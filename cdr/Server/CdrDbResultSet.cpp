@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.cpp,v 1.12 2001-12-19 12:26:29 bkline Exp $
+ * $Id: CdrDbResultSet.cpp,v 1.13 2002-03-28 18:26:59 bkline Exp $
  *
  * Implementation for ODBC result fetching wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2001/12/19 12:26:29  bkline
+ * Fixed bug in blob retrieval which resulted in loss of first byte.
+ *
  * Revision 1.11  2001/12/14 15:20:08  bkline
  * Added space for a single byte for large values; even though the ODBC
  * docs say nothing will be stored for a call with insufficient space,
@@ -78,17 +81,17 @@ cdr::db::ResultSet::ResultSet(cdr::db::Statement& s)
 
     // Extract the column information (if any).
     for (SQLSMALLINT i = 1; i <= nCols; ++i) {
-        Column* c= new Column;
+        ResultSetMetaData::Column c;
         char name[1024];
         SQLSMALLINT cbName;
         rc = SQLDescribeCol(st.hstmt, (SQLSMALLINT)i, (SQLCHAR *)name,
-                            sizeof name, &cbName, &c->type, &c->size,
-                            &c->digits, &c->nullable);
+                            sizeof name, &cbName, &c.type, &c.size,
+                            &c.digits, &c.nullable);
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
             throw cdr::Exception(L"Database failure fetching column info",
                                  st.getErrorMessage(rc));
-        c->name = std::string(name, cbName);
-        columnVector.push_back(c);
+        c.name = std::string(name, cbName);
+        metaData.columnVector.push_back(c);
     }
 }
 
@@ -97,7 +100,7 @@ cdr::db::ResultSet::ResultSet(cdr::db::Statement& s)
  * seem to matter, as the compiler appears to have optimized these away.
  */
 cdr::db::ResultSet::ResultSet(const ResultSet& rs)
-    : st(rs.st), columnVector(rs.columnVector), pRefCount(rs.pRefCount)
+    : st(rs.st), metaData(rs.metaData), pRefCount(rs.pRefCount)
 {
     ++*pRefCount;
 #if DEBUG
@@ -108,7 +111,7 @@ cdr::db::ResultSet::ResultSet(const ResultSet& rs)
 }
 
 /**
- * Discards the column information for the query.
+ * Cleans up.
  */
 cdr::db::ResultSet::~ResultSet()
 {
@@ -118,10 +121,6 @@ cdr::db::ResultSet::~ResultSet()
 #endif
     if (--*pRefCount > 0)
         return;
-    for (size_t i = 0; i < columnVector.size(); ++i) {
-        Column* c = columnVector[i];
-        delete c;
-    }
     delete pRefCount;
 }
 
@@ -161,12 +160,12 @@ bool cdr::db::ResultSet::next()
  */
 cdr::String cdr::db::ResultSet::getString(int pos)
 {
-    if (pos > columnVector.size())
+    if (pos < 1 || pos > metaData.getColumnCount())
         throw cdr::Exception(L"ResultSet: column request out of range");
     SQLRETURN rc;
-    Column* c = columnVector[pos - 1];
-    bool largeValue = c->size > 10000;
-    size_t bufSize = largeValue ? 1 : c->size + 1;
+    ResultSetMetaData::Column& c = metaData.columnVector[pos - 1];
+    bool largeValue = c.size > 10000;
+    size_t bufSize = largeValue ? 1 : c.size + 1;
     wchar_t* data = new wchar_t[bufSize];
     memset(data, 0, bufSize * sizeof(wchar_t));
     SDWORD cbData = (bufSize) * sizeof(wchar_t);
@@ -223,12 +222,12 @@ cdr::Int cdr::db::ResultSet::getInt(int pos)
  */
 cdr::Blob cdr::db::ResultSet::getBytes(int pos)
 {
-    if (pos > columnVector.size())
+    if (pos < 1 || pos > metaData.getColumnCount())
         throw cdr::Exception(L"ResultSet: column request out of range");
     SQLRETURN rc;
-    Column* c = columnVector[pos - 1];
-    bool largeValue = c->size > 10000;
-    size_t bufSize = largeValue ? 0 : c->size;
+    ResultSetMetaData::Column& c = metaData.columnVector[pos - 1];
+    bool largeValue = c.size > 10000;
+    size_t bufSize = largeValue ? 0 : c.size;
     unsigned char* data = new unsigned char[bufSize + 1];
     memset(data, 0, bufSize + 1);
     SDWORD cbData = bufSize;

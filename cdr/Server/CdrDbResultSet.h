@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.h,v 1.7 2000-12-28 13:31:10 bkline Exp $
+ * $Id: CdrDbResultSet.h,v 1.8 2002-03-28 18:27:00 bkline Exp $
  *
  * Wrapper for ODBC result fetching.  Modeled after JDBC interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2000/12/28 13:31:10  bkline
+ * Removed refCount member, as counter is now dynamically allocated.
+ *
  * Revision 1.6  2000/05/03 23:39:22  bkline
  * More ccdoc comments.
  *
@@ -33,6 +36,7 @@
 #include "CdrDbPreparedStatement.h"
 #include "CdrBlob.h"
 #include "CdrString.h"
+#include "CdrException.h"
 
 /**@#-*/
 
@@ -42,6 +46,85 @@ namespace cdr {
 /**@#+*/
 
         /** @pkg cdr.db */
+
+        // Forward declaration.
+        class ResultSet;
+
+        /**
+         * An object that can be used to get information about the types and
+         * properties of the columns in a ResultSet object.
+         */
+        class ResultSetMetaData {
+
+        public:
+
+            friend ResultSet;
+
+            /**
+             * Returns the number of columns in this ResultSet object.
+             */
+            int getColumnCount() const { return columnVector.size(); }
+            
+            /**
+             * Get the designated column's name.
+             *
+             *  @param  column      the first column is 1, the second is 2,
+             *                      ...
+             *  @returns            column name
+             */
+            cdr::String getColumnName(int column) const {
+                if (column < 1 || column > columnVector.size())
+                    throw cdr::Exception(L"Column number out of range.");
+                return columnVector[column - 1].name;
+            }
+
+        private:
+
+            /**
+             * Information for one of the columns in a result set.
+             */
+            struct Column {
+
+                /**
+                 * Name of the column.  Extracted but not used for this
+                 * version.
+                 */
+                std::string name;
+
+                /**
+                 * The type of the result value.
+                 */
+                SQLSMALLINT type;
+
+                /**
+                 * The maximum size of the result value.  Note that for TEXT
+                 * columns this can be very large, and the actual size of the
+                 * result must be determined when the value is retrieved.
+                 */
+                SQLUINTEGER size;
+
+                /**
+                 * Scale of the result.
+                 */
+                SQLSMALLINT digits;
+
+                /**
+                 * Flag indicating whether the column can hold NULL values.
+                 */
+                SQLSMALLINT nullable;
+            };
+
+            /**
+             * For convenience and as a workaround for MSVC++ template bugs.
+             */
+            typedef std::vector<Column> ColumnVector;
+
+            /**
+             * Information collected from the <code>Statement</code> object
+             * about the columns of the result set.
+             */
+            ColumnVector    columnVector;
+        };
 
         /**
          * Implements JDBC-like interface for class of the same name for
@@ -123,6 +206,11 @@ namespace cdr {
              */
             cdr::Blob   getBytes(int pos);
 
+            /**
+             * Retrieves information about the columns of this result set.
+             */
+            ResultSetMetaData getMetaData() const { return metaData; }
+
         private:
 
             /**
@@ -152,60 +240,20 @@ namespace cdr {
              * Reference to the statement for which this object will retrieve
              * results.
              */
-            Statement&  st;
+            Statement&        st;
             
+            /**
+             * Keeps track of information about columns in the result set.
+             */
+            ResultSetMetaData metaData;
+
             /**
              * Pointer to the reference count shared by all copies of the
              * object.  When a new copy is made the count is incremented.
              * When a copy is destroyed the count is decremented.  When the
              * count drops to zero the resources for the object are released.
              */
-            int*        pRefCount;
-
-            /**
-             * Information for one of the columns in a result set.
-             */
-            struct Column {
-
-                /**
-                 * Name of the column.  Extracted but not used for this
-                 * version.
-                 */
-                std::string name;
-
-                /**
-                 * The type of the result value.
-                 */
-                SQLSMALLINT type;
-
-                /**
-                 * The maximum size of the result value.  Note that for TEXT
-                 * columns this can be very large, and the actual size of the
-                 * result must be determined when the value is retrieved.
-                 */
-                SQLUINTEGER size;
-
-                /**
-                 * Scale of the result.
-                 */
-                SQLSMALLINT digits;
-
-                /**
-                 * Flag indicating whether the column can hold NULL values.
-                 */
-                SQLSMALLINT nullable;
-            };
-
-            /**
-             * For convenience and as a workaround for MSVC++ template bugs.
-             */
-            typedef std::vector<Column*> ColumnVector;;
-
-            /**
-             * Information collected from the <code>Statement</code> object
-             * about the columns of the result set.
-             */
-            ColumnVector    columnVector;
+            int*              pRefCount;
 
             /**
              * Unimplemented (blocked) assignment operator.
