@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Vendor Filter: InScopeProtocol</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.73: Fixed Related WebSites (Bug 941)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -630,6 +630,7 @@
    ================================================================ -->
    <LeadOrgPersonnel>
     <xsl:apply-templates    select = "LeadOrgPersonnel"/>
+    <xsl:apply-templates    select = "OverallContact"/>
    </LeadOrgPersonnel>
   </xsl:element>
  </xsl:template>
@@ -847,10 +848,10 @@
          <xsl:choose>
           <xsl:when           test = "../ProtocolSpecificContact/
                                          PostalAddress">
-           <PostalAddress>
+           <!-- PostalAddress -->
             <xsl:apply-templates select = "../ProtocolSpecificContact/
                                            PostalAddress"/>
-           </PostalAddress>
+           <!-- /PostalAddress -->
           </xsl:when>
           <xsl:otherwise>
            <xsl:for-each         select = "Person/PersonLocations/
@@ -908,7 +909,7 @@
           <xsl:when                test = "../ProtocolSpecificContact/
                                               Email">
            <Email>
-            <xsl:apply-templates select = "../ProtocolSpecificContact/
+            <xsl:value-of        select = "../ProtocolSpecificContact/
                                               Email"/>
            </Email>
           </xsl:when>
@@ -928,6 +929,10 @@
           <xsl:when                test = "../ProtocolSpecificContact/
                                               WebSite">
            <WebSite>
+            <xsl:attribute         name = "xref">
+             <xsl:value-of       select = "../ProtocolSpecificContact/
+                                           WebSite/@cdr:xref"/>
+            </xsl:attribute>
             <xsl:apply-templates select = "../ProtocolSpecificContact/
                                               WebSite"/>
            </WebSite>
@@ -1046,6 +1051,25 @@
       <xsl:attribute              name = "sitetype">
        <xsl:value-of            select = "'Organization'"/>
       </xsl:attribute>
+      <xsl:choose>
+      <xsl:when                   test = "../../@SuppressContactInformation
+                                          or
+                                          ../@SuppressContactInformation">
+       <xsl:attribute             name = "SuppressContactInformation">
+        <xsl:value-of           select = "../../@SuppressContactInformation |
+                                          ../@SuppressContactInformation"/>
+       </xsl:attribute>
+       <xsl:attribute             name = "contactinfo">
+        <xsl:value-of           select = "../../@SuppressContactInformation |
+                                          ../@SuppressContactInformation"/>
+       </xsl:attribute>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:attribute             name = "contactinfo">
+        <xsl:value-of           select = "'No'"/>
+       </xsl:attribute>
+      </xsl:otherwise>
+      </xsl:choose>
 
       <SiteName>
        <xsl:apply-templates     select = "OrganizationNameInformation/
@@ -1056,7 +1080,9 @@
       <xsl:apply-templates      select = "../OrgSiteContact/
                                           SpecificPerson |
                                           ../OrgSiteContact/
-                                          GenericPerson"/>
+                                          GenericPerson |
+                                          ../OrgSiteContact/
+                                          ClinicalTrialOffice"/>
       <!-- End:   Create ProtPerson Element in Vendor Output -->
 
      </ProtocolSite>
@@ -1076,6 +1102,25 @@
      <xsl:attribute               name = "sitetype">
       <xsl:value-of             select = "'Person'"/>
      </xsl:attribute>
+     <xsl:choose>
+     <xsl:when                    test = "../@SuppressContactInformation 
+                                          or
+                                          @SuppressContactInformation">
+      <xsl:attribute              name = "SuppressContactInformation">
+       <xsl:value-of            select = "../@SuppressContactInformation |
+                                          @SuppressContactInformation"/>
+      </xsl:attribute>
+      <xsl:attribute              name = "contactinfo">
+       <xsl:value-of            select = "../@SuppressContactInformation |
+                                          @SuppressContactInformation"/>
+      </xsl:attribute>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:attribute              name = "contactinfo">
+       <xsl:value-of            select = "'No'"/>
+      </xsl:attribute>
+     </xsl:otherwise>
+     </xsl:choose>
 
      <xsl:apply-templates       select = "PrivatePracticePerson"/>
     </ProtocolSite>
@@ -1090,7 +1135,8 @@
  Assemble the output for a specific person identified as the 
  contact for a participating organization.
  ==================================================================== -->
- <xsl:template               match = "GenericPerson">
+ <xsl:template               match = "GenericPerson |
+                                      OverallContact">
   <ProtPerson>
    <PersonRole>
     <xsl:value-of           select = "PersonTitle"/>
@@ -1126,6 +1172,54 @@
  </xsl:template>
 
 
+ <!-- *
+ ====================================================================
+ Assemble the output for the ClinicalTrialOffice information to be
+ displayed as a ProtPerson element.  The only possible entries are
+ the PersonRole, ContactName, Phone, and Email.
+ ==================================================================== -->
+ <xsl:template               match = "ClinicalTrialOffice">
+  <ProtPerson>
+   <PersonRole>
+    <xsl:value-of           select = "'Clinical Trial Office'"/>
+   </PersonRole>
+   <Contact>
+    <xsl:if                   test = "Organization/
+                                      ClinicalTrialsOfficeContact/
+                                      ClinicalTrialsOfficeContactName">
+     <ContactName>
+      <xsl:value-of         select = "Organization/
+                                      ClinicalTrialsOfficeContact/
+                                      ClinicalTrialsOfficeContactName"/>
+     </ContactName>
+    </xsl:if>
+
+    <ContactDetail>
+     <Phone>
+      <xsl:for-each         select = "Organization/
+                                      ClinicalTrialsOfficeContact/
+                                      ClinicalTrialsOfficeContactPhone">
+       <xsl:value-of        select = "."/>
+       <xsl:if                test = "position() != last()">
+        <xsl:text>; </xsl:text>
+       </xsl:if>
+      </xsl:for-each>
+     </Phone>
+
+     <xsl:if                  test = "Organization/
+                                      ClinicalTrialsOfficeContact/
+                                      ClinicalTrialsOfficeContactEmail">
+      <Email>
+       <xsl:value-of        select = "Organization/
+                                      ClinicalTrialsOfficeContact/
+                                      ClinicalTrialsOfficeContactEmail"/>
+      </Email>
+     </xsl:if>
+
+    </ContactDetail>
+   </Contact>
+  </ProtPerson>
+ </xsl:template>
 
 
  <!--
