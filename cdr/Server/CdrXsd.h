@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.h,v 1.12 2001-05-03 18:46:59 bkline Exp $
+ * $Id: CdrXsd.h,v 1.13 2001-05-16 15:50:51 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2001/05/03 18:46:59  bkline
+ * Moved in code from ParseSchema.cpp.
+ *
  * Revision 1.11  2001/01/17 21:53:37  bkline
  * Added general support for groups, sequences, choices & includes.
  *
@@ -649,6 +652,8 @@ namespace cdr {
         typedef StringList::const_iterator              StringEnum;
         typedef std::list<Key*>                         KeyList;
         typedef std::list<KeyRef*>                      KeyRefList;
+        typedef std::map<cdr::String, 
+                         const cdr::StringSet*>         ValidValueSets;
 
         /**
          * Common base class for <code>Key</code> and <code>KeyRef</code>
@@ -867,6 +872,16 @@ namespace cdr {
              *  @return         string containing the DTD.
              */
             cdr::String         makeDtd(const cdr::String& schemaFilename);
+
+            /**
+             * Extracts lists of valid values for elements and attributes
+             * found in this schema.  The key represents an element name by
+             * itself or an attribute for an element in the form
+             * element@attribute.
+             *
+             *  @param  list    caller's list object to be populated.
+             */
+            void                getValidValueSets(ValidValueSets& list) const;
 
         private:
 
@@ -1088,7 +1103,7 @@ namespace cdr {
             cdr::String     getTypeName() const { return typeName; }
 
             /**
-             * Find's the <code>Type</code> object attached to this element or
+             * Finds the <code>Type</code> object attached to this element or
              * attribute.  Hands the work off to <code>resolveType()</code>,
              * which looks up the type based on its name if this is the first
              * call for this <code>Node</code>.
@@ -1797,7 +1812,7 @@ namespace cdr {
              *                      this to look up the simple type).
              */
             SimpleContent(const cdr::String& n, const Schema* s) 
-                         { name = n; schema = s; }
+                         : simpleType(0), schema(s) { name = n; }
 
             /**
              * Accessor method to obtain the type used to constrain the text
