@@ -31,52 +31,39 @@
          Copy DocId, TermName,TermDefinition, Term Pronunciation
         ================================================================= -->
    
-<xsl:template match="GlossaryTerm">
- <xsl:text disable-output-escaping="yes">
+ <xsl:template                   match = "GlossaryTerm">
+  <xsl:text    disable-output-escaping = "yes">
 &lt;!DOCTYPE GlossaryTerm &gt;</xsl:text>
 
-<xsl:element name='{name()}'>
-<xsl:for-each  select="document('cdrutil:/docid')">
-<xsl:attribute name="id">
-<xsl:value-of select="."/>
-</xsl:attribute>
-</xsl:for-each>
-<xsl:if test="PdqKey">
-<xsl:attribute name="LegacyPDQID">
-<xsl:value-of select="PdqKey"/>
-</xsl:attribute>
-</xsl:if>
-<xsl:if test="@Dictionary">
-<xsl:attribute name="Dictionary">
-<xsl:value-of select="@Dictionary"/>
-</xsl:attribute>
-</xsl:if>
+  <xsl:element                    name = '{name()}'>
+   <xsl:for-each                select = "document('cdrutil:/docid')">
+    <xsl:attribute                name = "id">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+   <xsl:if                        test = "PdqKey">
+    <xsl:attribute                name = "LegacyPDQID">
+     <xsl:value-of              select = "PdqKey"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:if                        test = "@Dictionary">
+    <xsl:attribute                name = "Dictionary">
+     <xsl:value-of              select = "@Dictionary"/>
+    </xsl:attribute>
+   </xsl:if>
 
 
-            <xsl:apply-templates  select="TermName" mode="copy"/>
-            <xsl:apply-templates  select="SpanishTermName" mode="copy"/>
-            <xsl:apply-templates  select="TermPronunciation" mode="copy"/>
+   <xsl:apply-templates         select = "TermName" 
+                                  mode = "copy"/>
+   <xsl:apply-templates         select = "SpanishTermName" 
+                                  mode = "copy"/>
+   <xsl:apply-templates         select = "TermPronunciation" 
+                                  mode = "copy"/>
+   <xsl:apply-templates         select = "TermDefinition"
+                                  mode = "copy"/>
+   <xsl:apply-templates         select = "SpanishTermDefinition"
+                                  mode = "copy"/>
 
-           <xsl:for-each select="TermDefinition">
-           <xsl:element name="TermDefinition">
-           <xsl:if test="@Audience">
-           <xsl:attribute name="Audience">
-           <xsl:value-of select="@Audience"/>
-           </xsl:attribute>
-           </xsl:if>
-           <xsl:value-of select="."/>
-           </xsl:element>
-          </xsl:for-each>
-           <xsl:for-each select="SpanishTermDefinition">
-            <xsl:element name="SpanishTermDefinition">
-           <xsl:if test="@Audience">
-           <xsl:attribute name="Audience">
-           <xsl:value-of select="@Audience"/>
-           </xsl:attribute>
-           </xsl:if>
-           <xsl:value-of select="."/>
-           </xsl:element>
-           </xsl:for-each>
 <!-- ===================================================================
             Copy Date First Published and Date Last Modified
      ================================================================== -->
@@ -93,12 +80,32 @@
       <xsl:call-template          name = "getDateFirstPub">
         <xsl:with-param           name = "date"
                                 select = "$DateFirstPub"/>
-   </xsl:call-template>    
-   </xsl:otherwise>
+      </xsl:call-template>    
+    </xsl:otherwise>
    </xsl:choose>
-   <xsl:apply-templates select="DateLastModified" mode="copy"/>
-   </xsl:element>
-   </xsl:template>
+   <xsl:apply-templates         select = "DateLastModified" 
+                                  mode = "copy"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ The TermDefinition and SpanishTermDefinition can contain inline 
+ markup and needs to be handled with a template
+ ===================================================================== -->
+ <xsl:template                   match = "TermDefinition |
+                                          SpanishTermDefinition"
+                                  mode = "copy">
+  <xsl:element                    name = "{name()}">
+   <xsl:if                        test = "@Audience">
+    <xsl:attribute                name = "Audience">
+     <xsl:value-of              select = "@Audience"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:apply-templates           mode = "copy"/>
+  </xsl:element>
+ </xsl:template>
 
 </xsl:transform>]]>
 </CdrDocXml>
