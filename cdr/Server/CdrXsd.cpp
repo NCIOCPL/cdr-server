@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.15 2001-06-12 22:38:03 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.16 2001-07-20 14:55:02 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2001/06/12 22:38:03  bkline
+ * Added mixing #IMPLIED for readonly attribute decl.
+ *
  * Revision 1.14  2001/06/12 11:06:54  bkline
  * Added readonly attribute declaration for DocId, DocTitle, and top-level
  * document element.
@@ -115,6 +118,11 @@ static void validateTimeInstant(
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void validateNMToken(
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
+        cdr::StringList&                errors);
+static void validateIdOrIdref(
         const cdr::String&              elemName,
         const cdr::String&              attrName,
         const cdr::String&              val,
@@ -314,6 +322,8 @@ void cdr::xsd::Schema::seedBuiltinTypes()
     registerType(new cdr::xsd::SimpleType(cdr::xsd::TIME_INSTANT));
     registerType(new cdr::xsd::SimpleType(cdr::xsd::DATE_TIME));
     registerType(new cdr::xsd::SimpleType(cdr::xsd::NMTOKEN));
+    registerType(new cdr::xsd::SimpleType(cdr::xsd::ID));
+    registerType(new cdr::xsd::SimpleType(cdr::xsd::IDREF));
 }
 
 /**
@@ -867,7 +877,9 @@ cdr::xsd::SimpleType::SimpleType(const cdr::String& n)
         BuiltinTypeMapElement(cdr::xsd::DATE_TIME,      DATE_TIME    ),
         // XXX Remove after compatibility period.
         BuiltinTypeMapElement(cdr::xsd::TIME_INSTANT,   TIME_INSTANT ),
-        BuiltinTypeMapElement(cdr::xsd::NMTOKEN,        NMTOKEN      )
+        BuiltinTypeMapElement(cdr::xsd::NMTOKEN,        NMTOKEN      ),
+        BuiltinTypeMapElement(cdr::xsd::ID,             ID           ),
+        BuiltinTypeMapElement(cdr::xsd::IDREF,          IDREF        )
     };
 
     for (size_t i = 0; i < sizeof map / sizeof *map; ++i) {
@@ -1610,6 +1622,24 @@ void validateNMToken(
 }
 
 /**
+ * Reports any errors found with an ID or IDREF value.
+ */
+void validateIdOrIdref(
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
+        cdr::StringList&                errors)
+{
+    if (!cdr::xsd::isNMToken(val) || 
+            val.size() > 0 && val[0] != '_' && !iswalpha(val[0])) {
+        cdr::String err = cdr::String(L"Invalid ID or IDREF value: '")
+                        + val
+                        + identifyTextValue(elemName, attrName);
+        errors.push_back(err);
+    }
+}
+
+/**
  * Determines whether the value is less than any minimum specified.
  */
 void checkMinInclusive(
@@ -1720,6 +1750,10 @@ void validateSimpleType(
         break;
     case cdr::xsd::SimpleType::NMTOKEN:
         validateNMToken(elemName, attrName, value, errors);
+        break;
+    case cdr::xsd::SimpleType::ID:
+    case cdr::xsd::SimpleType::IDREF:
+        validateIdOrIdref(elemName, attrName, value, errors);
         break;
     default:
         err = cdr::String(L"Unrecognized base type for '")
@@ -6819,5 +6853,46 @@ void cdr::xsd::Schema::getValidValueSets(ValidValueSets& sets) const
                 }
             }
         }
+    }
+}
+
+/**
+ * Reports whether a given element in the schema has a particular
+ * attribute.
+ *
+ *  @param  elemName    name of element to check.
+ *  @param  attrName    name of attribute to check.
+ *  @return             <code>true</code> if the element can have
+ *                      the attribute named in the second
+ *                      parameter; otherwise <code>false</code>.
+ */
+bool cdr::xsd::Schema::hasAttribute(const cdr::String& elemName,
+                                    const cdr::String& attrName) const
+{
+    const Type* type = lookupType(lookupElementType(elemName));
+    if (!type)
+        return false;
+    const ComplexType* ct = dynamic_cast<const ComplexType*>(type);
+    if (!ct)
+        return false;
+    return ct->hasAttribute(attrName);
+}
+
+/**
+ * Extract a list of elements which can have a particular
+ * attribute.
+ *
+ *  @param  attrName    name of attribute to check.
+ *  @param  elemList    list of element names to be populated.
+ */
+void cdr::xsd::Schema::elemsWithAttr(const cdr::String& attrName,
+                                     cdr::StringList& elemList) const
+{
+    elemList.clear();
+    ElemTypeMap::const_iterator i = elements.begin();
+    while (i != elements.end()) {
+        cdr::String name = (i++)->first;
+        if (hasAttribute(name, attrName))
+            elemList.push_back(name);
     }
 }
