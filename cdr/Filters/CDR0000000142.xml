@@ -32,14 +32,17 @@
       <xsl:variable          name   = "MailerID" 
                              select = "@cdr:ref"/>
       <xsl:variable          name   = "MailerInfo" 
-                             select = "document(concat('cdr:',$MailerID))"/>
+                             select = "document(concat('cdrx:',$MailerID))"/>
       <xsl:variable          name   = "MailerPerson"
                              select = "$MailerInfo/Person"/>
       <xsl:choose>
+        <xsl:when              test = "$MailerInfo/CdrDocCtl/NotFound">
+          <xsl:text>No recipient</xsl:text>
+        </xsl:when>
         <xsl:when            test   = "string($MailerPerson)=''">
           <xsl:value-of      select = "$MailerInfo/Organization
                                        /OrganizationNameInformation
-                                       /OfficialName"/>
+                                       /OfficialName/Name"/>
         </xsl:when>
         <xsl:otherwise>
           <xsl:value-of      select = "$MailerInfo/Person
