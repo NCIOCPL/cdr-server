@@ -1,9 +1,12 @@
 /*
- * $Id: CdrValidateDoc.h,v 1.5 2001-06-20 00:56:10 ameyer Exp $
+ * $Id: CdrValidateDoc.h,v 1.6 2001-12-19 15:47:48 ameyer Exp $
  *
  * Support routines for CDR document validation.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2001/06/20 00:56:10  ameyer
+ * Changed comments on execValidateDoc() to reflect changes.
+ *
  * Revision 1.4  2001/04/05 15:27:52  ameyer
  * Fixed out of date comments in execValidateDoc().
  *
@@ -48,7 +51,8 @@ namespace cdr {
     const enum ValidRule {
         ValidateOnly,           // Validate doc but leave database alone
         UpdateIfValid,          // Update database iff no errors
-        UpdateUnconditionally   // Update database regardless of errors
+        UpdateUnconditionally,  // Update database regardless of errors
+        UpdateLinkTablesOnly    // Don't validate links, do update link tables
     };
 
 
