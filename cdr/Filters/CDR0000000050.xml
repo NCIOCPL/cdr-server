@@ -700,18 +700,28 @@
 
  <!--
  ========================================================================
- Named Template to display the Address
+ Named Template to display the Cooperative Group Membership
+ Display a warning message if more then one MemberOfCooperativeGroups 
+ element is found or if the existing element is empty.
  ======================================================================== -->
  <xsl:template                   match = "MemberOfCooperativeGroups">
   <b>
    <u>Cooperative Group Membership</u>
   </b>
-
+  
   <xsl:choose>
-   <xsl:when                      test = "MainMemberOf |
-                                          AffiliateMemberOf
+   <xsl:when                      test = "count(../MemberOfCooperativeGroups)
+                                                                        = 1">
+    <xsl:apply-templates        select = "MainMemberOf |
+                                          AffiliateMemberOf"/>
+   </xsl:when>
+   <xsl:when                      test = "count(../MemberOfCooperativeGroups)
+                                                                     &gt; 1
+                                          and 
+                                          position() != last()
                                           and
-                                          position() = 1">
+                                          count(MainMemberOf)+
+                                            count(AffiliateMemberOf) != 0">
     <xsl:apply-templates          select = "MainMemberOf |
                                           AffiliateMemberOf"/>
    </xsl:when>
