@@ -1,9 +1,12 @@
 /*
- * $Id: CdrMergeProt.cpp,v 1.2 2002-04-09 12:51:53 bkline Exp $
+ * $Id: CdrMergeProt.cpp,v 1.3 2002-08-23 20:28:52 bkline Exp $
  *
  * Merge scientific protocol information into main in-scope protocol document.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/04/09 12:51:53  bkline
+ * Added ProtocolTitle to scientific element list.
+ *
  * Revision 1.1  2001/11/28 19:44:38  bkline
  * Initial revision
  *
@@ -315,7 +318,7 @@ cdr::StringSet getScientificElemNames()
         L"ProtocolTitle",
         L"ProtocolAmendmentInformation",
         L"ProtocolAbstract",
-        L"ProtocolDetails",
+        L"ProtocolDetail",
         L"Eligibility",
         L"ProtocolRelatedLinks",
         L"PublishedResults",
