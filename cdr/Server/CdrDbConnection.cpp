@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbConnection.cpp,v 1.4 2000-05-03 15:25:41 bkline Exp $
+ * $Id: CdrDbConnection.cpp,v 1.5 2000-05-21 00:48:59 bkline Exp $
  *
  * Implementation for ODBC connection wrapper.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/05/03 15:25:41  bkline
+ * Fixed database statement creation.
+ *
  * Revision 1.3  2000/04/22 22:15:04  bkline
  * Added more comments.
  *
@@ -32,10 +35,19 @@ HENV cdr::db::Connection::henv = SQL_NULL_HENV;
  *
  *  @exception cdr::Exception if ODBC error encountered.
  */
-cdr::db::Connection::Connection() : autoCommit(false), hdbc(SQL_NULL_HDBC)
+cdr::db::Connection::Connection(const SQLCHAR* dsn, 
+                                const SQLCHAR* uid, 
+                                const SQLCHAR* pwd) 
+    : autoCommit(false), hdbc(SQL_NULL_HDBC), refCount(1)
 {
+    master = this;
     SQLRETURN rc;
     if (henv == SQL_NULL_HENV) {
+        rc = SQLSetEnvAttr(0, SQL_ATTR_CONNECTION_POOLING,
+                           (SQLPOINTER)SQL_CP_ONE_PER_HENV, 0);
+        if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+            throw cdr::Exception(L"Failure enabling connection pooling",
+                                 getErrorMessage(rc, henv, 0, 0));
         rc = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &henv);
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
             throw cdr::Exception(L"Failure allocating database environment",
@@ -50,22 +62,71 @@ cdr::db::Connection::Connection() : autoCommit(false), hdbc(SQL_NULL_HDBC)
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
         throw cdr::Exception(L"Failure allocating database connection",
                              getErrorMessage(rc, henv, hdbc, 0));
-    rc = SQLConnect(hdbc, (SQLCHAR *)"cdr", SQL_NTS,
-                          (SQLCHAR *)"cdr", SQL_NTS,
-                          (SQLCHAR *)"***REMOVED***", SQL_NTS);
-    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+    rc = SQLConnect(hdbc, const_cast<SQLCHAR*>(dsn), SQL_NTS,
+                          const_cast<SQLCHAR*>(uid), SQL_NTS, 
+                          const_cast<SQLCHAR*>(pwd), SQL_NTS);
+    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
+        hdbc = SQL_NULL_HDBC;
         throw cdr::Exception(L"Failure connecting to database",
                              getErrorMessage(rc, henv, hdbc, 0));
+    }
     setAutoCommit(true);
+}
+
+/**
+ * Makes a safe copy of the <code>Connection</code> object
+ * which knows when the master copy has been closed.
+ *
+ *  @param  c           reference to <code>Connection</code>
+ *                      object.
+ */
+cdr::db::Connection::Connection(const Connection& c) : hdbc(c.hdbc),
+      master(const_cast<Connection*>(&c))
+{
+    ++master->refCount;
+    std::cerr << "Connection copy constructor; refCount=" << master->refCount
+              << "\n";;
+}
+
+/**
+ * Makes a safe copy of the <code>Connection</code> object
+ * which knows when the master copy has been closed.
+ *
+ *  @param  c           reference to <code>Connection</code>
+ *                      object.
+ *  @return             reference to modified
+ *                      <code>Connection</code> object.
+ */
+cdr::db::Connection& cdr::db::Connection::operator=(const Connection& c)
+{
+    hdbc        = c.hdbc;
+    master      = const_cast<Connection*>(&c);
+    ++master->refCount;
+    return *this;
+}
+
+/**
+ * Cleans up the connection if appropriate.
+ */
+cdr::db::Connection::~Connection()
+{
+    std::cerr << "Connection destructor; refCount=" << master->refCount <<
+        "\n";
+    if (--master->refCount < 1 && !isClosed())
+        close();
 }
 
 /**
  * Cleans up the connection.
  */
-cdr::db::Connection::~Connection()
+void cdr::db::Connection::close()
 {
+    if (isClosed())
+        throw cdr::Exception(
+                L"Connection::close(): Connection already closed.");
     SQLDisconnect(hdbc);
     SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
+    master->hdbc = SQL_NULL_HDBC;
 }
 
 /**
@@ -133,7 +194,9 @@ cdr::String cdr::db::Connection::getErrorMessage(SQLRETURN sqlReturn,
  */
 void cdr::db::Connection::setAutoCommit(bool val)
 {
-    if (autoCommit == val)
+    if (isClosed())
+        throw cdr::Exception(L"Connection::setAutoCommit(): Connection closed");
+    if (getAutoCommit() == val)
         return;
     SQLUINTEGER setting = val ? SQL_AUTOCOMMIT_ON : SQL_AUTOCOMMIT_OFF;
     SQLRETURN rc = SQLSetConnectAttr(hdbc, 
@@ -143,7 +206,7 @@ void cdr::db::Connection::setAutoCommit(bool val)
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
         throw cdr::Exception(L"Failure setting auto commit",
                              getErrorMessage(rc, henv, hdbc, 0));
-    autoCommit = val;
+    master->autoCommit = val;
 }
 
 /**
@@ -151,6 +214,8 @@ void cdr::db::Connection::setAutoCommit(bool val)
  */
 void cdr::db::Connection::commit()
 {
+    if (isClosed())
+        throw cdr::Exception(L"Connection::commit(): Connection closed");
     SQLRETURN rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
         throw cdr::Exception(L"Commit failure",
@@ -162,6 +227,8 @@ void cdr::db::Connection::commit()
  */
 void cdr::db::Connection::rollback()
 {
+    if (isClosed())
+        throw cdr::Exception(L"Connection::rollback(): Connection closed");
     SQLRETURN rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_ROLLBACK);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
         throw cdr::Exception(L"Rollback failure",
@@ -174,6 +241,8 @@ void cdr::db::Connection::rollback()
  */
 int cdr::db::Connection::getLastIdent()
 {
+    if (isClosed())
+        throw cdr::Exception(L"Connection::getLastIdent(): Connection closed");
     cdr::db::Statement s(*this);
     cdr::db::ResultSet r = s.executeQuery("SELECT @@IDENTITY");
     if (!r.next())
@@ -190,6 +259,9 @@ int cdr::db::Connection::getLastIdent()
  */
 cdr::String cdr::db::Connection::getDateTimeString() 
 {
+    if (isClosed())
+        throw cdr::Exception(
+                L"Connection::getDateTimeString(): Connection closed");
     cdr::db::Statement query(*this);
     cdr::db::ResultSet rs = query.executeQuery("SELECT GETDATE()");
     if (!rs.next())
@@ -205,5 +277,37 @@ cdr::db::Statement cdr::db::Connection::createStatement()
 cdr::db::PreparedStatement 
 cdr::db::Connection::prepareStatement(const std::string& s)
 {
+    if (isClosed())
+        throw cdr::Exception(
+                L"Connection::prepareStatement(): Connection closed");
     return PreparedStatement(*this, s);
+}
+
+/**
+ * Opens a new connection to the CDR database.  Connection pooling
+ * is used to reduce the number of actual connections which have
+ * to be built up and torn down.
+ *
+ *  @param  url     string of the form "odbc:dsn" where dsn is
+ *                  ODBC DSN for the connection.
+ *  @param  uid     login ID for the database.
+ *  @param  pwd     password for the database account.
+ *  @return         new <code>Connection</code> object.
+ */
+cdr::db::Connection 
+cdr::db::DriverManager::getConnection(const cdr::String& url_, 
+                                      const cdr::String& uid_,
+                                      const cdr::String& pwd_)
+{
+    if (url_.length() < 6 || url_.substr(0, 5) != L"odbc:")
+        throw cdr::Exception(
+                L"DriverManager::getConnection(): Unsupported connection type",
+                url_);
+
+    std::string dsn = url_.toUtf8().substr(5);
+    std::string uid = uid_.toUtf8();
+    std::string pwd = pwd_.toUtf8();
+    return Connection(reinterpret_cast<const SQLCHAR*>(dsn.c_str()),
+                      reinterpret_cast<const SQLCHAR*>(uid.c_str()),
+                      reinterpret_cast<const SQLCHAR*>(pwd.c_str()));
 }
