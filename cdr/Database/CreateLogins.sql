@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.13 2002-11-08 15:38:40 pzhang Exp $
+ * $Id: CreateLogins.sql,v 1.14 2002-11-14 01:11:14 bkline Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2002/11/08 15:38:40  pzhang
+ * Rolled back to version 1.11 [left CdrGuest SELECT usr].
+ *
  * Revision 1.12  2002/11/01 15:37:54  pzhang
  * Denied CdrGuest to select usr table.
  *
@@ -354,4 +357,8 @@ GO
 GRANT SELECT, UPDATE, INSERT ON batch_job_parm TO CdrPublishing
 GO
 GRANT SELECT ON batch_job_parm TO CdrGuest
+GO
+GRANT SELECT ON filter_set TO CdrGuest
+GO
+GRANT SELECT ON filter_set_member TO CdrGuest
 GO
