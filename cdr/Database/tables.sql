@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.5 2000-02-04 01:53:11 ameyer Exp $
+ * $Id: tables.sql,v 1.6 2000-04-11 22:46:25 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/02/04 01:53:11  ameyer
+ * Added link module related tables.
+ *
  * Revision 1.4  1999/12/16 21:53:40  bkline
  * Added 'approved' column to document table.
  *
@@ -475,14 +478,14 @@ CREATE TABLE grp_usr
  *  it is possible for the same type to be used in more than one place.
  * Each unique type has defining properties, see table link_properties.
  *
- *     id    unique id used in other tables.
- *     name  human readable name
- *     comment  optional free tex notes
+ *     id       unique id used in other tables.
+ *     name     human readable name
+ *     comment  optional free text notes
  */
 CREATE TABLE link_type (
-     id INTEGER IDENTITY PRIMARY KEY,
-     name VARCHAR(32) UNIQUE,
-     comment VARCHAR(255) NULL
+          id INTEGER IDENTITY PRIMARY KEY,
+        name VARCHAR(32) UNIQUE,
+     comment VARCHAR(255) NULL,
 )
 
 /*
@@ -495,12 +498,13 @@ CREATE TABLE link_type (
  *
  *     doc_type foreign key references doc_type table
  *     element  element in doc_type which may contain one of these links.
- *     link_id  foreign key references link table.
+ *     link_id  foreign key references link_type table.
  */
 CREATE TABLE link_xml (
-     doc_type  integer NOT NULL REFERENCES doc_type,
-     element   VARCHAR(32) NOT NULL UNIQUE,
-     link_id   integer NOT NULL REFERENCES link_type
+      doc_type INTEGER NOT NULL REFERENCES doc_type,
+       element VARCHAR(32) NOT NULL UNIQUE,
+       link_id INTEGER NOT NULL REFERENCES link_type,
+   PRIMARY KEY (doc_type, element)
 )
 
 /*
@@ -512,8 +516,8 @@ CREATE TABLE link_xml (
  *     comment free text comments.
  */
 CREATE TABLE link_prop_type (
-     id      INTEGER IDENTITY PRIMARY KEY,
-     name    VARCHAR(32) UNIQUE,
+          id INTEGER IDENTITY PRIMARY KEY,
+        name VARCHAR(32) UNIQUE,
      comment VARCHAR(256) NULL
 )
 
@@ -535,9 +539,10 @@ CREATE TABLE link_prop_type (
  *   etc.
  */
 CREATE TABLE link_prop (
-     link_id  INTEGER NOT NULL REFERENCES link_type,
+      link_id INTEGER NOT NULL REFERENCES link_type,
      property INTEGER NOT NULL REFERENCE link_prop_type,
-     value    VARCHAR(64)
+        value VARCHAR(64),
+  PRIMARY KEY (link_type, property)
 )
 
 /*
@@ -554,25 +559,25 @@ CREATE TABLE link_prop (
  *     source_doc     doc id containing a link element.
  *     source_doctype doc type of source_doc
  *     source_elem    element in source doc containing a link.
- *     target_doc     doc id linked to by source.
- *     target_fmt     format (xml, html, etc.) of target_doc
+ *     target_doc     doc id linked to by source (null if url used)
  *     target_doctype doc type of target_doc
+ *     target_fmt     format (xml, html, etc.) of target_doc
  *     target_frag    fragment id linked to, if any.
  *     url            alternative to target id + fragment for non CDR targets.
  *     val_time       date/time err_count set.
  */
 CREATE TABLE link_net (
-     link_type      INTEGER NOT NULL REFERENCE link_type,
-     val_status     CHAR NOT NULL CHECK (val_status IN ('P', 'F', 'N')),
-     source_doc     INTEGER NOT NULL REFERENCES doc,
-     source_doctype INTEGER NOT NULL REFERENCES doc,
-     source_elem    VARCHAR(32) NOT NULL,
-     target_doc     INTEGER NULL REFERENCES doc,
-     target_fmt     INTEGER NOT NULL REFERENCES format,
+          link_type INTEGER NOT NULL REFERENCE link_type,
+         val_status CHAR NOT NULL CHECK (val_status IN ('P', 'F', 'N')),
+         source_doc INTEGER NOT NULL REFERENCES doc,
+     source_doctype INTEGER NOT NULL REFERENCES doc_type,
+        source_elem VARCHAR(32) NOT NULL,
+         target_doc INTEGER NULL REFERENCES doc,
      target_doctype INTEGER REFERENCES doc_type NULL,
-     target_frag    VARCHAR(32) NULL,
-     url            VARCHAR(256) NULL,
-     val_time       DATETIME
+         target_fmt INTEGER NOT NULL REFERENCES format,
+        target_frag VARCHAR(32) NULL,
+                url VARCHAR(256) NULL,
+           val_time DATETIME
 )
 
 /*
@@ -588,9 +593,10 @@ CREATE TABLE link_net (
  *     fragment  value of id attribute in element.
  */
 CREATE TABLE link_fragment (
-     doc_id     INTEGER NOT NULL REFERENCES doc,
-     elem       VARCHAR(32),
-     fragment   VARCHAR(32)
+         doc_id INTEGER NOT NULL REFERENCES doc,
+           elem VARCHAR(32),
+       fragment VARCHAR(32),
+    PRIMARY KEY (doc_id, elem)
 )
 
 /*************************************************************
