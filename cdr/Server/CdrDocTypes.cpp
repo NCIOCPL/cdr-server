@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDocTypes.cpp,v 1.6 2001-05-21 20:48:29 bkline Exp $
+ * $Id: CdrDocTypes.cpp,v 1.7 2001-06-12 11:07:58 bkline Exp $
  *
  * Support routines for CDR document types.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2001/05/21 20:48:29  bkline
+ * Eliminated checks for permission to perform read-only doctype actions.
+ *
  * Revision 1.5  2001/05/16 15:45:07  bkline
  * Added listSchemaDocs() command; modified commands to reflect shift
  * of schema documents from doc_type table to document table.
@@ -106,6 +109,28 @@ cdr::String cdr::listSchemaDocs(Session&          session,
         return response + L"</CdrListSchemaDocsResp>";
 }
 
+cdr::StringList getLinkingElements(int id, cdr::db::Connection& conn)
+{
+    cdr::StringList linkingElements;
+    static const char* query = "SELECT DISTINCT x.element                 "
+                               "           FROM link_xml x                "
+                               "           JOIN link_type t               "
+                               "             ON x.link_id = t.id          "
+                               "           JOIN link_target g             "
+                               "             ON g.source_link_type = t.id "
+                               "          WHERE x.doc_type = ?            ";
+    cdr::db::PreparedStatement ps = conn.prepareStatement(query);
+    ps.setInt(1, id);
+    cdr::db::ResultSet rs = ps.executeQuery();
+    while (rs.next()) {
+        cdr::String elemName = rs.getString(1);
+        if (!elemName.empty())
+            linkingElements.push_back(elemName);
+    }
+    ps.close();
+    return linkingElements;
+}
+
 /**
  * Load the row from the doc_type table for the requested document type.
  * Send back the schema and other related document type information.
@@ -138,7 +163,8 @@ cdr::String cdr::getDocType(Session&          session,
                         "                 t.versioning,       "
                         "                 t.schema_date,      "
                         "                 d.xml,              "
-                        "                 d.title             "
+                        "                 d.title,            "
+                        "                 t.id                "
                         "            FROM doc_type t          "
                         "            JOIN format f            "
                         "              ON t.format = f.id     "
@@ -157,7 +183,9 @@ cdr::String cdr::getDocType(Session&          session,
     cdr::String schemaMod  = rs.getString(5);
     cdr::String schemaStr  = rs.getString(6);
     cdr::String schemaName = rs.getString(7);
+    int         id         = rs.getInt(8);
     ps.close();
+    cdr::StringList linkingElements = getLinkingElements(id, conn);
 
     cdr::xsd::Schema* schema = 0;
     if (!schemaStr.empty()) {
@@ -197,6 +225,13 @@ cdr::String cdr::getDocType(Session&          session,
             resp << L"</EnumSet>";
             ++i;
         }
+    }
+    if (!linkingElements.empty()) {
+        resp << L"<LinkingElements>";
+        cdr::StringList::const_iterator iter = linkingElements.begin();
+        while (iter != linkingElements.end())
+            resp << L"<LinkingElement>" << *iter++ << L"</LinkingElement>";
+        resp << L"</LinkingElements>";
     }
     if (!comment.isNull())
         resp << L"<Comment>" << comment << L"</Comment>";
