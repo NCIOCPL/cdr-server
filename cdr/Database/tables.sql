@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.85 2003-09-29 17:26:23 bkline Exp $
+ * $Id: tables.sql,v 1.86 2003-10-23 14:32:33 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.85  2003/09/29 17:26:23  bkline
+ * Renamed catgory column of external_map_usage table to id.
+ *
  * Revision 1.84  2003/09/29 15:25:13  bkline
  * Modified external_id tables (now external_map and external_map_usage)
  * to be put into service for mapping NLM names for persons and
@@ -1749,4 +1752,45 @@ CREATE TABLE sys_value
  last_change DATETIME NOT NULL,
      program varchar(64) NULL,
        notes NTEXT NULL)
+GO
+
+/*
+ * Table of valid values for disposition status of documents imported 
+ * from ClinicalTrials.gov.
+ *
+ *           id  uniquely identifies the status value
+ *         name  string used to represent the value
+ *      comment  optional user comments
+ */
+CREATE TABLE ctgov_disposition
+         (id INTEGER IDENTITY PRIMARY KEY,
+        name VARCHAR(32)      NOT NULL UNIQUE,
+     comment NTEXT                NULL)
+GO
+
+/*
+ * Table for tracking documents downloaded from NLM's CancerTrials.gov site.
+ *
+ *       nlm_id  uniquely identifies the document withing CT.gov
+ *        title  official title, if present; otherwise brief title
+ *          xml  unmodified XML document as downloaded from NLM
+ *   downloaded  date/time of download
+ *  disposition  foreign key into ctgov_disposition table
+ *           dt  date/time of most recent disposition change
+ *     verified  date/time document was last verified at NLM
+ *      changed  date/time document was last changed at NLM
+ *       cdr_id  document ID in CDR (if imported)
+ *      comment  user comments, if any
+ */
+CREATE TABLE ctgov_import
+     (nlm_id VARCHAR(16)   NOT NULL PRIMARY KEY,
+       title NVARCHAR(255) NOT NULL,
+         xml NTEXT         NOT NULL,
+  downloaded DATETIME      NOT NULL,
+ disposition INTEGER       NOT NULL REFERENCES ctgov_disposition,
+          dt DATETIME      NOT NULL,
+    verified DATETIME          NULL,
+     changed DATETIME          NULL,
+      cdr_id INTEGER           NULL REFERENCES all_docs,
+     comment NTEXT             NULL)
 GO
