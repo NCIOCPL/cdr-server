@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.69 2002-08-29 12:16:45 bkline Exp $
+ * $Id: tables.sql,v 1.70 2002-09-12 20:03:39 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.69  2002/08/29 12:16:45  bkline
+ * Modified doc_info view.
+ *
  * Revision 1.68  2002/08/23 01:10:27  ameyer
  * Added indexes to link_net.
  *
@@ -506,17 +509,28 @@ GO
  *               we auto generate them in the form '_1', '_2', etc. for all
  *               elements which don't already have these attributes.  This
  *               stores the last used fragment id.  Next one used is this + 1.
+ *     first_pub date document was first published (if at all); will be NULL
+ *               for any document which has never yet been published; will
+ *               also be NULL for any document which was imported from an
+ *               external system (e.g., PDQ) for which we cannot ever know
+ *               when first publication took place; these documents will
+ *               have the value 'N' for the 
+ * first_pub_knowable
+ *               column, in which case the publication subsystem must never
+ *               insert a non-NULL value into the first_pub column.
  */
-CREATE TABLE all_docs
-           (id INTEGER IDENTITY PRIMARY KEY,
-    val_status CHAR          NOT NULL DEFAULT 'U' REFERENCES doc_status,
-      val_date DATETIME          NULL,
-      doc_type INTEGER       NOT NULL REFERENCES doc_type,
-         title NVARCHAR(255) NOT NULL,
-           xml NTEXT         NOT NULL,
-       comment NVARCHAR(255)     NULL,
- active_status CHAR          NOT NULL DEFAULT 'A' REFERENCES active_status,
-  last_frag_id INTEGER       NOT NULL DEFAULT 0)
+      CREATE TABLE all_docs
+               (id INTEGER IDENTITY PRIMARY KEY,
+        val_status CHAR          NOT NULL DEFAULT 'U' REFERENCES doc_status,
+          val_date DATETIME          NULL,
+          doc_type INTEGER       NOT NULL REFERENCES doc_type,
+             title NVARCHAR(255) NOT NULL,
+               xml NTEXT         NOT NULL,
+           comment NVARCHAR(255)     NULL,
+     active_status CHAR          NOT NULL DEFAULT 'A' REFERENCES active_status,
+      last_frag_id INTEGER       NOT NULL DEFAULT 0,
+         first_pub DATETIME          NULL,
+first_pub_knowable CHAR          NOT NULL DEFAULT 'Y')
 GO
 
 /*
