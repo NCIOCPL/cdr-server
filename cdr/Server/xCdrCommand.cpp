@@ -1,9 +1,13 @@
 /*
- * $Id: xCdrCommand.cpp,v 1.17 2001-01-17 21:49:18 bkline Exp $
+ * $Id: xCdrCommand.cpp,v 1.18 2001-02-26 16:09:53 mruben Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2001/01/17 21:49:18  bkline
+ * Replaced CdrGetSchema with CdrAddDocType, CdrModDocType, CdrDelDocType,
+ * and CdrGetDocType.
+ *
  * Revision 1.16  2000/12/28 13:29:26  bkline
  * Added entry for CdrGetSchema command.
  *
@@ -279,6 +283,7 @@ cdr::String cdr::getDoc(cdr::Session& session,
     return stub(L"GetDoc");
 }
 
+#if 0
 cdr::String cdr::checkVerOut(cdr::Session& session,
                           const cdr::dom::Node& commandNode,
                           cdr::db::Connection& dbConnection) {
@@ -290,6 +295,7 @@ cdr::String cdr::checkVerIn(cdr::Session& session,
                             cdr::db::Connection& dbConnection) {
     return stub(L"CheckIn");
 }
+#endif
 
 cdr::String cdr::report(cdr::Session& session,
                         const cdr::dom::Node& commandNode,

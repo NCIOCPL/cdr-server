@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.5 2000-12-07 22:53:08 ameyer Exp $
+ * $Id: CdrVersion.cpp,v 1.6 2001-02-26 16:09:53 mruben Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/12/07 22:53:08  ameyer
+ * Moved allowVersion from unnamed to cdr namespace so delDoc can see it.
+ *
  * Revision 1.4  2000/11/20 15:23:32  mruben
  * fixed bug in SQL
  *
@@ -150,8 +153,9 @@ int cdr::checkIn(cdr::Session& session, int docId,
   if (!abandon)
   {
     ++version;
-    string query = "SELECT d.doc_type, d.title, d.xml, "
-                   "       d.comment, a.dt, b.data "
+    string query = "SELECT d.val_status, d.val_date, d.approved, "
+                   "       d.doc_type, d.title, d.xml, "
+                   "       d.comment, d.active_status, a.dt, b.data "
                    "FROM document d "
                    "JOIN audit_trail a ON a.document = d.id "
                    "LEFT OUTER JOIN doc_blob b ON b.id = d.id "
@@ -166,27 +170,36 @@ int cdr::checkIn(cdr::Session& session, int docId,
     if (!rs.next())
       throw cdr::Exception(L"Error getting document data");
 
-    int doc_type = rs.getInt(1);
-    cdr::String title = rs.getString(2);
-    cdr::String xml = rs.getString(3);
-    cdr::String doc_comment = rs.getString(4);
-    cdr::String updated_dt = rs.getString(5);
-    cdr::Blob data = rs.getBytes(6);
+    cdr::String val_status = rs.getString(1);
+    cdr::String val_date = rs.getString(2);
+    cdr::String approved = rs.getString(3);
+    int doc_type = rs.getInt(4);
+    cdr::String title = rs.getString(5);
+    cdr::String xml = rs.getString(6);
+    cdr::String doc_comment = rs.getString(7);
+    cdr::String active_status = rs.getString(8);
+    cdr::String updated_dt = rs.getString(9);
+    cdr::Blob data = rs.getBytes(10);
 
     string newver = "INSERT INTO doc_version "
-      "(id, num, dt, updated_dt, usr, doc_type, title, "
-      " xml, data, comment) "
-      "VALUES (?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?)";
+                    "            (id, num, dt, updated_dt, usr, val_status, "
+                    "             val_date, approved, doc_type, title, "
+                    "             xml, data, comment, active_status) "
+      "VALUES (?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     cdr::db::PreparedStatement insert = conn.prepareStatement(newver);
     insert.setInt(1, docId);
     insert.setInt(2, version);
     insert.setString(3, updated_dt);
     insert.setInt(4, usr);
-    insert.setInt(5, doc_type);
-    insert.setString(6, title);
-    insert.setString(7, xml);
-    insert.setBytes(8, data);
-    insert.setString(9, doc_comment);
+    insert.setString(5, val_status);
+    insert.setString(6, val_date);
+    insert.setString(7, approved);
+    insert.setInt(8, doc_type);
+    insert.setString(9, title);
+    insert.setString(10, xml);
+    insert.setBytes(11, data);
+    insert.setString(12, doc_comment);
+    insert.setString(13, active_status);
     insert.executeQuery();
   }
 
@@ -280,10 +293,11 @@ int cdr::checkOut(cdr::Session& session,
 bool cdr::getVersion(int docId, cdr::db::Connection& conn, int num,
                      CdrVerDoc* verdoc)
 {
-  string query = "SELECT dt, updated_dt, usr, doc_type, title, "
-    "xml, data, comment "
-    "FROM doc_version "
-    "WHERE id = ? and num = ?";
+  string query = "SELECT dt, updated_dt, usr, val_status, val_date, "
+                        "approved, doc_type, title, "
+                        "xml, data, comment, active_status "
+                 "FROM doc_version "
+                 "WHERE id = ? and num = ?";
   cdr::db::PreparedStatement select = conn.prepareStatement(query);
   select.setInt(1, docId);
   select.setInt(2, num);
@@ -299,11 +313,15 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn, int num,
     verdoc->dt = rs.getString(1);
     verdoc->updated_dt = cdr::toXmlDate(rs.getString(2));
     verdoc->usr = rs.getInt(3);
-    verdoc->doc_type = rs.getInt(4);
-    verdoc->title = rs.getString(5);
-    verdoc->xml = rs.getString(6);
-    verdoc->data = rs.getBytes(7);
-    verdoc->comment = rs.getString(8);
+    verdoc->val_status = rs.getString(4);
+    verdoc->val_date = rs.getString(5);
+    verdoc->approved = rs.getString(6);
+    verdoc->doc_type = rs.getInt(7);
+    verdoc->title = rs.getString(8);
+    verdoc->xml = rs.getString(9);
+    verdoc->data = rs.getBytes(10);
+    verdoc->comment = rs.getString(11);
+    verdoc->active_status = rs.getString(12);
   }
 
   return true;
@@ -313,8 +331,9 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn,
                      const cdr::String& dt,
                      CdrVerDoc* verdoc)
 {
-  string query = "SELECT num, dt, updated_dt, usr, doc_type, title, "
-                 "xml, data, comment "
+  string query = "SELECT num, dt, updated_dt, usr, val_status, val_date, "
+                        "approved, doc_type, title, "
+                        "xml, data, comment, active_status "
                  "FROM doc_version "
                  "WHERE document = ? "
                  "  AND dt = (SELECT MAX(dt) FROM doc_version "
@@ -331,15 +350,19 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn,
   if (verdoc != NULL)
   {
     verdoc->document = docId;
-    verdoc->num = rs.getInt(1);;
+    verdoc->num = rs.getInt(1);
     verdoc->dt = rs.getString(2);
     verdoc->updated_dt = cdr::toXmlDate(rs.getString(3));
     verdoc->usr = rs.getInt(4);
-    verdoc->doc_type = rs.getInt(5);
-    verdoc->title = rs.getString(6);
-    verdoc->xml = rs.getString(7);
-    verdoc->data = rs.getBytes(8);
-    verdoc->comment = rs.getString(9);
+    verdoc->val_status = rs.getString(5);
+    verdoc->val_date = rs.getString(6);
+    verdoc->approved = rs.getString(7);
+    verdoc->doc_type = rs.getInt(8);
+    verdoc->title = rs.getString(9);
+    verdoc->xml = rs.getString(10);
+    verdoc->data = rs.getBytes(11);
+    verdoc->comment = rs.getString(12);
+    verdoc->active_status = rs.getString(13);
   }
 
   return true;
@@ -349,8 +372,9 @@ bool cdr::getLabelVersion(int docId, cdr::db::Connection& conn,
                           const cdr::String& label_name,
                           CdrVerDoc* verdoc)
 {
-  string query = "SELECT d.num, d.dt, d.updated_dt, d.usr, "
-                        "d.doc_type, d.title, d.xml, d.data, d.comment "
+  string query = "SELECT d.num, d.dt, d.updated_dt, d.usr, d.val_status, "
+                        "d.val_date, d.approved, d.doc_type, d.title, "
+                        "d.xml, d.data, d.comment, d.active_status "
                         "FROM doc_version d "
                         "INNER JOIN doc_version_label dl "
                         "ON d.id = dl.document "
@@ -373,11 +397,15 @@ bool cdr::getLabelVersion(int docId, cdr::db::Connection& conn,
     verdoc->dt = rs.getString(2);
     verdoc->updated_dt = cdr::toXmlDate(rs.getString(3));
     verdoc->usr = rs.getInt(4);
-    verdoc->doc_type = rs.getInt(5);
-    verdoc->title = rs.getString(6);
-    verdoc->xml = rs.getString(7);
-    verdoc->data = rs.getBytes(8);
-    verdoc->comment = rs.getString(9);
+    verdoc->val_status = rs.getString(5);
+    verdoc->val_date = rs.getString(6);
+    verdoc->approved = rs.getString(7);
+    verdoc->doc_type = rs.getInt(8);
+    verdoc->title = rs.getString(9);
+    verdoc->xml = rs.getString(10);
+    verdoc->data = rs.getBytes(11);
+    verdoc->comment = rs.getString(12);
+    verdoc->active_status = rs.getString(13);
   }
 
   return true;
