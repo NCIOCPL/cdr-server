@@ -191,8 +191,9 @@
                               mode = "copy"/>
    <xsl:apply-templates     select = "Outline"
                               mode = "copy"/>
-   <xsl:apply-templates     select = "EntryCriteria"
-                              mode = "copy"/>
+   <EntryCriteria>
+    <xsl:apply-templates     select = "EntryCriteria"/>
+   </EntryCriteria>
    <xsl:apply-templates     select = "ProjectedAccrual"
                               mode = "copy"/>
    <xsl:apply-templates     select = "EndPoints"
@@ -235,6 +236,29 @@
                               mode = "copy"/>
   </Patient>
  </xsl:template>
+
+ <!--
+ ====================================================================
+ Assemble the EntryCriteria detail section.
+ ==================================================================== -->
+ <xsl:template               match = "EntryCriteria">
+   <xsl:apply-templates/>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Assemble the Protocol detail section.
+ ==================================================================== -->
+ <xsl:template               match = "DiseaseCharacteristics |
+                                      PatientCharacteristics |
+                                      PriorConcurrentTherapy |
+                                      GeneralEligibilityCriteria">
+  <xsl:element                name = "{name()}">
+   <xsl:apply-templates/>
+  </xsl:element>
+ </xsl:template>
+
 
  <!--
  ====================================================================
@@ -329,13 +353,13 @@
       Template for extracting Glossary Term definitions for Patient
       Abstract section
       ============================================================== -->
- <xsl:template               match = "GlossaryTermRef">
-    <GlossaryTermRef>
+ <xsl:template               match = "GlossaryTermRef | ProtocolRef">
+    <xsl:element              name = "{name()}">
       <xsl:attribute          name = "href">
        <xsl:value-of        select = "@cdr:href"/>
       </xsl:attribute>
       <xsl:apply-templates/>
-    </GlossaryTermRef>
+    </xsl:element>
   </xsl:template>
 
 
@@ -361,6 +385,7 @@
                               mode = "copy"/>
   </ProtocolDetail>
  </xsl:template>
+
 
  <!--
  ====================================================================
