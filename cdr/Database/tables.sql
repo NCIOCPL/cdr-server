@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.39 2001-09-28 17:00:43 bkline Exp $
+ * $Id: tables.sql,v 1.40 2001-10-11 17:32:28 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.39  2001/09/28 17:00:43  bkline
+ * Added messages column to pub_proc_doc tables; changed pub_system column
+ * of pub_proc table to foreign key into all_docs table.
+ *
  * Revision 1.38  2001/09/21 13:44:08  bkline
  * Changed all "REFERENCES document" to "REFERENCES all_doc".
  *
@@ -404,6 +408,14 @@ CREATE VIEW active_doc AS SELECT * FROM document WHERE active_status = 'A'
  */
 CREATE VIEW deleted_doc AS SELECT * FROM document WHERE active_status = 'D'
 
+/*
+ * Flag for documents which have been marked as ready for pre-publication
+ * review.
+ *
+ *       doc_id  foreign key into all_docs table.
+ */
+CREATE TABLE ready_for_review
+     (doc_id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs)
 /* 
  * Record of a document's having been checked out.  Retained even after it has
  * been checked back in.  Note that queued requests to check a document out
@@ -921,39 +933,6 @@ CREATE TABLE issue
        notes TEXT            NULL)
 
 /*
- * Table for recording publication events.
- *
- *           id  primary key for the publishing event.
- *   pub_system  name of the system requesting the publishing event 
-*                (e.g. UDB).
- *   pub_subset  name of the publishing subset used for the event.
- *          usr  ID of user requesting the publication event.
- *      started  date/time the event commenced.
- *    completed  date/time the publication event was finished.
- */
-CREATE TABLE pub_event
-         (id INTEGER IDENTITY PRIMARY KEY,
-  pub_system VARCHAR(255) NOT NULL,
-  pub_subset VARCHAR(255) NOT NULL,
-         usr INTEGER      NOT NULL REFERENCES usr,
-     started DATETIME     NOT NULL,
-   completed DATETIME         NULL)
-
-/*
- * Table used to record publication of a specific document.
- *
- *    pub_event  foreign key into pub_event table.
- *       doc_id  identification of document which was published.
- *  doc_version  part of foreign key into doc_version table.
- */
-CREATE TABLE published_doc
-  (pub_event INTEGER      NOT NULL REFERENCES pub_event,
-      doc_id INTEGER      NOT NULL,
- doc_version INTEGER      NOT NULL,
-  CONSTRAINT pubdoc_fk_doc_ver     FOREIGN KEY(doc_id, doc_version) 
-                                   REFERENCES doc_version)
-
-/*
  * Table used to track processing of publication events.
  *
  *           id  primary key for the publication event processing.
@@ -1008,3 +987,18 @@ CREATE TABLE pub_proc_doc
   CONSTRAINT pub_proc_doc_fk        PRIMARY KEY(pub_proc, doc_id, doc_version),
   CONSTRAINT pub_proc_doc_fk_docver FOREIGN KEY(doc_id, doc_version) 
                                     REFERENCES doc_version)
+
+/*
+ * View for completed publication events.
+ */
+CREATE VIEW pub_event
+         AS SELECT *
+              FROM pub_proc
+             WHERE completed IS NOT NULL
+/*
+ * View of documents which have been successfully published.
+ */
+CREATE VIEW published_doc
+         AS SELECT pub_proc_doc.*
+              FROM pub_proc_doc, pub_event
+             WHERE pub_event.status = 'Success'
