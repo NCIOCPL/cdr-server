@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.6 2002-02-14 17:59:09 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.7 2002-03-12 20:42:44 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2002/02/14 17:59:09  bkline
+ * Added code to recognize empty-element tag syntax.
+ *
  * Revision 1.5  2002/02/01 22:43:15  bkline
  * Modified logic in LeadOrgPicklist class to avoid duplicates.
  *
@@ -45,6 +48,12 @@ static cdr::String applyNamedFilter(const cdr::String&,
                                     const cdr::String&,
                                     cdr::FilterParmVector*,
                                     cdr::db::Connection& dbConnection);
+static cdr::String getDocumentXml(
+              int                    docId,
+              cdr::db::Connection&   dbConnection);
+static cdr::String getNamedFilter(
+        const cdr::String&           filterName,
+              cdr::db::Connection&   dbConnection);
 
 map<cdr::String, cdr::Report*> cdr::Report::reportMap;
 
@@ -146,12 +155,12 @@ cdr::String cdr::report(cdr::Session& session,
   return cdr::Report::doReport(session, commandNode, dbConnection);
 }
 
-/*****************************************************************************/
-/* Inactive Checked Out Documents report                                     */
-/*****************************************************************************/
-
 namespace
 {
+
+  /*************************************************************************/
+  /* Inactive Checked Out Documents report                                 */
+  /*************************************************************************/
   class Inactive : public cdr::Report
   {
     public:
@@ -163,6 +172,9 @@ namespace
                                   cdr::Report::ReportParameters parm);
   };
 
+  /*************************************************************************/
+  /* Report for lead organization picklist.                                */
+  /*************************************************************************/
   class LeadOrgPicklist : public cdr::Report
   {
     public:
@@ -174,6 +186,9 @@ namespace
                                   cdr::Report::ReportParameters parm);
   };
 
+  /*************************************************************************/
+  /* Report for protocol update persons picklist.                          */
+  /*************************************************************************/
   class ProtocolUpdatePersonsPicklist : public cdr::Report
   {
     public:
@@ -186,6 +201,9 @@ namespace
                                   cdr::Report::ReportParameters parm);
   };
 
+  /*************************************************************************/
+  /* Report for person locations picklist.                                 */
+  /*************************************************************************/
   class PersonLocations : public cdr::Report
   {
     public:
@@ -198,6 +216,9 @@ namespace
                                   cdr::Report::ReportParameters parm);
   };
 
+  /*************************************************************************/
+  /* Report for person address fragment.                                   */
+  /*************************************************************************/
   class PersonAddressFragment : public cdr::Report
   {
     public:
@@ -210,11 +231,29 @@ namespace
                                   cdr::Report::ReportParameters parm);
   };
 
+  /*************************************************************************/
+  /* Report for protocol participating organizations.                      */
+  /*************************************************************************/
   class ParticipatingOrgs : public cdr::Report
   {
     public:
       ParticipatingOrgs() : 
           cdr::Report("Participating Organizations Picklist") {}
+
+    private:
+      virtual cdr::String execute(cdr::Session& session,
+                                  cdr::db::Connection& dbConnection,
+                                  cdr::Report::ReportParameters parm);
+  };
+
+  /*************************************************************************/
+  /* Dated actions report.                                                 */
+  /*************************************************************************/
+  class DatedActions : public cdr::Report
+  {
+    public:
+      DatedActions() : 
+          cdr::Report("Dated Actions") {}
 
     private:
       virtual cdr::String execute(cdr::Session& session,
@@ -565,6 +604,47 @@ namespace
     return result.str();
   }
 
+  cdr::String DatedActions::execute(cdr::Session& session,
+                                    cdr::db::Connection& dbConnection,
+                                    cdr::Report::ReportParameters parm)
+  {
+    ReportParameters::iterator i = parm.find(L"DocType");
+    if (i == parm.end())
+      throw cdr::Exception(L"Must specify DocType");
+    cdr::String docType = i->second;
+
+    // Get the XML for the filter we'll use repeatedly.
+    cdr::String filterXml = getNamedFilter(L"Dated Actions", dbConnection);
+
+    // Get a list of documents of this type which have dated actions.
+    string query = "SELECT DISTINCT q.doc_id             "
+                   "           FROM query_term q         "
+                   "           JOIN document d           "
+                   "             ON d.id = q.doc_id      "
+                   "           JOIN doc_type t           "
+                   "             ON t.id = d.doc_type    "
+                   "          WHERE t.name = ?           "
+                   "            AND q.path LIKE '%/DatedAction/ActionDate'";
+      
+    cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
+    select.setString(1, docType);
+    cdr::db::ResultSet rs = select.executeQuery();
+
+    cdr::FilterParmVector parms;
+    wostringstream result;
+    result << L"<ReportBody><![CDATA[\n"
+              L"<ReportName>" << getName() << L"</ReportName>\n";
+    while (rs.next())
+    {
+      int id = rs.getInt(1);
+      cdr::String docXml = getDocumentXml(id, dbConnection);
+      result << cdr::filterDocument(docXml, filterXml, dbConnection, 0, &parms);
+    }
+
+    result << L"]]></ReportBody>\n";
+    return result.str();
+  }
+
   // Instantiations of report objects.
   Inactive                      inactive;
   LeadOrgPicklist               leadOrgPicklist;
@@ -572,11 +652,52 @@ namespace
   PersonLocations               personLocations;
   PersonAddressFragment         personAddressFragment;
   ParticipatingOrgs             participatingOrgs;
-
+  DatedActions                  datedActions;
 }
 
 /**
- * Wrapper for Filter modules's public filterDocument() function.
+ * Get XML for a filter by name.
+ */
+cdr::String getNamedFilter(
+        const cdr::String&           filterName,
+              cdr::db::Connection&   dbConnection)
+{
+    string query = " SELECT xml               "
+                   "   FROM document d        "
+                   "   JOIN doc_type t        "
+                   "     ON t.id = d.doc_type "
+                   "  WHERE t.name = 'filter' "
+                   "    AND d.title = ?       ";
+    cdr::db::PreparedStatement ps = dbConnection.prepareStatement(query);
+    ps.setString(1, filterName);
+    cdr::db::ResultSet rs = ps.executeQuery();
+    if (!rs.next())
+      throw cdr::Exception(L"Cannot find filter", filterName);
+    cdr::String filterXml = rs.getString(1);
+    if (rs.next())
+      throw cdr::Exception(L"Duplicate filter documents", filterName);
+    return filterXml;
+}
+
+/**
+ * Get XML for a document by ID.
+ */
+cdr::String getDocumentXml(
+              int                    docId,
+              cdr::db::Connection&   dbConnection)
+{
+    string query = "SELECT xml FROM document WHERE id = ?";
+    cdr::db::PreparedStatement ps = dbConnection.prepareStatement(query);
+    ps.setInt(1, docId);
+    cdr::db::ResultSet rs = ps.executeQuery();
+    if (!rs.next())
+      throw cdr::Exception(L"Cannot find document", cdr::stringDocId(docId));
+    cdr::String docXml = rs.getString(1);
+    return docXml;
+}
+
+/**
+ * Wrapper for Filter module's public filterDocument() function.
  */
 cdr::String applyNamedFilter(
         const cdr::String&           filterName,
@@ -584,22 +705,7 @@ cdr::String applyNamedFilter(
               cdr::FilterParmVector* parms,
               cdr::db::Connection&   dbConnection)
 {
-                             
-    string query1 = "SELECT xml FROM document WHERE id = ?";
-    string query2 = "SELECT xml FROM document WHERE title = ?";
-    cdr::db::PreparedStatement ps1 = dbConnection.prepareStatement(query1);
-    cdr::db::PreparedStatement ps2 = dbConnection.prepareStatement(query2);
-    ps1.setInt(1, docId.extractDocId());
-    ps2.setString(1, filterName);
-    cdr::db::ResultSet rs1 = ps1.executeQuery();
-    if (!rs1.next())
-      throw cdr::Exception(L"Cannot find document", docId);
-    cdr::String docXml = rs1.getString(1);
-    cdr::db::ResultSet rs2 = ps2.executeQuery();
-    if (!rs2.next())
-      throw cdr::Exception(L"Cannot find filter", filterName);
-    cdr::String filterXml = rs2.getString(1);
-    if (rs2.next())
-      throw cdr::Exception(L"Duplicate filter documents", filterName);
+    cdr::String filterXml = getNamedFilter(filterName, dbConnection);
+    cdr::String docXml    = getDocumentXml(docId.extractDocId(), dbConnection);
     return cdr::filterDocument(docXml, filterXml, dbConnection, 0, parms);
 }
