@@ -1,10 +1,13 @@
 /*
- * $Id: CdrPublish.cpp,v 1.7 2002-10-29 21:03:39 pzhang Exp $
+ * $Id: CdrPublish.cpp,v 1.8 2005-03-04 02:55:49 ameyer Exp $
  *
  * Commands to create a new publishing job and retrieve status for an
  * existing publishing job.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2002/10/29 21:03:39  pzhang
+ * Added allowInActive to cdr::publish() to handle Hotfix-Remove.
+ *
  * Revision 1.6  2002/10/01 21:32:39  ameyer
  * Now accepting AllowNonPublish element in CdrPublish command.  Enables a
  * caller to force publication of versions not marked as publishable.  This
@@ -176,14 +179,14 @@ cdr::String cdr::publish(Session& session,
             else if (name == L"Email")
                 email = dom::getTextContent(child);
             else if (name == L"NoOutput")
-                noOutput = dom::getTextContent(child);            
+                noOutput = dom::getTextContent(child);
             else if (name == L"AllowNonPub") {
                 String allow = dom::getTextContent(child);
                 if (allow == L"Y")
                     allowNonPub = true;
-            } 
+            }
             else if (name == L"AllowInActive") {
-                if (L"Y" == dom::getTextContent(child))               
+                if (L"Y" == dom::getTextContent(child))
                     allowInActive = true;
             }
         }
@@ -287,7 +290,7 @@ cdr::String cdr::publish(Session& session,
     while (docIter != docList.end()) {
         int docId  = docIter->first;
         int docVer = docIter->second;
-        insertDocument(jobId, docId, docVer, allowNonPub, allowInActive, 
+        insertDocument(jobId, docId, docVer, allowNonPub, allowInActive,
                        jobTime, conn);
         docIter++;
     }
@@ -329,7 +332,7 @@ cdr::dom::Element getControlDoc(
         throw cdr::Exception(L"Duplicate control documents", pubSystemName);
 
     // Extract the DOM tree for the document.
-    cdr::dom::Parser parser;
+    cdr::dom::Parser parser(true);
     try {
         parser.parse(xml);
     }
@@ -606,7 +609,7 @@ void insertDocument(
         // Special code to handle Hotfix-Remove of blocked document.
         if (allowInActive)
             query = " SELECT MAX(v.num)            "
-                    "   FROM doc_version v         "                  
+                    "   FROM doc_version v         "
                     "  WHERE v.id = ?              "
                     "    AND v.dt <= ?             ";
 
