@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: InScopeProtocol.xml,v 1.19 2001-12-19 15:36:04 bkline Exp $
+      $Id: InScopeProtocol.xml,v 1.20 2001-12-21 00:19:54 ArkD Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.19  2001/12/19 15:36:04  bkline
+      Added optional PdqKey attributes for elements with cdr:id attributes.
+
       Revision 1.18  2001/12/19 15:02:30  bkline
       Changed ProtocolDetails to ProtocolDetail to match CommonProtocolInfo.xml.
 
@@ -133,15 +136,15 @@
     <sequence>
       <element       name            = 'ProtocolIDs'
                      type            = 'ProtocolIDs'/>
-      <element       name            = 'FundingInfo'
-                     type            = 'FundingInfo'
-                     minOccurs       = '0'/>
       <element       name            = 'ProtocolSources'
                      type            = 'ProtocolSources'/>
       <element       name            = 'ProtocolApproval'
                      type            = 'ProtocolApproval'/>
       <element       name            = 'ProtocolSponsors'
                      type            = 'ProtocolSponsors'
+                     minOccurs       = '0'/>
+      <element       name            = 'FundingInfo'
+                     type            = 'FundingInfo'
                      minOccurs       = '0'/>
       <element       name            = 'ProtocolAmendmentInformation'
                      type            = 'ProtocolAmendmentInformation'
@@ -152,6 +155,13 @@
                      maxOccurs       = '3'/>
       <element       name            = 'ProtocolAbstract'
                      type            = 'ProtocolAbstract'/>
+      <element       name            = 'ProtocolPhase'
+                     type            = 'ProtocolPhase'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'ProtocolDesign'
+                     type            = 'ProtocolDesign'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'ProtocolDetail'
                      type            = 'ProtocolDetail'
                      maxOccurs       = 'unbounded'/>
@@ -162,13 +172,6 @@
                      minOccurs       = '0'/>
       <element       name            = 'PublishedResults'
                      type            = 'PublishedResults'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'ProtocolPhase'
-                     type            = 'ProtocolPhase'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'ProtocolDesign'
-                     type            = 'ProtocolDesign'
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
       <element       name            = 'ProtocolSpecialCategory'
@@ -195,7 +198,7 @@
 <!--                       OTHER COMPLEX TYPES                           -->
 <!--=====================================================================-->
   <complexType       name            = 'FundingInfo'>
-    <choice>
+    <sequence>
       <element       name            = 'NIHGrantContract'
                      type            = 'NIHGrantContract'
                      maxOccurs       = 'unbounded'
@@ -204,14 +207,13 @@
                      type            = 'OtherGrantContractInfo'
                      maxOccurs       = 'unbounded'
                      minOccurs       = '0'/>
-    </choice>
+    </sequence>
   </complexType>
 
   <complexType       name            = 'NIHGrantContract'>
     <sequence>
       <element       name            = 'NIHGrantContractType'
-                     type            = 'NIHGrantContractType'
-                     minOccurs       = '0'/>
+                     type            = 'NIHGrantContractType'/>
       <element       name            = 'GrantContractNo'
                      type            = 'string'/>
       <element       name            = 'Comment'
@@ -245,6 +247,9 @@
                      type            = 'SourceName'/>
       <element       name            = 'DateReceived'
                      type            = 'date'/>
+      <element       name            = 'Comment'
+                     type            = 'string'
+                     minOccurs       = '0'/>
     </sequence>
   </complexType>
 
@@ -312,9 +317,6 @@
       <element       name            = 'LeadOrgPersonnel'
                      type            = 'LeadOrgPersonnel'
                      maxOccurs       = 'unbounded'/>
-      <element       name            = 'LegacyOrgPersonnel'
-                     type            = 'string'
-                     minOccurs       = '0'/>
       <element       name            = 'ProtocolSites'
                      type            = 'ProtocolSites'
                      minOccurs       = '0'/>
@@ -339,6 +341,7 @@
   </complexType>
 
   <complexType       name            = 'OrgStatus'>
+  <!--Refers to Lead Org Status-->
     <sequence>
       <element       name            = 'StatusName'
                      type            = 'ProtocolStatusName'/>
@@ -392,6 +395,10 @@
                      type            = 'ProtocolStatusName'/>
       <element       name            = 'OrgSiteContact'
                      type            = 'ContactInformation'/>
+      <element       name            = 'EnteredBy'
+                     type            = 'string'/>
+      <element       name            = 'EntryDate'
+                     type            = 'date'/>
     </sequence>
     <attribute       name            = 'CoopMember'
                      type            = 'CoopMember'
@@ -404,6 +411,10 @@
                      type            = 'PersonFragmentLink'/>
       <element       name            = 'PrivatePracticeSiteStatus'
                      type            = 'ProtocolStatusName'/>
+      <element       name            = 'EnteredBy'
+                     type            = 'string'/>
+      <element       name            = 'EntryDate'
+                     type            = 'date'/>
     </sequence>
     <attribute       name            = 'CoopMember'
                      type            = 'CoopMember'
@@ -411,16 +422,12 @@
   </complexType>
 
   <complexType       name            = 'ContactInformation'>
-    <sequence>
+    <choice          maxOccurs       = 'unbounded'>
       <element       name            = 'SpecificPerson'
-                     type            = 'SpecificPerson'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
+                     type            = 'SpecificPerson'/>
       <element       name            = 'GenericPerson'
-                     type            = 'GenericPerson'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
+                     type            = 'GenericPerson'/>
+    </choice>
   </complexType>
 
   <complexType       name            = 'SpecificPerson'>
@@ -432,6 +439,10 @@
       <element       name            = 'SpecificPhone'
                      type            = 'string'
                      minOccurs       = '0'/>
+      <element       name            = 'EnteredBy'
+                     type            = 'string'/>
+      <element       name            = 'EntryDate'
+                     type            = 'date'/>
     </sequence>
   </complexType>
 
@@ -440,8 +451,11 @@
       <element       name            = 'PersonTitle'
                      type            = 'string'/>
       <element       name            = 'GenericPersonContact'
-                     type            = 'Contact'
-                     minOccurs       = '0'/>
+                     type            = 'Contact'/>
+      <element       name            = 'EnteredBy'
+                     type            = 'string'/>
+      <element       name            = 'EntryDate'
+                     type            = 'date'/>
     </sequence>
   </complexType>
 
@@ -495,10 +509,10 @@
       <enumeration   value           = 'National Cancer Institute of Canada'/>
       <enumeration   value           = 'Industry email submission'/>
       <enumeration   value           = 'Industry mail submission'/>
-      <enumeration   value           = 'Industry CancerNet submission'/>
+      <enumeration   value           = 'Industry web submission'/>
       <enumeration   value           = 'Investigator/contact email submission'/>
       <enumeration   value           = 'Investigator/contact mail submission'/>
-      <enumeration   value           = 'Investigator/contact CancerNet submission'/>
+      <enumeration   value           = 'Investigator/contact web submission'/>
     </restriction>
   </simpleType>
 
@@ -516,7 +530,8 @@
       <enumeration   value           = 'MRC review'/>
       <enumeration   value           = 'CRC review'/>
       <enumeration   value           = 'FCC review'/>
-	    </restriction>
+      <enumeration   value           = 'PDQ Brussels Editorial Board review'/>
+    </restriction>
   </simpleType>
 
   <simpleType        name            = 'ReimbursementApprovalType'>
@@ -534,6 +549,7 @@
       <enumeration   value           = 'Treatment referral center trial'/>
       <enumeration   value           = 'NCI high priority trial'/>
       <enumeration   value           = 'Expanded access trial'/>
+      <enumeration   value           = 'NIH Clinical Center trial'/>
     </restriction>
   </simpleType>
 
@@ -545,13 +561,6 @@
       <enumeration   value           = 'Closed'/>
       <enumeration   value           = 'Completed'/>
       <enumeration   value           = 'Withdrawn'/>
-    </restriction>
-  </simpleType>
-
-  <simpleType        name            = 'CoopNonCoop'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Cooperative group'/>
-      <enumeration   value           = 'Non-cooperative group'/>
     </restriction>
   </simpleType>
 
