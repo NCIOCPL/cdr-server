@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.14 2003-02-14 17:57:42 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.15 2003-04-15 18:15:08 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2003/02/14 17:57:42  bkline
+ * Fixed typo in query for PUP picklist (issue #595).
+ *
  * Revision 1.13  2003/01/02 13:28:59  bkline
  * Fixed bug in report of checked out docs without recent activity.
  *
@@ -276,6 +279,21 @@ namespace
     public:
       DatedActions() : 
           cdr::Report("Dated Actions") {}
+
+    private:
+      virtual cdr::String execute(cdr::Session& session,
+                                  cdr::db::Connection& dbConnection,
+                                  cdr::Report::ReportParameters parm);
+  };
+
+  /*************************************************************************/
+  /* Menu term tree report.                                                */
+  /*************************************************************************/
+  class MenuTermTree : public cdr::Report
+  {
+    public:
+      MenuTermTree() : 
+          cdr::Report("Menu Term Tree") {}
 
     private:
       virtual cdr::String execute(cdr::Session& session,
@@ -721,6 +739,75 @@ namespace
     return result.str();
   }
 
+  cdr::String MenuTermTree::execute(cdr::Session& session,
+                                    cdr::db::Connection& dbConnection,
+                                    cdr::Report::ReportParameters parm)
+  {
+    // Pull the menu term information from the database.
+    char* query =
+        "SELECT DISTINCT a.doc_id  AS term_id,                                "
+        "                a.value   AS term_name,                              "
+        "                b.value   AS menu_type,                              "
+        "                c.value   AS menu_status,                            "
+        "                d.value   AS display_name,                           "
+        "                e.int_val AS parent                                  "
+        "           FROM query_term a                                         "
+        "           JOIN query_term b                                         "
+        "             ON b.doc_id = a.doc_id                                  "
+        "           JOIN query_term c                                         "
+        "             ON c.doc_id = a.doc_id                                  "
+        "            AND LEFT(c.node_loc, 8) = LEFT(b.node_loc, 8)            "
+        "LEFT OUTER JOIN query_term d                                         "
+        "             ON d.doc_id = a.doc_id                                  "
+        "            AND d.path = '/Term/MenuInformation/MenuItem/DisplayName'"
+        "            AND LEFT(d.node_loc, 8) = LEFT(b.node_loc, 8)            "
+        "LEFT OUTER JOIN query_term e                                         "
+        "             ON e.doc_id = a.doc_id                                  "
+        "            AND e.path = '/Term/MenuInformation/MenuItem'            "
+        "                       + '/MenuParent/@cdr:ref'                      "
+        "            AND LEFT(e.node_loc, 8) = LEFT(b.node_loc, 8)            "
+        "          WHERE a.path = '/Term/PreferredName'                       "
+        "            AND b.path = '/Term/MenuInformation/MenuItem/MenuType'   "
+        "            AND c.path = '/Term/MenuInformation/MenuItem/MenuStatus' "
+        "       ORDER BY a.doc_id                                             "
+        ;
+      
+    cdr::db::Statement select = dbConnection.createStatement();
+    cdr::db::ResultSet rs = select.executeQuery(query);
+    std::wostringstream result;
+    result << L"<ReportBody><![CDATA[\n"
+              L"<ReportName>" << getName() << L"</ReportName>\n";
+    while (rs.next())
+    {
+      int         docId       = rs.getInt(1);
+      cdr::String termName    = cdr::entConvert(rs.getString(2));
+      cdr::String menuType    = cdr::entConvert(rs.getString(3));
+      cdr::String menuStatus  = cdr::entConvert(rs.getString(4));
+      cdr::String displayName = rs.getString(5);
+      cdr::Int    parentId    = rs.getInt(6);
+      result << L"<MenuItem><TermId>"
+             << docId
+             << L"</TermId><TermName>"
+             << termName
+             << L"</TermName><MenuType>"
+             << menuType
+             << L"</MenuType><MenuStatus>"
+             << menuStatus
+             << L"</MenuStatus>";
+      if (!displayName.isNull() && !displayName.empty())
+          result << L"<DisplayName>"
+                 << cdr::entConvert(displayName)
+                 << L"</DisplayName>";
+      if (!parentId.isNull())
+          result << L"<ParentId>"
+                 << parentId
+                 << L"</ParentId>";
+      result << L"</MenuItem>\n";
+    }
+    result << L"]]></ReportBody>\n";
+    return result.str();
+  }
+
 #if 0
 struct TargetDoc { 
     int id; 
@@ -815,6 +902,7 @@ struct TargetDoc {
   PersonAddressFragment         personAddressFragment;
   ParticipatingOrgs             participatingOrgs;
   DatedActions                  datedActions;
+  MenuTermTree                  menuTermTree;
 #if 0
   PublishLinkedDocs             publishLinkedDocs;
 #endif
