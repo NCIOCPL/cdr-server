@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.2 2002-01-22 22:28:05 bkline Exp $
+ * $Id: CreateLogins.sql,v 1.3 2002-04-10 14:17:53 bkline Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/01/22 22:28:05  bkline
+ * Added permissions for views.
+ *
  * Revision 1.1  2001/12/24 01:06:11  bkline
  * Initial revision
  *
@@ -288,4 +291,6 @@ GO
 GRANT SELECT ON TermsWithParents TO CdrGuest
 GO
 GRANT SELECT ON TermsWithParents TO CdrPublishing
+GO
+GRANT SELECT ON failed_login_attempts TO CdrGuest
 GO
