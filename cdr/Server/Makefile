@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.69 2003-01-31 00:05:46 ameyer Exp $
+# $Id: Makefile,v 1.70 2003-08-14 18:20:02 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.69  2003/01/31 00:05:46  ameyer
+# Added CdrSysValue.h / .cpp.
+#
 # Revision 1.68  2002/12/11 14:31:38  bkline
 # Added -D_DEBUG for DBG=1 builds.
 #
@@ -308,10 +311,13 @@ LIBOBJS=CdrString.obj \
         CdrDbStatement.obj \
         CdrDbPreparedStatement.obj \
         CdrDbResultSet.obj \
+        CdrFilter.obj \
+        CdrGetDoc.obj \
         CdrLog.obj \
         CdrSession.obj \
         CdrParserInput.obj \
         CdrRegEx.obj \
+        CdrVersion.obj \
         catchexp.obj
 OBJS   =CdrCommand.obj \
         CdrLogon.obj \
@@ -335,9 +341,6 @@ OBJS   =CdrCommand.obj \
         CdrSearch.obj \
         CdrSearch_tab.obj \
         CdrSysValue.obj \
-        CdrGetDoc.obj \
-        CdrFilter.obj \
-        CdrVersion.obj \
         CdrReport.obj \
         CdrDocTypes.obj \
         CdrShutdown.obj \
