@@ -164,10 +164,25 @@
          be determined after the sort if the first or last entry of the 
          OrganizationName element is the true org name
          =============================================================== -->
+    <xsl:choose>
+     <xsl:when                    test = "OrganizationLocation/
+                                          PersonOrganizationName/
+                                          @IncludeParentName">
+      <xsl:for-each             select = "OrganizationLocation/
+                                          Organization/
+                                          OrganizationName">
+       <OrganizationName>
+        <xsl:value-of           select = "."/>
+       </OrganizationName>
+      </xsl:for-each>
+     </xsl:when>
+     <xsl:otherwise>
     <OrganizationName> 
      <xsl:value-of              select = "OrganizationLocation/
                                           PersonOrganizationName"/>
     </OrganizationName>
+     </xsl:otherwise>
+    </xsl:choose>
 
     <xsl:call-template            name = "getPostalAddress">
      <xsl:with-param              name = "orgAddressFID"
@@ -207,6 +222,17 @@
     </ComplexAffiliation>
    </xsl:for-each>
   </OtherPracticeLocation>
+ </xsl:template>
+
+
+ <!--
+ =======================================================================
+ Template to Rename element name
+ ======================================================================= -->
+ <xsl:template                   match = "BoardContactOrganizationName">
+  <OrganizationName>
+   <xsl:apply-templates/>
+  </OrganizationName>
  </xsl:template>
 </xsl:transform>
 ]]>
