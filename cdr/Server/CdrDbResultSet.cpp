@@ -1,9 +1,14 @@
 /*
- * $Id: CdrDbResultSet.cpp,v 1.11 2001-12-14 15:20:08 bkline Exp $
+ * $Id: CdrDbResultSet.cpp,v 1.12 2001-12-19 12:26:29 bkline Exp $
  *
  * Implementation for ODBC result fetching wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2001/12/14 15:20:08  bkline
+ * Added space for a single byte for large values; even though the ODBC
+ * docs say nothing will be stored for a call with insufficient space,
+ * BoundsChecker says otherwise.
+ *
  * Revision 1.10  2001/06/12 22:37:04  bkline
  * Fixed bug in handling of large blobs (buffer too small).
  *
@@ -223,9 +228,9 @@ cdr::Blob cdr::db::ResultSet::getBytes(int pos)
     SQLRETURN rc;
     Column* c = columnVector[pos - 1];
     bool largeValue = c->size > 10000;
-    size_t bufSize = largeValue ? 1 : c->size + 1;
-    unsigned char* data = new unsigned char[bufSize];
-    memset(data, 0, bufSize);
+    size_t bufSize = largeValue ? 0 : c->size;
+    unsigned char* data = new unsigned char[bufSize + 1];
+    memset(data, 0, bufSize + 1);
     SDWORD cbData = bufSize;
     rc = SQLGetData(st.hstmt, (UWORD)pos, SQL_C_BINARY, (PTR)data,
                     cbData, &cbData);
