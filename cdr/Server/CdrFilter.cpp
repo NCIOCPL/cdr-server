@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.12 2001-09-20 20:13:31 mruben Exp $
+ * $Id: CdrFilter.cpp,v 1.13 2001-09-21 03:45:53 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2001/09/20 20:13:31  mruben
+ * added code for accessing versions -- needs testing
+ *
  * Revision 1.11  2001/07/12 19:35:06  mruben
  * fixed error in message
  *
@@ -575,6 +578,56 @@ namespace
   }
 }
 
+// Version that accepts filter document id
+cdr::String cdr::filterDocumentByScriptId (
+        const cdr::String& document,
+        int filterId,
+        cdr::db::Connection& connection,
+        cdr::String* messages,
+        cdr::FilterParmVector* parms)
+{
+  // Convert filterId to filter itself
+  std::string qry = "SELECT xml FROM document WHERE id = ?";
+  cdr::db::PreparedStatement stmt = connection.prepareStatement (qry);
+  stmt.setInt (1, filterId);
+  cdr::db::ResultSet rs = stmt.executeQuery();
+  if (!rs.next())
+      throw cdr::Exception (L"filterDocument: can't find filter for id="
+                            + cdr::String::toString (filterId));
+  cdr::String filterXml = rs.getString (1);
+
+  // Invoke existing function, passing the script
+  return filterDocument (document, filterXml, connection, messages, parms);
+}
+
+// Version that accepts filter document title
+cdr::String cdr::filterDocumentByScriptTitle (
+        const cdr::String& document,
+        const cdr::String& filterTitle,
+        cdr::db::Connection& connection,
+        cdr::String* messages,
+        cdr::FilterParmVector* parms)
+{
+  // Convert filterId to filter itself
+  std::string qry = "SELECT xml FROM document WHERE title = ?";
+  cdr::db::PreparedStatement stmt = connection.prepareStatement (qry);
+  stmt.setString (1, filterTitle);
+  cdr::db::ResultSet rs = stmt.executeQuery();
+  if (!rs.next())
+      throw cdr::Exception (L"filterDocument: can't find filter for id="
+                            + filterTitle);
+  cdr::String filterXml = rs.getString (1);
+
+  // Title had better be unique
+  if (rs.next())
+      throw cdr::Exception (L"filterDocument: filter title not unique: "
+                            + filterTitle);
+
+  // Invoke existing function, passing the script
+  return filterDocument (document, filterXml, connection, messages, parms);
+}
+
+// Primary version, using string
 cdr::String cdr::filterDocument(const cdr::String& document,
                            const cdr::String& filter,
                            cdr::db::Connection& connection,
