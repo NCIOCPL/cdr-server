@@ -1,0 +1,103 @@
+<CdrDoc Type='Filter' Id='CDR0000269011'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Vendor Filter: InScopeProtocol - Sort ProtocolSites</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+
+<!-- Creator:  Volker Englisch
+     Created:  11/07/2002        -->
+
+<!-- 
+ ==================================================================
+ $Id: CDR0000269011.xml,v 1.1 2002-11-12 23:42:24 venglisc Exp $
+
+ $Log: not supported by cvs2svn $
+ ================================================================== -->
+<xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                            xmlns:cdr = "cips.nci.nih.gov/cdr"
+              exclude-result-prefixes = "cdr"
+                              version = "1.0">
+
+ <xsl:output                   method = "xml" 
+                 omit-xml-declaration = "no"
+                             encoding = "UTF-8"
+                               indent = "yes"/>
+
+
+ <!--
+ ================================================================
+ Default rule, copying back out everything just as we got it.
+ ================================================================ -->
+ <xsl:template                  match = "@*|comment()|*|
+                                         processing-instruction()|text()">
+  <xsl:copy>
+   <xsl:apply-templates        select = "@*|comment()|*|
+                                         processing-instruction()|text()"/>
+  </xsl:copy>
+ </xsl:template>
+
+ <!--
+ ===================================================================
+ Template to sort the ProtocolSite elements and only display unique
+ entries. 
+ =================================================================== -->
+ <xsl:template                  match = "ProtocolSites">
+    <xsl:copy>
+    <!-- This syntax is comparing the text notes only!!! -->
+     <xsl:apply-templates      select = "ProtocolSite
+                                         [not(.=preceding::ProtocolSite)]">
+       <xsl:sort               select = "."/>
+     </xsl:apply-templates>
+
+    </xsl:copy>
+ </xsl:template>
+
+
+ <!--  
+ ===================================================================
+ Template to collect all persons associated with a single site.  In 
+ the case of a site being displayed twice this is producing two 
+ identical entries.
+ Example:
+   Site A       \     Site A
+     Person a   |       Person a
+     Person b   |       Person b
+   Site B       |==>    Person d
+     Person c   |     Site A
+   Site A       |       Person a
+     Person d   /       Person b
+                        Person d
+                      Site B
+                        Person c
+ The duplicates are being trimmed in a separate filter.
+ =================================================================== -->
+ <xsl:template                  match = "ProtocolSite">
+  <xsl:variable                  name = "siteID"   select = "@ref"/>
+
+  <ProtocolSite>
+   <xsl:attribute                name = "ref">
+    <xsl:value-of              select = "./@ref"/>
+   </xsl:attribute>
+
+   <xsl:attribute                name = "sitetype">
+    <xsl:value-of              select = "./@sitetype"/>
+   </xsl:attribute>
+
+   <xsl:copy-of                select = "SiteName"/>
+
+   <xsl:for-each               select = "/Protocol/ProtocolAdminInfo
+                                         /ProtocolSites
+                                         /ProtocolSite[@ref=$siteID]
+                                         /ProtPerson">
+    <xsl:apply-templates       select = "."/>
+   </xsl:for-each>
+  </ProtocolSite>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
