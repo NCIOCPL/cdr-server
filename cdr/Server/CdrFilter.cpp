@@ -1,9 +1,13 @@
 /*
- * $Id: CdrFilter.cpp,v 1.35 2003-06-05 15:36:32 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.36 2003-06-10 20:06:50 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2003/06/05 15:36:32  bkline
+ * Added new command for determining the last publishable version of
+ * a CDR document.
+ *
  * Revision 1.34  2003/03/14 02:01:40  bkline
  * Fixed garbage returns from cdr::String::getInt().
  *
@@ -151,11 +155,11 @@ static cdr::String getDocTitle(const cdr::String& id,
 static cdr::String getPrettyUrl(const cdr::String& guid);
 
 static void getFiltersInSet(const cdr::String& name,
-                            std::vector<int>& filterSet, 
+                            std::vector<int>& filterSet,
                             cdr::db::Connection& conn);
 
 static void getFiltersInSet(int,
-                            std::vector<int>& filterSet, 
+                            std::vector<int>& filterSet,
                             int depth,
                             cdr::db::Connection& conn);
 static string getPubVerNumber(const string&,
@@ -195,7 +199,7 @@ namespace
 
     return result;
   }
-  
+
   // unique type used to get CdrDocCtl
   const wchar_t CdrDocType[] = L"";
 
@@ -564,10 +568,10 @@ namespace
         }
         else if (version_str == L"lastp")
         {
-          version = cdr::getLatestPublishableVersion(uid.extractDocId(), 
+          version = cdr::getLatestPublishableVersion(uid.extractDocId(),
                                                      connection);
           if (version < 1)
-            throw cdr::Exception(L"No publishable version found for document", 
+            throw cdr::Exception(L"No publishable version found for document",
                                  uid);
         }
         else if (!version_str.empty())
@@ -608,9 +612,9 @@ namespace
       {
         parms = function.substr(idx + 1);
         function = function.substr(0, idx);
-        
+
       }
-      
+
       if (function == "docid")
         u.doc = "<DocId>" + thread_data->DocId.toUtf8() + "</DocId>";
       else
@@ -632,7 +636,7 @@ namespace
       // RMK 2002-09-02: added function to get a pretty URL from Cancer.gov.
       else if (function == "pretty-url")
       {
-        u.doc = string("<PrettyUrl>") + getPrettyUrl(parms).toUtf8() + 
+        u.doc = string("<PrettyUrl>") + getPrettyUrl(parms).toUtf8() +
                       "</PrettyUrl>";
       }
       // RMK 2003-05-29: added function to get number of last pub. version.
@@ -786,7 +790,7 @@ namespace
         // XXX casts of last two arguments will be needed for sab 0.95.
         rc = SablotRunProcessor(proc, "arg:/_stylesheet",
                                 "arg:/_xmlinput", "arg:/_output",
-                                (const char**)pparms, 
+                                (const char**)pparms,
                                 (const char**)arguments);
         if (thread_data->fatalError)
           throw cdr::Exception(thread_data->errMsg.str());
@@ -992,13 +996,13 @@ cdr::String cdr::filter(cdr::Session& session,
         else
         if (name == L"FilterSet")
         {
-          const cdr::dom::Element& e = 
+          const cdr::dom::Element& e =
               static_cast<const cdr::dom::Element&>(child);
           std::vector<int> filterSet;
           String setName = e.getAttribute("Name");
           String versionStr = e.getAttribute("Version");
           getFiltersInSet(setName, filterSet, connection);
-          for (size_t i = 0; i < filterSet.size(); ++i) 
+          for (size_t i = 0; i < filterSet.size(); ++i)
           {
             int id = filterSet[i];
             int ver = 0;
@@ -1078,7 +1082,7 @@ cdr::String cdr::filter(cdr::Session& session,
 /**
  * Open a socket on the specified port to the specified host.
  *
- *  @param  host        string for the host; can be dotted-decimal or 
+ *  @param  host        string for the host; can be dotted-decimal or
  *                      DNS name.
  *  @param  port        integer for the port to which we are to connect.
  *  @returns            port number if successful; -1 on failure.
@@ -1210,17 +1214,17 @@ struct HttpHeaders {
  *                          server's response.
  */
 cdr::String sendSoapRequest(
-        const char* host, 
-        const cdr::String& action, 
-        const cdr::String& request, 
-        const cdr::String& path, 
+        const char* host,
+        const cdr::String& action,
+        const cdr::String& request,
+        const cdr::String& path,
         int port = 80)
 {
     // Build the request.
-    std::string r = request.toUtf8(); 
+    std::string r = request.toUtf8();
     int len = r.size();
     int sock = openSocket(host, port);
-    std::string headers = 
+    std::string headers =
         "POST " + path.toUtf8() + " HTTP/1.1\r\n"
         "Host: " + std::string(host) + "\r\n"
         "Accept-Encoding: identity\r\n"
@@ -1277,7 +1281,7 @@ cdr::String sendSoapRequest(
         }
 		n = recv(sock, buf, sizeof buf, 0);
     }
-        
+
     // Didn't get the response we're were looking for.
     closesocket(sock);
     return L"";
@@ -1299,9 +1303,9 @@ cdr::String getPrettyUrl(const cdr::String& guid)
 {
     try {
         const char* host    = "stage.cancer.gov";
-        cdr::String path    = "/PrettyURL/GetPrettyURL.asmx"; 
+        cdr::String path    = "/PrettyURL/GetPrettyURL.asmx";
         cdr::String action  = "http://cancer.gov/GetPrettyURL/ReturnPrettyURL";
-        cdr::String request = 
+        cdr::String request =
     L"<?xml version='1.0' encoding='utf-8'?>"
     L"<soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'"
     L"               xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'"
@@ -1379,7 +1383,7 @@ static void extractFilterSetParams(const cdr::dom::Node& commandNode,
             else if (name == L"FilterSetNotes")
                 filterSetNotes = cdr::dom::getTextContent(child);
             else if (name == L"Filter") {
-                const cdr::dom::Element& e = 
+                const cdr::dom::Element& e =
                     static_cast<const cdr::dom::Element&>(child);
                 cdr::String idString = e.getAttribute("DocId");
                 if (idString.empty())
@@ -1389,7 +1393,7 @@ static void extractFilterSetParams(const cdr::dom::Node& commandNode,
                 filterSetMembers.push_back(FilterSetMember(id, false));
             }
             else if (name == L"FilterSet") {
-                const cdr::dom::Element& e = 
+                const cdr::dom::Element& e =
                     static_cast<const cdr::dom::Element&>(child);
                 cdr::String idString = e.getAttribute("SetId");
                 if (idString.empty())
@@ -1529,7 +1533,7 @@ cdr::String cdr::repFilterSet(cdr::Session& session,
     connection.commit();
 
     // Report success.
-    return L"<CdrAddFilterSetResp TotalFilters='"
+    return L"<CdrRepFilterSetResp TotalFilters='"
         + String::toString(filters.size())
         + L"'/>";
 }
@@ -1792,7 +1796,7 @@ cdr::String cdr::getFilters(cdr::Session& session,
 }
 
 void getFiltersInSet(const cdr::String& name,
-                     std::vector<int>& filterSet, 
+                     std::vector<int>& filterSet,
                      cdr::db::Connection& conn)
 {
     cdr::db::PreparedStatement stmt = conn.prepareStatement(
@@ -1807,8 +1811,8 @@ void getFiltersInSet(const cdr::String& name,
     getFiltersInSet(id, filterSet, 0, conn);
 }
 
-void getFiltersInSet(int id, 
-                     std::vector<int>& filterSet, 
+void getFiltersInSet(int id,
+                     std::vector<int>& filterSet,
                      int depth,
                      cdr::db::Connection& conn)
 {
@@ -1841,7 +1845,7 @@ void getFiltersInSet(int id,
     }
     for (size_t i = 0; i < setMembers.size(); ++i) {
         if (setMembers[i].nested)
-            getFiltersInSet(setMembers[i].foreignKey, filterSet, depth + 1, 
+            getFiltersInSet(setMembers[i].foreignKey, filterSet, depth + 1,
                             conn);
         else
             filterSet.push_back(setMembers[i].foreignKey);
