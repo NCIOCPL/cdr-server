@@ -20,7 +20,7 @@
 
 <!-- 
  ==================================================================
- $Id: CDR0000269013.xml,v 1.8 2003-07-21 19:34:12 venglisc Exp $
+ $Id: CDR0000269013.xml,v 1.9 2004-03-09 16:15:32 venglisc Exp $
 
  $Log: not supported by cvs2svn $
  ================================================================== -->
@@ -53,10 +53,16 @@
  =================================================================== -->
  <xsl:template                  match = "ProtocolSites">
     <xsl:copy>
-    <!-- This syntax is comparing the text nodes only!!! -->
      <xsl:apply-templates      select = "ProtocolSite
                                          [not(.=preceding::ProtocolSite)]">
-       <xsl:sort               select = "."/>
+       <xsl:sort               select = "concat(./SiteName | 
+                                                        ./ProtPerson/
+                                                          PersonNameInformation/
+                                                          SurName,  
+                                                '@@@', 
+                                                ./@ref,
+                                                '@@@',
+                                                ./@contactinfo)"/>
      </xsl:apply-templates>
 
     </xsl:copy>
@@ -94,6 +100,12 @@
    <xsl:attribute                name = "sitetype">
     <xsl:value-of              select = "./@sitetype"/>
    </xsl:attribute>
+
+   <xsl:if                        test = "@SuppressContactInformation">
+    <xsl:attribute                name = "SuppressContactInformation">
+     <xsl:value-of              select = "@SuppressContactInformation"/>
+    </xsl:attribute>
+   </xsl:if>
 
    <xsl:copy-of                select = "SiteName"/>
    <xsl:for-each               select = "/Protocol/ProtocolAdminInfo
