@@ -6,9 +6,12 @@
  *                                      @author Alan Meyer
  *                                      @date February 2001
  *
- * $Id: CdrLinkProcs.h,v 1.4 2002-05-08 20:33:34 pzhang Exp $
+ * $Id: CdrLinkProcs.h,v 1.5 2004-02-06 03:13:54 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/05/08 20:33:34  pzhang
+ * Added makeSubQueries.
+ *
  * Revision 1.3  2001/09/28 01:22:01  ameyer
  * Added getLinkTargetRestrictions().
  *
@@ -198,15 +201,15 @@ class LinkChkNode {
          *
          * There are problems with SQL server executing a query containing
          *      3 query_term tables joined, although joining 2 tables seems
-         *      fine. We hence drop that idea and generate this specific version 
-         *      of subqueries from the parse tree. 
+         *      fine. We hence drop that idea and generate this specific version
+         *      of subqueries from the parse tree.
          *
          * @param  query      Ptr to string containing the query to be returned.
          *
          * @param  cdrId      A table alias followed by a column name for CDR Id.
          *
          * @throws            CdrException if syntax or other error.
-         */ 
+         */
         void makeSubQueries (std::string& query,
                              std::string& cdrid);
 };
@@ -221,14 +224,18 @@ class LinkChkRelation : public LinkChkNode {
         std::string    tag;         // Tag in format used in query_term table
         LinkChkRelator relator;     // Relationship
         std::string    value;       // Value to compare against linked doc
+        bool           chkValue;
+                                    // 0=ignore value, just check existence
 
     public:
+
         /**
          * Constructor takes the 3 fields in a relationship and initializes
          * the object with them.
          */
         LinkChkRelation (std::string rtag, LinkChkRelator rrel,
-            std::string rval) : tag (rtag), relator (rrel), value (rval) {}
+                         std::string rval, bool ckVal) : tag (rtag),
+                         relator (rrel), value (rval), chkValue (ckVal) {}
 
         /**
          * Report this as a relator node
@@ -238,9 +245,10 @@ class LinkChkRelation : public LinkChkNode {
         /**
          * Accessors
          */
-        std::string    getTag()     { return tag;     }
-        LinkChkRelator getRelator() { return relator; }
-        std::string    getValue()   { return value;   }
+        std::string    getTag()      { return tag;      }
+        LinkChkRelator getRelator()  { return relator;  }
+        std::string    getValue()    { return value;    }
+        bool           getChkValue() { return chkValue; }
 
         /**
          * Evaluate a single relation expression.
