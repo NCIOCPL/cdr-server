@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.8 2001-05-04 17:01:17 mruben Exp $
+ * $Id: CdrVersion.cpp,v 1.9 2001-05-23 01:24:53 ameyer Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2001/05/04 17:01:17  mruben
+ * fixed bug in reading attributes
+ *
  * Revision 1.7  2001/05/03 18:43:48  bkline
  * Fixed bug in query (two result set columns reversed).
  *
@@ -67,7 +70,8 @@ bool cdr::allowVersion(int docId, cdr::db::Connection& conn)
 
 int cdr::checkIn(cdr::Session& session, int docId,
                  cdr::db::Connection& conn,
-                 const cdr::String* comment, bool abandon, bool force)
+                 cdr::String actStatus, const cdr::String* comment,
+                 bool abandon, bool force)
 {
   // we need to serialize.  Save current autocommit state so if the
   // caller has already done so, we don't mess him up
@@ -158,10 +162,15 @@ int cdr::checkIn(cdr::Session& session, int docId,
   // now add new version if not abandoned
   if (!abandon)
   {
+    // Must have new legal active_status value for new version
+    if (actStatus != L"A" && actStatus != L"I")
+      throw cdr::Exception(
+          L"Must specify active_status 'A' or 'I' when creating new version");
+
     ++version;
     string query = "SELECT d.val_status, d.val_date, d.approved, "
                    "       d.doc_type, d.title, d.xml, "
-                   "       d.comment, d.active_status, a.dt, b.data "
+                   "       d.comment, a.dt, b.data "
                    "FROM document d "
                    "JOIN audit_trail a ON a.document = d.id "
                    "LEFT OUTER JOIN doc_blob b ON b.id = d.id "
@@ -183,9 +192,8 @@ int cdr::checkIn(cdr::Session& session, int docId,
     cdr::String title = rs.getString(5);
     cdr::String xml = rs.getString(6);
     cdr::String doc_comment = rs.getString(7);
-    cdr::String active_status = rs.getString(8);
-    cdr::String updated_dt = rs.getString(9);
-    cdr::Blob data = rs.getBytes(10);
+    cdr::String updated_dt = rs.getString(8);
+    cdr::Blob data = rs.getBytes(9);
 
     string newver = "INSERT INTO doc_version "
                     "            (id, num, dt, updated_dt, usr, val_status, "
@@ -205,7 +213,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
     insert.setString(10, xml);
     insert.setBytes(11, data);
     insert.setString(12, doc_comment);
-    insert.setString(13, active_status);
+    insert.setString(13, actStatus);
     insert.executeQuery();
   }
 
@@ -244,7 +252,8 @@ int cdr::checkOut(cdr::Session& session,
     {
       if (!session.canDo(conn, "FORCE CHECKOUT", docId))
         throw cdr::Exception(L"User not authorized to force checkout");
-      checkIn(session, docId, conn, NULL, true, force);
+      // Note forced checkins do not create new versions
+      checkIn(session, docId, conn, L"I", NULL, true, force);
     }
     else
     {
@@ -538,6 +547,8 @@ cdr::String cdr::checkVerIn(cdr::Session& session,
 {
   bool abandon = false;
   bool force = false;
+  cdr::String actStatus = L"X";     // Initialized to invalid value
+  cdr::String publishable;
   int version = -1;
   auto_ptr<cdr::String> comment;
   cdr::String ui_string;
@@ -549,6 +560,21 @@ cdr::String cdr::checkVerIn(cdr::Session& session,
   attr = cmdattr.getNamedItem("ForceCheckIn");
   if (attr != NULL && cdr::String(attr.getNodeValue()) == L"Y")
     force = true;
+
+  // Set active status based on whether user says version is publishable
+  attr = cmdattr.getNamedItem("Publishable");
+  if (attr != NULL) {
+    publishable = cdr::String(attr.getNodeValue());
+    if (publishable == L"Y")
+       actStatus = L"A";
+    else if (publishable == L"N")
+       actStatus = L"I";
+  }
+
+  // If creating a new version, must specify active status
+  if (!abandon && actStatus == L"X")
+    throw cdr::Exception(
+            L"Must specify Publishable='Y' or 'N' when creating new version");
 
   for (cdr::dom::Node child = commandNode.getFirstChild();
        child != NULL;
@@ -581,7 +607,7 @@ cdr::String cdr::checkVerIn(cdr::Session& session,
     }
   }
   version = checkIn(session, ui_string.extractDocId(), dbConnection,
-                    comment.get(), abandon, force);
+                    actStatus, comment.get(), abandon, force);
 
   wostringstream ver_string;
   if (version >= 0)
