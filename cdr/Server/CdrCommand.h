@@ -1,9 +1,13 @@
 /*
- * $Id: CdrCommand.h,v 1.17 2001-04-13 12:19:16 bkline Exp $
+ * $Id: CdrCommand.h,v 1.18 2001-05-17 17:39:09 ameyer Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2001/04/13 12:19:16  bkline
+ * Added listActions(), getAction(), addAction(), repAction(), and
+ * delAction().
+ *
  * Revision 1.16  2001/04/08 22:48:24  bkline
  * Added getTree() function.
  *
@@ -638,6 +642,92 @@ namespace cdr {
     extern String getLinks   (Session&          session,
                               const dom::Node&  node,
                               db::Connection&   conn);
+
+    /**
+     * Add or modify a link type definition in the relational tables
+     * controlling link definitions and behavior.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String putLinkType (Session&          session,
+                               const dom::Node&  node,
+                               db::Connection&   conn);
+
+    /**
+     * Retrieve all information pertaining to a link type in the
+     * relational tables controlling link definitions and behavior.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String getLinkType (Session&          session,
+                               const dom::Node&  node,
+                               db::Connection&   conn);
+
+    /**
+     * Retrieve a list of names of defined link type names and comments.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String listLinkTypes (Session&          session,
+                                 const dom::Node&  node,
+                                 db::Connection&   conn);
+
+    /**
+     * Retrieve a list of defined types of properties that can be
+     * applied to link types.
+     *
+     * Types declared in the link_prop_types table correspond to custom
+     * validation processing routines for links.  It makes no sense to
+     * define one without writing the code to perform the corresponding
+     * validation.  Therefore there is no external CdrCommand to create
+     * these, only this command to retrieve them so that users using the
+     * administrative interface can assign existing property types to
+     * link types.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String listLinkProps (Session&          session,
+                                 const dom::Node&  node,
+                                 db::Connection&   conn);
+
+    /**
+     * Provides a list of schema documents currently stored in the CDR.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String listSchemaDocs(Session&          session,
+                                 const dom::Node&  node,
+                                 db::Connection&   conn);
 
     /**
      * Provides a list of document types currently defined for the CDR.
