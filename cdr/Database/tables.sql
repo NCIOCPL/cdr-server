@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.61 2002-07-18 23:34:45 ameyer Exp $
+ * $Id: tables.sql,v 1.62 2002-07-19 00:43:32 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.61  2002/07/18 23:34:45  ameyer
+ * Added batch_job and batch_job_parm for non-publishing batch processing.
+ *
  * Revision 1.60  2002/07/05 15:05:33  bkline
  * New views for primary pub jobs.
  *
@@ -1275,7 +1278,7 @@ CREATE TABLE batch_job
   process_id INTEGER NULL,
      started DATETIME NOT NULL,
    status_dt DATETIME NOT NULL,
-      status INTEGER NOT NULL,
+      status CHAR (12) NOT NULL,
        email VARCHAR (256) NULL,
     progress TEXT NULL)
 GO
