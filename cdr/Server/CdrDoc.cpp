@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.14 2001-06-12 22:37:39 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.15 2001-06-15 02:29:23 ameyer Exp $
  *
  */
 
@@ -117,6 +117,8 @@ cdr::CdrDoc::CdrDoc (
                         //   client modifiable elements are examined
                         //   and retained.
                         if (ctlTag == L"DocTitle")
+                            // XXXX - THIS WILL CHANGE
+                            // PLAN IS TO GET TITLE VIA XSLT SCRIPT
                             Title = cdr::dom::getTextContent (ctlNode);
 
                         else if (ctlTag == L"DocComment")
@@ -299,14 +301,14 @@ void cdr::CdrDoc::Store ()
 
     // Clear out any old blob data for the document.
     static const char* const delBlobQuery = "DELETE doc_blob WHERE id = ?";
-    cdr::db::PreparedStatement delBlob = 
+    cdr::db::PreparedStatement delBlob =
         docDbConn.prepareStatement(delBlobQuery);
     delBlob.setInt(1, Id);
     delBlob.executeUpdate();
 
     // Store the blob data, if any.
     if (!BlobData.isNull()) {
-        static const char* const insBlobQuery = 
+        static const char* const insBlobQuery =
             "INSERT doc_blob(id, data) VALUES(?,?)";
         cdr::db::PreparedStatement insBlob =
             docDbConn.prepareStatement(insBlobQuery);
@@ -749,7 +751,7 @@ cdr::String cdr::delDoc (
 
 /**
  * Determine whether the DocumentElement (top node of the parse
- * tree is available, make it so if not.
+ * tree) is available, make it so if not.
  */
 
 bool cdr::CdrDoc::parseAvailable ()
@@ -775,21 +777,52 @@ bool cdr::CdrDoc::parseAvailable ()
     // Build a parse tree
     cdr::dom::Parser parser;
     try {
+        // Successful or not, the parse will have been attempted
+        parsed = true;
+
+        // Attempt it
         parser.parse (data);
         docElem = parser.getDocument().getDocumentElement();
     }
     catch (const cdr::dom::XMLException& e) {
+        // XML is unparsable, presumed to be malformed
+        this->malFormed();
+
+        // Save error message from parser
         parseErrMsg = e.getMessage();
         return false;
     }
     catch (...) {
+        this->malFormed();
         parseErrMsg = L"Unknown error parsing XML";
         return false;
     }
 
+    // If we're here, parse was successful, document is well formed
+    // Flag should be false already but it's reasonable to confirm it here
+    malformed = false;
+
     return true;
 
 } // parseAvailable
+
+
+/**
+ * Mark a document as malformed
+ */
+
+void cdr::CdrDoc::malFormed()
+{
+    // Mark this objec in memory
+    malformed = true;
+
+    // Set validation status in case doc is stored
+    ValStatus = L"M";
+
+    // Title derives from the document, but we can't derive a title
+    //   from a malformed document.
+    Title = L"Malformed document - no title can be generated";
+}
 
 
 /**
@@ -910,10 +943,12 @@ void cdr::CdrDoc::updateQueryTerms()
 
     // Add rows for query terms.
     if (!paths.empty()) {
-        cdr::dom::Parser parser;
-        parser.parse(Xml);
-        cdr::dom::Node node = parser.getDocument().getDocumentElement();
-        addQueryTerms(cdr::String(L""), node.getNodeName(), node, paths);
+
+        // Find or create a parse of the document
+        if (parseAvailable()) {
+            cdr::dom::Node node = getDocumentElement();
+            addQueryTerms(cdr::String(L""), node.getNodeName(), node, paths);
+        }
     }
 }
 
