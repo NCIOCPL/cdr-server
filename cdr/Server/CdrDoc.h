@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.2 2000-06-23 15:31:14 bkline Exp $
+ * $Id: CdrDoc.h,v 1.3 2000-10-27 02:33:42 ameyer Exp $
  *
  */
 
@@ -16,6 +16,7 @@
 #include "CdrDom.h"
 #include "CdrString.h"
 #include "CdrDbConnection.h"
+#include "CdrBlob.h"
 
 /**@#-*/
 
@@ -53,7 +54,7 @@ namespace cdr {
              *  @param  docId       CDR document ID for a document currently
              *                      in the database.
              */
-            // CdrDoc (cdr::Connection& dbConn, const cdr::String& docId);
+            CdrDoc (cdr::db::Connection& dbConn, const int docId);
 
             /**
              * Delete a CdrDoc object
@@ -68,23 +69,23 @@ namespace cdr {
             void Store ();
 
             /**
-             * Replaces the rows in the query_term table for the current 
+             * Replaces the rows in the query_term table for the current
              * document.
              */
             void updateQueryTerms();
 
             // Accessors
-            int getId()                 {return Id;}
-            int getDocType()            {return DocType;}
-            cdr::String getTextId()     {return TextId;}
-            cdr::String getValStatus()  {return ValStatus;}
-            cdr::String getValDate()    {return ValDate;}
-            cdr::String getApproved()   {return Approved;}
-            cdr::String getTextDocType(){return TextDocType;}
-            cdr::String getTitle()      {return Title;}
-            cdr::String getXml()        {return Xml;}
-            cdr::String getBlob()       {return Blob;} // XXXX Encode?
-            cdr::String getComment()    {return Comment;}
+            int getId()                    {return Id;}
+            int getDocType()               {return DocType;}
+            cdr::String getTextId()        {return TextId;}
+            cdr::String getValStatus()     {return ValStatus;}
+            cdr::String getValDate()       {return ValDate;}
+            cdr::String getApproved()      {return Approved;}
+            cdr::String getTextDocType()   {return TextDocType;}
+            cdr::String getTitle()         {return Title;}
+            cdr::String getXml()           {return Xml;}
+            cdr::String getComment()       {return Comment;}
+            cdr::db::Connection& getConn() {return docDbConn;}
 
         private:
             // Values corresponding to document table data
@@ -97,7 +98,7 @@ namespace cdr {
             cdr::String TextDocType; // Form used in document tag
             cdr::String Title;       // External title
             cdr::String Xml;         // Actual document as XML, not CDATA
-            cdr::String Blob;        // Associated non-XML, if any
+            cdr::Blob   BlobData;    // Associated non-XML, if any
             cdr::String Comment;     // Free text
 
             // Connection to the database
@@ -107,9 +108,9 @@ namespace cdr {
              * Adds a row to the query_term table for the current node if
              * appropriate and recursively does the same for all sub-elements.
              *
-             *  @param  path        reference to string representing path for 
+             *  @param  path        reference to string representing path for
              *                      current node; e.g., "/Person/PersonStatus".
-             *  @param  node        reference to current node of document's 
+             *  @param  node        reference to current node of document's
              *                      DOM tree.
              *  @param  paths       reference to set of paths to be indexed.
              */
