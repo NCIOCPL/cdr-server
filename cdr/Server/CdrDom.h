@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.h,v 1.5 2000-04-26 01:35:58 bkline Exp $
+ * $Id: CdrDom.h,v 1.6 2000-05-04 01:14:08 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/04/26 01:35:58  bkline
+ * Added overloaded second parse(const cdr::String&) method.
+ *
  * Revision 1.4  2000/04/22 18:57:38  bkline
  * Added ccdoc comment markers for namespaces and @pkg directives.
  *
@@ -40,22 +43,71 @@ namespace cdr {
         /** @pkg cdr.dom */
 
         // Map back to names in DOM standard.
+
+        /**
+         * Collections of nodes that can be accessed by name.
+         */
         typedef ::DOM_NamedNodeMap  NamedNodeMap;
+
+        /**
+         * Primary datatype for the DOM model.
+         */
         typedef ::DOM_Node          Node;
+
+        /**
+         * Predominant node type in the DOM model.
+         */
         typedef ::DOM_Element       Element;
+
+        /**
+         * Product of a DOM parsing operation.
+         */
         typedef ::DOM_Document      Document;
+
+        /**
+         * Carries error information for a failure of DOM processing.
+         */
         typedef ::XMLException      DOMException;
 
         /**
          * Wrap Parser class, which is not part of standard.
          */
         class Parser : public ::DOMParser {
+
         public:
-            void parse(const std::string& xml) throw(cdr::dom::DOMException);
-            void parse(const cdr::String& xml) throw(cdr::dom::DOMException);
+
+            /**
+             * Parses a narrow-character string, creating a DOM tree.
+             *
+             *  @param  xml     reference to string containing the UTF-8
+             *                  serialization of an XML document.
+             *  @exception      DOMException if a parsing error is encountered.
+             */
+            void parse(const std::string& xml) throw(DOMException);
+
+            /**
+             * Parses a wide-character string, creating a DOM tree.
+             *
+             *  @param  xml     reference to string containing the UTF-16
+             *                  serialization of an XML document.
+             *  @exception      DOMException if a parsing error is encountered.
+             */
+            void parse(const cdr::String& xml) throw(DOMException);
+
         private:
+
+            /**
+             * Artificial flag used to perform initialization required by the
+             * xml4c package.
+             */
             static bool initialized;
-            static bool doInit() throw(cdr::dom::DOMException) { 
+
+            /**
+             * Perform initialization required by the xml4c package.
+             *
+             *  @exception      DOMException if a parsing error is encountered.
+             */
+            static bool doInit() throw(DOMException) { 
                 XMLPlatformUtils::Initialize(); return true; 
             }
         };
@@ -64,8 +116,11 @@ namespace cdr {
          * Convenience method, not part of standard DOM interface
          * (though perhaps it should be), for extracting the text
          * content from an element.
+         *
+         *  @param  node        reference to DOM node from which text
+         *                      content is to be extracted.
          */
-        extern cdr::String getTextContent(const Node&);
+        extern cdr::String getTextContent(const Node& node);
     }
 }
 
