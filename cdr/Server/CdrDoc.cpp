@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.3 2000-06-02 20:55:05 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.4 2000-06-22 19:52:03 ameyer Exp $
  *
  */
 
@@ -32,7 +32,7 @@ cdr::CdrDoc::CdrDoc (
     cdr::db::Connection& dbConn,
     cdr::dom::Node& docDom
 ) : docDbConn (dbConn),
-    Comment(true), 
+    Comment(true),
     Blob(true),
     ValDate(true),
     Id(0),
@@ -43,7 +43,7 @@ cdr::CdrDoc::CdrDoc (
         static_cast<const cdr::dom::Element&>(docDom);
     TextDocType = docElement.getAttribute (L"Type");
     if (TextDocType.size() == 0)
-        throw cdr::Exception (L"CdrDoc: Doctag missing Type attribute");
+        throw cdr::Exception (L"CdrDoc: Doctag missing 'Type' attribute");
     TextId = docElement.getAttribute (L"Id");
 
     // If Id was passed, document must exist in database.
@@ -67,8 +67,8 @@ cdr::CdrDoc::CdrDoc (
     select.setString (1, TextDocType);
     cdr::db::ResultSet rs = select.executeQuery();
     if (!rs.next())
-        throw cdr::Exception(L"CdrDoc: DocType \"" + TextDocType +
-                             "\" is invalid");
+        throw cdr::Exception(L"CdrDoc: DocType '" + TextDocType +
+                             L"' is invalid");
     DocType = rs.getInt(1);
 
     // Default values for control elements in the document table
@@ -133,10 +133,10 @@ cdr::CdrDoc::CdrDoc (
                 Blob = cdr::dom::getTextContent (child);
             }
 
-            else {
+            else
                 // Nothing else is allowed
-                throw cdr::Exception(L"CdrDoc: Unrecognized element in CdrDoc");
-            }
+                throw cdr::Exception(L"CdrDoc: Unrecognized element '" +
+                                     name + L"' in CdrDoc");
         }
 
         child = child.getNextSibling ();
@@ -144,9 +144,9 @@ cdr::CdrDoc::CdrDoc (
 
     // Check for absolutely required fields
     if (Title.size() == 0)
-        throw cdr::Exception (L"CdrDoc: Missing required DocTitle element");
+        throw cdr::Exception (L"CdrDoc: Missing required 'DocTitle' element");
     if (Xml.size() == 0)
-        throw cdr::Exception (L"CdrDoc: Missing required Xml element");
+        throw cdr::Exception (L"CdrDoc: Missing required 'Xml' element");
 
 } // CdrDoc ()
 
@@ -178,7 +178,7 @@ void cdr::CdrDoc::Store ()
     // Existing record
     else {
         sqlStmt =
-            "UPDATE document ("
+            "UPDATE document "
             "  SET val_status = ?,"
             "      val_date = ?,"
             "      approved = ?,"
@@ -201,7 +201,7 @@ void cdr::CdrDoc::Store ()
     docStmt.setString (7, Comment);
 
     // For existing records, fill in ID
-    if (!Id)
+    if (Id)
         docStmt.setInt    (8, Id);
 
     // Do it
@@ -320,9 +320,10 @@ static cdr::String CdrPutDoc (
                 // Save node for later use
                 docNode = topNode;
 
-            else
-                throw cdr::Exception
-                    (L"CdrPutDoc: Unrecognized element in command");
+            else {
+                throw cdr::Exception (L"CdrDoc: Unrecognized element '" +
+                                        name + L"' in command");
+            }
         }
 
         topNode = topNode.getNextSibling ();
@@ -330,14 +331,16 @@ static cdr::String CdrPutDoc (
 
     // Construct a doc object containing all the data
     if (docNode == 0)
-        throw cdr::Exception (L"CdrPutDoc: No CdrDoc element in transaction");
+        throw cdr::Exception(L"CdrPutDoc: No 'CdrDoc' element in transaction");
     cdr::CdrDoc doc (dbConn, docNode);
 
     // Check user authorization
-    cdr::String action = newrec ? L"ADD DOCUMENT" : L"UPDATE DOCUMENT";
-    if (!session.canDo (dbConn, action, doc.getTextDocType()))
-        throw cdr::Exception (L"CdrPutDoc: User not authorized to perform "
-                              L"this action on this doc type");
+    cdr::String action = newrec ? L"ADD DOCUMENT" : L"MODIFY DOCUMENT";
+    cdr::String doctype = doc.getTextDocType();
+    if (!session.canDo (dbConn, action, doctype))
+        throw cdr::Exception (L"CdrPutDoc: User '" + session.getUserName() +
+                              L"' not authorized to '" + action +
+                              L"' with docs of type '" + doctype + L"'");
 
     // Does document id attribute match expected action type?
     if (doc.getId() && newrec)
@@ -399,7 +402,7 @@ static cdr::String CdrPutDoc (
     // Return string with errors, etc.
     // XXXX - FIX THIS
     cdr::String rtag = newrec ? L"Add" : L"Rep";
-    cdr::String resp = cdr::String (L"  <Cdr") + rtag + L"DocResp>"
+    cdr::String resp = cdr::String (L"  <Cdr") + rtag + L"DocResp>\n"
                      + L"   <DocId>" + doc.getTextId() + L"</DocId>\n"
                      + L"  </Cdr" + rtag + L"DocResp>\n";
     return resp;
@@ -436,7 +439,7 @@ void cdr::CdrDoc::updateQueryTerms()
             paths.insert(path);
         }
     }
-    
+
     // Step 3: add rows for query terms.
     if (!paths.empty()) {
         cdr::dom::Parser parser;
