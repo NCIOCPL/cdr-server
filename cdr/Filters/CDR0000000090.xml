@@ -9,7 +9,8 @@
    <xsl:transform xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                     version = "1.0"
                   xmlns:cdr = "cips.nci.nih.gov/cdr">
- <xsl:import    href = "cdr:name:InLine Markup Formatter"/>
+
+ <xsl:import    href = "cdr:name:Module: InLine Markup Formatter"/>
  <xsl:include   href = "cdr:name:Module: STYLE Default"/> 
 
  <xsl:output  method = "html"/>
@@ -43,233 +44,239 @@
   </HTML>
  </xsl:template>
 
-  <!-- ===================================================  
-        Generate the HTML for the glossary term QC Report
-       ===================================================-->
-   <xsl:template match="GlossaryTerm">
-      <BODY>
-      <!-- ===============================================
-            Display Report heading and subheading 
-           ===============================================-->
-        <b>
-          <font size='4'>
-             <center>Glossary Term<br />
-             QC Report</center>
-          </font>
-        </b>
-        <b>
-          <font size='3'>
-            <center>
-             <xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/>
-         </center>
-         </font>
-         </b>
-         <p/>
-
-         <b>
-         <font size='3'>
-         <xsl:apply-templates select="PDQKey"/>
-         </font>
-         </b>
-         <p/>
-         <b><xsl:value-of select="document('cdrutil:/docid')"/></b><br /><br />
-            <xsl:if test="@Dictionary">
-             <b>
-               <font size='3'>Dictionary</font>
-            </b>
-                 <xsl:text>......................................</xsl:text>
-             <xsl:apply-templates select="@Dictionary"/><br /><br />
-           </xsl:if>
-
-  <table width = '90%' cellpadding = "0" cellspacing = "0">
-    <tr>
-      <td width = '35%'><b>Name</b></td>
-      <td width = '65%'><xsl:apply-templates select="TermName"/></td>
-    </tr>
-    <tr>
-      <xsl:choose>
-      <xsl:when test="not(TermPronunciation)">
-        <td><b><font size='3'>Pronunciation</font></b></td>
-      </xsl:when>
-      <xsl:otherwise>
-        <td><b><font size='3'>Pronunciation</font></b></td>
-        <td><xsl:apply-templates select="TermPronunciation"/></td>
-      </xsl:otherwise>
-      </xsl:choose>
-    </tr>
-    <tr>
-     <td valign = "top"><b>Definition</b></td>
-     <td><table cellpadding = "0" cellspacing = "0">
-          <xsl:for-each     select = "TermDefinition">
-           <tr><td>
-            <xsl:apply-templates select="DefinitionText"/></td>
-           </tr>
-          </xsl:for-each>
-         </table>
-      </td>
-    </tr>
-  </table>           
-
-  <p/>
-          
-  <xsl:for-each select="TermDefinition">
-    <table width = '90%' cellpadding = "0" cellspacing = "0">
-      <tr>
-        <td width = '35%'><b><font size='3'>Dictionary</font></b></td>
-        <td width = '65%'>
-          <xsl:apply-templates select="Dictionary"/>
-        </td>
-      </tr>
-      <tr>
-        <td><b><font size='3'>Audience</font></b></td>
-        <td>
-          <xsl:for-each select = "Audience">
-            <xsl:if test = "position() = last()">
-              <xsl:value-of select="."/>
-            </xsl:if>
-            <xsl:if test = "not(position() = last())">
-              <xsl:value-of select="."/>
-              <xsl:text>; </xsl:text>
-            </xsl:if>
-          </xsl:for-each> 
-        </td>
-      </tr>
-    </table>
-    <br />
-
-    <hr/>
-         </xsl:for-each>
-
-  <xsl:if test="SpanishTermName">
-    <table width = '90%' cellpadding = "0" cellspacing = "0">
-      <tr>
-        <td width = '35%'><b>Spanish Term</b></td>
-        <td width = '65%'><xsl:apply-templates select="SpanishTermName"/></td>
-      </tr>
-      <tr>  
-        <td valign = "top"><b>Spanish Term Definition</b></td>
-        <td>
-         <xsl:apply-templates select="SpanishTermDefinition/DefinitionText"/>
-        </td>
-      </tr>
-    </table>
-    <br />
-
-    <table width = '90%' cellpadding = "0" cellspacing = "0">
-      <tr>
-        <td width = '35%'><b>Dictionary</b></td>
-        <td width = '65%'>
-          <xsl:apply-templates select="Dictionary"/>
-        </td>
-      </tr>
-      <tr>
-        <td><b><font size='3'>Spanish Term Audience</font></b></td>
-        <td>
-          <xsl:for-each select = "SpanishTermDefinition/Audience">
-            <xsl:if test = "position() = last()">
-              <xsl:value-of select="."/>
-            </xsl:if>
-            <xsl:if test = "not(position() = last())">
-              <xsl:value-of select="."/>
-              <xsl:text>; </xsl:text>
-            </xsl:if>
-          </xsl:for-each> 
-        </td>
-      </tr>
-    </table> 
-   <br/>
-   <hr/>
-  </xsl:if>          
-
-  <table width = '90%' cellpadding = "0" cellspacing = "0">
-    <tr>
-      <td width = '35%'><b><font size='3'>Source</font></b></td>
-       <td width = '65%'><xsl:apply-templates select="TermSource"/></td>
-    </tr>
-    <tr>
-      <td> </td><td> </td>
-    </tr>
-    <tr>
-      <td><b><font size='3'>Type</font></b></td>
-      <td><xsl:apply-templates select="TermType"/></td>
-    </tr>
-    <tr>
-      <td> </td>
-    </tr>
-    <tr>
-      <td><b><font size='3'>Status</font></b></td>
-      <td><xsl:apply-templates select="TermStatus"/></td>
-    </tr>
-    <tr>
-      <td> </td>
-    </tr>
-    <tr>
-      <td><b><font size='3'>Date</font></b></td>
-      <td><xsl:apply-templates select="StatusDate"/></td>
-    </tr>
-    <tr>
-      <td> </td>
-    </tr>
-    <tr>
-     <td>
-       <b><font size='3'>Comment</font></b>
-     </td>
-     <xsl:choose>
-      <xsl:when                   test = "Comment">
-       <td>
-       <xsl:apply-templates select="Comment"/>
-       </td>
-      </xsl:when>
-      <xsl:otherwise>
-       <td> </td>
-      </xsl:otherwise>
-     </xsl:choose>
-    </tr>
-    <tr>
-     <td>
-       <b><font size='3'>Date Last Modified</font></b>
-     </td>
-     <xsl:choose>
-      <xsl:when                   test = "DateLastModified">
-       <td>
-       <xsl:apply-templates select="DateLastModified"/>
-       </td>
-      </xsl:when>
-      <xsl:otherwise>
-       <td> </td>
-      </xsl:otherwise>
-     </xsl:choose>
-    </tr>
-  </table>
-
-
-  <!-- xsl:choose>
-   <xsl:when                   test = "not(Comment)">
-    <b><font size='3'>Comment</font></b>
-   </xsl:when>
-   <xsl:otherwise>
-    <b><font size='3'>Comment</font></b>
-    <xsl:apply-templates select="Comment"/>
-   </xsl:otherwise>
-  <xsl:choose -->
+ <!-- 
+ ===================================================  
+ Generate the HTML for the glossary term QC Report
+ =================================================== -->
+ <xsl:template match="GlossaryTerm">
+  <BODY>
+  <!-- 
+  ==================================================
+  Display Report heading and subheading 
+  ================================================== -->
+  <b>
+   <font size='4'>
+    <center>Glossary Term<br />QC Report</center>
+   </font>
+   <font size='3'>
+    <center>
+     <xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/>
+    </center>
+   </font>
+  </b>
   <p/>
 
-  <!-- xsl:if test="not(DateLastModified)">
-    <b><font size='3'>Date Last Modified</font></b>
-    <br />
+  <b>
+   <font size='3'>
+    <xsl:apply-templates select="PDQKey"/>
+   </font>
+  </b>
+  <p/>
+  <b>
+   <font size="4"><xsl:value-of select="document('cdrutil:/docid')"/></font>
+  </b>
+  <br />
+  <br />
+  <xsl:if test="@Dictionary">
+   <b>
+    <font size='3'>Dictionary</font>
+   </b>
+   <xsl:text>......................................</xsl:text>
+   <xsl:apply-templates select="@Dictionary"/>
+   <br />
+   <br />
   </xsl:if>
 
-  <xsl:if test="DateLastModified">
-    <table width = '90%' cellpadding = "0" cellspacing = "0">
-      <tr>
-        <td width = '30%'><b><font size='3'>Date Last Modified</font></b></td>
-        <td width = '70%'><xsl:apply-templates select="DateLastModified"/></td>
-      </tr>
-    </table>
-  </xsl:if -->
-      </BODY>  
-   </xsl:template>
+  <table width = '90%' cellpadding = "0" cellspacing = "0">
+   <tr>
+    <td width = '35%'><b><font size="4">Name</font></b></td>
+    <td width = '65%'><xsl:apply-templates select="TermName"/></td>
+   </tr>
+   <tr>
+    <xsl:choose>
+     <xsl:when test="not(TermPronunciation)">
+      <td><b><font size='3'>Pronunciation</font></b></td>
+     </xsl:when>
+     <xsl:otherwise>
+      <td><b><font size='3'>Pronunciation</font></b></td>
+      <td><xsl:apply-templates select="TermPronunciation"/></td>
+     </xsl:otherwise>
+    </xsl:choose>
+   </tr>
+  </table>           
 
-  </xsl:transform>]]>
+  <hr/>
+  <xsl:apply-templates select = "TermDefinition"/>
+  <xsl:apply-templates select = "SpanishTermName"/>
+  <xsl:apply-templates select = "SpanishTermDefinition"/>
+
+  <table width = '90%' cellpadding = "0" cellspacing = "0">
+   <tr>
+    <td width = '35%'><b><font size='3'>Source</font></b></td>
+    <td width = '65%'><xsl:apply-templates select="TermSource"/></td>
+   </tr>
+   <tr>
+    <td> </td><td> </td>
+   </tr>
+   <tr>
+    <td><b><font size='3'>Type</font></b></td>
+    <td><xsl:apply-templates select="TermType"/></td>
+   </tr>
+   <tr>
+    <td> </td>
+   </tr>
+   <tr>
+    <td><b><font size='3'>Status</font></b></td>
+    <td><xsl:apply-templates select="TermStatus"/></td>
+   </tr>
+   <tr>
+    <td> </td>
+   </tr>
+   <tr>
+    <td><b><font size='3'>Date</font></b></td>
+    <td><xsl:apply-templates select="StatusDate"/></td>
+   </tr>
+   <tr>
+    <td> </td>
+   </tr>
+   <tr>
+    <td>
+     <b><font size='3'>Comment</font></b>
+    </td>
+    <xsl:choose>
+     <xsl:when                   test = "Comment">
+      <td>
+       <xsl:apply-templates select="Comment"/>
+      </td>
+     </xsl:when>
+     <xsl:otherwise>
+      <td> </td>
+     </xsl:otherwise>
+    </xsl:choose>
+   </tr>
+   <tr>
+    <td>
+     <b><font size='3'>Date Last Modified</font></b>
+    </td>
+    <xsl:choose>
+     <xsl:when                   test = "DateLastModified">
+      <td>
+       <xsl:apply-templates select="DateLastModified"/>
+      </td>
+     </xsl:when>
+     <xsl:otherwise>
+      <td> </td>
+     </xsl:otherwise>
+    </xsl:choose>
+   </tr>
+  </table>
+
+  <p/>
+  </BODY>  
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template to display individual TermDefinitions
+ ================================================================== -->
+ <xsl:template                 match = "TermDefinition">
+  <table width = '90%' cellpadding = "0" cellspacing = "0">
+   <tr>
+    <td valign = "top"><b>Definition</b></td>
+    <td><xsl:apply-templates select="DefinitionText"/></td>
+   </tr>
+   <tr>
+    <td width = '35%'><b><font size='3'>Dictionary</font></b></td>
+    <td width = '65%'>
+     <xsl:apply-templates select="Dictionary"/>
+    </td>
+   </tr>
+   <tr>
+    <td><b><font size='3'>Audience</font></b></td>
+    <td>
+     <xsl:for-each select = "Audience">
+      <xsl:if test = "position() = last()">
+       <xsl:value-of select="."/>
+      </xsl:if>
+      <xsl:if test = "not(position() = last())">
+       <xsl:value-of select="."/>
+       <xsl:text>; </xsl:text>
+      </xsl:if>
+     </xsl:for-each> 
+    </td>
+   </tr>
+  </table>
+  <xsl:choose>
+   <xsl:when  test = "position() != last()">
+    <center><hr width="25%"/></center>
+   </xsl:when>
+   <xsl:otherwise>
+    <hr/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template to display optional SpanishTermName
+ ================================================================== -->
+ <xsl:template                 match = "SpanishTermName">
+  <p/>
+  <table width = '90%' cellpadding = "0" cellspacing = "0">
+   <tr>
+    <td width = '35%'><b><font size="4">Spanish Name</font></b></td>
+    <td width = '65%'><xsl:value-of select="."/></td>
+   </tr>
+  </table>
+  <p/>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template to display individual SpanishTermDefinitions
+ ================================================================== -->
+ <xsl:template                 match = "SpanishTermDefinition">
+  <table width = '90%' cellpadding = "0" cellspacing = "0">
+   <tr>  
+    <td width="35%" valign = "top"><b>Spanish Definition</b></td>
+    <td width="65%"><xsl:apply-templates select="DefinitionText"/></td>
+   </tr>
+  </table>
+
+  <table width = '90%' cellpadding = "0" cellspacing = "0">
+   <tr>
+    <td width = '35%'><b>Spanish Dictionary</b></td>
+    <td width = '65%'><xsl:apply-templates select="Dictionary"/></td>
+   </tr>
+   <tr>
+    <td><b><font size='3'>Spanish Audience</font></b></td>
+    <td>
+     <xsl:for-each select = "Audience">
+      <xsl:if test = "position() = last()">
+       <xsl:value-of select="."/>
+      </xsl:if>
+      <xsl:if test = "not(position() = last())">
+       <xsl:value-of select="."/>
+       <xsl:text>; </xsl:text>
+      </xsl:if>
+     </xsl:for-each> 
+    </td>
+   </tr>
+  </table> 
+  <xsl:choose>
+   <xsl:when  test = "position() != last()">
+    <center><hr width="25%"/></center>
+   </xsl:when>
+   <xsl:otherwise>
+    <hr/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+</xsl:transform>
+]]>
 </CdrDocXml>
 </CdrDoc>
