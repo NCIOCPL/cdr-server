@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.h,v 1.7 2000-05-03 21:46:35 bkline Exp $
+ * $Id: CdrXsd.h,v 1.8 2000-05-04 01:15:54 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2000/05/03 21:46:35  bkline
+ * More ccdoc comments.
+ *
  * Revision 1.6  2000/05/03 15:43:36  bkline
  * Added hasAttribute() method.
  *
@@ -188,7 +191,12 @@ namespace cdr {
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
          * user-defined simple type from the built-in Integer type.
-         /
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
+         *          XML Schema Part 2: Datatypes</A>
+         */
         const wchar_t* const INTEGER       = L"xsd:integer";
         
         /**
@@ -621,8 +629,8 @@ namespace cdr {
              *  @param  s           reference to <code>Schema</code> object
              *                      which maintains the registry of types used
              *                      to match a name to a <code>Type</code>.
-             *  @return         address of <code>Type</code> object assigned
-             *                  to this element or attribute.
+             *  @return             address of <code>Type</code> object 
+             *                      assigned to this element or attribute.
              */
             const Type*     resolveType(const Schema&);
         };
@@ -680,10 +688,32 @@ namespace cdr {
          * Attribute attached to a schema element.
          */
         class Attribute : public Node {
+
         public:
-            Attribute(const cdr::dom::Node&);
-            bool                isOptional() const { return optional; }
+
+            /**
+             * Extracts the specification of the requirements for this
+             * attribute for its schema node.
+             * 
+             *  @param  n           reference to DOM node holding validation
+             *                      requirements for this attribute.
+             */
+            Attribute(const cdr::dom::Node& n);
+
+            /**
+             * Accessor method for reporting whether this attribute can be
+             * omitted.
+             *
+             *  @return             <code>true</code> if the attribute
+             *                      can be omitted for this element.
+             */
+            bool            isOptional() const { return optional; }
+
         private:
+
+            /**
+             * Flag recording whether this element can be omitted.
+             */
             bool            optional;
         };
 
@@ -920,6 +950,7 @@ namespace cdr {
             /**
              * Maximum allowable length for values of this type.  Defaults to
              * <code>INT_MAX</code>.
+             */
             int                 maxLength;
 
             /**
