@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #
-# $Id: PushDevDocs.py,v 1.2 2002-09-07 16:10:57 bkline Exp $
+# $Id: PushDevDocs.py,v 1.3 2002-10-24 13:32:01 bkline Exp $
 #
 # Replaces copies of CDR control documents which have been preserved
 # from the development server, after a refresh of the database on
@@ -116,7 +116,8 @@ for name in glob.glob("AddDocs/*.xml"):
                 reason = reason, host = server)
         if not resp.startswith("CDR"):
             log("Failure saving %s: %s" % (idString, resp), 1)
-        doc = cdr.getDoc(session, idString, 'Y', host = server)
+            continue
+        doc = cdr.getDoc(session, resp, 'Y', host = server)
         if doc.startswith("<Err"):
             log("Failure locking %s: %s" % (idString, doc), 1)
             continue
