@@ -1,9 +1,11 @@
 /*
- * $Id: tables.sql,v 1.1 1999-11-23 19:20:33 bobk Exp $
+ * $Id: tables.sql,v 1.2 1999-11-23 20:31:11 bobk Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  1999/11/23  19:20:33  bobk
+ * Initial revision
  */
 
 /* 
@@ -264,10 +266,11 @@ CREATE TABLE doc_blob
  *
  *           id  identification of the document to which this attribute
  *               pertains
- *         name  name of the type of this document attribute
+ *         name  name of the type of this document attribute; for example,
+ *               'AUDIENCE'
  *          num  occurrence number for this instance of this attribute type
- *               for this document
- *          val  value for this attribute instance
+ *               for this document; convention starts numbering with 1
+ *          val  value for this attribute instance; e.g., 'Technical'
  *      comment  optional free-text notes concerning this attribute value
  */
 CREATE TABLE attr
@@ -278,13 +281,27 @@ CREATE TABLE attr
      comment VARCHAR(255) NULL,
  PRIMARY KEY (id, name, num))
 
-/* Support for external ID categories; e.g., MEDLINE. */
+/* 
+ * Support for external document ID categories; e.g., MEDLINE. 
+ *
+ *     category  automatically generated primary key for the id_category table
+ *         name  display name for the category of identifier; e.g. 'MEDLINE'
+ *      comment  optional free-text explanation of the usage/characteristics
+ *               of this category of external identifier
+ */
 CREATE TABLE id_category
    (category INTEGER IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL,
      comment VARCHAR(255) NULL)
 
-/* Document identifiers other than our own unique IDs. */
+/* 
+ * Document identifiers other than our own unique IDs. 
+ *
+ *     document  identifies the document to which this external identifier
+ *               applies
+ *       id_cat  category of this external identifier
+ *           id  value of the external identifier; e.g., '99446448'
+ */
 CREATE TABLE external_id
    (document INTEGER NOT NULL REFERENCES document,
       id_cat INTEGER NOT NULL REFERENCES id_category,
@@ -293,6 +310,15 @@ CREATE TABLE external_id
 
 /* 
  * Actions performed on documents which modified the data.  Requirement 4.1.3.
+ *
+ *     document  identifies the document on which this action was performed
+ *           dt  date/time the modified version of the document was stored 
+ *               in the repository
+ *          usr  user account responsible for the changes
+ *       action  identification of the action which was performed
+ *      program  optional identification of the program used to perform the 
+ *               action
+ *      comment  optional free-form text explanation of the changes
  */
 CREATE TABLE audit_trail
    (document INTEGER NOT NULL REFERENCES document,
@@ -311,23 +337,68 @@ CREATE TABLE audit_trail
  * Alan has suggested that we may only want to store version information for
  * versions which have been "published" - assuming we can come up with a
  * satisfactory definition for that term in this context.
+ *
+ *     document  identifies the document which this version represents
+ *          num  sequential number of the version of the document; numbering
+ *               starts with 1
+ *           dt  date/time the modifications were stored in the repository
+ *         data  compressed version of the deltas between this version of the
+ *               document and the previous version
+ *      comment  optional free-form text description of the characteristics of 
+ *               this version of the document
  */
 CREATE TABLE doc_version
    (document INTEGER NOT NULL REFERENCES document,
          num INTEGER NOT NULL,
           dt DATETIME NOT NULL,
-       label VARCHAR(32) NULL,
         data IMAGE NULL,
      comment VARCHAR(255) NULL,
  PRIMARY KEY (document, num))
 
+/*
+ * Marks a version for later retrieval by name.  Note that a single version of
+ * a given document can be marked with more than one label (or with none at
+ * all).
+ *
+ *           id  automatically generated primary key for the version_label
+ *               table
+ *        label  identification of a logical version; used to mark the common 
+ *               version for a collection of documents in order to be able to
+ *               retrieve that version of those documents at a later point in
+ *               time, without knowing the individual version number for each
+ *               document
+ *      comment  optional free-text description of the purpose of this version
+ *               label
+ */
 CREATE TABLE version_label
-   (document INTEGER NOT NULL REFERENCES document,
+         (id INTEGER IDENTITY PRIMARY KEY,
+        name VARCHAR(32) NOT NULL UNIQUE,
+     comment VARCHAR(255 NULL)
+
+/*
+ * Associates a version label with a specific version of a single document.
+ *
+ *        label  foreign key into the version_label table
+ *     document  identifies the document which this version represents
+ *          num  sequential number of the version of the document
+ */
+CREATE TABLE doc_version_label
+
+      (label INTEGER NOT NULL REFERENCES version_label,
+    document INTEGER NOT NULL REFERENCES document,
          num INTEGER NOT NULL,
-          dt DATETIME NOT NULL,
-       label VARCHAR(32) NULL)
+ PRIMARY KEY (label, document))
   
-/* Permission for a document-type specific action, assigned to a group. */
+/* 
+ * Permission for a document-type specific action, assigned to a group.
+ *
+ *          grp  group to which this permission is assigned
+ *       action  identification of action which is permitted
+ *     doc_type  identification of document type for which the action is 
+ *               allowed
+ *      comment  optional free-text annotation of any notes about the
+ *               assignment of this permission to the group
+ */
 CREATE TABLE grp_action
         (grp INTEGER NOT NULL REFERENCES grp,
       action INTEGER NOT NULL REFERENCES action,
@@ -335,7 +406,14 @@ CREATE TABLE grp_action
      comment VARCHAR(255) NULL,
  PRIMARY KEY (grp, action, doc_type))
 
-/* Membership of groups. */
+/* 
+ * Membership of groups.
+ *
+ *          grp  group to which this user account has been assigned
+ *          usr  identification of user account assigned to this group
+ *      comment  optional free-text notes about this user's membership
+ *               in this group
+ */
 CREATE TABLE grp_usr
         (grp INTEGER NOT NULL REFERENCES grp,
          usr INTEGER NOT NULL REFERENCES usr,
@@ -372,11 +450,18 @@ CREATE TABLE link
  * integrity.  The advantage of the alternate approach is flexibility
  * (removing the assumption that any tag, regardless of position, is
  * controlled by the rule).
+ *
+ *           id  automatically generated primary key for the vv_rule table
+ *         name  display string used to identify the rule for the user
+ *          grp  identifies the horizontal slice of the ctl table whose
+ *               values form the set of valid values for this data element
+ *        dtype  document type to which this rule is applied
+ *          tag  element in this document type to which the rule is applied
  */
 CREATE TABLE vv_rule
          (id INTEGER IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL,
-         grp VARCHAR(32) NOT NULL,
+         grp INTEGER NOT NULL REFERENCES ctl_grp,
        dtype INTEGER NOT NULL REFERENCES doc_type,
          tag VARCHAR(32) NOT NULL)
 
@@ -390,6 +475,11 @@ CREATE TABLE vv_rule
  *
  * XXX Need to investigate how XML processing instructions (PI) might play
  * a similar role, either replacing or augmenting these tables.
+ *
+ *           id  automatically generated primary key for the custom_rule table
+ *         name  display string used to identify this rule to the user; for
+ *               example, PATTERN MATCH
+ *     severity  level of seriousness assigned to violations of this rule
  */
 CREATE TABLE custom_rule
          (id INTEGER IDENTITY PRIMARY KEY,
@@ -403,18 +493,31 @@ CREATE TABLE custom_rule
  * number (the app column) determines the order in which the rule is invoked
  * for this document type.  Each application would logically have a different
  * set of parameters (see the rule_param table).
+ *
+ *           id  identification of the rule being applied to the doc type
+ *        dtype  document type to which this rule is being applied
+ *          app  identification of which application of the rule to this
+ *               document type is represented by this row
+ *       status  A (active) or D (disabled)
  */
 CREATE TABLE rule_map
          (id INTEGER NOT NULL REFERENCES custom_rule,
        dtype INTEGER NOT NULL REFERENCES doc_type,
          app INTEGER NOT NULL,
-      status CHAR, /* A=active D=disabled */
+      status CHAR,
  PRIMARY KEY (id, dtype, app))
 
 /* 
  * Sequenced list of unnamed parameters for the custom validation rules.
  * Parameters are numbered sequentially beginning with 1.  The values of 
  * the parameters are stored as character data.
+ *
+ *           id  identification of the rule to which this parameter is passed
+ *        dtype  document type to which the rule is being applied
+ *          app  identifies which application of the rule to this document
+ *               type is involved
+ *          pos  position of the parameter
+ *          val  value of the parameter passed to the validation rule
  */
 CREATE TABLE rule_param
          (id INTEGER NOT NULL,
