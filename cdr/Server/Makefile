@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.22 2000-07-10 19:51:55 bkline Exp $
+# $Id: Makefile,v 1.23 2000-08-10 19:37:56 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.22  2000/07/10 19:51:55  bkline
+# Added rules for service.
+#
 # Revision 1.21  2000/06/09 04:02:33  ameyer
 # Added CdrLog.h, CdrLog.cpp
 #
@@ -164,9 +167,12 @@ LIBS   =cdr.lib xerces-c_1.lib sablot.lib xmlparse.lib xmltok.lib \
 #--------------------------------------------------------------------------
 # Targets
 #--------------------------------------------------------------------------
-all: init $(CDRSVR) CdrDocs #$(SERVICE)
+all: init CdrServer.exe CdrDocs #$(SERVICE)
 
 service: $(SERVICE)
+
+install:
+	-cp CdrServer.exe $(CDRSVR)
 
 #--------------------------------------------------------------------------
 # Initialization, saving two generations of old errors
@@ -180,8 +186,8 @@ init:
 # Rule for building CDR server.
 #--------------------------------------------------------------------------
 
-$(CDRSVR): CdrServer.obj $(OBJS) $(CDRLIB)
-	$(LN) $(LFLAGS) /out:$(CDRSVR) CdrServer.obj $(OBJS) $(LIBS) >> errs
+CdrServer.exe: CdrServer.obj $(OBJS) $(CDRLIB)
+	$(LN) $(LFLAGS) /out:CdrServer.exe CdrServer.obj $(OBJS) $(LIBS) >> errs
 
 #--------------------------------------------------------------------------
 # Rule for building CDR service.
