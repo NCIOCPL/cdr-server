@@ -8,11 +8,19 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 
 <!-- Creator:  Volker Englisch
-     Created:  11/07/2002        -->
+     Created:  11/07/2002        
+     Comment:  This filter is the first part of a two part filtering
+               process.  This part (Vendor Filter: InScopeProtocol -
+               Sort ProtocolSite) is sorting ProtocolSite and ProtPerson
+               Elements and combining the ProtPerson fragments from
+               identical ProtocolSite fragments.
+               This second part (Vendor Filter: InScopeProtocol - Remove
+               Duplicate ProtocolSite) ensures that each ProtocolSite only
+               appears once in the resulting output. -->
 
 <!-- 
  ==================================================================
- $Id: CDR0000269013.xml,v 1.1 2002-11-12 23:45:18 venglisc Exp $
+ $Id: CDR0000269013.xml,v 1.2 2002-11-14 19:11:43 venglisc Exp $
 
  $Log: not supported by cvs2svn $
  ================================================================== -->
@@ -62,24 +70,30 @@
  the case of a site being displayed twice this is producing two 
  identical entries.
  Example:
-   Site A       \     Site A
-     Person a   |       Person a
-     Person b   |       Person b
-   Site B       |==>    Person d
-     Person c   |     Site A
-   Site A       |       Person a
-     Person d   /       Person b
-                        Person d
-                      Site B
-                        Person c
- The duplicates are being trimmed in a separate filter.
+   ORIGINAL          FIRST FILTER         SECOND FILTER
+   Site A#F1    \     Site A        \      
+     Person a   |       Person a    |     Site A
+     Person b   |       Person b    |       Person a
+   Site B       |       Person d    |       Person b
+     Person c   |==>  Site A        |==>    Person d
+   Site A#F2    |       Person a    |     Site B
+     Person a   |       Person b    |       Person c
+     Person d   /       Person d    |
+                      Site B        |
+                        Person c    /
+ The duplicates are being trimmed in the second filter of this process.
  =================================================================== -->
  <xsl:template                  match = "ProtocolSite">
-  <xsl:variable                  name = "siteID"   select = "@ref"/>
-
+  <!-- xsl:choose>
+   <xsl:when                     test = "contains(@ref, '#')" -->
+    <xsl:variable                name = "siteID"   
+                               select = "substring-before
+                                         (concat(@ref, '#'), '#')"/>
+    <!-- xsl:variable                name = "siteIDfrag"   
+                               select = "@ref"/ -->
   <ProtocolSite>
    <xsl:attribute                name = "ref">
-    <xsl:value-of              select = "./@ref"/>
+    <xsl:value-of              select = "$siteID"/>
    </xsl:attribute>
 
    <xsl:attribute                name = "sitetype">
@@ -90,8 +104,16 @@
 
    <xsl:for-each               select = "/Protocol/ProtocolAdminInfo
                                          /ProtocolSites
+                                         /ProtocolSite[
+                                           substring(@ref, 1, 13)=$siteID]
+                                         /ProtPerson[
+                                           not(.=preceding::ProtPerson)] |
+                                         /Protocol/ProtocolAdminInfo
+                                         /ProtocolSites
                                          /ProtocolSite[@ref=$siteID]
-                                         /ProtPerson">
+                                         /ProtPerson[
+                                           not(.=preceding::ProtPerson)]">
+    <xsl:sort                  select = "."/>
     <xsl:apply-templates       select = "."/>
    </xsl:for-each>
   </ProtocolSite>
