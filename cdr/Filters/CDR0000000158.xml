@@ -3,22 +3,35 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Patient Summary QC Report Filter</DocTitle>
-<DocComment>CVS-V1.25:Insertion/Deletion</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.40: Fixed Title Format (Bug 942)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
+<!--
+ ================================================================
+     $Id: CDR0000000158.xml,v 1.41 2004-07-16 17:29:51 venglisc Exp $
+
+     Filter to display Patient Summary QC Reports
+        Written by Volker Englisch, 2004-07-16
+
+     $Log: not supported by cvs2svn $
+ ================================================================ -->
 <xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              version = "1.0"
                            xmlns:cdr = "cips.nci.nih.gov/cdr"
              exclude-result-prefixes = "cdr">
 
- <xsl:include   href = "cdr:name:Module: InLine Markup Formatter"/>
- <xsl:include   href = "cdr:name:Module: Table Formatter"/>
- <xsl:include   href = "cdr:name:Module: STYLE Default"/>  
- <xsl:include   href = "cdr:name:Module: Checkbox Formatter"/>  
-     
  <xsl:output                  method = "html"
                               indent = "no"/>
 
+ <xsl:include   href = "cdr:name:Module: InLine Markup Formatter"/>
+ <xsl:include   href = "cdr:name:Module: Checkbox Formatter"/>  
+ <xsl:include   href = "cdr:name:Module: Table Formatter"/>
+ <xsl:include   href = "cdr:name:Module: STYLE Default"/>  
+ <xsl:include   href = "cdr:name:Module: STYLE QC Summary"/>  
+ <xsl:include   href = "cdr:name:Module: STYLE RS Insertion Deletion"/>  
+     
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
  <!--
  ===================================================================
  Main template
@@ -26,21 +39,29 @@
  <xsl:template                   match = "/">
   <HTML>
    <HEAD>
-    <TITLE>Formats Patient Summary</TITLE>
+    <xsl:variable                 name = "cdrdocs" 
+                                select = "document('cdrx:/*/CdrCtl')"/>
+
+    <TITLE>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+     <xsl:text>: </xsl:text>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/> 
+    </TITLE>
+
     <!-- Modified 7/14/2003  C.Burg  -->
     <STYLE type='text/css'>
      <xsl:call-template           name = "defaultStyle"/>  
-
-     h2 { font style: bold font size: 14pt}
-     h3 { font style: bold font size: 13pt}
-     h4 { font style: bold font size: 12pt}
+     <xsl:call-template           name = "qcSummaryStyle"/>  
+     <xsl:call-template           name = "rsInsertionDeletionStyle"/>  
     </STYLE>
    </HEAD>
 
    <BASEFONT FACE='Arial, Helvetica, sans-serif'/>
-
    <xsl:apply-templates         select = "Summary"/>
-
   </HTML>
  </xsl:template>
 
@@ -119,44 +140,90 @@
      </xsl:if>
     </xsl:template>
 
-<!-- ================================================================== 
-       Display an Insertion 
-     ================================================================== -->
-    <xsl:template              match = "Insertion">
-     <xsl:choose>
-      <xsl:when                 test = "@RevisionLevel = 'proposed'">
-       <font color="FUCHSIA">
-        <xsl:apply-templates/>
-       </font>
-      </xsl:when>
-      <xsl:otherwise>
-       <font color="RED">
-        <xsl:apply-templates/>
-       </font>
-      </xsl:otherwise>
-     </xsl:choose>
-    </xsl:template>
+ <!-- 
+ Note: The insertion/deletion templates for the Redline/Strikeout
+       and the patient summary reports are identical.
+       However, the Bold/Underline report is slightly different.
+ ================================================================== 
+ Display text with Insertion (Citation text is handled separately)
+ ================================================================== -->
+ <xsl:template                   match = "Insertion">
+  <xsl:choose>
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
+    <span class="insertproposed">
+     <xsl:apply-templates/>
+    </span>
+   </xsl:when>
+   <xsl:otherwise> 
+    <span class="insertapproved">
+     <xsl:apply-templates/>
+    </span>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
 
-<!-- ==================================================================
-       Display a Deletion 
-     ================================================================== -->
-    <xsl:template              match = "Deletion">
-     <xsl:choose>
-      <xsl:when                 test = "@RevisionLevel = 'proposed'">
-       <strike>
-        <font color="FUCHSIA">
-         <xsl:apply-templates/>
-        </font>
-       </strike>
-      </xsl:when>
-      <xsl:otherwise>
-       <strike>
-        <xsl:apply-templates/>
-       </strike>
-      </xsl:otherwise>
-     </xsl:choose>
-    </xsl:template>
- 
+ <!-- 
+ ==================================================================
+ Display text proposed for Deletion (Citation text is handled 
+ separately).
+ ================================================================== -->
+ <xsl:template                   match = "Deletion"> 
+  <xsl:choose>
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
+    <span class="deleteproposed">
+     <xsl:apply-templates/>
+    </span>  
+   </xsl:when>
+   <xsl:otherwise>
+    <span class="deleteapproved">
+     <xsl:apply-templates/>
+    </span>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>      
+
+
+ <!-- 
+ ================================================================== 
+ Display an Insertion 
+ =================================================================== -->
+ <xsl:template                   match = "Insertion"
+                                  mode = "compactNo">
+  <xsl:choose>
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
+    <span class="insertproposed">
+     <xsl:apply-templates/>
+    </span>
+   </xsl:when>
+   <xsl:otherwise>
+    <span class="insertapproved">
+     <xsl:apply-templates/>
+    </span>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+         
+ <!-- 
+ ==================================================================
+ Display a Deletion 
+ =================================================================== -->
+ <xsl:template                   match = "Deletion"
+                                  mode = "compactNo">
+  <xsl:choose>
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
+    <span class="deleteproposed">
+     <xsl:apply-templates/>
+    </span>
+   </xsl:when>
+   <xsl:otherwise>
+    <span class="deleteapproved">
+     <xsl:apply-templates/>
+    </span>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
 <!-- ================================================================
        This template deletes data elements not used in the display 
      ================================================================ -->
