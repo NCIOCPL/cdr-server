@@ -1,8 +1,11 @@
 #----------------------------------------------------------------------
 #
-# $Id: BackUpSmallTables.py,v 1.1 2001-05-04 11:57:32 bkline Exp $
+# $Id: BackUpSmallTables.py,v 1.2 2001-12-19 19:59:20 bkline Exp $
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.1  2001/05/04 11:57:32  bkline
+# Initial revision
+#
 #----------------------------------------------------------------------
 import os, sys, time
 
@@ -42,9 +45,12 @@ if os.path.exists(zip):
 # List of tables to be backed up.
 #----------------------------------------------------------------------
 tables = ('action',
+          'active_status',
           'common',
           'ctl',
           'ctl_grp',
+          'dev_task',
+          'dev_task_status',
           'doc_status',
           'doc_type',
           'format',
@@ -52,6 +58,9 @@ tables = ('action',
           'grp_action',
           'grp_usr',
           'id_category',
+          'issue',
+          'issue_priority',
+          'issue_user',
           'link_prop_type',
           'link_properties',
           'link_target',
@@ -59,6 +68,7 @@ tables = ('action',
           'link_xml',
           'query_term_def',
           'query_term_rule',
+          'report_task',
           'usr'
          )
 
