@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSearch.cpp,v 1.5 2001-03-21 02:40:21 bkline Exp $
+ * $Id: CdrSearch.cpp,v 1.6 2001-05-21 20:31:41 bkline Exp $
  *
  * Queries the CDR to create subset list of documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2001/03/21 02:40:21  bkline
+ * Changed attr.name to attr.path and attr.id to attr.doc_id.
+ *
  * Revision 1.4  2001/03/02 13:59:57  bkline
  * Added DocType element to results.
  *
@@ -460,4 +463,265 @@ cdr::String cdr::searchLinks(cdr::Session& session,
     else
         response += L"<QueryResults/></CdrSearchLinksResp>";
     return response;
+}
+
+/**
+ * Returns a list of available query term rules.  Rules cannot be created
+ * through the CDR command interface.  They are inserted by the programmer
+ * implementing the custom software behind the rule.
+ *
+ *  @param      session     contains information about the current user.
+ *  @param      node        contains the XML for the command.
+ *  @param      conn        reference to the connection object for the
+ *                          CDR database.
+ *  @return                 String object containing the XML for the
+ *                          command response.
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::listQueryTermRules(cdr::Session& session, 
+                                    const cdr::dom::Node& node, 
+                                    cdr::db::Connection& conn)
+{
+    // Start with an empty response.
+    cdr::String response;
+
+    // Pull the rows from the query_term_rule table.
+    cdr::db::Statement s = conn.createStatement();
+    cdr::db::ResultSet r = s.executeQuery("   SELECT name            "
+                                          "     FROM query_term_rule "
+                                          " ORDER BY name            ");
+    while (r.next()) {
+        if (response.empty())
+            response = L"<CdrListQueryTermRulesResp>";
+        response += L"<Rule>" + r.getString(1) + L"</Rule>";
+    }
+
+    // Wrap up and send the response
+    if (response.empty())
+        response = L"<CdrListQueryTermRulesResp/>";
+    else
+        response += L"</CdrListQueryTermRulesResp>";
+    return response;
+}
+
+/**
+ * Returns a list of CDR query term definitions.
+ *
+ *  @param      session     contains information about the current user.
+ *  @param      node        contains the XML for the command.
+ *  @param      conn        reference to the connection object for the
+ *                          CDR database.
+ *  @return                 String object containing the XML for the
+ *                          command response.
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::listQueryTermDefs(cdr::Session& session, 
+                                   const cdr::dom::Node& node, 
+                                   cdr::db::Connection& conn)
+{
+    // Start with an empty response.
+    cdr::String response;
+
+    // Create an outer join query, so we pick up definitions without rules.
+    const char* query = "          SELECT qtd.path,              "
+                        "                 qtr.name               "
+                        "            FROM query_term_def qtd     "
+                        " LEFT OUTER JOIN query_term_rule qtr    "
+                        "              ON qtd.term_rule = qtr.id "
+                        "        ORDER BY qtd.path, qtr.name     ";
+    cdr::db::Statement s = conn.createStatement();
+    cdr::db::ResultSet r = s.executeQuery(query);
+
+    // Extract the definitions from the cursor.
+    while (r.next()) {
+        cdr::String path = r.getString(1);
+        cdr::String rule = r.getString(2);
+        if (response.empty())
+            response = L"<CdrListQueryTermDefsResp>";
+        response += L"<Definition><Path>" + path + L"</Path>";
+        if (!rule.isNull())
+            response += L"<Rule>" + rule + L"</Rule>";
+        response += L"</Definition>";
+    }
+
+    // Wrap up and send the response
+    if (response.empty())
+        response = L"<CdrListQueryTermDefsResp/>";
+    else
+        response += L"</CdrListQueryTermDefsResp>";
+    return response;
+}
+
+/**
+ * Adds a new query term definition.
+ *
+ *  @param      session     contains information about the current user.
+ *  @param      node        contains the XML for the command.
+ *  @param      conn        reference to the connection object for the
+ *                          CDR database.
+ *  @return                 String object containing the XML for the
+ *                          command response.
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::addQueryTermDef(cdr::Session& session, 
+                                 const cdr::dom::Node& node, 
+                                 cdr::db::Connection& conn)
+{
+    // Make sure the user is authorized to do this.
+    if (!session.canDo(conn, L"ADD QUERY TERM DEF", L""))
+        throw cdr::Exception(L"User not authorized to add query term "
+                             L"definitions");
+
+    // Extract the definition from the command buffer.
+    cdr::String path;
+    cdr::String rule;
+    cdr::dom::Node child = node.getFirstChild();
+    while (child != 0) {
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String name = child.getNodeName();
+            if (name == L"Path")
+                path = cdr::dom::getTextContent(child);
+            else if (name == L"Rule")
+                rule = cdr::dom::getTextContent(child);
+            else
+                throw cdr::Exception(L"Unexpected element", name);
+        }
+        child = child.getNextSibling();
+    }
+
+    // Check for required elements.
+    if (path.empty())
+        throw cdr::Exception(L"Missing required Path element");
+
+    // If there's a rule specified, find its primary key.
+    cdr::Int ruleId(true);
+    if (!rule.empty()) {
+        const char* q = " SELECT id              "
+                        "   FROM query_term_rule "
+                        "  WHERE name = ?        ";
+        cdr::db::PreparedStatement ps = conn.prepareStatement(q);
+        ps.setString(1, rule);
+        cdr::db::ResultSet         rs = ps.executeQuery();
+        if (!rs.next())
+            throw cdr::Exception(L"Unknown query term rule", rule);
+        ruleId = rs.getInt(1);
+        ps.close();
+    }
+
+    // Make sure this isn't a duplicate definition.
+    const char* q1;
+    if (rule.empty())
+        q1 = " SELECT COUNT(*)          "
+             "   FROM query_term_def    "
+             "  WHERE path = ?          "
+             "    AND term_rule IS NULL ";
+    else
+        q1 = " SELECT COUNT(*)          "
+             "   FROM query_term_def    "
+             "  WHERE path      = ?     "
+             "    AND term_rule = ?     ";
+    cdr::db::PreparedStatement s1 = conn.prepareStatement(q1);
+    s1.setString(1, path);
+    if (!ruleId.isNull())
+        s1.setInt(2, ruleId);
+    cdr::db::ResultSet r1 = s1.executeQuery();
+    if (!r1.next())
+        throw cdr::Exception(L"Failure checking for "
+                             L"duplicate query term definition");
+    int matchingRows = r1.getInt(1);
+    if (matchingRows > 0)
+        throw cdr::Exception(L"Duplicate query term definition");
+    s1.close();
+
+    // Pop in the new definition.
+    const char* q2 = " INSERT INTO query_term_def (path, term_rule) "
+                     "      VALUES (?, ?)                           ";
+    cdr::db::PreparedStatement s2 = conn.prepareStatement(q2);
+    s2.setString(1, path);
+    s2.setInt(2, ruleId);
+    if (s2.executeUpdate() != 1)
+        throw cdr::Exception(L"Failure inserting query term definition");
+
+    // Report success.
+    return L"<CdrAddQueryTermDef/>";
+}
+
+/**
+ * Deletes an existing query term definition.  There is no command for
+ * modifying an existing query term definition.  Instead a command is issued
+ * to delete a definition by identifying its path and rule (if present) and
+ * then a second command to add the new definition is submitted.
+ *
+ *  @param      session     contains information about the current user.
+ *  @param      node        contains the XML for the command.
+ *  @param      conn        reference to the connection object for the
+ *                          CDR database.
+ *  @return                 String object containing the XML for the
+ *                          command response.
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::delQueryTermDef(cdr::Session& session, 
+                                 const cdr::dom::Node& node, 
+                                 cdr::db::Connection& conn)
+{
+    // Make sure the user is authorized to do this.
+    if (!session.canDo(conn, L"DELETE QUERY TERM DEF", L""))
+        throw cdr::Exception(L"User not authorized to delete query term "
+                             L"definitions");
+
+    // Extract the definition from the command buffer.
+    cdr::String path;
+    cdr::String rule;
+    cdr::dom::Node child = node.getFirstChild();
+    while (child != 0) {
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String name = child.getNodeName();
+            if (name == L"Path")
+                path = cdr::dom::getTextContent(child);
+            else if (name == L"Rule")
+                rule = cdr::dom::getTextContent(child);
+            else
+                throw cdr::Exception(L"Unexpected element", name);
+        }
+        child = child.getNextSibling();
+    }
+
+    // Check for required elements.
+    if (path.empty())
+        throw cdr::Exception(L"Missing required Path element");
+
+    // If there's a rule specified, find its primary key.
+    cdr::Int ruleId(true);
+    if (!rule.empty()) {
+        const char* q = " SELECT id              "
+                        "   FROM query_term_rule "
+                        "  WHERE name = ?        ";
+        cdr::db::PreparedStatement ps = conn.prepareStatement(q);
+        ps.setString(1, rule);
+        cdr::db::ResultSet         rs = ps.executeQuery();
+        if (!rs.next())
+            throw cdr::Exception(L"Unknown query term rule", rule);
+        ruleId = rs.getInt(1);
+        ps.close();
+    }
+
+    // Delete the definition.
+    const char* q;
+    if (ruleId.isNull())
+        q = " DELETE query_term_def    "
+            "  WHERE path      = ?     "
+            "    AND term_rule IS NULL ";
+    else
+        q = " DELETE query_term_def  "
+            "  WHERE path      = ?   "
+            "    AND term_rule = ?   ";
+    cdr::db::PreparedStatement s = conn.prepareStatement(q);
+    s.setString(1, path);
+    if (!ruleId.isNull())
+        s.setInt(2, ruleId);
+    if (s.executeUpdate() != 1)
+        throw cdr::Exception(L"Query term definition not found");
+
+    // Report success.
+    return L"<CdrDelQueryTermDef/>";
 }

@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.18 2001-05-17 17:39:09 ameyer Exp $
+ * $Id: CdrCommand.h,v 1.19 2001-05-21 20:29:31 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2001/05/17 17:39:09  ameyer
+ * Add link administration transaction handlers.
+ *
  * Revision 1.17  2001/04/13 12:19:16  bkline
  * Added listActions(), getAction(), addAction(), repAction(), and
  * delAction().
@@ -456,6 +459,72 @@ namespace cdr {
     extern String search     (Session&          session,
                               const dom::Node&  node,
                               db::Connection&   conn);
+
+    /**
+     * Returns a list of available query term rules.  Rules cannot be created
+     * through the CDR command interface.  They are inserted by the programmer
+     * implementing the custom software behind the rule.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String listQueryTermRules(Session&          session,
+                                     const dom::Node&  node,
+                                     db::Connection&   conn);
+
+    /**
+     * Returns a list of CDR query term definitions.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String listQueryTermDefs(Session&          session,
+                                    const dom::Node&  node,
+                                    db::Connection&   conn);
+
+    /**
+     * Adds a new query term definition.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String addQueryTermDef(Session&          session,
+                                  const dom::Node&  node,
+                                  db::Connection&   conn);
+
+    /**
+     * Deletes an existing query term definition.  There is no command for
+     * modifying an existing query term definition.  Instead a command is
+     * issued to delete a definition by identifying its path and rule (if
+     * present) and then a second command to add the new definition is
+     * submitted.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String delQueryTermDef(Session&          session,
+                                  const dom::Node&  node,
+                                  db::Connection&   conn);
 
     /**
      * Retrieves a list of potential link targets for a specified combination
