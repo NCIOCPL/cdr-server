@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.31 2002-03-06 21:55:11 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.32 2002-03-26 23:13:51 ameyer Exp $
  *
  */
 
@@ -46,6 +46,10 @@ static void addSingleQueryTerm (cdr::db::Connection&, int, cdr::String&,
 static void delQueryTerms (cdr::db::Connection&, int);
 
 static cdr::String createFragIdTransform (cdr::db::Connection&, int);
+
+// String constants used as substitute titles
+#define MALFORMED_DOC_TITLE L"!Malformed document - no title can be generated"
+#define NO_TITLE_AVAILABLE  L"!No title available for this document"
 
 // Constructor for a CdrDoc
 // Extracts the various elements from the CdrDoc for database update
@@ -1097,7 +1101,7 @@ void cdr::CdrDoc::createTitle()
     if (Title.size() == 0) {
         errList.push_back (
             L"No title available for document, using default error title");
-        Title = L"!No title available for this document";
+        Title = NO_TITLE_AVAILABLE;
     }
 }
 
@@ -1116,7 +1120,13 @@ void cdr::CdrDoc::malFormed()
 
     // Title derives from the document, but we can't derive a title
     //   from a malformed document.
-    Title = L"Malformed document - no title can be generated";
+    // If there is a title, leave it alone, else see if there's a filter
+    if (Title.size() == 0) {
+        if (titleFilterId == 0)
+            Title = NO_TITLE_AVAILABLE;
+        else
+            Title = MALFORMED_DOC_TITLE;
+    }
 }
 
 
