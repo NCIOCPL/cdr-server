@@ -1,9 +1,12 @@
 /*
- * $Id: CdrGetDoc.h,v 1.11 2002-07-03 12:55:59 bkline Exp $
+ * $Id: CdrGetDoc.h,v 1.12 2004-11-05 05:56:08 ameyer Exp $
  *
  * Internal support functions for CDR document retrieval.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2002/07/03 12:55:59  bkline
+ * Added code to get first publication info.
+ *
  * Revision 1.10  2002/06/28 20:40:44  ameyer
  * Made docVer parameter constant on call to getDocString()
  *
@@ -60,13 +63,17 @@ namespace cdr {
      *                      database.
      *  @param  usecdata    if true, document is returned as CDATA.
      *  @param  denormalize if true, link denormalization filter is applied.
+     *  @param  getXml      if true, fetch xml, else not.
+     *  @param  getBlob     if true, fetch blob in base64, else not.
      *  @return             wide-character String object containing XML
      *                      for the document.
      */
     extern cdr::String getDocString(const cdr::String&   docId,
                                     cdr::db::Connection& conn,
                                     bool usecdata = true,
-                                    bool denormalize = true);
+                                    bool denormalize = true,
+                                    bool getXml = true,
+                                    bool getBlob = true);
 
     /**
      * Overloaded version of getDocString which pulls a previous version
@@ -80,6 +87,8 @@ namespace cdr {
      *                      database.
      *  @param  verDoc      ptr to struct filled out by version control.
      *  @param  usecdata    if true, document is returned as CDATA.
+     *  @param  getXml      if true, fetch xml, else not.
+     *  @param  getBlob     if true, fetch blob in base64, else not.
      *  @param  denormalize if true, link denormalization filter is applied.
      *  @return             wide-character String object containing XML
      *                      for the document.
@@ -88,7 +97,9 @@ namespace cdr {
                                     cdr::db::Connection&  conn,
                                     const struct cdr::CdrVerDoc *verDoc,
                                     bool usecdata = true,
-                                    bool denormalize = true);
+                                    bool denormalize = true,
+                                    bool getXml = true,
+                                    bool getBlob = true);
 
     /**
      * Overloaded version of getDocString which pulls a previous version
@@ -103,6 +114,8 @@ namespace cdr {
      *  @param  version     version number
      *  @param  usecdata    if true, document is returned as CDATA.
      *  @param  denormalize if true, link denormalization filter is applied.
+     *  @param  getXml      if true, fetch xml, else not.
+     *  @param  getBlob     if true, fetch blob in base64, else not.
      *  @return             wide-character String object containing XML
      *                      for the document.
      */
@@ -110,7 +123,9 @@ namespace cdr {
                                     cdr::db::Connection&  conn,
                                     int version,
                                     bool usecdata = true,
-                                    bool denormalize = true);
+                                    bool denormalize = true,
+                                    bool getXml = true,
+                                    bool getBlob = true);
 
     /**@#-*/
 
