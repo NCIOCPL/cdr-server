@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.100 2005-01-22 16:04:15 bkline Exp $
+ * $Id: tables.sql,v 1.101 2005-01-22 16:46:11 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.100  2005/01/22 16:04:15  bkline
+ * Added ctgov_export table.
+ *
  * Revision 1.99  2004/11/02 22:42:20  ameyer
  * Changes for new blob handling.
  *
@@ -2089,15 +2092,18 @@ GO
  *
  *           id  primary key for table
  *           dt  datetime job was run
+ *       source  link to import_source table
+ *       status  'Started', 'In progress', 'Failure', 'Success'
  */
 CREATE TABLE import_job
-         (id INTEGER  IDENTITY PRIMARY KEY,
-          dt DATETIME NOT NULL,
-      source INTEGER  NOT NULL REFERENCES import_source)
+         (id INTEGER     IDENTITY PRIMARY KEY,
+          dt DATETIME    NOT NULL,
+      source INTEGER     NOT NULL REFERENCES import_source,
+      status VARCHAR(20) NOT NULL)
 GO
 CREATE INDEX import_job_dt ON import_job(dt)
 GO
-CREATE INDEX import_job_source ON import_job(source, dt)
+CREATE INDEX import_job_source ON import_job(source, status, dt)
 GO
 
 /*
