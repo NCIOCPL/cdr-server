@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.46 2004-05-14 02:20:54 ameyer Exp $
+ * $Id: CdrFilter.cpp,v 1.47 2005-03-04 02:53:39 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.46  2004/05/14 02:20:54  ameyer
+ * Added cdrutil protocol callback for function denormalizeTerm.
+ *
  * Revision 1.45  2004/04/30 01:35:03  ameyer
  * Added code, normally dormant, for timing filter execution by filter id.
  *
@@ -315,7 +318,11 @@ namespace
                                             //type != CdrFilterType));
                                             false));
 
-    cdr::dom::Parser parser;
+    // Force this parser to release its DOM tree when it goes out of scope
+    // We could accumulate hundreds of these trees if we don't do this
+    //   and we don't need them to hang around after getDocument returns
+    cdr::dom::Parser parser(false);
+
     parser.parse(docstring);
     cdr::dom::Document doc = parser.getDocument();
     for (cdr::dom::Node node = doc.getFirstChild().getFirstChild();
