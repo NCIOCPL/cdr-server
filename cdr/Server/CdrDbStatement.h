@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbStatement.h,v 1.6 2000-05-03 15:40:45 bkline Exp $
+ * $Id: CdrDbStatement.h,v 1.7 2000-05-03 23:50:42 bkline Exp $
  *
  * Wrapper for ODBC HSTMT.  Modeled after JDBC interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/05/03 15:40:45  bkline
+ * Fixed creation of db Statements.
+ *
  * Revision 1.5  2000/04/22 18:57:38  bkline
  * Added ccdoc comment markers for namespaces and @pkg directives.
  *
@@ -58,13 +61,23 @@ namespace cdr {
             friend Connection;
 
          public:
+
+            /**
+             * Releases the statement handle after all copies of the object
+             * have been destroyed.
+             */
             virtual ~Statement();
 
             /**
              * Submits a query to the CDR database, and returns a
              * ResultSet object for retrieving rows, if any.
+             *
+             *  @param  q       address of null-terminated string containing
+             *                  the SQL query to be executed.
+             *  @return         object from which query results can be 
+             *                  retrieved.
              */
-            ResultSet       executeQuery(const char*);
+            ResultSet       executeQuery(const char* q);
 
             /**
              * Closes any open cursors associated with the query,
@@ -73,23 +86,74 @@ namespace cdr {
             virtual void    close();
 
             /**
-             * Copy constructor.
+             * Copy constructor.  Uses reference counting to prevent premature
+             * release of the statement handle.
+             *
+             *  @param  st      reference to the object to be copied.
              */
-            Statement(const Statement&);
+            Statement(const Statement& st);
 
          protected:
 
-            Statement(Connection&);
+            /**
+             * Creates a new <code>Statement</code> object using an open CDR
+             * database connection.  Can only be invoked by the
+             * <code>Connection</code> class or by the derived
+             * <code>PreparedStatement</code> class.
+             *
+             *  @param  c           reference to the open CDR database 
+             *                      connection object.
+             */
+            Statement(Connection& c);
+
+            /**
+             * Reference to the object representing the open CDR database
+             * connection.
+             */
             Connection& conn;
+
+            /**
+             * ODBC statement handle.
+             */
             HSTMT       hstmt;
-            cdr::String getErrorMessage(SQLRETURN);
+
+            /**
+             * Constructs a string containing the concatenation of all ODBC
+             * driver and database errors.
+             *
+             *  @param  rc          result code from last ODBC call.
+             */
+            cdr::String getErrorMessage(SQLRETURN rc);
+
+            /**
+             * Reference count used to prevent premature release of statement
+             * resources.  Only the <code>refCount</code> field of the
+             * original object is used.
+             *
+             *  @see pRefCount
+             */
             int         refCount;
+
+            /**
+             * Address of the <code>refCount</code> field of the original copy
+             * of the object.  This address is shared by all copies.
+             */
             int*        pRefCount;
+
+            /**
+             * Closes the ODBC statement, allowing it to be re-used.
+             */
             void        closeStatement();
 
         private:
 
-            Statement& operator=(const Statement&);     // Block this.
+            /**
+             * Unimplemented (blocked) assignment operator.
+             *
+             *  @param  st      reference to object to be copied.
+             *  @return         reference to modified object.
+             */
+            Statement& operator=(const Statement& st);
         };
     }
 }
