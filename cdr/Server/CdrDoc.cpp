@@ -5,9 +5,12 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.2 2000-05-21 00:50:14 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.3 2000-06-02 20:55:05 bkline Exp $
  *
  */
+
+// Eliminate annoying MS warnings about MS problems.
+#pragma warning(disable : 4786)
 
 #include "CdrSession.h"
 #include "CdrDom.h"
@@ -16,12 +19,12 @@
 #include "CdrDbConnection.h"
 #include "CdrCommand.h"
 #include "CdrDbPreparedStatement.h"
+#include "CdrDbStatement.h"
 #include "CdrDbResultSet.h"
 #include "CdrDoc.h"
 
 static cdr::String CdrPutDoc (cdr::Session& session,
    const cdr::dom::Node& cmdNode, cdr::db::Connection& dbConn, bool newrec);
-
 
 // Constructor for a CdrDoc
 // Extracts the various elements from the CdrDoc for database update
@@ -376,6 +379,9 @@ static cdr::String CdrPutDoc (
     if (!newrec)
         doc.Store ();
 
+    // Add support for queries.
+    doc.updateQueryTerms();
+
     // Check-in to version control if requested
     if (cmdCheckIn == L"Y") {
         // XXXX - VERSION CONTROL
@@ -387,14 +393,92 @@ static cdr::String CdrPutDoc (
     // XXXX - Append audit info
 
     // If we got here okay commit all updates
+    dbConn.commit();
     dbConn.setAutoCommit (true);
 
     // Return string with errors, etc.
     // XXXX - FIX THIS
     cdr::String rtag = newrec ? L"Add" : L"Rep";
-    cdr::String resp = cdr::String (L"<Cdr") + rtag + L"DocResp>"
-                     + L"<DocId>" + doc.getTextId() + L"</DocId>"
-                     + L"</Cdr" + rtag + L"DocResp>";
+    cdr::String resp = cdr::String (L"  <Cdr") + rtag + L"DocResp>"
+                     + L"   <DocId>" + doc.getTextId() + L"</DocId>\n"
+                     + L"  </Cdr" + rtag + L"DocResp>\n";
     return resp;
 
 } // CdrPutDoc
+
+/**
+ * Replaces the rows in the query_term table for the current document.
+ */
+void cdr::CdrDoc::updateQueryTerms()
+{
+    // Step 0: sanity check.
+    if (Id == 0 || DocType == 0)
+        return;
+
+    // Step 1: clear out the existing rows.
+    cdr::db::Statement delStmt = docDbConn.createStatement();
+    char delQuery[80];
+    sprintf(delQuery, "DELETE query_term WHERE doc_id = %d", Id);
+    delStmt.executeUpdate(delQuery);
+
+    // Step 2: find out which paths get indexed.
+    cdr::db::Statement selStmt = docDbConn.createStatement();
+    char selQuery[256];
+    sprintf(selQuery, "SELECT path"
+                      "  FROM query_term_def"
+                      " WHERE path LIKE '/%s/%%'",
+                      TextDocType.toUtf8().c_str());
+    cdr::db::ResultSet rs = selStmt.executeQuery(selQuery);
+    StringSet paths;
+    while (rs.next()) {
+        cdr::String path = rs.getString(1);
+        if (paths.find(path) == paths.end()) {
+            paths.insert(path);
+        }
+    }
+    
+    // Step 3: add rows for query terms.
+    if (!paths.empty()) {
+        cdr::dom::Parser parser;
+        parser.parse(Xml);
+        cdr::dom::Node node = parser.getDocument().getDocumentElement();
+        addQueryTerms(cdr::String("/") + node.getNodeName(), node, paths);
+    }
+}
+
+/**
+ * Adds a row to the query_term table for the current node if appropriate,
+ * and recursively does the same for all sub-elements.
+ *
+ *  @param  path        reference to string representing path for current
+ *                      node; e.g., "/Person/PersonStatus".
+ *  @param  node        reference to current node of document's DOM tree.
+ *  @param  paths       reference to set of paths to be indexed.
+ */
+void cdr::CdrDoc::addQueryTerms(const cdr::String& path,
+                                const cdr::dom::Node& node,
+                                const StringSet& paths)
+{
+    // Step 1: add a row to the query_term table if appropriate.
+    if (paths.find(path) != paths.end()) {
+        cdr::String value = cdr::dom::getTextContent(node);
+        const char* insert = "INSERT INTO query_term(doc_id, path, value)"
+                             "     VALUES(?,?,?)";
+        cdr::db::PreparedStatement stmt = docDbConn.prepareStatement(insert);
+        stmt.setInt(1, Id);
+        stmt.setString(2, path);
+        stmt.setString(3, value);
+        stmt.executeQuery();
+    }
+
+    // Step 2: recursively add terms for sub-elements.
+    cdr::dom::Node child = node.getFirstChild();
+    while (child != 0) {
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            addQueryTerms(path + "/" + child.getNodeName(),
+                          child,
+                          paths);
+        }
+        child = child.getNextSibling();
+    }
+}
