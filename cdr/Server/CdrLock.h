@@ -1,10 +1,23 @@
 /*
- * $Id: CdrLock.h,v 1.1 2001-11-28 20:04:31 bkline Exp $
+ * $Id: CdrLock.h,v 1.2 2001-12-13 20:24:26 bkline Exp $
  *
  * Class for mutex acquisition to take advantage of automatic release
  * when stack frame exits.
  *
+ * Usage example:
+ *
+ *     HANDLE mutex = CreateMutex(0, false, "CdrActiveConnectionsMutex");
+ *     if (mutex != 0) {
+ *         // Wait 5 seconds.
+ *         cdr::Lock lock(mutex, 5000);
+ *         if (lock.m) {
+ *             ++activeConnections;
+ *         }
+ *     }
+ *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2001/11/28 20:04:31  bkline
+ * Initial revision
  */
 
 #ifndef _CDR_LOCK_H_
@@ -12,7 +25,12 @@
 
 #include <windows.h>
 
+/**@#-*/
+
 namespace cdr {
+
+/**@#+*/
+
     struct Lock {
         HANDLE m;
         Lock(HANDLE mutex, DWORD usecs) : m(0) {
