@@ -1,0 +1,273 @@
+<?xml version="1.0"?>
+  <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                 version="1.0"
+                 xmlns:cdr="cips.nci.nih.gov/cdr">
+  
+   <xsl:output method="html"/>
+   <xsl:template match="/">
+  <!--Filter written by C.Burg - 7-27-2001 -->
+  <!-- This program is a filter to display a PDQ citation
+       in the health professional summary-->
+        
+   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+    <HTML>
+    <HEAD>
+    <TITLE>Formats PDQ Citation in Professional Summary </TITLE>
+
+   <!--Inline sytle sheet to display H2 and H4 headers in Navy 
+     <STYLE>
+       H2,H4 {color: Navy}
+     </STYLE>-->
+     <!--
+     <LINK REL='stylesheet' 
+           HREF='/stylesheets/protocol2.css' 
+           TYPE='text/css' /> -->
+    </HEAD>
+    <!-- <BASEFONT FACE='Arial, Helvetica, sans-serif' /> -->
+    <xsl:apply-templates select="Citation"/>
+    </HTML>
+   </xsl:template>
+
+<!-- Display PDQ citation reference -->
+
+
+<xsl:template match="Citation">
+ <BODY>
+<!--test to determine if PDQ citation -->
+<xsl:if test="PDQCitation">
+<!-- Display header and include trademark symbol-->
+<h2>PDQ&#xAE; Citation</h2>
+<table>
+<tr align="left" valign="top">
+<td><b></b></td>
+<td width="24"></td>
+<td></td>
+</tr>
+<!-- Display author list -->
+
+<tr align="left" valign="top">
+<td><b>AUTHOR:</b></td>
+<td width="24"></td>
+<td>
+<xsl:for-each select="PDQCitation/AuthorList/Author/PersonalName">
+<xsl:value-of select="concat(LastName,' ',FirstName)"/>
+<xsl:if test="position() !=last()">, </xsl:if>
+</xsl:for-each>
+</td>
+</tr>
+<!-- Display citation title and pubication details -->
+<tr align="left" valign="top">
+<td><b>TITLE:</b></td>
+<td width="24"></td>
+<td>
+<xsl:for-each select="PDQCitation/CitationTitle">
+<xsl:value-of select="."/>. 
+</xsl:for-each>
+<xsl:for-each select="PDQCitation/PublicationDetails">
+<xsl:choose>
+<xsl:when test="contains(PublishedIn/@cdr:ref,'CDR')">
+<xsl:variable name="RefID" select="PublishedIn/@cdr:ref"/>
+<xsl:variable name="RefInfo" select="document(concat('cdr:',$RefID))"/>
+<xsl:value-of select="$RefInfo/Citation/PDQCitation/CitationTitle"/>.
+<xsl:text> </xsl:text>
+<xsl:value-of select="$RefInfo/Citation/PDQCitation/PublicationDetails/OtherPublicationInformation"/>,
+<xsl:text> </xsl:text>
+</xsl:when>
+</xsl:choose>
+<xsl:value-of select="OtherPublicationInformation"/>.
+</xsl:for-each>
+</td>
+</tr> 
+<!-- Display citation type -->
+<tr align="left" valign="top">
+<td><b>PUBLICATION&#xa0;TYPE:</b></td>
+<td width="24"></td>
+<td>
+<xsl:for-each select="PDQCitation/CitationType">
+<xsl:value-of select="."/>
+</xsl:for-each>
+</td>
+</tr>
+<!-- Display abstract if available or message indicating an abstract
+      is not available -->
+<tr align="left" valign="top">
+<td><b>ABSTRACT:</b></td>
+<td width="24"></td>
+<td>
+<xsl:for-each select="PDQCitation">
+<xsl:choose>
+<xsl:when test="Abstract">
+<xsl:value-of select="."/>
+</xsl:when>
+<xsl:otherwise>
+<xsl:text>No abstract presently available</xsl:text>
+</xsl:otherwise>
+</xsl:choose>
+</xsl:for-each>
+</td>
+</tr>
+</table>
+</xsl:if>
+<!-- Test to determine if Pubmed citation -->
+<xsl:if test="PubmedArticle">
+<h2>CANCERLIT&#xAE; Citation</h2>
+<table>
+<tr align="left" valign="top">
+<td><b></b></td>
+<td width="24"></td>
+<td></td>
+</tr>
+<!-- Display authors and limit to 3 and add et al. -->
+<tr align="left" valign="top">
+<td><b>AUTHOR:</b></td>
+<td width="24"></td>
+<td>
+<xsl:for-each select="PubmedArticle/MedlineCitation/Article/AuthorList/Author">
+<xsl:if test="position() &lt; 4">
+<xsl:value-of select="concat(LastName,' ',Initials)"/>
+<xsl:if test="position()!=last()">, </xsl:if>
+</xsl:if>
+</xsl:for-each>
+<xsl:text> et al. </xsl:text>
+</td>
+</tr>
+<!--Display the article title -->
+
+<tr align="left" valign="top">
+<td><b>TITLE:</b></td>
+<td width="24"></td>
+<td>
+<xsl:for-each select="PubmedArticle/MedlineCitation/Article">
+<xsl:value-of select="ArticleTitle"/>
+</xsl:for-each>
+</td>
+</tr> 
+<!-- Display the information about the source of the article -->
+
+<tr align="left" valign="top">
+<td><b>SOURCE:</b></td>
+<td width="24"></td>
+<td>
+<xsl:for-each select="PubmedArticle/MedlineCitation">
+<xsl:value-of select="MedlineJournalInfo/MedlineTA"/>
+</xsl:for-each>
+<xsl:text> </xsl:text>
+<xsl:for-each select="PubmedArticle/MedlineCitation/Article/Journal/JournalIssue">
+<xsl:value-of select="concat(Volume,'(',Issue,')',': ')"/>
+</xsl:for-each>
+<xsl:for-each select="PubmedArticle/MedlineCitation/Article/Pagination">
+ <xsl:value-of select="concat(MedlinePgn,', ')"/>
+</xsl:for-each>
+
+<xsl:for-each select="PubmedArticle/PubmedData/History/PubMedPubDate[1]">
+<xsl:value-of select="Year"/>
+<xsl:text>   </xsl:text>
+</xsl:for-each>
+
+<xsl:for-each select="PubmedArticle/MedlineCitation">
+<xsl:value-of select="concat('   UI: ',MedlineID)"/>
+</xsl:for-each>
+</td>
+</tr>
+<!-- Display the abstract text if available -->
+<tr align="left" valign="top">
+<td><b>ABSTRACT:</b></td>
+<td width="24"></td>
+<td>
+<xsl:for-each select="PubmedArticle/MedlineCitation/Article/Abstract">
+<xsl:choose>
+<xsl:when test="AbstractText">
+<xsl:value-of select="AbstractText"/>
+</xsl:when>
+<xsl:otherwise>
+<xsl:text>No abstract presently available</xsl:text>
+</xsl:otherwise>
+</xsl:choose>
+</xsl:for-each>
+</td>
+</tr>
+<!--Display the Mesh headings -->
+<tr align="left" valign="top">
+<td><b>MESH&#xa0;TERMS:</b></td>
+<td width="24"></td>
+<td>
+<xsl:for-each 
+select="PubmedArticle/MedlineCitation/MeshHeadingList/MeshHeading">
+<xsl:value-of select="."/><br />
+</xsl:for-each>
+</td>
+</tr>
+<!--Display the language and convert lower to upper case -->
+
+<tr align="left" valign="top">
+<td><b>LANGUAGE:</b></td>
+<td width="24"></td>
+<td>
+<xsl:for-each select="PubmedArticle/MedlineCitation/Article">
+<xsl:variable name="lang" select="Language"/>
+<xsl:value-of select="translate($lang,'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
+</xsl:for-each>
+</td>
+</tr>
+<!-- Display the publication type -->
+
+<tr align="left" valign="top">
+<td><b><xsl:text>PUBLICATION&#xa0;TYPE:</xsl:text></b></td>
+<td width="30"></td>
+<td>
+<xsl:for-each select="PubmedArticle/MedlineCitation/Article/PublicationTypeList">
+<xsl:variable name="pubtype" select="PublicationType"/>
+<xsl:value-of select="translate($pubtype,'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
+</xsl:for-each>
+</td>
+</tr>
+
+<!--Display title abbreviation -->
+
+<tr align="left" valign="top">
+<td><b>TITLE&#xa0;ABBREVIATION:</b></td>
+<td width="30"></td>
+<td>
+<xsl:for-each select="PubmedArticle/MedlineCitation/MedlineJournalInfo/MedlineTA">
+<xsl:value-of select="."/>
+</xsl:for-each>
+</td>
+</tr>
+<!-- Display the publication year -->
+<tr align="left" valign="top">
+<td><b>YEAR:</b></td>
+<td width="24"></td>
+<td>
+
+<xsl:for-each select="PubmedArticle/PubmedData/History/PubMedPubDate[1]">
+<xsl:value-of select="Year"/>
+</xsl:for-each>
+</td>
+</tr>
+<!-- Display the affiliation information which includes address -->
+<xsl:if test="PubmedArticle/MedlineCitation/Article/Affiliation">
+<tr align="left" valign="top">
+<td><b>ADDRESS:</b></td>
+<td width="24"></td>
+<td>
+<xsl:for-each select="PubmedArticle/MedlineCitation/Article/Affiliation">
+<xsl:value-of select="."/>
+</xsl:for-each>
+</td>
+</tr>
+</xsl:if>
+<!-- Display entry year and month -->
+<tr align="left" valign="top">
+<td><b>ENTRY&#xa0;MONTH:</b></td>
+<td width="24"></td>
+<td>
+<xsl:for-each select="PubmedArticle/MedlineCitation/DateCompleted">
+<xsl:value-of select="concat(Year,Month)"/>
+</xsl:for-each>
+</td>
+</tr>
+</table>
+</xsl:if>
+ </BODY>
+</xsl:template>
+  </xsl:transform>

@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+ <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                version="1.0"
+                xmlns:cdr="cips.nci.nih.gov/cdr">
+  <xsl:output method="html"/>
+
+  <xsl:template match="/">
+   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+   <HTML>
+    <HEAD> <!-- LINE 10 -->
+     <TITLE>@@DOCID@@</TITLE>
+     <!-- META HTTP-EQUIV="Pragma" CONTENT="no-cache" / -->
+     <LINK REL='stylesheet' 
+           HREF='/stylesheets/term.css' 
+           TYPE='text/css' />
+    </HEAD>
+    <BASEFONT FACE='Arial, Helvetica, sans-serif' />
+    <xsl:apply-templates select="Citation"/>
+   </HTML>
+  </xsl:template> <!-- LINE 20 -->
+
+  <xsl:template match='Citation'>
+   <BODY>
+    <HR />
+    <H1>Citation Document @@DOCID@@</H1>
+    <HR />
+    <xsl:apply-templates select="PubmedArticle|PubMedArticle|PDQCitation"/>
+   </BODY>
+  </xsl:template>
+
+  <xsl:template match="PubmedArticle|PubMedArticle">
+    <H2><xsl:value-of select="MedlineCitation/Article/ArticleTitle"/></H2>
+    <TABLE>
+     <xsl:for-each select="MedlineCitation/Article/ArticleTitle">
+      <TR>
+       <TH ALIGN='right' NOWRAP='1'>Article Title:</TH>
+       <TD><xsl:value-of select="."/></TD>
+      </TR>
+     </xsl:for-each>
+     <xsl:for-each select="MedlineCitation/MedlineJournalInformation/MedlineTA">
+      <TR>
+       <TH ALIGN='right' NOWRAP='1'>Published In:</TH>
+       <TD><xsl:value-of select="."/></TD>
+      </TR>
+     </xsl:for-each>
+     <xsl:for-each select="PubMedData/History/PubMedPubDate/Year">
+      <TR>
+       <TH ALIGN='right' NOWRAP='1'>Publication Year:</TH>
+       <TD><xsl:value-of select="."/></TD>
+      </TR>
+     </xsl:for-each>
+     <xsl:for-each select="MedlineCitation/Article/Journal/JournalIssue/Volume">
+      <TR>
+       <TH ALIGN='right' NOWRAP='1'>Volume:</TH>
+       <TD><xsl:value-of select="."/></TD>
+      </TR>
+     </xsl:for-each>
+     <xsl:for-each select="MedlineCitation/Article/Journal/JournalIssue/Issue">
+      <TR>
+       <TH ALIGN='right' NOWRAP='1'>Issue:</TH>
+       <TD><xsl:value-of select="."/></TD>
+      </TR>
+     </xsl:for-each>
+    </TABLE>
+  </xsl:template>
+
+  <xsl:template match="PDQCitation">
+    <H2><xsl:value-of select="CitationTitle"/></H2>
+    <TABLE>
+     <xsl:for-each select="CitationTitle">
+      <TR>
+       <TH ALIGN='right' NOWRAP='1'>Citation Title:</TH>
+       <TD><xsl:value-of select="."/></TD>
+      </TR>
+     </xsl:for-each>
+     <xsl:for-each select="PublicationDetails/PublishedIn">
+      <TR>
+       <TH ALIGN='right' NOWRAP='1'>Published In:</TH>
+       <TD><xsl:value-of select="."/></TD>
+      </TR>
+     </xsl:for-each>
+     <xsl:for-each select="PublicationDetails/PublicationYear">
+      <TR>
+       <TH ALIGN='right' NOWRAP='1'>Publication Year:</TH>
+       <TD><xsl:value-of select="."/></TD>
+      </TR>
+     </xsl:for-each>
+    </TABLE>
+  </xsl:template>
+
+ </xsl:transform>

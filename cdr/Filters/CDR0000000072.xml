@@ -1,0 +1,171 @@
+<?xml version="1.0"?>
+
+<xsl:transform       xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                     xmlns:cdr = "cips.nci.nih.gov/cdr"
+                       version = "1.0">
+
+ <!-- Passed in by the caller -->
+ <xsl:param               name = "fragId"/>
+
+ <!-- Start at the top.  We only want PrivatePractice and
+      OtherPracticeLocation elements. 
+   -->
+ <xsl:template           match = "/">
+  <ReportBody>
+   <xsl:apply-templates select = "//PrivatePractice[@cdr:id = $fragId]"/>
+   <xsl:apply-templates select = "//OtherPracticeLocation[@cdr:id = $fragId]"/>
+  </ReportBody>
+ </xsl:template>
+
+ <!-- Identity rule, copies everything to the output tree. -->
+ <xsl:template           match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates select = "@*|node()"/>
+  </xsl:copy>
+ </xsl:template>
+
+ <!-- Extract the address information for the PrivatePractice element -->
+ <xsl:template           match = "PrivatePractice">
+  <!--<xsl:copy>-->
+   <xsl:apply-templates  select = "node()"/>
+  <!--</xsl:copy>-->
+ </xsl:template>
+
+ <!-- Extract the address information for the OtherPracticeLocation element -->
+ <xsl:template           match = "OtherPracticeLocation">
+  <xsl:variable           name = "fragRef"
+                        select = "OrganizationLocation/@cdr:ref"/>
+  <xsl:variable           name = "orgDoc"
+                        select = "document(concat('cdrx:', $fragRef))"/>
+  <xsl:if                 test = "$orgDoc and @cdr:id">
+   <xsl:variable          name = "orgName"
+                        select = "$orgDoc//OfficialName/Name"/>
+   <xsl:variable          name = "fragId"
+                        select = "substring-after($fragRef, '#')"/>
+   <xsl:variable          name = "orgLocs"
+                        select = "$orgDoc/Organization/OrganizationLocations"/>
+   <xsl:variable          name = "orgLoc"
+                        select = "$orgLocs/OrganizationLocation/Location[@cdr:id = $fragId]"/>
+
+   <xsl:choose>
+    <xsl:when             test = "SpecificPostalAddress">
+     <xsl:apply-templates
+                        select = "SpecificPostalAddress"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates
+                        select = "$orgLoc/PostalAddress"/>
+    </xsl:otherwise>
+   </xsl:choose>
+   <xsl:choose>
+    <xsl:when             test = "SpecificPhone">
+     <xsl:apply-templates
+                        select = "SpecificPhone"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates
+                        select = "$orgLoc/Phone"/>
+    </xsl:otherwise>
+   </xsl:choose>
+   <xsl:choose>
+    <xsl:when             test = "SpecificTollFreePhone">
+     <xsl:apply-templates
+                        select = "SpecificTollFreePhone"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates
+                        select = "$orgLoc/TollFreePhone"/>
+    </xsl:otherwise>
+   </xsl:choose>
+   <xsl:choose>
+    <xsl:when             test = "SpecificFax">
+     <xsl:apply-templates
+                        select = "SpecificFax"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates
+                        select = "$orgLoc/Fax"/>
+    </xsl:otherwise>
+   </xsl:choose>
+   <xsl:choose>
+    <xsl:when             test = "SpecificEmail">
+     <xsl:apply-templates
+                        select = "SpecificEmail"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates
+                        select = "$orgLoc/Email"/>
+    </xsl:otherwise>
+   </xsl:choose>
+   <xsl:choose>
+    <xsl:when             test = "SpecificWebSite">
+     <xsl:apply-templates
+                        select = "SpecificWebSite"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates
+                        select = "$orgLoc/WebSite"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template           match = 'PostalAddress|SpecificPostalAddress'>
+  <PostalAddress>
+    <xsl:apply-templates select = "@*|node()"/>
+  </PostalAddress>
+ </xsl:template>
+
+ <xsl:template           match = 'Phone|SpecificPhone'>
+  <Phone>
+    <xsl:apply-templates select = "@*|node()"/>
+  </Phone>
+ </xsl:template>
+
+ <xsl:template           match = 'TollFreePhone|SpecificTollFreePhone'>
+  <TollFreePhone>
+    <xsl:apply-templates select = "@*|node()"/>
+  </TollFreePhone>
+ </xsl:template>
+
+ <xsl:template           match = 'Fax|SpecificFax'>
+  <Fax>
+    <xsl:apply-templates select = "@*|node()"/>
+  </Fax>
+ </xsl:template>
+
+ <xsl:template           match = 'Email|SpecificEmail'>
+  <Email>
+    <xsl:apply-templates select = "@*|node()"/>
+  </Email>
+ </xsl:template>
+
+ <xsl:template           match = 'WebSite|SpecificWebSite'>
+  <WebSite>
+    <xsl:apply-templates select = "@*|node()"/>
+  </WebSite>
+ </xsl:template>
+
+ <xsl:template           match = 'PoliticalSubUnit_State'>
+  <PoliticalSubUnit_State>
+    <xsl:apply-templates select = "@*"/>
+    <xsl:if               test = "@cdr:ref">
+     <xsl:variable        name = "state"
+                        select = "document(concat('cdrx:', @cdr:ref))"/>
+     <xsl:value-of      select = "$state/PoliticalSubUnit/PoliticalSubUnitFullName"/>
+    </xsl:if>
+  </PoliticalSubUnit_State>
+ </xsl:template>
+
+ <xsl:template           match = 'Country'>
+  <Country>
+    <xsl:apply-templates select = "@*"/>
+    <xsl:if               test = "@cdr:ref">
+     <xsl:variable        name = "country"
+                        select = "document(concat('cdrx:', @cdr:ref))"/>
+     <xsl:value-of      select = "$country/Country/CountryFullName"/>
+    </xsl:if>
+  </Country>
+ </xsl:template>
+
+</xsl:transform>

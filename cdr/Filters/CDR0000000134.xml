@@ -1,0 +1,122 @@
+<?xml version="1.0"?>
+
+<!-- ===================================================================
+       Filter to create the vendor Terminology XML 
+     =================================================================== -->
+
+  <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                    version="1.0"
+                 xmlns:cdr="cips.nci.nih.gov/cdr"
+                   exclude-result-prefixes="cdr">
+        <xsl:output method="xml" omit-xml-declaration="no"/>
+
+                
+
+<!-- ======================================================================
+      Copy DocId, PreferredName, OtherTermName, OtherNameType
+     ==================================================================== -->
+
+<xsl:template match="Term">
+
+
+<xsl:copy>   
+<xsl:for-each select="DocId">
+<xsl:attribute name="id">
+<xsl:value-of select="."/>
+</xsl:attribute>
+</xsl:for-each>
+
+<xsl:attribute name="LegacyPDQID">
+<xsl:value-of select="PdqKey"/>
+</xsl:attribute>
+  
+<xsl:apply-templates   select="PreferredName" mode="copy"/>
+
+<xsl:if test="OtherName">
+<xsl:for-each select="OtherName">
+<OtherName>
+<xsl:apply-templates   select="OtherTermName" mode="copy"/>
+<xsl:apply-templates   select="OtherNameType" mode="copy"/>
+</OtherName>
+</xsl:for-each>
+</xsl:if>
+
+<!-- =====================================================================
+     Copy SourceInformation, VocabularySource, DefinitionSource
+     ===================================================================== -->
+
+<xsl:if test="SourceInformation">
+<xsl:apply-templates   select="SourceInformation" mode="copy"/>
+</xsl:if>
+
+<xsl:if test="VocabularySource">
+<xsl:apply-templates   select="VocabularySource" mode="copy"/>
+</xsl:if>
+
+<xsl:if test="DefinitionSource">
+<xsl:apply-templates   select="DefinitionSource" mode="copy"/>
+</xsl:if>
+
+<!-- ===================================================================
+                    Copy TermType,SemanticTypeText
+      code needs to be updated when ref is added to XML records
+     ================================================================== -->  
+<xsl:for-each select="TermType">
+<xsl:for-each select="TermTypeName">
+<xsl:if test=".='Protocol selection criteria'">
+<xsl:apply-templates select="."  mode="copy"/>
+</xsl:if>
+<xsl:if test=".='Obsolete term'">
+<xsl:apply-templates select="."  mode="copy"/>
+</xsl:if>
+<xsl:if test=".='Header term'">
+<xsl:apply-templates select="."  mode="copy"/>
+</xsl:if>
+<xsl:if test=".='Semantic type'">
+<xsl:apply-templates select="."  mode="copy"/>
+</xsl:if>
+
+</xsl:for-each>
+</xsl:for-each>
+
+<xsl:for-each select="SemanticTypeText">
+<SemanticType ref=""><xsl:value-of select="."/></SemanticType>
+</xsl:for-each>
+
+<!-- =================================================================
+        Copy Term Relationship (Parent TermId,PreferredName,ParentType
+     ================================================================== -->
+
+               <TermRelationship>
+               <xsl:for-each select="TermRelationship">
+               <xsl:for-each select="ParentTerm">
+               <ParentTerm>
+               <ParentTermName>
+                <xsl:attribute name="ref">
+                <xsl:value-of select="@cdr:ref"/>
+                </xsl:attribute>
+                <xsl:for-each select="PreferredName">
+                <xsl:value-of select="."/>
+                </xsl:for-each>
+                </ParentTermName>
+                <xsl:apply-templates select="ParentType" mode="copy"/>
+                </ParentTerm>
+                </xsl:for-each>
+                </xsl:for-each>
+                </TermRelationship>
+                </xsl:copy>
+                </xsl:template>
+
+ <!-- ==================================================================
+       Template rule used to do XML to XML transformations which
+       copies any attribute node, or node that is child of of something 
+      =================================================================== -->
+
+    <xsl:template match="@*|node()" mode="copy">
+       <xsl:copy>
+       <xsl:apply-templates select="@*" mode="copy"/>
+       <xsl:apply-templates mode="copy"/>
+       </xsl:copy> 
+    </xsl:template>
+
+</xsl:transform>

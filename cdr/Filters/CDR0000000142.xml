@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                version="1.0"
+                xmlns:cdr="cips.nci.nih.gov/cdr">
+ <xsl:output method="text"/>
+
+  
+<!-- Filter written by Volker Englisch - 04/12/2002 -->
+<!-- This is a filter to display the mailer title   -->
+      
+<!-- Display Mailer title                              -->
+<!-- Find Root Element and Display Mailer Type Element -->
+<!-- ================================================= -->
+<xsl:template match="Mailer"> 
+  <xsl:value-of select="Type"/>;<xsl:text/>
+
+<!-- Find Recipient element and resolve to select the type of Mailer -->
+<!-- Assign variable MailerPerson.  Variable is empty if the mailer  -->
+<!-- is not a Person mailer (assuming two different types only       -->
+<!-- =============================================================== -->
+
+  <xsl:for-each select="Recipient">
+    <xsl:if test="contains(@cdr:ref, 'CDR')">
+      
+      <xsl:variable name   = "MailerID" 
+                    select = "@cdr:ref"/>
+      <xsl:variable name   = "MailerInfo" 
+                    select = "document(concat('cdr:',$MailerID))"/>
+      <xsl:variable name   = "MailerPerson"
+                    select = "$MailerInfo/Person"/>
+      <xsl:choose>
+        <xsl:when test = "string($MailerPerson)=''">
+          <xsl:value-of select = "$MailerInfo/Organization/OrganizationNameInformation/OfficialName"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select = "$MailerInfo/Person/PersonNameInformation/SurName"/>, <xsl:text/>
+          <xsl:value-of select = "$MailerInfo/Person/PersonNameInformation/GivenName"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:if>
+  </xsl:for-each>
+</xsl:template>
+</xsl:transform>

@@ -1,0 +1,309 @@
+<?xml version="1.0"?>
+  <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                 version="1.0"
+                xmlns:cdr="cips.nci.nih.gov/cdr">
+   <xsl:output method="html"/>
+   <xsl:template match="/">
+     <!--Filter written by C.Burg - 9/25/2001 -->
+  <!-- This program is a filter to create an XMetal Person
+       Display -->
+      
+<xsl:text disable-output-escaping='yes'>&lt;!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /&gt;</xsl:text>
+    <HTML>
+    <HEAD>
+      <xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
+
+    <TITLE><xsl:value-of select="document('cdrutil:/docid')"/>&#xa0;&#xa0;<xsl:value-of select="substring-before($cdrmydoc/CdrDocCtl/DocTitle,';')"/> </TITLE>
+     
+       <!--
+     <LINK REL='stylesheet' 
+           HREF='/stylesheets/protocol2.css' 
+           TYPE='text/css' /> -->
+    </HEAD>
+  <BASEFONT FACE='sans-serif' />
+    <xsl:apply-templates select="Person"/>
+    
+    </HTML>
+    </xsl:template>
+  <!-- Generate the HTML for the Person QC Report-->
+  <xsl:template match="Person">
+    <BODY>
+    <!--Display Report heading and subheading 
+  <b><font size='4'><left>Person Content<br />
+      QC Report</left></font></b><br />-->
+<!-- Display report title
+ <b><font size='4'><center><xsl:text>Person QC Report</xsl:text></center></font></b>
+ <b><font size='3'><center><xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/></center></font></b><br /><br />-->
+
+ <!-- Display name header -->
+ <br /><br />
+ <b><font size='4'><xsl:text>Doc ID</xsl:text></font></b><br />
+<xsl:value-of select="document('cdrutil:/docid')"/><br /><br />
+ <b><font size='4'><xsl:text>Person Name Information</xsl:text></font></b><br /><br />
+ <b><font size='3'><xsl:text>Given Name</xsl:text></font></b><br />
+ <xsl:apply-templates select="PersonNameInformation/GivenName"/><br />
+ <b><font size='3'><xsl:text>Sur Name</xsl:text></font></b><br />
+<xsl:apply-templates select="PersonNameInformation/SurName"/><br />
+<xsl:if test="Person/Prefix">
+ <b><font size='3'><xsl:text>Prefix</xsl:text></font></b><br />
+ <xsl:apply-templates select="PersonNameInformation/Prefix"/><br />
+ </xsl:if>
+ <!--test for generation suffix and display if present -->
+   <xsl:if test="PersonNameInformaton/GenerationSuffix">
+   <xsl:for-each select="PersonNameInformation/GenerationSuffix">
+   <xsl:value-of select="."/>
+   <xsl:text>&#xa0;</xsl:text>
+   </xsl:for-each>
+   </xsl:if>
+<!--check for Professional suffix and display -->
+     <xsl:if test="PersonNameInformation/ProfessionalSuffix">
+    <b><font size='3'><xsl:text>Professional Suffix</xsl:text></font></b><br />
+    <xsl:for-each select="PersonNameInformation/ProfessionalSuffix/StandardProfessionalSuffix">
+    <xsl:value-of select="."/><br />
+    </xsl:for-each>
+    </xsl:if>
+   <br /><br />
+   <!--Display Professional Information -->
+
+   <b><font size='4'><xsl:text>Professional Information</xsl:text></font></b><br /><br />
+ 
+<xsl:for-each select="ProfessionalInformation/PDQBoardMembershipDetails">
+<xsl:if test="PDQEditorialBoard">
+<b><xsl:text>PDQ Board</xsl:text></b><br />
+<xsl:value-of select="PDQEditorialBoard"/><br />
+</xsl:if>
+<xsl:if test="PDQAdvisoryBoard">
+<b><xsl:text>PDQ Board</xsl:text></b><br />
+<xsl:value-of select="PDQAdvisoryBoard"/><br />
+</xsl:if>
+<xsl:if test="PDQVoluntaryProtocolReviewBoard">
+<b><xsl:text>PDQ Board</xsl:text></b><br />
+<xsl:value-of select="PDQVoluntaryProtocolReviewBoard"/><br />
+</xsl:if>
+</xsl:for-each>
+
+  <!-- Display Administrative Information -->
+<br />
+<b><font size='4'>Physician Details</font></b><br /><br />
+    
+<b><font size='4'>Administrative Information</font></b><br /><br />
+    
+  <xsl:for-each  select="ProfessionalInformation/PhysicianDetails/AdministrativeInformation/Directory">
+    <b><xsl:text>Directory</xsl:text></b><br />
+   <xsl:value-of select="Include"/><br />
+   <b><xsl:text>Entered By</xsl:text></b><br />
+ <xsl:value-of select="EnteredBy"/><br />
+ <b><xsl:text>Date</xsl:text></b><br />
+ <xsl:value-of select="Date"/><br />
+ </xsl:for-each>
+<br />
+<!--Physician Specialty Information -->
+<xsl:if test="ProfessionalInformation/PhysicianDetails/PhysicianSpecialtyInformation/BoardCertifiedSpecialty">
+ <br />
+ <xsl:for-each select="ProfessionalInformation/PhysicianDetails/PhysicianSpecialtyInformation/BoardCertifiedSpecialty">
+<b><font size='4'>Physician Specialty Information</font></b><br /><br />
+<b><font size='3'>Board Certified Specialty</font></b><br />
+<xsl:value-of select="BoardCertifiedSpecialtyName"/><br />
+<b><font size='3'>Certified</font></b><br />
+<xsl:value-of select="Certified"/><br />
+<b><font size='3'>Verified</font></b><br />
+<xsl:value-of select="Verified"/><br />
+</xsl:for-each>
+ </xsl:if> 
+ <br />
+
+ 
+ <b><font size='4'><xsl:text>Physician Membership Information</xsl:text></font></b><br /><br />
+<xsl:if test="ProfessionalInformation/PhysicianDetails/PhysicianMembershipInformation/MemberOfCooperativeGroup/CooperativeGroup">
+
+<b><font size='3'>Member of Cooperative Group</font></b><br />
+ <xsl:for-each  select="ProfessionalInformation/PhysicianDetails/PhysicianMembershipInformation/MemberOfCooperativeGroup/CooperativeGroup">
+<xsl:value-of select="."/><br />
+</xsl:for-each>
+<br />
+</xsl:if>
+  
+<b><font size='3'>Member of Medical Society </font></b><br />
+   <xsl:for-each  select="ProfessionalInformation/PhysicianDetails/PhysicianMembershipInformation/MemberOfMedicalSociety">
+<xsl:value-of select="."/><br />
+</xsl:for-each>
+
+
+ <!--   <dl>
+<xsl:for-each select="Status">
+<dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><xsl:text>Status</xsl:text></b><xsl:value-of select="concat('........................................',CurrentStatus)"/></dt>
+ </xsl:for-each>
+/dl> 
+  <dl>
+<xsl:for-each select="Status/Comment">
+<dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><xsl:text>Comment</xsl:text></b><xsl:value-of select="concat('&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;',Comment)"/></dt>
+ </xsl:for-each>
+ </dl> -->
+
+ <!-- <dl>
+  <xsl:for-each  select="ProfessionalInformation/PhysicianDetails/AdministrativeInformation">
+    <dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><xsl:text>Preferred Contact Mode</xsl:text></b><xsl:value-of select="concat('..........',PreferredContactMode)"/></dt>
+  </xsl:for-each>
+  </dl>-->
+<br />
+<b><font size='4'>Person Locations</font></b><br />
+
+   <xsl:if test="PersonLocations/Home">
+    <b><font size='3'>Home</font></b><br /><br />
+    <xsl:for-each select="PersonLocations/Home/PostalAddress">
+    <b><font size='3'>Street</font></b><br />
+     <xsl:for-each select="Street">
+    <xsl:value-of select="."/><br />
+    </xsl:for-each>
+     <b><font size='3'>Political SubUnit</font></b><br />
+     <xsl:value-of select="PoliticalSubUnit_State"/><br />
+     <xsl:value-of select="Country"/><br />
+       <b><font size='3'>Postal Code</font></b><br />
+      <xsl:value-of select="PostalCode_ZIP"/><br />
+      </xsl:for-each>
+   <xsl:for-each select="PersonLocations/Home">
+      <xsl:if test="Phone">
+  <b><font size='3'>Phone</font></b><br />
+  <xsl:value-of select="Phone"/><br />
+  </xsl:if>
+   <xsl:if test="Fax">
+  <b><font size='3'>Fax</font></b><br /><br />
+  <xsl:value-of select="Fax"/><br />
+  </xsl:if>
+
+   <xsl:if test="Email">
+  <b><font size='3'>Email</font></b><br /><br />
+  <xsl:value-of select="Email"/><br />
+  </xsl:if>
+  
+ <xsl:if test="WebSite">
+  <b><font size='3'>WebSite</font></b><br /><br />
+  <u><xsl:value-of select="WebSite/@cdr:xref"/></u><br />
+  </xsl:if>
+ </xsl:for-each>
+   <br />
+  </xsl:if>
+  
+   
+
+
+   <xsl:if test="PersonLocations/PrivatePractice/PrivatePracticeLocation">
+    <br />
+   <b><font size='3'>Private Practice</font></b><br /><br />
+   <xsl:for-each select="PersonLocations/PrivatePractice/PrivatePracticeLocation/PostalAddress">
+    <b><font size='3'>Street</font></b><br />
+     <xsl:for-each select="Street">
+    <xsl:value-of select="."/><br />
+    </xsl:for-each>
+     <b><font size='3'>Political SubUnit</font></b><br />
+     <xsl:value-of select="PoliticalSubUnit_State"/><br />
+     <xsl:value-of select="Country"/><br />
+       <b><font size='3'>Postal Code</font></b><br />
+      <xsl:value-of select="PostalCode_ZIP"/><br />
+      </xsl:for-each>
+   <xsl:for-each select="PersonLocations/PrivatePractice/PrivatePracticeLocation">
+      <xsl:if test="Phone">
+  <b><font size='3'>Phone</font></b><br />
+  <xsl:value-of select="Phone"/><br />
+  </xsl:if>
+   <xsl:if test="Fax">
+  <b><font size='3'>Fax</font></b><br />
+  <xsl:value-of select="Fax"/><br />
+  </xsl:if>
+
+   <xsl:if test="Email">
+  <b><font size='3'>Email</font></b><br /><br />
+  <xsl:value-of select="Email"/><br />
+  </xsl:if>
+  
+ <xsl:if test="WebSite">
+  <b><font size='3'>WebSite</font></b><br /><br />
+  <u><xsl:value-of select="WebSite/@cdr:xref"/></u><br />
+  </xsl:if>
+ </xsl:for-each>
+ <br />
+  </xsl:if>
+  
+
+<xsl:if test="PersonLocations/OtherPracticeLocation">
+<b><font size='3'>Other Practice Locations</font></b><br />
+  <xsl:for-each select="PersonLocations/OtherPracticeLocation">
+ 
+<b><font size='3'>Organization Location</font></b><br />
+  <xsl:value-of select="OrganizationLocation"/><br />
+  <xsl:if test="PersonTitle">
+   <b><font size='3'>Person Title</font></b><br />
+  
+    <xsl:value-of select="PersonTitle"/><br />
+    </xsl:if>
+ 
+ <xsl:if test="SpecificPostalAddress">     
+  <xsl:for-each select="SpecificPostalAddress">
+   
+     <b><font size='3'>Street</font></b><br />
+     <xsl:for-each select="Street">
+    <xsl:value-of select="."/><br />
+    </xsl:for-each>
+     <b><font size='3'>Political SubUnit</font></b><br />
+     <xsl:value-of select="PoliticalSubUnit_State"/><br />
+     <xsl:value-of select="Country"/><br />
+       <b><font size='3'>Postal Code</font></b><br />
+      <xsl:value-of select="PostalCode_ZIP"/><br />
+      </xsl:for-each>
+      </xsl:if>  
+  
+   
+     <xsl:if test="SpecificPhone">
+  <b><font size='3'>Specific Phone</font></b><br />
+  <xsl:value-of select="SpecificPhone"/><br />
+  </xsl:if>
+   <xsl:if test="SpecificFax">
+  <b><font size='3'>Specific Fax</font></b><br />
+  <xsl:value-of select="SpecificFax"/><br />
+  </xsl:if>
+
+   <xsl:if test="SpecificEmail">
+  <b><font size='3'> Specific Email</font></b><br />
+  <xsl:value-of select="SpecificEmail"/><br /><br />
+  </xsl:if>
+  
+ <xsl:if test="SpecificWebSite">
+  <b><font size='3'> Specific WebSite</font></b><br /><br />
+  <u><xsl:value-of select="SpecificWebSite/@cdr:xref"/></u><br />
+  </xsl:if>
+ </xsl:for-each>
+</xsl:if>
+ <br />
+<xsl:for-each select="PersonLocations">
+<b><font size='3'> CIPS Contact</font></b><br />
+  <xsl:value-of select="CIPSContact"/><br />
+</xsl:for-each>
+
+<xsl:for-each select="Status">
+<br />
+<b><font size='3'>Status</font></b><br />
+  <xsl:value-of select="CurrentStatus"/><br />
+<b><font size='3'>Entered By</font></b><br />
+  <xsl:value-of select="EnteredBy"/><br />
+<b><font size='3'>Entry Date</font></b><br />
+  <xsl:value-of select="EntryDate"/><br />
+
+
+
+</xsl:for-each>
+
+<!--
+ <b><font size='4'>Record Information</font></b><br /><br />
+<xsl:for-each select="CdrDocCtl">
+<b><xsl:text>Date Created</xsl:text></b><xsl:text>....................</xsl:text>
+<xsl:value-of select="substring-before(Create/Date,'T')"/><br />
+<b><xsl:text>User</xsl:text></b><xsl:text>....................................</xsl:text>
+<xsl:value-of select="Create/User"/><br />
+<b><xsl:text>Date Modfied</xsl:text></b><xsl:text>....................</xsl:text>
+<xsl:value-of select="substring-before(Modify/Date,'T')"/><br />
+<b><xsl:text>User</xsl:text></b><xsl:text>....................................</xsl:text>
+<xsl:value-of select="Modify/User"/>
+</xsl:for-each>-->
+   </BODY>
+   </xsl:template>
+  </xsl:transform>

@@ -1,0 +1,284 @@
+<?xml version="1.0"?>
+<xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                version="1.0"
+               xmlns:cdr="cips.nci.nih.gov/cdr">
+  <xsl:output method="xml" omit-xml-declaration="no"/>
+<!-- ====================================================================
+     Filter to create XML data for HP summary to add references to end of
+     each summary section for vendor publishing
+     ==================================================================== -->
+<!-- Written by Cheryl Burg 8-2-2001 -->
+<!-- =====================================================================
+     Select data elements to be copied and add tags when an incomplete
+     node is copied 
+     This filter resolves the CDR link provided for the citation and
+      formats the citations at the end of each summary section
+     ==================================================================== -->
+ 
+  <xsl:template match="*">
+  <xsl:copy>
+<DocId><xsl:value-of select="document('cdrutil:/docid')"/></DocId>
+  <xsl:apply-templates/>
+  </xsl:copy>
+ </xsl:template>
+
+<!-- =================================================================
+                  add refidx to CitationReference elements 
+     ================================================================== -->
+
+  <xsl:template match="Reference">
+    <xsl:variable name="ref">
+      <xsl:value-of select="@cdr:ref"/>
+    </xsl:variable>
+    <xsl:copy>
+       <xsl:apply-templates select="@*"/>
+       <xsl:if test="contains($ref,'CDR00')">
+    <xsl:variable name="CitInfo" select="document(concat('cdrx:',$ref))"/>
+    <xsl:variable name="ProtInfo" select="document(concat('cdrx:',$ref))"/>
+  
+<!-- ================================================================
+          test to see if the citation is a PDQ citation type
+     =============================================================== -->
+ 
+ <xsl:if test="$CitInfo/Citation/PDQCitation">
+  <xsl:if test="$CitInfo/Citation/PDQCitation/CancerLitID">
+<xsl:for-each select="$CitInfo/Citation/PDQCitation/CancerLitID">
+<xsl:attribute name="CancerLitID">
+<xsl:value-of select="."/>
+</xsl:attribute>
+</xsl:for-each>
+</xsl:if>
+
+  <xsl:for-each select="$CitInfo/Citation/PDQCitation">
+<xsl:variable name="Authors" select="Author"/>
+<xsl:choose>
+<xsl:when test="contains($Authors,'null')">
+<xsl:text>&#xa;</xsl:text>
+</xsl:when>
+<xsl:when test="AuthorList/Author/CollectiveName">
+<xsl:value-of select="AuthorList/Author/CollectiveName"/>.&#xa0;
+</xsl:when>
+<xsl:otherwise>
+<xsl:for-each select="AuthorList/Author">
+<xsl:value-of select="LastName"/>&#xa0;<xsl:text/>
+<xsl:value-of select="FirstName"/><xsl:text/>
+<xsl:if test="position() !=last()">,&#xa0;</xsl:if>
+<xsl:if test="position()=last()">
+<xsl:if test="$CitInfo/Citation/PDQCitation/AuthorList/@Complete='No'">
+<xsl:text>&#xa0;et al.&#xa0;</xsl:text>
+</xsl:if>
+<xsl:if test="$CitInfo/Citation/PDQCitation/AuthorList/@Complete='Yes'">
+<xsl:text>.&#xa0;</xsl:text>
+</xsl:if>
+</xsl:if>
+</xsl:for-each>
+</xsl:otherwise>
+</xsl:choose>
+<xsl:value-of select="CitationTitle"/>.<xsl:text/>
+<xsl:text>&#xa;</xsl:text>
+
+
+<xsl:for-each select="PublicationDetails">
+ 
+ <xsl:choose>
+  <xsl:when test="contains(PublishedIn/@cdr:ref,'CDR')">
+  <xsl:variable name="RefID" select="PublishedIn/@cdr:ref"/>
+  <!--<xsl:value-of select="$RefID"/>-->
+ <xsl:if test="contains($RefID,'CDR')">
+  <xsl:variable name="RefInfo" select="document(concat('cdrx:',$RefID,'/lastp'))"/>
+ <!--<xsl:value-of select="$RefInfo"/>-->
+<!-- <xsl:value-of select="$RefInfo/Citation/PDQCitation/CitationTitle"/>
+ <xsl:text>&#xa0;</xsl:text>-->
+<xsl:if test="$RefInfo/Citation/PDQCitation/CitationType='Book'">
+<xsl:if test="AuthorList/Author/CollectiveName">
+<xsl:value-of select="$RefInfo/Citation/PDQCitation/AuthorList/Author/CollectiveName"/>
+<xsl:text>.&#xa0;</xsl:text>
+</xsl:if>
+<xsl:text>In: </xsl:text>
+</xsl:if>
+ <xsl:value-of select="$RefInfo/Citation/PDQCitation/CitationTitle"/>
+ <xsl:text>.&#xa0;</xsl:text>
+
+<xsl:value-of select="$RefInfo/Citation/PDQCitation/PublicationDetails/OtherPublicationInformation"/><xsl:text/>
+  <xsl:text>,&#xa0;</xsl:text>
+  </xsl:if>
+ </xsl:when>
+ </xsl:choose>
+  </xsl:for-each>
+<xsl:value-of select="PublicationDetails/OtherPublicationInformation"/>.<xsl:text/>
+<!--<xsl:text>.</xsl:text>-->
+</xsl:for-each>
+</xsl:if>
+ <!-- ==================================================================
+            test to determine if citation reference is a pubmed record 
+      =================================================================== -->
+
+<xsl:if test="$CitInfo/Citation/PubmedArticle">
+<xsl:if test="$CitInfo/Citation/PubmedArticle/MedlineCitation/MedlineID">
+<xsl:for-each select="$CitInfo/Citation/PubmedArticle/MedlineCitation/MedlineID">
+<xsl:attribute name="MedlineID">
+<xsl:value-of select="."/>
+</xsl:attribute>
+</xsl:for-each>
+</xsl:if>
+
+<xsl:if test="$CitInfo/Citation/PubmedArticle/MedlineCitation/PMID">
+<xsl:for-each select="$CitInfo/Citation/PubmedArticle/MedlineCitation/PMID">
+<xsl:attribute name="PMID">
+<xsl:value-of select="."/>
+</xsl:attribute>
+</xsl:for-each>
+</xsl:if>
+
+<xsl:if test="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList">
+
+<xsl:for-each
+
+select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Author">
+<xsl:variable name="Tnodes" select="count($CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Author)"/>
+<!--<xsl:value-of select="$Tnodes"/>-->
+<xsl:choose>
+
+<!--<xsl:when test="position()=last()=1">
+<xsl:value-of select="concat(LastName,' ',Initials)"/>.&#xa0;<xsl:text/>
+</xsl:when>-->
+
+<xsl:when test="position() &lt; 4 ">
+<xsl:value-of select="concat(LastName,' ',Initials)"/>
+<xsl:if test="position() !=last()">,&#xa0;<xsl:text/>
+</xsl:if>
+<xsl:if test="position()=last()">.&#xa0;<xsl:text/>
+</xsl:if>
+</xsl:when>
+<!--<xsl:when test="position()!=3">
+<xsl:text>,&#xa;&#xa0;</xsl:text>
+</xsl:when>-->
+<xsl:when test="position() =4" >
+<xsl:if test="$Tnodes &gt; 3 ">
+<!--<xsl:value-of select="concat(LastName,' ',Initials)"/>-->
+<xsl:text>&#xa0;et al.&#xa0;</xsl:text>
+</xsl:if>
+</xsl:when>
+<xsl:otherwise>
+</xsl:otherwise>
+</xsl:choose>
+</xsl:for-each>
+</xsl:if>
+
+
+<xsl:for-each select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article">
+<xsl:value-of select="ArticleTitle"/>
+<xsl:text>&#xa;</xsl:text>
+</xsl:for-each>
+<xsl:for-each select="$CitInfo/Citation/PubmedArticle/MedlineCitation/MedlineJournalInfo/MedlineTA">
+<xsl:value-of select="."/>
+<xsl:text>&#xa;</xsl:text>
+</xsl:for-each>
+
+<xsl:for-each select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/Journal/JournalIssue">
+<xsl:text> </xsl:text>
+<xsl:if test="Issue">
+<xsl:value-of select="concat(Volume,' ','(',Issue,')',': ')"/>
+</xsl:if>
+<xsl:if test="not(Issue)">
+<xsl:if test="contains(Article/Journal/JournalIssue/Volume,'Suppl')">
+  <xsl:value-of select="substring(Article/Journal/JournalIssue/Volume,1,1)"/>&#xa0;
+(<xsl:value-of select="substring(Article/Journal/JournalIssue/Volume,3,7)"/>)&#xa0;
+</xsl:if>
+<xsl:if test="not(contains(Article/Journal/JournalIssue/Volume,'Suppl'))">
+<xsl:value-of select="Article/Journal/JournalIssue/Volume"/>&#xa0;
+</xsl:if>
+<xsl:value-of select="Volume"/>:&#xa0;
+</xsl:if>
+</xsl:for-each>
+<xsl:for-each select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/Pagination">
+<xsl:value-of select="concat(MedlinePgn,', ')"/>
+</xsl:for-each>
+<!--<xsl:value-of select="concat($CitInfo/Citation/PubmedArticle/MedlineCitation/Article/Pagination/MedlinePgn,', ')"/>-->
+<xsl:for-each select="$CitInfo/Citation/PubmedArticle/PubmedData/History/PubMedPubDate[1]/Year">
+<xsl:value-of select="."/>
+<xsl:text>.&#xa;</xsl:text>
+</xsl:for-each>
+</xsl:if>
+ <!-- ==============================================================
+       Test to determine if citation is a protocol
+     =============================================================== -->
+
+<xsl:if test="$ProtInfo/InScopeProtocol/ProtocolIDs/PrimaryID/IDString">
+<xsl:for-each select="$ProtInfo/InScopeProtocol/ProtocolAdminInfo/ProtocolLeadOrg/LeadOrgPersonnel">
+<xsl:if test="../LeadOrgRole='Primary'">
+<xsl:if test="PersonRole='Protocol chair'">
+<xsl:if test="contains(Person/@cdr:ref,'CDR')">
+  <xsl:variable name="PerID" select="substring-before(Person/@cdr:ref,'#')"/>
+  <xsl:variable name="PerInfo" select="document(concat('cdrx:',$PerID,'/last'))"/>
+  <xsl:value-of select="$PerInfo/Person/PersonNameInformation/SurName"/>
+  <xsl:text>&#xa0;</xsl:text>
+  <xsl:value-of select="substring($PerInfo/Person/PersonNameInformation/GivenName,1,1)"/>
+ <xsl:variable name="Gname" select="substring-after($PerInfo/Person/PersonNameInformation/GivenName,' ')"/>
+ <xsl:value-of select="translate($Gname,'.',',')"/>
+<xsl:text>&#xa0;&#xa0;</xsl:text>
+  </xsl:if>
+  </xsl:if>
+  </xsl:if>
+  </xsl:for-each>
+
+<xsl:for-each select="$ProtInfo/InScopeProtocol/ProtocolAdminInfo/ProtocolLeadOrg/LeadOrganizationID">
+<xsl:if test="../LeadOrgRole='Primary'">
+ <xsl:value-of select="."/>:
+</xsl:if>
+</xsl:for-each>
+<!--<xsl:if test="PersonRole='Protocol chair'">
+<xsl:value-of select="."/>-->
+
+<xsl:if test="contains(Person/@cdr:ref,'CDR')">
+  <xsl:variable name="PerID" select="$ProtInfo/InScopeProtocol/ProtocolAdminInfo/ProtocolLeadOrg/LeadOrgPersonnel/Person/@cdr:ref"/>
+  <xsl:variable name="PerInfo" select="document(concat('cdrx:',$PerID,'/last'))"/>
+  <xsl:value-of select="$PerInfo/Person/PersonNameInformation/SurName"/>
+  <xsl:value-of select="$PerInfo/Person/PersonNameInformation/GivenName"/>
+  <xsl:text>  </xsl:text>
+  <!--</xsl:if>-->
+  </xsl:if>
+<!--  </xsl:for-each>-->
+
+  <xsl:text>&#xa0;</xsl:text>
+  <xsl:for-each select="$ProtInfo/InScopeProtocol/ProtocolTitle[@Type='Professional']">
+<xsl:value-of select="."/>,
+</xsl:for-each>
+
+<xsl:for-each select="$ProtInfo/InScopeProtocol/ProtocolIDs/PrimaryID/IDString">
+<xsl:value-of select="."/>,
+</xsl:for-each>
+<xsl:for-each select="$ProtInfo/InScopeProtocol/ProtocolDetail/StudyType">
+<xsl:value-of select="."/>,
+</xsl:for-each>
+<xsl:for-each select="$ProtInfo/InScopeProtocol/ProtocolAdminInfo/CurrentProtocolStatus">
+<xsl:value-of select="."/>,
+</xsl:for-each>
+<xsl:for-each select="$ProtInfo/InScopeProtocol/ProtocolAdminInfo/ProtocolLeadOrg/LeadOrgProtocolStatuses/CurrentOrgStatus/StatusDate">
+<xsl:if test="../../../LeadOrgRole='Primary'">
+<xsl:value-of select="substring(.,6,2)"/>
+<xsl:text>/</xsl:text>
+<xsl:value-of select="substring(.,9,2)"/>
+<xsl:text>/</xsl:text>
+<xsl:value-of select="substring(.,1,4)"/>.
+</xsl:if>
+</xsl:for-each>
+</xsl:if>
+</xsl:if>
+</xsl:copy>
+</xsl:template>
+
+               
+<!-- ===================================================================
+      Template rule used to do XML to XML transformations which
+       copies any attribute node, or node that is child of of something 
+     ==================================================================== -->
+
+   <xsl:template match="@*|node()">
+     <xsl:copy>
+     <xsl:apply-templates select="@*"/>
+     <xsl:apply-templates/>
+     </xsl:copy> 
+     </xsl:template>
+
+</xsl:transform>

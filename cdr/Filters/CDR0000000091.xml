@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                 version="1.0"
+               xmlns:cdr="cips.nci.nih.gov/cdr">
+ <xsl:output method="text"/>
+ <xsl:template match="Person">
+  <xsl:apply-templates select="PersonNameInformation/SurName"/>;<xsl:text/>
+  <xsl:apply-templates 
+        select="PersonNameInformation/GivenName"/>;<xsl:text/>
+   <xsl:for-each
+        select="PersonLocations">
+    <xsl:variable name="Cipscontact" select="CIPSContact"/>
+    <xsl:if test="OtherPracticeLocation[@cdr:id=$Cipscontact]">
+    <xsl:choose>
+   <xsl:when test="contains(OtherPracticeLocation/OrganizationLocation/@cdr:ref,'CDR')">
+   <xsl:variable name="OrgID" select="OtherPracticeLocation/OrganizationLocation/@cdr:ref"/>
+<xsl:variable name="CipsContact" select="substring-after(OtherPracticeLocation/OrganizationLocation/@cdr:ref,'#')"/>
+<!-- Changed cdr: to cdrx: to make retrieval conditional. -->
+    <xsl:variable name="OrgInfo" select="document(concat('cdrx:',$OrgID))"/>
+<!--    <xsl:if test="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/City">-->
+ <xsl:apply-templates select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$CipsContact]/PostalAddress/City"/>
+<xsl:if test="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$CipsContact]/PostalAddress/PoliticalSubUnit_State">
+<xsl:text>;</xsl:text>
+  <xsl:apply-templates select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$CipsContact]/PostalAddress/PoliticalSubUnit_State"/>
+</xsl:if>
+<!--</xsl:if>-->
+</xsl:when>
+ </xsl:choose>
+    </xsl:if>
+ <xsl:if test="PrivatePractice/PrivatePracticeLocation[@cdr:id=$Cipscontact]">
+  <xsl:apply-templates select="PrivatePractice/PrivatePracticeLocation/PostalAddress/City"/>
+<xsl:if test="
+ PrivatePractice/PrivatePracticeLocation/PostalAddress/PoliticalSubUnit_State">
+ <xsl:text>;</xsl:text>
+ <xsl:apply-templates select="PrivatePractice/PrivatePracticeLocation/PostalAddress/PoliticalSubUnit_State"/>
+ </xsl:if>   
+    </xsl:if>
+ <xsl:if test="Home[@cdr:id=$Cipscontact]">
+  <xsl:apply-templates select="Home/PostalAddress/City"/>
+  <xsl:if test="Home/PostalAddress/PoliticalSubUnit_State">
+  <xsl:text>;</xsl:text>
+  <xsl:apply-templates select="Home/PostalAddress/PoliticalSubUnit_State"/>
+  </xsl:if>
+  </xsl:if>
+      
+      </xsl:for-each> 
+      </xsl:template>
+  </xsl:transform>

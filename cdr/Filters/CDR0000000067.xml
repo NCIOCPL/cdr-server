@@ -1,0 +1,74 @@
+<?xml version="1.0"?>
+<!--Written by C. Burg  3/13/2002 -->
+
+<!-- ==================================================================
+      Filter to construct a DocTitle for a Organization Document.
+     =================================================================== -->
+
+ <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"       
+                    version = "1.0"
+                    xmlns:cdr="cips.nci.nih.gov/cdr">          
+ <xsl:output method="text"/>
+
+ <!-- ================================================================
+        Extract the Organization Name;ShortName;city;city suffix;
+        state or country if no state                      
+      ================================================================ -->
+
+     <xsl:template match="Organization">
+
+<!-- =============================================================
+      Select the Organization name
+     ============================================================== -->
+ 
+    <xsl:for-each select="OrganizationNameInformation">
+    <xsl:value-of select="OfficialName/Name"/>;<xsl:text/>
+    <xsl:if test="ShortName/Name">
+    <xsl:value-of select="ShortName/Name"/>;<xsl:text/>
+    </xsl:if>
+    </xsl:for-each>
+ <!-- ================================================================
+       Select the location that matches the CIPSContact.
+      =============================================================== -->
+
+     <xsl:for-each select="OrganizationLocations">
+     <xsl:variable name="Cipscontact" select="CIPSContact"/>
+     <xsl:variable name="locId" select="OrganizationLocation/@cdr:id"/>
+
+ <!-- ================================================================
+     Select the city, city suffix, state, and when no state the country.
+      ================================================================ -->
+ 
+     <xsl:if test="OrganizationLocation/Location[@cdr:id=$Cipscontact]">
+     <xsl:value-of   select="OrganizationLocation/Location/PostalAddress/City"/>;<xsl:text/>
+     <xsl:if test="OrganizationLocation/Location/PostalAddress/CitySuffix">
+     <xsl:value-of select="OrganizationLocation/Location/PostalAddress/CitySuffix"/>;<xsl:text/>
+     </xsl:if>
+     <xsl:choose>
+     <xsl:when test="contains(OrganizationLocation/Location/PostalAddress/PoliticalSubUnit_State/@cdr:ref,
+ 'CDR')">
+     <xsl:variable name="StateID"
+                          select="OrganizationLocation/Location/PostalAddress/PoliticalSubUnit_State/@cdr:ref"/>
+     <xsl:variable name="StateInfo"
+                          select="document(concat('cdrx:',$StateID))"/>
+     <xsl:apply-templates  select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName"/><xsl:text/>
+     </xsl:when>
+     <xsl:otherwise>
+
+      <xsl:if test="OrganizationLocation/Location/PostalAddress/Country">
+       <xsl:if test="contains(OrganizationLocation/Location/PostalAddress/Country/@cdr:ref,
+ 'CDR')">
+     <xsl:variable name="CountryID"
+                          select="OrganizationLocation/Location/PostalAddress/Country/@cdr:ref"/>
+     <xsl:variable name="CountryInfo"
+                          select="document(concat('cdrx:',$CountryID))"/>
+     <xsl:apply-templates  select="$CountryInfo/Country/CountryFullName"/>
+      </xsl:if>
+      </xsl:if>
+      </xsl:otherwise>
+      </xsl:choose>
+      </xsl:if>
+      </xsl:for-each>  
+   
+  </xsl:template>
+  </xsl:transform>

@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<xsl:transform                xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                              xmlns:cdr = "cips.nci.nih.gov/cdr"
+                                version = "1.0">
+
+ <xsl:output                     method = "html"/>
+
+ <xsl:variable                     name = "script"
+                                 select = "'/cgi-bin/cdr/Filter.py'"/>
+ <xsl:variable                     name = "filter"
+                                 select = "'Documentation+Help+Screens+Filter'"/>
+
+ <xsl:template                    match = "/">
+  <html>
+   <xsl:apply-templates          select = "DocumentationToC"/>
+  </html>
+ </xsl:template>
+
+ <xsl:template                    match = "DocumentationToC">
+  <head>
+   <title>
+    <xsl:apply-templates         select = "ToCTitle"/>
+   </title>
+   <style>
+    h1,h2,h3,h4 {color: Navy}
+    li.lnone {list-style: none}
+    p { +.4mm }
+   </style>
+  </head>
+  <body>
+   <h1>
+    <xsl:apply-templates         select = "ToCTitle"/>
+   </h1>
+   <xsl:apply-templates          select = "TableOfContents"/>
+  </body>
+ </xsl:template>
+
+ <xsl:template                    match = "TableOfContents">
+  <xsl:apply-templates           select = "ToCSection"/>
+ </xsl:template>
+
+ <xsl:template                    match = "ToCSection">
+  <xsl:apply-templates           select = "ToCLevel"/>
+ </xsl:template>
+
+ <xsl:template                    match = "ToCLevel">
+  <ul>
+   <xsl:apply-templates          select = "ToCEntry"/>
+   <xsl:apply-templates          select = "ToCLevel"/>
+  </ul>
+ </xsl:template>
+
+ <xsl:template                    match = "ToCEntry">
+  <li>
+   <xsl:apply-templates          select = "ConstructedTopic"/>
+   <xsl:apply-templates          select = "DocumentationRef"/>
+  </li>
+ </xsl:template>
+
+ <xsl:template                    match = "ConstructedTopic">
+  <xsl:value-of                  select = "."/>
+ </xsl:template>
+
+ <xsl:template                    match = "DocumentationRef">
+  <a>
+   <xsl:attribute                  name = "href">
+    <xsl:value-of                 select = "concat($script,
+                                                   '?DocId=',
+                                                   @cdr:href,
+                                                   '&amp;Filter=name:',
+                                                   $filter)"/>
+   </xsl:attribute>
+   <xsl:value-of                  select = "."/>
+  </a>
+ </xsl:template>
+
+</xsl:transform>

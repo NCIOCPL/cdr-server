@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Filter to denormalize by replacing contents of elements with
+     cdr:ref attributes with title of linked document -->
+
+<xsl:transform version="1.0" 
+               xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+               xmlns:cdr="cips.nci.nih.gov/cdr">
+
+  <!-- Workaround for Sablotron bug. -->
+  <xsl:template match="xsl:transform">
+    <xsl:copy>
+      <xsl:attribute name="xmlns:xsl">
+        <xsl:text>http://www.w3.org/1999/XSL/Transform</xsl:text>
+      </xsl:attribute>
+      <xsl:apply-templates select="@*"/>
+      <xsl:apply-templates/>
+    </xsl:copy>
+  </xsl:template>
+
+  <!-- Just copy most nodes -->
+  <xsl:template match="@*|node()|comment()|processing-instruction()">
+    <xsl:copy>
+      <xsl:apply-templates select="@*"/>
+      <xsl:apply-templates/>
+    </xsl:copy>
+  </xsl:template>
+
+  <!-- If an element has a cdr:href attribute, replace its content -->
+  <!-- with the linked documents title (from the document table).  -->
+  <!-- If the document does not exist or its title is empty, just  -->
+  <!-- copy the node and its contents.                             -->
+  <xsl:template xmlns:cdr="cips.nci.nih.gov/cdr" match="*[@cdr:ref]">
+    <xsl:variable name="cdrref">
+      <xsl:choose>
+        <xsl:when test="@cdr:ref">
+          <xsl:value-of select="@cdr:ref"/>
+        </xsl:when>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:variable name="fragId" select="substring-after($cdrref, '#')"/>
+    <xsl:variable name="cdrtmpvalue">
+      <xsl:value-of select="document(concat('cdrx:',$cdrref, '/CdrCtl'))                             /CdrDocCtl/DocTitle"/>
+    </xsl:variable>
+    <xsl:variable name="cdrvalue">
+     <xsl:choose>
+      <xsl:when test="contains($cdrtmpvalue, ';')">
+       <xsl:value-of select="substring-before($cdrtmpvalue, ';')"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of select="$cdrtmpvalue"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:variable>
+    <xsl:element name="{name()}">
+      <xsl:apply-templates select="@*"/>
+      <xsl:choose>
+        <xsl:when test="$cdrvalue=''">
+          <xsl:apply-templates/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:choose>
+            <xsl:when test="$fragId=''">
+              <xsl:value-of select="$cdrvalue"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:value-of select="concat($cdrvalue, ' [', $fragId, ']')"/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:element>
+  </xsl:template>
+
+</xsl:transform>

@@ -1,0 +1,228 @@
+<?xml version="1.0"?>
+
+ <!--Filter written by C.Burg - 3/14/2002 -->
+
+ <!-- ===========================================================
+           Filter to display XMetal Help Screens 
+      ============================================================ -->
+
+      <xsl:transform   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                         version="1.0"
+                       xmlns:cdr="cips.nci.nih.gov/cdr">
+      <xsl:output method="html"/>
+
+      <xsl:template match="/">
+    
+      <HTML>
+        <HEAD>
+          <xsl:variable name="cdrdocs" select="document('cdrx:/*/CdrCtl')"/>
+
+          <TITLE><xsl:value-of select="document ('cdrutil:/docid')"/>&#xa0;&#xa0;<xsl:value-of select="substring-before($cdrdocs/CdrDocCtl/DocTitle,';')"/></TITLE>
+     
+ <!-- =================================================================
+       Inline sytle sheet to display H2 and H4 headers in Navy 
+      ================================================================= -->
+
+      <STYLE>
+         h3,h4 {color: Navy}
+         li.lnone {list-style: none}
+         p { +.4mm }
+      </STYLE>
+      </HEAD>
+         <BASEFONT FACE='Arial, Helvetica, sans-serif' /> 
+         <xsl:apply-templates select="Documentation"/>
+      </HTML>
+      </xsl:template>
+
+       <xsl:template match="Documentation">
+         <BODY>
+            <xsl:apply-templates/>
+         </BODY>
+       </xsl:template>
+
+ <!-- ============================================================
+                    Display the Title of the Help Screen
+      ============================================================= -->
+
+      <xsl:template match="DocumentationTitle">
+         <h3><xsl:value-of select="."/></h3>
+      </xsl:template>
+
+ <!-- ===============================================================
+                      Display Paragraphs
+      ================================================================ -->
+
+      <xsl:template match="Para">
+      <p><xsl:apply-templates/></p>
+      </xsl:template>
+
+<!-- ===============================================================
+                      Display Paragraphs in Ordered Lists      ================================================================ 
+
+      <xsl:template match="ListItem/Para">
+      <br />
+      <xsl:apply-templates/><br />
+      </xsl:template>-->
+
+
+ <!-- ==================================================================
+          Display an Itemized List
+       ================================================================ -->
+                                              
+       <xsl:template match="ItemizedList">
+
+       <p><xsl:value-of  select="ListTitle"/></p>
+
+       <xsl:choose>
+          <xsl:when test="@Style='bullet'">
+              <ul>
+             <xsl:for-each select="ListItem">
+                <li type='disc'><xsl:apply-templates/></li>
+             </xsl:for-each>
+             </ul>
+          </xsl:when>
+          <xsl:when test="@Style='dash'">
+              <ul>
+             <xsl:for-each select="ListItem">
+                <li type='square'><xsl:apply-templates/></li>
+             </xsl:for-each>
+             </ul>
+             <br />
+             </xsl:when>
+
+          <xsl:otherwise>
+             <ul>
+             <xsl:for-each select="ListItem">
+             <li class='lnone'><xsl:apply-templates/></li><br />
+             </xsl:for-each>
+             </ul>
+       </xsl:otherwise>
+       </xsl:choose>
+ 
+       </xsl:template>
+
+         
+ 
+ <!--  ===================================================================
+               Display Strong 
+       ================================================================== -->
+
+      <xsl:template match="Strong">
+         <b><xsl:value-of select="."/></b>
+      </xsl:template>
+ 
+    
+ <!--  ===================================================================
+               Display Emphasis 
+       ================================================================== -->
+
+      <xsl:template match="Emphasis">
+         <i><xsl:value-of select="."/></i>
+      </xsl:template>
+     
+
+ 
+ <!-- ====================================================================
+                           Display a topic section title
+      ====================================================================  -->
+
+      <xsl:template match="TopicSectionTitle">
+         <h3><xsl:value-of select="."/></h3>
+      </xsl:template>
+ 
+
+ <!-- ==============================================================
+                     Display an Ordered List
+      ================================================================ -->
+      <xsl:template match="OrderedList">
+        <h3><xsl:value-of select="ListTitle"/></h3>
+      <xsl:choose>
+         <xsl:when test="@Style='LAlpha'">
+            <ol>
+            <xsl:for-each select="ListItem">
+                 <li type='a'><xsl:apply-templates/></li>
+            </xsl:for-each>
+            </ol>
+         </xsl:when>
+         <xsl:otherwise>
+            <ol>
+            <xsl:for-each select="ListItem">
+            <li><xsl:apply-templates/></li><br />
+            </xsl:for-each>
+            </ol>
+           
+         </xsl:otherwise>
+      </xsl:choose>
+      </xsl:template>
+
+      
+  
+ <!-- ==============================================================
+               Do not display these data elements 
+        ============================================================== -->
+
+       <xsl:template match="Metadata"/>
+       
+       
+                
+
+    
+  <!-- ==============================================================
+                 Display Related Topic
+       ============================================================== -->
+
+       <xsl:template match="TopicRelationship">
+         <xsl:for-each select="//RelatedTopic">   
+             <b><xsl:value-of select="@RelationshipType"/>:</b><br />
+             <xsl:for-each select="RelatedTopicID">
+              <a>
+ <xsl:attribute name="href">
+ <xsl:value-of select="concat('/cgi-bin/cdr/Filter.py?DocId=',@cdr:href,'&amp;Filter=name:Documentation+Help+Screens+Filter')"/>
+ </xsl:attribute>
+<xsl:value-of select="."/><br />
+<xsl:if test="position()=last()"><br /></xsl:if>
+</a>
+</xsl:for-each>
+</xsl:for-each>
+       </xsl:template>
+
+ <!-- ====================================================================
+                    Display a table
+      =================================================================== -->
+
+             
+             <xsl:template match="Table">
+             <xsl:if test="Title">
+                 <br />
+             <b><xsl:apply-templates select="Title"/></b><br />
+              </xsl:if>
+              <table border='1' cellspacing='0' cellpadding='0' width='60%'>
+              <!-- <xsl:attribute name='border'>1</xsl:attribute>-->
+              <xsl:for-each select="TGroup/THead/Row">
+              <tr>
+              <xsl:for-each select="entry">
+              <th><xsl:apply-templates/></th>
+              </xsl:for-each>
+              </tr>
+              </xsl:for-each>
+              <xsl:for-each select="TGroup/TBody/Row">
+              <tr>
+              <xsl:for-each select='entry'>
+              <xsl:variable name="cols" select="../../..@Cols"/>
+              <xsl:if test="not(@NameEnd)"> 
+              <td><xsl:apply-templates select="."/></td>
+              </xsl:if>
+              <xsl:if test="@NameEnd"> 
+        <td colspan='{$cols}' width='50%'><xsl:apply-templates select="."/></td>
+            </xsl:if>
+       
+            </xsl:for-each>
+            </tr>
+            </xsl:for-each>
+           
+            </table>
+            </xsl:template>
+                
+            
+        
+</xsl:transform>

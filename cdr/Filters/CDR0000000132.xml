@@ -1,0 +1,159 @@
+<?xml version="1.0"?>
+<xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                           xmlns:cdr = "cips.nci.nih.gov/cdr"
+                             version = "1.0">
+
+ <xsl:output                  method = "xml"/>
+
+ <!-- ===================================================================
+      Drop down to the OrganizationLocations element.
+      =================================================================== -->
+ <xsl:template match="/">
+  <xsl:apply-templates        select = "Organization/OrganizationLocations"/>
+ </xsl:template>
+
+ <!-- ===================================================================
+      Process each of the Location children.
+      =================================================================== -->
+ <xsl:template                 match = "OrganizationLocations">
+  <xsl:variable                 name = "cipsContactId"
+                              select = "CIPSContact"/>
+  <Locations>
+   <xsl:for-each              select = "OrganizationLocation/Location">
+    <xsl:call-template          name = "getLocation">
+     <xsl:with-param            name = "cipsContactId"
+                              select = "$cipsContactId"/>
+    </xsl:call-template>
+   </xsl:for-each>
+  </Locations>
+ </xsl:template>
+
+ <!-- ===================================================================
+      Extract the address (as HTML) and the fragment ID (if any).
+      =================================================================== -->
+ <xsl:template                  name = "getLocation">
+  <xsl:param                    name = "cipsContactId"/>
+  <Location>
+   <table                     border = "0"
+                         cellspacing = "0"
+                         cellpadding = "0">
+    <xsl:apply-templates      select = "PostalAddress"/>
+    <xsl:apply-templates      select = "Phone"/>
+    <xsl:apply-templates      select = "TollFreePhone"/>
+    <xsl:apply-templates      select = "Fax"/>
+    <xsl:apply-templates      select = "Email"/>
+    <xsl:apply-templates      select = "WebSite"/>
+    <xsl:if                     test = "@cdr:id = $cipsContactId">
+     <tr>
+      <td                     colspan = "2">
+       <font                    size = "3">CIPS Contact Location</font>
+      </td>
+     </tr>
+    </xsl:if>
+   </table>
+   <xsl:if                      test = "@cdr:id">
+    <FragmentId>
+     <xsl:value-of            select = "@cdr:id"/>
+    </FragmentId>
+   </xsl:if>
+  </Location>
+ </xsl:template>
+
+ <!-- ===================================================================
+      Assemble the postal address as HTML.
+      =================================================================== -->
+ <xsl:template                 match = "PostalAddress">
+  <xsl:for-each               select = "Street">
+   <tr>
+    <td                      colspan = "2">
+     <font                      size = "3">
+      <xsl:value-of           select = "."/>
+     </font>
+    </td>
+   </tr>
+  </xsl:for-each>
+  <xsl:variable                 name = "city">
+   <xsl:if                      test = "City">
+    <xsl:value-of             select = "City"/>
+    <xsl:if                     test = "CitySuffix">
+     <xsl:text> </xsl:text>
+     <xsl:value-of            select = "CitySuffix"/>
+    </xsl:if>
+   </xsl:if>
+  </xsl:variable>
+  <xsl:variable                 name = "state">
+   <xsl:if                      test = "PoliticalSubUnit_State[@cdr:ref]">
+    <xsl:variable               name = "stateDoc"
+                              select = "document(concat(''cdrx:'',
+                                                 PoliticalSubUnit_State/
+                                                 @cdr:ref))"/>
+    <xsl:choose>
+     <xsl:when                  test = "$stateDoc/PoliticalSubUnit/
+                                        PoliticalSubUnitShortName">
+      <xsl:value-of           select = "$stateDoc/PoliticalSubUnit/
+                                        PoliticalSubUnitShortName"/>
+     </xsl:when>
+     <xsl:when                  test = "$stateDoc/PoliticalSubUnit/
+                                        PoliticalSubUnitFullName">
+      <xsl:value-of           select = "$stateDoc/PoliticalSubUnit/
+                                        PoliticalSubUnitFullName"/>
+     </xsl:when>
+    </xsl:choose>
+   </xsl:if>
+  </xsl:variable>
+  <xsl:variable                 name = "cityLine">
+   <xsl:value-of              select = "$city"/>
+   <xsl:if                      test = "$city and $state">
+    <xsl:text>, </xsl:text>
+   </xsl:if>
+   <xsl:value-of              select = "$state"/>
+   <xsl:if                      test = "$state and PostalCode_ZIP">
+    <xsl:text> </xsl:text>
+   </xsl:if>
+   <xsl:value-of              select = "PostalCode_ZIP"/>
+  </xsl:variable>
+  <xsl:if                       test = "$cityLine">
+   <tr>
+    <td                      colspan = "2">
+     <font                      size = "3">
+      <xsl:value-of           select = "$cityLine"/>
+     </font>
+    </td>
+   </tr>
+  </xsl:if>
+  <xsl:if                       test = "Country[@cdr:ref]">
+   <xsl:variable                name = "country"
+                              select = "document(concat(''cdrx:'',
+                                                 Country/@cdr:ref))"/>
+   <xsl:if                      test = "$country/Country/CountryFullName">
+    <tr>
+     <td                     colspan = "2">
+      <font                     size = "3">
+       <xsl:value-of          select = "$country/Country/CountryFullName"/>
+      </font>
+     </td>
+    </tr>
+   </xsl:if>
+  </xsl:if>
+ </xsl:template>
+
+ <!-- ===================================================================
+      Assemble the miscellaneous data elements as HTML.
+      =================================================================== -->
+ <xsl:template                 match = "Phone|TollFreePhone|Fax|Email|WebSite">
+  <tr>
+   <td>
+    <font                      size = "3">
+     <xsl:value-of           select = "name()"/>
+     <xsl:text>:&#160;&#160;</xsl:text>
+    </font>
+   </td>
+   <td>
+    <font                      size = "3">
+     <xsl:value-of           select = "."/>
+    </font>
+   </td>
+  </tr>
+ </xsl:template>
+
+</xsl:transform>

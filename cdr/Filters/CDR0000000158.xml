@@ -1,0 +1,378 @@
+<?xml version="1.0"?>
+<xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                 version="1.0"
+                 xmlns:cdr="cips.nci.nih.gov/cdr">
+<xsl:output method="html"/>
+
+<!--Filter written by C.Burg - 6/12/2001 -->
+
+<!-- ============================================================
+     This program is a filter to display the Patient summary
+        in approximate cancer.gov format 
+     ============================================================-->
+
+<xsl:template match="/">
+<!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+   <HTML>
+      <HEAD>
+         <TITLE>Formats Patient Summary Test</TITLE>
+
+         <!-- ================================================
+              Inline sytle sheet to display H2 and H4 headers 
+              in Navy 
+              ================================================-->
+         <STYLE>
+            H2,H3,H4 {color: Navy}
+            <!-- H2,H4 {font-size: medium} -->
+            p {font-size: 12pt}
+            dt {font-size: 12pt}
+            dd {font-size: 12pt}
+         </STYLE>
+     <!--<LINK REL='stylesheet' 
+              HREF='/stylesheets/protocol2.css' 
+              TYPE='text/css' /> -->
+      </HEAD>
+      <!-- <BASEFONT FACE='Arial, Helvetica, sans-serif' /> -->
+      <xsl:apply-templates select="Summary"/>
+   </HTML>
+</xsl:template>
+
+<!-- ==================================
+       Display summary title 
+     ==================================-->
+
+<xsl:template match="Summary">
+   <xsl:if test="SummaryMetaData/SummaryAudience='Patients'">
+   <BODY>
+      <xsl:for-each select="SummaryTitle">
+         <H2><xsl:value-of select="."/></H2>
+      </xsl:for-each>
+
+   <!--==========================================
+         Display summary type and audience 
+       ==========================================-->
+
+      <xsl:for-each select="SummaryMetaData">
+         <H3>
+            <xsl:value-of select="concat(SummaryType,' - ',SummaryAudience)"/>
+         </H3>
+      </xsl:for-each>
+
+   <!--======================================================
+         Display a Contents List of Summary Section Titles 
+       ======================================================-->
+
+      <h2>Table of Contents</h2>
+      <dl>
+         <xsl:for-each select="SummarySection">
+         <dt>
+            <a href="#{translate(Title,' ','-')}"><xsl:value-of select="Title"/>
+            </a>
+         </dt>
+         <xsl:choose>
+            <xsl:when test="descendant::SummarySection">
+               <dl>
+                  <xsl:for-each select="SummarySection">
+                  <dt>
+                     <a href="#{translate(Title,' ','-')}">
+                     <xsl:value-of select="Title"/></a>
+                  </dt>
+                  </xsl:for-each>
+               </dl>
+            </xsl:when>
+            <xsl:otherwise>
+            </xsl:otherwise>
+         </xsl:choose>
+      </xsl:for-each>
+      </dl>
+<!--
+      <xsl:if test="descendant::SummarySection/SummarySection">
+         <dl>
+            <xsl:for-each select="SummarySection/SummarySection">
+               <dt>
+                  <a href="#{translate(Title,' ','-')}">
+                  <xsl:value-of select="Title"/></a>
+               </dt><br />
+            </xsl:for-each>
+         </dl>
+      </xsl:if>
+   </xsl:for-each>
+   </dl>-->
+
+   <hr />
+   <xsl:apply-templates/>
+
+   </BODY>
+   </xsl:if>  <!-- ends if test="//'Patients' -->
+</xsl:template>
+
+<!-- ====================================================================
+     templates to handle summary section anchors,list formats, and 
+     paragraphs that can occur in any order in the summaries 
+     ====================================================================-->
+
+<!-- ====================================================================
+     Display a summary section/summary section title and include anchor 
+     ====================================================================-->
+
+<xsl:template match="SummarySection/SummarySection/Title">
+   <h3><a name="{translate(.,' ','-')}"><xsl:apply-templates/></a></h3>
+ </xsl:template>
+
+<!-- =================================================================
+      Display a summary section title and include anchor
+    ================================================================== -->
+
+<xsl:template match="Title">
+ <xsl:if test="not(SummarySection/SummarySection)">
+  <h2><a name="{translate(.,' ','-')}"><xsl:apply-templates/></a></h2>
+   </xsl:if>
+ </xsl:template>
+
+<!--
+<xsl:template match="SummarySection/SummarySection/KeyPoint">
+   <h3><a name="{translate(.,' ','-')}"><xsl:apply-templates/></a></h3>
+</xsl:template>-->
+
+<!--<xsl:template match="SummarySection/Title">
+  <xsl:if test="not(SummarySection/SummarySection/Title)">
+   <h2><a name="{translate(.,' ','-')}"><xsl:apply-templates/></a></h2>
+   </xsl:if>
+  </xsl:template>-->
+ 
+<!-- =======================================
+      Display KeyPoints 
+     =======================================-->
+
+<xsl:template match="KeyPoints">
+   <xsl:if test="KeyPointBox">
+      <table align='center' border='1'>
+      <tr>
+         <td align='middle'>
+            <b>Key Points for This Section</b>
+         </td>
+      </tr>
+      <tr>
+         <td>
+            <ul>
+               <xsl:for-each select="KeyPointBox">
+                  <li>
+                     <a href="#{translate(substring(.,1,15),' ','-')}">
+                     <xsl:value-of select="."/></a>
+                  </li>
+               </xsl:for-each>
+               <ul>
+                  <xsl:for-each select="KeyPointBox2">
+                  <li type='disc'>
+                     <a href="#{translate(substring(.,1,15),' ','-')}">
+                     <xsl:value-of select="."/></a>
+                  </li>
+               </xsl:for-each>
+               </ul>
+            </ul>
+         </td>
+      </tr>
+      </table><br />
+   </xsl:if>
+</xsl:template>
+
+<!-- =========================================
+      Display an ordered list 
+     =========================================-->
+
+<xsl:template match="OrderedList/ListItem">
+   <dl>
+      <dd>
+         <xsl:apply-templates/>
+      </dd><br /><br />
+   </dl>
+</xsl:template>
+
+<!-- ===========================================
+      display footnotes
+     ===========================================-->
+
+<xsl:template match="CitationLink">
+   <xsl:variable name="ref-list" select="@refidx"/>
+   [<a href="#{$ref-list}">
+   <xsl:apply-templates select="$ref-list"/></a>
+   <xsl:text>] </xsl:text>
+</xsl:template>
+
+
+<!-- ============================================
+      display references 
+     ============================================-->
+
+<xsl:template match="ReferenceList">
+   <xsl:if test="Reference">
+      <h4>References:</h4>
+      <ol>
+         <xsl:for-each select="Reference">
+         <xsl:variable name="Refidx" select="@refidx"/>
+         <li>
+            <a name="{$Refidx}"><xsl:apply-templates select=".">
+            </xsl:apply-templates>
+            </a>
+         </li><br />  <!-- <br /> -->
+         </xsl:for-each>
+      </ol>
+   </xsl:if>
+</xsl:template>
+
+<!-- ===============================================
+       Display a bulleted itemized list 
+     ===============================================-->
+
+<xsl:template match="ItemizedList[@Style='bullet']">
+   <ul>
+   <xsl:for-each select="ListItem">
+      <li list-style-type='none'>
+         <xsl:apply-templates/>
+      </li><br />
+   </xsl:for-each>
+   </ul>
+   <br />
+</xsl:template>
+
+<!-- ===============================================
+      display a dashed itemized list 
+     ===============================================-->
+
+<xsl:template match="ItemizedList[@Style='dash']">
+   <ul>
+      <xsl:for-each select="ListItem">
+        <!-- <xsl:text>-&#xa0;</xsl:text>-->
+     <li type='square'><xsl:apply-templates/></li><br />
+      </xsl:for-each>
+   </ul>
+   <br />
+</xsl:template>
+
+<!-- ==================================================
+      display a itemized list 
+     ==================================================-->
+
+<xsl:template match="ItemizedList">
+   <ul>
+      <xsl:for-each select="ListItem">
+         <xsl:apply-templates/>
+      </xsl:for-each>
+   </ul>
+</xsl:template>
+
+
+<!-- ================================================================
+      This template deletes data elements not used in the display 
+     ================================================================-->
+
+<xsl:template match="PdqKey | PDQBoard | SectionType |Diagnosis | SummaryLanguage| SummaryType |SummaryAudience | SummaryTitle |MainTopics | SecondaryTopics"/>
+
+<!-- =================================================================
+        Display Paragraphs 
+     =================================================================-->
+
+<xsl:template match="Para">
+   <p><xsl:apply-templates/></p>
+</xsl:template>
+
+<!-- =================================================================
+      Create a link to another document or website -old XML
+     =================================================================-->
+<!--
+<xsl:template match="ZLNK">
+   <xsl:variable name="nlink" select="."/>
+   <a href="{$nlink}">
+   <xsl:apply-templates/></a>
+</xsl:template>-->
+
+<!-- ====================================================================
+      Display tables [preliminary version RMK 17Nov2001; to be expanded. 
+     ====================================================================-->
+
+<xsl:template match="Table">
+   <center>
+      <xsl:if test="Title">
+         <h3><xsl:apply-templates select="Title"/></h3>
+      </xsl:if>
+      <table border='1' cellspacing='0' cellpadding='3'>
+         <xsl:if test="@Frame='all'">
+            <xsl:attribute name='border'>1</xsl:attribute>
+         </xsl:if>
+         <xsl:for-each select="TGroup/THead/Row">
+            <tr>
+               <xsl:for-each select='entry'>
+                  <th>
+                     <xsl:apply-templates/>
+                  </th>
+               </xsl:for-each>
+            </tr>
+         </xsl:for-each>
+         <xsl:for-each select="TGroup/TBody/Row">
+            <tr>
+            <xsl:for-each select='entry'>
+               <td>
+                  <xsl:apply-templates/>
+               </td>
+            </xsl:for-each>
+            </tr>
+         </xsl:for-each>
+      </table>
+      <xsl:for-each select='TGroup//Row/entry/Note'>
+         <i>
+            <xsl:value-of select="."/><br />
+         </i>
+      </xsl:for-each>
+   </center>
+</xsl:template>
+
+<!-- =========================================================
+      don't do anything for Note   =========================================================-->
+
+<xsl:template match="entry/Note"/>
+
+<!-- =========================================================
+        Display as formatted in document 
+     =========================================================-->
+<xsl:template match="Para/TT">
+   <pre>
+      <xsl:apply-templates/>
+   </pre>
+</xsl:template>
+
+<!-- =========================================================
+                       Link to glossaryTermRefs 
+     =========================================================-->
+<xsl:template match="GlossaryTermRef">
+ <a>
+ <xsl:attribute name="href">
+ <xsl:value-of select="concat('/cgi-bin/cdr/Filter.py?DocId=',@cdr:href,'&amp;Filter=name:Glossary+Term+Display+for+Patient+Summaries')"/>
+ </xsl:attribute>
+<xsl:value-of select="."/>
+</a>
+</xsl:template>
+
+<!-- =========================================================
+             create anchor from keypoint in table to text
+     =========================================================-->
+
+<xsl:template match="KeyPoint">
+   <b>
+      <a name="{translate(substring(.,1,15),' ','-')}">
+      <xsl:value-of select="."/></a>
+   </b>
+</xsl:template>
+
+<!-- =========================================================
+           Create a link to an external website 
+     =========================================================-->
+
+<xsl:template match="ExternalRef">
+   <xsl:variable name="nlink" select="@cdr:xref"/>
+   <a href="{$nlink}">
+      <xsl:apply-templates/>
+   </a>
+</xsl:template>
+
+
+</xsl:transform>

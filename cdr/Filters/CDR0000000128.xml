@@ -1,0 +1,123 @@
+<?xml version="1.0"?>
+
+ <!-- ============================================================
+      Filter to construct a DocTitle for a Person document.
+      ============================================================ -->
+
+<xsl:transform        xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                        version = "1.0"
+                      xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+ <xsl:output method="text"/>
+
+ <!-- ============================================================
+      Extract surname ; given name ; city ; state 
+      ============================================================ -->
+
+ <xsl:template match="/">
+  <xsl:value-of          select = "Person/PersonNameInformation/SurName"/><xsl:text>, </xsl:text>
+ <!-- <xsl:text>;</xsl:text>-->
+  <xsl:value-of          select = "Person/PersonNameInformation/GivenName"/>
+  <xsl:text>;</xsl:text>
+  <xsl:apply-templates   select = "Person/PersonLocations"/>
+ </xsl:template>
+
+ <!-- ============================================================
+      Pick the location which matches the CIPSContact fragment ID.
+      ============================================================ -->
+
+ <xsl:template            match = "PersonLocations">
+  <xsl:variable            name = "fragId"
+                         select = "CIPSContact"/>
+  <xsl:apply-templates   select = "Home[@cdr:id=$fragId]"/>
+  <xsl:apply-templates   select = "PrivatePractice/
+                                   PrivatePracticeLocation[@cdr:id=$fragId]"/>
+  <xsl:if test="not(OtherPracticeLocation[@cdr:id=$fragId]/SpecificPostalAddress)">
+  <xsl:apply-templates   select = "OtherPracticeLocation[@cdr:id=$fragId]/
+                                   OrganizationLocation"/>
+  </xsl:if>
+   <xsl:if test="OtherPracticeLocation[@cdr:id=$fragId]/SpecificPostalAddress">
+   <xsl:apply-templates   select = "OtherPracticeLocation[@cdr:id=$fragId]"/>
+   </xsl:if>                               
+ </xsl:template>
+
+ <!-- ============================================================
+      Extract city and state from the organization document.
+      Using cdrx protocol so processor will not throw an exception
+      it the organization document cannot be found.
+      ============================================================ -->
+
+ <xsl:template            match = "OtherPracticeLocation/OrganizationLocation">
+ <xsl:if test="not(../SpecificPostalAddress)">
+  <xsl:variable            name = "docId"
+                         select = "substring-before(@cdr:ref, '#')"/>
+  <xsl:variable            name = "fragId"
+                         select = "substring-after(@cdr:ref, '#')"/>
+  <xsl:variable            name = "org"
+                         select = "document(concat('cdrx:', $docId))"/>
+  <xsl:variable            name = "orgLocs"
+                         select = "$org/Organization/OrganizationLocations"/>
+  <xsl:variable            name = "loc"
+                         select = "$orgLocs/OrganizationLocation
+                                           /Location[@cdr:id=$fragId]"/>
+  <xsl:apply-templates   select = "$loc/PostalAddress"/>
+ </xsl:if>
+ </xsl:template>
+
+ <xsl:template            match = "Home|PrivatePracticeLocation">
+  <xsl:apply-templates   select = "PostalAddress"/>
+ </xsl:template>
+<xsl:template            match = "OtherPracticeLocation">
+  <xsl:apply-templates   select = "SpecificPostalAddress"/>
+ </xsl:template>
+
+ <!-- ============================================================
+      Common template to pull out the city and state.
+      Make sure separating semicolon is conditional on presence of 
+      City.
+      ============================================================ -->
+
+ <xsl:template            match = "PostalAddress | SpecificPostalAddress">
+  <xsl:variable            name = "city"
+                         select = "City"/>
+  <xsl:if                  test = "$city">
+   <xsl:value-of         select = "$city"/>
+   <xsl:text>;</xsl:text>
+  </xsl:if>
+  <xsl:choose>
+   <xsl:when               test = "PoliticalSubUnit_State">
+    <xsl:apply-templates select = "PoliticalSubUnit_State"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:if                test = "Country">
+     <xsl:apply-templates
+                         select = "Country"/>
+    </xsl:if>
+   </xsl:otherwise>
+  </xsl:choose>                    
+ </xsl:template>
+
+ <!-- ============================================================
+      Extract the state name from its own document, not the 
+      denormalized string that might or might not be present in
+      the Person document.
+      ============================================================ -->
+
+ <xsl:template            match = "PoliticalSubUnit_State">
+  <xsl:variable            name = "doc"
+                         select = "document(concat('cdrx:', @cdr:ref))"/>
+  <xsl:value-of          select = "$doc/PoliticalSubUnit
+                                       /PoliticalSubUnitFullName"/>
+ </xsl:template>
+
+ <!-- ============================================================
+      Same approach for the Country: get it from the source.
+      ============================================================ -->
+
+ <xsl:template            match = "Country">
+  <xsl:variable            name = "doc"
+                         select = "document(concat('cdrx:', @cdr:ref))"/>
+  <xsl:value-of          select = "$doc/Country/CountryFullName"/>
+ </xsl:template>
+
+</xsl:transform>

@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+ <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                version="1.0"
+                xmlns:cdr="cips.nci.nih.gov/cdr">
+  <!-- for testing 
+  <xsl:param     name="leadOrgId">CDR0000051374</xsl:param>
+    -->
+  <xsl:param     name="leadOrgId"/>
+
+  <xsl:template match="/">
+   <InScopeProtocol>
+    <xsl:apply-templates select="InScopeProtocol"/>
+   </InScopeProtocol>
+  </xsl:template>
+
+  <xsl:template match='InScopeProtocol'>
+   <xsl:for-each select = "ProtocolTitle[@Type='Original']">
+    <Title><xsl:value-of select='.'/></Title>
+   </xsl:for-each>
+   <xsl:apply-templates select="ProtocolAdminInfo"/>
+  </xsl:template>
+
+  <xsl:template match="ProtocolAdminInfo">
+   <xsl:for-each select="ProtocolLeadOrg">
+    <xsl:if test="LeadOrganizationID/@cdr:ref=$leadOrgId">
+     <LeadOrg>
+      <xsl:apply-templates select="LeadOrganizationID"/>
+      <xsl:apply-templates select="LeadOrgProtocolStatuses/CurrentOrgStatus"/>
+      <xsl:apply-templates select="ProtocolSites"/>
+     </LeadOrg>
+    </xsl:if>
+   </xsl:for-each>
+  </xsl:template>
+
+  <xsl:template match="ProtocolSites">
+   <xsl:for-each select="OrgSite">
+    <ParticipatingOrg>
+     <xsl:apply-templates select="OrgSiteID"/>
+     <xsl:apply-templates select="OrgSiteContact/SpecificPerson"/>
+    </ParticipatingOrg>
+   </xsl:for-each>
+  </xsl:template>
+
+  <xsl:template match="SpecificPerson">
+   <xsl:variable name="person" 
+                 select="document(concat('cdrx:', Person/@cdr:ref))"/>
+   <Contact>
+    <Surname>
+     <xsl:value-of select="$person/Person/PersonNameInformation/SurName"/>
+    </Surname>
+    <GivenName>
+     <xsl:value-of select="$person/Person/PersonNameInformation/GivenName"/>
+    </GivenName>
+    <Role>
+     <xsl:value-of select="Role"/>
+    </Role>
+   </Contact>
+  </xsl:template>
+
+  <xsl:template match="LeadOrganizationID|OrgSiteID">
+   <xsl:variable name="org" select="document(concat('cdrx:', @cdr:ref))"/>
+   <xsl:variable name="nameInfo"
+                 select="$org/Organization/OrganizationNameInformation"/>
+   <xsl:variable name="orgName" select="$nameInfo/OfficialName/Name"/>
+   <xsl:choose>
+    <xsl:when test="$orgName">
+     <OrgName><xsl:value-of select="$orgName"/></OrgName>
+    </xsl:when>
+    <xsl:otherwise>
+     <OrgName>*** Name not found ***</OrgName>
+    </xsl:otherwise>
+   </xsl:choose>
+   <OrgId><xsl:value-of select="@cdr:ref"/></OrgId>
+  </xsl:template>
+
+  <xsl:template match="CurrentOrgStatus">
+   <Status><xsl:value-of select="StatusName"/></Status>
+  </xsl:template>
+
+ </xsl:transform>

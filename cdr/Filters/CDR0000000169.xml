@@ -1,0 +1,181 @@
+<?xml version="1.0"?>
+<xsl:transform            xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                          xmlns:cdr = "cips.nci.nih.gov/cdr"
+                            version = "1.0">
+
+ <!-- 
+ ======================================================================
+ Format the postal address.
+ ====================================================================== -->
+ <xsl:template                match = "PostalAddress|SpecificPostalAddress">
+  <xsl:variable                name = "city"
+                             select = "City"/>
+  <xsl:variable                name = "zip"
+                             select = "PostalCode_ZIP"/>
+  <xsl:variable                name = "stateLink"
+                             select = "PoliticalSubUnit_State/@cdr:ref"/>
+  <xsl:variable                name = "stateDoc">
+   <xsl:if                     test = "$stateLink">
+    <xsl:copy-of             select = "document(concat('cdrx:',
+                                                       $stateLink))"/>
+   </xsl:if>
+  </xsl:variable>
+  <xsl:variable                name = "stateFullName"
+                             select = "$stateDoc/PoliticalSubUnit
+                                                /PoliticalSubUnitFullName"/>
+  <xsl:variable                name = "stateShortName"
+                             select = "$stateDoc/PoliticalSubUnit
+                                                /PoliticalSubUnitShortName"/>
+  <xsl:variable                name = "state">
+   <xsl:choose>
+    <xsl:when                  test = "$stateShortName">
+     <xsl:value-of           select = "$stateShortName"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of           select = "$stateFullName"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+  <xsl:variable                name = "countryLink"
+                             select = "Country/@cdr:ref"/>
+
+  <xsl:variable                name = "countryDoc">
+   <xsl:if                     test = "$countryLink">
+    <xsl:copy-of             select = "document(concat('cdrx:', 
+                                                       $countryLink))"/>
+   </xsl:if>
+  </xsl:variable>
+
+  <xsl:variable                name = "zipPos"
+                             select = "$countryDoc/Country/
+                                       PostalCodePosition"/>
+  <xsl:variable                name = "country"
+                             select = "$countryDoc/Country/CountryFullName"/>
+
+  <xsl:for-each              select = "Street">
+   <Line>
+    <xsl:value-of            select = "."/>
+   </Line>
+  </xsl:for-each>
+
+  <!-- XSLT makes this *way* uglier than it should be. -->
+  <xsl:if                      test = "$zip">
+   <xsl:choose>
+
+    <!-- ZIP goes before city. -->
+    <xsl:when                  test = "$zipPos = 'before City'">
+     <Line>
+      <xsl:value-of          select = "concat($zip, ' ', $city)"/>
+      <xsl:if                  test = "$city and $state">
+       <xsl:text>, </xsl:text>
+      </xsl:if>
+      <xsl:value-of          select = "$state"/>
+     </Line>
+    </xsl:when>
+
+    <!-- ZIP goes after city. -->
+    <xsl:when                  test = "$zipPos = 'after City'">
+     <Line>
+      <xsl:if                  test = "$city">
+       <xsl:value-of         select = "concat($city, ' ')"/>
+      </xsl:if>
+      <xsl:value-of          select = "concat($zip, ' ', $state)"/>
+     </Line>
+    </xsl:when>
+
+    <!-- ZIP goes after state (the default). -->
+    <xsl:when                  test = "not($zipPos = 'after Country')">
+     <Line>
+      <xsl:value-of          select = "$city"/>
+      <xsl:if                  test = "$city != '' and $state != ''">
+       <xsl:text>, </xsl:text>
+      </xsl:if>
+      <xsl:value-of          select = "$state"/>
+      <xsl:if                  test = "$city != '' or $state != ''">
+       <xsl:text> </xsl:text>
+      </xsl:if>
+      <xsl:value-of          select = "$zip"/>
+     </Line>
+    </xsl:when>
+   </xsl:choose>
+  </xsl:if>
+
+  <!-- No zip code. -->
+  <xsl:if                      test = "not($zip)">
+   <xsl:variable               name = "noZipLine">
+    <xsl:value-of            select = "$city"/>
+    <xsl:if                    test = "$city and $state">
+     <xsl:text>, </xsl:text>
+    </xsl:if>
+    <xsl:value-of            select = "$state"/>
+   </xsl:variable>
+   <xsl:if                     test = "$noZipLine">
+    <Line>
+     <xsl:value-of           select = "$noZipLine"/>
+    </Line>
+   </xsl:if>
+  </xsl:if>
+
+  <!-- Plug in the country (required). -->
+  <Line>
+   <xsl:value-of             select = "$country"/>
+   <xsl:if                     test = "$zip and $zipPos = 'after Country'">
+    <xsl:value-of            select = "concat(' ', $zip)"/>
+   </xsl:if>
+  </Line>
+
+ </xsl:template>
+
+ <!-- 
+ ======================================================================
+ Grab the phone.
+ ====================================================================== -->
+ <xsl:template                match = "Phone|SpecificPhone">
+  <Line>
+   <xsl:value-of             select = "concat('Phone: ', .)"/>
+  </Line>
+ </xsl:template>
+
+ <!-- 
+ ======================================================================
+ Grab the toll-free phone.
+ ====================================================================== -->
+ <xsl:template                match = "TollFreePhone|SpecificTollFreePhone">
+  <Line>
+   <xsl:value-of             select = "concat('Toll-free Phone: ', .)"/>
+  </Line>
+ </xsl:template>
+
+ <!-- 
+ ======================================================================
+ Grab the fax number.
+ ====================================================================== -->
+ <xsl:template                match = "Fax|SpecificFax">
+  <Line>
+   <xsl:value-of             select = "concat('Fax: ', .)"/>
+  </Line>
+ </xsl:template>
+
+ <!-- 
+ ======================================================================
+ Grab the email address.
+ ====================================================================== -->
+ <xsl:template                match = "Email|SpecificEmail">
+  <Line>
+   <xsl:value-of             select = "concat('Email: ', .)"/>
+  </Line>
+ </xsl:template>
+
+ <!-- 
+ ======================================================================
+ Grab the web site.
+ ====================================================================== -->
+ <xsl:template                match = "WebSite|SpecificWebSite">
+  <xsl:if                      test = "@cdr:xref">
+   <Line>
+    <xsl:value-of            select = "concat('Website: ', @cdr:xref)"/>
+   </Line>
+  </xsl:if>
+ </xsl:template>
+
+</xsl:transform>

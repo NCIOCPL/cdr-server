@@ -1,0 +1,390 @@
+<?xml version="1.0"?>
+
+<!-- ================================================================
+      Filter to create a Patient InScope Protocol QC Report
+     ================================================================= -->
+    
+  <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                 version="1.0"
+                 xmlns:cdr="cips.nci.nih.gov/cdr">
+   <xsl:output method="html"/>
+   <xsl:template match="/">
+
+  <!--Filter written by C.
+Burg - 6/21/2001 -->
+  
+   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+    <HTML>
+    <xsl:variable name="cdrdocs" select="document('cdrx:/*/CdrCtl')"/>
+<HEAD>
+<TITLE><xsl:value-of select="document('cdrutil:/docid')"/>&#xa0;&#xa0;<xsl:value-of select="substring-before($cdrdocs/CdrDocCtl/DocTitle,';')"/></TITLE>
+     
+     
+     <!--
+     <LINK REL='stylesheet' 
+           HREF='/stylesheets/protocol2.css' 
+           TYPE='text/css' /> -->
+    </HEAD>
+    <STYLE>
+      li.lnone {list-style: none}
+    </STYLE>
+     <BASEFONT FACE='Arial, Helvetica, sans-serif' /> 
+    <xsl:apply-templates select="InScopeProtocol"/>
+    </HTML>
+    </xsl:template>
+  <!-- Generate the HTML for the Patient QC Report-->
+  <xsl:template match="InScopeProtocol">
+    <BODY>
+
+ <!-- ====================================================================
+       Display Report heading and subheading
+      ==================================================================== -->
+  
+  <b><font size='4'><center>Patient Protocol Content<br />QC Report</center></font></b>
+ <b><font size='3'><center><xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/></center></font></b><br /><br />
+<b><xsl:value-of select="document('cdrutil:/docid')"/></b><br />
+ <xsl:variable name="cdrdoc" select="document('cdrx:/*/CdrCtl')"/>
+ <xsl:value-of select="$cdrdoc/CdrDocCtl/DocTitle"/><br /><br />
+     
+
+ <!--<xsl:apply-templates select="ProtocolTitle[@Type='Professional']"/>-->
+
+<b><font size='4'>Identification Information</font></b><br /><br />
+
+
+<xsl:apply-templates/>
+
+<!-- ===================================================================
+      Display Creation Date,User, and Modification Date and User
+     ================================================================== -->
+
+<b><font size='4'>Record Information</font></b><br /><br />
+<xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
+<b><xsl:text>Date Created</xsl:text></b><xsl:text>....................</xsl:text>
+<xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/Date"/><br />
+<b><xsl:text>User</xsl:text></b><xsl:text>....................................</xsl:text>
+<xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/User"/><br />
+<b><xsl:text>Date Modfied</xsl:text></b><xsl:text>....................</xsl:text>
+<xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/Date"/><br />
+<b><xsl:text>User</xsl:text></b><xsl:text>....................................</xsl:text>
+<xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/User"/>
+
+</BODY>
+</xsl:template>
+
+<!-- =====================================================================
+                         Display the PDQKey
+     ==================================================================== -->
+
+<xsl:template match="PdqKey">
+<b><xsl:text>PDQ Key</xsl:text></b>
+<xsl:text>............................</xsl:text>
+<xsl:apply-templates/><br />
+</xsl:template>
+
+<!-- ==================================================================
+        Display the Primary ID and OtherIDs and ID types and comments
+     ==================================================================  -->
+
+<xsl:template match="PrimaryID">
+<b><xsl:text>Primary ID</xsl:text></b>
+<xsl:text>...........................</xsl:text>
+
+<xsl:apply-templates select="IDString"/><br />
+<b><xsl:text>Comment</xsl:text></b><br />
+<xsl:apply-templates select="Comment"/><br /><br />
+
+</xsl:template> 
+
+<xsl:template match="OtherID">
+
+<b><xsl:text>Other ID</xsl:text></b>
+<xsl:text>................................</xsl:text>
+<xsl:apply-templates select="IDType"/>,
+<xsl:apply-templates select="IDString"/><br />
+<b><xsl:text>Comment</xsl:text></b>
+<xsl:if test="Comment">
+<xsl:apply-templates select="Comment"/>
+</xsl:if>
+<br /><br />
+</xsl:template>
+ 
+<!-- Display Professional title-->
+
+<!--<xsl:template match="ProtocolAbstract">
+  <b><font size='4'><xsl:text>Professional Abstract</xsl:text></font></b><br />
+ </xsl:template>-->
+
+<!--<xsl:template match="ProtocolAbstract/Professional">
+  <b><font size='4'><xsl:text>Objectives</xsl:text></font></b><br />
+ </xsl:template>-->
+
+<!-- =====================================================================
+        Display Protocol Objectives
+     ==================================================================== -->
+
+<xsl:template match="OrderedList">
+ <ol>
+ <xsl:for-each select="ListItem">
+<li type="I"><xsl:value-of select="."/></li><br />
+  </xsl:for-each>
+  </ol>
+ <!--<xsl:if test="Para/TT">
+ <pre><xsl:value-of select="."/></pre>
+ </xsl:if>-->
+ </xsl:template>
+<!-- ====================================================================
+      Display the Disease characteristics, Patient characteristics,
+      Prior concurrent therapy
+     ==================================================================== -->
+ 
+<xsl:template match="DiseaseCharacteristics">
+ <h3>Entry Criteria</h3>
+<h3>Disease Characteristics:</h3> 
+<xsl:apply-templates/>
+</xsl:template>
+
+<xsl:template match="PatientCharacteristics">
+<h3>Patient Characteristics:</h3>
+<xsl:apply-templates/>
+</xsl:template>
+
+<xsl:template match="ItemizedList">
+<b><i><xsl:value-of select="ListTitle"/></i></b>
+<ul>
+ <xsl:for-each select="ListItem">
+   <li class='lnone'><xsl:apply-templates/></li><br />
+  </xsl:for-each>
+</ul>
+
+</xsl:template>
+
+  
+<xsl:template match="PriorConcurrentTherapy">
+ 
+ <h3>Prior Concurrent Therapy</h3>
+  <xsl:apply-templates/>
+</xsl:template>
+
+<!-- ================================================================
+       Display the projected accrual
+     ================================================================ -->
+
+<xsl:template match="ProjectedAccrual">
+ <br /><br />
+ <h3>Projected Accrual</h3><br />
+  <p><xsl:apply-templates/></p>
+ </xsl:template>
+
+<!-- ===================================================================
+                 Display Dose Schedule
+     =================================================================== -->
+
+<xsl:template match="DoseSchedule">
+ <br /><br />
+ <h3>Dose Schedule</h3><br />
+  <xsl:apply-templates/>
+  <br /><br />
+ </xsl:template>
+
+
+<xsl:template match="Outline">
+<h3>Outline</h3>
+ <xsl:apply-templates/>
+</xsl:template>
+
+<xsl:template match="ProtocolAbstract/Professional/EnteredBy">
+   
+ <b><font size='3'>Entered By</font></b>
+ <xsl:text>....................</xsl:text>
+ <xsl:value-of select="."/><br />
+ </xsl:template>
+
+<xsl:template match="ProtocolAbstract/Professional/EntryDate">
+   
+ <b><font size='3'>Entry Date</font></b>
+ <xsl:text>.....................</xsl:text>
+ <xsl:value-of select="."/><br /><br />
+ </xsl:template>
+
+
+
+<!-- ==================================================================
+      Display the Patient Purpose, Eligibility, Treatment Intervention
+     ================================================================== -->  
+
+<xsl:template match="Purpose">
+
+ <b><font size='3'>Purpose</font></b><br />
+ <xsl:apply-templates/>
+ </xsl:template>
+<xsl:template match="Rationale">
+ <b><font size='4'>Patient Abstract</font></b><br /><br />
+ <b><font size='3'>Rationale</font></b><br />
+ <xsl:apply-templates/>
+  </xsl:template>
+<xsl:template match="Eligibility/EligibilityText">
+<b><font size='3'>Eligibility</font></b><br />
+ <xsl:apply-templates/>
+  </xsl:template>
+
+<xsl:template match="TreatmentIntervention">
+ 
+  <b><font size='3'>Treatment Intervention</font></b><br />
+  <xsl:apply-templates/>
+
+ <b><font size='3'>Entered By</font></b>
+ <xsl:text>....................</xsl:text>
+ <xsl:value-of select="../EnteredBy"/><br />
+   
+ <b><font size='3'>Entry Date</font></b>
+ <xsl:text>.....................</xsl:text>
+ <xsl:value-of select="../EntryDate"/><br />
+
+ </xsl:template>
+
+
+
+<!-- =========================================================
+                       Link to glossaryTermRefs 
+     =========================================================-->
+<xsl:template match="GlossaryTermRef">
+ <a>
+ <xsl:attribute name="href">
+ <xsl:value-of select="concat('/cgi-bin/cdr/Filter.py?DocId=',@cdr:href,'&amp;Filter=name:Glossary+Term+Display+for+Patient+Summaries')"/>
+ </xsl:attribute>
+<xsl:value-of select="."/>
+</a>
+</xsl:template>
+
+
+<!-- =====================================================================
+        Display the Paragraphs
+     ====================================================================== 
+
+ <xsl:template match="Outline/Para">
+ <p><xsl:apply-templates/></p>
+ </xsl:template>-->
+
+<!--Display an itemized list -->
+
+
+
+<!--<xsl:template match="ItemizedList | ItemizedList/ListItem">
+<dl>
+<dd><xsl:apply-templates/></dd><br />
+</dl>
+</xsl:template>-->
+
+<!--===============================================
+       Display Paragraphs
+     =============================================== -->
+
+<!--
+<xsl:template match="ProtocolAbstract/Professional/EntryCriteria/DiseaseCharaceristics/Para">
+<p><xsl:apply-templates/></p>
+</xsl:template>-->
+
+<!-- ==============================================================
+                     Display tables 
+     ============================================================== -->
+
+<xsl:template match="Para">
+<xsl:if test="TT">
+<pre><xsl:apply-templates/></pre>
+</xsl:if>
+<xsl:if test="not(TT)">
+<p><xsl:apply-templates/></p>
+</xsl:if>
+</xsl:template>
+
+<!--===============================================================
+    Display Protocol Professional or Patient Title
+    ================================================================ -->
+
+<xsl:template match="ProtocolTitle">
+<br />
+<xsl:if test="@Type='Professional'">
+
+   <b><font size='4'>Professional Title</font></b><br />
+       <p><xsl:apply-templates/></p>
+  <b><font size='4'>Professional Abstract</font></b><br /><br />
+   <b><font size='3'>Objectives</font></b>
+   </xsl:if>
+<xsl:if test="@Type='Patient'">
+   <b><font size='4'>Patient Title</font></b><br />
+   <p><xsl:apply-templates/></p>
+     </xsl:if>
+  </xsl:template>
+<!-- ==================================================================
+                     Display a Subscript 
+     =================================================================== -->
+
+              <xsl:template match="Subscript">
+              <sub><xsl:apply-templates/></sub>
+              </xsl:template>
+
+<!-- ==================================================================
+                     Display a Superscript 
+     =================================================================== -->
+
+              <xsl:template match="Superscript">
+              <sup><xsl:apply-templates/></sup>
+              </xsl:template>
+
+<!-- ==================================================================
+                     Display Strong 
+     =================================================================== -->
+
+              <xsl:template match="Strong">
+              <b><xsl:apply-templates/></b>
+              </xsl:template>
+
+<!-- ==================================================================
+                     Display Emphasis 
+     =================================================================== -->
+
+              <xsl:template match="Emphasis">
+              <i><xsl:apply-templates/></i>
+              </xsl:template>
+
+<!-- ==================================================================
+                     Display DrugName
+     =================================================================== -->
+
+              <xsl:template match="DrugName">
+              <i><xsl:apply-templates/></i>
+              </xsl:template>
+
+
+<!-- ==================================================================
+                     Display Scientific Name 
+     =================================================================== -->
+
+              <xsl:template match="ScientificName">
+              <i><xsl:apply-templates/></i>
+              </xsl:template>
+<!-- ==================================================================
+                     Display Foreign Word 
+     =================================================================== -->
+
+              <xsl:template match="ForeignWord">
+              <i><xsl:apply-templates/></i>
+              </xsl:template>
+
+<!-- ==================================================================
+                     Display Gene Name 
+     =================================================================== -->
+
+              <xsl:template match="GeneName">
+              <i><xsl:apply-templates/></i>
+              </xsl:template>
+
+
+<!-- ====================================================================
+       Do not display EnteredBy or EntryDate
+     ==================================================================== -->
+
+<xsl:template match="EnteredBy | EntryDate"/>
+
+ </xsl:transform>

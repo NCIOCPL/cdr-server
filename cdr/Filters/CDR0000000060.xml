@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+ <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                version="1.0">
+  <xsl:output method="html"/>
+
+  <xsl:template match="/">
+   <xsl:apply-templates select='ReportBody'/>
+  </xsl:template>
+
+  <xsl:template match="ReportBody">
+   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+   <HTML>
+    <HEAD>
+     <TITLE><xsl:value-of select="ReportName"/></TITLE>
+     <!-- META HTTP-EQUIV="Pragma" CONTENT="no-cache" / -->
+     <LINK REL='stylesheet' 
+           HREF='/stylesheets/report.css' 
+           TYPE='text/css' />
+    </HEAD>
+    <BODY>
+     <H2>Checked-out Documents Inactive Longer Than @@DAYS@@ Days</H2>
+     <TABLE BORDER='2'
+            CELLPADDING='2'
+            CELLSPACING='0'>
+      <TR>
+       <TH>Document ID</TH>
+       <TH>Type</TH>
+       <TH>User</TH>
+       <TH>Checked Out</TH>
+       <TH>Last Action</TH>
+       <TH>Action Date</TH>
+      </TR>
+      <xsl:apply-templates select="ReportRow"/>
+     </TABLE>
+    </BODY>
+   </HTML>
+  </xsl:template>
+
+  <xsl:template match='ReportRow'>
+   <TR>
+    <TD><xsl:value-of select="DocId"/></TD>
+    <TD><xsl:value-of select="DocType"/></TD>
+    <TD><xsl:value-of select="CheckedOutTo"/></TD>
+    <TD ALIGN='center'><xsl:value-of select="substring(WhenCheckedOut, 1, 10)"/></TD>
+    <TD><xsl:value-of select="LastActivity/ActionType"/></TD>
+    <TD ALIGN='center'><xsl:value-of select="substring(LastActivity/ActionWhen, 1, 10)"/></TD>
+   </TR>
+  </xsl:template>
+
+ </xsl:transform>

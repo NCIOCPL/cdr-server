@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+
+<xsl:transform       xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                     xmlns:cdr = "cips.nci.nih.gov/cdr"
+                       version = "1.0">
+
+ <!-- Passed in by the caller -->
+ <xsl:param               name = "docId"/>
+
+ <!-- Start at the top.  We're only interested in the Location
+      children of the OrganizationLocations element.
+   -->
+ <xsl:template           match = "/">
+  <Addresses>
+   <xsl:apply-templates select = 'Organization/OrganizationLocations/OrganizationLocation/Location'/>
+  </Addresses>
+ </xsl:template>
+
+ <!-- Extract the address information from the Location element -->
+ <xsl:template           match = "Location">
+  <xsl:variable           name = "addrStr">
+   <xsl:call-template     name = "concat-address-pieces"/>
+  </xsl:variable>
+  <xsl:if                 test = '$addrStr and @cdr:id'>
+   <Address>
+    <Link><xsl:value-of  select = 'concat($docId,"#",@cdr:id)'/></Link>
+    <Data><xsl:value-of  select = 'substring($addrStr, 2)'/></Data>
+   </Address>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template            name = 'concat-address-pieces'>
+  <xsl:apply-templates  select = 'PostalAddress'/>
+  <xsl:apply-templates  select = 'Phone|TollFreePhone|Fax|Email|WebSite'/>
+ </xsl:template>
+
+ <xsl:template           match = 'PostalAddress'>
+  <xsl:apply-templates  select = 'Street|City|CitySuffix|PoliticalUnit_State'/>
+  <xsl:apply-templates  select = 'Country|PostalCode_ZIP'/>
+ </xsl:template>
+
+ <xsl:template           match =
+ 'Street|City|CitySuffix|PostalCode_ZIP|Phone|TollFreePhone|Fax|Email'>
+  <xsl:if                 test = "string(.)">
+   <xsl:value-of        select = "concat('/',string(.))"/>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template           match = 'PoliticalUnit_State|Country|WebSite'>
+  <xsl:if                 test = "string(.)">
+   <xsl:value-of        select = "concat('/',string(.))"/>
+  </xsl:if>
+ </xsl:template>
+
+</xsl:transform>

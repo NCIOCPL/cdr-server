@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<!--
+     $Id: CDR0000000093.xml,v 1.1.1.1 2002-07-01 15:34:21 bkline Exp $
+
+     Filter which resolves Insertion/Deletion markup.
+
+     $Log: not supported by cvs2svn $
+  -->
+
+<xsl:transform       xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                     xmlns:cdr = "cips.nci.nih.gov/cdr"
+                       version = "1.0">
+
+ <xsl:param               name = "useLevel"
+                        select = "3"/>
+ <xsl:variable            name = "okVals">
+  <xsl:choose>
+   <xsl:when              test = "$useLevel = '3'">publish</xsl:when>
+   <xsl:when              test = "$useLevel = '2'">publish|approved</xsl:when>
+   <xsl:when              test = "$useLevel = '1'">publish|approved|
+                                                            proposed</xsl:when>
+  </xsl:choose>
+ </xsl:variable>
+
+ <!-- Identity rule, copies everything to the output tree. -->
+ <xsl:template           match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates select = "@*|node()"/>
+  </xsl:copy>
+ </xsl:template>
+
+ <!-- For Insertion markup, keep the content if the RevisionLevel
+      attribute is at or above that specified by the incoming
+      parameter, otherwise, discard the element.
+   -->
+ <xsl:template           match = "Insertion">
+  <xsl:if                 test = "contains($okVals, @RevisionLevel)">
+   <xsl:apply-templates select = "*"/>
+  </xsl:if>
+ </xsl:template>
+
+ <!-- For Deletion markup, toss the content if the RevisionLevel
+      attribute is at or above that specified by the incoming
+      parameter, otherwise, discard the element.
+   -->
+ <xsl:template           match = "Deletion">
+  <xsl:if                 test = "not(contains($okVals, @RevisionLevel))">
+   <xsl:apply-templates select = "*"/>
+  </xsl:if>
+ </xsl:template>
+
+</xsl:transform>

@@ -1,0 +1,162 @@
+<?xml version="1.0"?>
+   <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                    version="1.0"
+                  xmlns:cdr="cips.nci.nih.gov/cdr">
+   <xsl:output method="html"/>
+
+   <!--Filter written by C.Burg 9/25/2001 -->
+   <!-- ======================================================
+         This program is a filter to create a Glossary term
+         Content QC Report 
+        ======================================================-->
+
+   <xsl:template match="/">
+
+   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+   <HTML>
+      <HEAD>
+         <xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
+         <TITLE>
+            <xsl:value-of select="document('cdrutil:/docid')"/>&#xa0;&#xa0;
+            <xsl:value-of select="$cdrmydoc/CdrDocCtl/DocTitle"/> 
+         </TITLE>
+     
+         <!--
+         <LINK REL='stylesheet' 
+              HREF='/stylesheets/protocol2.css' 
+              TYPE='text/css' /> -->
+      </HEAD>
+      <BASEFONT FACE='Arial, Helvetica, sans-serif' />
+      <xsl:apply-templates select="GlossaryTerm"/>
+   </HTML>
+   </xsl:template>
+
+  <!-- ===================================================  
+        Generate the HTML for the glossary term QC Report
+       ===================================================-->
+   <xsl:template match="GlossaryTerm">
+      <BODY>
+      <!-- ===============================================
+            Display Report heading and subheading 
+           ===============================================-->
+        <b>
+          <font size='3'>
+             <center>Glossary Term<br />
+             QC Report</center>
+          </font>
+        </b>
+        <b>
+          <font size='3'>
+            <center>
+             <xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/>
+            </center>
+          </font>
+         </b><br /><br />
+         <b>
+            <font size='3'>
+               <xsl:apply-templates select="PDQKey"/>
+            </font>
+         </b><br />
+         <b><xsl:value-of select="document('cdrutil:/docid')"/></b><br />
+            <b>
+               <font size='3'>Name</font>
+            </b>
+             <xsl:text>..............................................</xsl:text>
+             <xsl:apply-templates select="TermName"/>
+         
+         <xsl:if test="not(TermPronunciation)">
+           <b>
+             <font size='3'>Pronunciation</font>
+           </b>
+         </xsl:if>
+         <xsl:if test="TermPronunciation">
+           <p>
+             <b>
+                <font size='3'>Pronunciation</font>
+             </b>
+             <xsl:text>.................................</xsl:text>
+             <xsl:apply-templates select="TermPronunciation"/>
+           </p>
+         </xsl:if>
+         <p>
+           <b>
+             <font size='3'>Definition</font>
+           </b><br />
+           <xsl:for-each select="TermDefinition">
+             <xsl:value-of select="."/><br />
+           </xsl:for-each>
+         </p>
+
+         <p>
+            <b>
+              <font size='3'>Source</font>
+            </b>
+            <xsl:text>............................................</xsl:text>
+            <xsl:apply-templates select="TermSource"/>
+         </p>
+
+         <p>
+           <b>
+              <font size='3'>Type</font>
+           </b>
+           <xsl:text>...............................................</xsl:text>
+           <xsl:apply-templates select="TermType"/>
+         </p>
+
+         <p>
+           <b>
+              <font size='3'>Status</font>
+           </b>
+           <xsl:text>.............................................</xsl:text>
+           <xsl:apply-templates select="TermStatus"/>
+         </p>
+
+         <p>
+           <b>
+             <font size='3'>Date</font>
+           </b>
+           <xsl:text>................................................</xsl:text>
+           <xsl:apply-templates select="StatusDate"/>
+         </p>
+ 
+         <p>
+           <b>
+             <font size='3'>PDQ Key</font>
+           </b>
+            <xsl:text>........................................</xsl:text>
+            <xsl:apply-templates select="PdqKey"/>
+         </p>
+
+         <xsl:if test="not(Comment)">
+         <b>
+            <font size='3'>Comment</font>
+         </b><br />
+      </xsl:if>
+      <xsl:if test="Comment">
+         <dt>
+            <b>
+              <font size='3'>Comment</font>
+           </b>
+           <xsl:text>..........................................</xsl:text>
+           <xsl:apply-templates select="Comment"/>
+         </dt><br /><br />
+      </xsl:if>
+
+      <br />
+      <xsl:if test="not(DateLastModified)">
+        <b>
+          <font size='3'>Date Last Modified</font>
+        </b><br /><br />
+      </xsl:if>
+      <xsl:if test="DateLastModified">
+         <b>
+            <font size='3'>Date Last Modified</font>
+         </b>
+         <xsl:text>...................</xsl:text>
+         <xsl:apply-templates select="DateLastModified"/><br />
+      </xsl:if>
+
+      </BODY>  
+   </xsl:template>
+
+  </xsl:transform>

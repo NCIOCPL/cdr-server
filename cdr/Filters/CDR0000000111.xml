@@ -1,0 +1,205 @@
+<?xml version="1.0"?>
+
+<!--myTitle>  Creator:  Volker Englisch
+              Created:  06/20/2002</myTitle-->
+
+<xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+               xmlns:cdr="cips.nci.nih.gov/cdr"
+               version="1.0">
+
+<xsl:output method="xml" 
+            omit-xml-declaration="no"/>
+ <!-- Passed in by the caller -->
+ <xsl:param                           name = "changeFrom"/>
+ <xsl:param                           name = "changeTo"/>
+
+ <!-- Global Variables -->
+ <xsl:variable                        name = "pa_hp" 
+                                    select = "/InScopeProtocol/ProtocolAbstract/
+                                              Professional"/>   
+ <xsl:variable                        name = "pa_p"
+                                    select = "/InScopeProtocol/ProtocolAbstract/
+                                              Patient"/>
+ <xsl:variable                        name = "org_loc" 
+                                    select = "/Organization/
+                                              OrganizationLocations/
+                                              OrganizationLocation/Location"/>
+
+  <xsl:template match="InScopeProtocol">
+    <xsl:copy>
+
+<!-- ==================================================================
+     Copy second tier fields without any reference links
+     (Protocol Id, Protocol Sources, Approval, Sponsor, Funding, Title) 
+     ================================================================== -->
+      <xsl:apply-templates   select = "ProtocolIDs" 
+                             mode   = "copy"/>
+      <xsl:apply-templates   select = "ProtocolSources" 
+                             mode   = "copy"/>
+      <xsl:apply-templates   select = "ProtocolApproval" 
+                             mode   = "copy"/>
+      <xsl:apply-templates   select = "ProtocolSponsors" 
+                             mode   = "copy"/>
+      <xsl:apply-templates   select = "FundingInfo" 
+                             mode   = "copy"/>
+      <xsl:apply-templates   select = "ProtocolTitle" 
+                             mode   = "copy"/>
+      <xsl:apply-templates   select = "ProtocolAbstract" 
+                             mode   = "copy"/>
+      <xsl:apply-templates   select = "ProtocolPhase" 
+                             mode   = "copy"/>
+      <xsl:apply-templates   select = "ProtocolDetail" 
+                             mode   = "copy"/>
+      <xsl:apply-templates   select = "Eligibility" 
+                             mode   = "copy"/>
+
+
+    <!--
+    =====================================================================
+    Process the Protocol Administrative Information
+    ===================================================================== -->
+    <ProtocolAdminInfo>
+     <xsl:apply-templates select = "ProtocolAdminInfo/CurrentProtocolStatus" 
+                            mode = "copy"/>
+     <xsl:apply-templates select = "ProtocolAdminInfo/ProtocolLeadOrg"/>
+    </ProtocolAdminInfo>
+        
+    <xsl:apply-templates  select = "DateLastModified" 
+                            mode = "copy"/>
+    <xsl:apply-templates  select = "PdqKey" 
+                            mode = "copy"/>
+   </xsl:copy>
+  </xsl:template>
+
+
+  <!--
+  ===================================================================
+  Extract the information for one lead organization.
+  =================================================================== -->
+  <xsl:template            match = "ProtocolLeadOrg">
+   <xsl:variable            name = "orgID"
+                          select = "LeadOrganizationID/@cdr:ref"/>
+   <ProtocolLeadOrg>
+    <xsl:attribute          name = "Group">
+     <xsl:value-of        select = "@Group"/>
+    </xsl:attribute>
+    <xsl:apply-templates  select = "LeadOrganizationID"/>
+    <xsl:apply-templates  select = "LeadOrgRole"
+                            mode = "copy"/>
+    <xsl:apply-templates  select = "LeadOrgProtocolID"
+                            mode = "copy"/>
+    <xsl:apply-templates  select = "LeadOrgProtocolStatuses"
+                            mode = "copy"/>
+    <xsl:apply-templates  select = "LeadOrgPersonnel"
+                            mode = "copy"/>
+
+<!-- add the participating sites to the lead organization
+     Note:  This link will be broken for the vendor filter but needs 
+            to be kept here for the QC filters
+     =============================================================== -->
+     <xsl:if                test = "ProtocolSites">
+      <ProtocolSites>
+       <xsl:apply-templates
+                          select = "ProtocolSites"/>
+      </ProtocolSites>
+     </xsl:if>
+
+   </ProtocolLeadOrg>
+  </xsl:template>
+
+  <!--
+  ===================================================================
+  Template to change the Person link
+  =================================================================== -->
+  <xsl:template            match = "LeadOrganizationID">
+   <xsl:variable            name = "lorgID"
+                          select = "@cdr:ref"/>
+   
+    <xsl:choose>
+      <xsl:when             test = "@cdr:ref=$changeFrom">
+        <LeadOrganizationID>
+        <xsl:attribute      name = "cdr:ref">
+          <xsl:value-of   select = "$changeTo"/>
+        </xsl:attribute>
+        <xsl:value-of     select = "."/>
+        </LeadOrganizationID>
+      </xsl:when>
+      <xsl:otherwise>
+        <LeadOrganizationID  cdr:ref = "{$lorgID}">
+        <xsl:attribute      name = "PdqKey">
+          <xsl:value-of   select = "@PdqKey"/>
+        </xsl:attribute>
+        <xsl:value-of     select = "."/>
+        </LeadOrganizationID>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <!--
+  ===========================================================================
+  Template for handling the participating organizations.
+  ==========================================================================
+  -->
+  <xsl:template            match = "ProtocolSites">
+   <xsl:apply-templates   select = "OrgSite"/>
+  </xsl:template>
+  
+  <!--
+  ===========================================================================
+  Template for handling one participating organization.
+  ==========================================================================
+  -->
+  <xsl:template            match = "OrgSite">
+   <xsl:variable            name = "orgId" 
+                          select = "OrgSiteID/@cdr:ref"/>
+   <OrgSite>
+    <xsl:apply-templates  select = "OrgSiteID"/>
+    <xsl:apply-templates  select = "OrgSiteStatus"
+                            mode = "copy"/>
+    <xsl:apply-templates  select = "OrgSiteContact"
+                            mode = "copy"/>
+   </OrgSite>
+  </xsl:template>
+  
+  <!--
+  ===========================================================================
+  Template for handling specific person elements.
+  ==========================================================================
+  -->
+  <xsl:template            match = "OrgSiteID">
+   <xsl:variable            name = "orgID" 
+                          select = "@cdr:ref"/>
+    <xsl:choose>
+      <xsl:when             test = "@cdr:ref=$changeFrom">
+        <OrgSiteID>
+        <xsl:attribute      name = "cdr:ref">
+          <xsl:value-of   select = "$changeTo"/>
+        </xsl:attribute>
+        <xsl:value-of     select = "."/>
+        </OrgSiteID>
+      </xsl:when>
+      <xsl:otherwise>
+        <OrgSiteID       cdr:ref = "{$orgID}">
+        <xsl:attribute      name = "PdqKey">
+          <xsl:value-of   select = "@PdqKey"/>
+        </xsl:attribute>
+        <xsl:value-of     select = "."/>
+        </OrgSiteID>
+      </xsl:otherwise>
+    </xsl:choose>
+
+    <xsl:apply-templates  select = "Role"
+                            mode = "copy"/>
+  </xsl:template>
+
+
+<!-- Template rule used to do XML to XML transformations which
+     copies any attribute node, or node that is child of of something 
+     ================================================================ -->
+  <xsl:template match="@*|node()" mode="copy">
+    <xsl:copy>
+      <xsl:apply-templates select="@*" mode="copy"/>
+      <xsl:apply-templates select="node()" mode="copy"/>
+    </xsl:copy>
+  </xsl:template>
+</xsl:transform>
