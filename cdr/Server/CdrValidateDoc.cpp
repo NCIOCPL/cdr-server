@@ -1,10 +1,13 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.4 2000-04-29 15:50:13 bkline Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.5 2000-05-03 15:20:38 bkline Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/04/29 15:50:13  bkline
+ * First version with all stubs replaced.
+ *
  * Revision 1.3  2000/04/27 13:10:49  bkline
  * Replaced stubs for validation of simple types.
  *
@@ -26,30 +29,20 @@
 // Project headers.
 #include "CdrString.h"
 #include "CdrCommand.h"
+#include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
 #include "CdrXsd.h"
 #include "CdrRegEx.h"
+#include "CdrGetDoc.h"
+#include "CdrValidateDoc.h"
 
 // Local functions.
-static void extractDoc(
-        cdr::dom::Element&              docElement, 
-        cdr::dom::Node&                 wrapperNode,
-        cdr::String&                    schemaString, 
-        cdr::String&                    docIdString,
-        cdr::String&                    docTypeString,
-        cdr::db::Connection&            dbConnection);
-static void retrieveDoc(
-        cdr::dom::Element&              docElement, 
-        cdr::String&                    schemaString, 
-        cdr::String&                    docIdString,
-        cdr::String&                    docTypeString,
-        cdr::db::Connection&            dbConnection);
 static cdr::String makeResponse(
         cdr::String&                    docIdString,
         const wchar_t*                  status,
         cdr::StringList&                errors);
 static void setDocStatus(
-        cdr::db::Connection&            dbConnection,
+        cdr::db::Connection&            conn,
         int                             docId,
         const wchar_t*                  status);
 static void validateElement(
@@ -167,179 +160,132 @@ static bool matchPattern(
 cdr::String cdr::validateDoc(
         cdr::Session&                   session, 
         const cdr::dom::Node&           commandNode,
-        cdr::db::Connection&            dbConnection) 
+        cdr::db::Connection&            conn) 
 {
-    // Extract the data elements from the command node.
-    cdr::String         docIdString;
-    cdr::String         docTypeString;
-    cdr::StringList     errors;
-    bool                memoryOnly = true;
+    // Make sure the user is authorized to validate this document.
+    const cdr::dom::Element& commandElement =
+        static_cast<const cdr::dom::Element&>(commandNode);
+    cdr::String docTypeString = commandElement.getAttribute(L"DocType");
+    if (docTypeString.empty())
+        throw cdr::Exception(L"DocType attribute missing from "
+                           L"CdrValidateDoc command element");
+    if (!session.canDo(conn, L"VALIDATE DOCUMENT", docTypeString)) {
+        cdr::String err = cdr::String(L"Validation of ")
+                        + docTypeString
+                        + L" documents is not authorized for this user";
+        throw cdr::Exception(err.c_str());
+    }
 
-    // Catch our own exceptions so we can set DocStatus appropriately.
-    try {
+    // Extract the document or its ID from the command.
+    cdr::dom::Node  docNode;
+    cdr::String     docIdString;
+    cdr::dom::Node  child = commandNode.getFirstChild();
+    while (child != 0) {
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String name = child.getNodeName();
+            if (name == L"CdrDoc")
+                docNode = child;
+            else if (name == L"DocId")
+                docIdString = cdr::dom::getTextContent(child);
+            else
+                throw cdr::Exception(L"Unexpected element", name);
+        }
+        child = child.getNextSibling();
+    }
 
-        // Nested `try' to consolidate some of the common error handling.
-        try {
-            cdr::String         schemaString;
-            cdr::dom::Element   docElement;
-            cdr::dom::Node      child = commandNode.getFirstChild();
-            while (child != 0) {
-                if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
-                    cdr::String name = child.getNodeName();
-                    if (name == L"CdrDoc") {
-                        extractDoc(docElement, child, schemaString,
-                                   docIdString, docTypeString, dbConnection);
-                    }
-                    else if (name == L"DocId") {
-                        docIdString = cdr::dom::getTextContent(child);
-                        if (docIdString.size() == 0) {
-                            errors.push_back(L"Empty document ID");
-                            session.lastStatus = L"failure";
-                            return makeResponse(docIdString, L"U", errors);
+    // Make sure we got what we need.
+    bool updateDocStatus = false;
+    int  docId = 0;
+    if (docIdString.empty() && docNode == 0)
+        throw cdr::Exception(L"Command requires DocId or CdrDoc element");
+    if (docNode != 0 && !docIdString.empty())
+        throw cdr::Exception(L"Both DocId and CdrDoc specified");
+    if (docNode == 0) {
+        cdr::String docString = cdr::getDocString(docIdString, conn);
+        cdr::dom::Parser parser;
+        parser.parse(docString);
+        docNode = parser.getDocument().getDocumentElement();
+        updateDocStatus = true;
+
+        // Make sure the caller is telling the truth about the DocType.
+        cdr::String realDocType;
+        cdr::dom::Node docCtlNode = docNode.getFirstChild();
+        while (docCtlNode != 0) {
+            if (docCtlNode.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+                cdr::String name = docCtlNode.getNodeName();
+                if (name == L"CdrDocCtl") {
+                    cdr::dom::Node n = docCtlNode.getFirstChild();
+                    while (n != 0) {
+                        if (n.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+                            cdr::String name = n.getNodeName();
+                            if (name == L"DocType")
+                                realDocType = cdr::dom::getTextContent(n);
+                            else if (name == L"DocId")
+                                docId = 
+                                    cdr::dom::getTextContent(n).extractDocId();
+                            if (docId != 0 && !realDocType.empty())
+                                break;
                         }
-                        memoryOnly = false;
-                        retrieveDoc(docElement, schemaString, docIdString, 
-                                    docTypeString, dbConnection);
-                    }
-                    else
-                        throw cdr::Exception(L"Unexpected element", name);
-                    if (!session.canDo(dbConnection, L"VALIDATE DOCUMENT",
-                                       docTypeString)) {
-                        errors.push_back(L"User not authorized for action");
-                        session.lastStatus = L"failure";
-                        return makeResponse(docIdString, L"U", errors);
+                        n = n.getNextSibling();
                     }
                     break;
                 }
-                child = child.getNextSibling();
             }
-
-            // We have the parsed document; now compile the schema.
-            if (schemaString.size() == 0) {
-                errors.push_back(cdr::String(
-                            L"Schema missing for document type: ") 
-                            + docTypeString);
-                session.lastStatus = L"failure";
-                return makeResponse(docIdString, L"U", errors);
-            }
-            cdr::dom::Parser parser;
-            parser.parse(schemaString);
-            cdr::xsd::Schema schema(parser.getDocument().getDocumentElement());
-
-            // Use the schema to validate the document
-            cdr::xsd::Element schemaElement = schema.getTopElement();
-            if (schemaElement.getName() != docElement.getNodeName()) {
-                cdr::String err;
-                err = cdr::String(L"Wrong element at top of document: ")
-                    + L" (expected) "
-                    + schemaElement.getName()
-                    + L")";
-                errors.push_back(err);
-            }
-            else {
-                const cdr::xsd::Type& elementType =
-                    *schemaElement.getType(schema);
-                validateElement(docElement, elementType, schema, errors);
-            }
-
-            // Validate the links if appropriate XXX NOT YET IMPLEMENTED
-#if 0
-            if (!memoryOnly)
-                validateLinks(docElement, 
-                              session, 
-                              docIdString.getDocId());
-#endif
-
-            // Report the outcome.
-            const wchar_t* status = errors.size() > 0 ? L"I" : L"V";
-            if (errors.size() > 0)
-                session.lastStatus = L"warning";
-            return makeResponse(docIdString, status, errors);
+            docCtlNode = docCtlNode.getNextSibling();
         }
-
-        // First handler for all exceptions.
-        catch (...) {
-
-            // No matter which problem we hit here, set status to failure.
-            session.lastStatus = L"failure";
-
-            /*
-             * If we can't determine the doc type, we can't tell whether
-             * the user is authorized to request the validation action.
-             */
-            if (docTypeString.size() == 0) {
-                errors.push_back(L"Unable to determine document type");
-                //return makeResponse(docIdString, L"U", errors);
-                throw;
-            }
-
-            // Don't do anything further if user not authorized for command.
-            if (!session.canDo(dbConnection, L"VALIDATE DOCUMENT", 
-                               docTypeString)) {
-                errors.push_back(L"User not authorized for requested action");
-                //return makeResponse(docIdString, L"U", errors);
-                throw;
-            }
-
-            // Record the failure to determine validity if appropriate.
-            if (!memoryOnly && docIdString.size() > 0)
-                setDocStatus(dbConnection, docIdString.extractDocId(), L"U");
-
-            // Now we can use specific exception handlers.
-            throw;
-        }
+        if (realDocType.empty())
+            throw cdr::Exception(L"Unable to extract document type from "
+                                 L"document");
+        if (realDocType != docTypeString)
+            throw cdr::Exception(L"Command specifies incorrect DocType",
+                                 docTypeString);
     }
-    catch (const cdr::Exception& cdrEx) {
-        errors.push_back(cdrEx.getString());
-        return makeResponse(docIdString, L"U", errors);
+
+    // Validate the document against the schema.
+    cdr::StringList errors;
+    cdr::validateDocAgainstSchema(docNode, docTypeString, conn,
+                                  errors,updateDocStatus);
+
+    // Note the outcome of the validation.
+    const wchar_t* status = errors.size() > 0 ? L"I" : L"V";
+    if (updateDocStatus) {
+        setDocStatus(conn, docId, status);
+
+        // Validate the links if appropriate XXX NOT YET IMPLEMENTED
+        //validateLinks(docElement, session, docIdString.getDocId());
     }
-    catch (const cdr::dom::DOMException& ex) {
-        errors.push_back(cdr::String(ex.getMessage()));
-        return makeResponse(docIdString, L"U", errors);
-    }
-    catch (std::exception& stdEx) {
-        cdr::String err = cdr::String(L"Standard exception caught: ")
-                        + cdr::String(stdEx.what());
-        errors.push_back(err);
-        return makeResponse(docIdString, L"U", errors);
-    }
-    catch (...) {
-        errors.push_back(L"Unexpected exception caught");
-        return makeResponse(docIdString, L"U", errors);
-    }
+
+    // Report the outcome.
+    return makeResponse(docIdString, status, errors);
 }
 
 /**
- * Extract document from wrapper DOM node and CDATA section.
+ * Checks document against the schema for its document type, reporting any
+ * errors found in the caller's <code>Errors</code> vector.  Caller is
+ * responsible for ensuring that the docTypeName is correct for this
+ * document.
+ *
+ *  @param  docNode             DOM node for CdrDoc element
+ *  @param  docTypeName         string for name of document's type
+ *  @param  conn                reference to CDR database connection object
+ *  @param  errors              vector of strings to be populated by this
+ *                              function
+ *  @param  updateDocStatus     if <code>true</code> update the doc_status
+ *                              column of the document table
+ *
+ *  @exception  cdr::Exception  if database or parsing error encountered
  */
-void extractDoc(
-        cdr::dom::Element&      docElement, 
-        cdr::dom::Node&         wrapperNode,
-        cdr::String&            schemaString, 
-        cdr::String&            docIdString,
-        cdr::String&            docTypeString,
-        cdr::db::Connection&    dbConnection)
+void cdr::validateDocAgainstSchema(
+        const cdr::dom::Node&           docNode,
+        const cdr::String&              docTypeName,
+        cdr::db::Connection&            conn,
+        cdr::StringList&                errors,
+        bool                            updateDocStatus)
 {
-    // Extract attributes from the <CdrDoc> element.
-    cdr::dom::Element& cdrDoc   = static_cast<cdr::dom::Element&>(wrapperNode);
-    docIdString                 = cdrDoc.getAttribute(L"Id");
-    docTypeString               = cdrDoc.getAttribute(L"Type");
-
-    // Look up the schema for the document type
-    if (docTypeString.empty())
-        throw cdr::Exception(L"Missing document type attribute");
-    cdr::db::Statement select(dbConnection);
-    select.setString(1, docTypeString);
-    cdr::db::ResultSet rs = select.executeQuery("SELECT xml_schema"
-                                                "  FROM doc_type"
-                                                " WHERE name = ?");
-    if (!rs.next())
-        throw cdr::Exception(L"Unknown document type", docTypeString);
-    schemaString = rs.getString(1);
-
     // Pull the XML out of the wrapper.
     bool foundDocument = false;
-    cdr::dom::Node child = wrapperNode.getFirstChild();
+    cdr::dom::Element docXmlElement;
+    cdr::dom::Node child = docNode.getFirstChild();
     while (child != 0) {
         if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String name = child.getNodeName();
@@ -355,55 +301,46 @@ void extractDoc(
                         cdr::dom::Parser parser;
                         parser.parse(cdata.getNodeValue());
                         cdr::dom::Document document = parser.getDocument();
-                        docElement = document.getDocumentElement();
+                        docXmlElement = document.getDocumentElement();
                         foundDocument = true;
                         break;
                     }
+                    cdata = cdata.getNextSibling();
                 }
                 break;
             }
         }
+        child = child.getNextSibling();
     }
     if (!foundDocument)
-        throw cdr::Exception(L"XML for document not found");
-}
+        throw cdr::Exception(L"CdrDocXml element for document not found");
 
-/**
- * Retrieves the document from the database and parses it.
- */
-void retrieveDoc(
-        cdr::dom::Element&      docElement, 
-        cdr::String&            schemaString, 
-        cdr::String&            docIdString,
-        cdr::String&            docTypeString,
-        cdr::db::Connection&    dbConnection)
-{
-    // Submit a query to retrieve the document and schema from the database.
-    cdr::db::Statement select(dbConnection);
-    int id = docIdString.extractDocId();
-    select.setInt(1, id);
-    cdr::db::ResultSet rs = select.executeQuery("SELECT d.xml,"
-                                                "       t.xml_schema,"
-                                                "       t.name"
-                                                "  FROM document d,"
-                                                "       doc_type t"
-                                                " WHERE d.id = ?"
-                                                "   AND t.id = d.doc_type");
+    // Go get the schema for the document's type.
+    std::string query = "SELECT xml_schema FROM doc_type WHERE name = ?";
+    cdr::db::PreparedStatement select = conn.prepareStatement(query);
+    select.setString(1, docTypeName);
+    cdr::db::ResultSet rs = select.executeQuery();
     if (!rs.next())
-        throw cdr::Exception(L"Document not found", docIdString);
-    cdr::String docXml  = rs.getString(1);
-    schemaString        = rs.getString(2);
-    docTypeString       = rs.getString(3);
-    if (docXml.size() == 0)
-        throw cdr::Exception(L"XML for document is empty");
-    if (docTypeString.size() == 0)
-        throw cdr::Exception(L"Unable to retrieve document type name");
+        throw cdr::Exception(L"Unknown document type", docTypeName);
+    cdr::String schemaString = rs.getString(1);
 
-    // Parse the XML for the document.
+    // Parse the schema
     cdr::dom::Parser parser;
-    parser.parse(docXml);
-    cdr::dom::Document document = parser.getDocument();
-    docElement = parser.getDocument().getDocumentElement();
+    parser.parse(schemaString);
+    cdr::xsd::Schema schema(parser.getDocument().getDocumentElement());
+
+    // Use the schema to validate the XML portion of the document
+    cdr::xsd::Element schemaElement = schema.getTopElement();
+    if (schemaElement.getName() != docXmlElement.getNodeName()) {
+        cdr::String err;
+        err = cdr::String(L"Wrong element at top of document XML: ")
+            + L" (expected "
+            + schemaElement.getName()
+            + L")";
+        throw cdr::Exception(err.c_str());
+    }
+    const cdr::xsd::Type& elementType = *schemaElement.getType(schema);
+    validateElement(docXmlElement, elementType, schema, errors);
 }
 
 /**
@@ -438,13 +375,14 @@ void setDocStatus(
         int                             id, 
         const wchar_t*                  status)
 {
-    cdr::db::Statement update(conn);
-    update.setString(1, status);
-    update.setInt(2, id); 
-    update.executeQuery("UPDATE document"
+    std::string query = "UPDATE document"
                         "   SET val_status = ?,"
                         "       val_date = GETDATE()"
-                        " WHERE id = ?");
+                        " WHERE id = ?";
+    cdr::db::PreparedStatement update = conn.prepareStatement(query);
+    update.setString(1, status);
+    update.setInt(2, id); 
+    update.executeQuery();
 }
 
 /**
