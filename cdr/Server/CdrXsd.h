@@ -1,7 +1,11 @@
 /*
- * $Id: CdrXsd.h,v 1.14 2001-09-19 18:44:13 bkline Exp $
+ * $Id: CdrXsd.h,v 1.15 2002-08-27 17:14:18 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2001/09/19 18:44:13  bkline
+ * Added ID/IDREF support, as well as methods for checking for the
+ * presence of an attribute.
+ *
  * Revision 1.13  2001/05/16 15:50:51  bkline
  * Added getValidValueSets() method to Schema class.  Fixed uninitialized
  * pointer bug in SimpleContent class.
@@ -1082,14 +1086,15 @@ namespace cdr {
              * Recursively examines the current element and its children to
              * see which have cdr:id attributes.
              *
-             *  @param  schema      reference to CDR schema object.
              *  @param  elem        reference to current element.
+             *  @param  attrName    name of attribute we're interested in.
              *  @param  elemList    reference to list we're building of 
              *                      elements which have cdr:id attributes.
              *  @param  checked     set to prevent processing the same 
              *                      element multiple times.
              */
             void checkElementForAttribute(cdr::xsd::Element& elem,
+                                          const cdr::String& attrName,
                                           cdr::StringList& elemList,
                                           cdr::StringSet& checked) const;
 
@@ -1098,12 +1103,14 @@ namespace cdr {
              * Content can be a group, a sequence, a choice, or an element.
              *
              *  @param  node        address of schema node.
+             *  @param  attrName    name of attribute we're interested in.
              *  @param  elemList    reference to list we're building of 
              *                      elements which have cdr:id attributes.
              *  @param  checked     set to prevent processing the same 
              *                      element multiple times.
              */
             void checkContentForAttribute(const cdr::xsd::Node* node,
+                                          const cdr::String& attrName,
                                           cdr::StringList& elemList,
                                           cdr::StringSet& checked) const;
 

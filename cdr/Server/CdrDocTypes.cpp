@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDocTypes.cpp,v 1.10 2002-05-15 23:40:15 bkline Exp $
+ * $Id: CdrDocTypes.cpp,v 1.11 2002-08-27 17:14:16 bkline Exp $
  *
  * Support routines for CDR document types.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2002/05/15 23:40:15  bkline
+ * Added attribute to skip generation of the DTD for GetDocType command.
+ *
  * Revision 1.9  2001/11/06 21:40:32  bkline
  * Modified query for CdrGetDocTypes command to only return the ones we're
  * really using ("WHERE active = 'Y'") and to order them by name.
@@ -201,7 +204,6 @@ cdr::String cdr::getDocType(Session&          session,
     cdr::String schemaName = rs.getString(7);
     int         id         = rs.getInt(8);
     ps.close();
-    cdr::StringList linkingElements = getLinkingElements(id, conn);
 
     cdr::xsd::Schema* schema = 0;
     if (!schemaStr.empty()) {
@@ -211,6 +213,8 @@ cdr::String cdr::getDocType(Session&          session,
         schema = new cdr::xsd::Schema(schemaElem, &conn);
     }
     std::auto_ptr<cdr::xsd::Schema> schemaPtr(schema);
+    cdr::StringList linkingElements;
+    schema->elemsWithAttr(L"cdr:ref", linkingElements);
     std::wostringstream resp;
     resp << L"<CdrGetDocTypeResp Type='"
          << docTypeString

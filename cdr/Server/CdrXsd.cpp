@@ -1,7 +1,11 @@
 /*
- * $Id: CdrXsd.cpp,v 1.30 2002-04-17 22:26:25 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.31 2002-08-27 17:14:17 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2002/04/17 22:26:25  bkline
+ * Added missing check to verify that elements with simple types had no
+ * child elements.
+ *
  * Revision 1.29  2002/04/12 01:49:31  bkline
  * Removed unnecessary log testing call.
  *
@@ -7043,15 +7047,16 @@ void cdr::xsd::Schema::elemsWithAttr(const cdr::String& attrName,
 {
     cdr::StringSet alreadyChecked;
     elemList.clear();
-    checkElementForAttribute(getTopElement(), elemList, alreadyChecked);
+    checkElementForAttribute(getTopElement(), attrName, 
+        elemList, alreadyChecked);
 }
 
 /**
  * Recursively examines the current element and its children to
- * see which have cdr:id attributes.
+ * see which can have a specified attribute.
  *
- *  @param  schema      reference to CDR schema object.
  *  @param  elem        reference to current element.
+ *  @param  attrName    name of attribute we're interested in.
  *  @param  elemList    reference to list we're building of 
  *                      elements which have cdr:id attributes.
  *  @param  checked     set to prevent processing the same 
@@ -7059,6 +7064,7 @@ void cdr::xsd::Schema::elemsWithAttr(const cdr::String& attrName,
  */
 void cdr::xsd::Schema::checkElementForAttribute(
         Element&            elem,
+        const cdr::String&  attrName,
         cdr::StringList&    elemList,
         cdr::StringSet&     checked) const
 {
@@ -7079,7 +7085,7 @@ void cdr::xsd::Schema::checkElementForAttribute(
         return;
 
     // See if the element has a cdr:id attribute.
-    if (cType->hasAttribute(L"cdr:id"))
+    if (cType->hasAttribute(attrName))
         elemList.push_back(name);
 
     // See what kind of content we have.
@@ -7093,14 +7099,17 @@ void cdr::xsd::Schema::checkElementForAttribute(
     }
 
     // Handle the child elements.
-    checkContentForAttribute(cType->getContent(), elemList, checked);
+    checkContentForAttribute(cType->getContent(), attrName, elemList, 
+        checked);
 }
 
 /**
- * Examine content for a complex type, looking for elements.  
+ * Examine content for a complex type, looking for elements
+ * which can contain a specified attribute.
  * Content can be a group, a sequence, a choice, or an element.
  *
  *  @param  node        address of schema node.
+ *  @param  attrName    name of attribute we're interested in.
  *  @param  elemList    reference to list we're building of 
  *                      elements which have cdr:id attributes.
  *  @param  checked     set to prevent processing the same 
@@ -7108,6 +7117,7 @@ void cdr::xsd::Schema::checkElementForAttribute(
  */
 void cdr::xsd::Schema::checkContentForAttribute(
         const Node*         node,
+        const cdr::String&  attrName,
         cdr::StringList&    elemList,
         cdr::StringSet&     checked) const
 {
@@ -7118,7 +7128,8 @@ void cdr::xsd::Schema::checkContentForAttribute(
     // Is this a group?
     const Group* g = dynamic_cast<const Group*>(node);
     if (g) {
-        checkContentForAttribute(g->getContent(), elemList, checked);
+        checkContentForAttribute(g->getContent(), attrName, elemList, 
+            checked);
         return;
     }
 
@@ -7127,7 +7138,8 @@ void cdr::xsd::Schema::checkContentForAttribute(
     if (e) {
         // Const cast is required because elements need to resolve their type
         // name to their type when first used.
-        checkElementForAttribute(const_cast<Element&>(*e), elemList, checked);
+        checkElementForAttribute(const_cast<Element&>(*e), attrName, elemList,
+            checked);
         return;
     }
 
@@ -7136,7 +7148,7 @@ void cdr::xsd::Schema::checkContentForAttribute(
     if (cs) {
         NodeEnum nodeEnum = cs->getNodes();
         while (nodeEnum != cs->getListEnd())
-            checkContentForAttribute(*nodeEnum++, elemList, checked);
+            checkContentForAttribute(*nodeEnum++, attrName, elemList, checked);
         return;
     }
 
