@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.22 2002-08-29 21:52:07 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.23 2003-09-23 23:02:42 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2002/08/29 21:52:07  ameyer
+ * Added some constants to represent initial values of object members.
+ *
  * Revision 1.21  2002/08/14 01:51:04  ameyer
  * Added length checks on fragment and url sizes.
  * Restored saveLink checking in link table insertions, left out of the
@@ -1648,7 +1651,12 @@ void cdr::link::updateLinkNet (
         insStmt.setInt   (1, docId);
         insStmt.setInt   (2, rsi->link_type);
         insStmt.setString(3, rsi->source_elem);
-        insStmt.setInt   (4, rsi->target_doc);
+        if (rsi->target_doc > 0)
+            insStmt.setInt   (4, rsi->target_doc);
+        else {
+            cdr::Int nullTarg = new cdr::Int(true);
+            insStmt.setInt (4, nullTarg);
+        }
         insStmt.setString(5, rsi->target_frag);
         insStmt.setString(6, rsi->url);
         insStmt.executeUpdate();
