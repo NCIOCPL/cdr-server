@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.22 2001-10-17 13:51:59 bkline Exp $
+ * $Id: CdrCommand.h,v 1.23 2002-04-04 01:05:21 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2001/10/17 13:51:59  bkline
+ * Added mergeProt() function.
+ *
  * Revision 1.21  2001/09/19 18:41:54  bkline
  * Added CdrPasteLink command.
  *
@@ -944,6 +947,21 @@ namespace cdr {
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
     extern String mergeProt  (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
+
+    /**
+     * Creates a new CDR publishing job.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String publish    (Session&          session,
                               const dom::Node&  node,
                               db::Connection&   conn);
 
