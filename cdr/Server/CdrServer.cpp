@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.27 2002-03-09 04:21:35 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.28 2002-06-16 03:02:43 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2002/03/09 04:21:35  bkline
+ * Added some #ifdef _DEBUG fences.
+ *
  * Revision 1.26  2002/03/07 12:58:22  bkline
  * Added more tracing to standard output, as well as conditional memory
  * allocation dumps at the bottom of each time through the main loop.
@@ -109,6 +112,7 @@
 // Local constants.
 const short CDR_PORT = 2019;
 const int   CDR_QUEUE_SIZE = 10;
+const unsigned int MAX_REQUEST_LENGTH = 25000000;
 
 // Local functions.
 static void             cleanup();
@@ -330,6 +334,11 @@ int readRequest(int fd, std::string& request, const cdr::String& when) {
     memcpy(&length, lengthBytes, sizeof length);
     length = ntohl(length);
     //std::cerr << "Client tells me he is sending " << length << " bytes.\n";
+
+    // Avoid bogus requests from attackers (the only attacks we have had
+    // so far are from NIH network administration software).
+    if (length > MAX_REQUEST_LENGTH)
+        return 0;
 
     // Allocate a working buffer.
     char *buf = new char[length + 1];
