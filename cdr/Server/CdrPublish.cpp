@@ -1,10 +1,13 @@
 /*
- * $Id: CdrPublish.cpp,v 1.5 2002-09-03 21:27:01 bkline Exp $
+ * $Id: CdrPublish.cpp,v 1.6 2002-10-01 21:32:39 ameyer Exp $
  *
- * Commands to create a new publishing job and retrieve status for an 
+ * Commands to create a new publishing job and retrieve status for an
  * existing publishing job.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2002/09/03 21:27:01  bkline
+ * Fixed typo in SQL query.
+ *
  * Revision 1.4  2002/08/27 02:38:23  bkline
  * Added check to ensure selection of publishable versions.
  *
@@ -39,10 +42,10 @@ static cdr::dom::Node getSubsetElem(
         const cdr::dom::Node&,
         const cdr::String& requestedName);
 static void getSubsetParms(
-        const cdr::dom::Node& subsetElem, 
+        const cdr::dom::Node& subsetElem,
         cdr::NamedValues* controlParms);
 static void getSubsetOptions(
-        const cdr::dom::Node& subsetElem, 
+        const cdr::dom::Node& subsetElem,
         cdr::NamedValues* options);
 static void checkAuthorization(
         const cdr::dom::Node& subsetNode,
@@ -50,7 +53,7 @@ static void checkAuthorization(
         cdr::db::Connection& conn);
 static int createJob(
         int controlDocId,
-        const cdr::String& pubSubsetName, 
+        const cdr::String& pubSubsetName,
         int usrId,
         const cdr::String& baseDir,
         const cdr::String& jobTime,
@@ -58,20 +61,21 @@ static int createJob(
         const cdr::String& noOutput,
         cdr::db::Connection& conn);
 static void insertParameterRow(
-        int jobId, 
-        int parmId, 
-        const cdr::String& name, 
+        int jobId,
+        int parmId,
+        const cdr::String& name,
         const cdr::String& value,
         cdr::db::Connection& conn);
 static void insertDocument(
-        int jobId, 
+        int jobId,
         int docId,
         int userDocVersion,
+        bool allowNonPub,
         const cdr::String& jobTime,
         cdr::db::Connection& conn);
 static int findExistingJob(
-        int controlDocId, 
-        const cdr::String& pubSubsetName, 
+        int controlDocId,
+        const cdr::String& pubSubsetName,
         cdr::db::Connection& conn);
 
 /**
@@ -89,6 +93,7 @@ cdr::String cdr::publish(Session& session,
     String              pubSubsetName;
     String              email(true);
     String              noOutput = L"N";
+    bool                allowNonPub = false;
     NamedValues         controlParms;
     NamedValues         requestParms;
     NamedValues         jobParms;
@@ -115,7 +120,7 @@ cdr::String cdr::publish(Session& session,
                         String parmValue;
                         dom::Node child = parm.getFirstChild();
                         while (child != NULL) {
-                            if (child. getNodeType() == 
+                            if (child. getNodeType() ==
                                     dom::Node::ELEMENT_NODE) {
                                 String name = child.getNodeName();
                                 if (name == L"Name")
@@ -164,6 +169,11 @@ cdr::String cdr::publish(Session& session,
                 email = dom::getTextContent(child);
             else if (name == L"NoOutput")
                 noOutput = dom::getTextContent(child);
+            else if (name == L"AllowNonPub") {
+                String allow = dom::getTextContent(child);
+                if (allow == L"Y")
+                    allowNonPub = true;
+            }
         }
         child = child.getNextSibling();
     }
@@ -172,7 +182,7 @@ cdr::String cdr::publish(Session& session,
     if (pubSystemName.empty() || pubSubsetName.empty())
         throw Exception(L"PubSystem and PubSubset elements are both required");
 
-    // Normalize the noOutput value.
+    // Normalize noOutput Y/N values
     if (noOutput != L"Y")
         noOutput = L"N";
 
@@ -183,7 +193,7 @@ cdr::String cdr::publish(Session& session,
 
     // Extract the DOM element for the requested subset.
     dom::Node subsetElem = getSubsetElem(controlDocElem, pubSubsetName);
-    
+
     // Make sure the user is authorized to invoke the publishing job.
     checkAuthorization(subsetElem, session, conn);
 
@@ -241,13 +251,13 @@ cdr::String cdr::publish(Session& session,
                         L" of this publication type is still pending.");
 
     // Create the row for the new job.
-    int jobId = createJob(controlDocId, 
-                          pubSubsetName, 
-                          session.getUserId(), 
+    int jobId = createJob(controlDocId,
+                          pubSubsetName,
+                          session.getUserId(),
                           baseDir,
                           jobTime,
                           email,
-                          noOutput, 
+                          noOutput,
                           conn);
 
     // Create the pub_proc_parm rows.
@@ -259,13 +269,13 @@ cdr::String cdr::publish(Session& session,
         insertParameterRow(jobId, parmId++, name, value, conn);
         ++parmIter;
     }
-    
+
     // Create the rows for the user-listed documents.
     std::map<int, int>::const_iterator docIter = docList.begin();
     while (docIter != docList.end()) {
         int docId  = docIter->first;
         int docVer = docIter->second;
-        insertDocument(jobId, docId, docVer, jobTime, conn);
+        insertDocument(jobId, docId, docVer, allowNonPub, jobTime, conn);
         docIter++;
     }
 
@@ -329,11 +339,11 @@ cdr::dom::Node getSubsetElem(
             if (name == L"SystemSubset") {
                 cdr::dom::Node nameNode = subset.getFirstChild();
                 while (nameNode != NULL) {
-                    if (nameNode.getNodeType() == 
+                    if (nameNode.getNodeType() ==
                             cdr::dom::Node::ELEMENT_NODE) {
                         cdr::String name = nameNode.getNodeName();
                         if (name == L"SubsetName") {
-                            cdr::String subsetName = 
+                            cdr::String subsetName =
                                 cdr::dom::getTextContent(nameNode);
                             if (subsetName == requestedName)
                                 return subset;
@@ -351,7 +361,7 @@ cdr::dom::Node getSubsetElem(
 }
 
 void getSubsetParms(
-        const cdr::dom::Node& subsetElem, 
+        const cdr::dom::Node& subsetElem,
         cdr::NamedValues* controlParms)
 {
     cdr::dom::Node child = subsetElem.getFirstChild();
@@ -361,7 +371,7 @@ void getSubsetParms(
             if (name == L"SubsetParameters") {
                 cdr::dom::Node parmNode = child.getFirstChild();
                 while (parmNode != NULL) {
-                    if (parmNode.getNodeType() == 
+                    if (parmNode.getNodeType() ==
                             cdr::dom::Node::ELEMENT_NODE) {
                         cdr::String name = parmNode.getNodeName();
                         if (name != L"SubsetParameter")
@@ -372,7 +382,7 @@ void getSubsetParms(
                         cdr::String parmName;
                         cdr::String parmValue;
                         while (child != NULL) {
-                            if (child.getNodeType() == 
+                            if (child.getNodeType() ==
                                     cdr::dom::Node::ELEMENT_NODE) {
                                 cdr::String name = child.getNodeName();
                                 if (name == L"ParmName")
@@ -405,7 +415,7 @@ void getSubsetParms(
 }
 
 void getSubsetOptions(
-        const cdr::dom::Node& subsetElem, 
+        const cdr::dom::Node& subsetElem,
         cdr::NamedValues* options)
 {
     cdr::dom::Node child = subsetElem.getFirstChild();
@@ -415,7 +425,7 @@ void getSubsetOptions(
             if (name == L"SubsetOptions") {
                 cdr::dom::Node option = child.getFirstChild();
                 while (option != NULL) {
-                    if (option.getNodeType() == 
+                    if (option.getNodeType() ==
                             cdr::dom::Node::ELEMENT_NODE) {
                         cdr::String name = option.getNodeName();
                         if (name != L"SubsetOption")
@@ -426,11 +436,11 @@ void getSubsetOptions(
                         cdr::String optionName;
                         cdr::String optionValue;
                         while (child != NULL) {
-                            if (child.getNodeType() == 
+                            if (child.getNodeType() ==
                                     cdr::dom::Node::ELEMENT_NODE) {
                                 cdr::String name = child.getNodeName();
                                 if (name == L"OptionName")
-                                    optionName = 
+                                    optionName =
                                         cdr::dom::getTextContent(child);
                                 else if (name == L"OptionValue")
                                     optionValue =
@@ -479,7 +489,7 @@ void checkAuthorization(
 
 int createJob(
         int controlDocId,
-        const cdr::String& pubSubsetName, 
+        const cdr::String& pubSubsetName,
         int usrId,
         const cdr::String& baseDir,
         const cdr::String& jobTime,
@@ -537,9 +547,9 @@ int createJob(
 }
 
 void insertParameterRow(
-        int jobId, 
-        int parmId, 
-        const cdr::String& name, 
+        int jobId,
+        int parmId,
+        const cdr::String& name,
         const cdr::String& value,
         cdr::db::Connection& conn)
 {
@@ -566,31 +576,52 @@ void insertParameterRow(
 }
 
 void insertDocument(
-        int jobId, 
+        int jobId,
         int docId,
         int userDocVersion,
+        bool allowNonPub,
         const cdr::String& jobTime,
         cdr::db::Connection& conn)
 {
     // Verify or select the document version to be published.
-    const char* query = userDocVersion < 1 ? " SELECT MAX(v.num)            "
-                                             "   FROM doc_version v         "
-                                             "   JOIN document d            "
-                                             "     ON d.id = v.id           "
-                                             "  WHERE v.id = ?              "
-                                             "    AND v.publishable = 'Y'   "
-                                             "    AND v.val_status = 'V'    "
-                                             "    AND d.active_status = 'A' "
-                                             "    AND v.dt <= ?             "
-                                           : " SELECT v.num                 "
-                                             "   FROM doc_version v         "
-                                             "   JOIN document d            "
-                                             "     ON d.id = v.id           "
-                                             "  WHERE v.id = ?              "
-                                             "    AND v.publishable = 'Y'   "
-                                             "    AND v.val_status = 'V'    "
-                                             "    AND d.active_status = 'A' "
-                                             "    AND v.num = ?             ";
+    char *query;
+
+    // If caller supplied no version, get last publishable one
+    if (userDocVersion < 1)
+        query = " SELECT MAX(v.num)            "
+                "   FROM doc_version v         "
+                "   JOIN document d            "
+                "     ON d.id = v.id           "
+                "  WHERE v.id = ?              "
+                "    AND v.publishable = 'Y'   "
+                "    AND v.val_status = 'V'    "
+                "    AND d.active_status = 'A' "
+                "    AND v.dt <= ?             ";
+
+    // Else caller supplied one, has he explicitly said it doesn't
+    //   have to be publishable?
+    // We'll still check for active status and that doc + version exists
+    else if (allowNonPub)
+        query = " SELECT v.num                 "
+                "   FROM doc_version v         "
+                "   JOIN document d            "
+                "     ON d.id = v.id           "
+                "  WHERE v.id = ?              "
+                "    AND d.active_status = 'A' "
+                "    AND v.num = ?             ";
+
+    // Else check everything
+    else
+        query = " SELECT v.num                 "
+                "   FROM doc_version v         "
+                "   JOIN document d            "
+                "     ON d.id = v.id           "
+                "  WHERE v.id = ?              "
+                "    AND v.publishable = 'Y'   "
+                "    AND v.val_status = 'V'    "
+                "    AND d.active_status = 'A' "
+                "    AND v.num = ?             ";
+
     cdr::db::PreparedStatement select = conn.prepareStatement(query);
     select.setInt(1, docId);
     if (userDocVersion < 1)
@@ -606,9 +637,9 @@ void insertDocument(
             throw cdr::Exception(L"No publishable version found for document ",
                                  cdr::stringDocId(docId));
         else
-            throw cdr::Exception(L"Version " + 
+            throw cdr::Exception(L"Version " +
                                  cdr::String::toString(userDocVersion) +
-                                 L" not publishable for document ",
+                                 L" not found or not publishable for document ",
                                  cdr::stringDocId(docId));
     }
 
@@ -633,8 +664,8 @@ void insertDocument(
 }
 
 int findExistingJob(
-        int controlDocId, 
-        const cdr::String& pubSubsetName, 
+        int controlDocId,
+        const cdr::String& pubSubsetName,
         cdr::db::Connection& conn)
 {
     const char* query = " SELECT id                                   "
