@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbStatement.h,v 1.10 2000-12-28 13:31:58 bkline Exp $
+ * $Id: CdrDbStatement.h,v 1.11 2001-04-08 22:49:08 bkline Exp $
  *
  * Wrapper for ODBC HSTMT.  Modeled after JDBC interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2000/12/28 13:31:58  bkline
+ * Removed refCount member, as counter is now dynamically allocated.
+ *
  * Revision 1.9  2000/05/21 00:54:11  bkline
  * Added executeUpdate() method.
  *
@@ -103,7 +106,14 @@ namespace cdr {
              *                  the SQL query to be executed.
              *  @return         number of rows affected, if applicable.
              */
-            int cdr::db::Statement::executeUpdate(const char* query);
+            int executeUpdate(const char* query);
+
+            /**
+             * Returns the current result as a ResultSet object.
+             *
+             *  @return         new <code>ResultSet</code> object.
+             */
+            ResultSet getResultSet();
 
             /**
              * Closes any open cursors associated with the query,
@@ -111,6 +121,13 @@ namespace cdr {
              */
             virtual void    close();
 
+            /**
+             * Move to the statement object's next result set, if available.
+             *
+             *  @return         <code>true</code> if another result set is
+             *                  available; otherwise <code>false</code>.
+             */
+            bool getMoreResults();
             /**
              * Copy constructor.  Uses reference counting to prevent premature
              * release of the statement handle.
