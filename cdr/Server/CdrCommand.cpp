@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.cpp,v 1.28 2001-09-19 18:41:37 bkline Exp $
+ * $Id: CdrCommand.cpp,v 1.29 2001-10-17 13:50:42 bkline Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2001/09/19 18:41:37  bkline
+ * Added CdrPasteLink.
+ *
  * Revision 1.27  2001/06/28 17:37:45  bkline
  * Added command CdrGetCssFiles.
  *
@@ -155,6 +158,7 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
         CommandMap(L"CdrDelDocType",         cdr::delDocType),
         CommandMap(L"CdrGetDocType",         cdr::getDocType),
         CommandMap(L"CdrGetTree",            cdr::getTree),
+        CommandMap(L"CdrMergeProt",          cdr::mergeProt),
         CommandMap(L"CdrShutdown",           cdr::shutdown)
     };
     for (size_t i = 0; i < sizeof map / sizeof *map; ++i) {
