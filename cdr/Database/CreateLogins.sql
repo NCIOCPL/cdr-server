@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.15 2003-04-08 20:32:16 bkline Exp $
+ * $Id: CreateLogins.sql,v 1.16 2003-08-12 12:50:18 bkline Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2003/04/08 20:32:16  bkline
+ * Added rights to query table for CdrGuest.
+ *
  * Revision 1.14  2002/11/14 01:11:14  bkline
  * Granted SELECT privileges for filter_set* to CdrGuest.
  *
@@ -364,6 +367,8 @@ GO
 GRANT SELECT ON filter_set TO CdrGuest
 GO
 GRANT SELECT ON filter_set_member TO CdrGuest
+GO
+GRANT SELECT ON zipcode TO CdrGuest
 GO
 GRANT SELECT, UPDATE, INSERT ON query TO CdrGuest
 GO
