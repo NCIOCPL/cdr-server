@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbStatement.h,v 1.5 2000-04-22 18:57:38 bkline Exp $
+ * $Id: CdrDbStatement.h,v 1.6 2000-05-03 15:40:45 bkline Exp $
  *
  * Wrapper for ODBC HSTMT.  Modeled after JDBC interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/04/22 18:57:38  bkline
+ * Added ccdoc comment markers for namespaces and @pkg directives.
+ *
  * Revision 1.4  2000/04/22 15:36:15  bkline
  * Filled out documentation comments.  Made all ODBC-specific members
  * private.
@@ -22,7 +25,10 @@
 #define CDR_DB_STATEMENT_
 
 #include <vector>
-#include "CdrDbConnection.h"
+#include <windows.h>
+#include <sqlext.h>
+//#include "CdrDbConnection.h"
+#include "CdrString.h"
 #include "CdrInt.h"
 
 /**@#-*/
@@ -35,6 +41,7 @@ namespace cdr {
         /** @pkg cdr.db */
 
         class ResultSet;
+        class Connection;
 
         /**
          * Implements JDBC-like interface of same name for queries
@@ -43,61 +50,46 @@ namespace cdr {
         class Statement {
 
             /**
-             * The ResultSet class is granted access to the private
-             * members of Statement in order to eliminate the need for
-             * public accessor methods for ODBC-specific handles.
+             * These classes are granted access to the private members
+             * of Statement in order to eliminate the need for public
+             * accessor methods for ODBC-specific handles.
              */
             friend ResultSet;
+            friend Connection;
 
          public:
-            Statement(Connection&);
-            ~Statement();
-
-            /**
-             * Registers a wide string parameter for a query.
-             */
-            void        setString(int, const cdr::String&);
-
-            /**
-             * Registers a narrow string parameter for a query.
-             *
-             *  @deprecated
-             */
-            void        setString(int, const std::string&, bool = false);
-
-            /**
-             * Registers an integer parameter for a query.  Uses
-             * the cdr::Int class, which can represent a NULL value.
-             */
-            void        setInt(int, const cdr::Int&);
+            virtual ~Statement();
 
             /**
              * Submits a query to the CDR database, and returns a
              * ResultSet object for retrieving rows, if any.
              */
-            ResultSet   executeQuery(const char*);
+            ResultSet       executeQuery(const char*);
 
             /**
              * Closes any open cursors associated with the query,
              * making it available for re-use.
              */
-            void        close();
+            virtual void    close();
+
+            /**
+             * Copy constructor.
+             */
+            Statement(const Statement&);
+
+         protected:
+
+            Statement(Connection&);
+            Connection& conn;
+            HSTMT       hstmt;
+            cdr::String getErrorMessage(SQLRETURN);
+            int         refCount;
+            int*        pRefCount;
+            void        closeStatement();
 
         private:
-            Connection& conn;
-            HSTMT hstmt;
-            struct Parameter {
-                int     position;
-                void*   value;
-                int     len;
-                int     cType;
-                int     sType;
-                SDWORD  cb;
-            };
-            typedef std::vector<Parameter*> ParamVector;
-            ParamVector paramVector;
-            cdr::String getErrorMessage(SQLRETURN);
-            void clearParms();
+
+            Statement& operator=(const Statement&);     // Block this.
         };
     }
 }
