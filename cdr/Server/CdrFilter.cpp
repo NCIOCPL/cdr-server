@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.10 2001-06-19 18:54:29 mruben Exp $
+ * $Id: CdrFilter.cpp,v 1.11 2001-07-12 19:35:06 mruben Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2001/06/19 18:54:29  mruben
+ * addes API call and support for parms
+ *
  * Revision 1.9  2001/05/08 15:00:00  mruben
  * fixed bug in generating filter results
  *
@@ -70,7 +73,7 @@ namespace
       ~ParmList();
       void addparm(const cdr::String& name, const cdr::String& value);
       char** g_parms() { return parms.size() == 0 ? NULL : &parms[0]; }
-      
+
     private:
       vector<char*> parms;
   };
@@ -113,20 +116,20 @@ namespace
     parms.push_back(NULL);
     parms.push_back(NULL);
   }
-  
+
   /***************************************************************************/
   /* get document from the repository.  Error if type not NULL and document  */
   /* does not have this type                                                 */
   /***************************************************************************/
-  cdr::String getDocument(cdr::String ui, 
+  cdr::String getDocument(cdr::String ui,
                           cdr::db::Connection& connection,
                           const wchar_t* type = NULL)
   {
     if (type == CdrDocType)
       return cdr::getDocString(ui, connection, false);
-    
+
     cdr::String docstring(cdr::getDocString(ui, connection));
-    
+
     cdr::dom::Parser parser;
     parser.parse(docstring);
     cdr::dom::Document doc = parser.getDocument();
@@ -154,7 +157,7 @@ namespace
         cdr::dom::Node xml = node.getFirstChild();
         if (xml.getNodeType() != cdr::dom::Node::CDATA_SECTION_NODE)
           break;
-        
+
         return xml.getNodeValue();
       }
     }
@@ -190,12 +193,12 @@ namespace
       }
       name.replace(idx, 11, doctype);
     }
-    
+
     string query = "SELECT id "
                    "FROM document "
                    "WHERE title=? "
                    "GROUP BY id";
-    
+
     cdr::db::PreparedStatement select = connection.prepareStatement(query);
     select.setString(1, name);
     cdr::db::ResultSet rs = select.executeQuery();
@@ -206,11 +209,11 @@ namespace
 
     if (rs.next())
       throw cdr::Exception(L"Multiple documents with title: " + name);
-    
+
     return getDocument(cdr::stringDocId(id), connection);
   }
 
-  
+
   /***************************************************************************/
   /* get document from document spec (XML)                                   */
   /* If type is not null and document is retrieved from CDR, its DocType     */
@@ -224,7 +227,7 @@ namespace
                           cdr::String* ui = NULL, cdr::String* docui = NULL)
   {
     cdr::dom::NamedNodeMap attributes = docspec.getAttributes();
-    
+
     cdr::dom::Node name = attributes.getNamedItem("Name");
     if (name != NULL)
       return getFilterByName(name.getNodeValue(), connection, docui);
@@ -235,7 +238,7 @@ namespace
       cdr::String u = href.getNodeValue();
       if (ui != NULL)
         *ui = u;
-      
+
       return getDocument(u, connection, type);
     }
 
@@ -264,7 +267,7 @@ namespace
       case MH_LEVEL_ERROR:
       {
         wostringstream msg;
-        msg << "XSLT error: code: " << code;
+        msg << L"XSLT error: code: " << code;
         if (fields != NULL)
           while (*fields != NULL)
             msg << cdr::String(*(fields++)) << L"\n";
@@ -288,7 +291,7 @@ namespace
               msg = string(q + sizeof xsl_msgheader - 1);
               if (msg.length() != 0)
                 msg = msg.substr(0, msg.length() - 1);
-                
+
               filter_messages += "<message>"
                                + msg
                                + "</message>\n";
@@ -297,14 +300,14 @@ namespace
 
         }
         break;
-        
+
       case MH_LEVEL_INFO:
         break;
     }
-    
+
     return 0;
   }
-  
+
   /***************************************************************************/
   /* Sablotron URI handling callbacks                                        */
   /***************************************************************************/
@@ -312,7 +315,7 @@ namespace
   {
     public:
       UriInfo() : inuse(false), pos(0) {}
-      
+
       bool inuse;
       string doc;
       int pos;
@@ -397,7 +400,7 @@ namespace
                  const char* rest, char** buffer, int* count)
   {
     int handle;
-    
+
     *buffer = NULL;
 
     try
@@ -415,7 +418,7 @@ namespace
       delete[] *buffer;
       throw;
     }
-      
+
     return 0;
   }
 
@@ -447,7 +450,7 @@ namespace
   {
     return 1;  // unsupported
   }
-  
+
   /***************************************************************************/
   /* Process filter on document                                              */
   /***************************************************************************/
@@ -464,7 +467,7 @@ namespace
       // We have to go through some contortions here to avoid sending a const
       // char* to sablotron.  This probably is not necessary, but the function
       // is not declared as taking a const char* so it seems safer.
-      
+
       s = new char[script.length() + 1];
       strcpy(s, script.c_str());
       d = new char[document.length() + 1];
@@ -476,7 +479,7 @@ namespace
              ip != parms->end();
              ++ip)
           p.addparm(ip->first, ip->second);
-      
+
       char *arguments[] = { "/_stylesheet", s,
                             "/_xmlinput", d,
                             "/_output", NULL,
@@ -533,7 +536,7 @@ namespace
   }
 }
 
-cdr::String filterDocument(const cdr::String& document,
+cdr::String cdr::filterDocument(const cdr::String& document,
                            const cdr::String& filter,
                            cdr::db::Connection& connection,
                            cdr::String* messages,
@@ -551,7 +554,7 @@ cdr::String filterDocument(const cdr::String& document,
   return result;
 }
 
-cdr::String cdr::filter(cdr::Session& session, 
+cdr::String cdr::filter(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
                         cdr::db::Connection& connection)
 {
@@ -565,13 +568,13 @@ cdr::String cdr::filter(cdr::Session& session,
   cdr::dom::Node attr = cmdattr.getNamedItem("Output");
 
   cdr::String foo;
-  
+
   if (attr != NULL && cdr::String(attr.getNodeValue()) == L"N")
     output = false;
 
   // we need to get the document first so we'll have it's type if needed
   // to determine the filter name
-  
+
   // extract document from the command
   {
     for (cdr::dom::Node child = commandNode.getFirstChild();
@@ -602,7 +605,7 @@ cdr::String cdr::filter(cdr::Session& session,
   }
 
   cdr::FilterParmVector pvector;
-  
+
   // extract filters and parms from the command
   {
     for (cdr::dom::Node child = commandNode.getFirstChild();
@@ -636,7 +639,7 @@ cdr::String cdr::filter(cdr::Session& session,
                 if (ppc != NULL
                       && ppc.getNodeType() == cdr::dom::Node::TEXT_NODE)
                   nvalue = ppc.getNodeValue();
-                
+
                 if (nname == L"Name")
                   name = nvalue;
                 else
@@ -668,7 +671,7 @@ cdr::String cdr::filter(cdr::Session& session,
   result = output ? "<Document><![CDATA[" + result + "]]></Document>\n" : "";
   if (filter_messages.length() != 0)
     result += "<Messages>" + filter_messages + "</Messages>\n";
-  
+
   return L"<CdrFilterResp>"
        + result
        + L"</CdrFilterResp>\n";
