@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.18 2000-11-30 23:21:39 ameyer Exp $
+ * $Id: tables.sql,v 1.19 2000-12-08 03:45:28 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2000/11/30 23:21:39  ameyer
+ * Added schema_date to doc_type table.
+ *
  * Revision 1.17  2000/10/27 11:09:14  bkline
  * Added DDL for query_term, query_term_rule, and query_term_def tables.
  *
@@ -276,16 +279,35 @@ CREATE TABLE doc_status
  *               standard caption for an illustration)
  *      comment  optional free-text description of additional characteristics
  *               of the document
+ *active_status  'A' indicates an active document.  'D' = deleted.  Other
+ *               values could be added in the future.
  */
 CREATE TABLE document
-         (id INTEGER IDENTITY PRIMARY KEY,
-  val_status CHAR NOT NULL DEFAULT 'U' REFERENCES doc_status,
-    val_date DATETIME NULL,
-    approved CHAR NOT NULL DEFAULT 'N',
-    doc_type INTEGER NOT NULL REFERENCES doc_type,
-       title VARCHAR(255) NOT NULL,
-         xml NTEXT NOT NULL,
-     comment VARCHAR(255) NULL)
+           (id INTEGER IDENTITY PRIMARY KEY,
+    val_status CHAR NOT NULL DEFAULT 'U' REFERENCES doc_status,
+      val_date DATETIME NULL,
+      approved CHAR NOT NULL DEFAULT 'N',
+      doc_type INTEGER NOT NULL REFERENCES doc_type,
+         title VARCHAR(255) NOT NULL,
+           xml NTEXT NOT NULL,
+       comment VARCHAR(255) NULL,
+ active_status CHAR NOT NULL DEFAULT 'A')
+
+/*
+ * Index needed to support a view of the document table which brings all
+ * active documents together, or all deleted documents.
+ */
+CREATE UNIQUE INDEX doc_status_idx ON document (active_status, id)
+
+/*
+ * View of the document table containing only active documents.
+ */
+CREATE VIEW active_doc AS SELECT * FROM document WHERE active_status = 'A'
+
+/*
+ * View of the document table containing only deleted documents.
+ */
+CREATE VIEW deleted_doc AS SELECT * FROM document WHERE active_status = 'D'
 
 /* 
  * Record of a document's having been checked out.  Retained even after it has
