@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.60 2002-07-05 15:05:33 bkline Exp $
+ * $Id: tables.sql,v 1.61 2002-07-18 23:34:45 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.60  2002/07/05 15:05:33  bkline
+ * New views for primary pub jobs.
+ *
  * Revision 1.59  2002/07/03 13:06:43  bkline
  * Added primary_pub_job view; adjusted formatting.
  *
@@ -1246,6 +1249,50 @@ CREATE TABLE remailer_ids
   CONSTRAINT remailer_ids_recipient_fk FOREIGN KEY (recipient)
                                        REFERENCES all_docs)
 GO
+
+/*
+ * Holds all information for a batch job.
+ * These are not publishing jobs, which have their own table, but
+ * other types of batch jobs.
+ *
+ *           id  Batch job id.
+ *         name  Human readable name of this job.
+ *      command  Executable command line, may include @@vars, see cdrbatch.py.
+ *               May also include command line args, but see batch_job_parm
+ *               for more flexible way to pass args to Python progs.
+ *   process_id  OS process identifier.
+ *      started  DateTime job was queued.
+ *         last  DateTime last status was set.
+ *       status  Last known status of job.  See cdrbatch.py
+ *        email  Send email here with final status.
+ * progress_msg  Job can set this to allow status query.
+ *               At end, job might set final info here.
+ */
+CREATE TABLE batch_job
+         (id INTEGER  IDENTITY PRIMARY KEY,
+        name VARCHAR (512) NOT NULL,
+     command VARCHAR (512) NOT NULL,
+  process_id INTEGER NULL,
+     started DATETIME NOT NULL,
+   status_dt DATETIME NOT NULL,
+      status INTEGER NOT NULL,
+       email VARCHAR (256) NULL,
+    progress TEXT NULL)
+GO
+
+/*
+ * Parameters for a batch job.
+ *
+ *          job  batch_job id for which these are parameters.
+ *         name  Name of parameter, application dependent.
+ *        value  Value as a string, application dependent.
+ */
+CREATE TABLE batch_job_parm
+        (job INTEGER NOT NULL REFERENCES batch_job,
+        name VARCHAR (32) NOT NULL,
+       value VARCHAR (256) NOT NULL)
+GO
+
 
 /*
  * View for completed publication events.
