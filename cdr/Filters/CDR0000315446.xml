@@ -1,0 +1,242 @@
+<CdrDoc Type='Filter' Id='CDR0000315446'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Module: PersonLocations Denormalization</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<!--
+     PersonLocations Denormalization
+     Creator:  Volker Englisch
+     Created:  04/30/2003
+-->
+
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0">
+
+ <xsl:output                    method = "xml" 
+                  omit-xml-declaration = "no"
+                              encoding = "UTF-8"/>
+
+
+ <!--
+ ===================================================================
+ Denormalize the Person information.
+ Note:  Can not extract the call for the call-template out of the 
+        when-otherwise clauses since the contactID variable would be
+        out-of-scope.
+ =================================================================== -->
+ <xsl:template                     match = "Person           |
+                                            SpecificPerson   |  
+                                            CIPSContactPerson">
+  <xsl:element                      name = "{name()}">
+   <Person>
+    <xsl:choose>
+     <xsl:when                      test = "name() = 'SpecificPerson'">
+      <xsl:for-each               select = "Person/@*">
+       <xsl:attribute               name = "{name()}">
+        <xsl:value-of             select = "."/>
+       </xsl:attribute>
+      </xsl:for-each>
+      <xsl:variable                 name = "contactID"
+                                  select = "Person/@cdr:ref"/>
+      <xsl:variable                 name = "contactPerson"
+                                  select = "document(concat('cdr:', $contactID, 
+                                                          '/last'))"/>
+      <xsl:call-template            name = "getPerson">
+       <xsl:with-param              name = "contactPerson"
+                                  select = "$contactPerson"/>
+      </xsl:call-template>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:for-each               select = "@*">
+       <xsl:attribute               name = "{name()}">
+        <xsl:value-of             select = "."/>
+       </xsl:attribute>
+      </xsl:for-each>
+      <xsl:variable                 name = "contactID"
+                                  select = "@cdr:ref"/>
+      <xsl:variable                 name = "contactPerson"
+                                  select = "document(concat('cdr:', $contactID, 
+                                                          '/last'))"/>
+      <xsl:call-template            name = "getPerson">
+       <xsl:with-param              name = "contactPerson"
+                                  select = "$contactPerson"/>
+      </xsl:call-template>
+     </xsl:otherwise>
+    </xsl:choose>
+   </Person>
+   <xsl:copy-of                   select = "Role"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Denormalize the Parent Organization Information
+ =================================================================== -->
+ <xsl:template                   match = "ParentOrganization |
+                                          ResearchBaseFor    |
+                                          MemberOfAdHocGroup |
+                                          CCOP               |
+                                          CooperativeGroup   |
+                                          MainMember         |
+                                          OtherPracticeLocation/
+                                            OrganizationLocation">
+  <xsl:call-template              name = "getOrganization"/>
+ </xsl:template>
+
+
+
+ <!--
+ ===================================================================
+ Denormalize the information for PoliticalSubUnit/State information.
+ =================================================================== -->
+ <xsl:template                   match = "PoliticalSubUnit_State">
+  <xsl:variable                   name = "stateId"
+                                select = "@cdr:ref"/>
+
+  <xsl:variable                   name = "state"
+                                select = "document(concat('cdr:', $stateId, 
+                                                          '/lastp'))"/>
+  <xsl:element                    name = "PoliticalSubUnit_State">
+   <xsl:attribute                 name = "cdr:ref">
+    <xsl:value-of               select = "$stateId"/>
+   </xsl:attribute>
+   <xsl:copy-of                 select = "$state/PoliticalSubUnit/
+                                          PoliticalSubUnitFullName"/>
+   <xsl:copy-of                 select = "$state/PoliticalSubUnit/
+                                          PoliticalSubUnitShortName"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Template to correctly handle the Country element in the citations.
+ Since a template for the Country documents exists this secondary
+ Country template is needed.
+ =================================================================== -->
+ <xsl:template                   match = "MedlineJournalInfo/Country">
+  <xsl:copy>
+   <xsl:apply-templates/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Denormalize the Country information.
+ =================================================================== -->
+ <xsl:template                   match = "Country">
+  <xsl:element                    name = "Country">
+   <xsl:variable                  name = "countryId"
+                                select = "@cdr:ref"/>
+   <xsl:variable                  name = "country"
+                                select = "document(concat('cdr:', $countryId, 
+                                                          '/lastp'))"/>
+   <xsl:attribute                 name = "cdr:ref">
+    <xsl:value-of               select = "$countryId"/>
+   </xsl:attribute>
+   <xsl:copy-of                 select = "$country/Country/CountryFullName"/>
+   <xsl:copy-of                 select = "$country/Country/CountryShortName"/>
+   <xsl:copy-of                 select = "$country/Country/PostalCodePosition"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Named Templates
+ =================================================================== --> 
+ <!-- 
+ ===================================================================
+ Extract the information for one lead organization.
+ =================================================================== -->
+ <xsl:template                    name = "getOrganization">
+  <xsl:element                    name = "{name()}">
+   <xsl:variable                  name = "orgID"
+                                select = "@cdr:ref"/>
+   <xsl:variable                  name = "org"
+                                select = "document(concat('cdr:', $orgID, 
+                                                          '/last'))"/>
+   <Organization>
+    <xsl:for-each               select = "@*">
+     <xsl:attribute               name = "{name()}">
+      <xsl:value-of             select = "."/>
+     </xsl:attribute>
+    </xsl:for-each>
+
+    <xsl:copy-of                select = "$org/Organization/
+                                          OrganizationNameInformation"/>
+    <xsl:apply-templates        select = "$org/Organization/
+                                          OrganizationParent/
+                                          ParentOrganization"/>
+    <!--  
+    All we need for the ParentOrganization, CCOP, etc. is the parent 
+    name and the information if there exists a grandparent.  
+    However, the template is called via OrganizationLocation we need 
+    (almost) all available information.
+    ===================================================================  -->
+    <xsl:if                       test = "name() = 'OrganizationLocation'">
+     <xsl:apply-templates       select = "$org/Organization/
+                                          OrganizationDetails"/>
+     <xsl:apply-templates       select = "$org/Organization/
+                                          OrganizationLocations"/>
+     <xsl:apply-templates       select = "$org/Organization/
+                                          OrganizationAffiliations"/>
+     <xsl:copy-of               select = "$org/Organization/
+                                          Status"/>
+     <xsl:copy-of               select = "$org/Organization/
+                                          OrganizationType"/>
+
+     <!-- 
+     These 2 elements are listed in the Schema but there doesn't exist
+     any data.  Keeping these commented out for the time being.
+     ==================================================================   
+     <xsl:copy-of               select = "$org/Organization/
+                                          ProtocolIDAcronym"/>
+     <xsl:copy-of               select = "$org/Organization/
+                                          PreferredProtocolOrganization"/> -->
+
+    </xsl:if>
+   </Organization>
+   <xsl:if                        test = "name() = 'OrgSiteID'">
+    <OrgSiteContact>
+     <xsl:apply-templates       select = "../OrgSiteContact/SpecificPerson |
+                                          ../OrgSiteContact/GenericPerson"/>
+    </OrgSiteContact>
+   </xsl:if>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Extract the information for person information.
+ =================================================================== -->
+ <xsl:template                    name = "getPerson">
+  <xsl:param                      name = "contactPerson"/>
+
+  <xsl:copy-of                  select = "$contactPerson/Person/
+                                          PersonNameInformation"/>
+  <xsl:copy-of                  select = "$contactPerson/Person/
+                                          ProfessionalInformation"/>
+  <!-- 
+  Only limited information is needed for the CIPSContactPerson.
+  The denormalization doesn't need to pick up these elements.   
+  ============================================================ -->
+  <xsl:if                         test = "name() != 'CIPSContactPerson'">
+   <xsl:apply-templates         select = "$contactPerson/Person/
+                                          PersonLocations"/>
+   <xsl:copy-of                 select = "$contactPerson/Person/
+                                          Status"/>
+  </xsl:if>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
