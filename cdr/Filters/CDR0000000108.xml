@@ -7,13 +7,14 @@
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
-     Denormalization Filter: InScopeProtocol
-     Creator:  Volker Englisch
-     Created:  04/01/2002
-     Modified: 10/29/2002
-     Modified: 2002-12-02
--->
+ ================================================================
+     $Id: CDR0000000108.xml,v 1.65 2004-07-09 22:12:23 venglisc Exp $
 
+     Denormalization Filter: InScopeProtocol
+        Written by Volker Englisch, 2002-04-01
+
+     $Log: not supported by cvs2svn $
+ ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
                           xmlns:cdrscr = "cips.nci.nih.gov/cdr/script"
@@ -146,7 +147,7 @@
        <!--
        Include the Patient Abstract Eligibility Misc Document
        ====================================================== -->
-<!--   Doc-ID on Mahler:  Remove after refresh of Mahler 
+<!--   Doc-ID on Mahler:  Remove after refresh of Mahler
        <xsl:variable              name = "miscEligiDoc" 
                                 select = "document(concat('cdr:CDR0000346455',
                                                           '/lastp'))"/>
@@ -154,6 +155,7 @@
        <xsl:variable              name = "miscEligiDoc" 
                                 select = "document(concat('cdr:CDR0000372868',
                                                           '/lastp'))"/>
+
        <xsl:apply-templates     select = "$miscEligiDoc/MiscellaneousDocument
                                                    /MiscellaneousDocumentText">
         <xsl:with-param           name = "miscDocId"
@@ -314,6 +316,24 @@
    <xsl:variable                 name = "citInfo" 
                                select = "document(concat('cdr:', $citRef,
                                                             '/lastp'))"/>
+   <!--
+   Pick up the author's last name and initials or the collective name
+   to create the author list for sorting the resulting attribute value
+   =================================================================== -->
+   <xsl:variable                 name = "alist">
+    <xsl:for-each              select = "$citInfo/Citation/PDQCitation/
+                                           AuthorList/Author             |
+                                         $citInfo/Citation/PubmedArticle/
+                                           NCBIArticle/Article/
+                                           AuthorList/Author             |
+                                         $citInfo/Citation/PubmedArticle/
+                                           MedlineCitation/Article/
+                                           AuthorList/Author">
+     <xsl:value-of              select = "LastName | CollectiveName"/>    
+     <xsl:value-of              select = "Initials | FirstName"/>
+    </xsl:for-each>
+   </xsl:variable>
+
    <!-- 
    This new attribute is introduced in order to sort by publication
    year across different citation types
@@ -324,6 +344,9 @@
                                          PublicationYear      |
                                          $citInfo/Citation/PubmedArticle//
                                          PubDate/Year"/>
+   </xsl:attribute>
+   <xsl:attribute                name = "authorlist">
+    <xsl:value-of              select = "translate($alist, ' ', '')"/>
    </xsl:attribute>
 
    <xsl:apply-templates        select = "$citInfo/Citation/PDQCitation | 
