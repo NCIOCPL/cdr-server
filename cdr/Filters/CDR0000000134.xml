@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Vendor Filter: Term</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.18: Remove Indent=Yes (Bug 1076)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml  version = "1.0"?>
 <!-- 
@@ -52,7 +52,10 @@ Filter to create the vendor Terminology XML
    <xsl:apply-templates         select = "TermType/TermTypeName"/>
    <xsl:apply-templates         select = "SemanticType"/>
    <xsl:apply-templates         select = "TermRelationship"/>
-   <xsl:apply-templates         select = "MenuInformation"/>
+   <xsl:if                        test = "TermType/TermTypeName != 
+                                                 'Obsolete term'">
+    <xsl:apply-templates         select = "MenuInformation"/>
+   </xsl:if>
                
    <!-- 
    ===================================================================
@@ -194,9 +197,11 @@ Filter to create the vendor Terminology XML
  Copy Term Relationship (Parent TermId,PreferredName,ParentType
  =================================================================== -->
  <xsl:template                   match = "MenuInformation">
+  <xsl:if                         test = "MenuItem[MenuStatus = 'Online']">
   <MenuInformation>
-   <xsl:apply-templates         select = "MenuItem"/>
+   <xsl:apply-templates         select = "MenuItem[MenuStatus = 'Online']"/>
   </MenuInformation>
+  </xsl:if>
  </xsl:template>
 
  <!--
