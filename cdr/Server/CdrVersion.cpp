@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.2 2000-10-25 19:06:34 mruben Exp $
+ * $Id: CdrVersion.cpp,v 1.3 2000-10-31 15:46:13 mruben Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/10/25 19:06:34  mruben
+ * fixed date representation
+ *
  * Revision 1.1  2000/10/23 14:08:34  mruben
  * Initial revision
  *
@@ -50,13 +53,16 @@ namespace
   }
 }
 
-int cdr::checkIn(int docId,  cdr::db::Connection& conn, int usr,
+int cdr::checkIn(cdr::Session& session, int docId,
+                 cdr::db::Connection& conn, 
                  const cdr::String* comment, bool abandon, bool force)
 {
   // we need to serialize.  Save current autocommit state so if the
   // caller has already done so, we don't mess him up
   bool autocommitted = conn.getAutoCommit();
   conn.setAutoCommit(false);
+
+  int usr = session.getUserId();
 
   // what is the current version?
   int version = getVersionNumber(docId, conn);
@@ -71,35 +77,39 @@ int cdr::checkIn(int docId,  cdr::db::Connection& conn, int usr,
   if (isCheckedOut(docId, conn, &checked_out_usr, &dt_out))
   {
     // someone already has it checked out.  Is it this user
-    if (usr != checked_out_usr && !force)
-    {
-      string usr_query = "SELECT name, fullname from usr "
-                         "WHERE id = ?";
-      cdr::db::PreparedStatement ch_select
-        = conn.prepareStatement(usr_query);
-      ch_select.setInt(1, checked_out_usr);
-      cdr::db::ResultSet usr_rs = ch_select.executeQuery();
-      cdr::String usrname;
-      cdr::String fullname;
-      if (usr_rs.next())
+    if (usr != checked_out_usr)
+      if (!force)
       {
-        usrname = usr_rs.getString(1);
-        fullname = usr_rs.getString(2);
-        if (fullname.size() != 0)
-          fullname = L" (" + fullname + L")";
+        string usr_query = "SELECT name, fullname from usr "
+                           "WHERE id = ?";
+        cdr::db::PreparedStatement ch_select
+          = conn.prepareStatement(usr_query);
+        ch_select.setInt(1, checked_out_usr);
+        cdr::db::ResultSet usr_rs = ch_select.executeQuery();
+        cdr::String usrname;
+        cdr::String fullname;
+        if (usr_rs.next())
+        {
+          usrname = usr_rs.getString(1);
+          fullname = usr_rs.getString(2);
+          if (fullname.size() != 0)
+            fullname = L" (" + fullname + L")";
+        }
+        else
+        {
+          wostringstream u;
+          u << checked_out_usr;
+          usrname = u.str();
+        }
+        throw cdr::Exception(L"Document not checked out to current user"
+                             L".  Checked out to"
+                             + usrname
+                             + fullname
+                             + L" at " + dt_out);
       }
       else
-      {
-        wostringstream u;
-        u << checked_out_usr;
-        usrname = u.str();
-      }
-      throw cdr::Exception(L"Document not checked out to current user"
-                           L".  Checked out to"
-                           + usrname
-                           + fullname
-                           + L" at " + dt_out);
-    }
+        if (!session.canDo(conn, "FORCE CHECKIN", docId))
+          throw cdr::Exception(L"User not authorized to force checkin");
 
     if (comment != NULL)
     {
@@ -128,6 +138,8 @@ int cdr::checkIn(int docId,  cdr::db::Connection& conn, int usr,
       throw cdr::Exception("Version control  not allowed for document type");
     if (version > 0)
       throw cdr::Exception(L"Document not checked out");
+    if (!session.canDo(conn, "MODIFY DOCUMENT", docId))
+      throw cdr::Exception(L"User not authorized to modify document");
   }
 
       
@@ -179,7 +191,8 @@ int cdr::checkIn(int docId,  cdr::db::Connection& conn, int usr,
   return abandon ? -1 : version;
 }
   
-int cdr::checkOut(int docId, cdr::db::Connection& conn, int usr,
+int cdr::checkOut(cdr::Session& session,
+                  int docId, cdr::db::Connection& conn,
                   const cdr::String& comment, bool force)
 {
   // we need to serialize.  Save current autocommit state so if the
@@ -187,8 +200,13 @@ int cdr::checkOut(int docId, cdr::db::Connection& conn, int usr,
   bool autocommitted = conn.getAutoCommit();
   conn.setAutoCommit(false);
 
+  int usr = session.getUserId();
+  
   if (!allowVersion(docId, conn))
     throw cdr::Exception("Version control  not allowed for document type");
+
+  if (!session.canDo(conn, "MODIFY DOCUMENT", docId))
+    throw cdr::Exception(L"User not authorized to modify document");
   
   // is the document checked out?    
   string query = "SELECT dt_out, usr "
@@ -201,7 +219,11 @@ int cdr::checkOut(int docId, cdr::db::Connection& conn, int usr,
   {
     // someone already has it checked out
     if (force)
-      checkIn(docId, conn, usr, NULL, true, force);
+    {
+      if (!session.canDo(conn, "FORCE CHECKOUT", docId))
+        throw cdr::Exception(L"User not authorized to force checkout");
+      checkIn(session, docId, conn, NULL, true, force);
+    }
     else
     {
       cdr::String dt_out = rs.getString(1);
@@ -464,8 +486,8 @@ cdr::String cdr::checkVerOut(cdr::Session& session,
       }
     }
   }
-  version = checkOut(ui_string.extractDocId(), dbConnection,
-                    session.getUserId(), comment, force);
+  version = checkOut(session, ui_string.extractDocId(), dbConnection,
+                    comment, force);
   
   wostringstream ver_string;
   ver_string << L"<Version>" << version << L"</Version>";
@@ -521,8 +543,8 @@ cdr::String cdr::checkVerIn(cdr::Session& session,
       }
     }
   }
-  version = checkIn(ui_string.extractDocId(), dbConnection,
-                    session.getUserId(), comment.get(), abandon, force);
+  version = checkIn(session, ui_string.extractDocId(), dbConnection,
+                    comment.get(), abandon, force);
   
   wostringstream ver_string;
   if (version >= 0)
