@@ -1,10 +1,13 @@
 #----------------------------------------------------------------------
 #
-# $Id: base_data_sql.py,v 1.5 2002-02-08 15:01:06 bkline Exp $
+# $Id: base_data_sql.py,v 1.6 2002-03-02 00:46:57 bkline Exp $
 #
 # Generate SQL statements for loading the base CDR database records.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.5  2002/02/08 15:01:06  bkline
+# Added code to save MiscellaneousDocument and Documentation documents.
+#
 # Revision 1.4  2001/12/21 23:15:27  bkline
 # Retained primary keys for issue and dev_tasks tables.
 #
@@ -22,7 +25,7 @@
 #----------------------------------------------------------------------
 # Load necessary modules.
 #----------------------------------------------------------------------
-import binascii, cdrdb, sys
+import binascii, cdrdb, sys, re
 
 #----------------------------------------------------------------------
 # Initialize maps for reconstructing foreign key references.
@@ -38,16 +41,26 @@ query_term_rule = {}
 query_term_def  = {}
 used_filters    = {}
 used_schemas    = {}
+non_ascii_chars = re.compile(u"([\u0080-\uFFFF])")
+
+#----------------------------------------------------------------------
+# Encode non-ASCII characters.
+#----------------------------------------------------------------------
+def encode(match):
+    char = match.group(0)
+    val  = ord(char)
+    return "&#%d;" % val
 
 #----------------------------------------------------------------------
 # Wrap a (possibly NULL) string value suitable for use in a SQL query.
 #----------------------------------------------------------------------
 def quote(val):
     if val == None:
-        return "NULL"
+        return u"NULL"
     if type(val) == type(""):
         return "'" + val.replace("'", "''") + "'"
     if type(val) == type(u""):
+        val = re.sub(non_ascii_chars, encode, val)        
         return u"'" + val.replace(u"'", u"''") + u"'"
     return "'" + str(val) + "'"
 
@@ -532,7 +545,7 @@ SELECT d.val_status, d.val_date, d.title, d.xml, d.comment, d.active_status
     ON t.id = d.doc_type
  WHERE t.name = 'Documentation'""")
     for row in cursor.fetchall():
-        print """\
+        print u"""\
 INSERT INTO document(val_status, val_date, doc_type, title, xml, 
                      comment, active_status, last_frag_id)
      SELECT %s, %s, id, %s, %s, %s, %s, 0
