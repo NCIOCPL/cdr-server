@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.54 2003-05-13 17:45:19 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.55 2003-05-29 15:35:46 ameyer Exp $
  *
  */
 
@@ -343,7 +343,7 @@ void cdr::CdrDoc::Store ()
     if (getRevFilterLevel() != DEFAULT_REVISION_LEVEL)
         throw cdr::Exception(L"CdrDoc::Store: RevisionFilterLevel cannot be "
                              L"overridden when saving a CDR document.");
-    
+
     // New record
     if (!Id) {
         sqlStmt =
@@ -681,7 +681,7 @@ static cdr::String CdrPutDoc (
     if (doc.getRevFilterLevel() != cdr::DEFAULT_REVISION_LEVEL)
         throw cdr::Exception(L"CdrPutDoc: RevisionFilterLevel cannot be "
                              L"overridden when saving a CDR document.");
-    
+
     // Make sure validation has been invoked if a publishable version
     // has been requested.  The DLL will enforce this, but we do it
     // here as well, since the DLL is our primary, but not our only client.
@@ -1397,7 +1397,7 @@ cdr::String cdr::reIndexDoc (
     doc.updateQueryTerms();
 
     // Failures are impossible - except for internal exceptions
-    return (L"<CdrReindexResp/>");
+    return (L"<CdrReindexDocResp/>");
 }
 
 /**
@@ -1777,7 +1777,7 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
             addValidationMessage(L"Status mismatch between Lead "
                                  L"Organizations.  Status needs to be "
                                  L"checked.", VAL_MESSAGE_WARNING);
-        
+
         if (statusSet.find(L"Active") != statusSet.end())
             status = L"Active";
         else if (statusSet.find(L"Temporarily closed") != statusSet.end())
