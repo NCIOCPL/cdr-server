@@ -1,9 +1,13 @@
 #----------------------------------------------------------------------
-# $Id: base_data_sql.py,v 1.1 2001-12-06 02:54:11 bkline Exp $
+#
+# $Id: base_data_sql.py,v 1.2 2001-12-19 20:34:30 bkline Exp $
 #
 # Generate SQL statements for loading the base CDR database records.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.1  2001/12/06 02:54:11  bkline
+# Initial revision
+#
 #----------------------------------------------------------------------
 
 #----------------------------------------------------------------------
@@ -507,7 +511,7 @@ print "USE cdr\nGO\n"
 #----------------------------------------------------------------------
 # Log on to the CDR database.
 #----------------------------------------------------------------------
-conn = cdrdb.connect()
+conn = cdrdb.connect(dataSource = 'mmdb2')
 
 #----------------------------------------------------------------------
 # Load the data.
