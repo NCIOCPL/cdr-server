@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.15 2000-07-21 21:08:08 ameyer Exp $
+ * $Id: CdrString.h,v 1.16 2000-10-05 17:14:44 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2000/07/21 21:08:08  ameyer
+ * Added tagWrap().
+ *
  * Revision 1.14  2000/07/11 22:42:03  ameyer
  * Added stringDocId() helper function.
  *
@@ -308,6 +311,14 @@ namespace cdr {
      *  @return             string form of the doc id.
      */
     extern String stringDocId (const int);
+
+    /**
+     * Convert reserved XML characters to character entities in a string
+     *
+     *  @param  inStr       reference to string to be converted.
+     *  @return             string with &...; in place of reserved chars
+     */
+    extern String entConvert (const String&);
 
     /**
      * Wrap an xml tag around a string, returning the wrapped string.
