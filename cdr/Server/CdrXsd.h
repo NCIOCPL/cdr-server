@@ -1,7 +1,11 @@
 /*
- * $Id: CdrXsd.h,v 1.13 2001-05-16 15:50:51 bkline Exp $
+ * $Id: CdrXsd.h,v 1.14 2001-09-19 18:44:13 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2001/05/16 15:50:51  bkline
+ * Added getValidValueSets() method to Schema class.  Fixed uninitialized
+ * pointer bug in SimpleContent class.
+ *
  * Revision 1.12  2001/05/03 18:46:59  bkline
  * Moved in code from ParseSchema.cpp.
  *
@@ -364,7 +368,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const URI           = L"uri";
+        const wchar_t* const URI           = L"anyURI";
         
         /**
          * Obsolete value for <code>base</code> attribute, indicating 
@@ -401,6 +405,28 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const NMTOKEN       = L"NMTOKEN";
+        
+        /**
+         * Value for <code>base</code> attribute, indicating derivation of a
+         * user-defined simple type from the built-in ID type.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
+         *          XML Schema Part 2: Datatypes</A>
+         */
+        const wchar_t* const ID            = L"ID";
+        
+        /**
+         * Value for <code>base</code> attribute, indicating derivation of a
+         * user-defined simple type from the built-in IDREF type.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
+         *          XML Schema Part 2: Datatypes</A>
+         */
+        const wchar_t* const IDREF         = L"IDREF";
         
         /**
          * Tag for the element used to specify the inclusive lower bound of
@@ -883,6 +909,30 @@ namespace cdr {
              */
             void                getValidValueSets(ValidValueSets& list) const;
 
+            /**
+             * Reports whether a given element in the schema has a particular
+             * attribute.
+             *
+             *  @param  elemName    name of element to check.
+             *  @param  attrName    name of attribute to check.
+             *  @return             <code>true</code> if the element can have
+             *                      the attribute named in the second
+             *                      parameter; otherwise <code>false</code>.
+             */
+            bool                hasAttribute(const cdr::String& elemName,
+                                             const cdr::String& attrName)
+                                             const;
+
+            /**
+             * Extract a list of elements which can have a particular
+             * attribute.
+             *
+             *  @param  attrName    name of attribute to check.
+             *  @param  elemList    list of element names to be populated.
+             */
+            void                elemsWithAttr(const cdr::String& attrName,
+                                              cdr::StringList& elemList) const;
+
         private:
 
             /**
@@ -1027,6 +1077,35 @@ namespace cdr {
             void declareDtdChildElements(cdr::StringSet& declaredElems,
                                          const Node* n,
                                          std::wostream& os);
+
+            /**
+             * Recursively examines the current element and its children to
+             * see which have cdr:id attributes.
+             *
+             *  @param  schema      reference to CDR schema object.
+             *  @param  elem        reference to current element.
+             *  @param  elemList    reference to list we're building of 
+             *                      elements which have cdr:id attributes.
+             *  @param  checked     set to prevent processing the same 
+             *                      element multiple times.
+             */
+            void checkElementForAttribute(cdr::xsd::Element& elem,
+                                          cdr::StringList& elemList,
+                                          cdr::StringSet& checked) const;
+
+            /**
+             * Examine content for a complex type, looking for elements.  
+             * Content can be a group, a sequence, a choice, or an element.
+             *
+             *  @param  node        address of schema node.
+             *  @param  elemList    reference to list we're building of 
+             *                      elements which have cdr:id attributes.
+             *  @param  checked     set to prevent processing the same 
+             *                      element multiple times.
+             */
+            void checkContentForAttribute(const cdr::xsd::Node* node,
+                                          cdr::StringList& elemList,
+                                          cdr::StringSet& checked) const;
 
             /**
              * Directory to be used for locating included schema subdocuments
@@ -1593,7 +1672,7 @@ namespace cdr {
              */
             enum BuiltinType { STRING, DATE, TIME, DECIMAL, INTEGER,
                                URI, BINARY, TIME_INSTANT, DATE_TIME, NMTOKEN,
-                               HEXBIN, BASE64BIN };
+                               HEXBIN, BASE64BIN, ID, IDREF };
 
             /**
              * Accessor method for the name of the base type for this
@@ -1978,7 +2057,8 @@ namespace cdr {
         extern void validateDocAgainstSchema(
                 cdr::dom::Element&         docElem,
                 cdr::dom::Element&         schemaElem,
-                StringList&                errors);
+                StringList&                errors,
+                cdr::db::Connection*       conn = 0);
 
         /**
          * Determine whether the string matches the NMTOKEN production of
