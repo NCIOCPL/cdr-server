@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.16 2001-06-06 12:25:08 bkline Exp $
+ * $Id: CdrString.cpp,v 1.17 2001-06-12 22:38:31 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2001/06/06 12:25:08  bkline
+ * Added blob encoding/decoding.
+ *
  * Revision 1.15  2001/05/16 20:39:01  bkline
  * Removed inefficiencies in utf8ToUtf16().
  *
@@ -300,7 +303,7 @@ bool cdr::ynCheck (cdr::String ynString, bool defaultVal, cdr::String forceMsg)
 /**
  * Construct a Blob object from it's encoded string version.
  */
-cdr::Blob::Blob(const cdr::String& base64)
+cdr::Blob::Blob(const cdr::String& base64) : null(true)
 {
     // Keep this outside the try block so we can delete it in the catch.
     unsigned char* buf = 0;
@@ -412,6 +415,7 @@ cdr::Blob::Blob(const cdr::String& base64)
         delete [] buf;
         throw;
     }
+    null = false;
 }
 
 /**
