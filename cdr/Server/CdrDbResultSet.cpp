@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.cpp,v 1.13 2002-03-28 18:26:59 bkline Exp $
+ * $Id: CdrDbResultSet.cpp,v 1.14 2002-11-13 15:03:06 bkline Exp $
  *
  * Implementation for ODBC result fetching wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2002/03/28 18:26:59  bkline
+ * Added some support for ResultSetMetaData.
+ *
  * Revision 1.12  2001/12/19 12:26:29  bkline
  * Fixed bug in blob retrieval which resulted in loss of first byte.
  *
@@ -173,6 +176,8 @@ cdr::String cdr::db::ResultSet::getString(int pos)
                     cbData, &cbData);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
         delete [] data;
+        if (rc == SQL_NO_DATA_FOUND)
+            return cdr::String();
         throw cdr::Exception("Database failure extracting data",
                              st.getErrorMessage(rc));
     }
@@ -189,6 +194,8 @@ cdr::String cdr::db::ResultSet::getString(int pos)
                         cbData + sizeof(wchar_t), &cbData);
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
             delete [] data;
+            if (rc == SQL_NO_DATA_FOUND)
+                return cdr::String();
             throw cdr::Exception("Database failure extracting data",
                                  st.getErrorMessage(rc));
         }
