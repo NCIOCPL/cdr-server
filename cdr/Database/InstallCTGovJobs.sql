@@ -1,10 +1,14 @@
 /*
- * $Id: InstallCTGovJobs.sql,v 1.1 2003-12-18 21:47:21 bkline Exp $
+ * $Id: InstallCTGovJobs.sql,v 1.2 2004-01-12 19:14:57 bkline Exp $
  *
  * Script to install jobs to download and import protocols from
  * ClinicalTrials.gov.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2003/12/18 21:47:21  bkline
+ * Script to install the nightly jobs to download and import trials
+ * from ClinicalTrials.gov.
+ *
  */
 USE msdb
 EXEC sp_add_category    @name              = 'CDR Jobs'
@@ -17,7 +21,7 @@ EXEC sp_add_jobstep     @job_name          = 'CTGov Nightly Tasks',
                         @subsystem         = 'CMDEXEC',
                         @command           = 'd:\cdr\bin\RunCTGovDownload.cmd',
                         @on_success_action = 3, -- go to the next step
-                        @on_fail_action    = 3, -- go to the next step
+                        @on_fail_action    = 3  -- go to the next step
 GO
 EXEC sp_add_jobstep     @job_name          = 'CTGov Nightly Tasks',
                         @step_name         = 'CTGov Protocol Import',
