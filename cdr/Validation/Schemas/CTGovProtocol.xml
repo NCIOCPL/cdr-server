@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: CTGovProtocol.xml,v 1.4 2003-09-29 12:10:31 bkline Exp $
+      $Id: CTGovProtocol.xml,v 1.5 2003-10-03 15:36:19 bkline Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.4  2003/09/29 12:10:31  bkline
+      Fixed typo (NotEmptyString for string in enumerated list).
+
       Revision 1.3  2003/09/29 12:06:16  bkline
       Modified definition of Phase to match InScopeProtocol's definition.
 
@@ -42,9 +45,9 @@
       <element       name            = 'Sponsors'
                      type            = 'CTSponsors'/>
       <element       name            = 'BriefSummary'
-                     type            = 'string'/>
+                     type            = 'ParagraphsAndLists'/>
       <element       name            = 'DetailedDescription'
-                     type            = 'string'
+                     type            = 'ParagraphsAndLists'
                      minOccurs       = '0'/>
       <element       name            = 'OverallStatus'
                      type            = 'CTStatus'/>
@@ -166,7 +169,7 @@
   <complexType       name            = 'CTEligibility'>
     <sequence>
       <element       name            = 'CTCriteria'
-                     type            = 'string'/>
+                     type            = 'ParagraphsAndLists'/>
       <element       name            = 'CTExpectedEnrollment'
                      type            = 'integer'
                      minOccurs       = '0'/>
@@ -179,6 +182,24 @@
     </sequence>
   </complexType>
 
+  <complexType       name            = 'ParagraphsAndLists'>
+    <choice          maxOccurs       = 'unbounded'>
+      <element       name            = 'Para'
+                     type            = 'string'/>
+      <element       name            = 'ItemizedList'
+                     type            = 'ItemizedList'/>
+    </choice>
+  </complexType>
+
+  <!-- Watered-down (but upward-compatible) version of ItemizedList. -->
+  <complexType       name            = 'ItemizedList'>
+    <sequence>
+      <element       name            = 'ListItem'
+                     type            = 'string'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
   <complexType       name            = 'CTLocation'>
     <sequence>
       <element       name            = 'Facility'
@@ -187,7 +208,8 @@
                      type            = 'CTStatus'/>
       <element       name            = 'Contact'
                      type            = 'CTContact'
-                     minOccurs       = '0'/>
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'ContactBackup'
                      type            = 'CTContact'
                      minOccurs       = '0'/>
@@ -369,7 +391,7 @@
       <element       name            = 'City'
                      type            = 'string'
                      minOccurs       = '0'/>
-      <element       name            = 'PoliticalSubunit_State'
+      <element       name            = 'PoliticalSubUnit_State'
                      type            = 'LinkedValue'
                      minOccurs       = '0'/>
       <element       name            = 'Country'
