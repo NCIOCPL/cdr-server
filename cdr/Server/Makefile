@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.51 2002-01-31 21:44:11 mruben Exp $
+# $Id: Makefile,v 1.52 2002-02-12 23:03:27 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.51  2002/01/31 21:44:11  mruben
+# fixed make of ccdoc to use $(DRV)
+#
 # Revision 1.50  2002/01/31 21:23:26  mruben
 # Changed BISON_SIMPLE variable to avoid clash with environment variable
 #
@@ -354,13 +357,14 @@ $(CDRLIB): $(LIBOBJS)
 
 #--------------------------------------------------------------------------
 # For Bison, we're not attempting a generic rule
+# Note that our version of bison requires a modified 
+#   bison.simple parser to handle C++ syntax
+# See /etc/bison.simple, /etc/bison.simple.readme
 #--------------------------------------------------------------------------
-BISON_SIMPLE_FILE=$(DRV)/etc/bison.cdrtest
 CdrSearch_tab.obj: CdrSearch_tab.c $(HDRS)
 	$(CC) $(CFLAGS) -c -TP CdrSearch_tab.c >> errs
 
 CdrSearch_tab.c: CdrSearch.y $(HDRS)
-	set BISON_SIMPLE=$(BISON_SIMPLE_FILE)
 	$(BISON) -p CdrSearch CdrSearch.y -o CdrSearch_tab.c
 
 #--------------------------------------------------------------------------
