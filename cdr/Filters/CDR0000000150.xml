@@ -381,12 +381,20 @@
                                       'Active')">
 
  <!-- Only create the ProtocolSites element if Active Sites exist and only
-      if its parent is active as well                               -->
+      if its parent is active as well or if the PrivateProtocolSite is 
+      active
+      ==================================================================== -->
     <xsl:if                   test = "(ProtocolLeadOrg[LeadOrgProtocolStatuses/
                                                        CurrentOrgStatus/
                                                        StatusName = 'Active']/
                                        ProtocolSites/
-                                       OrgSite[OrgSiteStatus = 'Active'])">
+                                       OrgSite[OrgSiteStatus = 'Active'])    |
+                                      (ProtocolLeadOrg[LeadOrgProtocolStatuses/
+                                                       CurrentOrgStatus/
+                                                       StatusName = 'Active']/
+                                       ProtocolSites/
+                                       PrivatePracticeSite
+                                       [PrivatePracticeSiteStatus = 'Active'])">
      <ProtocolSites>
       <xsl:apply-templates  select = "ProtocolLeadOrg/ProtocolSites"/>
      </ProtocolSites>
@@ -590,6 +598,7 @@
                                            [StatusName = 'Active'])">
 
   <xsl:for-each                 select = "OrgSite">
+   <!-- Only display active OrgSite                                        -->
    <xsl:if                        test = "OrgSiteStatus = 'Active'">
     <ProtocolSite                  ref = "{@ref}"
                               sitetype = "Organization">
@@ -606,15 +615,15 @@
    </xsl:if>
   </xsl:for-each>
 
-  <!-- Added code to pick up private practice sites.  RMK 2002-09-06. -->
+  <!-- Added code to pick up private practice sites.  RMK 2002-09-06.      -->
   <xsl:for-each                 select = "PrivatePracticeSite">
-   <xsl:variable                  name = "name"
-                                select = "PrivatePracticePerson/
-                                          PersonNameInformation"/>
-   <ProtocolSite                   ref = "{@ref}"
+   <!-- Only display active PrivatePracticeSite                            -->
+   <xsl:if                        test = "PrivatePracticeSiteStatus = 'Active'">
+    <ProtocolSite                  ref = "{@ref}"
                               sitetype = "Person">
-    <xsl:apply-templates        select = "PrivatePracticePerson"/>
-   </ProtocolSite>
+     <xsl:apply-templates       select = "PrivatePracticePerson"/>
+    </ProtocolSite>
+   </xsl:if>
   </xsl:for-each>
   </xsl:if>
  </xsl:template>
