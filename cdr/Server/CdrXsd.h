@@ -1,10 +1,12 @@
 /*
- * $Id: CdrXsd.h,v 1.2 2000-04-11 21:23:40 bkline Exp $
+ * $Id: CdrXsd.h,v 1.3 2000-04-22 18:01:26 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/11 21:23:40  bkline
+ * Fleshed out support for simple types; added true type inheritance.
+ *
  * Revision 1.1  2000/04/11 14:18:50  bkline
  * Initial revision
- *
  */
 
 #ifndef CDR_XSD_H_
@@ -23,7 +25,9 @@ namespace cdr {
 
     namespace xsd {
 
-        // Schema constants
+        /**
+         * Schema constants, used to recognize tokens found by the parser.
+         */
         const wchar_t* const SCHEMA        = L"xsd:schema";
         const wchar_t* const ELEMENT       = L"xsd:element";
         const wchar_t* const ATTRIBUTE     = L"xsd:attribute";
@@ -62,7 +66,7 @@ namespace cdr {
         const wchar_t* const HEX           = L"hex";
         const wchar_t* const BASE64        = L"base64";
 
-        // Forward declarations
+        // Forward declarations.
         class Type;
         class Element;
         class Attribute;
@@ -85,7 +89,10 @@ namespace cdr {
             void                registerType(const cdr::xsd::Type*);
         };
 
-        // Aliases for container types.
+        /**
+         * Aliases for container types.  Provided for convenience (and as a
+         * workaround for MSVC++ bugs).
+         */
         typedef std::list<Element*>             ElementList;
         typedef std::list<Attribute*>           AttributeList;
         typedef ElementList::const_iterator     ElemEnum;
