@@ -9,7 +9,7 @@
 
 <!--
  ================================================================
-     $Id: CDR0000346703.xml,v 1.3 2003-11-20 19:57:48 bkline Exp $
+     $Id: CDR0000346703.xml,v 1.4 2003-12-14 19:13:25 bkline Exp $
 
      Filter to create a CTGovProtocol QC Report.
      Input: from Denormalization Filter: CTGovProtocol
@@ -53,7 +53,7 @@
                                                           "%25B %25#d, %25Y ",
                                                           "%25#I:%25M%25p"))'/>
      </h2>
-    </center>
+    </center>@@NOPDQINDEXING@@
     <br />
     <br />
     <h1>
@@ -108,6 +108,7 @@
   <xsl:apply-templates          select = 'Sponsors'/>
   <xsl:apply-templates          select = 'OverallStatus'/>
   <xsl:apply-templates          select = 'Location'/>
+  <xsl:call-template              name = 'recordInfo'/>
  </xsl:template>
 
  <xsl:template                   match = 'RequiredHeader'>
@@ -419,6 +420,7 @@
     <th                        colspan = '2'>Diagnosis</th>
    </tr>
    <xsl:for-each                select = 'Diagnosis/Term/PreferredName'>
+    <xsl:sort                   select = 'normalize-space()'/>
     <tr>
      <td                       colspan = '2'>
       <xsl:value-of             select = 'normalize-space()'/>
@@ -466,10 +468,16 @@
    <xsl:call-template             name = 'makeTableRow'>
     <xsl:with-param               name = 'label'
                                 select = '"Lead Sponsor"'/>
-    <xsl:with-param               name = 'data'
-                                select = 'LeadSponsor/Organization/
+    <xsl:with-param               name = 'data'>
+     <xsl:value-of              select = 'LeadSponsor/Organization/
                                           OrganizationNameInformation/
                                           OfficialName/Name'/>
+     <xsl:if                      test = 'LeadSponsor/Organization/
+                                          @cdr:ref != ""'>
+      <xsl:value-of             select = 'concat(" [", LeadSponsor/
+                                          Organization/@cdr:ref, "]")'/>
+     </xsl:if>
+    </xsl:with-param>
    </xsl:call-template>
    <xsl:choose>
     <xsl:when                     test = 'Collaborator'>
@@ -477,10 +485,15 @@
       <xsl:call-template          name = 'makeTableRow'>
        <xsl:with-param            name = 'label'
                                 select = '"Collaborator"'/>
-       <xsl:with-param            name = 'data'
-                                select = 'Organization/
+       <xsl:with-param            name = 'data'>
+        <xsl:value-of           select = 'Organization/
                                           OrganizationNameInformation/
                                           OfficialName/Name'/>
+        <xsl:if                   test = 'Organization/@cdr:ref != ""'>
+         <xsl:value-of          select = 'concat(" [", Organization/@cdr:ref,
+                                                  "]")'/>
+        </xsl:if>
+       </xsl:with-param>
       </xsl:call-template>
      </xsl:for-each>
     </xsl:when>
@@ -569,10 +582,16 @@
    <xsl:call-template             name = 'makeTableRow'>
     <xsl:with-param               name = 'label'
                                 select = '"Facility Name"'/>
-    <xsl:with-param               name = 'data'
-                                select = 'Facility/Name/Organization/
+    <xsl:with-param               name = 'data'>
+     <xsl:value-of              select = 'Facility/Name/Organization/
                                           OrganizationNameInformation/
                                           OfficialName/Name'/>
+     <xsl:if                      test = 'Facility/Name/Organization/
+                                          @cdr:ref != ""'>
+      <xsl:value-of             select = 'concat(" [", Facility/Name/
+                                          Organization/@cdr:ref, "]")'/>
+     </xsl:if>
+    </xsl:with-param>
    </xsl:call-template>
    <tr>
     <th                        colspan = '2'>Address:</th>
@@ -595,12 +614,24 @@
      <xsl:call-template           name = 'makeIndentedRow'>
       <xsl:with-param             name = 'label'
                                 select = '"State/Political Unit"'/>
+      <xsl:with-param             name = 'data'>
+       <xsl:value-of            select = 'normalize-space()'/>
+       <xsl:if                    test = '../@cdr:ref != ""'>
+        <xsl:value-of           select = 'concat(" [", ../@cdr:ref, "]")'/>
+       </xsl:if>
+      </xsl:with-param>
      </xsl:call-template>
     </xsl:for-each>
     <xsl:for-each               select = 'Country/CountryFullName'>
      <xsl:call-template           name = 'makeIndentedRow'>
       <xsl:with-param             name = 'label'
                                 select = '"Country"'/>
+      <xsl:with-param             name = 'data'>
+       <xsl:value-of            select = 'normalize-space()'/>
+       <xsl:if                    test = '../@cdr:ref != ""'>
+        <xsl:value-of           select = 'concat(" [", ../@cdr:ref, "]")'/>
+       </xsl:if>
+      </xsl:with-param>
      </xsl:call-template>
     </xsl:for-each>
     <xsl:for-each               select = 'PostalCode_ZIP'>
@@ -738,27 +769,67 @@
 
  <xsl:template                    name = 'assemblePersonalName'>
   <xsl:for-each                 select = 'PersonNameInformation'>
-   <xsl:value-of                select = 'normalize-space(Surname)'/>
-   <xsl:value-of                select = 'normalize-space(SurName)'/>
-   <xsl:if                        test = 'normalize-space(GivenName) != "" or
-                                          normalize-space(MiddleInitial) != ""'>
-    <xsl:text>,</xsl:text>
-   </xsl:if>
-   <xsl:if                        test = 'normalize-space(GivenName) != ""'>
-    <xsl:value-of               select = 'concat(" ",
-                                          normalize-space(GivenName))'/>
-   </xsl:if>
-   <xsl:if                        test = 'normalize-space(MiddleInitial) != ""'>
-    <xsl:value-of               select = 'concat(" ",
-                                          normalize-space(MiddleInitial))'/>
-   </xsl:if>
-   <xsl:if                        test = 'normalize-space(ProfessionalSuffix)
-                                          != ""'>
-    <xsl:value-of               select = 'concat(", ",
-                                          normalize-space(
-                                          ProfessionalSuffix))'/>
-   </xsl:if>
+   <xsl:variable                  name = 'firstTwo'
+                                select = 'normalize-space(
+                                          concat(GivenName, " ", 
+                                                 MiddleInitial))'/>
+   <xsl:variable                  name = 'firstThree'
+                                select = 'normalize-space(
+                                          concat($firstTwo, " ",
+                                                 Surname,
+                                                 SurName))'/>
+   <xsl:variable                  name = 'combo'>
+    <xsl:value-of               select = '$firstThree'/>
+    <xsl:if                        test = 'normalize-space(ProfessionalSuffix)
+                                           != "" and $firstThree != ""'>
+     <xsl:text>, </xsl:text>
+    </xsl:if>
+    <xsl:value-of               select = 'ProfessionalSuffix'/>
+   </xsl:variable>
+   <xsl:value-of                select = 'normalize-space($combo)'/>
   </xsl:for-each>
+  <xsl:if                         test = '@cdr:ref != ""'>
+   <xsl:value-of                select = 'concat(" [", @cdr:ref, "]")'/>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    name = 'recordInfo'>
+  <table                        border = '0'
+                                 width = '100%'>
+   <xsl:call-template             name = 'blankRow'/>
+   <xsl:call-template             name = 'blankRow'/>
+   <xsl:call-template             name = 'blankRow'/>
+   <tr>
+    <th                        colspan = '2'>Record Information</th>
+   </tr>
+   <xsl:call-template             name = 'makeTableRow'>
+    <xsl:with-param               name = 'label'
+                                select = '"Updated by"'/>
+    <xsl:with-param               name = 'data'
+                                select = '"@@UPDATEDBY@@"'/>
+   </xsl:call-template>
+   <xsl:call-template             name = 'makeTableRow'>
+    <xsl:with-param               name = 'label'
+                                select = '"Date"'/>
+    <xsl:with-param               name = 'data'
+                                select = '"@@UPDATEDDATE@@"'/>
+   </xsl:call-template>
+   <xsl:call-template             name = 'blankRow'/>
+   <xsl:call-template             name = 'blankRow'/>
+   <xsl:call-template             name = 'blankRow'/>
+   <xsl:call-template             name = 'makeTableRow'>
+    <xsl:with-param               name = 'label'
+                                select = '"Verification Date"'/>
+    <xsl:with-param               name = 'data'
+                                select = 'VerificationDate'/>
+   </xsl:call-template>
+   <xsl:call-template             name = 'makeTableRow'>
+    <xsl:with-param               name = 'label'
+                                select = '"Last Changed Date"'/>
+    <xsl:with-param               name = 'data'
+                                select = 'LastChangedDate'/>
+   </xsl:call-template>
+  </table>
  </xsl:template>
 
 </xsl:transform>]]>

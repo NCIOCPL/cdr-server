@@ -1,0 +1,796 @@
+<CdrDoc Type='Filter' Id='CDR0000349690'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Import CTGovProtocol</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version='1.0'?>
+
+<!--
+     $Id: CDR0000349690.xml,v 1.1 2003-12-14 19:18:47 bkline Exp $
+
+     $Log: not supported by cvs2svn $
+  -->
+
+<xsl:transform                xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                              xmlns:cdr = 'cips.nci.nih.gov/cdr'
+                                version = '1.0'>
+
+ <xsl:output                     method = 'xml'
+                               encoding = 'utf-8'/>
+
+ <xsl:param                        name = 'newDoc'
+                                 select = '"Y"'/>
+
+ <xsl:template                    match = '/'>
+  <CTGovProtocol>
+   <xsl:apply-templates          select = 'clinical_study'/>
+  </CTGovProtocol>
+ </xsl:template>
+
+ <xsl:template                    match = 'clinical_study'>
+  <xsl:apply-templates           select = 'required_header'/>
+  <xsl:apply-templates           select = 'id_info'/>
+  <xsl:apply-templates           select = 'brief_title'/>
+  <xsl:apply-templates           select = 'official_title'/>
+  <Sponsors>
+   <xsl:call-template              name = 'pdqSponsorshipStub'/>
+   <xsl:apply-templates          select = 'sponsors'/>
+   <xsl:apply-templates          select = 'overall_official'/>
+   <xsl:for-each                 select = 'overall_contact'>
+    <xsl:if                        test = 'normalize-space() != ""'>
+     <OverallContact>
+      <xsl:call-template           name = 'extractContact'/>
+     </OverallContact>
+    </xsl:if>
+   </xsl:for-each>
+   <xsl:for-each                 select = 'overall_contact_backup'>
+    <xsl:if                        test = 'normalize-space() != ""'>
+     <OverallContactBackup>
+      <xsl:call-template           name = 'extractContact'/>
+     </OverallContactBackup>
+    </xsl:if>
+   </xsl:for-each>
+  </Sponsors>
+  <xsl:apply-templates           select = 'overall_status'/>
+  <xsl:apply-templates           select = 'start_date'/>
+  <xsl:apply-templates           select = 'end_date'/>
+  <xsl:apply-templates           select = 'location'/>
+  <xsl:apply-templates           select = 'brief_summary'/>
+  <xsl:apply-templates           select = 'detailed_description'/>
+  <xsl:apply-templates           select = 'phase'/>
+  <xsl:apply-templates           select = 'eligibility'/>
+  <CTGovIndexing>
+   <xsl:apply-templates          select = 'study_design'/>
+   <xsl:apply-templates          select = 'condition'/>
+   <xsl:apply-templates          select = 'intervention'/>
+  </CTGovIndexing>
+  <xsl:choose>
+   <xsl:when                       test = '$newDoc = "Y"'>
+    <PDQIndexing>
+     <StudyType>
+      <xsl:processing-instruction  name = 'xm-replace_text'>
+       <xsl:text>{Select name of study type (required)}</xsl:text>
+      </xsl:processing-instruction>
+     </StudyType>
+     <StudyCategory>
+      <StudyCategoryType>
+       <xsl:processing-instruction name = 'xm-replace_text'>
+        <xsl:text>{Select type of study category (required)}</xsl:text>
+       </xsl:processing-instruction>
+      </StudyCategoryType>
+      <StudyCategoryName>
+       <xsl:processing-instruction name = 'xm-replace_text'>
+        <xsl:text>{Select name of study category (required)}</xsl:text>
+       </xsl:processing-instruction>
+      </StudyCategoryName>
+      <Intervention>
+       <InterventionType>
+        <xsl:processing-instruction
+                                   name = 'xm-replace_text'>
+         <xsl:text>{Optionally link to a term describing the type </xsl:text>
+         <xsl:text>of intervention} </xsl:text>
+        </xsl:processing-instruction>
+       </InterventionType>
+       <InterventionName>
+        <xsl:processing-instruction
+                                   name = 'xm-replace_text'>
+         <xsl:text>{Optionally link to a term naming the </xsl:text>
+         <xsl:text>specific intervention} </xsl:text>
+        </xsl:processing-instruction>
+       </InterventionName>
+      </Intervention>
+     </StudyCategory>
+     <Condition>
+      <xsl:processing-instruction  name = 'xm-replace_text'>
+       <xsl:text>{Optionally link to a term describing the </xsl:text>
+       <xsl:text>participant's relevant medical condition} </xsl:text>
+      </xsl:processing-instruction>
+     </Condition>
+     <Gene>
+      <xsl:processing-instruction  name = 'xm-replace_text'>
+       <xsl:text>{Optionally link to the relevant gene term} </xsl:text>
+      </xsl:processing-instruction>
+     </Gene>
+     <Eligibility>
+      <HealthyVolunteers>
+       <xsl:text>No</xsl:text>
+      </HealthyVolunteers>
+      <LowAge>
+       <xsl:processing-instruction name = 'xm-replace_text'>
+        <xsl:text>{Enter the minimum eligible age (required)} </xsl:text>
+       </xsl:processing-instruction>
+      </LowAge>
+      <HighAge>
+       <xsl:processing-instruction name = 'xm-replace_text'>
+        <xsl:text>{Enter the maximum eligible age (required)} </xsl:text>
+       </xsl:processing-instruction>
+      </HighAge>
+      <AgeText>
+       <xsl:processing-instruction name = 'xm-replace_text'>
+        <xsl:text>{Enter a description of the age eligibility </xsl:text>
+        <xsl:text>criteria (required)} </xsl:text>
+       </xsl:processing-instruction>
+      </AgeText>
+      <Diagnosis>
+       <xsl:processing-instruction name = 'xm-replace_text'>
+        <xsl:text>{Optionally link to a diagnosis term} </xsl:text>
+       </xsl:processing-instruction>
+      </Diagnosis>
+      <ExclusionCriteria>
+       <xsl:processing-instruction name = 'xm-replace_text'>
+        <xsl:text>{Optionally link to an exclusion term} </xsl:text>
+       </xsl:processing-instruction>
+      </ExclusionCriteria>
+      <Comment>
+       <xsl:processing-instruction name = 'xm-replace_text'>
+        <xsl:text>{Optionally enter a comment} </xsl:text>
+       </xsl:processing-instruction>
+      </Comment>
+     </Eligibility>
+     <EnteredBy>
+      <xsl:processing-instruction  name = 'xm-replace_text'>
+       <xsl:text>{Enter ID of user adding PDQ indexing information} </xsl:text>
+      </xsl:processing-instruction>
+     </EnteredBy>
+     <EntryDate>
+      <xsl:processing-instruction  name = 'xm-replace_text'>
+       <xsl:text>{Enter date using format YYYY-MM-DD} </xsl:text>
+      </xsl:processing-instruction>
+     </EntryDate>
+    </PDQIndexing>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>@@PDQIndexing@@</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+  <xsl:apply-templates           select = 'verification_date'/>
+  <xsl:apply-templates           select = 'lastchanged_date'/>
+ </xsl:template>
+
+ <xsl:template                    match = 'required_header'>
+  <xsl:if                          test = 'normalize-space() != ""'>
+   <RequiredHeader>
+    <xsl:variable                  name = 'downloadDate'
+                                 select = 'normalize-space(download_date)'/>
+    <xsl:if                        test = '$downloadDate != ""'>
+     <DownloadDate>
+      <xsl:value-of              select = '$downloadDate'/>
+     </DownloadDate>
+    </xsl:if>
+    <xsl:variable                  name = 'linkText'
+                                 select = 'normalize-space(link_text)'/>
+    <xsl:if                        test = '$linkText != ""'>
+     <LinkText>
+      <xsl:value-of              select = '$linkText'/>
+     </LinkText>
+    </xsl:if>
+    <xsl:variable                  name = 'url'
+                                 select = 'normalize-space(url)'/>
+    <xsl:if                        test = '$url != ""'>
+     <URL>
+      <xsl:value-of              select = '$url'/>
+     </URL>
+    </xsl:if>
+   </RequiredHeader>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'id_info'>
+  <xsl:if                          test = 'normalize-space() != ""'>
+   <IDInfo>
+    <xsl:variable                  name = 'orgStudyId'
+                                 select = 'normalize-space(org_study_id)'/>
+    <xsl:if                        test = '$orgStudyId != ""'>
+     <OrgStudyID>
+      <xsl:value-of              select = '$orgStudyId'/>
+     </OrgStudyID>
+    </xsl:if>
+    <xsl:for-each                 select = 'secondary_id'>
+     <xsl:variable                  name = 'secondaryId'
+                                  select = 'normalize-space(secondary_id)'/>
+     <xsl:if                        test = '$secondaryId != ""'>
+      <SecondaryID>
+       <xsl:value-of              select = '$secondaryId'/>
+      </SecondaryID>
+     </xsl:if>
+    </xsl:for-each>
+    <xsl:variable                   name = 'nctId'
+                                  select = 'normalize-space(nct_id)'/>
+    <xsl:if                         test = '$nctId != ""'>
+     <NCTID>
+      <xsl:value-of               select = '$nctId'/>
+     </NCTID>
+    </xsl:if>
+   </IDInfo>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'brief_title'>
+  <xsl:variable                    name = 'title'
+                                 select = 'normalize-space()'/>
+  <xsl:if                          test = '$title != ""'>
+   <BriefTitle>
+    <xsl:value-of                select = '$title'/>
+   </BriefTitle>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'official_title'>
+  <xsl:variable                    name = 'title'
+                                 select = 'normalize-space()'/>
+  <xsl:if                          test = '$title != ""'>
+   <OfficialTitle>
+    <xsl:value-of                select = '$title'/>
+   </OfficialTitle>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'sponsors'>
+  <xsl:if                          test = 'normalize-space(
+                                           lead_sponsor/agency) != ""'>
+   <LeadSponsor>
+    <xsl:apply-templates         select = 'lead_sponsor/agency'/>
+   </LeadSponsor>
+  </xsl:if>
+  <xsl:for-each                  select = 'collaborator'>
+   <xsl:if                         test = 'normalize-space(agency) != ""'>
+    <Collaborator>
+     <xsl:apply-templates        select = 'agency'/>
+    </Collaborator>
+   </xsl:if>
+  </xsl:for-each>
+ </xsl:template>
+
+ <xsl:template                    match = 'agency'>
+  <xsl:variable                    name = 'agency'
+                                 select = 'normalize-space()'/>
+  <xsl:if                          test = '$agency != ""'>
+   
+   <xsl:variable                   name = 'cdrId'
+                                 select = 'document(concat("cdrutil:/",
+                                                           "extern-map",
+                                                           "/CT.gov Agencies/",
+                                                           $agency))'/>
+   <xsl:if                         test = '$cdrId != ""'>
+    <xsl:attribute                 name = 'cdr:ref'>
+     <xsl:value-of               select = '$cdrId'/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:value-of                 select = '$agency'/>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'overall_official'>
+  <xsl:if                          test = 'normalize-space() != ""'>
+   <OverallOfficial>
+    <xsl:call-template             name = 'extractNameElements'/>
+    <xsl:call-template             name = 'extractDegrees'/>
+    <xsl:call-template             name = 'extractRole'/>
+    <xsl:call-template             name = 'extractAffiliation'/>
+    <xsl:variable                  name = 'key'
+                                 select = 'concat(
+                                           normalize-space(first_name), "|",
+                                           normalize-space(middle_name), "|",
+                                           normalize-space(last_name), "|",
+                                           normalize-space(affiliation))'/>
+    <xsl:variable                  name = 'docId'
+                                 select = 'document(concat("cdrutil:/",
+                                                           "extern-map",
+                                                           "/CT.gov ",
+                                                           "Officials/",
+                                                           $key))'/>
+    <xsl:if                       test = '$docId != ""'>
+     <PDQPerson>
+      <xsl:attribute               name = 'cdr:ref'>
+       <xsl:value-of             select = '$docId'/>
+      </xsl:attribute>
+      <xsl:value-of              select = '$key'/>
+     </PDQPerson>
+    </xsl:if>
+   </OverallOfficial>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                     name = 'extractContact'>
+  <xsl:call-template               name = 'extractNameElements'/>
+  <xsl:call-template               name = 'extractDegrees'/>
+  <xsl:call-template               name = 'extractPhone'/>
+  <xsl:call-template               name = 'extractPhoneExt'/>
+  <xsl:call-template               name = 'extractEmail'/>
+ </xsl:template>
+
+ <xsl:template                     name = 'extractNameElements'>
+  <xsl:variable                    name = 'firstName'
+                                 select = 'normalize-space(first_name)'/>
+  <xsl:if                          test = '$firstName != ""'>
+   <GivenName>
+    <xsl:value-of                select = '$firstName'/>
+   </GivenName>
+  </xsl:if>
+  <xsl:variable                    name = 'middleName'
+                                 select = 'normalize-space(middle_name)'/>
+  <xsl:if                          test = '$middleName != ""'>
+   <MiddleInitial>
+    <xsl:value-of                select = '$middleName'/>
+   </MiddleInitial>
+  </xsl:if>
+  <xsl:variable                    name = 'lastName'
+                                 select = 'normalize-space(last_name)'/>
+  <xsl:if                          test = '$lastName != ""'>
+   <Surname>
+    <xsl:value-of                select = '$lastName'/>
+   </Surname>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                     name = 'extractDegrees'>
+  <xsl:variable                    name = 'deg'
+                                 select = 'normalize-space(degrees)'/>
+  <xsl:if                          test = '$deg != "" and $deg != "_"'>
+   <ProfessionalSuffix>
+    <xsl:value-of                select = '$deg'/>
+   </ProfessionalSuffix>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                     name = 'extractRole'>
+  <xsl:variable                    name = 'role'
+                                 select = 'normalize-space(role)'/>
+  <xsl:if                          test = '$role != ""'>
+   <Role>
+    <xsl:value-of                select = '$role'/>
+   </Role>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                     name = 'extractAffiliation'>
+  <xsl:variable                    name = 'affil'
+                                 select = 'normalize-space(affiliation)'/>
+  <xsl:if                          test = '$affil != ""'>
+   <Affiliation>
+    <xsl:value-of                select = '$affil'/>
+   </Affiliation>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                     name = 'extractPhone'>
+  <xsl:variable                    name = 'phone'
+                                 select = 'normalize-space(phone)'/>
+  <xsl:if                          test = '$phone != ""'>
+   <Phone>
+    <xsl:value-of                select = '$phone'/>
+   </Phone>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                     name = 'extractPhoneExt'>
+  <xsl:variable                    name = 'phoneExt'
+                                 select = 'normalize-space(phone_ext)'/>
+  <xsl:if                          test = '$phoneExt != ""'>
+   <PhoneExt>
+    <xsl:value-of                select = '$phoneExt'/>
+   </PhoneExt>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                     name = 'extractEmail'>
+  <xsl:variable                    name = 'email'
+                                 select = 'normalize-space(email)'/>
+  <xsl:if                          test = '$email != ""'>
+   <Email>
+    <xsl:value-of                select = '$email'/>
+   </Email>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'brief_summary'>
+  <xsl:if                          test = 'normalize-space() != ""'>
+   <BriefSummary>
+    <Para>
+     <xsl:value-of               select = '.'/>
+    </Para>
+   </BriefSummary>
+  </xsl:if>
+ </xsl:template>
+ 
+ <xsl:template                    match = 'detailed_description'>
+  <xsl:if                          test = 'normalize-space() != ""'>
+   <DetailedDescription>
+    <Para>
+     <xsl:value-of               select = '.'/>
+    </Para>
+   </DetailedDescription>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'overall_status'>
+  <xsl:if                          test = 'normalize-space() != ""'>
+   <OverallStatus>
+    <xsl:call-template             name = 'mapStatus'/>
+   </OverallStatus>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'start_date'>
+  <xsl:variable                    name = 'date'
+                                 select = 'normalize-space()'/>
+  <xsl:if                          test = '$date != ""'>
+   <StartDate>
+    <xsl:value-of                select = '$date'/>
+   </StartDate>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'end_date'>
+  <xsl:variable                    name = 'date'
+                                 select = 'normalize-space()'/>
+  <xsl:if                          test = '$date != ""'>
+   <EndDate>
+    <xsl:value-of                select = '$date'/>
+   </EndDate>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'phase'>
+  <xsl:variable                    name = 'phase'
+                                 select = 'normalize-space()'/>
+  <xsl:choose>
+   <xsl:when                       test = '$phase = "N/A"'>
+    <Phase>No phase specified</Phase>
+   </xsl:when>
+   <xsl:when                       test = '$phase = "Phase 1"'>
+    <Phase>Phase I</Phase>
+   </xsl:when>
+   <xsl:when                       test = '$phase = "Phase 1/Phase 2"'>
+    <Phase>Phase I</Phase>
+    <Phase>Phase II</Phase>
+   </xsl:when>
+   <xsl:when                       test = '$phase = "Phase 2"'>
+    <Phase>Phase II</Phase>
+   </xsl:when>
+   <xsl:when                       test = '$phase = "Phase 2/Phase 3"'>
+    <Phase>Phase II</Phase>
+    <Phase>Phase III</Phase>
+   </xsl:when>
+   <xsl:when                       test = '$phase = "Phase 3"'>
+    <Phase>Phase III</Phase>
+   </xsl:when>
+   <xsl:when                       test = '$phase = "Phase 4"'>
+    <Phase>Phase IV</Phase>
+   </xsl:when>
+   <xsl:when                       test = '$phase != ""'>
+    <Phase>
+     <xsl:value-of               select = '$phase'/>
+    </Phase>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:template>
+
+ <xsl:template                    match = 'study_design'>
+  <xsl:variable                    name = 'design'
+                                 select = 'normalize-space()'/>
+  <xsl:if                          test = '$design != ""'>
+   <CTStudyDesign>
+    <xsl:value-of                select = '$design'/>
+   </CTStudyDesign>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'condition'>
+  <xsl:variable                    name = 'condition'
+                                 select = 'normalize-space()'/>
+  <xsl:if                          test = '$condition != ""'>
+   <CTCondition>
+    <xsl:value-of                select = '$condition'/>
+   </CTCondition>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'intervention'>
+  <xsl:if                          test = 'normalize-space() != ""'>
+   <CTIntervention>
+    <xsl:variable                  name = 'type'
+                                 select = 'normalize-space(
+                                           intervention_type)'/>
+    <xsl:if                        test = '$type != ""'>
+     <CTInterventionType>
+      <xsl:value-of              select = '$type'/>
+     </CTInterventionType>
+    </xsl:if>
+    <xsl:variable                  name = 'name'
+                                 select = 'normalize-space(
+                                           intervention_name)'/>
+    <xsl:if                        test = '$name != ""'>
+     <CTInterventionName>
+      <xsl:value-of              select = '$name'/>
+     </CTInterventionName>
+    </xsl:if>
+   </CTIntervention>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'eligibility'>
+  <xsl:if                          test = 'normalize-space() != ""'>
+   <CTEligibility>
+    <xsl:variable                  name = 'criteria'
+                                 select = 'normalize-space(criteria)'/>
+    <xsl:if                        test = '$criteria != ""'>
+     <CTCriteria>
+      <Para>
+       <xsl:value-of             select = 'criteria'/>
+      </Para>
+     </CTCriteria>
+    </xsl:if>
+    <xsl:variable                  name = 'expectedEnrollment'
+                                 select = 'normalize-space(
+                                           expected_enrollment)'/>
+    <xsl:if                        test = '$expectedEnrollment != ""'>
+     <CTExpectedEnrollment>
+      <xsl:value-of              select = '$expectedEnrollment'/>
+     </CTExpectedEnrollment>
+    </xsl:if>
+    <xsl:variable                  name = 'gender'
+                                 select = 'normalize-space(gender)'/>
+    <xsl:if                        test = '$gender != ""'>
+     <CTGender>
+      <xsl:value-of              select = '$gender'/>
+     </CTGender>
+    </xsl:if>
+    <xsl:variable                  name = 'minAge'
+                                 select = 'normalize-space(minimum_age)'/>
+    <xsl:if                        test = '$minAge != ""'>
+     <CTMinimumAge>
+      <xsl:value-of              select = '$minAge'/>
+     </CTMinimumAge>
+    </xsl:if>
+    <xsl:variable                  name = 'maxAge'
+                                 select = 'normalize-space(maximum_age)'/>
+    <xsl:if                        test = '$maxAge != ""'>
+     <CTMaximumAge>
+      <xsl:value-of              select = '$maxAge'/>
+     </CTMaximumAge>
+    </xsl:if>
+   </CTEligibility>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'location'>
+  <xsl:if                          test = 'normalize-space() != ""'>
+   <Location>
+    <xsl:for-each                select = 'facility'>
+     <Facility>
+      <xsl:variable                name = 'fName'
+                                 select = 'normalize-space(name)'/>
+      <xsl:if                      test = '$fName != ""'>
+       <Name>
+        <xsl:variable              name = 'key'
+                                 select = 'concat($fName, "|",
+                                           normalize-space(address/city), "|",
+                                           normalize-space(address/state), "|",
+                                           normalize-space(address/zip), "|",
+                                           normalize-space(address/country))'/>
+        <xsl:variable              name = 'docId'
+                                 select = 'document(concat("cdrutil:/",
+                                                           "extern-map",
+                                                           "/CT.gov ",
+                                                           "Facilities/",
+                                                           $key))'/>
+        <xsl:if                    test = '$docId != ""'>
+         <xsl:attribute            name = 'cdr:ref'>
+          <xsl:value-of          select = '$docId'/>
+         </xsl:attribute>
+        </xsl:if>
+        <xsl:value-of            select = '$fName'/>
+       </Name>
+      </xsl:if>
+      <xsl:apply-templates       select = 'address'/>
+     </Facility>
+    </xsl:for-each>
+    <xsl:apply-templates         select = 'status'/>
+    <xsl:for-each                select = 'contact'>
+     <xsl:if                       test = 'normalize-space() != ""'>
+      <Contact>
+       <xsl:call-template          name = 'extractContact'/>
+      </Contact>
+     </xsl:if>
+    </xsl:for-each>
+    <xsl:for-each                select = 'contact_backup'>
+     <xsl:if                       test = 'normalize-space() != ""'>
+      <ContactBackup>
+       <xsl:call-template          name = 'extractContact'/>
+      </ContactBackup>
+     </xsl:if>
+    </xsl:for-each>
+    <xsl:for-each                select = 'investigator'>
+     <xsl:if                       test = 'normalize-space() != ""'>
+      <Investigator>
+       <xsl:call-template          name = 'extractNameElements'/>
+       <xsl:call-template          name = 'extractDegrees'/>
+       <xsl:call-template          name = 'extractRole'/>
+       <xsl:variable               name = 'key'
+                                 select = 'concat(
+                                           normalize-space
+                                                    (../facility/name), "|",
+                                           normalize-space(first_name), "|",
+                                           normalize-space(middle_name), "|",
+                                           normalize-space(last_name))'/>
+       <xsl:variable               name = 'docId'
+                                 select = 'document(concat("cdrutil:/",
+                                                           "extern-map",
+                                                           "/CT.gov ",
+                                                           "Investigators/",
+                                                           $key))'/>
+       <xsl:if                    test = '$docId != ""'>
+        <PDQPerson>
+         <xsl:attribute            name = 'cdr:ref'>
+          <xsl:value-of          select = '$docId'/>
+         </xsl:attribute>
+         <xsl:value-of           select = '$key'/>
+        </PDQPerson>
+       </xsl:if>
+      </Investigator>
+     </xsl:if>
+    </xsl:for-each>
+   </Location>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'address'>
+  <xsl:if                          test = 'normalize-space() != ""'>
+   <PostalAddress>
+    <xsl:variable                  name = 'city'
+                                 select = 'normalize-space(city)'/>
+    <xsl:if                        test = '$city != ""'>
+     <City>
+      <xsl:value-of              select = '$city'/>
+     </City>
+    </xsl:if>
+
+    <!-- Per Lakshmi 2003-12-11: drop states we can't map, but remember 
+         the mapping failure. -->
+    <xsl:variable                  name = 'sName'
+                                 select = 'normalize-space(state)'/>
+    <xsl:if                        test = '$sName != ""'>
+     <xsl:variable                 name = 'stateId'
+                                 select = 'document(concat("cdrutil:/",
+                                                           "extern-map",
+                                                           "/CT.gov States/",
+                                                           $sName))'/>
+     <xsl:if                       test = '$stateId != ""'>
+      <PoliticalSubUnit_State>
+       <xsl:attribute              name = 'cdr:ref'>
+        <xsl:value-of            select = '$stateId'/>
+       </xsl:attribute>
+       <xsl:value-of             select = '$sName'/>
+      </PoliticalSubUnit_State>
+     </xsl:if>
+    </xsl:if>
+    <xsl:variable                  name = 'cName'
+                                 select = 'normalize-space(country)'/>
+    <xsl:if                        test = '$cName != ""'>
+     <Country>
+      <xsl:attribute               name = 'cdr:ref'>
+       <xsl:variable               name = 'countryId'
+                                 select = 'document(concat("cdrutil:/",
+                                                           "extern-map",
+                                                           "/CT.gov ",
+                                                           "Countries/",
+                                                           $cName))'/>
+       <xsl:choose>
+        <xsl:when                  test = '$countryId = ""'>
+         <xsl:text>*** COUNTRY NAME NOT MAPPED ***</xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:value-of           select = '$countryId'/>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:attribute>
+      <xsl:value-of              select = '$cName'/>
+     </Country>
+    </xsl:if>
+    <xsl:if                        test = 'normalize-space(zip) != ""'>
+     <PostalCode_ZIP>
+      <xsl:value-of              select = 'normalize-space(zip)'/>
+     </PostalCode_ZIP>
+    </xsl:if>
+   </PostalAddress>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'status'>
+  <xsl:if                          test = 'normalize-space() != ""'>
+   <Status>
+    <xsl:call-template             name = 'mapStatus'/>
+   </Status>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'verification_date'>
+  <xsl:if                          test = 'normalize-space() != ""'>
+   <VerificationDate>
+    <xsl:value-of                select = 'normalize-space()'/>
+   </VerificationDate>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'lastchanged_date'>
+  <xsl:if                          test = 'normalize-space() != ""'>
+   <LastChangedDate>
+    <xsl:value-of                select = 'normalize-space()'/>
+   </LastChangedDate>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                     name = 'pdqSponsorshipStub'>
+  <xsl:variable                    name = 'name'
+                                 select = 'normalize-space(
+                                           sponsors/lead_sponsor/agency)'/>
+  <xsl:if                          test = '$name != ""'>
+   <xsl:variable                   name = 'cdrId'
+                                 select = 'document(concat("cdrutil:/",
+                                                           "extern-map",
+                                                           "/CT.gov Agencies/",
+                                                           $name))'/>
+   <xsl:if                         test = '$cdrId != ""'>
+    <xsl:value-of                select = 'concat("@@PDQSPONSORSHIP=",
+                                                  $cdrId,
+                                                  "@@")'/>
+   </xsl:if>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                     name = 'mapStatus'>
+  <xsl:variable                    name = 'v'
+                                 select = 'normalize-space()'/>
+  <xsl:choose>
+   <xsl:when                       test = '$v = "Not yet recruiting"'>
+    <xsl:text>Approved-not yet active</xsl:text>
+   </xsl:when>
+   <xsl:when                       test = '$v = "Recruiting"'>
+    <xsl:text>Active</xsl:text>
+   </xsl:when>
+   <xsl:when                       test = '$v = "No longer recruiting"'>
+    <xsl:text>Closed</xsl:text>
+   </xsl:when>
+   <xsl:when                       test = '$v = "Completed"'>
+    <xsl:text>Completed</xsl:text>
+   </xsl:when>
+   <xsl:when                       test = '$v = "Suspended"'>
+    <xsl:text>Temporarily closed</xsl:text>
+   </xsl:when>
+   <xsl:when                       test = '$v = "Terminated"'>
+    <xsl:text>Withdrawn</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:value-of                select = 'concat("*** UNRECOGNIZED VALUE: [",
+                                                  ., "] ***")'/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>

@@ -1,0 +1,43 @@
+<CdrDoc Type='Filter' Id='CDR0000349688'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">DocTitle for CTGovProtocol</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<xsl:transform            xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                            version = "1.0" 
+                          xmlns:cdr = "cips.nci.nih.gov/cdr">
+                                      
+                
+ <xsl:output                 method = "text"/>
+
+ <xsl:template                match = "/">
+  <xsl:apply-templates       select = "CTGovProtocol"/>
+ </xsl:template>
+
+ <xsl:template                match = "CTGovProtocol">
+  <xsl:variable                name = "title">
+   <xsl:choose>
+    <xsl:when                  test = "normalize-space(OfficialTitle) != ''">
+     <xsl:value-of           select = "normalize-space(OfficialTitle)"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of           select = "normalize-space(BriefTitle)"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+  <xsl:variable                name = "docTitle">
+   <xsl:value-of             select = "normalize-space(IDInfo/OrgStudyID)"/>
+   <xsl:for-each             select = "IDInfo/SecondaryID">
+    <xsl:value-of            select = "concat(';', normalize-space(.))"/>
+   </xsl:for-each>
+   <xsl:value-of             select = "concat(';', $title)"/>
+  </xsl:variable>
+  <xsl:value-of              select = "substring($docTitle, 1, 255)"/>
+ </xsl:template>
+
+</xsl:transform>]]>
+</CdrDocXml>
+</CdrDoc>

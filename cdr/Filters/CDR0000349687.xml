@@ -1,0 +1,166 @@
+<CdrDoc Type='Filter' Id='CDR0000349687'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Denormalization Filter: CTGovProtocol</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<!--
+   $Id: CDR0000349687.xml,v 1.1 2003-12-14 19:16:19 bkline Exp $
+   $Log: not supported by cvs2svn $
+  -->
+
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                          xmlns:cdrscr = "cips.nci.nih.gov/cdr/script"
+                           xmlns:exslt = "http://www.exslt.org/functions"
+               exclude-result-prefixes = "cdrscr"
+            extension-element-prefixes = "exslt"
+                               version = "1.0">
+
+ <xsl:import  
+  href = "cdr:name:Module: Denormalize and Upcode Protocol Terminology"/>
+ <xsl:include href = "cdr:name:Module: PersonLocations Denormalization"/>
+
+ <xsl:output                    method = "xml" 
+                  omit-xml-declaration = "no"
+                              encoding = "UTF-8"/> 
+
+ <xsl:param                       name = 'skipPdqIndexing'/>
+
+ <!-- *
+ ==================================================================
+ Top-level template.
+ ================================================================== -->
+ <xsl:template                   match = '/'>
+  <xsl:apply-templates          select = 'CTGovProtocol'/>
+ </xsl:template>
+
+
+ <!-- *
+ ==================================================================
+ Copy everything AS IS and invoke matched templates by default.
+ ================================================================== -->
+ <xsl:template                   match = "CTGovProtocol">
+  <xsl:copy>
+   <DocId>
+    <xsl:value-of select = "document('cdrutil:/docid')"/>
+   </DocId>
+   <xsl:apply-templates         select = "document('cdr:/*/CdrCtl')"/>
+   <xsl:apply-templates/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!-- *
+ ==============================================================
+ Template for organization links.
+ ============================================================== -->
+ <xsl:template                  match = "LeadSponsor |
+                                         Collaborator |
+                                         Facility/Name">
+  <xsl:choose>
+   <xsl:when                     test = "@cdr:ref != ''"> 
+    <xsl:call-template           name = "getOrganization">
+     <xsl:with-param             name = "includeCIPSContact"
+                               select = "'Y'"/>
+    </xsl:call-template>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:element                 name = "{name()}">
+     <Organization>
+      <OrganizationNameInformation>
+       <OfficialName>
+        <Name>
+         <xsl:value-of         select = "."/>
+        </Name>
+       </OfficialName>
+      </OrganizationNameInformation>
+     </Organization>
+    </xsl:element>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+ <!-- *
+ ==============================================================
+ Template for person links.  Can't use the getPerson template
+ from the PersonLocations Denormalization module, because we
+ need to include other information which that template doesn't
+ pick up.
+ ============================================================== -->
+ <xsl:template                  match = "OverallOfficial      |
+                                         OverallContact       |
+                                         OverallContactBackup |
+                                         Contact              |
+                                         ContactBackup        |
+                                         Investigator">
+  <xsl:variable                  name = "docId"
+                               select = "PDQPerson/@cdr:ref"/>
+  <xsl:variable                  name = "uri"
+                               select = "concat('cdrx:', $docId, '/last')"/>
+  <xsl:variable                  name = "doc"
+                               select = "document($uri)"/>
+  <xsl:element                   name = "{name()}">
+   <xsl:if                       test = "$docId != ''">
+    <xsl:attribute               name = "cdr:ref">
+     <xsl:value-of             select = "$docId"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:choose>
+    <xsl:when                    test = "$doc/Person/PersonNameInformation">
+     <xsl:copy-of              select = "$doc/Person/PersonNameInformation"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <PersonNameInformation>
+      <xsl:apply-templates     select = "GivenName"/>
+      <xsl:apply-templates     select = "MiddleInitial"/>
+      <xsl:apply-templates     select = "Surname|SurName"/>
+      <xsl:if                    test = "ProfessionalSuffix != ''">
+       <ProfessionalSuffix>
+        <CustomProfessionalSuffix>
+         <xsl:value-of         select = "ProfessionalSuffix"/>
+        </CustomProfessionalSuffix>
+       </ProfessionalSuffix>
+      </xsl:if>
+     </PersonNameInformation>
+    </xsl:otherwise>
+   </xsl:choose>
+   <xsl:apply-templates        select = "Role"/>
+   <xsl:apply-templates        select = "Affiliation"/>
+   <xsl:apply-templates        select = "Phone"/>
+   <xsl:apply-templates        select = "PhoneExt"/>
+   <xsl:apply-templates        select = "Email"/>
+  </xsl:element>
+ </xsl:template>
+
+ <!-- *
+ =========================================================================
+ Optionally suppress the PDQIndexing block so the filter won't blow up
+ when this part isn't ready yet.
+ ========================================================================= -->
+ <xsl:template                   match = "PDQIndexing">
+  <xsl:if                         test = 'not($skipPdqIndexing)'>
+   <xsl:copy>
+    <xsl:apply-templates         select = "@* | node()" />
+   </xsl:copy>
+  </xsl:if>
+ </xsl:template>
+
+ <!-- *
+ =========================================================================
+ Generic pass-through copy action.
+ ========================================================================= -->
+<!--
+ <xsl:template                   match = "node() | @*">
+  <xsl:copy>
+   <xsl:apply-templates         select = "@* | node()" />
+  </xsl:copy>
+ </xsl:template>
+-->
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>

@@ -1,0 +1,414 @@
+<CdrDoc Type='Filter' Id='CDR0000349693'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Vendor Filter: CTGovProtocol</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version='1.0'?>
+
+<!--
+     $Id: CDR0000349693.xml,v 1.1 2003-12-14 19:20:18 bkline Exp $
+
+     $Log: not supported by cvs2svn $
+  -->
+
+<xsl:transform            xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                          xmlns:cdr = 'cips.nci.nih.gov/cdr'
+                            version = '1.0'
+            exclude-result-prefixes = 'cdr'>
+
+ <xsl:include href = 'cdr:name:Module: Vendor Address Templates'/>
+ <xsl:include href = 'cdr:name:Module: Vendor Filter Templates'/>
+
+ <xsl:output                 method = 'xml'
+               omit-xml-declaration = 'no'
+                             indent = 'yes'
+                           encoding = 'utf-8'/>
+
+ <xsl:variable                 name = "discTitle"
+                             select = "concat('CTGov Protocol Abstract ',
+                                              'Disclaimer;CTGov protocol ',
+                                              'abstract disclaimer')"/>
+
+ <xsl:template                match = '/'>
+  <CTGovProtocol>
+   <xsl:attribute              name = 'id'>
+    <xsl:value-of            select = 'CTGovProtocol/DocId'/>
+   </xsl:attribute>
+   <xsl:apply-templates      select = 'CTGovProtocol'/>
+  </CTGovProtocol>
+ </xsl:template>
+
+ <xsl:template                match = 'CTGovProtocol'>
+  <xsl:apply-templates       select = 'RequiredHeader'/>
+  <xsl:apply-templates       select = 'IDInfo'/>
+  <xsl:apply-templates       select = 'BriefTitle'/>
+  <xsl:apply-templates       select = 'OfficialTitle'/>
+  <xsl:apply-templates       select = 'Sponsors'/>
+  <xsl:apply-templates       select = 'BriefSummary'/>
+  <xsl:apply-templates       select = 'DetailedDescription'/>
+  <xsl:apply-templates       select = 'CTEligibility'/>
+  <xsl:if                      test = 'normalize-space(CTEligibility) = ""'>
+   <CTEntryCriteria>
+    <Para>Entry criteria not present in the ClinicalTrials.gov record.</Para>  
+   </CTEntryCriteria>
+  </xsl:if>
+
+  <CTGovDisclaimer>
+   <xsl:variable               name = "discDoc"
+                             select = "document(concat('cdr:name:',
+                                                        $discTitle,
+                                                        '/lastp'))"/>
+   <xsl:value-of             select = "$discDoc/MiscellaneousDocument
+                                               /MiscellaneousDocumentText
+                                               /Section/Para"/>
+  </CTGovDisclaimer>
+
+  <xsl:apply-templates       select = 'OverallStatus'/>
+  <xsl:apply-templates       select = 'StartDate'/>
+  <xsl:apply-templates       select = 'EndDate'/>
+  <xsl:apply-templates       select = 'Phase'/>
+  <xsl:apply-templates       select = 'PDQIndexing'/>
+  <xsl:apply-templates       select = 'Location'/>
+  <xsl:apply-templates       select = 'VerificationDate'/>
+  <xsl:apply-templates       select = 'LastChangedDate'/>
+ </xsl:template>
+
+ <xsl:template                match = 'LeadSponsor | Collaborator'>
+  <xsl:if                      test = 'normalize-space(Organization/
+                                       OrganizationNameInformation/
+                                       OfficialName/Name) != ""'>
+   <xsl:element                 name = '{name()}'>
+    <xsl:if                     test = 'Organization/@cdr:ref != ""'>
+     <xsl:attribute             name = 'ref'>
+      <xsl:value-of           select = 'Organization/@cdr:ref'/>
+     </xsl:attribute>
+    </xsl:if>
+    <xsl:value-of             select = 'Organization/
+                                        OrganizationNameInformation/
+                                        OfficialName/Name'/>
+   </xsl:element>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                match = 'CTEligibility'>
+  <xsl:if                      test = 'normalize-space() != ""'>
+   <CTEntryCriteria>
+    <xsl:choose>
+     <xsl:when                 test = 'normalize-space(CTCriteria) != ""'>
+      <xsl:apply-templates   select = 'CTCriteria/Para |
+                                       CTCriteria/ItemizedList'/>
+     </xsl:when>
+     <xsl:otherwise>
+      <Para>Entry criteria not present in the ClinicalTrials.gov record.</Para>
+     </xsl:otherwise>
+    </xsl:choose>
+   </CTEntryCriteria>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                match = 'OverallStatus'>
+  <xsl:if                      test = 'normalize-space() != ""'>
+   <CurrentProtocolStatus>
+    <xsl:value-of            select = '.'/>
+   </CurrentProtocolStatus>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                match = 'RequiredHeader'>
+  <RequiredHeader>
+   <xsl:apply-templates      select = 'DownloadDate'/>
+   <LinkText>
+    <xsl:attribute             name = 'xref'>
+     <xsl:value-of           select = 'URL'/>
+    </xsl:attribute>
+    <xsl:value-of            select = 'LinkText'/>
+   </LinkText>
+  </RequiredHeader>
+ </xsl:template>
+
+ <xsl:template                match = 'Location'>
+  <xsl:if                      test = 'Status = "Active" or
+                                       (/CTGovProtocol/OverallStatus = "Active"
+                                        and Status = "")'>
+   <Location>
+    <xsl:apply-templates     select = 'Facility      | 
+                                       Status        | 
+                                       Contact       | 
+                                       ContactBackup |
+                                       Investigator' />
+   </Location>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                match = 'Status'>
+  <Status>
+   <xsl:choose>
+    <xsl:when                  test = 'normalize-space() != ""'>
+     <xsl:value-of           select = 'normalize-space()'/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of           select = '/CTGovProtocol/OverallStatus'/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </Status>
+ </xsl:template>
+ 
+ <xsl:template                match = 'Facility'>
+  <Facility>
+   <xsl:variable               name = 'orgName'
+
+                             select = 'Name/Organization/
+                                       OrganizationNameInformation/
+                                       OfficialName/Name'/>
+   <xsl:variable               name = 'orgId'
+                             select = 'Name/Organization/@cdr:ref'/>
+   <FacilityName>
+    <xsl:if                    test = '$orgId != ""'>
+     <xsl:attribute            name = 'ref'>
+      <xsl:value-of          select = '$orgId'/>
+     </xsl:attribute>
+    </xsl:if>
+    <xsl:choose>
+     <xsl:when                 test = 'normalize-space($orgName) != ""'>
+      <xsl:value-of           select = '$orgName'/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>Study Site</xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+   </FacilityName>
+   <xsl:choose>
+    <xsl:when                  test = 'Name/Organization/CIPSContact/
+                                       PostalAddress/@AddressType = "US"'>
+     <PostalAddress>
+      <xsl:apply-templates   select = 'PostalAddress/Street |
+                                       PostalAddress/City   |
+                                       PostalAddress/CitySuffix'/>
+      <xsl:for-each          select = 'Name/Organization/CIPSContact/
+                                       PostalAddress/
+                                       PoliticalSubUnit_State'>
+       <PoliticalSubUnitName    ref = '{@cdr:ref}'>
+        <xsl:value-of        select = 'PoliticalSubUnitFullName'/>
+       </PoliticalSubUnitName>
+      </xsl:for-each>
+      <xsl:for-each          select = 'PostalAddress/Country'>
+       <CountryName             ref = '{@cdr:ref}'>
+        <xsl:value-of        select = 'CountryFullName'/>
+       </CountryName>
+      </xsl:for-each>
+      <xsl:apply-templates   select = 'Name/Organization/CIPSContact/
+                                       PostalAddress/PostalCode_ZIP'/>
+      <xsl:apply-templates   select = 'PostalAddress/Country/
+                                       PostalCodePosition'/>
+     </PostalAddress>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates    select = 'PostalAddress'/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </Facility>
+ </xsl:template>
+
+ <xsl:template                match = 'Phase'>
+  <ProtocolPhase>
+   <xsl:choose>
+    <xsl:when                  test = 'normalize-space() != ""'>
+     <xsl:value-of           select = 'normalize-space()'/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>No phase specified</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </ProtocolPhase>
+ </xsl:template>
+
+ <xsl:template                match = 'Surname'>
+  <SurName>
+   <xsl:choose>
+    <xsl:when                  test = 'normalize-space() != ""'>
+     <xsl:value-of           select = 'normalize-space()'/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>No Surname in CTGov record</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </SurName>
+ </xsl:template>
+
+ <xsl:template                match = 'CustomProfessionalSuffix'>
+  <ProfessionalSuffix>
+   <xsl:value-of             select = '.'/>
+  </ProfessionalSuffix>
+ </xsl:template>
+
+ <xsl:template                match = 'PDQIndexing'>
+  <ProtocolDetail>
+   <xsl:apply-templates      select = 'StudyType'/>
+   <xsl:apply-templates      select = 'StudyCategory'/>
+   <xsl:apply-templates      select = 'Condition'/>
+   <xsl:apply-templates      select = 'Gene'/>
+  </ProtocolDetail>
+  <xsl:apply-templates       select = 'Eligibility'/>
+ </xsl:template>
+
+ <xsl:template                match = 'Eligibility'>
+  <Eligibility>
+   <xsl:apply-templates      select = 'HealthyVolunteers'/>
+   <xsl:apply-templates      select = 'LowAge'/>
+   <xsl:apply-templates      select = 'HighAge'/>
+   <xsl:apply-templates      select = 'AgeText'/>
+   <xsl:apply-templates      select = 'Diagnosis'/>
+   <xsl:apply-templates      select = 'ExclusionCriteria'/>
+  </Eligibility>
+ </xsl:template>
+
+ <xsl:template                match = 'StudyCategory'>
+  <StudyCategory>
+   <xsl:apply-templates      select = 'StudyCategoryName'/>
+   <xsl:apply-templates      select = 'Intervention'/>
+  </StudyCategory>
+ </xsl:template>
+ <xsl:template                match = 'Diagnosis'>
+  <Diagnosis>
+   <SpecificDiagnosis>
+    <xsl:apply-templates     select = 'Term'/>
+   </SpecificDiagnosis>
+   <xsl:for-each             select = 'Term/Term'>
+    <DiagnosisParent>
+     <xsl:apply-templates    select = '@cdr:ref'/>
+     <xsl:value-of           select = '.'/>
+    </DiagnosisParent>
+   </xsl:for-each>
+  </Diagnosis>
+ </xsl:template>
+
+ <xsl:template                match = 'Term'>
+  <xsl:apply-templates       select = '@cdr:ref'/>
+  <xsl:value-of              select = 'PreferredName'/>
+ </xsl:template>
+
+<xsl:template                match = 'Intervention'>
+  <Intervention>
+   <InterventionType>
+    <xsl:apply-templates     select = 'InterventionType/Term'/><!--/@cdr:ref'/>
+    <xsl:value-of            select = 'InterventionType/Term/PreferredName'/>-->
+   </InterventionType>
+   <xsl:for-each             select = 'InterventionType/Term/Term'>
+    <InterventionTypeParent>
+     <xsl:apply-templates    select = '@cdr:ref'/>
+     <xsl:value-of           select = 'PreferredName'/>
+    </InterventionTypeParent>
+   </xsl:for-each>
+   <xsl:for-each             select = 'InterventionNameLink'>
+    <InterventionNameLink>
+     <xsl:apply-templates    select = 'Term'/><!--/@cdr:ref'/>
+     <xsl:value-of           select = 'Term/PreferredName'/>-->
+    </InterventionNameLink>
+   </xsl:for-each>
+  </Intervention>
+ </xsl:template>
+
+ <xsl:template                match = 'Condition'>
+  <StudyCondition>
+   <SpecificCondition>
+    <xsl:apply-templates     select = 'Term'/><!--/@cdr:ref'/>
+    <xsl:value-of            select = 'Term/PreferredName'/>-->
+   </SpecificCondition>
+   <xsl:for-each             select = 'Term/Term'>
+    <ConditionParent>
+     <xsl:apply-templates    select = '@cdr:ref'/>
+     <xsl:value-of           select = 'PreferredName'/>
+    </ConditionParent>
+   </xsl:for-each>
+  </StudyCondition>
+ </xsl:template>
+
+ <xsl:template                 name = 'extractPersonalName'>
+  <xsl:apply-templates       select = '@cdr:ref'/>
+  <xsl:apply-templates       select = 'PersonNameInformation/GivenName'/>
+  <xsl:apply-templates       select = 'PersonNameInformation/MiddleInitial'/>
+  <xsl:apply-templates       select = 'PersonNameInformation/Surname |
+                                       PersonNameInformation/SurName'/>
+  <xsl:apply-templates       select = 'PersonNameInformation/
+                                       ProfessionalSuffix/
+                                       CustomProfessionalSuffix'/>
+ </xsl:template>
+
+ <xsl:template                 name = 'extractContact'>
+  <xsl:call-template           name = 'extractPersonalName'/>
+  <xsl:apply-templates       select = 'Phone'/>
+  <xsl:apply-templates       select = 'PhoneExt'/>
+  <xsl:apply-templates       select = 'Email'/>
+ </xsl:template>
+
+ <xsl:template                match = 'Contact'>
+  <CTGovContact>
+   <xsl:call-template          name = 'extractContact'/>
+  </CTGovContact>
+ </xsl:template>
+
+ <xsl:template                match = 'ContactBackup'>
+  <CTGovContactBackup>
+   <xsl:call-template          name = 'extractContact'/>
+  </CTGovContactBackup>
+ </xsl:template>
+
+ <xsl:template                match = 'OverallContact | OverallContactBackup'>
+  <xsl:element                 name = '{name()}'>
+   <xsl:call-template          name = 'extractContact'/>
+  </xsl:element>
+ </xsl:template>
+
+ <xsl:template                match = 'Investigator'>
+  <Investigator>
+   <xsl:call-template          name = 'extractPersonalName'/>
+   <xsl:apply-templates      select = 'Role'/>
+  </Investigator>
+ </xsl:template>
+
+ <xsl:template                match = 'OverallOfficial'>
+  <OverallOfficial>
+   <xsl:call-template          name = 'extractPersonalName'/>
+   <xsl:apply-templates      select = 'Role'/>
+   <xsl:apply-templates      select = 'Affiliation'/>
+  </OverallOfficial>
+ </xsl:template>
+
+ <xsl:template                match = '@cdr:ref'>
+  <xsl:attribute               name = 'ref'>
+   <xsl:value-of             select = '.'/>
+  </xsl:attribute>
+ </xsl:template>
+
+ <xsl:template                match = 'Para'>
+  <xsl:if                      test = 'normalize-space() != ""'>
+   <Para>
+    <xsl:value-of            select = 'normalize-space()'/>
+   </Para>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                match = 'ItemizedList'>
+  <ItemizedList               Style = 'bullet'>
+   <xsl:for-each             select = 'ListItem'>
+    <xsl:if                    test = 'normalize-space() != ""'>
+     <ListItem>
+      <xsl:value-of          select = 'normalize-space()'/>
+     </ListItem>
+    </xsl:if>
+   </xsl:for-each>
+  </ItemizedList>
+ </xsl:template>
+
+ <xsl:template                match = '*'>
+  <xsl:element                 name = '{name()}'>
+   <xsl:apply-templates      select = '@cdr:ref|*|text()'/>
+  </xsl:element>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
