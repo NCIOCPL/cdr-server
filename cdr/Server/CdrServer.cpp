@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.12 2000-06-09 04:00:09 ameyer Exp $
+ * $Id: CdrServer.cpp,v 1.13 2000-06-15 23:02:20 ameyer Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2000/06/09 04:00:09  ameyer
+ * Added logging.
+ *
  * Revision 1.11  2000/06/09 00:46:36  bkline
  * Replaced hardwired database logon strings with named constants.
  *
@@ -345,10 +348,11 @@ cdr::String processCommand(cdr::Session& session,
             cdr::String cmdName = specificCmd.getNodeName();
             std::wcerr << L"Received command: " << cmdName << L"\n";
 
-            // Log command contents
-            cdr::log::pThreadLog->Write (
-                    L"Command to be processed",
-                    cdr::dom::getTextContent (specificCmd));
+            // Log info about the command
+            cdr::String cmdText = L"Cmd: " + cmdName + L"  User: "
+                                + session.getUserName();
+
+            cdr::log::pThreadLog->Write (L"processCommand", cmdText);
 
             cdr::Command cdrCommand = cdr::lookupCommand(cmdName);
             if (!cdrCommand)
@@ -400,6 +404,10 @@ cdr::String processCommand(cdr::Session& session,
                                           + L" </CdrResponse>\n";
             if (cmdName == L"CdrShutdown")
                 timeToShutdown = true;
+
+            cdr::log::pThreadLog->Write (L"processCommand result",
+                                         session.getStatus());
+
             return response;
         }
         specificCmd = specificCmd.getNextSibling();
