@@ -1,5 +1,5 @@
 /*
- * $Id: CdrReport.cpp,v 1.1 2000-10-25 19:06:23 mruben Exp $
+ * $Id: CdrReport.cpp,v 1.2 2000-10-26 15:03:17 mruben Exp $
  *
  * Reporting functions
  *
@@ -80,6 +80,7 @@ cdr::String cdr::Report::doReport(cdr::Session& session,
         report = rpt->second;
         parm = report->defaultParameters();
       }
+      else
       if (name == L"ReportParams")
       {
         if (report == NULL)
@@ -88,17 +89,23 @@ cdr::String cdr::Report::doReport(cdr::Session& session,
         for (cdr::dom::Node param = child.getFirstChild();
              param != NULL;
              param = param.getNextSibling())
-          if (param.getNodeName() == L"ReportParam")
+        {
+          if (param.getNodeType() == cdr::dom::Node::ELEMENT_NODE)
           {
-            cdr::dom::NamedNodeMap cmdattr = param.getAttributes();
-            cdr::dom::Node attrname = cmdattr.getNamedItem("Name");
-            cdr::dom::Node attrvalue = cmdattr.getNamedItem("Value");
-            if (attrname != NULL)
-              if (attrvalue != NULL)
-                parm[attrname.getNodeValue()] = attrvalue.getNodeValue();
-              else
-                parm[attrname.getNodeValue()] = L"";
+            cdr::String pname = param.getNodeName();
+            if (pname == L"ReportParam")
+            {
+              cdr::dom::NamedNodeMap cmdattr = param.getAttributes();
+              cdr::dom::Node attrname = cmdattr.getNamedItem("Name");
+              cdr::dom::Node attrvalue = cmdattr.getNamedItem("Value");
+              if (attrname != NULL)
+                if (attrvalue != NULL)
+                  parm[attrname.getNodeValue()] = attrvalue.getNodeValue();
+                else
+                  parm[attrname.getNodeValue()] = L"";
+            }
           }
+        }
       }
     }
   }
@@ -175,13 +182,13 @@ namespace
     cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
     select.setInt(1, day);
     select.setInt(2, month);
-    select.setInt(2, year);
+    select.setInt(3, year);
     
     cdr::db::ResultSet rs = select.executeQuery();
 
     wostringstream result;
     result << L"<ReportBody><![CDATA[\n"
-              L"<ReportName>" << getName << L"</ReportName>\n";
+              L"<ReportName>" << getName() << L"</ReportName>\n";
     while (rs.next())
     {
       int id = rs.getInt(1);
@@ -200,7 +207,7 @@ namespace
                 L"</ReportRow>\n";
     }
 
-    result << "]]</ReportBody>\n";
+    result << L"]]</ReportBody>\n";
     return result.str();
   }
 
