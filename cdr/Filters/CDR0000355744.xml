@@ -1,0 +1,104 @@
+<CdrDoc Type='Filter' Id='CDR0000355744'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Global Change: Check for Missing Terminology Elements</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+
+ <!--
+ ===========================================================================
+ Check various elements in an InScopeProtocol document to determine
+ if any are required elements are missing after a global terminology change.
+
+ This can happen if users delete a term from documents without knowing
+ that it is the only remaining term of its type.
+
+ If an expected element is missing, produce a non-terminating warning
+ message.  This may or may not be illegal, but the user needs to know 
+ about it.
+
+ There are no XML significant changes to the document.
+ Input doc => Output doc.
+
+                                        Author: Alan Meyer
+                                          Date: February, 2004
+ =========================================================================== -->
+<xsl:transform       xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                     xmlns:cdr = "cips.nci.nih.gov/cdr"
+                       version = "1.0">
+
+ <xsl:output            method = "xml"/>
+ <!--
+ ================================================================
+ Default rule, copy all document elements to output via recursion
+ ================================================================ -->
+ <xsl:template            match = "@*|comment()|*|
+                                  processing-instruction()|text()">
+  <xsl:copy>
+   <xsl:apply-templates  select = "@*|comment()|*|
+                                  processing-instruction()|text()"/>
+  </xsl:copy>
+ </xsl:template>
+
+ <!--
+ ================================================================
+ Check that at least one Diagnosis still exists
+ ================================================================ -->
+ <xsl:template            match = "Eligibility">
+  <xsl:choose>
+   <xsl:when               test = "Diagnosis"/>
+   <xsl:otherwise>
+    <xsl:message terminate="no">
+No Diagnosis elements found in document
+    </xsl:message>
+   </xsl:otherwise>
+  </xsl:choose>
+
+  <!-- Copy everything to output -->
+  <xsl:copy-of           select = "."/>
+ 
+ </xsl:template>
+
+ <!--
+ ================================================================
+ Check ProtocolDetail for missing Condition
+ ================================================================ -->
+ <xsl:template            match = "ProtocolDetail">
+  <xsl:choose>
+   <xsl:when               test = "Condition"/>
+   <xsl:otherwise>
+    <xsl:message terminate="no">
+No Condition elements found in document
+    </xsl:message>
+   </xsl:otherwise>
+  </xsl:choose>
+  <!-- Intervention is inside protocol detail, so apply templates -->
+  <xsl:apply-templates  select = "StudyCategory/Intervention"/>
+
+  <!-- Copy all to output -->
+  <xsl:copy-of           select = "."/>
+ </xsl:template>
+
+ <!--
+ ================================================================
+ Check Intervention for missing Condition
+ ================================================================ -->
+
+ <xsl:template            match = "StudyCategory/Intervention">
+  <xsl:choose>
+   <xsl:when               test = "InterventionNameLink"/>
+   <xsl:otherwise>
+    <xsl:message terminate="no">
+No InterventionNameLink elements found for InterventionType=<xsl:value-of select="InterventionType/@cdr:ref"/>
+    </xsl:message>
+   </xsl:otherwise>
+  </xsl:choose>
+
+  <!-- No copy to output, already done in ProtocolDetail template -->
+ </xsl:template>
+
+</xsl:transform>]]>
+</CdrDocXml>
+</CdrDoc>
