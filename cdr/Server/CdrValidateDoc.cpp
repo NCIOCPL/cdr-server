@@ -1,10 +1,15 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.11 2001-05-16 15:46:11 bkline Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.12 2001-06-15 02:30:04 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2001/05/16 15:46:11  bkline
+ * Adjusted query to get the top-level schema document from the
+ * document table instead of the doc_type table, where it used
+ * to live.
+ *
  * Revision 1.10  2001/04/10 21:39:02  ameyer
  * Added catch(...) to ensure doc object allocate on heap is deleted.
  *
@@ -221,28 +226,9 @@ cdr::String cdr::execValidateDoc (
     cdr::StringList   errList;
 
 
-cdr::log::WriteFile (L"DEBUG XML", docObj.getXml());
-    // Parse the xml text and grab the top element.
-    cdr::dom::Parser parser;
-    try {
-        parser.parse (docObj.getXml());
-        parseOK = true;
-    }
-    catch (const cdr::dom::XMLException& de) {
-        errList.push_back (L"Parsing error in XML: "
-                          + cdr::String (de.getMessage()));
-    }
-    catch (...) {
-        errList.push_back (L"Unable to parse XML: ");
-    }
-
-    if (parseOK) {
-        cdr::dom::Document document = parser.getDocument();
-        if (document == 0)
-            throw cdr::Exception(L"CdrDocXml element for document not found");
-
-        cdr::dom::Element docXml  = document.getDocumentElement();
-        cdr::dom::Node    docNode = docXml;
+    // Get a parse tree for the XML
+    if (docObj.parseAvailable()) {
+        cdr::dom::Element docXml = docObj.getDocumentElement();
 
         // Validate the document against the schema if appropriate.
         if (validationTypes.empty()
@@ -263,6 +249,10 @@ cdr::log::WriteFile (L"DEBUG XML", docObj.getXml());
             cdr::link::CdrSetLinks (docXml, docObj.getConn(), docObj.getId(),
                                     docTypeString, validRule, errList);
     }
+
+    else
+        errList.push_back (L"Document malformed.  Validation not performed.  "
+                           + docObj.getParseErrMsg());
 
     // Note the outcome of the validation.
     const wchar_t* status = errList.size() > 0 ? L"I" : L"V";
