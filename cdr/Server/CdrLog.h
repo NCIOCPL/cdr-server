@@ -1,11 +1,14 @@
 /*
- * $Id: CdrLog.h,v 1.2 2000-10-05 15:21:40 ameyer Exp $
+ * $Id: CdrLog.h,v 1.3 2002-07-11 18:55:27 ameyer Exp $
  *
  * Write log strings to log database or file.
  *
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/10/05 15:21:40  ameyer
+ * Added WriteFile for logging to OS file instead of database.
+ *
  * Revision 1.1  2000/06/15 22:32:49  ameyer
  * Initial revision
  *
@@ -39,12 +42,18 @@ namespace cdr {
     static const size_t MsgMaxLen = 3800;
 
     /**
+     * Directory for logging - for OSLogFile.
+     * Also may be used elsewhere.
+     */
+    const std::string CdrLogDir = "d:/cdr/log";
+
+    /**
      * Name of OS based logfile.
      * This file is used if, and only if, the logger is unable to
      *   write to the debug_log table in the database.
      * Otherwise all log messages go to table debug_log.
      */
-    static const char * OSLogFile = "CdrLogErrs";
+    static const std::string OSLogFile = CdrLogDir + "/CdrLogErrs";
 
     /**
      * Thread global pointer to thread specific instance of a log object.
