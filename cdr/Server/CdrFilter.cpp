@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.38 2003-09-09 19:25:01 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.39 2003-11-05 22:28:32 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.38  2003/09/09 19:25:01  bkline
+ * Added new custom function for validating U.S. ZIP codes.
+ *
  * Revision 1.37  2003/08/04 17:03:26  bkline
  * Fixed breakage caused by upgrade to latest version of Microsoft's
  * C++ compiler.
@@ -122,7 +125,6 @@
  *
  * Revision 1.1  2000/08/23 14:19:03  mruben
  * Initial revision
- *
  */
 
 #if defined _MSC_VER
@@ -174,6 +176,8 @@ static string getPubVerNumber(const string&,
                               cdr::db::Connection&);
 static string getValidZip(const string&,
                           cdr::db::Connection&);
+static string lookupExternalValue(const string&,
+                                  cdr::db::Connection&);
 
 namespace
 {
@@ -657,6 +661,10 @@ namespace
       else if (function == "valid-zip")
       {
         u.doc = getValidZip(parms, thread_data->connection);
+      }
+      else if (function == "extern-map")
+      {
+        u.doc = lookupExternalValue(parms, thread_data->connection);
       }
       else
         return 1;
@@ -1912,5 +1920,42 @@ string getValidZip(const string& parms,
         return "<ValidZip/>";
     std::ostringstream os;
     os << "<ValidZip>" << parms.substr(0, 5) << "</ValidZip>";
+    return os.str();
+}
+
+string lookupExternalValue(const string& parms,
+                           cdr::db::Connection& conn)
+{
+    // Switch from utf-8 to 16-bit encoding.
+    cdr::String parmString = parms;
+
+    // Split the parameters into two pieces.
+    size_t sep = parmString.find(L"/");
+    if (sep == parmString.npos || sep == 0)
+        throw cdr::Exception(L"Invalid parm for extern-map function",
+                             parmString);
+    cdr::String usageName = parmString.substr(0, sep++);
+    cdr::String externName = parmString.substr(sep);
+    if (externName.empty())
+        throw cdr::Exception(L"External name missing from extern-map "
+                             L"function");
+
+    // Look up the external value.
+    cdr::db::PreparedStatement stmt = conn.prepareStatement(
+            "SELECT m.doc_id             "
+            "  FROM external_map m       "
+            "  JOIN external_map_usage u "
+            "    ON u.id = m.usage       "
+            " WHERE u.name = ?           "
+            "   AND m.value = ?          ");
+    stmt.setString(1, usageName);
+    stmt.setString(2, externName);
+    cdr::db::ResultSet rs = stmt.executeQuery();
+    if (!rs.next())
+        return "<DocId/>";
+    int docId = rs.getInt(1);
+    cdr::String idString = cdr::stringDocId(docId);
+    std::ostringstream os;
+    os << "<DocId>" << idString.toUtf8() << "</DocId>";
     return os.str();
 }
