@@ -1,9 +1,14 @@
 /*
- * $Id: CdrCommand.cpp,v 1.9 2000-05-17 13:01:59 bkline Exp $
+ * $Id: CdrCommand.cpp,v 1.10 2000-05-21 00:48:23 bkline Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2000/05/17 13:01:59  bkline
+ * Added code to addDoc stub to verify that document is well-formed, including
+ * that in the CDATA section.
+ * Replaced addDoc and repDoc stubs with new code from Alan.
+ *
  * Revision 1.8  2000/05/09 19:27:45  mruben
  * modified for CdrFilter
  *
@@ -67,7 +72,8 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
         CommandMap(L"CdrCheckIn",       cdr::checkIn),
         CommandMap(L"CdrReport",        cdr::report),
         CommandMap(L"CdrFilter",        cdr::filter),
-        CommandMap(L"CdrGetLinks",      cdr::getLinks)
+        CommandMap(L"CdrGetLinks",      cdr::getLinks),
+        CommandMap(L"CdrShutdown",      cdr::shutdown)
     };
     for (size_t i = 0; i < sizeof map / sizeof *map; ++i) {
         if (name == map[i].name)
