@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbConnection.h,v 1.7 2000-05-03 18:49:50 bkline Exp $
+ * $Id: CdrDbConnection.h,v 1.8 2000-05-21 00:53:35 bkline Exp $
  *
  * Interface for CDR wrapper for an ODBC database connection.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2000/05/03 18:49:50  bkline
+ * More ccdoc comments.
+ *
  * Revision 1.6  2000/05/03 15:37:54  bkline
  * Fixed creation of db statements.
  *
@@ -45,6 +48,7 @@ namespace cdr {
 
         // Forward references.
         class ResultSet;
+        class DriverManager;
 
         /**
          * Implements JDBC-like interface of same name for CDR database
@@ -60,22 +64,50 @@ namespace cdr {
              */
             friend Statement;
             friend ResultSet;
+            friend DriverManager;
 
         public:
 
             /**
-             * Default constructor.  A future version will be made private, 
-             * with a new Driver friend class, which will handle connection 
-             * pooling in its connect() method (in keeping with JDBC
-             * interfaces).
+             * Makes a safe copy of the <code>Connection</code> object
+             * which knows when the master copy has been closed.
+             *
+             *  @param  c           reference to <code>Connection</code>
+             *                      object.
              */
-            Connection();
+            Connection(const Connection&);
+
+            /**
+             * Makes a safe copy of the <code>Connection</code> object
+             * which knows when the master copy has been closed.
+             *
+             *  @param  c           reference to <code>Connection</code>
+             *                      object.
+             *  @return             reference to modified
+             *                      <code>Connection</code> object.
+             */
+            Connection& operator=(const Connection&);
 
             /**
              * Closes the database connection, releasing all resources
              * allocated by the connection.
              */
             ~Connection();
+
+            /**
+             * Closes the database connection, releasing all resources
+             * allocated by the connection.
+             */
+            void close();
+
+            /**
+             * Reports status of connection.
+             *
+             *  @return             <code>true</code> iff connection has
+             *                      been closed, or if has never been
+             *                      opened.
+             */
+            bool isClosed() const { return master->hdbc == SQL_NULL_HDBC; }
 
             /**
              * Creates an object which can handle a parameterized SQL
@@ -121,7 +153,7 @@ namespace cdr {
              *
              *  @return             current <code>autoCommit</code> setting.
              */
-            bool getAutoCommit() const { return autoCommit; }
+            bool getAutoCommit() const { return master->autoCommit; }
 
             /**
              * Causes the outstanding SQL statements for the current
@@ -154,6 +186,18 @@ namespace cdr {
         private:
 
             /**
+             * Private constructor.  Only the <code>DriverManager</code>
+             * class is used for creating new <Code>Connection</code>
+             * objects, in keeping with the JDBC interfaces.
+             */
+            Connection(const SQLCHAR*, const SQLCHAR*, const SQLCHAR*);
+
+            /**
+             * Unimplemented (blocked) default constructor.
+             */
+            Connection();
+
+            /**
              * Creates a string which holds the concatenated ODBC error
              * messages from the ODBC driver and from the database.
              *
@@ -168,7 +212,7 @@ namespace cdr {
             /**
              * ODBC database connection handle.
              */
-            HDBC hdbc;
+            HDBC        hdbc;
 
             /**
              * ODBC environment handle.
@@ -178,25 +222,43 @@ namespace cdr {
             /**
              * Flag remembering whether a multi-statement transaction is open.
              */
-            bool autoCommit;
+            bool        autoCommit;
 
             /**
-             * Blocked copy constructor.
-             *
-             *  @param  c           reference to <code>Connection</code>
-             *                      object.
+             * Shared address of the object used by the copy constructor and
+             * assignment operator.
              */
-            Connection(const Connection&);
+            Connection* master;
 
             /**
-             * Blocked assignment operator.
-             *
-             *  @param  c           reference to <code>Connection</code>
-             *                      object.
-             *  @return             reference to modified
-             *                      <code>Connection</code> object.
+             * Reference counting support.
              */
-            Connection& operator=(const Connection&);
+            int         refCount;
+        };
+
+        /**
+         * Class responsible for creating new connections.  Connection pooling
+         * is used to reduce the performance penalty for frequent creation of
+         * the <code>Connection</code> objects.
+         */
+        class DriverManager {
+
+        public:
+
+            /**
+             * Opens a new connection to the CDR database.  Connection pooling
+             * is used to reduce the number of actual connections which have
+             * to be built up and torn down.
+             *
+             *  @param  url     string of the form "odbc:dsn" where dsn is
+             *                  ODBC DSN for the connection.
+             *  @param  uid     login ID for the database.
+             *  @param  pwd     password for the database account.
+             *  @return         new <code>Connection</code> object.
+             */
+            static Connection getConnection(const cdr::String& url, 
+                                            const cdr::String& uid,
+                                            const cdr::String& pwd);
         };
     }
 }
