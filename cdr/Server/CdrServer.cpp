@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.10 2000-06-02 20:56:01 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.11 2000-06-09 00:46:36 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2000/06/02 20:56:01  bkline
+ * Fixed typo in progress message reporting clearing of inactive sessions.
+ *
  * Revision 1.9  2000/06/01 18:49:57  bkline
  * Removed some debugging output.
  *
@@ -140,9 +143,9 @@ main(int ac, char **av)
  */
 DWORD __stdcall dispatcher(LPVOID arg) {
     cdr::db::Connection conn = 
-        cdr::db::DriverManager::getConnection(L"odbc:cdr",
-                                              L"cdr", 
-                                              L"***REMOVED***");
+        cdr::db::DriverManager::getConnection(cdr::db::url,
+                                              cdr::db::uid,
+                                              cdr::db::pwd);
     cdr::String now = conn.getDateTimeString();
     now[10] = L'T';
     std::wcerr << L"NOW=" << now << L"\n";
@@ -414,9 +417,10 @@ DWORD __stdcall sessionSweep(LPVOID arg) {
     while (!timeToShutdown) {
         if (counter++ % 60 == 0) {
             cdr::db::Connection conn = 
-                cdr::db::DriverManager::getConnection(L"odbc:cdr",
-                                                      L"cdr", 
-                                                  L"***REMOVED***");
+                cdr::db::DriverManager::getConnection(
+                        cdr::db::url,
+                        cdr::db::uid,
+                        cdr::db::pwd);
             cdr::db::Statement s = conn.createStatement();
             int rows = s.executeUpdate(query);
             if (rows > 0) {
