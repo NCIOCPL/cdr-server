@@ -1,10 +1,13 @@
 %{
 /*
- * $Id: CdrSearch.y,v 1.4 2001-09-19 18:46:44 bkline Exp $
+ * $Id: CdrSearch.y,v 1.5 2002-03-03 14:44:08 bkline Exp $
  *
  * Parser for CDR Search module.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2001/09/19 18:46:44  bkline
+ * Allowed '@' in NameChar.
+ *
  * Revision 1.3  2001/03/21 02:39:53  bkline
  * Added '/' to NameChar production.
  *
@@ -71,7 +74,7 @@ static void yyerror(char*);
 static cdr::QueryNode::OpType comparisonOp;
 
 #define YYPARSE_PARAM parserParam
-#define YYLEX_PARAM const_cast<cdr::QueryParam*>(parserParam)->parserInput
+#define YYLEX_PARAM reinterpret_cast<cdr::QueryParam*>(parserParam)->parserInput
 
 %}
 
@@ -169,8 +172,8 @@ static cdr::QueryNode::OpType comparisonOp;
 
 int yylex(void* parm1, void* parm2)
 {
-    YYSTYPE* yylval = const_cast<YYSTYPE*>(parm1);
-    cdr::ParserInput& pi = *const_cast<cdr::ParserInput*>(parm2);
+    YYSTYPE* yylval = reinterpret_cast<YYSTYPE*>(parm1);
+    cdr::ParserInput& pi = *reinterpret_cast<cdr::ParserInput*>(parm2);
     for (;;) {
         wchar_t c = *pi;
         switch (c) {
