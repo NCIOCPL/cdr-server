@@ -268,20 +268,27 @@
   <xsl:element                name = "{name()}">
    <xsl:apply-templates       mode = "copy"/>
 
-   <xsl:if                    test = "/InScopeProtocol/ProtocolAdminInfo/
+   <!--
+   The NCI-supported trials disclaimer only needs to be displayed for
+   active protocols since only those list participating sites.
+   ===================================================================== -->
+   <xsl:if                    test = "../../../ProtocolAdminInfo/
+                                       CurrentProtocolStatus = 'Active'">
+    <xsl:if                   test = "/InScopeProtocol/ProtocolAdminInfo/
                                        ProtocolLeadOrg/LeadOrganizationID/
                                        Organization/OrganizationType = 
                                        'NCI-supported clinical trials group'">
-    <xsl:variable             name = "miscDoc1" 
+     <xsl:variable            name = "miscDoc1" 
                             select = "document(concat('cdr:name:',
                                       'Cooperative Group Disclaimer;',
                                       'Protocol site disclaimer',
                                       '/lastp'))"/>
-    <xsl:apply-templates    select = "$miscDoc1/MiscellaneousDocument/
+     <xsl:apply-templates   select = "$miscDoc1/MiscellaneousDocument/
                                        MiscellaneousDocumentText/
                                        Section/Para"
                               mode = "nciDisclaimer"/>
     </xsl:if>
+   </xsl:if>
   </xsl:element>
  </xsl:template>
 
