@@ -820,16 +820,7 @@
     </td>
   </tr>
 
-  <xsl:if                         test = "ClinicalTrialOffice">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Clinical Trial Office</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "ClinicalTrialOffice"/>
-    </td>
-   </tr>
-  </xsl:if>
+  <xsl:apply-templates          select = "ClinicalTrialOffice"/>
  </xsl:template>
 
 
@@ -1740,6 +1731,10 @@
            <b>Organization Location</b>
           </td>
           <td   xsl:use-attribute-sets = "cell2of2">
+           <!-- 
+           If the fragment ID points to a PrivatePracticeSite the entry
+           for the Org Location will be empty
+           ============================================================ -->
            <xsl:value-of        select = "PersonLocations/
                                           OtherPracticeLocation
 					    [$PerFrag=@cdr:id]/
@@ -2533,15 +2528,8 @@
       Add Clinical Trials Office Information
       ====================================== -->
       <xsl:if                     test = "ClinicalTrialOffice">
-       <table   xsl:use-attribute-sets = "table">
-        <tr>
-         <td    xsl:use-attribute-sets = "cell1of2">
-          <b>Clinical Trial Office</b>
-         </td>
-         <td    xsl:use-attribute-sets = "cell2of2">
-          <xsl:value-of         select = "ClinicalTrialOffice"/>
-         </td>
-        </tr>
+       <table   xsl:use-attribute-sets = "table"> 
+        <xsl:apply-templates    select = "ClinicalTrialOffice"/>
        </table>
       </xsl:if>
       <br />  
@@ -2549,6 +2537,144 @@
     </li>
    </xsl:for-each>
   </ol>
+ </xsl:template>
+
+
+ <!--
+ ===========================================================================
+ Template to display Clinical Trial Office Information
+ =========================================================================== -->
+ <xsl:template                   match = "ClinicalTrialOffice">
+  <xsl:variable                   name = "cipsID"
+                                select = "Organization/
+                                          OrganizationLocations/
+                                          CIPSContact"/>
+<!-- 
+Need to create a template to globally format the QC address block
+=================================================================     
+   <xsl:apply-templates         select = "Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location[@cdr:id = $cipsID]/
+                                          PostalAddress"/>
+-->
+
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Clinical Trial Office</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:value-of               select = "Organization/
+                                          OrganizationNameInformation/
+                                          OfficialName/Name"/>
+   </td>
+  </tr>
+  <tr>
+   <td         xsl:use-attribute-sets = "cell1of2">
+    <b>Clinical Trial Office Contact</b>
+   </td>
+   <xsl:if                        test = "Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactName">
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactName"/>
+    </td>
+   </xsl:if>
+  </tr>
+
+  <tr>
+   <td>
+    <b>City</b>
+   </td>
+   <td>
+    <xsl:value-of                select = "Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location[@cdr:id = $cipsID]/
+                                          PostalAddress/
+                                          City"/>
+   </td>
+  </tr>
+  <tr>
+   <td>
+    <b>State/Political Unit</b>
+   </td>
+   <td>
+    <xsl:value-of                select = "Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location[@cdr:id = $cipsID]/
+                                          PostalAddress/
+                                          PoliticalSubUnit_State/
+                                          PoliticalSubUnitFullName"/>
+   </td>
+  </tr>
+  <tr>
+   <td>
+    <b>Country</b>
+   </td>
+   <td>
+    <xsl:value-of                select = "Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location[@cdr:id = $cipsID]/
+                                          PostalAddress/
+                                          Country/
+                                          CountryFullName"/>
+   </td>
+  </tr>
+  <tr>
+   <td>
+    <b>Zip/Postal Code</b>
+   </td>
+   <td>
+    <xsl:value-of                select = "Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location[@cdr:id = $cipsID]/
+                                          PostalAddress/
+                                          PostalCode_ZIP"/>
+   </td>
+  </tr>
+
+  <xsl:if                         test = "Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactPhone">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Clinical Trial Office Phone</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactPhone"/>
+    </td>
+   </tr>
+  </xsl:if>
+  <xsl:if                         test = "Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactEmail">
+   <xsl:for-each                select = "Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactEmail">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Clinical Trial Office Email</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:call-template          name = "createEmailLink"/>
+     </td>
+    </tr>
+   </xsl:for-each>
+  </xsl:if>
  </xsl:template>
 
 
@@ -2714,20 +2840,18 @@
  ======================================================================== -->
  <xsl:template                    name = "displayProtocolSpecificTFPhone">
   <xsl:for-each                 select = "TollFreePhone">
-   <table       xsl:use-attribute-sets = "table"> 
-    <tr>   
-     <td        xsl:use-attribute-sets = "cell1iof2">
-     </td>
-     <td        xsl:use-attribute-sets = "cell2iof2">
-      <b class="native">Toll Free Phone</b>
-     </td>
-     <td        xsl:use-attribute-sets = "cell2of2">
-      <p class="native">
-       <xsl:value-of            select = "."/>
-      </p>
-     </td>
-    </tr>
-   </table>
+   <tr>   
+    <td         xsl:use-attribute-sets = "cell1iof2">
+    </td>
+    <td         xsl:use-attribute-sets = "cell2iof2">
+     <b class="native">Toll Free Phone</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <p class="native">
+      <xsl:value-of             select = "."/>
+     </p>
+    </td>
+   </tr>
   </xsl:for-each>
  </xsl:template>
 
