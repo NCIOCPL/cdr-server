@@ -1202,25 +1202,47 @@
 
   <ProtPerson>
    <PersonRole>
-    <xsl:value-of           select = "'Clinical Trial Office'"/>
+    <xsl:choose>
+     <xsl:when                test = "Organization/
+                                      OrganizationLocations/
+                                      ClinicalTrialsOfficeContact/
+                                      ClinicalTrialsOfficeContactName">
+      <xsl:value-of         select = "Organization/
+                                      OrganizationLocations/
+                                      ClinicalTrialsOfficeContact/
+                                      ClinicalTrialsOfficeContactName"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of         select = "'Clinical Trial Office'"/>
+     </xsl:otherwise>
+    </xsl:choose>
    </PersonRole>
 
    <Contact>
+    <xsl:attribute            name = "ctOffice">
+     <xsl:text>Yes</xsl:text>
+    </xsl:attribute>
+<!--
+    The ClinicalTrialsOfficeContactName is an optional element in the 
+    schema.
+    The ContactName is optional in the DTD but the Role is mandatory.
+    Therefore the ClinicalTrialsOfficeContactName will be mapped to the 
+    Role element if it exists.  Otherwise the string 'Clinical Trial
+    Office' will be set as the Role.
+    ====================================================================
     <xsl:if                   test = "Organization/
+                                      OrganizationLocations/
                                       ClinicalTrialsOfficeContact/
                                       ClinicalTrialsOfficeContactName">
      <ContactName>
       <xsl:value-of         select = "Organization/
+                                      OrganizationLocations/
                                       ClinicalTrialsOfficeContact/
                                       ClinicalTrialsOfficeContactName"/>
      </ContactName>
     </xsl:if>
-
+-->
     <ContactDetail>
-     <xsl:attribute               name = "ctOffice">
-      <xsl:value-of             select = "'Yes'"/>
-     </xsl:attribute>
-
      <xsl:apply-templates       select = "Organization/
                                           OrganizationLocations/
                                           OrganizationLocation/
