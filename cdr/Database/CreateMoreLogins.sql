@@ -1,10 +1,13 @@
 /*
- * $Id: CreateMoreLogins.sql,v 1.2 2001-12-24 01:04:41 bkline Exp $
+ * $Id: CreateMoreLogins.sql,v 1.3 2002-07-24 00:26:11 ameyer Exp $
  *
  * Run this script as database superuser to create the CdrGuest and
  * CdrPublishing SQL Server logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2001/12/24 01:04:41  bkline
+ * Added GRANT statements.
+ *
  * Revision 1.1  2001/12/19 20:14:31  bkline
  * Initial revision
  *
@@ -209,4 +212,12 @@ GO
 GRANT SELECT ON pub_proc_doc TO CdrGuest
 GO
 GRANT SELECT, UPDATE, INSERT ON pub_proc_doc TO CdrPublishing
+GO
+GRANT SELECT, UPDATE, INSERT ON batch_job TO CdrPublishing
+GO
+GRANT SELECT ON batch_job TO CdrGuest
+GO
+GRANT SELECT, UPDATE, INSERT ON batch_job_parm TO CdrPublishing
+GO
+GRANT SELECT ON batch_job_parm TO CdrGuest
 GO
