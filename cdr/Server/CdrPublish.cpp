@@ -1,10 +1,13 @@
 /*
- * $Id: CdrPublish.cpp,v 1.1 2002-04-04 01:04:41 bkline Exp $
+ * $Id: CdrPublish.cpp,v 1.2 2002-04-04 20:00:22 bkline Exp $
  *
  * Commands to create a new publishing job and retrieve status for an 
  * existing publishing job.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2002/04/04 01:04:41  bkline
+ * Commands for CDR publishing system (CdrPublish and CdrPubStatus).
+ *
  */
 
 // Eliminate annoying warnings about truncated debugging information.
@@ -55,6 +58,10 @@ static void insertDocument(
         int docId,
         int userDocVersion,
         const cdr::String& jobTime,
+        cdr::db::Connection& conn);
+static int findExistingJob(
+        int controlDocId, 
+        const cdr::String& pubSubsetName, 
         cdr::db::Connection& conn);
 
 /**
@@ -216,6 +223,12 @@ cdr::String cdr::publish(Session& session,
 
     // Everything we do from this point needs to be atomic.
     conn.setAutoCommit(false);
+
+    // Make sure we don't already have an ongoing job of this type.
+    int existingJob = findExistingJob(controlDocId, pubSubsetName, conn);
+    if (existingJob)
+        throw Exception(L"Job " + String::toString(existingJob) +
+                        L" of this publication type is still pending.");
 
     // Create the row for the new job.
     int jobId = createJob(controlDocId, 
@@ -480,7 +493,7 @@ int createJob(
                         "              '',        "
                         "              ?,         "
                         "              NULL,      "
-                        "              'Init',    "
+                        "              'Ready',   "
                         "              NULL,      "
                         "              ?,         "
                         "              ?          "
@@ -594,4 +607,23 @@ void insertDocument(
     insert.setInt(2, docId);
     insert.setInt(3, docVersion);
     insert.executeUpdate();
+}
+
+int findExistingJob(
+        int controlDocId, 
+        const cdr::String& pubSubsetName, 
+        cdr::db::Connection& conn)
+{
+    const char* query = " SELECT id                                   "
+                        "   FROM pub_proc                             "
+                        "  WHERE pub_system = ?                       "
+                        "    AND pub_subset = ?                       "
+                        "    AND status NOT IN ('Success', 'Failure') ";
+    cdr::db::PreparedStatement ps = conn.prepareStatement(query);
+    ps.setInt   (1, controlDocId);
+    ps.setString(2, pubSubsetName);
+    cdr::db::ResultSet rs = ps.executeQuery();
+    if (!rs.next())
+        return 0;
+    return rs.getInt(1);
 }
