@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.15 2002-01-23 18:23:13 mruben Exp $
+ * $Id: CdrFilter.cpp,v 1.16 2002-01-31 21:35:09 mruben Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2002/01/23 18:23:13  mruben
+ * Changed components of CdrDocCtl from uri
+ *
  * Revision 1.14  2002/01/08 18:19:12  mruben
  * Modified for reentrance.
  * Added support for nonstandard scheme cdrutil:
@@ -498,19 +501,17 @@ namespace
       if (function == "date")
       {
         char buf[1024];
-        const char* format = "<Date><Year>%Y</Year><Month>%m</Month>"
-                             "<Day>%d</Day><Hour>%H</Hour>"
-                             "<Minute>%M</Minute><Second>%S</Second>"
-                             "</Date>";
+
+        const char* format = "%Y-%m-%dT%H:%M:%S.000";
         if (!parms.empty())
         {
-          parms = "<Date>" + uri_decode(parms) + "</Date>";
+          parms = uri_decode(parms).c_str();
           format = parms.c_str();
         }
 
         time_t tod = time(NULL);
         strftime(buf, sizeof buf, format, localtime(&tod));
-        u.doc = buf;
+        u.doc = string("<Date>") + buf + "</Date>";
       }
       else
         return 1;
