@@ -857,22 +857,39 @@
 
  <!--
  ====================================================================
- Process the Phone element 
+ Process the Phone element:
+ ++++++++++++++++++++++++++
+ The denormalization filter provides three possible phone numbers, 
+ the Phone, the TollFreePhone, and the OrgPhone.  The rule for 
+ displaying the numbers are: 
+ a) The Phone element is always to be displayed if it exists unless the 
+    Public=No attribute exists (see option (c) to handle this case).
+ b) The TollFreePhone is always to be displayed if it exists.
+ c) If the Phone element exists but the Public=No attribute exists 
+    as well and the TollFreePhone does not exist display the OrgPhone 
+    as the persons Phone element.
  ==================================================================== -->
  <xsl:template               match = "Phone">
-     <xsl:choose>
+    <xsl:choose>
      <xsl:when                test = "not(@Public = 'No')">
        <xsl:apply-templates select = "."
                               mode = "copy"/>
      </xsl:when>
-      <xsl:otherwise>
-       <xsl:if                test = "../OrgPhone">
-        <Phone>
-         <xsl:value-of       select = "../OrgPhone"/>
-        </Phone>
-       </xsl:if>
-      </xsl:otherwise>
-     </xsl:choose>
+     <xsl:otherwise>
+      <xsl:choose>
+       <xsl:when              test = "../TollFreePhone">
+        <!-- Do not display Phone element since TollFreePhone exists -->
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:if                test = "../OrgPhone">
+         <Phone>
+          <xsl:value-of       select = "../OrgPhone"/>
+         </Phone>
+        </xsl:if>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:otherwise>
+    </xsl:choose>
  </xsl:template>
 
 
