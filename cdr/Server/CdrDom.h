@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.h,v 1.6 2000-05-04 01:14:08 bkline Exp $
+ * $Id: CdrDom.h,v 1.7 2000-05-09 21:10:39 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/05/04 01:14:08  bkline
+ * More ccdoc comments.
+ *
  * Revision 1.5  2000/04/26 01:35:58  bkline
  * Added overloaded second parse(const cdr::String&) method.
  *
@@ -30,6 +33,7 @@
 #include <framework/StdInInputSource.hpp>
 #include <dom/DOM_Node.hpp>
 #include <dom/DOM_NamedNodeMap.hpp>
+#include <sax/ErrorHandler.hpp>
 
 #include "CdrString.h"
 
@@ -77,6 +81,17 @@ namespace cdr {
         public:
 
             /**
+             * Creates a new <code>Parser</code> object, with our own custom
+             * error handling object plugged into it.
+             */
+            Parser();
+
+            /**
+             * Releases the resources allocated for our error handler.
+             */
+            ~Parser();
+
+            /**
              * Parses a narrow-character string, creating a DOM tree.
              *
              *  @param  xml     reference to string containing the UTF-8
@@ -97,6 +112,12 @@ namespace cdr {
         private:
 
             /**
+             * Address of an instance of the error handler specialized for
+             * the CDR.
+             */
+            ErrorHandler*       errorHandler;
+
+            /**
              * Artificial flag used to perform initialization required by the
              * xml4c package.
              */
@@ -110,6 +131,17 @@ namespace cdr {
             static bool doInit() throw(DOMException) { 
                 XMLPlatformUtils::Initialize(); return true; 
             }
+
+            /**
+             * Disabled copy constructor.
+             */
+            Parser(const Parser&);
+
+            /**
+             * Disabled assignment operator.
+             */
+            Parser& operator=(const Parser&);
+
         };
 
         /**
