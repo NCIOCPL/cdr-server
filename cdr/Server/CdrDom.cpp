@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.cpp,v 1.6 2000-10-05 21:25:09 bkline Exp $
+ * $Id: CdrDom.cpp,v 1.7 2001-10-17 13:51:28 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/10/05 21:25:09  bkline
+ * Added parseFile(const char*) method.
+ *
  * Revision 1.5  2000/10/04 18:26:40  bkline
  * Modified access to exception error message strings.
  *
@@ -101,4 +104,84 @@ cdr::String cdr::dom::getTextContent(const cdr::dom::Node& node)
         child = child.getNextSibling();
     }
     return str;
+}
+
+std::wostream& operator<<(std::wostream& os, const cdr::dom::Node& node)
+{
+    cdr::String name  = node.getNodeName();
+    cdr::String value = node.getNodeValue();
+    switch (node.getNodeType()) {
+        case cdr::dom::Node::TEXT_NODE:
+            os << value;
+            break;
+        case cdr::dom::Node::PROCESSING_INSTRUCTION_NODE:
+            os << L"<?" << name << L" " << value << L"?>";
+            break;
+        case cdr::dom::Node::DOCUMENT_NODE:
+        {
+            os << L"<?xml version='1.0' ?>";
+            cdr::dom::Node child = node.getFirstChild();
+            while (child != 0) {
+                os << child;
+                child = child.getNextSibling();
+            }
+            break;
+        }
+        case cdr::dom::Node::ELEMENT_NODE:
+        {
+            os << L"<" << name;
+            cdr::dom::NamedNodeMap attributes = node.getAttributes();
+            int nAttributes = attributes.getLength();
+            for (int i = 0; i < nAttributes; ++i) {
+                cdr::dom::Node attribute = attributes.item(i);
+                cdr::String attrValue = attribute.getNodeValue();
+                cdr::String attrName  = attribute.getNodeName();
+                size_t quot = attrValue.find(L"\"");
+                while (quot != attrValue.npos) {
+                    attrValue.replace(quot, 1, L"&quot;");
+                    quot = attrValue.find(L"\"", quot);
+                }
+                os << L" " 
+                   << attrName
+                   << L" = \""
+                   << attrValue
+                   << L"\"";
+            }
+
+            cdr::dom::Node child = node.getFirstChild();
+            if (child != 0) {
+                os << L">";
+                while (child != 0) {
+                    os << child;
+                    child = child.getNextSibling();
+                }
+                os << L"</" << name << L">";
+            }
+            else
+                os << L"/>";
+            break;
+        }
+        case cdr::dom::Node::ENTITY_REFERENCE_NODE:
+        {
+            cdr::dom::Node child = node.getFirstChild();
+            while (child != 0) {
+                os << child;
+                child = child.getNextSibling();
+            }
+            break;
+        }
+        case cdr::dom::Node::CDATA_SECTION_NODE:
+            os << L"<![CDATA[" << value << L"]]>";
+            break;
+        case cdr::dom::Node::COMMENT_NODE:
+            os << L"<!--" << value << L"-->";
+            break;
+        default:
+        {
+            wchar_t err[80];
+            swprintf(err, L"Unrecognized node type: %d", node.getNodeType());
+            throw cdr::Exception(err);
+        }
+    }
+    return os;
 }
