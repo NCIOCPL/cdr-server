@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.3 2000-04-26 01:28:01 bkline Exp $
+ * $Id: CdrString.cpp,v 1.4 2000-05-03 15:20:00 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/04/26 01:28:01  bkline
+ * Added extractDocId() method.
+ *
  * Revision 1.2  2000/04/11 17:49:54  bkline
  * Added constructor for converting from UTF-8.
  *
@@ -102,6 +105,18 @@ int cdr::String::getInt() const
     is >> i;
     return i;
 }
+
+/**
+ * Extracts floating-point value from wide string.
+ */
+double cdr::String::getFloat() const
+{
+    std::wistringstream is(*this);
+    double d;
+    is >> d;
+    return d;
+}
+
 /**
  * Skips past the 'CDR' prefix and extracts the integer id for the
  * document.
