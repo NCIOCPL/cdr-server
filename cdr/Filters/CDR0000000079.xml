@@ -33,7 +33,7 @@
     <TITLE><xsl:value-of select="document('cdrutil:/docid')"/>&#xa0;&#xa0;<xsl:value-of select="substring-before($cdrdocs/CdrDocCtl/DocTitle,';')"/></TITLE>
      
    <!--Inline sytle sheet to display H2 and H4 headers in Navy -->
-     <STYLE>
+     <STYLE type='text/css'>
        h2 { font style: bold font size: 14pt}
        h3 { font style: bold font size: 13pt}
        h4 { font style: bold font size: 12pt}
@@ -46,7 +46,14 @@
            pre {font size: medium}
            H3  {font size: medium}-->
            li.lnone {list-style-type: none}
-  
+       ul.lnone {list-style: none}
+
+       ol.a { list-style: lower-alpha; }
+       ol.A { list-style: upper-alpha; }
+       ol.i { list-style: lower-roman; }
+       ol.I { list-style: upper-roman; }
+       ol.d { list-style: decimal; }
+ 
      </STYLE>
      <!--
      <LINK REL='stylesheet' 
@@ -73,14 +80,14 @@
           10/06/2002 - Modified code to remove 4th level titles (CB) 
            10/08/2002 - took breaks out at end of titles.
      =================================================================== -->
-  <dl>
+  <ul Class="lnone">
    <xsl:for-each              select = "SummarySection">
     <xsl:call-template          name = "TocSummarySection">
      <xsl:with-param            name = "level"
                               select = "1"/>
     </xsl:call-template>  
    </xsl:for-each>
-  </dl>
+  </ul>
 
   <xsl:apply-templates/>
 
@@ -175,10 +182,21 @@
        Display a Deletion 
      =================================================================== -->
     <xsl:template              match = "Deletion">
-     <strike>
-     <xsl:apply-templates/>
-     </strike>
-    </xsl:template>
+      <xsl:choose>
+      <xsl:when                 test = "@RevisionLevel = 'proposed'">
+       <strike>
+       <font color="FUCHSIA">
+        <xsl:apply-templates/>
+       </font>
+       </strike>
+      </xsl:when>
+      <xsl:otherwise>
+       <strike>
+        <xsl:apply-templates/>
+       </strike>
+      </xsl:otherwise>
+     </xsl:choose>
+     </xsl:template>
 
 </xsl:transform>]]>
 </CdrDocXml>
