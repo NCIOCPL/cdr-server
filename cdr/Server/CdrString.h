@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.3 2000-04-17 21:28:01 bkline Exp $
+ * $Id: CdrString.h,v 1.4 2000-04-19 18:29:52 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/04/17 21:28:01  bkline
+ * Made cdr::String nullable.
+ *
  * Revision 1.2  2000/04/14 16:02:00  bkline
  * Added support for converting UTF-8 to UTF-16.
  *
@@ -17,6 +20,7 @@
 #include <string>
 #include <set>
 #include <vector>
+#include <list>
 
 // IBM DOM implementation.
 #include <dom/DOMString.hpp>
@@ -51,6 +55,7 @@ namespace cdr {
     // Containers of our strings.
     typedef std::set<String>             StringSet;
     typedef std::vector<String>          StringVector;
+    typedef std::list<String>            StringList;
 }
 
 #endif
