@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.8 2000-07-21 21:07:19 ameyer Exp $
+ * $Id: CdrString.cpp,v 1.9 2000-08-15 20:16:18 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2000/07/21 21:07:19  ameyer
+ * Added tagWrap().
+ *
  * Revision 1.7  2000/07/11 22:41:24  ameyer
  * Added stringDocId() helper function.
  *
@@ -109,6 +112,55 @@ void cdr::String::utf8ToUtf16(const char* s)
         }
     }
 }
+
+
+/**
+ * Convert reserved XML characters to character entities in a string
+ */
+
+cdr::String cdr::entConvert (
+    const cdr::String& inStr
+) {
+    const int max_entities=256;         // Number of Unicode chars we check
+    cdr::String outStr;                 // Output string
+    const wchar_t *wp,                  // Ptr to char in inStr
+            *last_outp;                 // Last point copied from inStr
+    wchar_t *entities[max_entities];    // Table of pointers to strings
+    int     c;                          // Single char from input stream
+
+    static bool first_time = true;
+
+    // Initialize table on first call
+    if (first_time) {
+
+        // Initialize entities table to null pointers
+        memset (entities, 0, sizeof(entities));
+
+        // Install the entities we check for
+        // If any have bit values greater than max_entities this won't work
+        entities['<'] = L"&lt;";
+        entities['>'] = L"&gt;";
+        entities['&'] = L"&amp;";
+    }
+
+    // Convert string
+    wp        = inStr.c_str();
+    last_outp = wp;
+
+    while ((c = (int) *wp) != 0) {
+        if (c < max_entities && entities[c]) {
+            outStr += cdr::String (last_outp, wp - last_outp) + entities[c];
+            last_outp = wp + 1;
+        }
+        ++wp;
+    }
+
+    // Get all remaining bytes - may be entire string
+    outStr += cdr::String (last_outp, wp - last_outp);
+
+    return outStr;
+}
+
 
 /**
  * Extracts integer value from wide string.
