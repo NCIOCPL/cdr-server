@@ -1,7 +1,10 @@
 /*
- * $Id: cdrdata.sql,v 1.4 2000-04-26 01:44:17 bkline Exp $
+ * $Id: cdrdata.sql,v 1.5 2000-10-10 20:04:08 mruben Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/04/26 01:44:17  bkline
+ * Fixed schema columns.
+ *
  * Revision 1.3  2000/04/21 19:49:25  bkline
  * Added data for testing group actions.
  *
@@ -96,6 +99,8 @@ INSERT INTO action(name) VALUES('GET GROUP')
 INSERT INTO action(name) VALUES('LIST GROUPS')
 INSERT INTO action(name) VALUES('GET USER')
 INSERT INTO action(name) VALUES('VALIDATE DOCUMENT')
+INSERT INTO action(name) VALUES('FORCE CHECKIN')
+INSERT INTO action(name) VALUES('FORCE CHECKOUT')
 go
 
 INSERT INTO grp(name) VALUES('TRAINEES')
