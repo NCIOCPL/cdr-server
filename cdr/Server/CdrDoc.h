@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.3 2000-10-27 02:33:42 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.4 2001-05-25 02:31:40 ameyer Exp $
  *
  */
 
@@ -118,6 +118,24 @@ namespace cdr {
                                const cdr::dom::Node& node,
                                const StringSet& paths);
 
+            /**
+             * Add a row to the query_term table for the current node
+             * if appropriate, and recursively do the same for all
+             * sub-elements.
+             *
+             *  @param  parentPath  Reference to string representing
+             *                      path for parent of current node;
+             *                      e.g., "/Person/PersonStatus".
+             *                      Null string if there is no parent.
+             *  @param  nodeName    Name of current element or attribute.
+             *  @param  node        Reference to current node of
+             *                      document's DOM tree.
+             *  @param  paths       Reference to set of paths to be indexed.
+             */
+            void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
+                                            const cdr::String& nodeName,
+                                            const cdr::dom::Node& node,
+                                            const StringSet& paths);
     };
 }
 
