@@ -1584,6 +1584,13 @@
   </OrderedList>
  </xsl:template>
 
+
+<!-- Template to select the phone/specific phone number.
+     If the Public=No attribute exists this phone number will not be displayed
+     via the vendor filter and the organization phone number needs to be 
+     displayed instead.  This org phone number is displayed in the OrgPhone 
+     element.
+     ====================================================================== -->
  <xsl:template                   match = "Phone|SpecificPhone">
   <Phone>
    <xsl:if                        test = "@Public">
@@ -1593,7 +1600,28 @@
    </xsl:if>
    <xsl:apply-templates         select = "node()"/>
   </Phone>
+
+  <xsl:if                         test = "@Public">
+   <xsl:variable                  name = "orgRef"
+                                select = "../OrganizationLocation/@cdr:ref"/>
+   <xsl:variable                  name = "orgDoc"
+                                select = "document(concat('cdr:', 
+                                                          $orgRef, '/last'))"/>
+   <xsl:variable                  name = "fragId"
+                                select = "substring-after($orgRef, '#')"/>
+   <xsl:variable                  name = "orgLoc"
+                                select = "$orgDoc/Organization/
+                                           OrganizationLocations/
+                                           OrganizationLocation/
+                                           Location[@cdr:id = $fragId]"/>
+   <xsl:if                        test = "$orgLoc/Phone">
+    <OrgPhone>
+     <xsl:value-of              select = "$orgLoc/Phone"/>
+    </OrgPhone>
+   </xsl:if>
+  </xsl:if>
  </xsl:template>
+
 
  <xsl:template                   match = "TollFreePhone|SpecificTollFreePhone">
   <TollFreePhone>
