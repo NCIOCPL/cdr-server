@@ -6,7 +6,6 @@
 <ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
-
 <xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                          xmlns:cdr = "cips.nci.nih.gov/cdr"
            exclude-result-prefixes = "cdr"
@@ -14,6 +13,10 @@
 
   <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
   <xsl:include href = "cdr:name:Module: Vendor Filter Templates"/>
+  <xsl:include href = "cdr:name:Module: Citation Formatting"/>
+  <xsl:include href = "cdr:name:Module: Vendor Phone Templates"/>
+  <xsl:include href = "cdr:name:Module: Vendor Address Templates"/>
+
   
  <xsl:output                method = "xml"
               omit-xml-declaration = "no"
@@ -28,77 +31,74 @@
        indent='yes'. -->
   <xsl:strip-space        elements = "*"/>
 
- <!--
+ <!-- *
  ====================================================================
  Root element.
  ==================================================================== -->
- <xsl:template               match = "/">
-  <xsl:text disable-output-escaping="yes">&lt;!DOCTYPE Protocol &gt;</xsl:text>
-  <xsl:apply-templates      select = "InScopeProtocol"/>
+ <xsl:template               match = "*">
+  <xsl:apply-templates/>
  </xsl:template>
 
- <!--
+ <!-- xsl:template               match = "/">
+  <xsl:text disable-output-escaping="yes">&lt;!DOCTYPE Protocol &gt;</xsl:text>
+  <xsl:apply-templates      select = "InScopeProtocol"/>
+ </xsl:template -->
+
+ <!-- *
  ====================================================================
  Document element.
  ==================================================================== -->
  <xsl:template               match = "InScopeProtocol">
 
   <Protocol>
-  <xsl:attribute              name = "id">
+   <xsl:attribute             name = "id">
     <xsl:value-of           select = "DocId"/>
-  </xsl:attribute>
-  <xsl:attribute              name = "LegacyPDQID">
+   </xsl:attribute>
+   <xsl:attribute             name = "LegacyPDQID">
     <xsl:value-of           select = "PdqKey"/>
-  </xsl:attribute>
+   </xsl:attribute>
 
-   <ProtocolIDs>
-     <xsl:apply-templates     select = "ProtocolIDs/PrimaryID"/>
-     <xsl:apply-templates     select = "ProtocolIDs/OtherID"/>
-   </ProtocolIDs>
-
+   <xsl:apply-templates     select = "ProtocolIDs"/>
    <xsl:apply-templates     select = "FundingInfo"/>
    <xsl:apply-templates     select = "ProtocolSponsors"/>
-   <xsl:apply-templates     select = "ReimbursementApproval"
-                              mode = "copy"/>
+   <xsl:apply-templates     select = "ProtocolApproval"/>
 
-   <!-- Output only the Professional and Patient title
-        The Type attribute is being renamed to Audience elsewhere. 
-        ==========================================================     -->
+   <!-- 
+   ==========================================================
+   Output only the Professional and Patient title
+   The Type attribute is being renamed to Audience elsewhere. 
+   ========================================================== -->
    <xsl:apply-templates     select = "ProtocolTitle[@Type='Professional']"
                               mode = "copy"/>
    <xsl:apply-templates     select = "ProtocolTitle[@Type='Patient']"
                               mode = "copy"/>
  
-   <!-- Use custom templates for these. -->
    <xsl:apply-templates     select = "ProtocolAbstract"/>
    <xsl:apply-templates     select = "ProtocolDetail"/>
- 
-   <!-- Use generic copy templates for these. -->
-   <xsl:apply-templates     select = "Eligibility"
-                              mode = "copy"/>
+   <xsl:apply-templates     select = "Eligibility"/>
    <xsl:apply-templates     select = "ProtocolRelatedLinks"/>
    <xsl:apply-templates     select = "PublishedResults"/>
    <xsl:apply-templates     select = "ProtocolPhase"
                               mode = "copy"/>
+
    <xsl:apply-templates     select = "ProtocolSpecialCategory"/>
 
-   <!-- Use custom templates for these. -->
    <xsl:apply-templates     select = "ProtocolAdminInfo"/>
 
 <!-- ===================================================================
             Copy Date First Published and Date Last Modified
      ================================================================== -->
   <xsl:choose>
-    <xsl:when                     test = "CdrDocCtl/FirstPub/Date">
+    <xsl:when                 test = "CdrDocCtl/FirstPub/Date">
       <DateFirstPublished>
-      <xsl:value-of             select = "substring-before(CdrDocCtl/
+      <xsl:value-of         select = "substring-before(CdrDocCtl/
                                             FirstPub/Date,'T')"/>
       </DateFirstPublished>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:call-template          name = "getDateFirstPub">
-        <xsl:with-param           name = "date"
-                                select = "$DateFirstPub"/>
+      <xsl:call-template      name = "getDateFirstPub">
+        <xsl:with-param       name = "date"
+                            select = "$DateFirstPub"/>
       </xsl:call-template>    
     </xsl:otherwise>
   </xsl:choose>
@@ -108,84 +108,102 @@
   </Protocol>
  </xsl:template>
 
- <!--
+
+ <!-- *
  ====================================================================
- Protocols have two flavors of abstracts: Professional and Patient.
+ Display the ProtocolIDs element wrapper for other IDs
  ==================================================================== -->
- <xsl:template               match = "ProtocolAbstract">
-  <ProtocolAbstract>
-   <xsl:apply-templates     select = "Professional"
-                              mode = "abstract"/>
-   <xsl:apply-templates     select = "Patient"
-                              mode = "abstract"/>
-  </ProtocolAbstract>
+ <xsl:template               match = "ProtocolIDs">
+  <xsl:element                name = "{name()}">
+   <xsl:apply-templates     select = "PrimaryID"/>
+   <xsl:apply-templates     select = "OtherID"/>
+  </xsl:element>
  </xsl:template>
 
 
-
- <!--
+ <!-- *
  ====================================================================
- Rename the element tags for ProtocolSponsors
+ Display the Primary and Other protocolIDs
+ ==================================================================== -->
+ <xsl:template               match = "PrimaryID | OtherID">
+  <xsl:element                name = "{name()}">
+   <xsl:apply-templates     select = "IDType"
+                              mode = "copy"/>
+   <xsl:apply-templates     select = "IDString"
+                              mode = "copy"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- *
+ ====================================================================
+ Funding template to display NIHGrantContract or OtherGrantContractInfo 
+ elements
+ Comment element will be filtered out globally.
+ ==================================================================== -->
+ <xsl:template               match = "FundingInfo">
+  <xsl:element                name = "{name()}">
+   <xsl:for-each            select = "NIHGrantContract">
+      <xsl:apply-templates  select = "."
+                              mode = "copy"/>
+    </xsl:for-each>
+    <xsl:for-each           select = "OtherGrantContractInfo">
+      <xsl:apply-templates  select = "."
+                              mode = "copy"/>
+    </xsl:for-each>
+   </xsl:element>
+ </xsl:template>
+
+
+ <!-- *
+ ====================================================================
+ Rename the element ProtocolSponsors to ProtocolSponsor and eliminate
+ the SponsorName child element.
  ==================================================================== -->
  <xsl:template               match = "ProtocolSponsors">
   <xsl:for-each             select = "SponsorName">
    <ProtocolSponsor>
-    <xsl:value-of          select = "."/>
+    <xsl:apply-templates    select = "."/>
    </ProtocolSponsor>
   </xsl:for-each>
  </xsl:template>
 
 
- <!--
+ <!-- *
  ====================================================================
- Funding info may contain Comment element in NIHGrantContract or 
- OtherGrantContractInfo elements that should not to displayed.
+ Rename the element ReimbursementApprovalType to ReimbursementApproval
+ Only the ReimbursementApprovalType element is being picked up from 
+ the ProtocolApproval fragment.
  ==================================================================== -->
- <xsl:template               match = "FundingInfo">
-   <FundingInfo>
-    <xsl:for-each           select = "NIHGrantContract">
-      <xsl:apply-templates  select = "."/>
-    </xsl:for-each>
-    <xsl:for-each           select = "OtherGrantContractInfo">
-      <xsl:apply-templates  select = "."/>
-    </xsl:for-each>
-   </FundingInfo>
+ <xsl:template               match = "ProtocolApproval">
+  <xsl:for-each             select = "ReimbursementApprovalType">
+   <ReimbursementApproval>
+    <xsl:apply-templates     select = "."
+                               mode = "copy"/>
+   </ReimbursementApproval>
+  </xsl:for-each>
  </xsl:template>
 
 
- <!--
+
+ <!-- *
  ====================================================================
- Copy NIHGrantContract info without displaying comment element
+ Protocols have two flavors of abstracts: Professional and Patient.
  ==================================================================== -->
- <xsl:template               match = "NIHGrantContract">
-  <NIHGrantContract>
-   <xsl:apply-templates     select = "NIHGrantContractType"
-                              mode = "copy"/>
-   <xsl:apply-templates     select = "GrantContractNo"
-                              mode = "copy"/>
-  </NIHGrantContract>
+ <xsl:template               match = "ProtocolAbstract">
+  <xsl:element                name = "{name()}">
+   <xsl:apply-templates     select = "Professional"/>
+   <xsl:apply-templates     select = "Patient"/>
+  </xsl:element>
  </xsl:template>
 
 
- <!--
- ====================================================================
- Dispaly OtherGrantContractInfo without displaying comment element.
- ==================================================================== -->
- <xsl:template               match = "OtherGrantContractInfo">
-  <OtherGrantContractInfo>
-   <xsl:apply-templates     select = "GrantContractNo"
-                              mode = "copy"/>
-  </OtherGrantContractInfo>
- </xsl:template>
-
-
- <!--
+ <!-- *
  ====================================================================
  Assemble the Professional abstract.
  ==================================================================== -->
- <xsl:template               match = "Professional"
-                              mode = "abstract">
-  <Professional>
+ <xsl:template               match = "Professional">
+  <xsl:element                name = "{name()}">
    <xsl:apply-templates     select = "Objectives"
                               mode = "copy"/>
    <xsl:apply-templates     select = "Outline"
@@ -204,163 +222,260 @@
                               mode = "copy"/>
    <xsl:apply-templates     select = "DosageForm"
                               mode = "copy"/>
- 
    <xsl:apply-templates     select = "ProfessionalDisclaimer"
                               mode = "copy"/>
-
-  </Professional>
+  </xsl:element>
  </xsl:template>
 
  <!--
  ====================================================================
  Assemble the Patient abstract.
  ==================================================================== -->
- <xsl:template               match = "Patient"
-                              mode = "abstract">
-  <Patient>
-   <Rationale>
-    <xsl:apply-templates    select = "Rationale"/>
-   </Rationale>
-   <Purpose>
-    <xsl:apply-templates    select = "Purpose"/>
-   </Purpose>
-   <EligibilityText>
-    <xsl:apply-templates    select = "EligibilityText"/>
-   </EligibilityText>
-   <TreatmentIntervention>
-    <xsl:apply-templates    select = "TreatmentIntervention"/>
-   </TreatmentIntervention>
+ <xsl:template               match = "Patient">
+  <xsl:element                name = "{name()}">
+   <xsl:apply-templates     select = "Rationale"
+                              mode = "copy"/>
+   <xsl:apply-templates     select = "Purpose"
+                              mode = "copy"/>
+   <xsl:apply-templates     select = "EligibilityText"
+                              mode = "copy"/>
+   <xsl:apply-templates     select = "TreatmentIntervention"
+                              mode = "copy"/>
    <xsl:apply-templates     select = "PatientDisclaimer"
                               mode = "copy"/>
-  </Patient>
- </xsl:template>
-
- 
- <!--
- ====================================================================
- Assemble the Protocol detail section.
- ==================================================================== -->
- <xsl:template               match = "Rationale       |
-                                      Purpose         |
-                                      EligibilityText |
-                                      TreatmentIntervention">
-   <xsl:apply-templates/>
+  </xsl:element>
  </xsl:template>
 
 
-<!-- ==================================================================== 
-     We should drop this later when mode="copy" is widely applied.
-     ==================================================================== -->
-  <xsl:template              match = "ItemizedList">
-      <xsl:apply-templates  select = "."
-                              mode = "copy"/>
-  </xsl:template>
-    
-
-
-<!-- ==================================================================== 
-     We should drop this later when mode="copy" is widely applied.
-     ==================================================================== -->
-  <xsl:template              match = "OrderedList">
-      <xsl:apply-templates  select = "."
-                              mode = "copy"/>
-  </xsl:template>
-    
-
- <!--
- ====================================================================
-     We should drop this later when mode="copy" is widely applied.
- ==================================================================== -->
- <xsl:template               match = "Para">
-      <xsl:apply-templates  select = "."
-                              mode = "copy"/>
- </xsl:template>
-
- <!--
- ====================================================================
- Drop the cdr namespace in cdr:id with mode = "copy".
- ==================================================================== -->
- <xsl:template               match = "@cdr:id"
-                              mode = "copy">
-   <xsl:attribute             name = "id">
-    <xsl:value-of           select = "."/>
-   </xsl:attribute>
- </xsl:template>
-
- <!--
- ====================================================================
- Drop the cdr namespace in cdr:ref with mode = "copy".
- ==================================================================== -->
- <xsl:template               match = "@cdr:ref"
-                              mode = "copy">
-   <xsl:attribute             name = "ref">
-    <xsl:value-of           select = "."/>
-   </xsl:attribute>
- </xsl:template>
-
- <!--
- ====================================================================
- Drop the cdr namespace in cdr:href with mode = "copy".
- ==================================================================== -->
- <xsl:template               match = "@cdr:href"
-                              mode = "copy">
-   <xsl:attribute             name = "href">
-    <xsl:value-of           select = "."/>
-   </xsl:attribute>
- </xsl:template>
-
-
- <!--
- ====================================================================
- Rename the Protocol Title Type attribute to Audience.
- ==================================================================== -->
- <xsl:template               match = "@Type"
-                              mode = "copy">
-   <xsl:attribute             name = "Audience">
-    <xsl:value-of           select = "."/>
-   </xsl:attribute>
- </xsl:template>
-
-
- <!--
- ====================================================================
- Drop PdqKey with mode = "copy".
- ==================================================================== -->
- <xsl:template               match = "@PdqKey"
-                              mode = "copy"/>
-
- <!--
- ====================================================================
- Drop PdqKey to be on the safe side. It doesn't seem to be used.
- ==================================================================== -->
- <xsl:template               match = "@PdqKey"/>
-
-
- <!-- ==============================================================
-     We should drop this later when mode="copy" is widely applied.
-      ============================================================== -->
- <xsl:template               match = "GlossaryTermRef | 
-                                      GlossaryTermLink |
-                                      ProtocolRef">
-      <xsl:apply-templates  select = "."
-                              mode = "copy"/>
-  </xsl:template>
-
- <!--
+ <!-- *
  ====================================================================
  Assemble the Protocol detail section.
  ==================================================================== -->
  <xsl:template               match = "ProtocolDetail">
-  <ProtocolDetail>
+  <xsl:element                name = "{name()}">
    <xsl:apply-templates     select = "StudyType"
                               mode = "copy"/>
    <xsl:apply-templates     select = "StudyCategory"/>
-   <xsl:apply-templates     select = "StudyCondition"
-                              mode = "copy"/>
-   <xsl:apply-templates     select = "Gene"
-                              mode = "copy"/>
-  </ProtocolDetail>
+   <xsl:apply-templates     select = "Condition"/>
+   <xsl:apply-templates     select = "Gene"/>
+  </xsl:element>
  </xsl:template>
+
+
+ <!-- *
+ ====================================================================
+ Add citation IDs as attributes
+ ==================================================================== -->
+ <xsl:template               match = "StudyCategory">
+   <xsl:element               name = "{name()}">
+    <xsl:apply-templates    select = "StudyCategoryName"
+                              mode = "copy"/>
+
+    <xsl:for-each           select = "Intervention">
+     <xsl:if                  test = "InterventionType">
+      <Intervention>
+       <xsl:apply-templates select = "InterventionType"/>
+       <xsl:apply-templates select = "InterventionNameLink"/>
+      </Intervention>
+     </xsl:if>
+    </xsl:for-each>
+
+   </xsl:element>
+ </xsl:template>
+
+
+ <!-- *
+ ====================================================================
+ Add Intervention term type to output tree
+ ==================================================================== -->
+ <xsl:template               match = "InterventionType">
+  <xsl:call-template          name = "getTerm">
+   <xsl:with-param            name = "elementName"
+                            select = "'InterventionType'"/>
+  </xsl:call-template>
+
+  <xsl:apply-templates      select = "Term/Term">
+   <xsl:with-param            name = "parentName"
+                            select = "'InterventionTypeParent'"/>
+  </xsl:apply-templates>
+ </xsl:template>
+
+
+ <!-- *
+ ====================================================================
+ Add Intervention term type to output tree
+ ==================================================================== -->
+ <xsl:template               match = "InterventionNameLink">
+  <xsl:call-template          name = "getTerm">
+   <xsl:with-param            name = "elementName"
+                            select = "'InterventionNameLink'"/>
+  </xsl:call-template>
+ </xsl:template>
+
+
+ <!-- *
+ ====================================================================
+ Add Condition term type to output tree 
+ ==================================================================== -->
+ <xsl:template               match = "Condition">
+  <StudyCondition>
+   <xsl:call-template         name = "getTerm">
+    <xsl:with-param           name = "elementName"
+                            select = "'SpecificCondition'"/>
+   </xsl:call-template>
+   <xsl:apply-templates     select = "Term/Term">
+    <xsl:with-param           name = "parentName"
+                            select = "'ConditionParent'"/>
+   </xsl:apply-templates>
+  </StudyCondition>
+ </xsl:template>
+
+
+ <!-- *
+ ====================================================================
+ Add the parents of the Terms to the output tree
+ ==================================================================== -->
+ <xsl:template              match = "Gene">
+  <xsl:element               name = "{name()}">
+   <xsl:call-template        name = "getTerm">
+    <xsl:with-param          name = "elementName"
+                           select = "'SpecificGene'"/>
+   </xsl:call-template>
+  </xsl:element>
+
+ </xsl:template>
+
+
+ <!-- *
+ ====================================================================
+ Assemble the Eligibility section.
+ ==================================================================== -->
+ <xsl:template               match = "Eligibility">
+  <xsl:element               name = "{name()}">
+   <xsl:apply-templates     select = "HealthyVolunteers"
+                              mode = "copy"/>
+   <xsl:apply-templates     select = "LowAge"
+                              mode = "copy"/>
+   <xsl:apply-templates     select = "HighAge"
+                              mode = "copy"/>
+   <xsl:apply-templates     select = "AgeText"
+                              mode = "copy"/>
+   <xsl:apply-templates     select = "Diagnosis"/>
+   <xsl:apply-templates     select = "ExclusionCriteria"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- *
+ ====================================================================
+ Add Condition term type to output tree 
+ ==================================================================== -->
+ <xsl:template               match = "Diagnosis">
+  <xsl:element                name = "{name()}">
+   <xsl:call-template         name = "getTerm">
+    <xsl:with-param           name = "elementName"
+                            select = "'SpecificDiagnosis'"/>
+   </xsl:call-template>
+   <xsl:apply-templates     select = "Term/Term">
+    <xsl:with-param           name = "parentName"
+                            select = "'DiagnosisParent'"/>
+   </xsl:apply-templates>
+  </xsl:element>
+ </xsl:template>
+
+
+
+ <!-- *
+ ====================================================================
+ Add Condition term type to output tree 
+ ==================================================================== -->
+ <xsl:template               match = "ExclusionCriteria">
+   <xsl:call-template         name = "getTerm">
+    <xsl:with-param           name = "elementName"
+                            select = "'ExclusionCriteria'"/>
+   </xsl:call-template>
+ </xsl:template>
+
+
+
+ <!-- *
+ ====================================================================
+ Filter the ProtocolRelatedLinks information for the vendors
+ Only the RelatedProtocols and RelatedWebsites elements are valid.
+ Also, ensure that the ProtocolRelatedLinks element is not copied to 
+ the output tree if none of the protocols are publishable.
+ ==================================================================== -->
+ <xsl:template               match = "ProtocolRelatedLinks">
+  <xsl:if                     test = "RelatedProtocols | RelatedWebsites">
+   <xsl:if                    test = "count(RelatedProtocols/
+                                      InScopeProtocol) &gt;
+                                      count(RelatedProtocols/
+                                      InScopeProtocol/@Publishable)">
+    <xsl:element              name = "{name()}">
+     <xsl:apply-templates   select = "RelatedProtocols | RelatedWebsites"/>
+    </xsl:element>
+   </xsl:if>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- *
+ ====================================================================
+ Filter the ProtocolRelatedLinks information for the vendors
+ Only the RelatedProtocols without a Publishable attribute and 
+ RelatedWebsites elements are valid.
+ ==================================================================== -->
+ <xsl:template               match = "RelatedProtocols">
+  <xsl:if                     test = "not(InScopeProtocol
+                                                     [@Publishable])">
+   <xsl:element               name = "{name()}">
+    <xsl:attribute            name = "ref">
+     <xsl:value-of          select = "InScopeProtocol/@cdr:ref"/>
+    </xsl:attribute>
+    <xsl:value-of           select = "InScopeProtocol/ProtocolIDs/
+                                      PrimaryID/IDString"/>
+   </xsl:element>
+   </xsl:if>
+ </xsl:template>
+
+
+ <!-- *
+ ====================================================================
+ Filter the ProtocolRelatedLinks information for the vendors
+ Only the RelatedProtocols and RelatedWebsites elements are valid.
+ ==================================================================== -->
+ <xsl:template               match = "RelatedWebsites">
+  <xsl:element                name = "{name()}">
+   <xsl:attribute             name = "href">
+    <xsl:value-of           select = "@cdr:href"/>
+   </xsl:attribute>
+   <xsl:apply-templates     select = "."/>
+  </xsl:element>
+ </xsl:template>
+
+
+
+ <!-- *
+ ====================================================================
+ Add citation IDs as attributes
+ ==================================================================== -->
+ <xsl:template               match = "PublishedResults">
+  <xsl:element                name = "{name()}">
+   <xsl:apply-templates    select = "./Citation"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- *
+ ====================================================================
+ Include the ProtocolSpecialCategory element in the output
+ ==================================================================== -->
+ <xsl:template               match = "ProtocolSpecialCategory">
+   <xsl:element               name = "{name()}">
+    <xsl:value-of           select = "SpecialCategory"/>
+   </xsl:element>
+ </xsl:template>
+
 
 
  <!--
@@ -371,17 +486,17 @@
        associated with each of the lead organizations!
  ==================================================================== -->
  <xsl:template               match = "ProtocolAdminInfo">
-  <ProtocolAdminInfo>
+  <xsl:element                name = "{name()}">
    <xsl:apply-templates     select = "CurrentProtocolStatus"
                               mode = "copy"/>
 
- <!-- Only display the LeadOrg if the Status is not Withdrawn       -->
+   <!-- Only display the LeadOrg if the Status is not Withdrawn       -->
    <xsl:apply-templates     select = "ProtocolLeadOrg
                                         [LeadOrgProtocolStatuses/
                                          CurrentOrgStatus/
                                          StatusName != 'Withdrawn']"/>
 
- <!-- Only display the ProtocolSites for Active Protocols           -->
+   <!-- Only display the ProtocolSites for Active Protocols           -->
    <xsl:if                    test = "(/InScopeProtocol/ProtocolAdminInfo/
                                       CurrentProtocolStatus = 
                                       'Active')">
@@ -389,12 +504,17 @@
  <!-- Only create the ProtocolSites element if Active Sites exist and only
       if its parent is active as well or if the PrivateProtocolSite is 
       active
+      Note:  This IF only controls the ProtocolSites element tag.  The 
+             sites to be picked up will be identified within the 
+             ProtocolSites template.
       ==================================================================== -->
-    <xsl:if                   test = "(ProtocolLeadOrg[LeadOrgProtocolStatuses/
-                                                       CurrentOrgStatus/
-                                                       StatusName = 'Active']/
-                                       ProtocolSites/
-                                       OrgSite[OrgSiteStatus = 'Active'])    |
+    <xsl:if                   test = "(ProtocolLeadOrg
+                                            [LeadOrganizationID/
+                                             Organization/Status/
+                                             CurrentStatus = 'Active']/
+                                       ProtocolSites/OrgSiteID/
+                                             Organization/Status
+                                             [CurrentStatus = 'Active'])    |
                                       (ProtocolLeadOrg[LeadOrgProtocolStatuses/
                                                        CurrentOrgStatus/
                                                        StatusName = 'Active']/
@@ -406,7 +526,7 @@
      </ProtocolSites>
     </xsl:if>
    </xsl:if>
-  </ProtocolAdminInfo>
+  </xsl:element>
  </xsl:template>
 
  <!--
@@ -416,12 +536,15 @@
  together in one amorphous pile following the lead organizations.
  ==================================================================== -->
  <xsl:template               match = "ProtocolLeadOrg">
-  <ProtocolLeadOrg>
+  <xsl:element                name = "{name()}">
    <LeadOrgName>
     <xsl:attribute            name = "ref">
-     <xsl:value-of          select = "@ref"/>
+     <xsl:value-of          select = "LeadOrganizationID/
+                                      Organization/@cdr:ref"/>
     </xsl:attribute>
-    <xsl:value-of           select = "OfficialName/Name"/>
+    <xsl:value-of           select = "LeadOrganizationID/
+                                      Organization/OrganizationNameInformation/
+                                      OfficialName/Name"/>
    </LeadOrgName>
    <xsl:apply-templates     select = "LeadOrgRole"
                               mode = "copy"/>
@@ -436,14 +559,17 @@
                               mode = "copy"/>
    </LeadOrgProtocolStatus>
 
-   <!-- LeadOrgPersonnel with Public=No attribute is not to be published
-        ================================================================ -->
+
+   <!-- 
+   LeadOrgPersonnel with Public=No attribute is not to be published
+   ================================================================ -->
    <xsl:if                    test = "not(LeadOrgPersonnel/@Public = 'No')">
      <LeadOrgPersonnel>
       <xsl:apply-templates    select = "LeadOrgPersonnel"/>
      </LeadOrgPersonnel>
    </xsl:if>
-  </ProtocolLeadOrg>
+
+  </xsl:element>
  </xsl:template>
 
  <!--
@@ -460,132 +586,314 @@
   <xsl:if                     test = "not(PersonRole='Update person') or
                                          (PersonRole='Update person'
                                           and count(PersonRole) &gt; 1)">
-  <ProtPerson>
-   <xsl:attribute             name = "ref">
-    <xsl:value-of           select = "Person/@ref"/>
-   </xsl:attribute>
-
-   <!-- If the status attribute exists the person's status is inactive
-        and a special note has to be displayed to this effect.         -->
-   <xsl:if                    test = "Person/@status">
-    <xsl:attribute             name = "status">
-     <xsl:text>Inactive - Contact information may not be current</xsl:text>
-    </xsl:attribute>
-   </xsl:if>
-   <xsl:apply-templates     select = "Person/PersonNameInformation"/>
-
-
-   <!-- The PersonRole of Update Person is CIPS internal information
-        and not intended for the vendors
-        ============================================================ -->
-   <xsl:for-each            select = "PersonRole">
-    <xsl:if                   test = "not(.='Update person')">
-     <xsl:apply-templates   select = "."
-                              mode = "copy"/>
-    </xsl:if>
-   </xsl:for-each>
-   <Contact>
-
-    <!-- XXX This is optional in the DTD, and I think it's probably
-             meant for generic person elements, so I'm omitting it here.
-             We've already got the PersonNameInformation, after all.
-    <ContactName/>
-    -->
-
-    <ContactDetail>
-    
-     <!-- XXX Not needed, according to Volker's original filter. 
-              Also, the denormalization filter doesn't have this
-              information (I don't think), so although the DTD
-              has it, it's optional, so I'm leaving it out here.
-     <xsl:attribute           name = "id">
-      ???
-     </xsl:attribute>
-     -->
-
-     <!-- Added at Lakshmi's request RMK 2002-09-08. -->
-     <xsl:for-each          select = "Person/OrganizationAddressNames/
-                                      OrganizationName">
-      <OrganizationName>
-       <xsl:value-of        select = "."/>
-      </OrganizationName>
-     </xsl:for-each>
-
-     <PostalAddress>
-      <xsl:apply-templates  select = "Person/Street"
-                              mode = "copy"/>
-      <xsl:apply-templates  select = "Person/City"
-                              mode = "copy"/>
-      <xsl:apply-templates  select = "Person/CitySuffix"
-                              mode = "copy"/>
-      <xsl:apply-templates  select = "Person/PoliticalSubUnit_State"/>
-      <xsl:apply-templates  select = "Person/Country"/>
-      <xsl:apply-templates  select = "Person/PostalCode_ZIP"
-                              mode = "copy"/>
-      <xsl:apply-templates  select = "Person/PostalCodePosition"
-                              mode = "copy"/>
-     </PostalAddress>
-
-     <!-- Volker's original had these outside the ContactDetail
-          element, but that didn't seem right after looking at
-          the DTD. -->
-     <!-- Phone with Public=No attribute is not to be published -->
-     <!-- ===================================================== -->
-     <xsl:apply-templates   select = "Person/Phone"/>
-     <xsl:apply-templates   select = "Person/TollFreePhone"
-                              mode = "copy"/>
-
-     <!-- Email with Public=No attribute is not to be published -->
-     <!-- ===================================================== -->
-     <xsl:if                  test = "not(Person/Email/@Public = 'No')">
-       <xsl:apply-templates select = "Person/Email"/>
-     </xsl:if>
-     <xsl:apply-templates   select = "Person/WebSite"
-                              mode = "copy"/>
-
-    </ContactDetail>
-   </Contact>
-  </ProtPerson>
+   <xsl:apply-templates     select = "Person"/>
   </xsl:if>
  </xsl:template>
 
  <!--
  ====================================================================
- Assemble the state element.  This template collapses two element
- layers into one, combining the 'ref' attribute from the parent
- PoliticalSubUnit_State element with the text content of the child
- PoliticalSubUnitFullName element, using a new PoliticalSubUnitName
- name for the combo element.
  ==================================================================== -->
- <xsl:template               match = "PoliticalSubUnit_State">
-  <PoliticalSubUnitName>
-   <xsl:attribute             name = "ref">
-    <xsl:value-of           select = "@ref"/>
-   </xsl:attribute>
-   <xsl:value-of            select = "PoliticalSubUnitFullName"/>
- <!-- XXX Problem in denormalization filter.  Displaying PoliticalSubUnit
-      text nodes until problem is fixed 
-      =============================================================== -->
-   <xsl:value-of            select = "PoliticalSubUnit_State"/>
-  </PoliticalSubUnitName>
- </xsl:template>
+ <xsl:template               match = "Person | 
+                                      SpecificPerson">
+  <xsl:variable               name = "myScope"
+                            select = "name()"/>
 
- <!--
- ====================================================================
- Put together the Country element.
- XXX Note that there is a bug in the denormalization filter for
-     this document type, resulting in two Country elements, one
-     with a cdr:ref attribute, and the other with a ref attribute.
-     This version assumes that the one with the ref attribute will
-     be kept.  Fix this template if the assumption is incorrect.
- ==================================================================== -->
- <xsl:template               match = "Country">
-  <CountryName>
+  <ProtPerson>
    <xsl:attribute             name = "ref">
-    <xsl:value-of           select = "@ref"/>
+    <xsl:value-of           select = "Person/@cdr:ref"/>
    </xsl:attribute>
-   <xsl:value-of            select = "CountryFullName"/>
-  </CountryName>
+
+   <xsl:variable              name = "contactFID"
+                            select = "substring-after(Person/@cdr:ref, '#')"/>
+   <xsl:variable              name = "orgAddressFID"
+                            select = "substring-after(
+                                       Person/PersonLocations/
+                                       OtherPracticeLocation
+                                        [@cdr:id = $contactFID]/
+                                       OrganizationLocation/
+                                       Organization/@cdr:ref, '#')"/>
+                                        
+   <!-- 
+   If the status attribute exists the person's status is inactive
+   and a special note has to be displayed as an attribute to this
+   effect.        
+   =============================================================== -->
+   <xsl:choose>
+    <xsl:when                 test = "Person/
+                                       Status[CurrentStatus = 'Inactive']">
+     <xsl:attribute           name = "status">
+      <xsl:text>Contact information may not be current</xsl:text>
+     </xsl:attribute>
+    </xsl:when>
+    <xsl:when                  test = "Person/
+                                        Status[CurrentStatus = 'Active']
+                                       and
+                                       Person/PersonLocations/ 
+                                        OtherPracticeLocation
+                                        [@cdr:id = $contactFID]
+                                       and 
+                                       Person/PersonLocations/ 
+                                        OtherPracticeLocation
+                                        [@PreviousLocation = 'Yes']">
+     <xsl:attribute           name = "status">
+      <xsl:text>Contact information may not be current</xsl:text>
+     </xsl:attribute>
+    </xsl:when>
+   </xsl:choose>
+
+   <xsl:apply-templates     select = "Person/PersonNameInformation"/>
+
+   <!-- 
+   Display the PersonRole of the LeadOrg Person element
+   and display the Role element of the ProtocolSite person
+   as PersonRole element.
+   Note: The PersonRole of Update Person is CIPS internal information
+         and not intended for the vendors
+   ================================================================== -->
+   <xsl:choose>
+    <xsl:when                 test = "$myScope = 'Person'">
+     <xsl:for-each          select = "../PersonRole">
+      <xsl:if                 test = "not(.='Update person')">
+       <xsl:apply-templates select = "."
+                              mode = "copy"/>
+      </xsl:if>
+     </xsl:for-each>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:for-each          select = "Role">
+      <PersonRole>
+       <xsl:value-of        select = "."/>
+      </PersonRole>
+     </xsl:for-each>
+    </xsl:otherwise>
+   </xsl:choose>
+
+   <Contact>
+    <ContactDetail>
+     <xsl:choose>
+      <!-- 
+      Handle Persons with PrivatePractice contact     
+      ============================================================== -->
+      <xsl:when               test = "Person/PersonLocations/
+                                      PrivatePractice/
+                                      PrivatePracticeLocation
+                                       [@cdr:id = $contactFID] |
+                                      Person/PersonLocations/
+                                      Home
+                                       [@cdr:id = $contactFID]">
+       <xsl:for-each        select = "Person/PersonLocations/
+                                      PrivatePractice/
+                                      PrivatePracticeLocation
+                                       [@cdr:id = $contactFID] |
+                                      Person/PersonLocations/
+                                      Home
+                                       [@cdr:id = $contactFID]">
+        <xsl:call-template    name = "getHomePrivatePractice"/>
+       </xsl:for-each>
+      </xsl:when>
+      <xsl:otherwise>
+       <OrganizationName>
+        <!--
+        Add the OrderParentNameFirst attribute to the OrganizationName
+        element.  This will be picked up with a following filter that
+        will revert the sort of the OrganizationName element based on 
+        its existence
+        ============================================================== -->
+        <xsl:if               test = "Person/PersonLocations/
+                                      OtherPracticeLocation
+                                       [@cdr:id = $contactFID]/
+                                      OrganizationLocation/
+                                      Organization/
+                                      OrganizationLocations/
+                                      OrganizationLocation/
+                                      @OrderParentNameFirst">
+         <xsl:attribute       name = "OrderParentNameFirst">
+          <xsl:value-of     select = "Person/PersonLocations/
+                                      OtherPracticeLocation
+                                       [@cdr:id = $contactFID]/
+                                      OrganizationLocation/
+                                      Organization/
+                                      OrganizationLocations/
+                                      OrganizationLocation/
+                                      @OrderParentNameFirst"/>
+         </xsl:attribute>
+        </xsl:if>
+
+        <xsl:value-of       select = "Person/PersonLocations/
+                                      OtherPracticeLocation
+                                       [@cdr:id = $contactFID]/
+                                      OrganizationLocation/
+                                      Organization/
+                                      OrganizationNameInformation/
+                                      OfficialName/Name"/>
+       </OrganizationName>
+
+       <!-- Call a template to collect all parent names for the address
+            block display                                               -->
+       <xsl:if                test = "Person/PersonLocations/
+                                      OtherPracticeLocation
+                                       [@cdr:id = $contactFID]/
+                                      OrganizationLocation/
+                                      Organization/
+                                      OrganizationLocations/
+                                      OrganizationLocation/@IncludeParentName">
+        <xsl:for-each       select = "Person/PersonLocations/
+                                      OtherPracticeLocation
+                                       [@cdr:id = $contactFID]/
+                                      OrganizationLocation/
+                                      Organization/
+                                      ParentOrganization">
+         <xsl:call-template   name = "getParentName"/>
+        </xsl:for-each>
+       </xsl:if>
+                                      
+       <!-- 
+       Pick up Specific Info if exists or Organization Info  
+       (Note:  The for-each loop exists merely to set the scope for the 
+               getPostalAddress, getPersonOrgPhone, ... templates)    
+       ================================================================= -->
+       <!-- 
+       If ProtocolSpecific Phone numbers exists we do NOT want to 
+       pick up missing information from the Person/Organization
+       record
+       This only needs to be considered for the LeadOrgPersonnel
+       (i.e. when the template is called as the Person template)
+       ========================================================== -->
+       <xsl:choose>
+        <xsl:when             test = "$myScope = 'Person'">
+         <xsl:choose>
+          <xsl:when           test = "../ProtocolSpecificContact/
+                                         PostalAddress">
+           <PostalAddress>
+            <xsl:apply-templates select = "../ProtocolSpecificContact/
+                                           PostalAddress"/>
+           </PostalAddress>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:for-each         select = "Person/PersonLocations/
+                                          OtherPracticeLocation
+                                           [@cdr:id = $contactFID]">
+            <xsl:call-template     name = "getPostalAddress">
+             <xsl:with-param       name = "orgAddressFID"
+                                 select = "$orgAddressFID"/>
+            </xsl:call-template>
+           </xsl:for-each>
+          </xsl:otherwise>
+         </xsl:choose>
+
+         <!-- If either the Phone or TollFreePhone exists we do not
+              display another phone number from the Person record. -->
+         <xsl:choose>         
+          <xsl:when                test = "../ProtocolSpecificContact/
+                                              TollFreePhone
+                                           or
+                                           ../ProtocolSpecificContact/
+                                              Phone">
+           <xsl:if                 test = "../ProtocolSpecificContact/
+                                              Phone">
+            <Phone>
+             <xsl:value-of       select = "../ProtocolSpecificContact/
+                                              Phone"/>
+            </Phone>
+           </xsl:if>
+           <xsl:if                 test = "../ProtocolSpecificContact/
+                                              TollFreePhone">
+            <TollFreePhone>
+             <xsl:value-of       select = "../ProtocolSpecificContact/
+                                              TollFreePhone"/>
+            </TollFreePhone>
+           </xsl:if>
+          </xsl:when>
+         <!-- The ProtocolSpecific phones do not exist, i.e pick up elsewhere-->
+          <xsl:otherwise>
+           <xsl:for-each         select = "Person/PersonLocations/
+                                           OtherPracticeLocation
+                                            [@cdr:id = $contactFID]">
+            <xsl:call-template     name = "getPersonOrgPhone">
+             <xsl:with-param       name = "orgAddressFID"
+                                 select = "$orgAddressFID"/>
+            </xsl:call-template>
+            <xsl:call-template     name = "getPersonOrgTollFreePhone">
+             <xsl:with-param       name = "orgAddressFID"
+                                 select = "$orgAddressFID"/>
+            </xsl:call-template>
+           </xsl:for-each>
+          </xsl:otherwise>
+         </xsl:choose>
+
+         <xsl:choose>
+          <xsl:when                test = "../ProtocolSpecificContact/
+                                              Email">
+           <Email>
+            <xsl:apply-templates select = "../ProtocolSpecificContact/
+                                              Email"/>
+           </Email>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:for-each         select = "Person/PersonLocations/
+                                           OtherPracticeLocation
+                                            [@cdr:id = $contactFID]">
+            <xsl:call-template     name = "getPersonOrgEmail">
+             <xsl:with-param       name = "orgAddressFID"
+                                 select = "$orgAddressFID"/>
+            </xsl:call-template>
+           </xsl:for-each>
+          </xsl:otherwise>
+         </xsl:choose>
+
+         <xsl:choose>
+          <xsl:when                test = "../ProtocolSpecificContact/
+                                              WebSite">
+           <WebSite>
+            <xsl:apply-templates select = "../ProtocolSpecificContact/
+                                              WebSite"/>
+           </WebSite>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:for-each         select = "Person/PersonLocations/
+                                           OtherPracticeLocation
+                                            [@cdr:id = $contactFID]">
+            <xsl:call-template     name = "getPersonOrgWebSite">
+             <xsl:with-param       name = "orgAddressFID"
+                                 select = "$orgAddressFID"/>
+            </xsl:call-template>
+           </xsl:for-each>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:when>
+
+        <xsl:otherwise>
+         <xsl:for-each           select = "Person/PersonLocations/
+                                           OtherPracticeLocation
+                                            [@cdr:id = $contactFID]">
+          <xsl:call-template       name = "getPostalAddress">
+           <xsl:with-param         name = "orgAddressFID"
+                                 select = "$orgAddressFID"/>
+          </xsl:call-template>
+          <xsl:call-template       name = "getPersonOrgPhone">
+           <xsl:with-param         name = "orgAddressFID"
+                                 select = "$orgAddressFID"/>
+          </xsl:call-template>
+          <xsl:call-template       name = "getPersonOrgTollFreePhone">
+           <xsl:with-param         name = "orgAddressFID"
+                                 select = "$orgAddressFID"/>
+          </xsl:call-template>
+          <xsl:call-template       name = "getPersonOrgEmail">
+           <xsl:with-param         name = "orgAddressFID"
+                                 select = "$orgAddressFID"/>
+          </xsl:call-template>
+          <xsl:call-template       name = "getPersonOrgWebSite">
+           <xsl:with-param         name = "orgAddressFID"
+                                 select = "$orgAddressFID"/>
+          </xsl:call-template>
+         </xsl:for-each>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:otherwise>
+     </xsl:choose>
+    </ContactDetail>
+   </Contact>
+  </ProtPerson>
  </xsl:template>
 
 
@@ -597,28 +905,37 @@
  ==================================================================== -->
  <xsl:template                   match = "ProtocolSites">
 
- <!-- Do not display this ProtocolSite if its parent is not active as well -->
- <xsl:if                          test = "(../LeadOrgProtocolStatuses/
+ <!-- Do not display this ProtocolSite if its parent is not 
+      active as well                                                  -->
+  <xsl:if                         test = "(../LeadOrgProtocolStatuses/
                                            CurrentOrgStatus
                                            [StatusName = 'Active'])">
+   <xsl:for-each                select = "OrgSiteID/Organization">
+    <!-- Only display active OrgSite                                        -->
+    <xsl:if                       test = "Status/CurrentStatus = 'Active'">
+     <ProtocolSite>
+      <xsl:attribute              name = "ref">
+       <xsl:value-of            select = "@cdr:ref"/>
+      </xsl:attribute>
+      <xsl:attribute              name = "sitetype">
+       <xsl:value-of            select = "'Organization'"/>
+      </xsl:attribute>
 
-  <xsl:for-each                 select = "OrgSite">
-   <!-- Only display active OrgSite                                        -->
-   <xsl:if                        test = "OrgSiteStatus = 'Active'">
-    <ProtocolSite                  ref = "{@ref}"
-                              sitetype = "Organization">
-     <SiteName>
-      <xsl:value-of             select = "OfficialName/Name"/>
-     </SiteName>
+      <SiteName>
+       <xsl:apply-templates     select = "OrganizationNameInformation/
+                                          OfficialName/Name"/>
+      </SiteName>
 
-     <!-- ProtPerson -->
-     <xsl:apply-templates       select = "OrgSiteContact/SpecificPerson|
-                                          OrgSiteContact/GenericPerson"/>
-     <!-- /ProtPerson -->
+      <!-- Begin: Create ProtPerson Element in Vendor Output -->
+      <xsl:apply-templates      select = "../OrgSiteContact/
+                                          SpecificPerson |
+                                          ../OrgSiteContact/
+                                          GenericPerson"/>
+      <!-- End:   Create ProtPerson Element in Vendor Output -->
 
-    </ProtocolSite>
-   </xsl:if>
-  </xsl:for-each>
+     </ProtocolSite>
+    </xsl:if>
+   </xsl:for-each>
 
   <!-- Added code to pick up private practice sites.  RMK 2002-09-06.      -->
   <xsl:for-each                 select = "PrivatePracticeSite">
@@ -633,88 +950,8 @@
   </xsl:if>
  </xsl:template>
 
- <!--
- ====================================================================
- Assemble the output for a specific person identified as the 
- contact for a participating organization.
- ==================================================================== -->
- <xsl:template               match = "SpecificPerson|PrivatePracticePerson">
-  <ProtPerson>
-   <xsl:attribute             name = "ref">
-    <xsl:value-of           select = "@ref"/>
-   </xsl:attribute>
 
-   <!-- If the status attribute exists the person's status is inactive
-        and a special note has to be displayed to this effect.         -->
-   <xsl:if                    test = "@status">
-    <xsl:attribute            name = "status">
-     <xsl:text>Inactive - Contact information may not be current</xsl:text>
-    </xsl:attribute>
-   </xsl:if>
-   <xsl:apply-templates     select = "PersonNameInformation"/>
-   <PersonRole>
-    <xsl:value-of           select = "Role"/>
-   </PersonRole>
-   <Contact>
-   <!-- This had been entered by Bob but although the DTD allows for a
-        status attribute for the Contact element it is not clear where 
-        this is coming from.  
-        The status attribute for the SpecificPerson template is identifying
-        instead if a person is active (default) or inactive (when set) 
-        Eliminating the attribute from the contact element.  VE, 10/08/02
-    <xsl:if                   test = "$status">
-     <xsl:attribute           name = "Status">
-      <xsl:value-of         select = "$status"/>
-     </xsl:attribute>
-    </xsl:if> -->
-
-    <!-- XXX The original filter didn't have this element here at all. -->
-    <ContactDetail>
-
-     <!-- Added at Lakshmi's request RMK 2002-09-08. -->
-     <xsl:for-each          select = "OrganizationAddressNames/
-                                      OrganizationName">
-      <OrganizationName>
-       <xsl:value-of        select = "."/>
-      </OrganizationName>
-     </xsl:for-each>
-
-     <PostalAddress>
-      <xsl:apply-templates  select = "Street"
-                              mode = "copy"/>
-      <xsl:apply-templates  select = "City"
-                              mode = "copy"/>
-      <xsl:apply-templates  select = "CitySuffix"
-                              mode = "copy"/>
-      <xsl:apply-templates  select = "PoliticalSubUnit_State"/>
-      <xsl:apply-templates  select = "Country"/>
-      <xsl:apply-templates  select = "PostalCode_ZIP"
-                              mode = "copy"/>
-      <xsl:apply-templates  select = "PostalCodePosition"
-                              mode = "copy"/>
-     </PostalAddress>
-
-     <!-- Phone with Public=No attribute is not to be published -->
-     <!-- ===================================================== -->
-     <xsl:apply-templates   select = "Phone"/> <!-- XXXX not tested (VE) -->
-     <xsl:apply-templates   select = "TollFreePhone"
-                              mode = "copy"/>
-
-     <!-- Email with Public=No attribute is not to be published -->
-     <!-- ===================================================== -->
-     <xsl:if                  test = "not(Email/@Public = 'No')">
-       <xsl:apply-templates select = "Email"/>
-     </xsl:if>
-     <xsl:apply-templates   select = "WebSite"
-                              mode = "copy"/>
-
-    </ContactDetail>
-
-   </Contact>
-  </ProtPerson>
- </xsl:template>
-
- <!--
+ <!-- *
  ====================================================================
  Assemble the output for a specific person identified as the 
  contact for a participating organization.
@@ -725,9 +962,8 @@
     <xsl:value-of           select = "PersonTitle"/>
    </PersonRole>
    <Contact>
-    <ContactName>
-     <xsl:value-of          select = "ContactName"/>
-    </ContactName>
+     <xsl:apply-templates   select = "GenericPersonContact/ContactName"
+                              mode = "copy"/>
 
     <ContactDetail>
 
@@ -739,232 +975,163 @@
       </OrganizationName>
      </xsl:for-each>
 
-     <PostalAddress>
-      <xsl:apply-templates  select = "Street"
-                              mode = "copy"/>
-      <xsl:apply-templates  select = "City"
-                              mode = "copy"/>
-      <xsl:apply-templates  select = "CitySuffix"
-                              mode = "copy"/>
-      <xsl:apply-templates  select = "PoliticalSubUnit_State"/>
-      <xsl:apply-templates  select = "Country"/>
-      <xsl:apply-templates  select = "PostalCode_ZIP"
-                              mode = "copy"/>
-      <xsl:apply-templates  select = "PostalCodePosition"
-                              mode = "copy"/>
-     </PostalAddress>
+     <xsl:apply-templates   select = "GenericPersonContact/ContactDetail/
+                                      PostalAddress"/>
 
-     <!-- Phone with Public=No attribute is not to be published
-          (Does it make sense to list a Generic Person with
-           Public=No?)  (VE)
-          ===================================================== -->
-     <xsl:apply-templates   select = "Phone"/> <!-- XXXX not tested (VE) -->
-     <xsl:apply-templates   select = "TollFreePhone"
-                              mode = "copy"/>
-
-     <!-- Email with Public=No attribute is not to be published -->
-     <!-- ===================================================== -->
-     <xsl:if                  test = "not(Email/@Public = 'No')">
-       <xsl:apply-templates select = "Email"/>
-     </xsl:if>
-     <xsl:apply-templates   select = "WebSite"
-                              mode = "copy"/>
+     <xsl:apply-templates   select = "GenericPersonContact/ContactDetail/
+                                      Phone"/>
+     <xsl:apply-templates   select = "GenericPersonContact/ContactDetail/
+                                      TollFreePhone"/>
+     <xsl:apply-templates   select = "GenericPersonContact/ContactDetail/
+                                      Email"/>
+     <xsl:apply-templates   select = "GenericPersonContact/ContactDetail/
+                                      WebSite"/>
     </ContactDetail>
    </Contact>
   </ProtPerson>
  </xsl:template>
 
 
- <!--
- ====================================================================
- Assemble the PersonNameInformation for a person.
- (Eliminating the StandardProfessionalSuffix element)
- ==================================================================== -->
- <xsl:template               match = "PersonNameInformation">
-   <PersonNameInformation>
-    <xsl:apply-templates    select = "GivenName"
-                              mode = "copy"/>
-    <xsl:apply-templates    select = "MiddleInitial"
-                              mode = "copy"/>
-    <xsl:apply-templates    select = "SurName"
-                              mode = "copy"/>
-    <xsl:apply-templates    select = "Prefix"
-                              mode = "copy"/>
-    <xsl:apply-templates    select = "GenerationSuffix"
-                              mode = "copy"/>
-    <ProfessionalSuffix>
-     <xsl:for-each          select = "ProfessionalSuffix/
-                                        StandardProfessionalSuffix |
-                                      ProfessionalSuffix/
-                                        CustomProfessionalSuffix">
-       <!-- Clean up the periods of the Custom Prof Suffix  -->
-       <xsl:choose>
-        <xsl:when             test = "name() = 'CustomProfessionalSuffix'">
-         <xsl:value-of      select = "translate(node(), '.', '')"/>
-        </xsl:when>
-        <xsl:otherwise>
-         <xsl:value-of      select = "."/>
-        </xsl:otherwise>
-       </xsl:choose>
-
-       <xsl:if                test = "position() != last()">
-         <xsl:text>, </xsl:text>
-       </xsl:if>
-     </xsl:for-each>
-    </ProfessionalSuffix>
-    <xsl:apply-templates    select = "NameFormat"
-                              mode = "copy"/>
-   </PersonNameInformation>
- </xsl:template>
 
 
  <!--
  ====================================================================
- Filter the ProtocolRelatedLinks information for the vendors
- Only the RelatedProtocols and RelatedWebsites elements are valid.
+ Named Templates
  ==================================================================== -->
- <xsl:template               match = "ProtocolRelatedLinks">
-  <xsl:if                     test = "RelatedProtocols | RelatedWebsites">
-   <ProtocolRelatedLinks>
-    <xsl:apply-templates    select = "RelatedProtocols | RelatedWebsites"
-                              mode = "copy"/>
-   </ProtocolRelatedLinks>
-  </xsl:if>
- </xsl:template>
-
-
- <!--
+ <!-- *
  ====================================================================
- Add citation IDs as attributes
+ Add the preferred Name of Terms to the output tree 
  ==================================================================== -->
- <xsl:template               match = "PublishedResults">
-    <xsl:apply-templates    select = "Citation"/>
- </xsl:template>
-
-
- <!--
- ====================================================================
- Add citation IDs as attributes
- ==================================================================== -->
- <xsl:template               match = "StudyCategory">
-   <StudyCategory>
-    <xsl:apply-templates    select = "StudyCategoryName"
-                              mode = "copy"/>
-    <xsl:apply-templates    select = "Intervention"
-                              mode = "copy"/>
-   </StudyCategory>
- </xsl:template>
-
-
-
- <!--
- ====================================================================
- Remove any comments from the output
- ==================================================================== -->
- <xsl:template               match = "PrimaryID | OtherID">
-   <xsl:element               name = "{name()}">
-    <xsl:apply-templates    select = "IDType"
-                              mode = "copy"/>
-    <xsl:apply-templates    select = "IDString"
-                              mode = "copy"/>
-   </xsl:element>
- </xsl:template>
-
-
-
- <!--
- ====================================================================
- Include the ProtocolSpecialCategory element in the output
- ==================================================================== -->
- <xsl:template               match = "ProtocolSpecialCategory">
-   <xsl:element               name = "{name()}">
-    <xsl:value-of           select = "SpecialCategory"/>
-   </xsl:element>
- </xsl:template>
-
- <!--
- ====================================================================
- Only display the e-mail if the attribute Public is missing or Yes.
- ==================================================================== -->
- <xsl:template               match = "Email">
-    <Email>
-     <xsl:value-of          select = "."/>
-    </Email>
- </xsl:template>
-
-
-
- <!--
- ====================================================================
- Process the Phone element:
- ++++++++++++++++++++++++++
- The denormalization filter provides three possible phone numbers, 
- the Phone, the TollFreePhone, and the OrgPhone.  The rule for 
- displaying the numbers are: 
- a) The Phone element is always to be displayed if it exists unless the 
-    Public=No attribute exists (see option (c) to handle this case).
- b) The TollFreePhone is always to be displayed if it exists.
- c) If the Phone element exists but the Public=No attribute exists 
-    as well and the TollFreePhone does not exist display the OrgPhone 
-    as the persons Phone element.
- ==================================================================== -->
- <xsl:template               match = "Phone">
-    <xsl:choose>
-     <xsl:when                test = "not(@Public = 'No')">
-       <xsl:apply-templates select = "."
-                              mode = "copy"/>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:choose>
-       <xsl:when              test = "../TollFreePhone">
-        <!-- Do not display Phone element since TollFreePhone exists -->
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:if                test = "../OrgPhone">
-         <Phone>
-          <xsl:value-of       select = "../OrgPhone"/>
-         </Phone>
-        </xsl:if>
-       </xsl:otherwise>
-      </xsl:choose>
-     </xsl:otherwise>
-    </xsl:choose>
- </xsl:template>
-
-
-
-
- <!--
- ====================================================================
- Add citation IDs as attributes
- ==================================================================== -->
- <xsl:template               match = "Citation">
-  <PublishedResults>
-    <xsl:if                   test = "MedlineID">
-     <xsl:attribute           name = "MedlineID">
-      <xsl:value-of         select = "MedlineID"/>
-     </xsl:attribute>
-    </xsl:if>
-    <xsl:if                   test = "PMID">
-     <xsl:attribute           name = "PMID">
-      <xsl:value-of         select = "PMID"/>
-     </xsl:attribute>
-    </xsl:if>
-    <xsl:value-of           select = "CitationText"/>
-  </PublishedResults>
- </xsl:template>
-
-
- <!--
- ====================================================================
- Template for inline Note elements
- Could be dropped when switch to mode="copy" is completed.
- ==================================================================== -->
- <xsl:template                   match = "Note">
-  <xsl:element                    name = "Note">
-   <xsl:apply-templates           mode = "copy"/>
+ <xsl:template               name = "getTerm">
+  <xsl:param                 name = "elementName"/>
+  <xsl:element               name = "{$elementName}">
+    <xsl:attribute           name = "ref">
+     <xsl:value-of         select = "Term[1]/@cdr:ref"/>
+    </xsl:attribute>
+    <xsl:apply-templates   select = "Term/PreferredName[1]"/>
   </xsl:element>
  </xsl:template>
+
+
+
+ <!--
+ ====================================================================
+ Templates for elements that are being used for denormalization
+ ==================================================================== -->
+ <!-- *
+ ====================================================================
+ Add the parents of the Terms to the output tree
+ ==================================================================== -->
+ <xsl:template              match = "Term">
+  <xsl:param                 name = "parentName"/>
+  <xsl:element               name = "{$parentName}">
+    <xsl:attribute           name = "ref">
+     <xsl:value-of         select = "@cdr:ref"/>
+    </xsl:attribute>
+    <xsl:apply-templates   select = "PreferredName"/>
+  </xsl:element>
+
+  <xsl:apply-templates     select = "Term">
+   <xsl:with-param           name = "parentName"
+                           select = "$parentName"/>
+  </xsl:apply-templates>
+ </xsl:template>
+
+
+
+
+
+ <!--
+ ====================================================================
+ Templates for elements that are being dropped or globally 
+ renaming attribute names.
+ ==================================================================== -->
+ <!--
+ ====================================================================
+ Drop Comment with and without mode = "copy".
+ It doesn't appear to be used without mode="copy" but it's safe to do.
+ ==================================================================== -->
+ <xsl:template               match = "Comment"/>
+ <xsl:template               match = "Comment"
+                              mode = "copy"/>
+
+
+ <!--
+ ====================================================================
+ Drop PdqKey with and withoiut mode = "copy".
+ It doesn't appear to be used without mode="copy" but it's safe to do.
+ ==================================================================== -->
+ <xsl:template               match = "@PdqKey"/>
+ <xsl:template               match = "@PdqKey"
+                              mode = "copy"/>
+
+
+ <!--
+ ====================================================================
+ Drop the cdr namespace in cdr:id with mode = "copy".
+ ==================================================================== -->
+ <xsl:template               match = "@cdr:id"
+                              mode = "copy">
+  <xsl:attribute              name = "id">
+   <xsl:value-of            select = "."/>
+  </xsl:attribute>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Drop the cdr namespace in cdr:ref with mode = "copy".
+ ==================================================================== -->
+ <xsl:template               match = "@cdr:ref"
+                              mode = "copy">
+  <xsl:attribute              name = "ref">
+   <xsl:value-of            select = "."/>
+  </xsl:attribute>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Drop the cdr namespace in cdr:href with mode = "copy".
+ ==================================================================== -->
+ <xsl:template               match = "@cdr:href"
+                              mode = "copy">
+  <xsl:attribute              name = "href">
+   <xsl:value-of            select = "."/>
+  </xsl:attribute>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Rename the Protocol Title Type attribute to Audience.
+ ==================================================================== -->
+ <xsl:template               match = "ProtocolTitle/@Type"
+                              mode = "copy">
+  <xsl:attribute              name = "Audience">
+   <xsl:value-of            select = "."/>
+  </xsl:attribute>
+ </xsl:template>
+
+
+
+<!-- ==================================================================== 
+     Temporarily drop @Compact until June, 2003.
+     ==================================================================== -->
+  <xsl:template              match = "OrderedList/@Compact"
+                              mode = "copy"/>
+    
+
+ <!-- 
+ =====================================================================
+ Suppress nodes with or without copy mode that are not to be displayed
+ in vendor output.
+ ===================================================================== -->
+ <xsl:template               match = "PoliticalSubUnitShortName"/>  
+  
+ <xsl:template               match = "PoliticalSubUnitShortName"
+                              mode = "copy"/>
+
 
 </xsl:transform>
 ]]>
