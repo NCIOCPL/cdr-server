@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.3 2000-10-31 15:46:13 mruben Exp $
+ * $Id: CdrVersion.cpp,v 1.4 2000-11-20 15:23:32 mruben Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/10/31 15:46:13  mruben
+ * added tests for authorization
+ *
  * Revision 1.2  2000/10/25 19:06:34  mruben
  * fixed date representation
  *
@@ -114,7 +117,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
     if (comment != NULL)
     {
       string update = "UPDATE checkout "
-                      "SET GETDATE(), version = ?, comment = ? "
+                      "SET dt_in = GETDATE(), version = ?, comment = ? "
                       "WHERE id = ? and dt_in is NULL";
       cdr::db::PreparedStatement up = conn.prepareStatement(update);
       up.setInt(1, abandon ? Int(true) : version);
