@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.34 2001-04-13 12:29:26 bkline Exp $
+# $Id: Makefile,v 1.35 2001-09-25 14:22:02 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.34  2001/04/13 12:29:26  bkline
+# Added CdrActions.obj.
+#
 # Revision 1.33  2001/04/08 22:44:01  bkline
 # Added CdrGetTree.obj.
 #
@@ -144,6 +147,7 @@ HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrDoc.h \
         $(CDRINC)/CdrDom.h \
         $(CDRINC)/CdrException.h \
+        $(CDRINC)/CdrFilter.h \
         $(CDRINC)/CdrGetDoc.h \
         $(CDRINC)/CdrInt.h \
         $(CDRINC)/CdrLink.h \
@@ -199,6 +203,7 @@ OBJS   =CdrCommand.obj \
         CdrDocTypes.obj \
         CdrShutdown.obj \
         CdrGetTree.obj \
+        CdrMergeProt.obj \
         CdrDOMtoString.obj
 
 LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
