@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.4 2001-05-25 02:31:40 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.5 2001-06-12 19:54:16 ameyer Exp $
  *
  */
 
@@ -74,32 +74,53 @@ namespace cdr {
              */
             void updateQueryTerms();
 
+            /**
+             * Tell whether a parse tree is available for the (possibly
+             * filtered) XML in the document.
+             *
+             * If the document has not been filtered but needs to be, it
+             * will be so filtered.  If it has not yet been parsed, it
+             * will be parsed.
+             *
+             *  @return             true=document element is available.
+             *                      false=malformed document, could not parse.
+             */
+            bool parseAvailable();
+
             // Accessors
             int getId()                    {return Id;}
             int getDocType()               {return DocType;}
             cdr::String getTextId()        {return TextId;}
             cdr::String getValStatus()     {return ValStatus;}
             cdr::String getValDate()       {return ValDate;}
-            cdr::String getApproved()      {return Approved;}
+            cdr::String getActiveStatus()  {return ActiveStatus;}
             cdr::String getTextDocType()   {return TextDocType;}
             cdr::String getTitle()         {return Title;}
             cdr::String getXml()           {return Xml;}
             cdr::String getComment()       {return Comment;}
+            cdr::String getParseErrMsg()   {return parseErrMsg;}
             cdr::db::Connection& getConn() {return docDbConn;}
+            cdr::dom::Element& getDocumentElement() {return docElem;}
 
         private:
             // Values corresponding to document table data
-            int Id;                  // Numeric form of document id
-            int DocType;             // Internal key to document type
-            cdr::String TextId;      // With "CDR00..." prefix
-            cdr::String ValStatus;   // V/I/U
-            cdr::String ValDate;     // Datetime
-            cdr::String Approved;    // Y/N
-            cdr::String TextDocType; // Form used in document tag
-            cdr::String Title;       // External title
-            cdr::String Xml;         // Actual document as XML, not CDATA
-            cdr::Blob   BlobData;    // Associated non-XML, if any
-            cdr::String Comment;     // Free text
+            int Id;                     // Numeric form of document id
+            int DocType;                // Internal key to document type
+            cdr::String TextId;         // With "CDR00..." prefix
+            cdr::String ValStatus;      // V/I/U
+            cdr::String ValDate;        // Datetime
+            cdr::String ActiveStatus;   // Y/N
+            cdr::String TextDocType;    // Form used in document tag
+            cdr::String Title;          // External title
+            cdr::String Xml;            // Actual document as XML, not CDATA
+            cdr::String filteredXml;    // After any filtering of insertion
+                                        //  and deletion markup
+            cdr::Blob   BlobData;       // Associated non-XML, if any
+            cdr::String Comment;        // Free text
+            cdr::dom::Element docElem;  // Top node of a parsed document
+            bool parsed;                // True=parse was attempted
+            bool malformed;             // True=parse failed
+            cdr::String parseErrMsg;    // Error message from parse
 
             // Connection to the database
             cdr::db::Connection& docDbConn;
