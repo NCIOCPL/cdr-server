@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.16 2003-08-12 12:50:18 bkline Exp $
+ * $Id: CreateLogins.sql,v 1.17 2003-11-10 13:42:41 bkline Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2003/08/12 12:50:18  bkline
+ * Added grant for new zipcode table.
+ *
  * Revision 1.15  2003/04/08 20:32:16  bkline
  * Added rights to query table for CdrGuest.
  *
@@ -371,4 +374,12 @@ GO
 GRANT SELECT ON zipcode TO CdrGuest
 GO
 GRANT SELECT, UPDATE, INSERT ON query TO CdrGuest
+GO
+GRANT SELECT ON ctgov_import TO CdrGuest
+GO
+GRANT SELECT ON ctgov_disposition TO CdrGuest
+GO
+GRANT SELECT ON ctgov_import_job TO CdrGuest
+GO
+GRANT SELECT ON ctgov_import_event TO CdrGuest
 GO
