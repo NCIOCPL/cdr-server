@@ -57,42 +57,55 @@
   </HTML>
 </xsl:template>
 
-<!-- =====================================================================
-       Produce the HTML BODY 
-     ===================================================================== -->
-    <xsl:template              match = "Summary">
-     <xsl:if                    test = "//SummaryAudience='Patients'">
-      <BODY>
-      <xsl:apply-templates    select = "SummaryTitle" 
+ <!-- 
+ =====================================================================
+ Produce the HTML BODY 
+ ===================================================================== -->
+ <xsl:template                 match = "Summary">
+  <xsl:choose>
+   <xsl:when                    test = "//SummaryAudience='Patients'
+                                        and
+                                        //KeyPoint">
+    <BODY>
+     <xsl:apply-templates     select = "SummaryTitle" 
                                 mode = "TOC"/>  
     
-   <!--======================================================
-         Display summary type and audience 
-       ======================================================-->
-      <xsl:for-each           select = "SummaryMetaData">
-       <h3>
-        <xsl:value-of         select = "concat(SummaryType,
+     <!--
+     ======================================================
+     Display summary type and audience 
+     ======================================================-->
+     <xsl:for-each            select = "SummaryMetaData">
+      <h3>
+       <xsl:value-of          select = "concat(SummaryType,
                                           ' - ', SummaryAudience)"/>
-       </h3>
-      </xsl:for-each>
+      </h3>
+     </xsl:for-each>
 
-      <xsl:if                    test = "SummarySection"> 
-       <ul Class="lnone">
+     <xsl:if                     test = "SummarySection"> 
+      <ul Class="lnone">
        <xsl:for-each          select = "SummarySection">
         <xsl:call-template      name = "TocSummarySection">
          <xsl:with-param        name = "level"
                               select = "1"/>
         </xsl:call-template>  
        </xsl:for-each>
-       </ul>
-      </xsl:if>
-      <hr/>
+      </ul>
+     </xsl:if>
+     <hr/>
 
-      <xsl:apply-templates/>
+     <xsl:apply-templates/>
             
-     </BODY>
-     </xsl:if>  
-    </xsl:template>
+    </BODY>
+   </xsl:when>
+   <xsl:otherwise>
+    <BODY>
+     <h2>ERROR:</h2>
+     <h3>Summary Patient QC Report valid for reformatted patient summaries 
+         only</h3>
+    </BODY>
+   </xsl:otherwise>
+  </xsl:choose>  
+ </xsl:template>
 
    
 
