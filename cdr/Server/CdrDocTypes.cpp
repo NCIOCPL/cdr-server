@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDocTypes.cpp,v 1.2 2001-01-17 21:50:33 bkline Exp $
+ * $Id: CdrDocTypes.cpp,v 1.3 2001-02-28 02:36:18 bkline Exp $
  *
  * Support routines for CDR document types.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2001/01/17 21:50:33  bkline
+ * Added CdrAdd/Mod/Del/GetDocType commands.
+ *
  * Revision 1.1  2001/01/16 21:11:52  bkline
  * Initial revision
  */
@@ -171,7 +174,7 @@ cdr::String cdr::addDocType(Session&          session,
     cdr::String schema;
     cdr::String comment(true);  // default to NULL
     cdr::dom::Node child = node.getFirstChild();
-    while (schema.empty() && child != 0) {
+    while (child != 0) {
         if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String name = child.getNodeName();
             if (name == L"DocSchema") {
@@ -292,7 +295,7 @@ cdr::String cdr::modDocType(Session&          session,
     cdr::String schema;
     cdr::String comment(true);  // default to NULL
     cdr::dom::Node child = node.getFirstChild();
-    while (schema.empty() && child != 0) {
+    while (child != 0) {
         if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String name = child.getNodeName();
             if (name == L"DocSchema") {
