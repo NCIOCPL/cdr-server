@@ -17,9 +17,12 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.3 2001-09-25 14:55:07 ameyer Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.4 2001-09-28 01:20:43 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2001/09/25 14:55:07  ameyer
+ * Many new features and functions related to link target checking.
+ *
  * Revision 1.2  2001/04/13 16:23:04  ameyer
  * Changed database structure for link properties table, required a
  * change to the select statement.
@@ -652,7 +655,6 @@ bool cdr::link::LinkChkPair::evalRule (
          ((cdr::link::LinkChkRelation *) rNode)->evalRelation (dbConn, docId));
 }
 
-#if 0
 /*
  * Get SQL WHERE clause for a particular link source, given the
  * document type and source element for the link.
@@ -694,10 +696,11 @@ bool getLinkTargetRestrictions (
     // If we got a rule, convert it to a SQL WHERE clause
     cdr::String rule = rs.getString (1);
     cdr::link::LinkChkTargContains *ruleTree = findOrMakeRuleTree (rule);
+    cdr::link::LinkChkPair         *treeTop  = ruleTree->getTreeTop();
+    treeTop->makeWhere (sql, tagColumn, valColumn);
 
-    XXXX LEFT OFF HERE, NOT SURE WE NEED THIS XXXX
+    return true;
 }
-#endif
 
 /*
  * Generate SQL for a complete parse tree - to be evaluated separately.
