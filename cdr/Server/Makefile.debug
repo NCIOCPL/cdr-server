@@ -1,0 +1,204 @@
+#--------------------------------------------------------------------------
+#
+# $Id: Makefile.debug,v 1.1 2001-12-14 15:21:31 bkline Exp $
+#
+# Rules for building debugging version of CDR server.
+#
+# $Log: not supported by cvs2svn $
+#--------------------------------------------------------------------------
+
+#--------------------------------------------------------------------------
+# Makefile variables
+#--------------------------------------------------------------------------
+
+CDR    =/cdr
+XML4C  =/usr/xml4c
+SABLOT =/bkline/sablot
+REGEX  =/usr/regex
+CDRINC =$(CDR)/include
+INC    =-I$(XML4C)/include -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)/include
+CFLAGS =$(INC) -W3 -GX -MTd -GR -Zi -nologo -DHEAPDEBUG -D_DEBUG
+LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
+	/LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/lib /DEBUG
+# Only use these when you have lots of time on your hands.
+#CC     =nmcl
+#LN     =nmlink
+CC     =cl
+LN     =link
+DOC    =../../InetPub/wwwtest/cdr/
+DOCS   =$(DOC)default.htm
+CDRLIB =$(CDR)/lib/cdrdbg.lib
+CDRBIN =$(CDR)/bin
+CDRSVR =$(CDRBIN)/CdrServer.exe
+SERVICE=$(CDRBIN)/CdrService.exe
+SVC_CFLAGS =-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT -D_DEBUG \
+            -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MTd
+HDRS   =$(CDRINC)/CdrBlob.h \
+        $(CDRINC)/CdrCommand.h \
+        $(CDRINC)/CdrDbConnection.h \
+        $(CDRINC)/CdrDbPreparedStatement.h \
+        $(CDRINC)/CdrDbResultSet.h \
+        $(CDRINC)/CdrDbStatement.h \
+        $(CDRINC)/CdrDoc.h \
+        $(CDRINC)/CdrDom.h \
+        $(CDRINC)/CdrException.h \
+        $(CDRINC)/CdrFilter.h \
+        $(CDRINC)/CdrGetDoc.h \
+        $(CDRINC)/CdrInt.h \
+        $(CDRINC)/CdrLink.h \
+        $(CDRINC)/CdrLinkProcs.h \
+        $(CDRINC)/CdrLock.h \
+        $(CDRINC)/CdrLog.h \
+        $(CDRINC)/CdrParserInput.h \
+        $(CDRINC)/CdrRegEx.h \
+        $(CDRINC)/CdrReport.h \
+        $(CDRINC)/CdrSearch.h \
+        $(CDRINC)/CdrSession.h \
+        $(CDRINC)/CdrString.h \
+        $(CDRINC)/CdrValidateDoc.h \
+        $(CDRINC)/CdrVersion.h \
+        $(CDRINC)/CdrXsd.h \
+        $(CDRINC)/catchexp.h
+LIBOBJS=CdrString.obj \
+        CdrXsd.obj \
+        CdrDom.obj \
+        CdrDbConnection.obj \
+        CdrDbStatement.obj \
+        CdrDbPreparedStatement.obj \
+        CdrDbResultSet.obj \
+        CdrLog.obj \
+        CdrSession.obj \
+        CdrParserInput.obj \
+        CdrRegEx.obj \
+        catchexp.obj
+OBJS   =CdrCommand.obj \
+        CdrLogon.obj \
+        CdrLogoff.obj \
+        CdrCheckAuth.obj \
+        CdrAddGrp.obj \
+        CdrGetGrp.obj \
+        CdrModGrp.obj \
+        CdrDelGrp.obj \
+        CdrListGrps.obj \
+        CdrAddUsr.obj \
+        CdrGetUsr.obj \
+        CdrModUsr.obj \
+        CdrDelUsr.obj \
+        CdrListUsrs.obj \
+        CdrActions.obj \
+        CdrDoc.obj \
+        CdrValidateDoc.obj \
+        CdrLink.obj \
+        CdrLinkProcs.obj \
+        CdrSearch.obj \
+        CdrSearch_tab.obj \
+        CdrGetDoc.obj \
+        CdrFilterDebug.obj \
+        CdrVersion.obj \
+        CdrReport.obj \
+        CdrDocTypes.obj \
+        CdrShutdown.obj \
+        CdrGetTree.obj \
+        CdrMergeProt.obj \
+        CdrDOMtoString.obj \
+        HeapDebug.obj
+
+LIBS   =cdrdbg.lib xerces-c_1.lib sablot.lib \
+        wsock32.lib odbc32.lib user32.lib 
+
+#--------------------------------------------------------------------------
+# File suffixes examined for rule interpretation
+#--------------------------------------------------------------------------
+.SUFFIXES:
+.SUFFIXES: .obj .c .cpp
+
+#--------------------------------------------------------------------------
+# Targets
+#--------------------------------------------------------------------------
+all: init CdrServer.exe
+
+#--------------------------------------------------------------------------
+# Initialization, saving two generations of old errors
+#--------------------------------------------------------------------------
+init:
+	-cp errs.1 errs.2
+	-cp errs errs.1
+	-rm -f errs
+
+#--------------------------------------------------------------------------
+# Rule for building CDR server.
+#--------------------------------------------------------------------------
+
+CdrServer.exe: CdrServer.obj $(OBJS) $(CDRLIB)
+	$(LN) $(LFLAGS) /out:CdrServer.exe CdrServer.obj $(OBJS) $(LIBS) >> errs
+
+#--------------------------------------------------------------------------
+# Rule for building CDR service.
+#--------------------------------------------------------------------------
+
+$(SERVICE): CdrService.obj service.obj
+	$(CC) -MT -Fe$(SERVICE) CdrService.obj service.obj advapi32.lib
+
+CdrService.obj: CdrService.c service.h
+	$(CC) -c $(SVC_CFLAGS) CdrService.c
+
+service.obj: service.c service.h
+	$(CC) -c $(SVC_CFLAGS) service.c
+
+#--------------------------------------------------------------------------
+# Rule for building test client.
+#--------------------------------------------------------------------------
+
+CdrTestClient.exe: CdrTestClient.cpp ../lib/cdr.lib
+	$(CC) $(CFLAGS) CdrTestClient.cpp ../lib/cdr.lib wsock32.lib
+
+#--------------------------------------------------------------------------
+# We're not doing dependency checking.
+# Any change to any header file recompiles all the source.
+#--------------------------------------------------------------------------
+$(OBJS): $(HDRS)
+
+$(LIBOBJS): $(HDRS)
+
+CdrServer.obj: CdrServer.cpp $(HDRS)
+
+#--------------------------------------------------------------------------
+# Rule for building CDR library.
+#--------------------------------------------------------------------------
+$(CDRLIB): $(LIBOBJS)
+	lib /OUT:$(CDRLIB) $(LIBOBJS) >> errs
+
+#--------------------------------------------------------------------------
+# For Bison, we're not attempting a generic rule
+#--------------------------------------------------------------------------
+BISON_SIMPLE=/etc/bison.cdrtest
+CdrSearch_tab.obj: CdrSearch_tab.c $(HDRS)
+	$(CC) $(CFLAGS) -c -TP CdrSearch_tab.c >> errs
+
+CdrSearch_tab.c: CdrSearch.y $(HDRS)
+	bison -p CdrSearch CdrSearch.y
+
+#--------------------------------------------------------------------------
+# Rule for building CDR programmer documentation.
+#--------------------------------------------------------------------------
+CdrDocs: $(DOCS)
+
+$(DOCS): $(HDRS)
+	ccdoc -html $(DOC) -imgurl images/ $(HDRS)
+	cp -f $(DOC)ccdoc.index.html $(DOCS)
+
+#--------------------------------------------------------------------------
+# Generic rules for object files
+#--------------------------------------------------------------------------
+.c.obj:
+	$(CC) -c $(CFLAGS) $*.c >> errs
+
+.cpp.obj:
+	$(CC) -c $(CFLAGS) $*.cpp >> errs
+
+
+#--------------------------------------------------------------------------
+# Cleanup rules.
+#--------------------------------------------------------------------------
+clean:
+	rm -f *.obj *~ *.bak CdrSearch_tab.c CdrSearch.tab.c ccdoc.ctf
