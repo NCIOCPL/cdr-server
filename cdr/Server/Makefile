@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.53 2002-03-07 18:15:54 bkline Exp $
+# $Id: Makefile,v 1.54 2002-03-09 04:20:55 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.53  2002/03/07 18:15:54  bkline
+# Update for new version of regex package.
+#
 # Revision 1.52  2002/02/12 23:03:27  ameyer
 # Eliminated reference to custom bison.cdrtest parser.  Moved new parser to
 # /etc/bison.simple instead.
@@ -190,7 +193,7 @@ SABLOT =$(DRV)/usr/sablot
 REGEX  =$(DRV)/usr/regex
 CDRINC =.
 INC    =-I$(XML4C)/include -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)
-CFLAGS =$(INC) -W3 -GX -MD -GR -nologo # -Zi
+CFLAGS =$(INC) -W3 -GX -MD -GR -D_NDEBUG -nologo # -Zi
 LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
         /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/vc6 # /DEBUG
 CC     =cl
