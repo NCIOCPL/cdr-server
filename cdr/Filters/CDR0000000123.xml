@@ -7,7 +7,6 @@
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--Filter written by C.Burg - 3/13/2002 -->
-
 <!-- ================================================================
            Filter to generate a Protocol Administrative QC Report
      ================================================================ -->
@@ -15,6 +14,8 @@
   <xsl:transform       xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                          version="1.0"
                        xmlns:cdr="cips.nci.nih.gov/cdr">
+    <xsl:include    href = "cdr:name:InLine Markup Formatter"/>
+
    <xsl:output method="html"/>
 
 <!-- ===============================================================
@@ -26,8 +27,8 @@
  
    <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
     <HTML>
-    <HEAD>
-    <xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
+       <xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
+      <HEAD>
 
     <TITLE><xsl:value-of select="document('cdrutil:/docid')"/>&#xa0;&#xa0;<xsl:value-of select="substring-before($cdrmydoc/CdrDocCtl/DocTitle,';')"/></TITLE>
      <!--
@@ -45,24 +46,90 @@
  
  <b><font size='3'><center><xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/></center></font></b><br />
 <b><xsl:value-of select="document('cdrutil:/docid')"/></b><br />
-
+  <xsl:apply-templates/>
+<!-- ===================================================================
+      Display Creation Date,User, and Modification Date and User
+     ================================================================== -->
+<br />
+<b><font size='4'>Record Information</font></b><br /><br />
+<xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
+ <table width='90%'>
+  <tr>
+  <th align='left' cellpadding='0' width='40%'>
+  <b>
+  <xsl:text>Date Created
+  </xsl:text>
+  </b>
+  </th>
+  <td width='60%'>
+<xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/Date"/>
+  </td>
+  </tr>
+  <tr>
+ <th align='left' width='40%'>
+<b>
+<xsl:text>User</xsl:text>
+</b>
+</th>
+<td width='60%'>
+<xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/User"/>
+ </td>
+ </tr>
+ <tr>
+  <th align='left' width='40%'>
+   <b>
+  <xsl:text>Date Modfied</xsl:text>
+  </b>
+ </th>
+ <td width='60%'>
+ <xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/Date"/>
+ </td>
+ </tr>
+ <tr>
+ <th align='left' width='40%'>
+<b>
+<xsl:text>User</xsl:text>
+</b>
+</th>
+<td width='60%'>
+<xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/User"/>
+ </td>
+ </tr>
+ </table>
+ </BODY>
+ </xsl:template>
+  
+ 
 <!-- ==================================================================
               Display the Professional and Original Title
      ================================================================== -->
- 
+  <xsl:template       match="ProtocolTitle">
+   <xsl:if            test = "@Type='Professional'">
   <b><font size='4'>Professional Title</font></b><br />
-  <xsl:apply-templates  select="ProtocolTitle[@Type='Professional']"/><br /><br />
-  
+  <xsl:value-of  select="."/><br /><br />
+  </xsl:if>
+   <xsl:if            test = "@Type='Original'">
     <b><font size='4'>Original Title</font></b><br />
-  <xsl:apply-templates  select="ProtocolTitle[@Type='Original']"/><br /><br />
+  <xsl:value-of  select="."/><br /><br />
+  </xsl:if>
+ </xsl:template>
 
 
 <!-- ==============================================================
                Display the Identification Information
      =============================================================== -->
+     
 
-  <b><font size='4'>Identification Information</font></b><br /><br />
- <table width='90%'>
+
+  <!-- ==============================================================
+               Display PDQ Key
+     =============================================================== -->
+  
+  
+   <xsl:template     match = "PdqKey">
+    <b><font size='4'>Identification Information</font></b><br /><br />
+
+  <table width='90%'>
   <tr>
   <th align='left' width='40%'>
 <b><font size='3'>PDQ ID
@@ -70,10 +137,21 @@
  </b>
 </th>
  <td width='60%'>
- <xsl:apply-templates               select="PdqKey"/>
+ <xsl:value-of                select="."/>
  </td>
  </tr>
- 
+ </table>
+ </xsl:template>
+
+ <!-- ================================================================
+         Display the Primary ID and Other IDs and ID Types, Comments
+      =============================================================== -->
+
+  <xsl:template   match  = "PrimaryID">
+  <xsl:if         test = "not(../../PdqKey)">
+   <b><font size='4'>Identification Information</font></b><br /><br />
+  </xsl:if>
+  <table width = '90%'>
   <tr>
   <th align='left' width='40%'>
   <b><font size='3'>Primary ID
@@ -81,7 +159,7 @@
   </b>
   </th>
   <td width='60%'>
- <xsl:apply-templates select="ProtocolIDs/PrimaryID/IDString"/><br />
+ <xsl:apply-templates select="IDString"/><br />
  </td>
  </tr>
  </table>
@@ -90,11 +168,12 @@
    </b>
    <br />
 
-<xsl:apply-templates          select="ProtocolIDs/PrimaryID/Comment"/>
+<xsl:apply-templates          select="Comment"/>
     <br /><br />
- 
- <xsl:for-each                select="ProtocolIDs/OtherID">
-   <table width='90%'>
+ </xsl:template>
+
+  <xsl:template               match = "OtherID"> 
+  <table width='90%'>
    <tr align='left' width='40%'>
    <th>
   <b><font size='3'>Other ID
@@ -133,15 +212,45 @@
   </b>
  <br />
 <xsl:apply-templates          select="Comment"/>
- <br />
-</xsl:for-each>
-<br /><br />
+  <br />
+  <br />
+  <br />
+  </xsl:template>
+  
+  <!-- ===============================================================
+                  Display the Protocol Sponsors
+     ================================================================ -->
+      <xsl:template   match = "ProtocolSponsors">
+     <b><font size='4'>Protocol Sponsors</font></b>
+     <br /><br />
+      <!--<xsl:for-each                 select="SponsorName">-->
+           <table width='90%'>
+           <tr>
+           <th align='left' width='40%'>
+           <b><font size='3'>Name
+           </font>
+          </b>
+          </th>
+          <td width='60%'>
+         <xsl:value-of             select="SponsorName"/>
+         </td>
+         </tr>
+         </table>         
+         <b><font size='3'>Comments</font></b>
+              <br />
+        <xsl:value-of              select="Comment"/>
+      <!--  </xsl:for-each>-->
+            <br />
+        </xsl:template>
+
+ 
+
 
    <!-- =============================================================
                Display Protocol Special Category
        ============================================================ -->
 
-           
+              <xsl:template   match = "ProtocolSpecialCategory">
               <xsl:if test="not(preceding-sibling::ProtocolSpecialCategory)">
               <b>
               <font size='4'>
@@ -157,30 +266,30 @@
               </font></b>
               </th>
               <td width='60%'>
-              <xsl:value-of      select="ProtocolSpecialCategory/
-                                         SpecialCategory"/>              
+              <xsl:value-of      select="SpecialCategory"/>
+                                                      
               </td>
               </tr>
               </table>
               <b><font size='3'>Comment
               </font></b><br />
-              <xsl:value-of          select="ProtocolSpecialCategory/
-                                             Comment"/>
+              <xsl:value-of          select="Comment"/>
+                                            
                <br />
                <br />
-          
-                           
-              
-              
-
+              </xsl:template>
+  
+ 
+      
 
 <!-- ============================================================
               Display the funding information
      ============================================================ -->
- 
+      <xsl:template    match = "FundingInfo">
+       <br />
       <b><font size='4'>Funding Information</font></b>
        <br /><br />
-      <xsl:for-each            select="FundingInfo/NIHGrantContract">
+      <xsl:for-each            select="NIHGrantContract">
       <table width='90%'>
       <tr>
       <th align='left' width='40%'>
@@ -213,7 +322,7 @@
        <br />
        <br />
        <b><font size='3'>Other Grant Contract Information</font></b>
-     <xsl:for-each   select="FundingInfo/OtherGrantContractInfo"> 
+     <xsl:for-each   select="OtherGrantContractInfo"> 
      <table width='90%'>
       <tr>
       <th align='left' width='40%'>
@@ -234,17 +343,17 @@
     <br />                                      
     </xsl:for-each>
     <br /><br />
-
+   </xsl:template>
    
 
 <!-- ================================================================
                    Display the Protocol Source
      ================================================================= -->
 
-
+           <xsl:template    match = "ProtocolSource">
            <b><font size='4'>Protocol Source</font></b>
                    <br /><br />
-          <xsl:for-each               select="ProtocolSources/ProtocolSource">
+          <!--<xsl:for-each               select="ProtocolSource">-->
             <table width='90%'>
             <tr>
            <th align='left' width='40%'>
@@ -267,25 +376,26 @@
           </td>
           </tr>
          </table>
-         </xsl:for-each>
+       <!--  </xsl:for-each>-->
            <br />
+        </xsl:template>
 
 <!-- ====================================================================
                 Display the Protocol Approval Information
      ===================================================================== -->
-
+   
+        <xsl:template     match = "ProtocolApproval">
        <b><font size='4'>Protocol Approval</font></b>
                        <br /><br />
-       <xsl:for-each              select="ProtocolApproval">
-           <table width='90%'>
-           <tr>
-           <th align='left' width='40%'>
-           <b><font size='3'>Review ApprovalType
-           </font>
-          </b>
-          </th>
-          <td width='40%'>
-        <xsl:value-of            select="ReviewApprovalType"/><br />
+        <table width='90%'>
+         <tr>
+         <th align='left' width='40%'>
+         <b><font size='3'>Review ApprovalType
+         </font>
+         </b>
+         </th>
+         <td width='40%'>
+         <xsl:value-of            select="ReviewApprovalType"/><br />
         </td>
         </tr>
           <tr>
@@ -304,64 +414,37 @@
   </b>
    <br />
    <xsl:apply-templates select="Comment"/>
-   </xsl:for-each>
-         <br /><br />
-
-<!-- ===============================================================
-                  Display the Protocol Sponsors
-     ================================================================ -->
-
-     <b><font size='4'>Protocol Sponsors</font></b>
-     <br /><br />
-      <xsl:for-each                 select="ProtocolSponsors/SponsorName">
-           <table width='90%'>
-           <tr>
-           <th align='left' width='40%'>
-           <b><font size='3'>Name
-           </font>
-          </b>
-          </th>
-          <td width='60%'>
-         <xsl:value-of             select="."/>
-         </td>
-         </tr>
-         </table>         
-         <b><font size='3'>Comments</font></b>
-              <br />
-        <xsl:value-of              select="../Comment"/>
-        </xsl:for-each>
-            <br />
+   <br /><br />
+   </xsl:template>
 
 <!-- ====================================================================
                   Display the Protocol Status Information
      ==================================================================== -->
-
+     
+      <xsl:template     match = "CurrentProtocolStatus">
+      <br />
       <b><font size='4'>Current Protocol Status</font></b>
       <br /><br />
-      <xsl:for-each            select="ProtocolAdminInfo/
-                                       CurrentProtocolStatus">
-           <table width='90%'>
-           <tr>
-           <th align='left' width='40%'>
-           <b><font size='3'>Status
-           </font>
-          </b>
-          </th>
-          <td width='60%'>
-          <xsl:value-of                select="."/>
-          </td>
-          </tr>
-          </table>
-          <br />
-          </xsl:for-each>
-          <br />
+      <table width='90%'>
+       <tr>
+       <th align='left' width='40%'>
+      <b><font size='3'>Status
+      </font>
+      </b>
+      </th>
+      <td width='60%'>
+      <xsl:value-of                select="."/>
+      </td>
+      </tr>
+      </table>
+      <br />
+      <br />
+      </xsl:template>
 
 <!-- ====================================================================
               Display the Lead Organization Information
      ==================================================================== -->
-
-    <xsl:for-each                      select="ProtocolAdminInfo">
-    <xsl:for-each                      select="ProtocolLeadOrg">
+    <xsl:template                    match = "ProtocolLeadOrg">
     <b>
    <font size='4'>Lead Organization
    </font>
@@ -471,7 +554,7 @@
        <b><font size='3'>Previous Protocol Status</font></b>
        </th>
        <td>
-       <xsl:text>&#xa0;</xsl:text>
+       <xsl:text> </xsl:text>
        </td>
        </tr>
         </table>
@@ -533,6 +616,7 @@
        </tr>
        </table>
       </xsl:if>
+      
 
 <!-- ==================================================================
                Display Lead Organization Information
@@ -628,7 +712,7 @@
       <table width='90%'>  
       <tr>
       <th align='left' width='40%'>
-      <xsl:text>&#xa0;&#xa0;</xsl:text>
+      <xsl:text>  </xsl:text>
       </th>
       <td width='60%'>
       <xsl:value-of            select="."/>
@@ -816,7 +900,7 @@
    <table width='90%'>     
    <tr>
    <th align ='left' width='40%'>
-   <xsl:text>&#xa0;&#xa0;&#xa0;Street</xsl:text>
+   <xsl:text>   Street</xsl:text>
     </th>
     </tr>
     </table>
@@ -834,7 +918,7 @@
 
    <tr>
    <th align='left' width='40%'>
-   <xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text>
+   <xsl:text>   </xsl:text>
    </th>
    <td width='60%'>
   <i>
@@ -1012,14 +1096,14 @@
    </table>
    </xsl:if>
    <br />
-   </xsl:for-each>
+  </xsl:for-each>
    </xsl:if>
    </xsl:for-each>
-
-
+ 
 <!-- ================================================================
       Display Orgs Name, Status, and Contact Information
      ================================================================= -->
+ 
  <xsl:for-each           select="ProtocolSites">
   <u>
   <b>
@@ -1028,8 +1112,9 @@
   </b>
   </u>
    <br /><br />
+
    
-      <xsl:for-each      select="OrgSiteID">
+      <xsl:for-each      select="OrgSiteID | PrivatePracticeSiteID">
       <xsl:variable      name="Faxx"  select="Organization/
                                               OrganizationLocations/
                                               OrganizationLocation/Location/
@@ -1043,15 +1128,12 @@
       <xsl:value-of     select="Organization/
                                 OrganizationNameInformation/
                                 OfficialName/Name"/>
+      <xsl:if           test = "PrivatePracticePerson">
+      <xsl:value-of     select ="'Private Practice'"/>
+      </xsl:if>
+
        <br />
        <br />
-     
-   
-                  
-       <xsl:for-each         select="OrgSiteContact">
-       <xsl:if               test="SpecificPerson">
-       <xsl:for-each         select="SpecificPerson/Person">
-       <xsl:variable name="PerFrag"  select="substring-after(@cdr:ref,'#')"/>
       <table width='90%'>
       <tr>
        <th align='left' width='40%'>
@@ -1061,10 +1143,18 @@
          </b>
          </th>
          <td width='60%'>
-      <xsl:value-of          select="../../../OrgSiteStatus"/>
+      <xsl:value-of          select="OrgSiteStatus"/>
       </td>
        </tr>
-           
+     </table>
+   
+                  
+       <xsl:for-each         select="OrgSiteContact | PrivatePracticePerson">
+       <xsl:if               test="SpecificPerson | Person">
+       <xsl:for-each         select="SpecificPerson/Person | Person">
+       <xsl:variable name="PerFrag"  select="substring-after(@cdr:ref,'#')"/>
+      <table width='90%'>
+                
          <tr>
          <th align='left' width='40%'>
          <b><font size='3'>Contact
@@ -1096,11 +1186,24 @@
          </b>
         </th>
          <td width='60%'>
-       <xsl:value-of         select="../SpecificPhone"/>
+       <xsl:value-of         select="../SpecificPhone |
+                                    PersonLocations/PrivatePractice/
+                                    PrivatePracticeLocation[$PerFrag=@cdr:id]/
+                                    Phone | PersonLocations/
+                                    Home[$PerFrag=@cdr:id]/Phone"/>
                                                                        
-       <xsl:if               test="../SpecificPhone/@Public">                         
+        <xsl:if                test="SpecificPhone/@Public |
+                                     PersonLocations/PrivatePractice/
+                                     PrivatePracticeLocation[$PerFrag=@cdr:id]/
+                                     Phone/@Public | PersonLocations/
+                                     Home[$PerFrag=@cdr:id]/
+                                     Phone/@Public">       
        <xsl:text>(Public=</xsl:text>
-       <xsl:value-of           select="../SpecificPhone/@Public"/>
+      <xsl:value-of           select= "../SpecificPhone/@Public |
+                                      PersonLocations/PrivatePractice/
+                                      PrivatePracticeLocation[$PerFrag=@cdr:id]/
+                                      Phone/@Public | PersonLocations/
+                                      Home[$PerFrag=@cdr:id]/Phone/@Public"/>
 
        <xsl:text>)</xsl:text>
        </xsl:if>
@@ -1143,7 +1246,10 @@
         <td width='60%'>
         <xsl:value-of            select="PersonLocations/
                                         OtherPracticeLocation[$PerFrag=@cdr:id]/
-                                         SpecificTollFreePhone"/>
+                                         SpecificTollFreePhone |
+                                         PersonLocations/PrivatePractice/
+                                    PrivatePracticeLocation[$PerFrag=@cdr:id]/
+                                         TollFreePhone"/>
        <xsl:if                  test="not(PersonLocations/
                                     OtherPracticeLocation[$PerFrag=@cdr:id]/
                                      SpecificTollFreePhone)">
@@ -1167,7 +1273,13 @@
         <td width='60%'>
         <xsl:value-of          select="PersonLocations/
                                        OtherPracticeLocation[$PerFrag=@cdr:id]/
-                                       SpecificFax"/>
+                                       SpecificFax | 
+                                       PersonLocations/PrivatePractice/
+                                    PrivatePracticeLocation[$PerFrag=@cdr:id]/
+                                    Fax | PersonLocations/
+                                    Home[$PerFrag=@cdr:id]/Fax"/>
+
+                                        
          <xsl:if                  test="not(PersonLocations/
                                     OtherPracticeLocation[$PerFrag=@cdr:id]/
                                      SpecificFax)">
@@ -1192,14 +1304,29 @@
         <td width='60%'>
         <xsl:value-of            select="PersonLocations/
                                         OtherPracticeLocation[$PerFrag=@cdr:id]/
-                                         SpecificEmail"/>
+                                         SpecificEmail |
+                                         PersonLocations/PrivatePractice/
+                                    PrivatePracticeLocation[$PerFrag=@cdr:id]/
+                                    Email | PersonLocations/
+                                    Home[$PerFrag=@cdr:id]/Email"/>
+     
         
           <xsl:if                test="PersonLocations/
                                        OtherPracticeLocation[$PerFrag=@cdr:id]/
-                                       SpecificEmail/@Public">
+                                       SpecificEmail/@Public |
+                                       PersonLocations/PrivatePractice/
+                                    PrivatePracticeLocation[$PerFrag=@cdr:id]/
+                                     Email/@Public | PersonLocations/
+                                    Home[$PerFrag=@cdr:id]/Email/@Public">
+
           <xsl:text>(Public=</xsl:text>
           <xsl:value-of          select="PersonLocations/OtherPracticeLocation/
-                                         SpecificEmail/@Public"/>
+                                         SpecificEmail/@Public |
+                                          PersonLocations/PrivatePractice/
+                                    PrivatePracticeLocation[$PerFrag=@cdr:id]/
+                                    Email/@Public | PersonLocations/
+                                    Home[$PerFrag=@cdr:id]/Email/Public"/>
+
           <xsl:text>)</xsl:text>
           </xsl:if>
           </td>
@@ -1213,11 +1340,23 @@
         <td width='60%'>
         <xsl:value-of          select="PersonLocations/
                                        OtherPracticeLocation[$PerFrag=@cdr:id]/
-                                       SpecificWebSite/@cdr:xref"/>
+                                       SpecificWebSite/@cdr:xref |
+                                       PersonLocations/PrivatePractice/
+                                    PrivatePracticeLocation[$PerFrag=@cdr:id]/
+                                    WebSite/@cdr:xref | PersonLocations/
+                                    Home[$PerFrag=@cdr:id]/WebSite/@cdr:xref"/>
+
+                                       
         <br />
         <xsl:value-of          select="PersonLocations/
                                        OtherPracticeLocation[$PerFrag=@cdr:id]/
-                                       SpecificWebSite"/>
+                                       SpecificWebSite |
+                                       PersonLocations/PrivatePractice/
+                                    PrivatePracticeLocation[$PerFrag=@cdr:id]/
+                                    WebSite | PersonLocations/
+                                    Home[$PerFrag=@cdr:id]/WebSite"/>
+
+                                       
                 
         <xsl:if                  test="not(PersonLocations/
                                     OtherPracticeLocation[$PerFrag=@cdr:id]/
@@ -1247,6 +1386,20 @@
        </xsl:if> 
 
       <xsl:if test="GenericPerson">
+    <!--  <table width='90%'>
+       <tr>
+       <th align='left' width='40%'>
+        <b>
+        <font size='3'>Organization Protocol Status
+       </font>
+       </b>
+       </th>
+       <td width='60%'>
+      <xsl:value-of          select="../OrgSiteStatus"/>
+      </td>
+      </tr>
+      </table>-->
+           
       <table width='90%'>
       <tr>
       <th align='left' width='40%'>
@@ -1480,15 +1633,13 @@
           </xsl:for-each>
           </xsl:for-each>
           </xsl:for-each>
-          </xsl:for-each>
-         
-         </xsl:for-each>
+         </xsl:template>
          
     <!-- =================================================================
                         Protocol Processing Details
       ================================================================ -->
+             <xsl:template      match ="ProtocolProcessingDetails">
               <br />
-             <xsl:for-each       select="ProtocolProcessingDetails">
               <b><font size='4'>Protocol Processing Details
               </font>
               </b>
@@ -1516,11 +1667,9 @@
             </td>
             </tr>
             </table>
-            <b><font size='3'>Comments</font></b><br />
-          <xsl:apply-templates       select="Comment"/><br />
-           </xsl:for-each>
-               </BODY>
-          </xsl:template>
+            <b><font size='3'>Comment</font></b><br />
+           <xsl:apply-templates       select="Comment"/><br />
+           </xsl:template>
 
          
  <!-- 
@@ -1530,7 +1679,83 @@
  <xsl:template                  match = "Note">
   <xsl:apply-templates         select = "." 
                                  mode = "RS"/>
+ 
  </xsl:template>  
+
+    <!-- ==============================================================
+                     Display Dated Action
+       ============================================================== -->
+
+         <xsl:template             match = "ProtocolAdminInfo/DatedAction">
+          <b>
+        <font size='4'><xsl:text>Dated Action</xsl:text></font>
+          </b>
+          <br />
+          <br />
+         <table width ='90%'>
+         <tr>
+         <th align='left' width='40%'>
+         <b>
+        <font size='3'><xsl:text>Action Description</xsl:text></font>
+         </b>
+         </th>
+         <td width='60%'>
+         <xsl:value-of             select = "ActionDescription"/>
+         </td>
+         </tr>
+         </table>
+         <table width ='90%'>
+         <tr>
+         <th align='left' width='40%'>
+        <b>
+        <font size='3'><xsl:text>Action Date</xsl:text></font>
+        </b>
+        </th>
+        <td>
+        <xsl:value-of             select ="ActionDate"/>
+        </td>
+        </tr>
+        </table>
+        <b>
+         <font size='3'><xsl:text>Comment</xsl:text></font>
+        </b>   
+        <br />
+        <xsl:value-of             select ="Comment"/>                           
+        <br />
+        <br />
+        </xsl:template>
+
+  <!-- ===============================================================
+              Display DateLastModified
+     ================================================================ -->
+  
+          <xsl:template match="DateLastModified">
+           <br />
+          <table width='90%'>
+          <tr> 
+          <th align='left' width='40%'>
+          <b><font size='4'>Date Last Modified</font></b>
+          </th>
+          <td width='60%'>
+          <xsl:value-of     select="."/>
+          </td>
+          </tr>
+          </table>
+          </xsl:template>
+
+     
+                         
+  
+  <!-- ===============================================================
+           Do not display data elements
+       =============================================================== -->
+
+     <xsl:template             match = "ProtocolPhase | ProtocolDesign |
+                                         ProtocolAbstract | ProtocolDetail |
+                                         Eligibility | ProtocolAbstract2 |
+                                         ProtocolRelatedLinks"/> 
+                                         
+     
 
 </xsl:transform>]]>
 </CdrDocXml>
