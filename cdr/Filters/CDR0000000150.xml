@@ -13,7 +13,8 @@
 
  <xsl:output                method = "xml" 
               omit-xml-declaration = "no"
-                          encoding = "UTF-8"/>
+                          encoding = "UTF-8"
+                            indent = 'yes'/>
 
  <!--
  ====================================================================
@@ -43,9 +44,7 @@
      <xsl:apply-templates     select = "ProtocolIDs/OtherID"/>
    </ProtocolIDs>
 
-   <!-- Use generic copy templates for these. -->
-   <xsl:apply-templates     select = "FundingInfo"
-                              mode = "copy"/>
+   <xsl:apply-templates     select = "FundingInfo"/>
    <xsl:apply-templates     select = "ProtocolSponsors"/>
    <xsl:apply-templates     select = "ReimbursementApproval"
                               mode = "copy"/>
@@ -108,6 +107,7 @@
  </xsl:template>
 
 
+
  <!--
  ====================================================================
  Rename the element tags for ProtocolSponsors
@@ -117,6 +117,50 @@
    <xsl:value-of          select = "SponsorName"/>
   </ProtocolSponsor>
  </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Funding info may contain Comment element in NIHGrantContract or 
+ OtherGrantContractInfo elements that should not to displayed.
+ ==================================================================== -->
+ <xsl:template               match = "FundingInfo">
+   <xsl:copy>
+    <xsl:for-each           select = "NIHGrantContract">
+      <xsl:apply-templates  select = "."/>
+    </xsl:for-each>
+    <xsl:for-each           select = "OtherGrantContractInfo">
+      <xsl:apply-templates  select = "."/>
+    </xsl:for-each>
+   </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Copy NIHGrantContract info without displaying comment element
+ ==================================================================== -->
+ <xsl:template               match = "NIHGrantContract">
+  <xsl:copy>
+   <xsl:apply-templates     select = "NIHGrantContractType"
+                              mode = "copy"/>
+   <xsl:apply-templates     select = "GrantContractNo"
+                              mode = "copy"/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Dispaly OtherGrantContractInfo without displaying comment element.
+ ==================================================================== -->
+ <xsl:template               match = "OtherGrantContractInfo">
+  <xsl:copy>
+   <xsl:apply-templates     select = "GrantContractNo"
+                              mode = "copy"/>
+  </xsl:copy>
+ </xsl:template>
+
 
  <!--
  ====================================================================
@@ -447,8 +491,7 @@
      <!-- Email with Public=No attribute is not to be published -->
      <!-- ===================================================== -->
      <xsl:if                  test = "not(Person/Email/@Public = 'No')">
-       <xsl:apply-templates select = "Person/Email"
-                              mode = "copy"/>
+       <xsl:apply-templates select = "Person/Email"/>
      </xsl:if>
      <xsl:apply-templates   select = "Person/WebSite"
                               mode = "copy"/>
@@ -572,8 +615,7 @@
      <!-- Email with Public=No attribute is not to be published -->
      <!-- ===================================================== -->
      <xsl:if                  test = "not(Email/@Public = 'No')">
-       <xsl:apply-templates select = "Email"
-                              mode = "copy"/>
+       <xsl:apply-templates select = "Email"/>
      </xsl:if>
      <xsl:apply-templates   select = "WebSite"
                               mode = "copy"/>
@@ -627,8 +669,7 @@
      <!-- Email with Public=No attribute is not to be published -->
      <!-- ===================================================== -->
      <xsl:if                  test = "not(Email/@Public = 'No')">
-       <xsl:apply-templates select = "Email"
-                              mode = "copy"/>
+       <xsl:apply-templates select = "Email"/>
      </xsl:if>
      <xsl:apply-templates   select = "WebSite"
                               mode = "copy"/>
@@ -717,6 +758,18 @@
  ==================================================================== -->
  <xsl:template               match = "Comment">
     <!-- Do Nothing -->
+ </xsl:template>
+
+
+
+ <!--
+ ====================================================================
+ Only display the e-mail if the attribute Public is missing or Yes.
+ ==================================================================== -->
+ <xsl:template               match = "Email">
+    <Email>
+     <xsl:value-of          select = "."/>
+    </Email>
  </xsl:template>
 
 
