@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.6 2001-03-19 17:17:43 mruben Exp $
+ * $Id: CdrFilter.cpp,v 1.7 2001-04-05 23:10:02 mruben Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2001/03/19 17:17:43  mruben
+ * added support for xsl:message
+ *
  * Revision 1.5  2001/03/13 22:15:09  mruben
  * added ability to use CdrDoc element for filter
  *
@@ -97,18 +100,84 @@ namespace
     }
     throw cdr::Exception(L"dryrot: invalid return from getDocString\n");
   }
+
+  /***************************************************************************/
+  /* get filter using title.  Replace @@DOCTYPE@@ with document type of      */
+  /* document to which it will be applied.  Error if more than one document  */
+  /* with requested title                                                    */
+  /***************************************************************************/
+  cdr::String getFilterByName(cdr::String name,
+                              cdr::db::Connection& connection,
+                              cdr::String* docui)
+  {
+    cdr::String::size_type idx = name.find(L"@@DOCTYPE@@");
+    if (idx != cdr::String::npos)
+    {
+      cdr::String doctype;
+
+      if (docui != NULL)
+      {
+        string tquery = "SELECT name "
+                        "FROM doc_type dt "
+                        "JOIN document d ON dt.id = d.doc_type "
+                        "WHERE d.id=?";
+        cdr::db::PreparedStatement tselect
+              = connection.prepareStatement(tquery);
+        tselect.setInt(1, docui->extractDocId());
+        cdr::db::ResultSet trs = tselect.executeQuery();
+        if (trs.next())
+          doctype = trs.getString(1);
+      }
+      name.replace(idx, 11, doctype);
+    }
+    
+    string query = "SELECT id "
+                   "FROM document "
+                   "WHERE title=? "
+                   "GROUP BY id";
+    
+    cdr::db::PreparedStatement select = connection.prepareStatement(query);
+    select.setString(1, name);
+    cdr::db::ResultSet rs = select.executeQuery();
+    if (!rs.next())
+      throw cdr::Exception(L"No document with title: " + name);
+
+    int id = rs.getInt(1);
+
+    if (rs.next())
+      throw cdr::Exception(L"Multiple documents with title: " + name);
+    
+    return getDocument(cdr::stringDocId(id), connection);
+  }
+
   
   /***************************************************************************/
   /* get document from document spec (XML)                                   */
+  /* If type is not null and document is retrieved from CDR, its DocType     */
+  /* must match type.  If ui is not null, the ui will be returned in it.     */
+  /* docui is used when getting a filter -- it contains the ui of the        */
+  /* document to which the filter will be applied                            */
   /***************************************************************************/
   cdr::String getDocument(cdr::dom::Node docspec,
                           cdr::db::Connection& connection,
-                          const wchar_t* type = NULL)
+                          const wchar_t* type = NULL,
+                          cdr::String* ui = NULL, cdr::String* docui = NULL)
   {
     cdr::dom::NamedNodeMap attributes = docspec.getAttributes();
+    
+    cdr::dom::Node name = attributes.getNamedItem("Name");
+    if (name != NULL)
+      return getFilterByName(name.getNodeValue(), connection, docui);
+
     cdr::dom::Node href = attributes.getNamedItem("href");
     if (href != NULL)
-      return getDocument(href.getNodeValue(), connection, type);
+    {
+      cdr::String u = href.getNodeValue();
+      if (ui != NULL)
+        *ui = u;
+      
+      return getDocument(u, connection, type);
+    }
 
     cdr::dom::Node f = docspec.getFirstChild();
     if (f.getNodeType() != cdr::dom::Node::CDATA_SECTION_NODE)
@@ -401,35 +470,64 @@ cdr::String cdr::filter(cdr::Session& session,
 {
   vector<cdr::String> filters;
   cdr::String document;
-  
-  // extract filters and document from the command
-  for (cdr::dom::Node child = commandNode.getFirstChild();
-       child != NULL;
-       child = child.getNextSibling())
-  {
-    if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE)
-    {
-      cdr::String name = child.getNodeName();
-      if (name == L"Filter")
-        filters.push_back(getDocument(child, connection));
-      else
-      if (name == L"Document")
-      {
-        const wchar_t* type = NULL;
-        cdr::dom::NamedNodeMap attributes = child.getAttributes();
-        cdr::dom::Node ctl = attributes.getNamedItem("ctl");
-        if (ctl != NULL)
-        {
-          cdr::String val = ctl.getNodeValue();
-          if (val == L"y")
-            type = CdrDocType;
-        }
+  cdr::String ui;
 
-        document = getDocument(child, connection, type);
+  // we need to serialize.  Save current autocommit state so if the
+  // caller has already done so, we don't mess him up
+  bool autocommitted = connection.getAutoCommit();
+  connection.setAutoCommit(false);
+
+
+  // we need to get the document first so we'll have it's type if needed
+  // to determine the filter name
+  
+  // extract document from the command
+  {
+    for (cdr::dom::Node child = commandNode.getFirstChild();
+         child != NULL;
+         child = child.getNextSibling())
+    {
+      if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE)
+      {
+        cdr::String name = child.getNodeName();
+        if (name == L"Document")
+        {
+          const wchar_t* type = NULL;
+          cdr::dom::NamedNodeMap attributes = child.getAttributes();
+          cdr::dom::Node ctl = attributes.getNamedItem("ctl");
+          if (ctl != NULL)
+          {
+            cdr::String val = ctl.getNodeValue();
+            if (val == L"y")
+              type = CdrDocType;
+          }
+
+          document = getDocument(child, connection, type, &ui);
+
+          break; // only one document allowed
+        }
+      }
+    }
+  }
+  
+  // extract filters from the command
+  {
+    for (cdr::dom::Node child = commandNode.getFirstChild();
+         child != NULL;
+         child = child.getNextSibling())
+    {
+      if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE)
+      {
+        cdr::String name = child.getNodeName();
+        if (name == L"Filter")
+          filters.push_back(getDocument(child, connection, NULL, NULL, &ui));
       }
     }
   }
 
+  // we're done with the database, so we can let others at it
+  connection.setAutoCommit(autocommitted);
+  
   string doc(document.toUtf8());
   string result(doc);
   for (std::vector<cdr::String>::iterator i = filters.begin();
