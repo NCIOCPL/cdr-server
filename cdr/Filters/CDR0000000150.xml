@@ -906,7 +906,6 @@
            </xsl:for-each>
           </xsl:otherwise>
          </xsl:choose>
-
          <xsl:choose>
           <xsl:when                test = "../ProtocolSpecificContact/
                                               Email">
@@ -964,7 +963,8 @@
           </xsl:call-template>
          </xsl:for-each>
 
-         <!-- If a SpecificPhone exists we do not denormalize in
+         <!-- If a SpecificPhone/SpecificEmail exists we do not 
+              denormalize in
               order to get a phone number from the person or org
               record.  The SpecificPhone is overwriting any other
               phone information. 
@@ -1006,12 +1006,23 @@
            <xsl:with-param         name = "orgAddressFID"
                                  select = "$orgAddressFID"/>
           </xsl:call-template>
-         <VolkerEnd/ -->
+          <VolkerEnd/ -->
 
-          <xsl:call-template       name = "getPersonOrgEmail">
-           <xsl:with-param         name = "orgAddressFID"
+          <xsl:choose>
+           <xsl:when                test = "../../../SpecificEmail">
+            <Email>
+             <xsl:apply-templates select = "../../../SpecificEmail/@Public"/>
+             <xsl:value-of        select = "../../../SpecificEmail"/>
+            </Email>
+           </xsl:when>
+           <xsl:otherwise>
+            <xsl:call-template       name = "getPersonOrgEmail">
+             <xsl:with-param         name = "orgAddressFID"
                                  select = "$orgAddressFID"/>
-          </xsl:call-template>
+            </xsl:call-template>
+           </xsl:otherwise>
+          </xsl:choose>
+
           <xsl:call-template       name = "getPersonOrgWebSite">
            <xsl:with-param         name = "orgAddressFID"
                                  select = "$orgAddressFID"/>
@@ -1344,12 +1355,25 @@
  </xsl:template>
 
 
-<!-- ==================================================================== 
-     Temporarily drop @Compact until June, 2003.
-     ==================================================================== -->
-  <xsl:template              match = "OrderedList/@Compact"
-                              mode = "copy"/>
-    
+ <!-- 
+ ==================================================================== 
+ Temporarily drop @Compact until June, 2003.
+ ==================================================================== -->
+ <xsl:template                   match = "OrderedList/@Compact"
+                                  mode = "copy"/>
+
+
+ <!--
+ ======================================================================
+ Template to add (Public = No) to the display
+ ====================================================================== -->
+ <xsl:template                   match = "@Public">
+  <xsl:attribute                  name = "Public">
+   <xsl:value-of                select = "'No'"/>
+  </xsl:attribute>
+ </xsl:template>
+
+
 </xsl:transform>
 ]]>
 </CdrDocXml>
