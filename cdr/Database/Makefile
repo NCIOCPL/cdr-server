@@ -1,11 +1,14 @@
 #----------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.5 2001-12-24 01:00:28 bkline Exp $
+# $Id: Makefile,v 1.6 2002-04-20 02:53:33 bkline Exp $
 #
 # Rules for initializing CDR database at data conversion time.
 # Must be run as system administrator.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.5  2001/12/24 01:00:28  bkline
+# Separated creation of logins to end of process.
+#
 # Revision 1.4  2001/12/22 01:56:37  bkline
 # Added rules to check scripts out of source code control.
 #
@@ -22,6 +25,7 @@
 #
 #----------------------------------------------------------------------
 
+CVSUPD=cvs update
 SQL=CreateLogins.sql\
     tables.sql\
     procs.sql\
@@ -31,10 +35,18 @@ SQL=CreateLogins.sql\
 #----------------------------------------------------------------------
 # Top-level rule.
 #----------------------------------------------------------------------
-all: $(SQL)
+all: cvsupdate
+	$(MAKE) _all
+
+cvsupdate:
+	$(CVSUPD)
+
+_all: $(SQL)
 	osql -n -E -i tables.sql
 	osql -n -E -i procs.sql
 	osql -n -E -i LoadControlData.sql
+	python FixDocumentationLinks.py > FixDocumentationLinks.out
+	python VersionPubControlDocs.py > VersionPubControlDocs.out
 	osql -n -E -i CreateLogins.sql
 	osql -n -E -i ShowCounts.sql
 	mv -f LoadControlData.sql LoadControlData.sql.old
@@ -46,21 +58,3 @@ LoadControlData.sql: base_data_sql.py
 	rm -f LoadControlData.sql
 	python base_data_sql.py > tmp.sql
 	mv -f tmp.sql LoadControlData.sql
-
-#----------------------------------------------------------------------
-# Get the rest from source code control.
-#----------------------------------------------------------------------
-CreateLogins.sql:
-	co CreateLogins.sql
-
-tables.sql:
-	co tables.sql
-
-procs.sql:
-	co procs.sql
-
-ShowCounts.sql:
-	co ShowCounts.sql
-
-base_data_sql.py:
-	co base_data_sql.py
