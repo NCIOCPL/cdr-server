@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.77 2003-01-30 23:46:38 ameyer Exp $
+ * $Id: tables.sql,v 1.78 2003-02-07 20:10:11 pzhang Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.77  2003/01/30 23:46:38  ameyer
+ * Made the name column unique.
+ *
  * Revision 1.76  2003/01/28 18:46:01  ameyer
  * Added sys_value table for system wide control values.
  *
@@ -1589,10 +1592,12 @@ GO
 
 CREATE VIEW primary_pub_doc
 AS
-    SELECT pub_proc_doc.*, primary_pub_job.completed
+    SELECT pub_proc_doc.*, primary_pub_job.started, primary_pub_job.output_dir
       FROM pub_proc_doc
       JOIN primary_pub_job
         ON pub_proc_doc.pub_proc = primary_pub_job.id
+     WHERE pub_proc_doc.removed = 'N'
+       AND pub_proc_doc.failure IS NULL
 GO
 
 /*
