@@ -1,9 +1,12 @@
 /*
- * $Id: CdrMergeProt.cpp,v 1.1 2001-11-28 19:44:38 bkline Exp $
+ * $Id: CdrMergeProt.cpp,v 1.2 2002-04-09 12:51:53 bkline Exp $
  *
  * Merge scientific protocol information into main in-scope protocol document.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2001/11/28 19:44:38  bkline
+ * Initial revision
+ *
  */
 
 // Eliminate annoying warnings about truncated debugging information.
@@ -150,12 +153,9 @@ cdr::String cdr::mergeProt(Session& session,
 
             // Yes.  Drop it.
             targetChild = targetChild.getNextSibling();
-            //targetDoc.removeChild(targetChild);
-            //targetChild = nextNode;
             continue;
         }
 
-cdr::log::WriteFile(L"mergeProt", L"Milepost 1");
         // Insert any scientific elements which go in front of this element.
         while (sourceChild != NULL) {
 
@@ -165,7 +165,6 @@ cdr::log::WriteFile(L"mergeProt", L"Milepost 1");
                 continue;
             }
 
-cdr::log::WriteFile(L"mergeProt", L"Milepost 2");
             // Find out the element's name.
             String sourceName = sourceChild.getNodeName();
 
@@ -176,33 +175,19 @@ cdr::log::WriteFile(L"mergeProt", L"Milepost 2");
                 break;
             }
 
-cdr::log::WriteFile(L"mergeProt", L"Milepost 3");
             // If this is a scientific element, keep it.
             if (scientificElems.find(sourceName) != scientificElems.end()) {
-cdr::log::WriteFile(L"mergeProt", L"Milepost 3a");
-                //try {
-                    //targetDoc.appendChild(sourceChild);
-                //}
-                //catch (DOM_DOMException& e) {
-                    //String err = e.msg;
-                    //throw Exception(L"appendChild", err);
-                //}
                 os << sourceChild;
             }
 
-cdr::log::WriteFile(L"mergeProt", L"Milepost 4");
             // Move to the next source node.
             sourceChild = sourceChild.getNextSibling();
-cdr::log::WriteFile(L"mergeProt", L"Milepost 5");
         }
-cdr::log::WriteFile(L"mergeProt", L"Milepost 6");
 
         // Copy node and move to the next node in the target chain.
         os << targetChild;
         targetChild = targetChild.getNextSibling();
-cdr::log::WriteFile(L"mergeProt", L"Milepost 7");
     }
-cdr::log::WriteFile(L"mergeProt", L"Milepost 8");
 
     // We're past the existing nodes in the target doc; anything left over?
     while (sourceChild != NULL) {
@@ -221,16 +206,12 @@ cdr::log::WriteFile(L"mergeProt", L"Milepost 8");
 
     // The source goes away ...
     deleteDoc(sourceDocIdStr, targetDocIdStr, session, conn);
-cdr::log::WriteFile(L"mergeProt", L"Milepost 9");
 
     // ... and the target gets saved with the new elements.
-    //std::wostringstream os;
-    //os << targetDoc;
     os << L"</" << topElementName << L">";
     String docString = os.str();
     checkIn(targetDocIdStr, sourceDocIdStr, docString, 
             L"InScopeProtocol", session, conn);
-cdr::log::WriteFile(L"mergeProt", L"Milepost 10");
 
     // Report success.
     return L"<CdrMergeProt/>";
@@ -331,6 +312,7 @@ void getElementNames(cdr::StringList& elemList, const cdr::xsd::Node* node)
 cdr::StringSet getScientificElemNames()
 {
     static const wchar_t* elemNames[] = {
+        L"ProtocolTitle",
         L"ProtocolAmendmentInformation",
         L"ProtocolAbstract",
         L"ProtocolDetails",
