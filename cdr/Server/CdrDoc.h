@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.1 2000-05-17 13:04:30 bkline Exp $
+ * $Id: CdrDoc.h,v 1.2 2000-06-23 15:31:14 bkline Exp $
  *
  */
 
@@ -67,6 +67,12 @@ namespace cdr {
              */
             void Store ();
 
+            /**
+             * Replaces the rows in the query_term table for the current 
+             * document.
+             */
+            void updateQueryTerms();
+
             // Accessors
             int getId()                 {return Id;}
             int getDocType()            {return DocType;}
@@ -96,6 +102,21 @@ namespace cdr {
 
             // Connection to the database
             cdr::db::Connection& docDbConn;
+
+            /**
+             * Adds a row to the query_term table for the current node if
+             * appropriate and recursively does the same for all sub-elements.
+             *
+             *  @param  path        reference to string representing path for 
+             *                      current node; e.g., "/Person/PersonStatus".
+             *  @param  node        reference to current node of document's 
+             *                      DOM tree.
+             *  @param  paths       reference to set of paths to be indexed.
+             */
+            void addQueryTerms(const cdr::String& path,
+                               const cdr::dom::Node& node,
+                               const StringSet& paths);
+
     };
 }
 
