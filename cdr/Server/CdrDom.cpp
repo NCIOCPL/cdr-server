@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.cpp,v 1.7 2001-10-17 13:51:28 bkline Exp $
+ * $Id: CdrDom.cpp,v 1.8 2002-11-21 21:01:13 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2001/10/17 13:51:28  bkline
+ * Added output insertion operator.
+ *
  * Revision 1.6  2000/10/05 21:25:09  bkline
  * Added parseFile(const char*) method.
  *
@@ -34,7 +37,7 @@ namespace cdr {
         public:
             void warning(const SAXParseException& e) {
                 // Substitute logging when in place.
-                std::wcerr << L"*** DOM WARNING: " << getMessage(e) 
+                std::wcerr << L"*** DOM WARNING: " << getMessage(e)
                            << std::endl;
             }
             void error(const SAXParseException& e) {
@@ -112,10 +115,10 @@ std::wostream& operator<<(std::wostream& os, const cdr::dom::Node& node)
     cdr::String value = node.getNodeValue();
     switch (node.getNodeType()) {
         case cdr::dom::Node::TEXT_NODE:
-            os << value;
+            os << cdr::entConvert(value);
             break;
         case cdr::dom::Node::PROCESSING_INSTRUCTION_NODE:
-            os << L"<?" << name << L" " << value << L"?>";
+            os << L"<?" << name << L" " << cdr::entConvert(value) << L"?>";
             break;
         case cdr::dom::Node::DOCUMENT_NODE:
         {
@@ -134,14 +137,15 @@ std::wostream& operator<<(std::wostream& os, const cdr::dom::Node& node)
             int nAttributes = attributes.getLength();
             for (int i = 0; i < nAttributes; ++i) {
                 cdr::dom::Node attribute = attributes.item(i);
-                cdr::String attrValue = attribute.getNodeValue();
+                cdr::String attrValue =
+                    cdr::entConvert(attribute.getNodeValue());
                 cdr::String attrName  = attribute.getNodeName();
                 size_t quot = attrValue.find(L"\"");
                 while (quot != attrValue.npos) {
                     attrValue.replace(quot, 1, L"&quot;");
                     quot = attrValue.find(L"\"", quot);
                 }
-                os << L" " 
+                os << L" "
                    << attrName
                    << L" = \""
                    << attrValue
