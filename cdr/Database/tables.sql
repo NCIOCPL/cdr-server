@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.31 2001-07-15 22:45:22 bkline Exp $
+ * $Id: tables.sql,v 1.32 2001-07-26 23:09:07 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2001/07/15 22:45:22  bkline
+ * Added int_val to query_term table.
+ *
  * Revision 1.30  2001/07/15 22:43:38  bkline
  * Added all_docs with document view.  Added term_kids and term_children
  * views.
@@ -237,8 +240,9 @@ CREATE TABLE format
  *               the perspective of the repository system (for example, PNG
  *               ILLUSTRATION) have a DTD for the XML information carried for
  *               the document.
- *   xml_schema  XML schema which identifies requirements of the elements
- *               of documents of this type; required even for "unstrucutred"
+ *   xml_schema  CDR doc id of the document containing the XML schema 
+ *               which identifies requirements of the elements of documents
+ *               of this type; required even for "unstructured"
  *               document types.
  *  schema_date  Date/time when schema was last modified.
  *          css  stylesheet for use by the client for editing documents of 
@@ -255,7 +259,7 @@ CREATE TABLE doc_type
      created DATETIME NOT NULL,
   versioning CHAR NOT NULL DEFAULT 'Y',
          dtd NTEXT NOT NULL,
-  xml_schema NTEXT NOT NULL,
+  xml_schema INTEGER REFERENCES document,
  schema_date DATETIME NOT NULL DEFAULT GETDATE(),
          css NTEXT NOT NULL,
 title_filter VARCHAR(32) NULL,
