@@ -1,9 +1,12 @@
 /*
- * $Id: ParseSchema.cpp,v 1.2 2000-04-11 21:24:09 bkline Exp $
+ * $Id: ParseSchema.cpp,v 1.3 2000-12-21 22:25:28 bkline Exp $
  *
  * Prototype for CDR schema parser.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/11 21:24:09  bkline
+ * Used type information for attributes.
+ *
  * Revision 1.1  2000/04/11 17:57:44  bkline
  * Initial revision
  *
@@ -22,7 +25,8 @@
 // Local support functions.
 static std::string  readSchemaFile(const char*);
 static void         writeDtd(const cdr::xsd::Schema&);
-static void         writeElement(const cdr::xsd::Schema&, cdr::xsd::Element&);
+static void         writeElement(const cdr::xsd::Schema&, cdr::xsd::Element&,
+                                 bool = false);
 
 /**
  * Parses schema document, extracts document type information, and
@@ -43,11 +47,34 @@ int main(int ac, char** av)
     }
 
     catch (const cdr::Exception& cdrEx) {
-        std::wcerr << L"CdrException: " << cdrEx.getString() << std::endl;
+        std::wcerr << L"CdrException: " << cdrEx.what() << std::endl;
         return EXIT_FAILURE;
     }
-    catch (const cdr::dom::DOMException& ex) {
+    catch (const cdr::dom::XMLException& ex) {
         std::wcerr << cdr::String(ex.getMessage()) << std::endl;
+        return EXIT_FAILURE;
+    }
+    catch (cdr::dom::DOMException* de) {
+        std::wcerr << L"DOM Exception: " << de->code << cdr::String(L": ") 
+                   << cdr::String(de->msg)
+                   << std::endl;
+        delete de;
+        return EXIT_FAILURE;
+    }
+    catch (const cdr::dom::SAXParseException& spe) {
+        std::wcerr << L"SAX Parse Exception: " << spe.getMessage()
+                   << L" at line " << spe.getLineNumber()
+                   << L", column " << spe.getColumnNumber()
+                   << std::endl;
+        return EXIT_FAILURE;
+    }
+    catch (const cdr::dom::SAXException& se) {
+        std::wcerr << cdr::String(se.getMessage()) << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    catch (const std::exception& e) {
+        std::cerr << L"Exception caught: " << e.what() << "\n";
         return EXIT_FAILURE;
     }
     catch (...) {
@@ -79,7 +106,7 @@ std::string readSchemaFile(const char* name)
 void writeDtd(const cdr::xsd::Schema& schema)
 {
     std::cout << "<?xml version='1.0' encoding='UTF-8'?>\n";
-    writeElement(schema, schema.getTopElement());
+    writeElement(schema, schema.getTopElement(), true);
 }
 
 /**
@@ -87,7 +114,8 @@ void writeDtd(const cdr::xsd::Schema& schema)
  * output.  Element object cannot be const because it needs to lookup
  * and store its type information.
  */
-void writeElement(const cdr::xsd::Schema& schema, cdr::xsd::Element& elem)
+void writeElement(const cdr::xsd::Schema& schema, cdr::xsd::Element& elem,
+                  bool isTopElement)
 {
     // Find out what type we are (from the type name).
     const cdr::xsd::Type *type = elem.getType(schema);
@@ -136,6 +164,10 @@ void writeElement(const cdr::xsd::Schema& schema, cdr::xsd::Element& elem)
                 std::cout << ")>\n";
             break;
         case cdr::xsd::ComplexType::ELEMENT_ONLY:
+            if (isTopElement) {
+                std::cout << "(CdrDocCtl";
+                ++eCounter;
+            }
             if (cType->getElemCount() < 1)
                 throw cdr::Exception(L"Elements required for ELEMENT_ONLY "
                                      L"content");
@@ -170,19 +202,20 @@ void writeElement(const cdr::xsd::Schema& schema, cdr::xsd::Element& elem)
                     (a->getType(schema));
                 if (!aType)
                     throw(L"Missing type for attribute", a->getName());
+#if 0
+                // DTD's can't handle enumerated values which aren't NMTOKENS.
                 const cdr::StringSet& enums = aType->getEnumSet();
                 if (enums.size() > 0) {
-                    std::wcerr << L"enums.size(): " << enums.size() << std::endl;
                     char sep = '(';
                     cdr::StringSet::const_iterator i = enums.begin();
                     while (i != enums.end()) {
-                        std::wcerr << L"enumerated value: " << *i << std::endl;
                         std::cout << sep << (*i++).toUtf8();
                         sep = '|';
                     }
                     std::cout << ')';
                 }
                 else
+#endif
                     std::cout << "CDATA";
                 if (a->isOptional())
                     std::cout << " #IMPLIED";
@@ -190,6 +223,13 @@ void writeElement(const cdr::xsd::Schema& schema, cdr::xsd::Element& elem)
                     std::cout << " #REQUIRED";
             }
             std::cout << ">\n";
+        }
+        if (isTopElement) {
+            //std::cout << "<!ATTLIST " << elem.getName().toUtf8()
+            //          << " xmlns:cdr CDATA #IMPLIED>\n";
+            std::cout << "<!ELEMENT CdrDocCtl (DocId, DocTitle)>\n";
+            std::cout << "<!ELEMENT DocId (#PCDATA)>\n";
+            std::cout << "<!ELEMENT DocTitle (#PCDATA)>\n";
         }
 
         // Declare any child elements which have not already been declared.
