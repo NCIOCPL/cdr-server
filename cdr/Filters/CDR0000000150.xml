@@ -235,8 +235,7 @@
                               mode = "copy"/>
    <xsl:apply-templates     select = "DosageForm"
                               mode = "copy"/ -->
-   <xsl:apply-templates     select = "ProfessionalDisclaimer"
-                              mode = "copy"/>
+   <xsl:apply-templates     select = "ProfessionalDisclaimer"/>
   </xsl:element>
  </xsl:template>
 
@@ -258,6 +257,52 @@
                               mode = "copy"/>
   </xsl:element>
  </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Add the default Professional disclaimer and an additional disclaimer
+ for NCI supported clinical trials.
+ ==================================================================== -->
+ <xsl:template               match = "ProfessionalDisclaimer">
+  <xsl:element                name = "{name()}">
+   <xsl:apply-templates       mode = "copy"/>
+
+   <xsl:if                    test = "/InScopeProtocol/ProtocolAdminInfo/
+                                       ProtocolLeadOrg/LeadOrganizationID/
+                                       Organization/OrganizationType = 
+                                       'NCI-supported clinical trials group'">
+    <xsl:variable             name = "miscDoc1" 
+                            select = "document(concat('cdr:name:',
+                                      'Cooperative Group Disclaimer;',
+                                      'Protocol site disclaimer',
+                                      '/lastp'))"/>
+    <xsl:apply-templates    select = "$miscDoc1/MiscellaneousDocument/
+                                       MiscellaneousDocumentText/
+                                       Section/Para"
+                              mode = "nciDisclaimer"/>
+    </xsl:if>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Template to create the Para element for the NCI supported clinical 
+ trials Disclaimer and modify the Para id.
+ ==================================================================== -->
+ <xsl:template               match = "Para"
+                              mode = "nciDisclaimer">
+  <Para>
+   <xsl:attribute             name = "id">
+    <xsl:text>_ProtNCIDisclaimer</xsl:text>
+    <xsl:value-of           select = "@cdr:id"/>
+   </xsl:attribute>
+
+   <xsl:apply-templates       mode = "copy"/>
+  </Para>
+ </xsl:template>
+
 
 
  <!-- *
@@ -587,11 +632,9 @@
    [2003-06-26 RMK: no longer true; needed for protocol abstract
     mailers, so this logic must be applied further downstream.]
    ================================================================ -->
-      <xsl:apply-templates   select = "LeadOrgPersonnel"/>
-      <!--
-                                       [not(@Public)]"/>
-        -->
-
+   <LeadOrgPersonnel>
+    <xsl:apply-templates    select = "LeadOrgPersonnel"/>
+   </LeadOrgPersonnel>
   </xsl:element>
  </xsl:template>
 
@@ -609,26 +652,13 @@
   mailers; implement this logic further downstream.]
  ==================================================================== -->
  <xsl:template               match = "LeadOrgPersonnel">
-  <!--
-  <xsl:if                     test = "not(PersonRole='Update person') or
-                                         (PersonRole='Update person'
-                                          and count(PersonRole) &gt; 1)">
-  -->
-   <LeadOrgPersonnel>
-    <xsl:if                    test = "@cdr:id = ../MailAbstractTo">
-     <xsl:attribute            name = "MailAbstractTo">
-      <xsl:value-of          select = "'Y'"/>
-     </xsl:attribute>
-    </xsl:if>
-    <xsl:apply-templates     select = "Person"/>
-   </LeadOrgPersonnel>
-  <!--
-  </xsl:if>
-  -->
+  <xsl:apply-templates      select = "Person"/>
  </xsl:template>
 
  <!--
  ====================================================================
+ Create a ProtPerson element for a lead org or participating org
+ person.
  ==================================================================== -->
  <xsl:template               match = "Person | 
                                       SpecificPerson |
@@ -637,6 +667,21 @@
                             select = "name()"/>
 
   <ProtPerson>
+
+   <!-- These will be stripped before the vendors get the data. -->
+   <xsl:if                    test = "$myScope = 'Person'">
+    <xsl:if                   test = "../@Public = 'No'">
+     <xsl:attribute           name = "Public">
+      <xsl:value-of         select = "'No'"/>
+     </xsl:attribute>
+    </xsl:if>
+    <xsl:if                   test = "../@cdr:id = ../../MailAbstractTo">
+     <xsl:attribute           name = "MailAbstractTo">
+      <xsl:value-of         select = "'Y'"/>
+     </xsl:attribute>
+    </xsl:if>
+   </xsl:if>
+
    <xsl:attribute             name = "ref">
     <xsl:value-of           select = "Person/@cdr:ref"/>
    </xsl:attribute>
@@ -690,14 +735,8 @@
    <xsl:choose>
     <xsl:when                 test = "$myScope = 'Person'">
      <xsl:for-each          select = "../PersonRole">
-      <!--
-      <xsl:if                 test = "not(.='Update person')">
-      -->
        <xsl:apply-templates select = "."
                               mode = "copy"/>
-      <!--
-      </xsl:if>
-      -->
      </xsl:for-each>
     </xsl:when>
     <xsl:when                 test = "$myScope = 'PrivatePracticePerson'">
