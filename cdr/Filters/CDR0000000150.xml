@@ -11,6 +11,9 @@
                          xmlns:cdr = "cips.nci.nih.gov/cdr"
            exclude-result-prefixes = "cdr"
                            version = "1.0">
+<!-- xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                         xmlns:cdr = "cips.nci.nih.gov/cdr"
+                           version = "1.0" -->
 
   <xsl:include href = "cdr:name:Module: Vendor Filter Templates"/>
   
@@ -272,20 +275,20 @@
 
 
 <!-- ==================================================================== 
-     Create the ItemizedList template. 
+     Create the ItemizedList template. (Template used by Patient Section)
      ==================================================================== -->
   <xsl:template              match = "ItemizedList">
     <ItemizedList>
       <xsl:attribute          name = "id">
-        <xsl:value-of       select = "./@id"/>
+        <xsl:value-of       select = "./@cdr:id"/>
       </xsl:attribute>
       <xsl:if                 test = "./@Style">
-       <xsl:attribute          name = "Style">
+       <xsl:attribute         name = "Style">
         <xsl:value-of       select = "./@Style"/>
        </xsl:attribute>
       </xsl:if>
       <xsl:if                 test = "./@Compact">
-       <xsl:attribute          name = "Compact">
+       <xsl:attribute         name = "Compact">
         <xsl:value-of       select = "./@Compact"/>
        </xsl:attribute>
       </xsl:if>
@@ -293,10 +296,33 @@
     </ItemizedList>
   </xsl:template>
     
+<!-- ==================================================================== 
+     Create the ItemizedList template. 
+     ==================================================================== -->
+  <xsl:template              match = "ItemizedList"
+                              mode = "copy">
+    <ItemizedList>
+      <xsl:attribute          name = "id">
+        <xsl:value-of       select = "./@cdr:id"/>
+      </xsl:attribute>
+      <xsl:if                 test = "./@Style">
+       <xsl:attribute         name = "Style">
+        <xsl:value-of       select = "./@Style"/>
+       </xsl:attribute>
+      </xsl:if>
+      <xsl:if                 test = "./@Compact">
+       <xsl:attribute         name = "Compact">
+        <xsl:value-of       select = "./@Compact"/>
+       </xsl:attribute>
+      </xsl:if>
+      <xsl:apply-templates    mode = "copy"/>
+    </ItemizedList>
+  </xsl:template>
+    
 
 
 <!-- ==================================================================== 
-     Create the OrderedList template.
+     Create the OrderedList template. (Template used by Patient Section)
      ==================================================================== -->
   <xsl:template              match = "OrderedList">
     <OrderedList>
@@ -334,12 +360,12 @@
        </xsl:attribute>
       </xsl:if>
       <!-- To be included in June 2003 update  -->
-      <!-- xsl:if                 test = "./@Compact">
+      <!--xsl:if                 test = "./@Compact">
        <xsl:attribute         name = "Compact">
         <xsl:value-of       select = "./@Compact"/>
        </xsl:attribute>
       </xsl:if -->
-      <xsl:apply-templates/>
+      <xsl:apply-templates    mode = "copy"/>
     </OrderedList>
   </xsl:template>
     
@@ -356,7 +382,7 @@
   <xsl:template              match = "ListItem"
                               mode = "copy">
     <ListItem>
-      <xsl:apply-templates/>
+      <xsl:apply-templates    mode = "copy"/>
     </ListItem>
   </xsl:template>
     
@@ -372,7 +398,7 @@
   <xsl:template              match = "ListTitle"
                               mode = "copy">
     <ListTitle>
-      <xsl:apply-templates/>
+      <xsl:apply-templates    mode = "copy"/>
     </ListTitle>
   </xsl:template>
     
