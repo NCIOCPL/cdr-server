@@ -1,7 +1,10 @@
 /*
- * $Id: cdrdata.sql,v 1.2 2000-04-17 21:34:02 bkline Exp $
+ * $Id: cdrdata.sql,v 1.3 2000-04-21 19:49:25 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/17 21:34:02  bkline
+ * Data mods to test CdrCheckAuth command.
+ *
  * Revision 1.1  2000/04/14 14:04:58  bkline
  * Initial revision
  *
@@ -79,6 +82,9 @@ INSERT INTO action(name) VALUES('PUBLISH DOCUMENT')
 INSERT INTO action(name) VALUES('CREATE USER')
 INSERT INTO action(name) VALUES('DELETE USER')
 INSERT INTO action(name) VALUES('MODIFY USER')
+INSERT INTO action(name) VALUES('ADD GROUP')
+INSERT INTO action(name) VALUES('MODIFY GROUP')
+INSERT INTO action(name) VALUES('DELETE GROUP')
 go
 
 INSERT INTO grp(name) VALUES('TRAINEES')
@@ -100,6 +106,9 @@ INSERT INTO grp_action(grp, action, doc_type) VALUES(3, 5, 2)
 INSERT INTO grp_action(grp, action, doc_type) VALUES(3, 6, 1)
 INSERT INTO grp_action(grp, action, doc_type) VALUES(3, 7, 1)
 INSERT INTO grp_action(grp, action, doc_type) VALUES(3, 8, 1)
+INSERT INTO grp_action(grp, action, doc_type) VALUES(3, 9, 1)
+INSERT INTO grp_action(grp, action, doc_type) VALUES(3, 10, 1)
+INSERT INTO grp_action(grp, action, doc_type) VALUES(3, 11, 1)
 INSERT INTO grp_action(grp, action, doc_type) VALUES(4, 1, 3)
 INSERT INTO grp_action(grp, action, doc_type) VALUES(4, 2, 3)
 INSERT INTO grp_action(grp, action, doc_type) VALUES(4, 3, 3)
@@ -109,4 +118,5 @@ INSERT INTO grp_usr(grp, usr) VALUES(1, 2)
 INSERT INTO grp_usr(grp, usr) VALUES(2, 1)
 INSERT INTO grp_usr(grp, usr) VALUES(1, 3)
 INSERT INTO grp_usr(grp, usr) VALUES(4, 3)
+INSERT INTO grp_usr(grp, usr) VALUES(3, 1)
 go
