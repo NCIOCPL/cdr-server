@@ -1,5 +1,5 @@
 /*
- * $Id: CdrTestClient.java,v 1.2 2000-04-17 03:15:23 bkline Exp $
+ * $Id: CdrTestClient.java,v 1.3 2001-01-18 14:49:15 bkline Exp $
  *
  * Test client (Java version) for sending commands to CDR server.
  * 
@@ -16,6 +16,9 @@
  * The encoding for the XML must be UTF-8.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/17 03:15:23  bkline
+ * Allowed "-" to mean standard input on command line.
+ *
  * Revision 1.1  2000/04/13 17:12:48  bkline
  * Initial revision
  *
@@ -48,7 +51,7 @@ class CdrTestClient {
             byte[] rspBytes = new byte[nRspBytes];
             in.readFully(rspBytes);
             String response = utf8ToUtf16(rspBytes);
-            System.out.println("Server response:\n" + response);
+            System.out.println("<!-- Server response: -->\n" + response);
         } catch (Exception e) { System.err.println("error: " + e); }
     }
     private static byte[] readBytes(InputStream inputStream)
