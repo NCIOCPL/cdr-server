@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.25 2002-06-18 20:33:52 ameyer Exp $
+ * $Id: CdrCommand.h,v 1.26 2002-06-26 02:21:52 ameyer Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2002/06/18 20:33:52  ameyer
+ * Added CdrCanDo command.
+ *
  * Revision 1.24  2002/05/03 20:35:45  bkline
  * New CdrListVersions command added.
  *
@@ -625,6 +628,12 @@ namespace cdr {
     /**
      * Lists the most recent versions for the specified document.
      *
+     * Safety note:
+     *   This command is safest if called on a checked out document
+     *   for which the caller holds the check-out.  That prevents another
+     *   thread from altering the version history while the command
+     *   is executed and/or before the results are used.
+     *
      *  @param      session     contains information about the current user.
      *  @param      node        contains the XML for the command.
      *  @param      conn        reference to the connection object for the
@@ -634,6 +643,32 @@ namespace cdr {
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
     extern String listVersions  (Session&          session,
+                                 const dom::Node&  node,
+                                 db::Connection&   conn);
+
+    /**
+     * Gives the version numbers of the last version and the last
+     * publishable version, which may be the same, and reports
+     * whether the last version is identical to the current
+     * working document according to isChanged().
+     *
+     * Similar to listVersions, but for a different purpose.
+     *
+     * Safety note:
+     *   This command is safest if called on a checked out document
+     *   for which the caller holds the check-out.  That prevents another
+     *   thread from altering the version history while the command
+     *   is executed and/or before the results are used.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String lastVersions  (Session&          session,
                                  const dom::Node&  node,
                                  db::Connection&   conn);
 
