@@ -171,6 +171,71 @@
 
  <!--
  ====================================================================
+ Template to modify SummarySection id attributes containing text from
+ misc. documents.
+ This code will need to be changed if the id attribute values for the
+ documents are being changed.
+ Treatment, HP Summaries, English - _ForMoreInfo_14
+ Treatment, HP Summaries, Spanish - _ForMoreInfo_7
+ CAM Summaries                    - _ForMoreInfo_2
+ ==================================================================== -->
+ <xsl:template                   match = "SummarySection
+                                            [@id='_ForMoreInfo_14'] |
+                                          SummarySection
+                                            [@id='_ForMoreInfo_7']  |
+                                          SummarySection
+                                            [@id='_ForMoreInfo_2']"
+                                  mode = "copy">
+  <xsl:element                    name = "{name()}">
+   <xsl:for-each                select = "@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+   <xsl:apply-templates           mode = "misc"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Template to copy all nodes as is but change the id attribute values
+ by appending a text value '_ForMoreInfo'.
+ ==================================================================== -->
+ <xsl:template                   match = "@* | *" 
+                                  mode = "misc">
+  <xsl:element                    name = "{name()}">
+   <xsl:for-each                select = "@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:choose>
+      <xsl:when                   test = "name() = 'id'">
+       <!-- 
+       The CAM summaries already contain the '_ForMoreInfo' value on 
+       the first level nodes.  Don't append again.
+       =============================================================== -->
+       <xsl:choose>
+        <xsl:when                 test = "contains(., 'ForMoreInfo')">
+         <xsl:value-of          select = "."/>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:text>_ForMoreInfo</xsl:text>
+         <xsl:value-of          select = "."/>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of              select = "."/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:attribute>
+   </xsl:for-each>
+   <xsl:apply-templates           mode = "misc"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
  Drop the cdr namespace in cdr:id with mode = "copy".
  ==================================================================== -->
  <xsl:template               match = "@cdr:id"
