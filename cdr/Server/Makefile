@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.3 2000-04-13 17:09:37 bkline Exp $
+# $Id: Makefile,v 1.4 2000-04-15 14:13:39 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.3  2000/04/13 17:09:37  bkline
+# Added rule for building server.
+#
 # Revision 1.2  2000/04/11 17:51:30  bkline
 # Added rule for building test driver for CdrString class.  Enhanced 'make
 # clean' rule.
@@ -30,14 +33,25 @@ HDRS  =$(CDRINC)\CdrString.h \
        $(CDRINC)\CdrException.h \
        $(CDRINC)\CdrDom.h \
        $(CDRINC)\CdrCommand.h \
+       $(CDRINC)\CdrDbConnection.h \
+       $(CDRINC)\CdrDbStatement.h \
+       $(CDRINC)\CdrDbResultSet.h \
+       $(CDRINC)\CdrCommand.h \
        $(CDRINC)\CdrSession.h
+OBJS  =CdrString.obj \
+       CdrXsd.obj \
+       CdrDom.obj \
+       CdrLogon.obj \
+       CdrDbConnection.obj \
+       CdrDbStatement.obj \
+       CdrDbResultSet.obj
 
 #--------------------------------------------------------------------------
 # Rule for building CDR server.
 #--------------------------------------------------------------------------
-$(CDRSVR): CdrServer.obj CdrCommand.obj $(CDRLIB)
-	$(CC) $(CFLAGS) -Fe$(CDRSVR) CdrServer.obj CdrCommand.obj $(CDRLIB) \
-$(XML4C)\lib\xerces-c_1.lib wsock32.lib 
+$(CDRSVR): CdrServer.obj CdrCommand.obj CdrLogon.obj $(CDRLIB)
+	$(CC) $(CFLAGS) -Fe$(CDRSVR) CdrServer.obj CdrCommand.obj CdrLogon.obj \
+    $(CDRLIB) $(XML4C)\lib\xerces-c_1.lib wsock32.lib odbc32.lib
 
 CdrServer.obj: CdrServer.cpp $(HDRS)
 	$(CC) $(CFLAGS) -c CdrServer.cpp
@@ -45,11 +59,14 @@ CdrServer.obj: CdrServer.cpp $(HDRS)
 CdrCommand.obj: CdrCommand.cpp $(HDRS)
 	$(CC) $(CFLAGS) -c CdrCommand.cpp
 
+CdrLogon.obj: CdrLogon.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrLogon.cpp
+
 #--------------------------------------------------------------------------
 # Rule for building CDR library.
 #--------------------------------------------------------------------------
-$(CDRLIB): CdrString.obj CdrXsd.obj CdrDom.obj
-	lib /OUT:$(CDRLIB) CdrString.obj CdrXsd.obj CdrDom.obj
+$(CDRLIB): $(OBJS)
+	lib /OUT:$(CDRLIB) $(OBJS)
 
 CdrString.obj: CdrString.cpp $(CDRINC)\CdrString.h
 	$(CC) $(CFLAGS) -c CdrString.cpp
@@ -59,6 +76,15 @@ CdrXsd.obj: CdrXsd.cpp $(HDRS)
 
 CdrDom.obj: CdrDom.cpp $(HDRS)
 	$(CC) $(CFLAGS) -c CdrDom.cpp
+
+CdrDbConnection.obj: CdrDbConnection.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrDbConnection.cpp
+
+CdrDbStatement.obj: CdrDbStatement.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrDbStatement.cpp
+
+CdrDbResultSet.obj: CdrDbResultSet.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrDbResultSet.cpp
 
 tCdrString.exe: tCdrString.cpp $(CDRLIB)
 	$(CC) $(CFLAGS) tCdrString.cpp $(CDRLIB)
