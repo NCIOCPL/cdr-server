@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLogon.cpp,v 1.2 2000-04-15 14:05:10 bkline Exp $
+ * $Id: CdrLogon.cpp,v 1.3 2000-04-16 21:43:26 bkline Exp $
  *
  * Opens a new CDR session.
  *
@@ -15,6 +15,9 @@
  *  </CdrLogonResp>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/15 14:05:10  bkline
+ * First debugged version.
+ *
  * Revision 1.1  2000/04/15 12:23:14  bkline
  * Initial revision
  */
@@ -63,8 +66,8 @@ cdr::String cdr::logon(cdr::Session& session,
         static char randomChars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     static size_t nRandomChars = sizeof randomChars - 1;
     srand(ticks);
-    sprintf(idBuf, "%lX-%lX-%d-%c%c%c%c%c%c%c%c%c%c%c%c",
-        ticks, now, id, 
+    sprintf(idBuf, "%lX-%lX-%03d-%c%c%c%c%c%c%c%c%c%c%c%c",
+        now, ticks, id, 
         randomChars[rand() % nRandomChars],
         randomChars[rand() % nRandomChars],
         randomChars[rand() % nRandomChars],
@@ -86,6 +89,9 @@ cdr::String cdr::logon(cdr::Session& session,
     insert.setInt(2, id);
     insert.executeQuery(insertQuery);
     
+    // Populate the session object.
+    session.lookupSession(sessionId, conn);
+
     // Send back the command response.
     cdr::String response = L"  <CdrLogonResp>\n   <SessionId>";
     response += sessionId + L"</SessionId>\n  </CdrLogonResp>\n";
