@@ -1,0 +1,196 @@
+<CdrDoc Type='Filter' Id='CDR0000335166'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Module: Checkbox Formatter</DocTitle>
+<DocComment>Restored after refresh of CDR database on Mahler</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             version = "1.0"
+                           xmlns:cdr = "cips.nci.nih.gov/cdr"
+             exclude-result-prefixes = "cdr">
+
+ <!-- 
+ Checkbox parameters passed via the Web interface
+ ==================================================== -->
+ <xsl:param                   name = "DisplayGlossaryTermList"/>
+ <xsl:param                   name = "DisplayComments"
+                            select = "'N'"/>
+ <xsl:param                   name = "ShowStandardWording"/>
+
+
+ <!-- 
+ ================================================================
+ Display a Table of Glossary Terms at the end of Patient Summary 
+ QC Report if the 'Include Glossary Terms' checkbox is checked.
+ ================================================================ -->
+ <xsl:template               match = "GlossaryTerms">
+  <xsl:if                     test = "$DisplayGlossaryTermList='Y'">
+   <hr />
+   <b>
+    <h1>
+     <xsl:text>Table of Glossary Terms</xsl:text>
+    </h1>
+   </b>
+   <p/>
+        
+   <table                   border = "1"> 
+    <tr>
+     <th>
+      <b>
+       <xsl:text>Term Text</xsl:text>
+      </b>
+     </th>
+
+     <th>
+      <b>
+       <xsl:text>Term Name</xsl:text>
+      </b>
+     </th>
+     <th>
+      <b>
+       <xsl:text>Definition Text</xsl:text>
+      </b>
+     </th>
+    </tr>
+           
+    <xsl:for-each           select = "GlossaryTerm">
+     <tr>
+      <td>
+       <xsl:value-of        select = "GlossaryTermRef"/>
+      </td>
+      <td>
+       <xsl:value-of        select = "TermName"/>
+      </td>
+      <td>
+       <xsl:value-of        select = "DefinitionText"/>
+      </td>
+     </tr>
+    </xsl:for-each>
+   </table>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ ================================================================
+ Display Comments - Redline/Strikeout
+ The comments are being displayed without insertion/deletion 
+ markup for insertions but _with_ markup for deletions
+ ================================================================ -->
+ <xsl:template               match = "Comment" 
+                              mode = "RS">
+  <xsl:if                     test = "$DisplayComments = 'Y'">
+   <xsl:choose>
+    <xsl:when                 test = "Deletion">
+     <strike>
+      <i>
+       <b>
+        <xsl:text> [Comment: </xsl:text>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </b>
+      </i>
+     </strike>
+    </xsl:when>
+    <xsl:otherwise>
+     <i>
+      <b>
+       <xsl:choose>
+        <xsl:when     test = "Insertion">
+         <font color="red">
+          <xsl:text>[Comment: </xsl:text>
+          <xsl:apply-templates/>
+          <xsl:text>] </xsl:text>
+         </font>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:text>[Comment: </xsl:text>
+         <xsl:apply-templates/>
+         <xsl:text>] </xsl:text>
+        </xsl:otherwise>
+       </xsl:choose>
+      </b>
+     </i>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ ================================================================
+ Display Comments - Bold/UnderLine
+ ================================================================ -->
+ <!-- xsl:template               match = "Comment" 
+                              mode = "BU">
+  <xsl:if                     test = "$DisplayComments = 'Y'">
+   <i>
+    <b>
+     <xsl:text>[Comment: </xsl:text>
+     <xsl:apply-templates/>
+     <xsl:text>] </xsl:text>
+    </b>
+   </i>
+  </xsl:if>
+ </xsl:template -->
+
+
+ <!-- 
+ ================================================================
+ Display the Comment elements with markup if the checkbox
+ is checked.
+ The comments are being displayed without insertion/deletion
+ markup within insertion and are not displayed by default for 
+ the deletions.
+ ================================================================ -->
+ <xsl:template               match = "Comment">
+  <xsl:if                     test = "$DisplayComments = 'Y'">
+   <xsl:choose>
+    <xsl:when                 test = "Insertion">
+     <i>
+      <b>
+       <u>
+       <xsl:text>[Comment: </xsl:text>
+       <xsl:apply-templates/>
+       <xsl:text>] </xsl:text>
+       </u>
+      </b>
+     </i>
+    </xsl:when>
+    <xsl:otherwise>
+     <i>
+      <b>
+       <xsl:text>[Comment: </xsl:text>
+       <xsl:apply-templates/>
+       <xsl:text>] </xsl:text>
+      </b>
+     </i>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ ================================================================
+ Display the StandardWording elements with markup if the checkbox
+ is checked, otherwise just display regular text.
+ ================================================================ -->
+ <xsl:template               match = "StandardWording">
+  <xsl:choose>                   
+   <xsl:when                  test = "$ShowStandardWording = 'Y'">
+    <font                    color = "#009900">
+     <xsl:apply-templates/>
+    </font>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:apply-templates/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+</xsl:transform>]]>
+</CdrDocXml>
+</CdrDoc>
