@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.16 2001-06-20 00:53:28 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.17 2001-06-22 00:29:23 ameyer Exp $
  *
  */
 
@@ -59,6 +59,7 @@ cdr::CdrDoc::CdrDoc (
     revisedXml (L""),
     revFilterFailed (false),
     revFilterLevel (0),
+    titleFilter (L""),
     Title (L"")
 {
 
@@ -86,14 +87,16 @@ cdr::CdrDoc::CdrDoc (
         Id = 0;
 
     // Check DocType - must be one of recognized types
-    std::string qry = "SELECT id FROM doc_type WHERE name = ?";
+    // Get name of XSLT filter to generate title at the same time
+    std::string qry = "SELECT id, title_filter FROM doc_type WHERE name = ?";
     cdr::db::PreparedStatement select = dbConn.prepareStatement(qry);
     select.setString (1, TextDocType);
     cdr::db::ResultSet rs = select.executeQuery();
     if (!rs.next())
         throw cdr::Exception(L"CdrDoc: DocType '" + TextDocType +
                              L"' is invalid");
-    DocType = rs.getInt(1);
+    DocType     = rs.getInt(1);
+    titleFilter = rs.getString(2);
 
     // Default values for control elements in the document table
     // All others are defaulted to NULL by cdr::String constructor
@@ -170,15 +173,13 @@ cdr::CdrDoc::CdrDoc (
     }
 
     // Check for absolutely required fields
-    if (Title.size() == 0)
-        // XXXX CHECK THE doc_type table for a new column (not yet there)
-        // If present, it's the id of a filter to be used in constructing
-        //   the title from the document xml itself
-        // If not present, and no DocTitle passed, we have an error
-        // XXXX IMPLEMENT WHEN FILTERING IS READY
-        throw cdr::Exception (L"CdrDoc: Missing required 'DocTitle' element");
     if (Xml.size() == 0)
         throw cdr::Exception (L"CdrDoc: Missing required 'Xml' element");
+
+    // If a title should be system generated, replace whatever came
+    //   in with the transaction
+    if (titleFilter.size() > 0)
+        createTitle();
 
 } // CdrDoc ()
 
@@ -202,6 +203,7 @@ cdr::CdrDoc::CdrDoc (
                         "                 d.xml,"
                         "                 d.comment,"
                         "                 t.name,"
+                        "                 t.title_filter,"
                         "                 b.data"
                         "            FROM document d"
                         "            JOIN doc_type t"
@@ -224,7 +226,8 @@ cdr::CdrDoc::CdrDoc (
     Xml         = rs.getString (6);
     Comment     = cdr::entConvert (rs.getString (7));
     TextDocType = rs.getString (8);
-    BlobData    = rs.getBytes (9);
+    titleFilter = rs.getString (9);
+    BlobData    = rs.getBytes (10);
     select.close();
 
     // We haven't filtered this for insertion, deletion markup
@@ -818,10 +821,12 @@ bool cdr::CdrDoc::parseAvailable ()
  */
 
 cdr::String cdr::CdrDoc::getRevisionFilteredXml (
-    cdr::String &errorStr,
     int         revisionLevel,
     bool        getIfUnfiltered
 ) {
+    // String to receive warnings, errors, etc. from XSLT
+    cdr::String errorStr = L"";
+
     // Validate parameter
     if (revisionLevel < 1 || revisionLevel > 3)
         throw cdr::Exception (L"CdrDoc::getRevisedXml: Illegal revision filter "
@@ -858,6 +863,12 @@ return Xml;
                                cdr::String (e.what ()));
         }
 
+        // Append any warnings
+        if (errorStr.size() > 0)
+            errList.push_back (
+                L"Revision Markup Filter returned these messages: " +
+                errorStr);
+
         // If successful, save level info
         if (!revFilterFailed) {
             if (revisedXml.size() > 0)
@@ -883,6 +894,55 @@ return Xml;
     // Nothing left to return
     return L"";
 }
+
+
+/*
+ * Generate a title for the document by means of an XSLT filter.
+ */
+
+void cdr::CdrDoc::createTitle()
+{
+    // If a filter is available, use it
+    if (titleFilter.size() > 0) {
+
+        // If revision markup not yet filtered, filter it now.
+        // This is needed because it might affect the title generation fields
+        cdr::String xml = getRevisionFilteredXml(DEFAULT_REVISION_LEVEL, true);
+
+
+        // Generate title
+        Title = L"";
+        cdr::String filterMsgs = L"";
+        try {
+            Title = cdr::filterDocument (Xml, titleFilter, docDbConn,
+                                         &filterMsgs);
+        }
+        catch (cdr::Exception e) {
+            // Add an error to the doc object
+            errList.push_back (L"Generating title: " + cdr::String (e.what()));
+            Title = L"";
+        }
+
+        // If any messages returned, make them available for later viewing
+        if (filterMsgs.size() > 0)
+            errList.push_back (
+                L"Generating title, filter produced these messages: " +
+                filterMsgs);
+    }
+
+    // If we still have no title because:
+    //   No title filter defined and no title supplied by other means, or
+    //   Title filter ran but generated no output, or
+    //   Title filter generated terminal error
+    // Then
+    //   Generate a default error title.
+    if (Title.size() == 0) {
+        errList.push_back (
+            L"No title available for document, using default error title");
+        Title = L"!No title available for this document";
+    }
+}
+
 
 /**
  * Mark a document as malformed
