@@ -1,15 +1,18 @@
 #----------------------------------------------------------------------
 #
-# $Id: TransferDb.py,v 1.1 2001-12-24 01:07:50 bkline Exp $
+# $Id: TransferDb.py,v 1.2 2002-02-14 19:03:28 bkline Exp $
 #
 # Transfers newly generated cdr database from CDRDEV to MMDB2.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.1  2001/12/24 01:07:50  bkline
+# Initial revision
+#
 #----------------------------------------------------------------------
 
 import cdrdb
 
-db   = 'foo'
+db   = 'cdr'
 conn = cdrdb.connect(dataSource = 'CDRDEV')
 curs = conn.cursor()
 conn.setAutoCommit()
