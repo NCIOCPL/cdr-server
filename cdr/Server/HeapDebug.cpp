@@ -1,9 +1,12 @@
 /*
- * $Id: HeapDebug.cpp,v 1.2 2001-12-14 18:28:06 bkline Exp $
+ * $Id: HeapDebug.cpp,v 1.3 2002-03-04 20:52:59 bkline Exp $
  *
  * Instrumentation for tracking down dynamic memory leaks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2001/12/14 18:28:06  bkline
+ * Added heapDebugging flag.
+ *
  * Revision 1.1  2001/12/14 15:22:20  bkline
  * Initial revision
  *
@@ -13,9 +16,12 @@
 #ifndef _DEBUG
 #define _DEBUG 1
 #endif
+#ifndef _CRTDBG_MAP_ALLOC
+#define _CRTDBG_MAP_ALLOC
+#endif
+#include <stdlib.h>
 #include <crtdbg.h>
 #include <iostream>
-#include <malloc.h>
 
 static bool heapDebugging = false;
 void setHeapDebugging(bool flag) { heapDebugging = flag; }
