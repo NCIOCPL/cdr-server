@@ -31,7 +31,10 @@
  <xsl:template                 match = "/">
   <AddressElements>
    <xsl:apply-templates       select = "/Person/PersonNameInformation"/>
-   <xsl:apply-templates       select = "/Person/PersonLocations"/>
+   <xsl:apply-templates       select = "/Person/PersonLocations">
+    <xsl:with-param             name = "fragId"
+                              select = "$fragId"/>
+   </xsl:apply-templates>
   </AddressElements>
  </xsl:template>
 
@@ -43,6 +46,7 @@
  home addresses at her request.
  =========================================================================== -->
  <xsl:template                 match = "PersonLocations">
+  <xsl:param                    name = "fragId"/>
   <xsl:apply-templates        select = "PrivatePractice/
                                         PrivatePracticeLocation
                                         [@cdr:id = $fragId]"/>
@@ -53,10 +57,22 @@
 
  <!--
  ===========================================================================
+ Stub to be overridden when we want these elements.  Does absolutely nothing.
+ =========================================================================== -->
+ <xsl:template                  name = "getPhoneFaxAndEmail">
+  <xsl:param                    name = "orgLoc"/>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
  Handle the easy case: a private practice or home location.
  =========================================================================== -->
  <xsl:template                 match = "PrivatePracticeLocation | Home">
   <xsl:apply-templates        select = "PostalAddress"/>
+  <xsl:call-template            name = "getPhoneFaxAndEmail">
+   <xsl:with-param              name = "orgLoc"
+                              select = "''"/>
+  </xsl:call-template>
  </xsl:template>
 
  <!--
@@ -109,6 +125,10 @@
     <xsl:apply-templates      select = "$orgLoc/Location/PostalAddress"/>
    </xsl:otherwise>
   </xsl:choose>
+  <xsl:call-template            name = "getPhoneFaxAndEmail">
+   <xsl:with-param              name = "orgLoc"
+                              select = "$orgLoc"/>
+  </xsl:call-template>
  </xsl:template>
 
  <!--
