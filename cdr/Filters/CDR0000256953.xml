@@ -1,0 +1,66 @@
+<CdrDoc Type='Filter' Id='CDR0000256953'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Table Formatter</DocTitle>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+  <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                 version="1.0"
+                 xmlns:cdr="cips.nci.nih.gov/cdr">
+<!--written by C.Burg 7/30/2002 -->
+
+
+ <!-- =================================================================
+                    Display a table-new format
+      ================================================================= -->
+             <xsl:template match="Table">
+             <xsl:if test="Title">
+                 <br />
+             <b><xsl:apply-templates select="Title"/></b><br />
+              </xsl:if>
+              <table border='1' valign='top' cellspacing='0' cellpadding='0' width='90%'>
+              <xsl:attribute name='border'>1</xsl:attribute>
+              <xsl:for-each select="TGroup/THead/Row">
+              <tr>
+              <xsl:for-each select="entry">
+              <th><b><xsl:apply-templates/></b></th>
+              </xsl:for-each>
+              </tr>
+              </xsl:for-each>
+              <xsl:for-each select="TGroup/TBody/Row">
+              <tr>
+              <xsl:for-each select='entry'>
+              <xsl:variable name="cols" select="../../..@Cols"/>
+              <xsl:if test="not(@NameEnd)"> 
+              <xsl:if test="@MoreRows">
+              <xsl:variable name="rows" select="@MoreRows"/>
+              <td rowspan='{$rows+1}'><xsl:apply-templates select="."/></td>
+              </xsl:if>
+              <xsl:if test="not(@MoreRows)">
+              <td ><xsl:apply-templates select="."/></td>
+              </xsl:if>
+              </xsl:if>
+              <xsl:if test="@NameEnd"> 
+              
+             <td colspan='{$cols}' width='80%'><xsl:apply-templates select="."/></td>
+            </xsl:if>
+       
+            </xsl:for-each>
+            </tr>
+            </xsl:for-each>
+            <xsl:for-each select="TGroup/TFoot/Row">
+              <tr>
+              <xsl:for-each select="entry">
+               <xsl:variable name="cols" select="../../..@Cols"/>
+              <td colspan='{$cols}' width='60%'><i><xsl:apply-templates/></i></td>
+              </xsl:for-each>
+              </tr>
+              </xsl:for-each>
+      
+            </table>
+            <br />
+           </xsl:template>
+           </xsl:transform>]]>
+</CdrDocXml>
+</CdrDoc>
