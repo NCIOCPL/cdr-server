@@ -27,8 +27,21 @@
  ==================================================================== -->
  <xsl:template               match = "SpecificPostalAddress |
                                       PostalAddress">
+  <xsl:param                  name = "native"
+                            select = "''"/>
+
   <xsl:element                name = "PostalAddress">
-  <xsl:apply-templates     select = "Street"
+   <xsl:if                    test = "@Public">
+    <xsl:attribute            name = "Public">
+     <xsl:value-of          select = "'No'"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:if                    test = "$native">
+    <xsl:attribute            name = "native">
+     <xsl:value-of          select = "'no'"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:apply-templates     select = "Street"
                               mode = "copy"/>
    <xsl:apply-templates     select = "City"
                               mode = "copy"/>
@@ -148,7 +161,10 @@
                                        Organization/OrganizationLocations/
                                        OrganizationLocation/
                                        Location[@cdr:id = $orgAddressFID]/
-                                       PostalAddress"/>
+                                       PostalAddress">
+     <xsl:with-param           name = "native"
+                             select = "'organization'"/>
+    </xsl:apply-templates>
    </xsl:when>
   </xsl:choose>
  </xsl:template>     
