@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.10 2000-05-02 19:26:38 bkline Exp $
+# $Id: Makefile,v 1.11 2000-05-02 21:54:41 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.10  2000/05/02 19:26:38  bkline
+# Added CdrRegEx, CdrBlob, CdrValidateDoc, and prelimintary CdrGetDoc.
+#
 # Revision 1.9  2000/04/26 01:27:03  bkline
 # Added rules for building programmer documentation.  Added CdrSearch
 # and CdrValidateDoc modules.
@@ -81,8 +84,7 @@ LIBOBJS=CdrString.obj \
         CdrSession.obj \
         CdrParserInput.obj \
         CdrRegEx.obj
-OBJS   =CdrServer.obj \
-        CdrCommand.obj \
+OBJS   =CdrCommand.obj \
         CdrLogon.obj \
         CdrLogoff.obj \
         CdrCheckAuth.obj \
@@ -102,72 +104,43 @@ OBJS   =CdrServer.obj \
         CdrGetDoc.obj
 LIBS   =cdr.lib xerces-c_1.lib wsock32.lib odbc32.lib user32.lib
 
+# File suffixes examined for rule interpretation
+.SUFFIXES: .obj .c .cpp
+
+# Targets
+all: init $(CDRSVR) CdrDocs
+
+#--------------------------------------------------------------------------
+# Initialization, saving two generations of old errors
+#--------------------------------------------------------------------------
+init:
+	-cp errs.1 errs.2
+	-cp errs errs.1
+	-rm errs
+
 #--------------------------------------------------------------------------
 # Rule for building CDR server.
 #--------------------------------------------------------------------------
 
-$(CDRSVR): $(OBJS) $(CDRLIB)
-	$(LN) $(LFLAGS) /out:$(CDRSVR) $(OBJS) $(LIBS)
+$(CDRSVR): CdrServer.obj $(OBJS) $(CDRLIB)
+	$(LN) $(LFLAGS) /out:$(CDRSVR) CdrServer.obj $(OBJS) $(LIBS) >> errs
 
-#$(CC) $(CFLAGS) -Fe$(CDRSVR) $(OBJS) $(LIBS)
+#--------------------------------------------------------------------------
+# We're not doing dependency checking.
+# Any change to any header file recompiles all the source.
+#--------------------------------------------------------------------------
+$(OBJS): $(HDRS)
+
+$(LIBOBJS): $(HDRS)
 
 CdrServer.obj: CdrServer.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrServer.cpp
 
-CdrCommand.obj: CdrCommand.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrCommand.cpp
-
-CdrLogon.obj: CdrLogon.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrLogon.cpp
-
-CdrLogoff.obj: CdrLogoff.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrLogoff.cpp
-
-CdrCheckAuth.obj: CdrCheckAuth.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrCheckAuth.cpp
-
-CdrAddGrp.obj: CdrAddGrp.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrAddGrp.cpp
-
-CdrGetGrp.obj: CdrGetGrp.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrGetGrp.cpp
-
-CdrModGrp.obj: CdrModGrp.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrModGrp.cpp
-
-CdrDelGrp.obj: CdrDelGrp.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrDelGrp.cpp
-
-CdrListGrps.obj: CdrListGrps.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrListGrps.cpp
-
-CdrAddUsr.obj: CdrAddUsr.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrAddUsr.cpp
-
-CdrGetUsr.obj: CdrGetUsr.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrGetUsr.cpp
-
-CdrModUsr.obj: CdrModUsr.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrModUsr.cpp
-
-CdrDelUsr.obj: CdrDelUsr.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrDelUsr.cpp
-
-CdrListUsrs.obj: CdrListUsrs.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrListUsrs.cpp
-
-CdrSearch.obj: CdrSearch.cpp $(HDRS) $(CDRINC)/CdrSearch.h
-	$(CC) $(CFLAGS) -c CdrSearch.cpp
-
-CdrValidateDoc.obj: CdrValidateDoc.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrValidateDoc.cpp
-
-CdrGetDoc.obj: CdrGetDoc.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrGetDoc.cpp
-
+#--------------------------------------------------------------------------
+# For Bison, we're not attempting a generic rule
+#--------------------------------------------------------------------------
 BISON_SIMPLE=/etc/bison.cdrtest
 CdrSearch_tab.obj: CdrSearch_tab.c $(HDRS)
-	$(CC) $(CFLAGS) -c -TP CdrSearch_tab.c
+	$(CC) $(CFLAGS) -c -TP CdrSearch_tab.c >> errs
 
 CdrSearch_tab.c: CdrSearch.y $(HDRS) $(CDRINC)/CdrSearch.h
 	bison -p CdrSearch CdrSearch.y
@@ -176,41 +149,11 @@ CdrSearch_tab.c: CdrSearch.y $(HDRS) $(CDRINC)/CdrSearch.h
 # Rule for building CDR library.
 #--------------------------------------------------------------------------
 $(CDRLIB): $(LIBOBJS)
-	lib /OUT:$(CDRLIB) $(LIBOBJS)
+	lib /OUT:$(CDRLIB) $(LIBOBJS) >> errs
 
+
+# This one has a different header dependency
 CdrString.obj: CdrString.cpp $(CDRINC)/CdrString.h
-	$(CC) $(CFLAGS) -c CdrString.cpp
-
-CdrXsd.obj: CdrXsd.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrXsd.cpp
-
-CdrDom.obj: CdrDom.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrDom.cpp
-
-CdrDbConnection.obj: CdrDbConnection.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrDbConnection.cpp
-
-CdrDbStatement.obj: CdrDbStatement.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrDbStatement.cpp
-
-CdrDbResultSet.obj: CdrDbResultSet.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrDbResultSet.cpp
-
-CdrSession.obj: CdrSession.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrSession.cpp
-
-CdrParserInput.obj: CdrParserInput.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrParserInput.cpp
-
-CdrRegEx.obj: CdrRegEx.cpp $(HDRS)
-	$(CC) $(CFLAGS) -c CdrRegEx.cpp
-
-tCdrRegEx.exe: tCdrRegEx.cpp $(HDRS) $(CDRLIB)
-	$(CC) $(CFLAGS) -c tCdrRegEx.cpp
-	$(LN) $(LFLAGS) /out:tCdrRegEx.exe tCdrRegEx.obj $(LIBS)
-
-tCdrString.exe: tCdrString.cpp $(CDRLIB)
-	$(CC) $(CFLAGS) tCdrString.cpp $(CDRLIB)
 
 #--------------------------------------------------------------------------
 # Rule for building CDR programmer documentation.
@@ -220,6 +163,15 @@ CdrDocs: $(DOCS)
 $(DOCS): $(HDRS)
 	ccdoc -html $(DOC) -imgurl images/ $(HDRS)
 	cp -f $(DOC)ccdoc.index.html $(DOCS)
+
+#--------------------------------------------------------------------------
+# Generic rules for object files
+#--------------------------------------------------------------------------
+.c.obj:
+	$(CC) -c $(CFLAGS) $*.c >> errs
+
+.cpp.obj:
+	$(CC) -c $(CFLAGS) $*.cpp >> errs
 
 #--------------------------------------------------------------------------
 # Cleanup rules.
