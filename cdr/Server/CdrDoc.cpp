@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.56 2003-08-04 17:03:26 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.57 2004-02-20 00:35:40 ameyer Exp $
  *
  */
 
@@ -1534,9 +1534,13 @@ void cdr::CdrDoc::updateQueryTerms()
 // Routines to modify the document before saving or validating.
 // Make sure these get called in an order which meets any interdependencies
 // between the preprocessing requirements.
+//
+// This is where we put calls to non-generic code that handles
+// document type specific logic.
 void cdr::CdrDoc::preProcess(bool validating)
 {
     updateProtocolStatus(validating);
+    sortProtocolSites();
     stripXmetalPis(validating);
     genFragmentIds();
 }
@@ -1817,6 +1821,39 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
                           cdr::String(e.what()));
     }
 }
+
+// Sort protocol sites before storing a record.
+void cdr::CdrDoc::sortProtocolSites() {
+
+    // Only run this on protocols
+    if (TextDocType != L"InScopeProtocol")
+        return;
+
+    // Generate title
+    cdr::String sortedXml  = L"";
+    cdr::String filterMsgs = L"";
+    try {
+        sortedXml = cdr::filterDocumentByScriptSetName (Xml,
+                cdr::String ("Protocol Site Sort Set"),
+                docDbConn, &filterMsgs);
+    }
+    catch (cdr::Exception& e) {
+        // Add an error to the doc object
+        errList.push_back (L"Sorting protocol sites: " +
+                           cdr::String (e.what()));
+    }
+
+    // If any messages returned, make them available for later viewing
+    if (filterMsgs.size() > 0)
+        errList.push_back (
+            L"Sorting protocol sites, filter produced these messages: " +
+            filterMsgs);
+
+    // If we got a result, it replaces the XML that we had
+    if (sortedXml.size() > 0)
+        Xml = sortedXml;
+}
+
 
 /**
  * Create an XSLT script for inserting fragment identifier attributes
