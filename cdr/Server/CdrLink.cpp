@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.13 2002-02-12 21:29:10 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.14 2002-02-15 06:46:13 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2002/02/12 21:29:10  ameyer
+ * Fixed error message.
+ *
  * Revision 1.12  2002/01/31 16:40:06  ameyer
  * Reorganized order of events so that the check for a link target's existence
  * is performed in the CdrLink constructor.  This is needed so that we can
@@ -841,7 +844,7 @@ cdr::String cdr::putLinkType (
         ustmt.setString (2, comment);
         ustmt.setInt    (3, linkId);
     }
-    ustmt.executeQuery();
+    ustmt.executeUpdate();
     ustmt.close();
 
     // If we created a new link type, get its id
@@ -849,7 +852,7 @@ cdr::String cdr::putLinkType (
         cdr::db::PreparedStatement nstmt = conn.prepareStatement (
             "SELECT id FROM link_type WHERE name = ?");
         nstmt.setString (1, typeName);
-        nstmt.executeQuery();
+        cdr::db::ResultSet rs = nstmt.executeQuery ();
         if (!rs.next())
             throw cdr::Exception (L"Can't find new link type '" +
                                   typeName + L"' - can't happen");
@@ -864,6 +867,7 @@ cdr::String cdr::putLinkType (
         cdr::db::PreparedStatement pstmt =
                  conn.prepareStatement (S_delLinkQuery[i]);
         pstmt.setInt (1, linkId);
+std::cout << "Exeuting '" << S_delLinkQuery[i] << "' linkId=" << linkId << "\n";
         pstmt.executeQuery();
         pstmt.close();
         ++i;
@@ -1121,6 +1125,8 @@ static void addLinkSource (
     if (srcField.size() == 0)
         throw cdr::Exception (L"Missing required SrcField field "
                               L"in LinkSource");
+
+std::wcout << L"Adding DocType=" << srcDocType << " elem=" << srcField << L" id=" << typeId << L"\n";
 
     // Failures here shouldn't happen through the
     //  admin interface, so I won't bother to catch
