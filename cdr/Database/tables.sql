@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.82 2003-06-25 13:34:40 bkline Exp $
+ * $Id: tables.sql,v 1.83 2003-08-22 16:34:12 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.82  2003/06/25 13:34:40  bkline
+ * Fixed typo in modification to docs_with_pub_status (missing comma).
+ *
  * Revision 1.81  2003/06/13 20:09:40  bkline
  * Added doc_title to docs_with_pub_status view.
  *
@@ -1401,6 +1404,7 @@ CREATE VIEW published_doc
          AS SELECT pub_proc_doc.*
               FROM pub_proc_doc, pub_event
              WHERE pub_event.status = 'Success'
+               AND pub_event.id = pub_proc_doc.pub_proc
                AND (pub_proc_doc.failure IS NULL
                 OR pub_proc_doc.failure <> 'Y')
 GO
