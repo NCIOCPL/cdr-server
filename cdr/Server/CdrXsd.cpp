@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.2 2000-04-11 21:22:58 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.3 2000-04-12 14:25:34 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/11 21:22:58  bkline
+ * Fleshed out support for simple types; added true type inheritance.
+ *
  * Revision 1.1  2000/04/11 14:15:56  bkline
  * Initial revision
  *
@@ -248,10 +251,8 @@ cdr::xsd::SimpleType::SimpleType(const cdr::xsd::Schema& schema,
             cdr::String nodeName = childNode.getNodeName();
             cdr::dom::Element& e = static_cast<cdr::dom::Element&>(childNode);
             cdr::String value = e.getAttribute(cdr::xsd::VALUE);
-            if (nodeName == cdr::xsd::ENUMERATION) {
-                std::wcerr << L"adding [" << value << L"] to enumset\n";
+            if (nodeName == cdr::xsd::ENUMERATION)
                 enumSet.insert(value);
-            }
             else if (nodeName == cdr::xsd::MIN_INCLUSIVE)
                 minInclusive = value;
             else if (nodeName == cdr::xsd::MAX_INCLUSIVE)
