@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.12 2000-05-16 21:19:26 bkline Exp $
+ * $Id: CdrString.h,v 1.13 2000-06-09 04:01:22 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2000/05/16 21:19:26  bkline
+ * Added packErrors() function.
+ *
  * Revision 1.11  2000/05/09 19:21:59  mruben
  * added operator+= and operator+
  *
@@ -42,6 +45,7 @@
 
 // System headers.
 #include <string>
+#include <sstream>
 #include <set>
 #include <vector>
 #include <list>
@@ -147,7 +151,7 @@ namespace cdr {
          *
          *  @param  s           reference to DOM string to be copied.
          */
-        String(const DOMString& s) 
+        String(const DOMString& s)
             : StdWstring(s.rawBuffer(), s.length()), null(false) {}
 
         /**
@@ -190,7 +194,7 @@ namespace cdr {
          *  @param  s           reference to object to be compared with this
          *                      object.
          *  @return             <code>true</code> iff the contents of this
-         *                      object sort lexically before those of 
+         *                      object sort lexically before those of
          *                      <code>s</code>.
          */
         bool operator<(const String& s) const
@@ -203,7 +207,7 @@ namespace cdr {
          *  @param  s           reference to object to be compared with this
          *                      object.
          *  @return             <code>true</code> iff the contents of this
-         *                      object sort lexically after those of 
+         *                      object sort lexically after those of
          *                      <code>s</code>.
          */
         bool operator>(const String& s) const
@@ -221,23 +225,34 @@ namespace cdr {
          * Parses the integer value represented by the string value of the
          * object.
          *
-         *  @return             integer value represented by the string 
+         *  @return             integer value represented by the string
          *                      value of the object; <code>0</code> if
-         *                      the value of the object does not represent 
+         *                      the value of the object does not represent
          *                      a number.
          */
         int getInt() const;
 
         /**
-         * Parses the floating-point value represented by the string value of 
+         * Parses the floating-point value represented by the string value of
          * the object.
          *
-         *  @return             floating-point value represented by the string 
+         *  @return             floating-point value represented by the string
          *                      value of the object; <code>0.0</code> if
-         *                      the value of the object does not represent 
+         *                      the value of the object does not represent
          *                      a number.
          */
         double getFloat() const;
+
+        /**
+         * Template function to convert any object for which a stringstream
+         * conversion exists to a String.
+         */
+        template <class T> String static toString (const T& in)
+        {
+            std::wostringstream os;
+            os << in;
+            return os.str();
+        }
 
         /**
          * Creates a standard <code>string</code> copy of the value of the
