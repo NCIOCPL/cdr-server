@@ -1,7 +1,11 @@
 /*
- * $Id: CdrString.h,v 1.25 2003-08-04 17:03:26 bkline Exp $
+ * $Id: CdrString.h,v 1.26 2004-03-23 16:26:48 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2003/08/04 17:03:26  bkline
+ * Fixed breakage caused by upgrade to latest version of Microsoft's
+ * C++ compiler.
+ *
  * Revision 1.24  2002/11/25 21:15:48  bkline
  * Added optional doQuotes boolean argument to entConvert() function.
  *
@@ -88,7 +92,7 @@
 #include <map>
 
 // IBM DOM implementation.
-#include <dom/DOMString.hpp>
+#include <xercesc/dom/deprecated/DOMString.hpp>
 
 /**@#-*/
 
@@ -188,7 +192,7 @@ namespace cdr {
          *
          *  @param  s           reference to DOM string to be copied.
          */
-        String(const DOMString& s)
+        String(const xml4c::DOMString& s)
             : StdWstring(s.rawBuffer(), s.length()), null(false) {}
 
         /**
@@ -211,7 +215,7 @@ namespace cdr {
             { assign(s); null = false; return *this; }
         String& operator=(const wchar_t* s)
             { assign(s); null = false; return *this; }
-        String& operator=(const DOMString& s)
+        String& operator=(const xml4c::DOMString& s)
             { assign(s.rawBuffer(), s.length()); null = false; return *this; }
         String& operator=(const std::string& s)
             { utf8ToUtf16(s.c_str()); null = false; return *this; }

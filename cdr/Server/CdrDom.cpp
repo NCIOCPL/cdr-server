@@ -1,7 +1,11 @@
 /*
- * $Id: CdrDom.cpp,v 1.8 2002-11-21 21:01:13 bkline Exp $
+ * $Id: CdrDom.cpp,v 1.9 2004-03-23 16:26:47 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2002/11/21 21:01:13  bkline
+ * Fixed serializing code in insertion operator (replacing special
+ * characters with entities).
+ *
  * Revision 1.7  2001/10/17 13:51:28  bkline
  * Added output insertion operator.
  *
@@ -28,12 +32,12 @@
 #include <iostream> // XXX Substitute logging when in place.
 #include "CdrDom.h"
 #include "CdrException.h"
-#include <framework/MemBufInputSource.hpp>
-#include <sax/SAXParseException.hpp>
+#include <xercesc/framework/MemBufInputSource.hpp>
+#include <xercesc/sax/SAXParseException.hpp>
 
 namespace cdr {
     namespace dom {
-        class ErrorHandler : public ::ErrorHandler {
+        class ErrorHandler : public xml4c::ErrorHandler {
         public:
             void warning(const SAXParseException& e) {
                 // Substitute logging when in place.
@@ -81,8 +85,9 @@ void cdr::dom::Parser::parse(const std::string& xml)
 {
     // Used to track down a bug in xml4c RMK 2000-09-07
     //std::cerr << "XML=[" << xml << "]" << std::endl;
-    MemBufInputSource s((const XMLByte* const)xml.c_str(), xml.size(), "MEM");
-    ((::DOMParser*)this)->parse(s);
+    xml4c::MemBufInputSource s((const XMLByte* const)xml.c_str(),
+                               xml.size(), "MEM");
+    ((xml4c::DOMParser*)this)->parse(s);
 }
 
 void cdr::dom::Parser::parse(const cdr::String& xml)
@@ -94,7 +99,7 @@ void cdr::dom::Parser::parse(const cdr::String& xml)
 void cdr::dom::Parser::parseFile(const char* fileName)
     throw(cdr::dom::DOMException)
 {
-    ((::DOMParser*)this)->parse(fileName);
+    ((xml4c::DOMParser*)this)->parse(fileName);
 }
 
 cdr::String cdr::dom::getTextContent(const cdr::dom::Node& node)

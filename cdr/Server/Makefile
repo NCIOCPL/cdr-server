@@ -1,10 +1,14 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.71 2004-03-22 14:27:24 bkline Exp $
+# $Id: Makefile,v 1.72 2004-03-23 16:26:48 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.71  2004/03/22 14:27:24  bkline
+# Adjustments to use of _DEBUG and _NDEBUG symbols to prevent unwanted
+# linking of the debugging versions of Microsoft's runtime libraries.
+#
 # Revision 1.70  2003/08/14 18:20:02  bkline
 # Moved more modules into cdr.lib (to resolve dependencies).
 #
@@ -262,7 +266,7 @@ SERVICE=$(CDRBIN)/CdrService.exe
 CFLAGS =$(INC) -W3 -GX -MD -GR -nologo
 LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
         /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/$(REVER)
-LIBS   =xerces-c_1.lib sablot.lib wsock32.lib odbc32.lib user32.lib 
+LIBS   =xml4c_5.lib sablot.lib wsock32.lib odbc32.lib user32.lib 
 SVCFLGS=-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT \
         -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MT
 !IF "$(DBG)" == ""

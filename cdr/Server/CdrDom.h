@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.h,v 1.11 2002-05-01 01:05:23 bkline Exp $
+ * $Id: CdrDom.h,v 1.12 2004-03-23 16:26:47 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2002/05/01 01:05:23  bkline
+ * Added pragma to shut off silly Microsoft warnings.
+ *
  * Revision 1.10  2001/10/17 13:52:19  bkline
  * Added output insertion operator for DOM node.
  *
@@ -44,15 +47,15 @@
 #include <iostream>
 
 // Interface to IBM/Apache XML parsers.
-#include <util/PlatformUtils.hpp>
-#include <parsers/DOMParser.hpp>
-#include <framework/StdInInputSource.hpp>
-#include <dom/DOM_Node.hpp>
-#include <dom/DOM_NamedNodeMap.hpp>
-#include <sax/ErrorHandler.hpp>
-#include <sax/SAXException.hpp>
-#include <sax/SAXParseException.hpp>
-#include <dom/DOM_DOMException.hpp>
+#include <xercesc/util/PlatformUtils.hpp>
+#include <xercesc/dom/deprecated/DOMParser.hpp>
+#include <xercesc/framework/StdInInputSource.hpp>
+#include <xercesc/dom/deprecated/DOM_Node.hpp>
+#include <xercesc/dom/deprecated/DOM_NamedNodeMap.hpp>
+#include <xercesc/sax/ErrorHandler.hpp>
+#include <xercesc/sax/SAXException.hpp>
+#include <xercesc/sax/SAXParseException.hpp>
+#include <xercesc/dom/deprecated/DOM_DOMException.hpp>
 
 #include "CdrString.h"
 
@@ -70,35 +73,35 @@ namespace cdr {
         /**
          * Collections of nodes that can be accessed by name.
          */
-        typedef ::DOM_NamedNodeMap  NamedNodeMap;
+        typedef xml4c::DOM_NamedNodeMap  NamedNodeMap;
 
         /**
          * Primary datatype for the DOM model.
          */
-        typedef ::DOM_Node          Node;
+        typedef xml4c::DOM_Node          Node;
 
         /**
          * Predominant node type in the DOM model.
          */
-        typedef ::DOM_Element       Element;
+        typedef xml4c::DOM_Element       Element;
 
         /**
          * Product of a DOM parsing operation.
          */
-        typedef ::DOM_Document      Document;
+        typedef xml4c::DOM_Document      Document;
 
         /**
          * Carries error information for a failure of DOM processing.
          */
-        typedef ::XMLException      XMLException;
-        typedef ::DOM_DOMException  DOMException;
-        typedef ::SAXException      SAXException;
-        typedef ::SAXParseException SAXParseException;
+        typedef xml4c::XMLException      XMLException;
+        typedef xml4c::DOM_DOMException  DOMException;
+        typedef xml4c::SAXException      SAXException;
+        typedef xml4c::SAXParseException SAXParseException;
 
         /**
          * Wrap Parser class, which is not part of standard.
          */
-        class Parser : public ::DOMParser {
+        class Parser : public xml4c::DOMParser {
 
         public:
 
@@ -147,7 +150,7 @@ namespace cdr {
              * Address of an instance of the error handler specialized for
              * the CDR.
              */
-            ErrorHandler*       errorHandler;
+            xml4c::ErrorHandler*       errorHandler;
 
             /**
              * Artificial flag used to perform initialization required by the
@@ -161,7 +164,7 @@ namespace cdr {
              *  @exception      DOMException if a parsing error is encountered.
              */
             static bool doInit() throw(DOMException) { 
-                XMLPlatformUtils::Initialize(); return true; 
+                xml4c::XMLPlatformUtils::Initialize(); return true; 
             }
 
             /**
