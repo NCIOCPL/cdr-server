@@ -6,54 +6,57 @@
 <ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
-   <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                            version="1.0"
-                 xmlns:cdr="cips.nci.nih.gov/cdr">
-  <xsl:import    href = "cdr:name:InLine Markup Formatter"/>
-  <xsl:include   href = "cdr:name:Module: Table Formatter"/>
-  <xsl:output method="html"/>
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
 
-  <xsl:template match="/">
+ <xsl:output                    method = "html" 
+                                indent = "no"/>
 
+ <xsl:import    href = "cdr:name:InLine Markup Formatter"/>
+ <xsl:include   href = "cdr:name:Module: Table Formatter"/>
+ <xsl:include   href = "cdr:name:Module: STYLE Default"/>  
+
+
+ <!-- 
+ ==================================================================
+ Create HTML Output
+ ================================================================== -->
+ <xsl:template                   match = "/">
   <!--Filter written by C.Burg - 4/29/2002 -->
   <!-- Modified  7/5/2002 to include Inline Markup -->
   <!-- Modified  7/22/2002 to include sort for Diagnosis,InterventionName -->
   <!-- Modified 5/1/2003 to run with new denormalization filter -->
    
-   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
-    <HTML>
-    <xsl:variable name="cdrdocs" select="document('cdrx:/*/CdrCtl')"/>
-<HEAD>
-<TITLE><xsl:value-of select="document('cdrutil:/docid')"/>&#xa0;&#xa0;<xsl:value-of select="substring-before($cdrdocs/CdrDocCtl/DocTitle,';')"/></TITLE>
+  <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+  <HTML>
+   <HEAD>
+    <xsl:variable                 name = "cdrdocs" 
+                                select = "document('cdrx:/*/CdrCtl')"/>
+    <TITLE>
+     <xsl:value-of              select = "document('cdrutil:/docid')"/>
+     <xsl:text>: </xsl:text>
+     <xsl:value-of              select = "substring-before($cdrdocs/
+                                          CdrDocCtl/DocTitle,';')"/>
+    </TITLE>
      
-     
-     <!--
-     <LINK REL='stylesheet' 
-           HREF='/stylesheets/protocol2.css' 
-           TYPE='text/css' /> -->
-      <!-- The line-height for p elements and increased margins
+    <!-- The line-height for p elements and increased margins
            added at Lakshmi's request 2003-08-29, #872. -->
-      <STYLE>
-        <!-- h3,h4 {color: Navy}-->
-          li.lnone {list-style-type: none}
-         <!-- li (+.2mm}-->
-         br { +.2mm }
-       li.disc  {list-style:disc}
-       li.square {list-style:square}
-       ol.little-alpha { list-style: lower-alpha; }
-       ol.A { list-style: upper-alpha; }
-       ol.little-roman { list-style: lower-roman; }
-       ol.I { list-style: upper-roman; }
-       ol.d { list-style: decimal; }
-       p, li { line-height: 2.0 }
-       body { margin-left: 10%; margin-right: 10% }
-      </STYLE>
-      
-    </HEAD>
-     <BASEFONT FACE='Arial, Helvetica, sans-serif' /> 
-    <xsl:apply-templates select="InScopeProtocol | ScientificProtocolInfo"/>
-    </HTML>
-    </xsl:template>
+    <STYLE type='text/css'>
+     <xsl:call-template           name = "defaultStyle"/>  
+
+     br    { +.2mm }
+     p, li { line-height: 2.0 }
+     body  { margin-left: 10%; margin-right: 10% }
+    </STYLE>
+   </HEAD>
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif'/> 
+   <xsl:apply-templates         select = "InScopeProtocol | 
+                                          ScientificProtocolInfo"/>
+  </HTML>
+ </xsl:template>
+
+
   <!-- Generate the HTML for the Full QC Report-->
   <xsl:template match="InScopeProtocol | ScientificProtocolInfo">
     <BODY>
