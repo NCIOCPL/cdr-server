@@ -1,9 +1,12 @@
 /*
- * $Id: CdrRegEx.h,v 1.3 2002-03-07 18:15:54 bkline Exp $
+ * $Id: CdrRegEx.h,v 1.4 2002-09-24 13:21:23 bkline Exp $
  *
  * CDR wrapper for regular expression processing.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/03/07 18:15:54  bkline
+ * Update for new version of regex package.
+ *
  * Revision 1.2  2000/05/04 11:52:35  bkline
  * More ccdoc comments.
  *
@@ -19,6 +22,13 @@
 #define UNICODE
 #define CDR_UNICODE_DEFINED_
 #endif
+
+// After consulting with John Maddock and the Boost project team, it was
+// decided that this warning (that a derived class (boost::bad_pattern)
+// is exported by the regex++ DLL when its base class (std::runtime_error)
+// is not exported).  One of the reasons this is harmless is that all
+// of the methods in std::runtime_error are defined inline.
+#pragma warning(disable : 4275)
 
 #include <boost/regex.hpp>
 #include "CdrString.h"
