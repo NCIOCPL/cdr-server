@@ -1,7 +1,11 @@
 /*
- * $Id: CdrXsd.cpp,v 1.4 2000-04-16 22:45:15 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.5 2000-04-26 01:29:23 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/04/16 22:45:15  bkline
+ * Added #pragma to disable annoying warnings about truncated debugging
+ * information.
+ *
  * Revision 1.3  2000/04/12 14:25:34  bkline
  * Removed debugging output.
  *
@@ -44,7 +48,7 @@ cdr::xsd::Schema::Schema(const cdr::dom::Node& schemaElement)
                 topElement = new cdr::xsd::Element(childNode);
             }
             else if (nodeName == cdr::xsd::COMPLEX_TYPE)
-                registerType(new cdr::xsd::ComplexType(childNode));
+                registerType(new cdr::xsd::ComplexType(*this, childNode));
             else if (nodeName == cdr::xsd::SIMPLE_TYPE)
                 registerType(new cdr::xsd::SimpleType(*this, childNode));
         }
@@ -82,14 +86,47 @@ void cdr::xsd::Schema::registerType(const cdr::xsd::Type* type)
 }
 
 /**
+ * Remembers an element definition, so we can look up its type later (in case
+ * we end up validating a record with misplaced elements).
+ */
+void cdr::xsd::Schema::registerElement(const cdr::String& name,
+                                       const cdr::String& type)
+{
+    ElementTypeMap::const_iterator i = elements.find(name);
+    if (i == elements.end())
+        elements[name] = type;
+    else {
+        const cdr::String& oldName = i->second;
+        if (name != oldName) {
+            std::wstring err = std::wstring(L"Redefinition of element ")
+                             + name
+                             + L" from type "
+                             + oldName
+                             + L" to "
+                             + name;
+            throw cdr::Exception(err.c_str());
+        }
+    }
+}
+
+/**
  * Finds a type by name in the schema's type collection.
  */
-const cdr::xsd::Type* cdr::xsd::Schema::lookupType(const cdr::String& typeName) const
+const cdr::xsd::Type* cdr::xsd::Schema::lookupType(const cdr::String& n) const
 {
-    TypeMap::const_iterator i = types.find(typeName);
+    TypeMap::const_iterator i = types.find(n);
     if (i != types.end())
         return i->second;
     return 0;
+}
+
+/**
+ * Finds the type name for a specific element name.
+ */
+cdr::String cdr::xsd::Schema::lookupElementType(const cdr::String& name) const
+{
+    ElementTypeMap::const_iterator i = elements.find(name);
+    return i != elements.end() ? i->second : L"";
 }
 
 /**
@@ -292,7 +329,8 @@ cdr::xsd::SimpleType::SimpleType(const cdr::xsd::Schema& schema,
  * Builds a new schema element object from the xsd:complexType node in the 
  * schema document.
  */
-cdr::xsd::ComplexType::ComplexType(const cdr::dom::Node& dn)
+cdr::xsd::ComplexType::ComplexType(cdr::xsd::Schema& schema,
+                                   const cdr::dom::Node& dn)
 {
     contentType = ELEMENT_ONLY;
     cdr::dom::NamedNodeMap attrs = dn.getAttributes();
@@ -317,10 +355,16 @@ cdr::xsd::ComplexType::ComplexType(const cdr::dom::Node& dn)
         int nodeType = childNode.getNodeType();
         if (nodeType == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String nodeName = childNode.getNodeName();
-            if (nodeName == cdr::xsd::ELEMENT)
-                elementList.push_back(new cdr::xsd::Element(childNode));
+            if (nodeName == cdr::xsd::ELEMENT) {
+                cdr::xsd::Element* e = new cdr::xsd::Element(childNode);
+                cdr::String elementName = e->getName();
+                schema.registerElement(elementName, e->getTypeName());
+                if (!hasElement(elementName))
+                    elemNames.insert(elementName);
+                elemList.push_back(e);
+            }
             else if (nodeName == cdr::xsd::ATTRIBUTE)
-                attributeList.push_back(new cdr::xsd::Attribute(childNode));
+                attrList.push_back(new cdr::xsd::Attribute(childNode));
         }
         childNode = childNode.getNextSibling();
     }
@@ -328,17 +372,29 @@ cdr::xsd::ComplexType::ComplexType(const cdr::dom::Node& dn)
         throw cdr::Exception(L"Name missing for complex type");
 }
 
+#if 0
+/**
+ * Finds element, given its name.  Used for MIXED content type.
+ */
+cdr::xsd::Element* 
+cdr::xsd::ComplexType::getElement(const cdr::String& name) const
+{
+    ElementMap::iterator i = elemMap.find(name);
+    return i == elemMap.end() ? 0 : i->second;
+}
+#endif
+
 /**
  * Cleans up the lists of elements and attributes which make up this type.
  */
 cdr::xsd::ComplexType::~ComplexType()
 {
-    for (cdr::xsd::ElementList::iterator eli = elementList.begin(); 
-         eli != elementList.end(); 
+    for (cdr::xsd::ElementList::iterator eli = elemList.begin(); 
+         eli != elemList.end(); 
          ++eli)
         delete *eli;
-    for (cdr::xsd::AttributeList::iterator ali = attributeList.begin(); 
-         ali != attributeList.end(); 
+    for (cdr::xsd::AttributeList::iterator ali = attrList.begin(); 
+         ali != attrList.end(); 
          ++ali)
         delete *ali;
 }
