@@ -1,21 +1,25 @@
 
 /*
- * $Id: CdrGetGrp.cpp,v 1.1 2000-04-22 09:31:58 bkline Exp $
+ * $Id: CdrGetGrp.cpp,v 1.2 2000-05-03 15:25:41 bkline Exp $
  *
  * Retrieves information about requested group.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/22 09:31:58  bkline
+ * Initial revision
+ *
  */
 
 #include "CdrCommand.h"
+#include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
 
 cdr::String cdr::getGrp(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::db::Connection& dbConnection) 
+                        cdr::db::Connection& conn) 
 {
     // Make sure our user is authorized to retrieve group information.
-    if (!session.canDo(dbConnection, L"GET GROUP", L""))
+    if (!session.canDo(conn, L"GET GROUP", L""))
         throw cdr::Exception(L"GET GROUP action not authorized for this user");
 
     // Extract the group name from the command.
@@ -33,12 +37,10 @@ cdr::String cdr::getGrp(cdr::Session& session,
         throw cdr::Exception(L"Missing group name");
 
     // Look up the base information for the group.
-    cdr::db::Statement grpQuery(dbConnection);
+    std::string query = "SELECT ID, comment FROM grp WHERE name = ?";
+    cdr::db::PreparedStatement grpQuery = conn.prepareStatement(query);
     grpQuery.setString(1, grpName);
-    cdr::db::ResultSet grpRs = grpQuery.executeQuery("SELECT id,"
-                                                     "       comment"
-                                                     "  FROM grp"
-                                                     " WHERE name = ?");
+    cdr::db::ResultSet grpRs = grpQuery.executeQuery();
     if (!grpRs.next())
         throw cdr::Exception(L"Group not found", grpName);
     int         gid     = grpRs.getInt(1);
@@ -51,17 +53,17 @@ cdr::String cdr::getGrp(cdr::Session& session,
                                      + L"</GrpName>\n";
 
     // Find the authorizations associated with this group.
-    cdr::db::Statement authSelect(dbConnection);
+    query = "SELECT a.name,"
+            "       t.name"
+            "  FROM action a,"
+            "       doc_type t,"
+            "       grp_action ga"
+            " WHERE ga.grp = ?"
+            "   AND t.id   = ga.doc_type"
+            "   AND a.id   = ga.action";
+    cdr::db::PreparedStatement authSelect = conn.prepareStatement(query);
     authSelect.setInt(1, gid);
-    const char* authQuery = "SELECT a.name,"
-                            "       t.name"
-                            "  FROM action a,"
-                            "       doc_type t,"
-                            "       grp_action ga"
-                            " WHERE ga.grp = ?"
-                            "   AND t.id   = ga.doc_type"
-                            "   AND a.id   = ga.action";
-    cdr::db::ResultSet authRs = authSelect.executeQuery(authQuery);
+    cdr::db::ResultSet authRs = authSelect.executeQuery();
     while (authRs.next()) {
         cdr::String action  = authRs.getString(1);
         cdr::String docType = authRs.getString(2);
@@ -72,14 +74,14 @@ cdr::String cdr::getGrp(cdr::Session& session,
     }
 
     // Find all the users associated with this group.
-    cdr::db::Statement usrSelect(dbConnection);
-    const char* usrQuery = "SELECT u.name"
-                           "  FROM usr u,"
-                           "       grp_usr g"
-                           " WHERE g.grp = ?"
-                           "   AND g.usr = u.id";
+    query = "SELECT u.name"
+            "  FROM usr u,"
+            "       grp_usr g"
+            " WHERE g.grp = ?"
+            "   AND g.usr = u.id";
+    cdr::db::PreparedStatement usrSelect = conn.prepareStatement(query);
     usrSelect.setInt(1, gid);
-    cdr::db::ResultSet usrRs = usrSelect.executeQuery(usrQuery);
+    cdr::db::ResultSet usrRs = usrSelect.executeQuery();
     while (usrRs.next())
         response += L"   <UserName>" + usrRs.getString(1) + L"</UserName>\n";
 

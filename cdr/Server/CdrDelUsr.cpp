@@ -1,17 +1,21 @@
 
 /*
- * $Id: CdrDelUsr.cpp,v 1.2 2000-04-23 01:19:58 bkline Exp $
+ * $Id: CdrDelUsr.cpp,v 1.3 2000-05-03 15:25:41 bkline Exp $
  *
  * Deletes a user (and any of the user's group memberships) from the CDR.  
  * Fails if any actions have been performed by the user.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/23 01:19:58  bkline
+ * Added function-level comment header.
+ *
  * Revision 1.1  2000/04/22 09:27:18  bkline
  * Initial revision
  */
 
 #include "CdrCommand.h"
 #include "CdrDbResultSet.h"
+#include "CdrDbPreparedStatement.h"
 
 /**
  * Drops any rows from the grp_usr table associated with this user, then drops
@@ -19,10 +23,10 @@
  */
 cdr::String cdr::delUsr(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::db::Connection& dbConnection) 
+                        cdr::db::Connection& conn) 
 {
     // Make sure our user is authorized to delete CDR users.
-    if (!session.canDo(dbConnection, L"DELETE USER", L""))
+    if (!session.canDo(conn, L"DELETE USER", L""))
         throw cdr::Exception(
                 L"DELETE USER action not authorized for this user");
 
@@ -41,26 +45,27 @@ cdr::String cdr::delUsr(cdr::Session& session,
         throw cdr::Exception(L"Missing user name");
 
     // Make sure the user exists.
-    cdr::db::Statement usrQuery(dbConnection);
+    std::string query = "SELECT id FROM usr WHERE name = ?";
+    cdr::db::PreparedStatement usrQuery = conn.prepareStatement(query);
     usrQuery.setString(1, usrName);
-    cdr::db::ResultSet usrRs = usrQuery.executeQuery("SELECT id"
-                                                     "  FROM usr"
-                                                     " WHERE name = ?");
+    cdr::db::ResultSet usrRs = usrQuery.executeQuery();
     if (!usrRs.next())
         throw cdr::Exception(L"User not found", usrName);
     int usrId = usrRs.getInt(1);
     usrQuery.close();
 
     // Drop group memberships.
-    dbConnection.setAutoCommit(false);
-    cdr::db::Statement dropGrps(dbConnection);
+    conn.setAutoCommit(false);
+    query = "DELETE grp_usr WHERE usr = ?";
+    cdr::db::PreparedStatement dropGrps = conn.prepareStatement(query);
     dropGrps.setInt(1, usrId);
-    dropGrps.executeQuery("DELETE grp_usr WHERE usr = ?");
+    dropGrps.executeQuery();
 
     // Finish the job.
-    cdr::db::Statement dropUsr(dbConnection);
+    query = "DELETE usr WHERE id = ?";
+    cdr::db::PreparedStatement dropUsr = conn.prepareStatement(query);
     dropUsr.setInt(1, usrId);
-    dropUsr.executeQuery("DELETE usr WHERE id = ?");
-    dbConnection.commit();
+    dropUsr.executeQuery();
+    conn.commit();
     return L"  <CdrDelUsrResp/>\n";
 }

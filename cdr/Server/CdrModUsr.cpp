@@ -1,15 +1,19 @@
 
 /*
- * $Id: CdrModUsr.cpp,v 1.2 2000-04-23 01:25:07 bkline Exp $
+ * $Id: CdrModUsr.cpp,v 1.3 2000-05-03 15:25:41 bkline Exp $
  *
  * Modifies the attributes and group assignments for an existing CDR user.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/23 01:25:07  bkline
+ * Added function-level comment header.
+ *
  * Revision 1.1  2000/04/22 09:24:57  bkline
  * Initial revision
  */
 
 #include "CdrCommand.h"
+#include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
 
 /**
@@ -19,10 +23,10 @@
  */
 cdr::String cdr::modUsr(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::db::Connection& dbConnection) 
+                        cdr::db::Connection& conn) 
 {
     // Make sure our user is authorized to add users.
-    if (!session.canDo(dbConnection, L"MODIFY USER", L""))
+    if (!session.canDo(conn, L"MODIFY USER", L""))
         throw 
             cdr::Exception(L"MODIFY USER action not authorized for this user");
 
@@ -61,18 +65,26 @@ cdr::String cdr::modUsr(cdr::Session& session,
         throw cdr::Exception(L"Missing password");
 
     // Look up the user.
-    cdr::db::Statement usrQuery(dbConnection);
+    std::string query = "SELECT id FROM usr WHERE name = ?";
+    cdr::db::PreparedStatement usrQuery = conn.prepareStatement(query);
     usrQuery.setString(1, uName);
-    cdr::db::ResultSet usrRs = usrQuery.executeQuery("SELECT id"
-                                                     "  FROM usr"
-                                                     " WHERE name = ?");
+    cdr::db::ResultSet usrRs = usrQuery.executeQuery();
     if (!usrRs.next())
         throw cdr::Exception(L"Failure locating user information");
     int usrId = usrRs.getInt(1);
 
     // Update the row for the user
-    dbConnection.setAutoCommit(false);
-    cdr::db::Statement update(dbConnection);
+    conn.setAutoCommit(false);
+    query = "UPDATE usr"
+            "   SET name     = ?,"
+            "       password = ?,"
+            "       fullname = ?,"
+            "       office   = ?,"
+            "       email    = ?,"
+            "       phone    = ?,"
+            "       comment  = ?"
+            " WHERE id       = ?";
+    cdr::db::PreparedStatement update = conn.prepareStatement(query);
     update.setString(1, uName);
     update.setString(2, password);
     update.setString(3, fullName);
@@ -81,20 +93,13 @@ cdr::String cdr::modUsr(cdr::Session& session,
     update.setString(6, phone);
     update.setString(7, comment);
     update.setInt   (8, usrId);
-    update.executeQuery("UPDATE usr"
-                        "   SET name     = ?,"
-                        "       password = ?,"
-                        "       fullname = ?,"
-                        "       office   = ?,"
-                        "       email    = ?,"
-                        "       phone    = ?,"
-                        "       comment  = ?"
-                        " WHERE id       = ?");
+    update.executeQuery();
 
     // Clear out existing group assignments.
-    cdr::db::Statement del(dbConnection);
+    query = "DELETE grp_usr WHERE usr = ?";
+    cdr::db::PreparedStatement del = conn.prepareStatement(query);
     del.setInt(1, usrId);
-    del.executeQuery("DELETE grp_usr WHERE usr = ?");
+    del.executeQuery();
 
     // Add groups to which user is assigned, if any.
     if (grpList.size() > 0) {
@@ -103,28 +108,24 @@ cdr::String cdr::modUsr(cdr::Session& session,
             const cdr::String gName = *i++;
 
             // Do INSERT the hard way so we can determine success.
-            cdr::db::Statement grpQuery(dbConnection);
+            query = "SELECT id FROM grp WHERE name = ?";
+            cdr::db::PreparedStatement grpQuery =
+                conn.prepareStatement(query);
             grpQuery.setString(1, gName);
             cdr::db::ResultSet rs = 
-                grpQuery.executeQuery("SELECT id"
-                                      "  FROM grp"
-                                      " WHERE name = ?");
+                grpQuery.executeQuery();
             if (!rs.next())
                 throw cdr::Exception(L"Unknown group", gName);
             int grpId = rs.getInt(1);
-            cdr::db::Statement insert(dbConnection);
+            query = "INSERT INTO grp_usr(grp, usr) VALUES(?, ?)";
+            cdr::db::PreparedStatement insert = conn.prepareStatement(query);
             insert.setInt(1, grpId);
             insert.setInt(2, usrId);
-            insert.executeQuery("INSERT INTO grp_usr"
-                                "("
-                                "    grp,"
-                                "    usr"
-                                ")"
-                                "VALUES(?, ?)");
+            insert.executeQuery();
         }
     }
 
     // Report success.
-    dbConnection.commit();
+    conn.commit();
     return L"  <CdrModUsrResp/>\n";
 }

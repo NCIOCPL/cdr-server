@@ -1,15 +1,20 @@
 /*
- * $Id: CdrDbConnection.cpp,v 1.3 2000-04-22 22:15:04 bkline Exp $
+ * $Id: CdrDbConnection.cpp,v 1.4 2000-05-03 15:25:41 bkline Exp $
  *
  * Implementation for ODBC connection wrapper.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/04/22 22:15:04  bkline
+ * Added more comments.
+ *
  * Revision 1.2  2000/04/22 09:33:17  bkline
  * Added transaction support and getLastIdent() method.
  *
  * Revision 1.1  2000/04/15 12:22:32  bkline
  * Initial revision
  */
+
+#include <iostream>
 
 #include "CdrDbConnection.h"
 #include "CdrDbResultSet.h"
@@ -177,4 +182,28 @@ int cdr::db::Connection::getLastIdent()
     if (i.isNull())
         throw cdr::Exception(L"Failure getting last ident value");
     return i;
+}
+
+/**
+ * Returns a string representing the CDR DBMS's idea of the
+ * current time.
+ */
+cdr::String cdr::db::Connection::getDateTimeString() 
+{
+    cdr::db::Statement query(*this);
+    cdr::db::ResultSet rs = query.executeQuery("SELECT GETDATE()");
+    if (!rs.next())
+        throw cdr::Exception(L"Failure getting date from DBMS");
+    return rs.getString(1);
+}
+
+cdr::db::Statement cdr::db::Connection::createStatement()
+{
+    return cdr::db::Statement(*this);
+}
+
+cdr::db::PreparedStatement 
+cdr::db::Connection::prepareStatement(const std::string& s)
+{
+    return PreparedStatement(*this, s);
 }

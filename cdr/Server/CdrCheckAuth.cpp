@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCheckAuth.cpp,v 1.2 2000-04-20 17:12:53 bkline Exp $
+ * $Id: CdrCheckAuth.cpp,v 1.3 2000-05-03 15:25:41 bkline Exp $
  *
  * Reports which actions are allowed for the current session.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/20 17:12:53  bkline
+ * Fixed <CdrCheckAuthResp> tags.
+ *
  * Revision 1.1  2000/04/17 21:23:43  bkline
  * Initial revision
  */
@@ -14,6 +17,7 @@
 #include <map>
 #include "CdrCommand.h"
 #include "CdrDbResultSet.h"
+#include "CdrDbPreparedStatement.h"
 
 // Matrix of action/doctype combinations.
 typedef std::map<cdr::String, cdr::StringSet> Actions;
@@ -101,9 +105,6 @@ void lookupAuth(const cdr::dom::Node& authNode,
         throw cdr::Exception(L"Missing or empty Action element");
 
     // Ask the database which combinations are available.
-    int pos = 1;
-    cdr::db::Statement select(conn);
-    select.setInt(pos++, uid);
     std::string query = "SELECT DISTINCT a.name, t.name"
                         "           FROM action a,"
                         "                doc_type t,"
@@ -114,15 +115,18 @@ void lookupAuth(const cdr::dom::Node& authNode,
                         "            AND a.id   = ga.action"
                         "            AND gu.grp = ga.grp"
                         "            AND gu.usr = ?";
-    if (action != L"*") {
+    if (action != L"*")
         query +=        "            AND a.name = ?";
-        select.setString(pos++, action);
-    }
-    if (docType != L"*") {
+    if (docType != L"*")
         query +=        "            AND t.name = ?";
+    cdr::db::PreparedStatement select = conn.prepareStatement(query);
+    int pos = 1;
+    select.setInt(pos++, uid);
+    if (action != L"*")
+        select.setString(pos++, action);
+    if (docType != L"*")
         select.setString(pos++, docType);
-    }
-    cdr::db::ResultSet rs = select.executeQuery(query.c_str());
+    cdr::db::ResultSet rs = select.executeQuery();
 
     // Add the values in the result set to the map of available actions.
     while (rs.next()) {

@@ -1,14 +1,18 @@
 
 /*
- * $Id: CdrModGrp.cpp,v 1.1 2000-04-22 09:31:32 bkline Exp $
+ * $Id: CdrModGrp.cpp,v 1.2 2000-05-03 15:25:41 bkline Exp $
  *
  * Modifies authorizations, comment, and possibly name of existing group.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/22 09:31:32  bkline
+ * Initial revision
+ *
  */
 
 #include <list>
 #include "CdrCommand.h"
+#include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
 
 struct Auth { cdr::String action, docType; };
@@ -16,10 +20,10 @@ typedef std::list<Auth> AuthList;
 
 cdr::String cdr::modGrp(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::db::Connection& dbConnection) 
+                        cdr::db::Connection& conn) 
 {
     // Make sure our user is authorized to MODIFY groups.
-    if (!session.canDo(dbConnection, L"MODIFY GROUP", L""))
+    if (!session.canDo(conn, L"MODIFY GROUP", L""))
         throw 
             cdr::Exception(L"MODIFY GROUP action not authorized for this user");
 
@@ -58,40 +62,33 @@ cdr::String cdr::modGrp(cdr::Session& session,
         throw cdr::Exception(L"Missing group name");
 
     // Make sure the group exists.
-    cdr::db::Statement grpQuery(dbConnection);
+    std::string query = "SELECT id FROM grp WHERE name = ?";
+    cdr::db::PreparedStatement grpQuery = conn.prepareStatement(query);
     grpQuery.setString(1, grpName);
-    cdr::db::ResultSet grpRs = grpQuery.executeQuery("SELECT id"
-                                                     "  FROM grp"
-                                                     " WHERE name = ?");
+    cdr::db::ResultSet grpRs = grpQuery.executeQuery();
     if (!grpRs.next())
         throw cdr::Exception(L"Unknown group", grpName);
     int grpId = grpRs.getInt(1);
 
     // Update the values for the group row.
-    dbConnection.setAutoCommit(false);
-    cdr::db::Statement update(dbConnection);
-    if (newGrpName.size() > 0) {
-        update.setString(1, newGrpName);
-        update.setString(2, comment);
-        update.setInt(3, grpId);
-        update.executeQuery("UPDATE grp"
-                            "   SET name = ?,"
-                            "       comment = ?"
-                            " WHERE id = ?");
-    }
-    else {
-        update.setString(1, comment);
-        update.setInt(2, grpId);
-        update.executeQuery("UPDATE grp"
-                            "   SET comment = ?"
-                            " WHERE id = ?");
-    }
+    conn.setAutoCommit(false);
+    if (newGrpName.empty())
+        query = "UPDATE grp SET comment = ? WHERE id = ?";
+    else
+        query = "UPDATE grp SET name = ?, comment = ? WHERE id = ?";
+    cdr::db::PreparedStatement update = conn.prepareStatement(query);
+    int pos = 1;
+    if (newGrpName.size() > 0)
+        update.setString(pos++, newGrpName);
+    update.setString(pos++, comment);
+    update.setInt(pos++, grpId);
+    update.executeQuery();
 
     // Clear out any existing authorizations.
-    cdr::db::Statement del(dbConnection);
+    query = "DELETE grp_action WHERE grp = ?";
+    cdr::db::PreparedStatement del = conn.prepareStatement(query);
     del.setInt(1, grpId);
-    del.executeQuery("DELETE grp_action"
-                     " WHERE grp = ?");
+    del.executeQuery();
 
     // Add authorizations back in, if any present.
     if (authList.size() > 0) {
@@ -101,39 +98,34 @@ cdr::String cdr::modGrp(cdr::Session& session,
 
             // Do INSERT the hard way so we can determine success.
             int actionId, docTypeId;
-            cdr::db::Statement actionQuery(dbConnection);
+            query = "SELECT id FROM action WHERE name = ?";
+            cdr::db::PreparedStatement actionQuery =
+                conn.prepareStatement(query);
             actionQuery.setString(1, auth.action);
             cdr::db::ResultSet rs1 = 
-                actionQuery.executeQuery("SELECT id"
-                                         "  FROM action"
-                                         " WHERE name = ?");
+                actionQuery.executeQuery();
             if (!rs1.next())
                 throw cdr::Exception(L"Unknown action", auth.action);
             actionId = rs1.getInt(1);
-            cdr::db::Statement docTypeQuery(dbConnection);
+            query = "SELECT id FROM doc_type WHERE name = ?";
+            cdr::db::PreparedStatement docTypeQuery =
+                conn.prepareStatement(query);
             docTypeQuery.setString(1, auth.docType);
-            cdr::db::ResultSet rs2 = 
-                docTypeQuery.executeQuery("SELECT id"
-                                          "  FROM doc_type"
-                                          " WHERE name = ?");
+            cdr::db::ResultSet rs2 = docTypeQuery.executeQuery();
             if (!rs2.next())
                 throw cdr::Exception(L"Unknown doc type", auth.docType);
             docTypeId = rs2.getInt(1);
-            cdr::db::Statement insert(dbConnection);
+            query = "INSERT INTO grp_action(grp, action, doc_type) "
+                    "VALUES(?, ?, ?)";
+            cdr::db::PreparedStatement insert = conn.prepareStatement(query);
             insert.setInt(1, grpId);
             insert.setInt(2, actionId);
             insert.setInt(3, docTypeId);
-            insert.executeQuery("INSERT INTO grp_action"
-                                "("
-                                "    grp,"
-                                "    action,"
-                                "    doc_type"
-                                ")"
-                                "VALUES(?, ?, ?)");
+            insert.executeQuery();
         }
     }
 
     // Report success.
-    dbConnection.commit();
+    conn.commit();
     return L"  <CdrModGrpResp/>\n";
 }

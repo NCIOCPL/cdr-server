@@ -1,15 +1,19 @@
 
 /*
- * $Id: CdrGetUsr.cpp,v 1.2 2000-04-23 01:19:58 bkline Exp $
+ * $Id: CdrGetUsr.cpp,v 1.3 2000-05-03 15:25:41 bkline Exp $
  *
  * Retrieves information about requested user.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/23 01:19:58  bkline
+ * Added function-level comment header.
+ *
  * Revision 1.1  2000/04/22 09:25:50  bkline
  * Initial revision
  */
 
 #include "CdrCommand.h"
+#include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
 
 /**
@@ -18,10 +22,10 @@
  */
 cdr::String cdr::getUsr(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::db::Connection& dbConnection) 
+                        cdr::db::Connection& conn) 
 {
     // Make sure our user is authorized to retrieve group information.
-    if (!session.canDo(dbConnection, L"GET USER", L""))
+    if (!session.canDo(conn, L"GET USER", L""))
         throw cdr::Exception(L"GET USER action not authorized for this user");
 
     // Extract the group name from the command.
@@ -39,18 +43,19 @@ cdr::String cdr::getUsr(cdr::Session& session,
         throw cdr::Exception(L"Missing user name");
 
     // Look up the base information for the user.
-    cdr::db::Statement usrQuery(dbConnection);
+    std::string query = "SELECT id,"
+                        "       name,"
+                        "       password,"
+                        "       fullname,"
+                        "       office,"
+                        "       email,"
+                        "       phone,"
+                        "       comment"
+                        "  FROM usr"
+                        " WHERE name = ?";
+    cdr::db::PreparedStatement usrQuery = conn.prepareStatement(query);
     usrQuery.setString(1, usrName);
-    cdr::db::ResultSet usrRs = usrQuery.executeQuery("SELECT id,"
-                                                     "       name,"
-                                                     "       password,"
-                                                     "       fullname,"
-                                                     "       office,"
-                                                     "       email,"
-                                                     "       phone,"
-                                                     "       comment"
-                                                     "  FROM usr"
-                                                     " WHERE name = ?");
+    cdr::db::ResultSet usrRs = usrQuery.executeQuery();
     if (!usrRs.next())
         throw cdr::Exception(L"User not found", usrName);
     int         uid      = usrRs.getInt(1);
@@ -88,14 +93,14 @@ cdr::String cdr::getUsr(cdr::Session& session,
                  +  L"</Phone>\n";
 
     // Find the groups to which this user is assigned.
-    cdr::db::Statement grpSelect(dbConnection);
+    query = "SELECT g.name"
+            "  FROM grp g,"
+            "       grp_usr gu"
+            " WHERE gu.usr = ?"
+            "   AND g.id   = gu.grp";
+    cdr::db::PreparedStatement grpSelect = conn.prepareStatement(query);
     grpSelect.setInt(1, uid);
-    const char* grpQuery = "SELECT g.name"
-                           "  FROM grp g,"
-                           "       grp_usr gu"
-                           " WHERE gu.usr = ?"
-                           "   AND g.id   = gu.grp";
-    cdr::db::ResultSet grpRs = grpSelect.executeQuery(grpQuery);
+    cdr::db::ResultSet grpRs = grpSelect.executeQuery();
     while (grpRs.next())
         response += L"   <GrpName>" + grpRs.getString(1) + L"</GrpName>\n";
 

@@ -1,15 +1,19 @@
 
 /*
- * $Id: CdrListUsrs.cpp,v 1.2 2000-04-23 01:19:58 bkline Exp $
+ * $Id: CdrListUsrs.cpp,v 1.3 2000-05-03 15:25:41 bkline Exp $
  *
  * Retrieves list of the existing CDR users.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/23 01:19:58  bkline
+ * Added function-level comment header.
+ *
  * Revision 1.1  2000/04/22 09:25:23  bkline
  * Initial revision
  */
 
 #include "CdrCommand.h"
+#include "CdrDbStatement.h"
 #include "CdrDbResultSet.h"
 
 /**
@@ -26,7 +30,7 @@ cdr::String cdr::listUsrs(cdr::Session& session,
                 L"LIST USERS action not authorized for this user");
 
     // Submit the query to the database
-    cdr::db::Statement s(dbConnection);
+    cdr::db::Statement s = dbConnection.createStatement();
     cdr::db::ResultSet r = s.executeQuery("SELECT name FROM usr");
     
     // Pull in the names from the result set.

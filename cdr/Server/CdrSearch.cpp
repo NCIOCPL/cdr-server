@@ -1,19 +1,34 @@
 /*
- * $Id: CdrSearch.cpp,v 1.1 2000-04-21 13:52:58 bkline Exp $
+ * $Id: CdrSearch.cpp,v 1.2 2000-05-03 15:25:41 bkline Exp $
  *
  * Queries the CDR to create subset list of documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/21 13:52:58  bkline
+ * Initial revision
+ *
  */
 
 #include <iostream>
 #include "CdrSearch.h"
 #include "CdrException.h"
 #include "CdrCommand.h"
+#include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
 #include "CdrParserInput.h"
 
-static std::string extractParams(const cdr::String&, cdr::db::Statement&);
+// Remember the parameters set we can set them after prepareStatement().
+struct SearchParam {
+    SearchParam(const cdr::String& p) : t(STRING), s(p) {}
+    SearchParam(int p) : t(INT), i(p) {}
+    enum Type { STRING, INT };
+    Type        t;
+    cdr::String s;
+    int         i;
+};
+typedef std::vector<SearchParam> SearchParams;
+
+static std::string extractParams(const cdr::String&, SearchParams&);
 
 cdr::String cdr::search(cdr::Session& session, 
                         const cdr::dom::Node& node, 
@@ -46,10 +61,23 @@ cdr::String cdr::search(cdr::Session& session,
     }
     cdr::String sql = query.getSql();
 
-    // Submit the query.to the DBMS.
-    cdr::db::Statement select(conn);
-    const char* pQuery = extractParams(sql, select).c_str();
-    cdr::db::ResultSet rs = select.executeQuery(pQuery);
+    // Submit the query to the DBMS.
+    SearchParams params;
+    std::string qString = extractParams(sql, params);
+    cdr::db::PreparedStatement select = conn.prepareStatement(qString);
+    for (size_t i = 0; i < params.size(); ++i) {
+        switch (params[i].t) {
+        case SearchParam::STRING:
+            select.setString(i + 1, params[i].s);
+            break;
+        case SearchParam::INT:
+            select.setInt(i + 1, params[i].i);
+            break;
+        default:
+            throw cdr::Exception(L"INTERNAL ERROR: Unknown SearchParam type");
+        }
+    }
+    cdr::db::ResultSet rs = select.executeQuery();
 
     // Construct the response.
     cdr::String response = L"  <CdrSearchResp>\n";
@@ -70,12 +98,11 @@ cdr::String cdr::search(cdr::Session& session,
     return response;
 }
 
-std::string extractParams(const cdr::String& sql, cdr::db::Statement& st)
+std::string extractParams(const cdr::String& sql, SearchParams& params)
 {
-    size_t      len = sql.size();       // Characters in original string
-    std::string str(len, ' ');          // Work area for narrow string
-    int         pos = 1;                // Parameter position in query
-    size_t      i = 0, j = 0;           // Indices into sql and str
+    size_t            len = sql.size();    // Characters in original string
+    std::string       str(len, ' ');       // Work area for narrow string
+    size_t            i = 0, j = 0;        // Indices into sql and str
 
     // Walk through all characters in original sql string.
     while (i < len) {
@@ -88,7 +115,7 @@ std::string extractParams(const cdr::String& sql, cdr::db::Statement& st)
             while (!foundDelim && i < len) {
                 if (sql[i] == cdr::QueryNode::STRING_MARK) {
                     cdr::String param = sql.substr(startPos, n);
-                    st.setString(pos++, param);
+                    params.push_back(SearchParam(param));
                     str[j++] = '?';
                     foundDelim = true;
                 }
@@ -107,7 +134,7 @@ std::string extractParams(const cdr::String& sql, cdr::db::Statement& st)
             while (!foundDelim && i < len) {
                 if (sql[i] == cdr::QueryNode::INT_MARK) {
                     cdr::String param = sql.substr(startPos, n);
-                    st.setString(pos++, param.getInt());
+                    params.push_back(SearchParam(param.getInt()));
                     str[j++] = '?';
                     foundDelim = true;
                 }

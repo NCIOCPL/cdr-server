@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.cpp,v 1.4 2000-04-26 01:24:05 bkline Exp $
+ * $Id: CdrDbResultSet.cpp,v 1.5 2000-05-03 15:25:41 bkline Exp $
  *
  * Implementation for ODBC result fetching wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/04/26 01:24:05  bkline
+ * Fixed BLOB retrieval.
+ *
  * Revision 1.3  2000/04/22 22:15:04  bkline
  * Added more comments.
  *
@@ -15,6 +18,7 @@
  */
 
 #include "CdrDbResultSet.h"
+#include "CdrException.h"
 
 /**
  * Gathers information about the columns of the results of the current query
@@ -79,8 +83,8 @@ cdr::String cdr::db::ResultSet::getString(int pos)
         throw cdr::Exception(L"ResultSet: column request out of range");
     SQLRETURN rc;
     Column* c = columnVector[pos - 1];
-    bool isBlob = c->size > 10000;
-    size_t bufSize = isBlob ? 0 : c->size + 1;
+    bool largeValue = c->size > 10000;
+    size_t bufSize = largeValue ? 0 : c->size + 1;
     wchar_t* data = new wchar_t[bufSize];
     memset(data, 0, bufSize * sizeof(wchar_t));
     SDWORD cbData = (bufSize) * sizeof(wchar_t);
@@ -95,13 +99,13 @@ cdr::String cdr::db::ResultSet::getString(int pos)
         delete[] data;
         return cdr::String(true);
     }
-    if (isBlob) {
+    if (largeValue) {
         delete[] data;
         size_t chars = cbData / sizeof(wchar_t);
         data = new wchar_t[chars + 1];
         data[chars] = 0;
         rc = SQLGetData(st.hstmt, (UWORD)pos, SQL_C_WCHAR, (PTR)data,
-                cbData + sizeof(wchar_t), &cbData);
+                        cbData + sizeof(wchar_t), &cbData);
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
             delete [] data;
             throw cdr::Exception("Database failure extracting data",
@@ -130,4 +134,48 @@ cdr::Int cdr::db::ResultSet::getInt(int pos)
     if (cbData == SQL_NULL_DATA)
         return cdr::Int(true);
     return data;
+}
+
+/**
+ * Extracts a vector of bytes for the <code>pos</code> of the result row.
+ */
+cdr::Blob cdr::db::ResultSet::getBytes(int pos)
+{
+    if (pos > columnVector.size())
+        throw cdr::Exception(L"ResultSet: column request out of range");
+    SQLRETURN rc;
+    Column* c = columnVector[pos - 1];
+    bool largeValue = c->size > 10000;
+    size_t bufSize = largeValue ? 0 : c->size + 1;
+    unsigned char* data = new unsigned char[bufSize];
+    memset(data, 0, bufSize);
+    SDWORD cbData = bufSize;
+    rc = SQLGetData(st.hstmt, (UWORD)pos, SQL_C_BINARY, (PTR)data,
+                    cbData, &cbData);
+    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
+        delete [] data;
+        throw cdr::Exception("Database failure extracting data",
+                             st.getErrorMessage(rc));
+    }
+    if (cbData == SQL_NULL_DATA) {
+        delete[] data;
+        return cdr::Blob(true);
+    }
+    if (largeValue) {
+        delete[] data;
+        size_t chars = cbData / sizeof(wchar_t);
+        data = new unsigned char[chars + 1];
+        data[chars] = 0;
+        rc = SQLGetData(st.hstmt, (UWORD)pos, SQL_C_BINARY, (PTR)data,
+                        cbData + sizeof(wchar_t), &cbData);
+        if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
+            delete [] data;
+            throw cdr::Exception("Database failure extracting data",
+                                 st.getErrorMessage(rc));
+        }
+    }
+
+    cdr::Blob b(data, cbData);
+    delete [] data;
+    return b;
 }

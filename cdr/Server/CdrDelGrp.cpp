@@ -1,21 +1,25 @@
 
 /*
- * $Id: CdrDelGrp.cpp,v 1.1 2000-04-22 09:27:50 bkline Exp $
+ * $Id: CdrDelGrp.cpp,v 1.2 2000-05-03 15:25:41 bkline Exp $
  *
  * Deletes a group (and its associated users and actions) from CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/22 09:27:50  bkline
+ * Initial revision
+ *
  */
 
 #include "CdrCommand.h"
 #include "CdrDbResultSet.h"
+#include "CdrDbPreparedStatement.h"
 
 cdr::String cdr::delGrp(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::db::Connection& dbConnection) 
+                        cdr::db::Connection& conn) 
 {
     // Make sure our user is authorized to delete CDR groups.
-    if (!session.canDo(dbConnection, L"DELETE GROUP", L""))
+    if (!session.canDo(conn, L"DELETE GROUP", L""))
         throw cdr::Exception(
                 L"DELETE GROUP action not authorized for this user");
 
@@ -34,33 +38,34 @@ cdr::String cdr::delGrp(cdr::Session& session,
         throw cdr::Exception(L"Missing group name");
 
     // Make sure the group exists.
-    cdr::db::Statement grpQuery(dbConnection);
+    std::string query = "SELECT id FROM grp WHERE name = ?";
+    cdr::db::PreparedStatement grpQuery = conn.prepareStatement(query);
     grpQuery.setString(1, grpName);
-    cdr::db::ResultSet grpRs = grpQuery.executeQuery("SELECT id"
-                                                     "  FROM grp"
-                                                     " WHERE name = ?");
+    cdr::db::ResultSet grpRs = grpQuery.executeQuery();
     if (!grpRs.next())
         throw cdr::Exception(L"Group not found", grpName);
     int gid = grpRs.getInt(1);
     grpQuery.close();
 
     // Drop group members.
-    dbConnection.setAutoCommit(false);
-    cdr::db::Statement dropUsrs(dbConnection);
+    conn.setAutoCommit(false);
+    query = "DELETE grp_usr WHERE grp_usr.grp = ?";
+    cdr::db::PreparedStatement dropUsrs = conn.prepareStatement(query);
     dropUsrs.setInt(1, gid);
-    dropUsrs.executeQuery("DELETE grp_usr WHERE grp_usr.grp = ?");
-    //dropUsrs.close();
+    dropUsrs.executeQuery();
 
     // Drop group actions.
-    cdr::db::Statement dropActions(dbConnection);
+    query = "DELETE grp_action WHERE grp_action.grp = ?";
+    cdr::db::PreparedStatement dropActions = conn.prepareStatement(query);
     dropActions.setInt(1, gid);
-    dropActions.executeQuery("DELETE grp_action WHERE grp_action.grp = ?");
+    dropActions.executeQuery();
     //dropActions.close();
 
     // Finish the job.
-    cdr::db::Statement dropGrp(dbConnection);
+    query = "DELETE grp WHERE id = ?";
+    cdr::db::PreparedStatement dropGrp = conn.prepareStatement(query);
     dropGrp.setInt(1, gid);
-    dropGrp.executeQuery("DELETE grp WHERE id = ?");
-    dbConnection.commit();
+    dropGrp.executeQuery();
+    conn.commit();
     return L"  <CdrDelGrpResp/>\n";
 }

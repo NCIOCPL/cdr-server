@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLogon.cpp,v 1.3 2000-04-16 21:43:26 bkline Exp $
+ * $Id: CdrLogon.cpp,v 1.4 2000-05-03 15:25:41 bkline Exp $
  *
  * Opens a new CDR session.
  *
@@ -15,6 +15,9 @@
  *  </CdrLogonResp>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/04/16 21:43:26  bkline
+ * Modified composition of sessionId slightly.  Added call to lookupSession.
+ *
  * Revision 1.2  2000/04/15 14:05:10  bkline
  * First debugged version.
  *
@@ -25,6 +28,7 @@
 #include <ctime>
 #include <cstdlib>
 #include "CdrCommand.h"
+#include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
 
 cdr::String cdr::logon(cdr::Session& session, 
@@ -49,9 +53,9 @@ cdr::String cdr::logon(cdr::Session& session,
     static const char selectQuery[] = "SELECT id, password "
                                         "FROM usr "  
                                        "WHERE name = ?";
-    cdr::db::Statement select(conn);
+    cdr::db::PreparedStatement select = conn.prepareStatement(selectQuery);
     select.setString(1, userName);
-    cdr::db::ResultSet rs = select.executeQuery(selectQuery);
+    cdr::db::ResultSet rs = select.executeQuery();
     if (!rs.next())
         throw cdr::Exception(L"Invalid logon credentials");
     int id = rs.getInt(1);
@@ -81,13 +85,13 @@ cdr::String cdr::logon(cdr::Session& session,
         randomChars[rand() % nRandomChars],
         randomChars[rand() % nRandomChars]);
     cdr::String sessionId = idBuf;
-    cdr::db::Statement insert(conn);
     static const char insertQuery[] = 
         "INSERT INTO session(name, usr, initiated, last_act)"
         "     VALUES (?, ?, GETDATE(), GETDATE())";
+    cdr::db::PreparedStatement insert = conn.prepareStatement(insertQuery);
     insert.setString(1, sessionId);
     insert.setInt(2, id);
-    insert.executeQuery(insertQuery);
+    insert.executeQuery();
     
     // Populate the session object.
     session.lookupSession(sessionId, conn);

@@ -1,15 +1,19 @@
 
 /*
- * $Id: CdrAddUsr.cpp,v 1.2 2000-04-23 01:13:47 bkline Exp $
+ * $Id: CdrAddUsr.cpp,v 1.3 2000-05-03 15:25:41 bkline Exp $
  *
  * Adds new user to CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/23 01:13:47  bkline
+ * Added function-level comment.
+ *
  * Revision 1.1  2000/04/22 09:26:12  bkline
  * Initial revision
  */
 
 #include "CdrCommand.h"
+#include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
 
 /**
@@ -18,10 +22,10 @@
  */
 cdr::String cdr::addUsr(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::db::Connection& dbConnection) 
+                        cdr::db::Connection& conn) 
 {
     // Make sure our user is authorized to add users.
-    if (!session.canDo(dbConnection, L"CREATE USER", L""))
+    if (!session.canDo(conn, L"CREATE USER", L""))
         throw 
             cdr::Exception(L"CREATE USER action not authorized for this user");
 
@@ -60,11 +64,10 @@ cdr::String cdr::addUsr(cdr::Session& session,
         throw cdr::Exception(L"Missing password");
 
     // Make sure the user doesn't already exist.
-    cdr::db::Statement usrQuery(dbConnection);
+    std::string select = "SELECT COUNT(*) FROM usr WHERE name = ?";
+    cdr::db::PreparedStatement usrQuery = conn.prepareStatement(select);
     usrQuery.setString(1, uName);
-    cdr::db::ResultSet usrRs = usrQuery.executeQuery("SELECT COUNT(*)"
-                                                     "  FROM usr"
-                                                     " WHERE name = ?");
+    cdr::db::ResultSet usrRs = usrQuery.executeQuery();
     if (!usrRs.next())
         throw cdr::Exception(L"Failure checking unique user name");
     int count = usrRs.getInt(1);
@@ -72,8 +75,18 @@ cdr::String cdr::addUsr(cdr::Session& session,
         throw cdr::Exception(L"User name already exists");
 
     // Add a new row to the usr table.
-    dbConnection.setAutoCommit(false);
-    cdr::db::Statement usrInsert(dbConnection);
+    conn.setAutoCommit(false);
+    std::string insert = 
+        "INSERT INTO usr(name,"
+        "                password,"
+        "                created,"
+        "                fullname,"
+        "                office,"
+        "                email, "
+        "                phone,"
+        "                comment)"
+        "        VALUES (?, ?, GETDATE(), ?, ?, ?, ?, ?)";
+    cdr::db::PreparedStatement usrInsert = conn.prepareStatement(insert);
     usrInsert.setString(1, uName);
     usrInsert.setString(2, password);
     usrInsert.setString(3, fullName);
@@ -81,19 +94,8 @@ cdr::String cdr::addUsr(cdr::Session& session,
     usrInsert.setString(5, email);
     usrInsert.setString(6, phone);
     usrInsert.setString(7, comment);
-    usrInsert.executeQuery("INSERT INTO usr"
-                           "("
-                           "    name,"
-                           "    password,"
-                           "    created,"
-                           "    fullname,"
-                           "    office,"
-                           "    email,"
-                           "    phone,"
-                           "    comment"
-                           ")"
-                           "VALUES(?, ?, GETDATE(), ?, ?, ?, ?, ?)");
-    int usrId = dbConnection.getLastIdent();
+    usrInsert.executeQuery();
+    int usrId = conn.getLastIdent();
 
     // Add groups to which user is assigned, if any.
     if (grpList.size() > 0) {
@@ -102,28 +104,22 @@ cdr::String cdr::addUsr(cdr::Session& session,
             const cdr::String gName = *i++;
 
             // Do INSERT the hard way so we can determine success.
-            cdr::db::Statement grpQuery(dbConnection);
+            std::string select = "SELECT id FROM grp WHERE name = ?";
+            cdr::db::PreparedStatement grpQuery = conn.prepareStatement(select);
             grpQuery.setString(1, gName);
-            cdr::db::ResultSet rs = 
-                grpQuery.executeQuery("SELECT id"
-                                      "  FROM grp"
-                                      " WHERE name = ?");
+            cdr::db::ResultSet rs = grpQuery.executeQuery();
             if (!rs.next())
                 throw cdr::Exception(L"Unknown group", gName);
             int grpId = rs.getInt(1);
-            cdr::db::Statement insert(dbConnection);
-            insert.setInt(1, grpId);
-            insert.setInt(2, usrId);
-            insert.executeQuery("INSERT INTO grp_usr"
-                                "("
-                                "    grp,"
-                                "    usr"
-                                ")"
-                                "VALUES(?, ?)");
+            std::string insert = "INSERT INTO grp_usr(grp, usr), VALUES(?, ?)";
+            cdr::db::PreparedStatement ps = conn.prepareStatement(insert);
+            ps.setInt(1, grpId);
+            ps.setInt(2, usrId);
+            ps.executeQuery();
         }
     }
 
     // Report success.
-    dbConnection.commit();
+    conn.commit();
     return L"  <CdrAddUsrResp/>\n";
 }
