@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.cpp,v 1.10 2005-03-04 02:51:12 ameyer Exp $
+ * $Id: CdrDom.cpp,v 1.11 2005-03-29 15:29:31 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/03/04 02:51:12  ameyer
+ * Converted from xml4c to Xerces DOM parser.  Significant changes.
+ *
  * Revision 1.9  2004/03/23 16:26:47  bkline
  * Upgraded to version 5.4.0 of xml4c (but still using deprecated APIs).
  *
@@ -128,10 +131,9 @@ bool cdr::dom::Parser::initialized = cdr::dom::Parser::doInit();
 cdr::dom::Parser::Parser(bool saveMem) : errorHandler(0)
 {
     // If we would exceed the max allowable open parsers
-    if (nextThreadParser == MAX_PARSERS) {
-        domLog("Exceeded max thread parsers - fatal error (!)");
-        throw cdr::Exception(L"Exceeded max thread parsers");
-    }
+    if (nextThreadParser == MAX_PARSERS)
+        throw cdr::Exception(
+              L"Parser constructor exceeded max thread parsers - fatal error");
 
     // Create and initialize a new parser
     errorHandler = new cdr::dom::ErrorHandler();
@@ -163,50 +165,23 @@ cdr::dom::Parser::~Parser()
 
 void cdr::dom::Parser::deleteAllThreadParsers()
 {
-// DEBUG
-char msg[80];
-sprintf(msg, "Deleting %d thread parsers, unsaved=%d", nextThreadParser,
-countNonSavedParsers);
-domLog(msg);
-int errorHandlerErrs = 0;
-int threadParserErrs = 0;
-if (guard1 !=0) domLog ("Start guard1 violation (!)");
-if (guard2 !=0) domLog ("Start guard2 violation (!)");
-if (guard3 !=0) domLog ("Start guard3 violation (!)");
-if (guard4 !=0) domLog ("Start guard4 violation (!)");
-
     // Delete zero or more parser objects
     while (nextThreadParser > 0) {
         --nextThreadParser;
 
         // Sanity checks first
-        if (!allErrorHandlers[nextThreadParser]) {
-domLog("Null error handler in deleteAllThreadParsers (!)");
-            ++errorHandlerErrs;
-}
-        else {
-            delete allErrorHandlers[nextThreadParser];
-            allErrorHandlers[nextThreadParser] = 0;
-        }
+        if (!allErrorHandlers[nextThreadParser])
+            throw cdr::Exception(
+                    "Null error handler in deleteAllThreadParsers");
+        delete allErrorHandlers[nextThreadParser];
+        allErrorHandlers[nextThreadParser] = 0;
 
-        if (!allThreadParsers[nextThreadParser]) {
-domLog("Null threadParser in deleteAllThreadParsers (!)");
-            ++threadParserErrs;
-}
-        else {
-            delete allThreadParsers[nextThreadParser];
-            allThreadParsers[nextThreadParser] = 0;
-        }
+        if (!allThreadParsers[nextThreadParser])
+            throw cdr::Exception(
+                    "Null threadParser in deleteAllThreadParsers");
+        delete allThreadParsers[nextThreadParser];
+        allThreadParsers[nextThreadParser] = 0;
     }
-if (guard1 !=0) domLog ("End guard1 violation (!)");
-if (guard2 !=0) domLog ("End guard2 violation (!)");
-if (guard3 !=0) domLog ("End guard3 violation (!)");
-if (guard4 !=0) domLog ("End guard4 violation (!)");
-domLog("Finished deleting all thread parsers");
-if (errorHandlerErrs + threadParserErrs != 0) {
-sprintf(msg, "errorHandlerErrs=%d, threadParserErrs=%d", errorHandlerErrs, threadParserErrs);
-domLog(msg);
-}
 }
 
 /**
