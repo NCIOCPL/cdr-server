@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSearch.cpp,v 1.10 2002-05-08 20:36:10 pzhang Exp $
+ * $Id: CdrSearch.cpp,v 1.11 2002-09-24 13:20:42 bkline Exp $
  *
  * Queries the CDR to create subset list of documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2002/05/08 20:36:10  pzhang
+ * Updated searchLinks function using getSearchLinksResp.
+ *
  * Revision 1.9  2002/04/30 14:09:55  bkline
  * Removed unused exception parameter.
  *
@@ -83,12 +86,11 @@ cdr::String cdr::search(cdr::Session& session,
     cdr::ParserInput input(queryString);
     cdr::Query query;
     cdr::QueryParam qp(&query, &input);
-    std::wcout << queryString << L"\n";
     try {
         CdrSearchparse(static_cast<void*>(&qp));
     }
     catch (cdr::Exception&) { 
-        std::wcout << L"LAST TOKEN: " << input.getLastTok() << std::endl;
+        // std::wcout << L"LAST TOKEN: " << input.getLastTok() << std::endl;
         throw;
     }
     cdr::String sql = query.getSql(maxRows);
@@ -185,11 +187,15 @@ std::string extractParams(const cdr::String& sql, SearchParams& params)
 
         // Not a delimiter.
         else
-            str[j++] = sql[i++];
+
+            // Safe to narrow to char here, because we're removing the string
+            // parameters from the SQL query (replacing them with
+            // placeholders), so what's left will just be SQL keywords, which
+            // we know will be representable by ASCII characters.
+            str[j++] = static_cast<char>(sql[i++]);
     }
 
     str.resize(j);
-    std::cout << str << '\n';
     return str;
 }
 
