@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.h,v 1.1 2000-04-15 12:16:59 bkline Exp $
+ * $Id: CdrDbResultSet.h,v 1.2 2000-04-17 21:27:40 bkline Exp $
  *
  * Wrapper for ODBC result fetching.  Modeled after JDBC interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/15 12:16:59  bkline
+ * Initial revision
+ *
  */
 
 #ifndef CDR_DB_RESULT_SET_
@@ -21,7 +24,7 @@ namespace cdr {
             ~ResultSet();
             bool        next();
             cdr::String getString(int);
-            int         getInt(int);
+            cdr::Int    getInt(int);
         private:
             Statement&  st;
             struct Column {
