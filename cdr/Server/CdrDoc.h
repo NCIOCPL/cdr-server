@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.18 2003-04-30 10:36:27 bkline Exp $
+ * $Id: CdrDoc.h,v 1.19 2003-05-13 17:45:19 bkline Exp $
  *
  */
 
@@ -164,13 +164,20 @@ namespace cdr {
              * document through filtering to remove revision markup as
              * per our default revision markup rules.
              *
-             *  @param revisionLevel    Integer 1..3 where
-             *                            1=All proposed revisions included
-             *                            2=All accepted revisions included
-             *                            3=Only accepted and publishable
-             *                              revisions included
-             *                          Default = DEFAULT_REVISION_LEVEL.
-             *                          These are Well Known Numbers.
+             * Uses revFilterLevel member, which must contain one of
+             * the following values:
+             *
+             *   1 = Proposed, accepted, and published revisions included
+             *   2 = Accepted and published revisions included
+             *   3 = Only publishable revisions are included
+             *
+             * These are Well Known Numbers.
+             *
+             * The default value (3 or DEFAULT_REVISION_LEVEL) is set in
+             * the constructor, and can be overridden in one of the
+             * constructors by the RevisionFilterLevel attribute on the
+             * CdrDoc element.
+             *
              *  @param getIfUnfiltered  True=Return unfiltered Xml if
              *                            revision filtering fails for any
              *                            reason.  Note that raw Xml may
@@ -179,9 +186,7 @@ namespace cdr {
              *                          Default = false;
              *  @return                 Filtered (or raw) XML, or L"".
              */
-            cdr::String getRevisionFilteredXml (
-                    int revisionLevel=DEFAULT_REVISION_LEVEL,
-                    bool getIfUnfiltered=false);
+            cdr::String getRevisionFilteredXml (bool getIfUnfiltered=false);
 
             /**
              * Mark a document as malformed.
@@ -252,6 +257,7 @@ namespace cdr {
             // Accessors
             int getId()                    {return Id;}
             int getDocType()               {return DocType;}
+            int getRevFilterLevel()        {return revFilterLevel;}
             bool getNeedsReview()          {return NeedsReview;}
             cdr::String getTextId()        {return TextId;}
             cdr::String getValStatus()     {return ValStatus;}
@@ -339,6 +345,7 @@ namespace cdr {
             bool malformed;             // True=parse failed
             bool revFilterFailed;       // True=Revision filtering failed
             int  revFilterLevel;        // Filtering done at this level
+            int  requestedFilterLevel;  // Level requested in constructor
             int  schemaDocId;           // Doc id for the schema for this doc
             int  titleFilterId;         // Filter id for constructing Title
             int  lastFragmentId;        // Last used generated cdr:id number

@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.53 2003-04-30 10:36:27 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.54 2003-05-13 17:45:19 bkline Exp $
  *
  */
 
@@ -81,7 +81,7 @@ cdr::CdrDoc::CdrDoc (
     lastFragmentId (0),
     revisedXml (L""),
     revFilterFailed (false),
-    revFilterLevel (0),
+    revFilterLevel (DEFAULT_REVISION_LEVEL),
     NeedsReview (false),
     titleFilterId (0),
     Title (L""),
@@ -96,6 +96,10 @@ cdr::CdrDoc::CdrDoc (
     if (TextDocType.size() == 0)
         throw cdr::Exception (L"CdrDoc: Doctag missing 'Type' attribute");
     TextId = docElement.getAttribute (L"Id");
+    String strFilterLevel = docElement.getAttribute(L"RevisionFilterLevel");
+    revFilterLevel = strFilterLevel.getInt();
+    if (!revFilterLevel)
+        revFilterLevel = DEFAULT_REVISION_LEVEL;
 
     // If Id was passed, document must exist in database.
     if (TextId.size() > 0) {
@@ -240,7 +244,9 @@ cdr::CdrDoc::CdrDoc (
 cdr::CdrDoc::CdrDoc (
     cdr::db::Connection& dbConn,
     int docId
-) : docDbConn (dbConn), Id (docId), warningCount (0) {
+) : docDbConn (dbConn), Id (docId), warningCount (0),
+    revFilterLevel (DEFAULT_REVISION_LEVEL)
+ {
 
     // Text version of identifier is from passed id
     TextId = cdr::stringDocId (Id);
@@ -319,7 +325,6 @@ cdr::CdrDoc::CdrDoc (
 
     // Haven't filtered it either
     revFilterFailed = false;
-    revFilterLevel  = 0;
 }
 
 
@@ -333,7 +338,12 @@ void cdr::CdrDoc::Store ()
 {
     std::string sqlStmt;
 
-
+    // Make sure the client program hasn't tampered with the revision
+    // filter level.
+    if (getRevFilterLevel() != DEFAULT_REVISION_LEVEL)
+        throw cdr::Exception(L"CdrDoc::Store: RevisionFilterLevel cannot be "
+                             L"overridden when saving a CDR document.");
+    
     // New record
     if (!Id) {
         sqlStmt =
@@ -666,12 +676,18 @@ static cdr::String CdrPutDoc (
     cdr::CdrDoc doc (dbConn, docNode);
     SHOW_ELAPSED("CdrDoc constructed", incrementalTimer);
 
+    // Make sure the client program hasn't tampered with the revision
+    // filter level.
+    if (doc.getRevFilterLevel() != cdr::DEFAULT_REVISION_LEVEL)
+        throw cdr::Exception(L"CdrPutDoc: RevisionFilterLevel cannot be "
+                             L"overridden when saving a CDR document.");
+    
     // Make sure validation has been invoked if a publishable version
     // has been requested.  The DLL will enforce this, but we do it
     // here as well, since the DLL is our primary, but not our only client.
     if (cmdPublishVersion && (!cmdSchemaVal || !cmdLinkVal)
                           && doc.isContentType())
-        throw cdr::Exception(L"CdrPubDoc: creation of a published version "
+        throw cdr::Exception(L"CdrPutDoc: creation of a published version "
                              L"not allowed unless full document validation is "
                              L"invoked.");
 
@@ -1154,31 +1170,27 @@ bool cdr::CdrDoc::parseAvailable ()
  */
 
 cdr::String cdr::CdrDoc::getRevisionFilteredXml (
-    int         revisionLevel,
     bool        getIfUnfiltered
 ) {
     // String to receive warnings, errors, etc. from XSLT
     cdr::String errorStr = L"";
 
-    // Validate parameter
-    if (revisionLevel < 1 || revisionLevel > 3)
-        throw cdr::Exception (L"CdrDoc::getRevisedXml: Illegal revision filter "
-                             + cdr::String::toString (revisionLevel)
-                             + L" requested for document");
+    // Validate revision level.
+    if (revFilterLevel < 1 || revFilterLevel > 3)
+        throw cdr::Exception(L"CdrDoc::getRevisedXml: Illegal revision filter "
+                           + cdr::String::toString (revFilterLevel)
+                           + L" requested for document");
 
     // Need to filter revision markup if:
     //   This is a content (not a control) document
     //   Filter attempt has not already failed (!revFilterFailed)
-    //   Filtering never attempted (revFilterLevel == 0)
-    //   Filtering done but at level other than what we want (revisionLevel...)
     //   Any previous revision filtering discarded (...size() == 0)
-    if (isContentType() && !revFilterFailed &&
-        ((revisionLevel != revFilterLevel) || revisedXml.size() == 0)) {
+    if (isContentType() && !revFilterFailed && revisedXml.size() == 0) {
 
         // Attempt to filter at the requested level
         cdr::FilterParmVector pv;        // Parameters passed to it
         pv.push_back (std::pair<cdr::String,cdr::String>
-            (L"useLevel", cdr::String::toString (revisionLevel)));
+            (L"useLevel", cdr::String::toString (revFilterLevel)));
 
         try {
             revisedXml = cdr::filterDocumentByScriptTitle (
@@ -1201,11 +1213,8 @@ cdr::String cdr::CdrDoc::getRevisionFilteredXml (
 
         // If successful, save level info
         if (!revFilterFailed) {
-            if (revisedXml.size() > 0)
-                revFilterLevel = revisionLevel;
-            else {
+            if (revisedXml.size() == 0) {
                 // Didn't really succeed
-                revFilterLevel  = 0;
                 revFilterFailed = true;
                 errList.push_back (
                         L"Filtering revision markup: Got 0 length result");
@@ -1237,7 +1246,7 @@ void cdr::CdrDoc::createTitle()
 
         // If revision markup not yet filtered, filter it now.
         // This is needed because it might affect the title generation fields
-        cdr::String xml = getRevisionFilteredXml(DEFAULT_REVISION_LEVEL, true);
+        cdr::String xml = getRevisionFilteredXml(true);
 
         // Generate title
         cdr::String filterTitle = L"";
