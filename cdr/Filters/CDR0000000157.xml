@@ -55,19 +55,20 @@
      SummaryType     - Treatment, CAM, etc...
      EditorialBoard  - Pediatric, Adult  
      ============================================================= -->   
-     <xsl:if                             test   = "SummaryMetaData/
+     <xsl:choose>
+     <xsl:when                           test   = "SummaryMetaData/
                                                    SummaryAudience='Patients'">
-     <SummarySection>
+      <SummarySection>
 <!-- Selecting **** English **** Language -->
         <xsl:choose>
-         <xsl:when                       test   = "SummaryMetaData/
+          <xsl:when                      test   = "SummaryMetaData/
                                                    SummaryLanguage='English'">
-          <xsl:choose>
-           <xsl:when                     test   = "SummaryMetaData/
+            <xsl:choose>
+            <xsl:when                    test   = "SummaryMetaData/
                                                    SummaryAudience='Patients'">
             <xsl:choose>
              <!-- Adding english patient treatment document -->
-             <xsl:when                   test   = "SummaryMetaData/
+             <xsl:when                  test   = "SummaryMetaData/
                                                    SummaryType='Treatment'">
               <xsl:choose>
                <xsl:when                   test = "contains(
@@ -75,30 +76,31 @@
                                                    Board, 'Pediatric')">
                 <xsl:variable              name = "miscDoc" 
                                          select = "document
-                                                   (concat('cdr:name:',
+                                                   (concat('cdrx:name:',
                                                    'About PDQ;Treatment;', 
                                                    'Patients;About ',
                                                    'PDQ-Pediatric treatment ',
                                                    'patient summary'))"/>
+
                 <xsl:apply-templates     select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
-                  <xsl:with-param          name = "miscDocId"
+                 <xsl:with-param           name = "miscDocId"
                                          select = "'_AboutPDQ'"/>
                 </xsl:apply-templates>
                </xsl:when>
                <xsl:otherwise>
                 <xsl:variable              name = "miscDoc" 
                                          select = "document
-                                                   (concat('cdr:name:',
+                                                   (concat('cdrx:name:',
                                                    'About PDQ;Treatment;',
                                                    'Patients;About ',
                                                    'PDQ-Adult treatment ',
                                                    'patient summary'))"/>
-                 <xsl:apply-templates    select = "$miscDoc/
+                <xsl:apply-templates     select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
-                  <xsl:with-param          name = "miscDocId"
+                 <xsl:with-param           name = "miscDocId"
                                          select = "'_AboutPDQ'"/>
                 </xsl:apply-templates>
                </xsl:otherwise>
@@ -108,87 +110,90 @@
                                                    SummaryType='Screening'">
               <xsl:variable                name = "miscDoc" 
                                          select = "document
-                                                   (concat('cdr:name:',
+                                                   (concat('cdrx:name:',
                                                    'About PDQ;Screening;',
                                                    'Patients;About PDQ-',
                                                    'Screening patient ',
-                                                   'summary'))"/>
-                 <xsl:apply-templates    select = "$miscDoc/
+                                                   'summary','/lastp'))"/>
+               
+              <xsl:apply-templates       select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
-                  <xsl:with-param          name = "miscDocId"
+               <xsl:with-param             name = "miscDocId"
                                          select = "'_AboutPDQ'"/>
-                </xsl:apply-templates>
+              </xsl:apply-templates>
              </xsl:when>
              <xsl:when                   test   = "SummaryMetaData/
                                                    SummaryType='Prevention'">
               <xsl:variable                name = "miscDoc" 
                                          select = "document
-                                                   (concat('cdr:name:',
+                                                   (concat('cdrx:name:',
                                                    'About PDQ;Prevention;',
                                                    'Patients;About PDQ-',
                                                    'Prevention patient ',
                                                    'summary'))"/>
-                 <xsl:apply-templates    select = "$miscDoc/
+              <xsl:apply-templates       select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
-                  <xsl:with-param          name = "miscDocId"
+               <xsl:with-param             name = "miscDocId"
                                          select = "'_AboutPDQ'"/>
-                </xsl:apply-templates>
+              </xsl:apply-templates>
              </xsl:when>
              <xsl:when                   test   = "SummaryMetaData/
                                                    SummaryType=
                                                    'Supportive care'">
               <xsl:variable                name = "miscDoc" 
                                          select = "document
-                                                   (concat('cdr:name:',
+                                                   (concat('cdrx:name:',
                                                    'About PDQ;Supportive ',
                                                    'care;Patients;About PDQ-',
                                                    'Supportive care patient ',
                                                    'summary'))"/>
-                 <xsl:apply-templates    select = "$miscDoc/
+              <xsl:apply-templates    select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
-                  <xsl:with-param          name = "miscDocId"
+               <xsl:with-param          name = "miscDocId"
                                          select = "'_AboutPDQ'"/>
-                </xsl:apply-templates>
-              </xsl:when>
-              <xsl:when                  test   = "SummaryMetaData/
+              </xsl:apply-templates>
+             </xsl:when>
+             <xsl:when                   test   = "SummaryMetaData/
                                                    SummaryType=
                                       'Complementary and alternative medicine'">
-                  <xsl:text>*********** not available yet ***********</xsl:text>
-                  <!--xsl:variable            name = "miscDoc" 
+              <xsl:variable             name = "miscDoc" 
                                          select = "document
-                                                   (concat('cdr:name:',
-                                                   'TBD'))"/>
-                 <xsl:apply-templates    select = "$miscDoc/
+                                                   (concat('cdrx:name:',
+                                                   'For More Information;',
+                                                   'For more information-',
+                                                   'CAM summary',
+                                                   '/lastp'))"/>
+              <xsl:apply-templates       select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
-                  <xsl:with-param          name = "miscDocId"
+               <xsl:with-param             name = "miscDocId"
                                          select = "'_AboutPDQ'"/>
-                </xsl:apply-templates-->
-              </xsl:when>
-              <xsl:when                  test   = "SummaryMetaData/
+              </xsl:apply-templates>
+             </xsl:when>
+             <xsl:when                   test   = "SummaryMetaData/
                                                    SummaryType='Genetics'">
-                  <xsl:text>*********** not available yet ***********</xsl:text>
-                  <!--xsl:variable            name = "miscDoc" 
+              <xsl:text>*********** not available yet ***********</xsl:text>
+              <!--xsl:variable             name = "miscDoc" 
                                          select = "document
-                                                   (concat('cdr:name:',
+                                                   (concat('cdrx:name:',
                                                    'TBD'))"/>
-                 <xsl:apply-templates    select = "$miscDoc/
+              <xsl:apply-templates       select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
-                  <xsl:with-param          name = "miscDocId"
+               <xsl:with-param             name = "miscDocId"
                                          select = "'_AboutPDQ'"/>
-                </xsl:apply-templates-->
-              </xsl:when>
-             </xsl:choose>
-            </xsl:when>
-           </xsl:choose>
+              </xsl:apply-templates-->
+             </xsl:when>
+            </xsl:choose>
           </xsl:when>
+        </xsl:choose>
+        </xsl:when>
 
 <!-- Selecting ***** Spanish ***** Language -->
-          <xsl:otherwise>
+        <xsl:otherwise>
 <!-- Summary: 1-Spanish,  -->
             <xsl:choose>
              <xsl:when                   test   = "SummaryMetaData/
@@ -203,11 +208,12 @@
                                                               'Pediatric')">
                       <!--xsl:variable        name = "miscDoc" 
                                          select = "document
-                                                   (concat('cdr:name:',
+                                                   (concat('cdrx:name:',
                                                    'About PDQ;Treatment;',
                                                    'Patients;About ',
                                                    'PDQ-Adult treatment ',
-                                                   'patient summary'))"/>
+                                                   'patient summary;', 
+                                                   'Spanish', '/lastp'))"/>
                  <xsl:apply-templates    select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
@@ -219,11 +225,12 @@
 <!-- 4-Adult -->
                      <!--xsl:variable         name = "miscDoc" 
                                          select = "document
-                                                   (concat('cdr:name:',
+                                                   (concat('cdrx:name:',
                                                    'About PDQ;Treatment;',
                                                    'Patients;About ',
                                                    'PDQ-Adult treatment ',
-                                                   'patient summary'))"/>
+                                                   'patient summary;',
+                                                   'Spanish', '/lastp'))"/>
                  <xsl:apply-templates    select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
@@ -237,11 +244,12 @@
                                                    SummaryType='Screening'">
                   <!--xsl:variable            name = "miscDoc" 
                                          select = "document
-                                                   (concat('cdr:name:',
+                                                   (concat('cdrx:name:',
                                                    'About PDQ;Treatment;',
                                                    'Patients;About ',
                                                    'PDQ-Adult treatment ',
-                                                   'patient summary'))"/>
+                                                   'patient summary;', 
+                                                   'Spanish', '/lastp'))"/>
                  <xsl:apply-templates    select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
@@ -253,11 +261,12 @@
                                                   SummaryType='Prevention'">
                   <!--xsl:variable            name = "miscDoc" 
                                          select = "document
-                                                   (concat('cdr:name:',
+                                                   (concat('cdrx:name:',
                                                    'About PDQ;Treatment;',
                                                    'Patients;About ',
                                                    'PDQ-Adult treatment ',
-                                                   'patient summary'))"/>
+                                                   'patient summary;',
+                                                   'Spanish', '/lastp'))"/>
                  <xsl:apply-templates    select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
@@ -269,11 +278,12 @@
                                                  SummaryType='Supportive care'">
                   <!--xsl:variable            name = "miscDoc" 
                                          select = "document
-                                                   (concat('cdr:name:',
+                                                   (concat('cdrx:name:',
                                                    'About PDQ;Treatment;',
                                                    'Patients;About ',
                                                    'PDQ-Adult treatment ',
-                                                   'patient summary'))"/>
+                                                   'patient summary;',
+                                                   'Spanish', '/lastp'))"/>
                  <xsl:apply-templates    select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
@@ -286,11 +296,12 @@
                                       'Complementary and alternative medicine'">
                   <!--xsl:variable            name = "miscDoc" 
                                          select = "document
-                                                   (concat('cdr:name:',
+                                                   (concat('cdrx:name:',
                                                    'About PDQ;Treatment;',
                                                    'Patients;About ',
                                                    'PDQ-Adult treatment ',
-                                                   'patient summary'))"/>
+                                                   'patient summary;',
+                                                   'Spanish', '/lastp'))"/>
                  <xsl:apply-templates    select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
@@ -302,11 +313,12 @@
                                                    SummaryType='Genetics'">
                   <!--xsl:variable            name = "miscDoc" 
                                          select = "document
-                                                   (concat('cdr:name:',
+                                                   (concat('cdrx:name:',
                                                    'About PDQ;Treatment;',
                                                    'Patients;About ',
                                                    'PDQ-Adult treatment ',
-                                                   'patient summary'))"/>
+                                                   'patient summary;',
+                                                   'Spanish', '/lastp'))"/>
                  <xsl:apply-templates    select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
@@ -320,39 +332,92 @@
             <SummarySection>
              <!--xsl:variable                 name = "miscDoc" 
                                          select = "document
-                                                   (concat('cdr:name:',
+                                                   (concat('cdrx:name:',
                                                    'About PDQ;Treatment;',
                                                    'Patients;About ',
                                                    'PDQ-Adult treatment ',
-                                                   'patient summary'))"/>
+                                                   'patient summary;',
+                                                   'Spanish', '/lastp'))"/>
                  <xsl:apply-templates    select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
                   <xsl:with-param          name = "miscDocId"
                                          select = "'_AboutPDQ'"/>
                 </xsl:apply-templates-->
-            </SummarySection>
+          </SummarySection>
           </xsl:otherwise>
         </xsl:choose>
-     </SummarySection>
-     </xsl:if>
-     <SummarySection>
-       <xsl:variable                       name = "miscDoc" 
+      </SummarySection>
+
+      <SummarySection>
+       <xsl:choose>
+        <xsl:when                          test = "SummaryMetaData/
+                                                   SummaryLanguage='English'">
+         <xsl:variable                     name = "miscDoc" 
                                          select = "document
                                                    (concat('cdr:name:',
                                                     'To Learn More;',
                                                     'patient summary;',
                                                     'To Learn More-patient ',
-                                                    'summary'))"/>
+                                                    'summary', '/lastp'))"/>
 
-       <xsl:apply-templates              select = "$miscDoc/
+         <xsl:apply-templates            select = "$miscDoc/
                                                    MiscellaneousDocument/
-                                                   MiscellaneousDocumentText">
-        <xsl:with-param                    name = "miscDocId"
+                                                   MiscellaneousDocumentText"
+                                           mode = "ToLearnMore">
+          <xsl:with-param                  name = "toLearnMore"
                                          select = "'_ToLearnMore'"/>
-       </xsl:apply-templates>
+         </xsl:apply-templates>
+        </xsl:when>
+        
+        <xsl:otherwise>
+         
+         <xsl:variable                     name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                    'To Learn More;',
+                                                    'patient summary;',
+                                                    'To Learn More-patient ',
+                                                    'summary;Spanish',
+                                                    '/lastp'))"/>
 
-     </SummarySection>
+         <xsl:apply-templates            select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText"
+                                           mode = "toLearnMore">
+          <xsl:with-param                  name = "miscDocId"
+                                         select = "'_ToLearnMore'"/>
+         </xsl:apply-templates>
+        </xsl:otherwise>
+       </xsl:choose>  
+      </SummarySection>
+     </xsl:when>
+
+<!-- Add the misc docs for HP -->
+     <xsl:otherwise>
+      <xsl:choose>
+       <xsl:when                         test   = "SummaryMetaData/
+                                                  SummaryType=
+                                      'Complementary and alternative medicine'">
+        <xsl:variable                      name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdrx:name:',
+                                                   'For More Information;',
+                                                   'For more information-',
+                                                   'CAM summary',
+                                                   '/lastp'))"/>
+        <xsl:apply-templates             select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText"
+                                           mode = "ForMoreInfo">
+         <xsl:with-param                   name = "miscDocId"
+                                         select = "'_ForMoreInfo'"/>
+        </xsl:apply-templates>
+       </xsl:when>
+      </xsl:choose>
+     </xsl:otherwise>
+     </xsl:choose>
+
      <xsl:apply-templates                select = "TranslationOf"
                                          mode   = "copy"/>
 
@@ -372,20 +437,41 @@
      <xsl:if                             test   = "not(SummaryMetaData/
                                                    SummaryAudience='Patients')">
       <ProfessionalDisclaimer>
-       <xsl:variable                       name = "profDisclaimer" 
+       <xsl:choose>
+        <xsl:when                          test = "SummaryMetaData/
+                                                   SummaryLanguage='English'">
+         <xsl:variable                     name = "profDisclaimer" 
                                          select = "document
-                                                   (concat('cdr:name:',
-                                                    'Professional ',
-                                                    'Disclaimer;Summary-health',
-                                                    ' professional ',
-                                                    'disclaimer'))"/>
-        <xsl:apply-templates             select = "$profDisclaimer/
+                                                   (concat('cdrx:name:',
+                                                    'Professional Disclaimer;',
+                                                    'Summary-health ',
+                                                    'professional disclaimer',
+                                                    '/lastp'))"/>
+         <xsl:apply-templates            select = "$profDisclaimer/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText"
                                            mode = "ProfDisclaimer">
-         <xsl:with-param                   name = "profDisclaimer"
+          <xsl:with-param                  name = "profDisclaimer"
                                          select = "'_ProfDisclaimer'"/>
-        </xsl:apply-templates>
+         </xsl:apply-templates>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:variable                     name = "profDisclaimer" 
+                                         select = "document
+                                                   (concat('cdrx:name:',
+                                                    'Professional Disclaimer;',
+                                                    'Summary-health ',
+                                                    'professional disclaimer;',
+                                                    'Spanish', '/lastp'))"/>
+         <xsl:apply-templates            select = "$profDisclaimer/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText"
+                                           mode = "ProfDisclaimer">
+          <xsl:with-param                  name = "profDisclaimer"
+                                         select = "'_ProfDisclaimer'"/>
+         </xsl:apply-templates>
+        </xsl:otherwise>
+       </xsl:choose>
       </ProfessionalDisclaimer>
      </xsl:if>
     </Summary>
@@ -480,6 +566,20 @@
 </xsl:template>
 
 
+<!-- ==================================================================
+     MiscellaneousDocumentText Template
+     ================================================================== -->  <xsl:template                    match = "MiscellaneousDocumentText"
+                                  mode = "ToLearnMore">
+    <xsl:param                    name = "toLearnMore"/>
+ 
+    <xsl:apply-templates        select = "Section/Title"/>
+    <xsl:apply-templates        select = "Section/Section">
+     <xsl:with-param      name = "miscDocId" select = "$toLearnMore"/>
+    </xsl:apply-templates>
+</xsl:template>
+
+
+
 
 <!-- ==================================================================
      Section Template for Misc Docs
@@ -510,6 +610,49 @@
 
     <xsl:apply-templates        select = "Title"/>
     <xsl:apply-templates        select = "Para"  
+                                  mode = "miscDoc">
+     <xsl:with-param              name = "miscDocId" 
+                                select = "$miscDocId"/>
+    </xsl:apply-templates>
+    <xsl:apply-templates        select = "ExternalRef"/>
+    <xsl:apply-templates        select = "ItemizedList">
+     <xsl:with-param              name = "miscDocId" 
+                                select = "$miscDocId"/>
+    </xsl:apply-templates>
+  </SummarySection>
+</xsl:template>
+
+
+<!-- ==================================================================
+     Section Template for 'For More Information' Misc Doc
+     Need to pass the parameter of the CDR Doc ID to set the ID 
+     attribute properly.  The misc doc can be either the 'To Learn More'
+     or the 'About PDQ' section.
+     ================================================================== -->  <xsl:template                    match = "Section"
+                                  mode = "ForMoreInfo">
+ <xsl:param                       name = "miscDocId"/>
+
+  <SummarySection>
+    <xsl:choose>
+     <xsl:when                    test = "$miscDocId">
+      <xsl:if                      test = "./@cdr:id">
+       <xsl:attribute              name = "id">
+        <xsl:value-of            select = "$miscDocId"/>
+        <xsl:value-of            select = "./@cdr:id"/>
+       </xsl:attribute>
+      </xsl:if>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:if                     test = "./@cdr:id">
+       <xsl:attribute             name = "id">
+        <xsl:value-of           select = "./@cdr:id"/>
+       </xsl:attribute>
+      </xsl:if>
+     </xsl:otherwise>
+    </xsl:choose>
+
+    <xsl:apply-templates        select = "Title"/>
+    <xsl:apply-templates        select = "Para | ItemizedList"  
                                   mode = "miscDoc">
      <xsl:with-param              name = "miscDocId" 
                                 select = "$miscDocId"/>
@@ -645,8 +788,7 @@
    <xsl:param                name  = "miscDocId"/>
     <Para>
       <xsl:attribute          name = "id">
-       <xsl:value-of        select = "$miscDocId"/>
-       <xsl:value-of        select = "./@cdr:id"/>
+       <xsl:value-of        select = "concat($miscDocId, ./@cdr:id)"/>
       </xsl:attribute>
       <xsl:apply-templates  select = "Para" 
                               mode = "copy"/>
@@ -671,9 +813,39 @@
      the paragraph IDs. (cdr:ref ID needs to be renamed to id).
      ==================================================================== -->
   <xsl:template              match = "ItemizedList">
+    <xsl:param                name = "miscDocId"/>
+
     <ItemizedList>
       <xsl:attribute          name = "id">
-        <xsl:value-of       select = "./@cdr:id"/>
+        <xsl:value-of       select = "concat($miscDocId, ./@cdr:id)"/>
+      </xsl:attribute>
+      <xsl:if                 test = "./@Style">
+       <xsl:attribute          name = "Style">
+        <xsl:value-of       select = "./@Style"/>
+       </xsl:attribute>
+      </xsl:if>
+      <xsl:if                 test = "./@Compact">
+       <xsl:attribute          name = "Compact">
+        <xsl:value-of       select = "./@Compact"/>
+       </xsl:attribute>
+      </xsl:if>
+      <xsl:apply-templates/>
+    </ItemizedList>
+  </xsl:template>
+    
+
+
+<!-- ==================================================================== 
+     Create the ItemizedList template including the renamed attribute for 
+     the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+     ==================================================================== -->
+  <xsl:template              match = "ItemizedList"
+                             mode  = "miscDoc">
+    <xsl:param                name = "miscDocId"/>
+
+    <ItemizedList>
+      <xsl:attribute          name = "id">
+        <xsl:value-of       select = "concat($miscDocId, ./@cdr:id)"/>
       </xsl:attribute>
       <xsl:if                 test = "./@Style">
        <xsl:attribute          name = "Style">
