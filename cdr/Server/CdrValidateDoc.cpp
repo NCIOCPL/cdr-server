@@ -1,10 +1,14 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.20 2002-08-14 01:52:39 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.21 2003-04-30 10:36:27 bkline Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2002/08/14 01:52:39  ameyer
+ * Replaced independent check of schema/filter/css document types with
+ * call to CdrDoc::isControlType()
+ *
  * Revision 1.19  2002/07/15 18:57:05  bkline
  * Restored 'schema' to 'Schema' for validation type.
  *
@@ -295,8 +299,11 @@ cdr::String cdr::execValidateDoc (
     }
 
     // If not malformed, note the outcome of the validation.
-    if (wcscmp(status, L"M"))
-        status = errList.size() > 0 ? L"I" : L"V";
+    if (wcscmp(status, L"M")) {
+        size_t warningCount = static_cast<size_t>(docObj.getWarningCount());
+        bool invalid = errList.size() > warningCount;
+        status = invalid ? L"I" : L"V";
+    }
 
     // Update database and object status
     docObj.setValStatus(status);

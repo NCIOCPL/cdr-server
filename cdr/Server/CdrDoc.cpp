@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.52 2003-02-10 14:04:20 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.53 2003-04-30 10:36:27 bkline Exp $
  *
  */
 
@@ -85,7 +85,8 @@ cdr::CdrDoc::CdrDoc (
     NeedsReview (false),
     titleFilterId (0),
     Title (L""),
-    conType (not_set)
+    conType (not_set),
+    warningCount (0)
 {
 
     // Get doctype and id from CdrDoc attributes
@@ -239,7 +240,7 @@ cdr::CdrDoc::CdrDoc (
 cdr::CdrDoc::CdrDoc (
     cdr::db::Connection& dbConn,
     int docId
-) : docDbConn (dbConn), Id (docId) {
+) : docDbConn (dbConn), Id (docId), warningCount (0) {
 
     // Text version of identifier is from passed id
     TextId = cdr::stringDocId (Id);
@@ -1727,17 +1728,9 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
     }
 
     // Parsing will be tried again later, errors here are redundant
-    catch (cdr::Exception&) {
-        // Validation will catch the fact that the document is malformed.
-        return;
-    }
-    catch (cdr::dom::XMLException &e) {
-        // Eliminate warning on unused variable
-        void *foo = (void *) &e;
-
-        // Validation will catch the fact that the document is malformed.
-        return;
-    }
+    // Validation will catch the fact that the document is malformed.
+    catch (cdr::Exception&) { return; }
+    catch (cdr::dom::XMLException &) { return; }
 
     // Find the statuses for the lead organizations.
     std::set<cdr::String> statusSet;
@@ -1765,15 +1758,19 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
 
     // Decide which status the whole protocol should have.
     cdr::String status;
-    if (statusSet.find(L"Active") != statusSet.end())
-        status = L"Active";
+    if (statusSet.size() == 1)
+        status = *statusSet.begin();
     else {
+
         // Disabled at Lakshmi's request 2002-09-30.
-        //if (statusSet.size() > 1)
-        //    errList.push_back(L"Status mismatch between Lead Organizations.  "
-        //                      L"Status needs to be checked.");
-        if (statusSet.find(L"Withdrawn") != statusSet.end())
-            status = L"Withdrawn";
+        // Re-enabled at Lakshmi's request 2003-04-18.
+        if (statusSet.size() > 1)
+            addValidationMessage(L"Status mismatch between Lead "
+                                 L"Organizations.  Status needs to be "
+                                 L"checked.", VAL_MESSAGE_WARNING);
+        
+        if (statusSet.find(L"Active") != statusSet.end())
+            status = L"Active";
         else if (statusSet.find(L"Temporarily closed") != statusSet.end())
             status = L"Temporarily Closed";
         else if (statusSet.find(L"Completed") != statusSet.end())
@@ -1783,7 +1780,7 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
         else if (statusSet.find(L"Approved-not yet active") != statusSet.end())
             status = L"Approved-not yet active";
         else {
-            errList.push_back(L"No valid lead organization status found");
+            addValidationMessage(L"No valid lead organization status found");
             status = L"No valid lead organization status found.";
         }
     }
