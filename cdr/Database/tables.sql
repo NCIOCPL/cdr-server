@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.11 2000-05-08 13:31:49 nanci Exp $
+ * $Id: tables.sql,v 1.12 2000-05-11 21:09:37 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2000/05/08 13:31:49  nanci
+ * changed comments above document table and changed name to doc_attr
+ *
  * Revision 1.10  2000/04/21 22:16:11  bkline
  * Added UNIQUE constraint to name columns.
  *
@@ -236,9 +239,6 @@ CREATE TABLE doc_status
  * url table or the doc_blob table, but not both.
  *
  *           id  automatically generated primary key for the document table
- *      created  date/time the document was first added to the repository
- *      creator  identification of user account responsible for adding the
- *               document to the repository
  *   val_status  foreign key reference into the doc_status table
  *     val_date  date validation processing was last performed on document
  *     approved  approved for publication/release ('Y' or 'N')- other changes
@@ -246,8 +246,6 @@ CREATE TABLE doc_status
  *     doc_type  foreign key reference into the doc_type table
  *        title  required string containing title for document; Titles will
  *               not be required to be unique
- *     modified  date/time the document's data was last changed
- *     modifier  user responsible for last change to document
  *          xml  for structured documents, this is the data for the document;
  *               for unstructured documents this contains tagged textual
  *               information associated with the document (for example, the
@@ -257,15 +255,11 @@ CREATE TABLE doc_status
  */
 CREATE TABLE document
          (id INTEGER IDENTITY PRIMARY KEY,
-     created DATETIME NOT NULL,
-     creator INTEGER NOT NULL REFERENCES usr,
   val_status CHAR NOT NULL DEFAULT 'U' REFERENCES doc_status,
     val_date DATETIME NULL,
     approved CHAR NOT NULL DEFAULT 'N',
     doc_type INTEGER NOT NULL REFERENCES doc_type,
        title VARCHAR(255) NOT NULL,
-    modified DATETIME NULL,
-    modifier INTEGER NULL REFERENCES usr,
          xml NTEXT NOT NULL,
      comment VARCHAR(255) NULL)
 
