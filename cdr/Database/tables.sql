@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.44 2001-12-06 03:00:36 bkline Exp $
+ * $Id: tables.sql,v 1.45 2001-12-22 01:38:34 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.44  2001/12/06 03:00:36  bkline
+ * Synchronized with actual database tables.
+ *
  * Revision 1.43  2001/11/02 20:43:10  bkline
  * Added 'active' column to doc_type table.
  *
@@ -964,12 +967,16 @@ GO
  *     target_doc     Doc id linked to by source (null if url used)
  *     target_frag    Fragment id linked to, if any.
  *     url            Alternative to target id + fragment for non CDR targets.
+ *
+ * XXX NOTE: foreign key constraint on target_doc column temporarily 
+ *           disabled until link management software is modified to 
+ *           avoid inserting rows for links to ID 0.
  */
 CREATE TABLE link_net (
           link_type INTEGER     NOT NULL REFERENCES link_type,
          source_doc INTEGER     NOT NULL REFERENCES all_docs,
         source_elem VARCHAR(32) NOT NULL,
-         target_doc INTEGER         NULL REFERENCES all_docs,
+         target_doc INTEGER         NULL /* REFERENCES all_docs */ ,
         target_frag VARCHAR(32)     NULL,
                 url VARCHAR(256)    NULL
 )
