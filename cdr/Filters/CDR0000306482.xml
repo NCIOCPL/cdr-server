@@ -16,6 +16,69 @@
                           encoding = "UTF-8"/>
 
 
+ <!-- *
+ ====================================================================
+ Assemble the PersonNameInformation for a person.
+ (Eliminating the StandardProfessionalSuffix element)
+ ==================================================================== -->
+ <xsl:template               match = "PersonNameInformation">
+   <PersonNameInformation>
+    <xsl:apply-templates    select = "GivenName"
+                              mode = "copy"/>
+    <xsl:apply-templates    select = "MiddleInitial"
+                              mode = "copy"/>
+    <xsl:apply-templates    select = "SurName"
+                              mode = "copy"/>
+    <xsl:apply-templates    select = "Prefix"
+                              mode = "copy"/>
+    <xsl:apply-templates    select = "GenerationSuffix"
+                              mode = "copy"/>
+
+    <!-- 
+    If the ProfessionalSuffix element is prepared for the vendor output
+    it's created from the Standard/Custom-ProfessionalSuffix elements
+    (when clause).
+    However, if the ProfessionalSuffic element is only to be copied -
+    because it's the second pass of this filter module - the element 
+    only needs to be copied as is (otherwise clause).
+    ==================================================================== -->
+    <xsl:choose>
+     <xsl:when                test = "ProfessionalSuffix/
+                                        StandardProfessionalSuffix |
+                                      ProfessionalSuffix/
+                                        CustomProfessionalSuffix">
+      <ProfessionalSuffix>
+       <xsl:for-each        select = "ProfessionalSuffix/
+                                        StandardProfessionalSuffix |
+                                      ProfessionalSuffix/
+                                        CustomProfessionalSuffix">
+        <!-- Clean up the periods of the Custom Prof Suffix  -->
+        <xsl:choose>
+         <xsl:when            test = "name() = 'CustomProfessionalSuffix'">
+          <xsl:value-of     select = "translate(node(), '.', '')"/>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:value-of     select = "."/>
+         </xsl:otherwise>
+        </xsl:choose>
+        <xsl:if               test = "position() != last()">
+         <xsl:text>, </xsl:text>
+        </xsl:if>
+       </xsl:for-each>
+      </ProfessionalSuffix>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:apply-templates  select = "ProfessionalSuffix"
+                              mode = "copy"/>
+     </xsl:otherwise>
+    </xsl:choose>
+
+    <xsl:apply-templates    select = "NameFormat"
+                              mode = "copy"/>
+   </PersonNameInformation>
+ </xsl:template>
+
+
 <!-- ======================================================================
         Generate DateFirstPublished element only if the passed-in value
         for parameter date is non-empty.
