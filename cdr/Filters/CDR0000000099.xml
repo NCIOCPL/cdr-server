@@ -272,12 +272,17 @@
    <xsl:for-each select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]">
    <Street><xsl:value-of select="PostalAddress/Street"/></Street>
    </xsl:for-each>
-   <City><xsl:value-of  select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/PostalAddress/City"/></City>
+
+  <City><xsl:value-of  select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/PostalAddress/City"/></City>
+
    <CitySuffix><xsl:value-of  select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/PostalAddress/CitySuffix"/></CitySuffix>
+
   <xsl:if test="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/PostalAddress/PoliticalSubUnit_State">
-   <PoliticalSubUnitRef><xsl:value-of select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/PostalAddress/PoliticalSubUnit_State/@cdr:ref"/></PoliticalSubUnitRef>
-   <xsl:variable name="StateID" select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]PostalAddress/PoliticalSubUnit_State/@cdr:ref"/>
-    <xsl:variable name="StateInfo" select="document(concat('cdr:',$StateID,'/lastp'))"/>
+  <PoliticalSubUnitRef><xsl:value-of select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/PostalAddress/PoliticalSubUnit_State/@cdr:ref"/></PoliticalSubUnitRef>
+
+   <xsl:variable name="StateID" select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/
+       Location[@cdr:id=$OrgID2]/PostalAddress/PoliticalSubUnit_State/@cdr:ref"/>
+   <xsl:variable name="StateInfo" select="document(concat('cdr:',$StateID,'/lastp'))"/>
    <PoliticalSubUnitShortName>
    <xsl:value-of     select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitShortName"/></PoliticalSubUnitShortName>
    <PoliticalSubUnitFullName><xsl:value-of select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName"/></PoliticalSubUnitFullName> 
@@ -430,6 +435,8 @@
                         OrganizationNameInformation/
                         OfficialName/Name"/>
 </OrganizationName>
+  <xsl:if      test="$ParentDoc/Organization/OrganizationLocations/
+                OrganizationLocation/@IncludeParentName">
 
    <xsl:if      test="$ParentDoc/Organization/
                       OrganizationParent/ParentOrganization/@cdr:ref">
@@ -446,6 +453,7 @@
                                select="$nextParentDoc"/>
     </xsl:call-template>
    </xsl:if>
+    </xsl:if>
     </xsl:template>
 
 
