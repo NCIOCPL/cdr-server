@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.1 2001-12-24 01:06:11 bkline Exp $
+ * $Id: CreateLogins.sql,v 1.2 2002-01-22 22:28:05 bkline Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2001/12/24 01:06:11  bkline
+ * Initial revision
+ *
  */
 
 /*
@@ -225,4 +228,64 @@ GO
 GRANT SELECT ON pub_proc_doc TO CdrGuest
 GO
 GRANT SELECT, UPDATE, INSERT ON pub_proc_doc TO CdrPublishing
+GO
+GRANT SELECT ON active_doc TO CdrGuest
+GO
+GRANT SELECT ON active_doc TO CdrPublishing
+GO
+GRANT SELECT ON control_docs TO CdrGuest
+GO
+GRANT SELECT ON control_docs TO CdrPublishing
+GO
+GRANT SELECT ON creation_date TO CdrGuest
+GO
+GRANT SELECT ON creation_date TO CdrPublishing
+GO
+GRANT SELECT ON deleted_doc TO CdrGuest
+GO
+GRANT SELECT ON deleted_doc TO CdrPublishing
+GO
+GRANT SELECT, UPDATE, INSERT ON document TO CdrPublishing
+GO
+GRANT SELECT ON document TO CdrGuest
+GO
+GRANT SELECT ON doc_created TO CdrGuest
+GO
+GRANT SELECT ON doc_created TO CdrPublishing
+GO
+GRANT SELECT ON doc_header TO CdrGuest
+GO
+GRANT SELECT ON doc_header TO CdrPublishing
+GO
+GRANT SELECT ON last_doc_publication TO CdrGuest
+GO
+GRANT SELECT ON last_doc_publication TO CdrPublishing
+GO
+GRANT SELECT ON orphan_terms TO CdrGuest
+GO
+GRANT SELECT ON orphan_terms TO CdrPublishing
+GO
+GRANT SELECT ON pub_event TO CdrGuest
+GO
+GRANT SELECT ON pub_event TO CdrPublishing
+GO
+GRANT SELECT ON published_doc TO CdrGuest
+GO
+GRANT SELECT ON published_doc TO CdrPublishing
+GO
+GRANT SELECT ON term_children TO CdrGuest
+GO
+GRANT SELECT ON term_children TO CdrPublishing
+GO
+GRANT SELECT ON term_kids TO CdrGuest
+GO
+GRANT SELECT ON term_kids TO CdrPublishing
+GO
+GRANT SELECT ON term_parents TO CdrGuest
+GO
+GRANT SELECT ON term_parents TO CdrPublishing
+GO
+GRANT SELECT ON TermsWithParents TO CdrGuest
+GO
+GRANT SELECT ON TermsWithParents TO CdrPublishing
 GO
