@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.68 2002-12-11 14:31:38 bkline Exp $
+# $Id: Makefile,v 1.69 2003-01-31 00:05:46 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.68  2002/12/11 14:31:38  bkline
+# Added -D_DEBUG for DBG=1 builds.
+#
 # Revision 1.67  2002/11/26 22:30:40  ameyer
 # Upgraded to newer version of ccdoc with different options.
 # Now building docs if and only if output directory $(DOC) exists.
@@ -291,6 +294,7 @@ HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrSearch.h \
         $(CDRINC)/CdrSession.h \
         $(CDRINC)/CdrString.h \
+        $(CDRINC)/CdrSysValue.h \
         $(CDRINC)/CdrValidateDoc.h \
         $(CDRINC)/CdrVersion.h \
         $(CDRINC)/CdrXsd.h \
@@ -330,6 +334,7 @@ OBJS   =CdrCommand.obj \
         CdrLinkProcs.obj \
         CdrSearch.obj \
         CdrSearch_tab.obj \
+        CdrSysValue.obj \
         CdrGetDoc.obj \
         CdrFilter.obj \
         CdrVersion.obj \
