@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.64 2002-10-30 12:27:59 bkline Exp $
+# $Id: Makefile,v 1.65 2002-11-21 21:13:47 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.64  2002/10/30 12:27:59  bkline
+# Split debugging and production builds.
+#
 # Revision 1.63  2002/10/06 23:39:36  bkline
 # Switched from using the debugging runtime library (-MDd) to the
 # release version (-MD).
@@ -320,7 +323,6 @@ OBJS   =CdrCommand.obj \
         CdrShutdown.obj \
         CdrGetTree.obj \
         CdrMergeProt.obj \
-        CdrDOMtoString.obj \
         CdrPublish.obj
 
 LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
