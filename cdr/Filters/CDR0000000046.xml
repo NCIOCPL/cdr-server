@@ -43,8 +43,8 @@
     <xsl:copy>
        <xsl:apply-templates select="@*"/>
        <xsl:if test="contains($ref,'CDR')">
-    <xsl:variable name="CitInfo" select="document(concat('cdr:',$ref))"/>
-    <xsl:variable name="ProtInfo" select="document(concat('cdr:',$ref))"/>
+    <xsl:variable name="CitInfo" select="document(concat('cdrx:',$ref))"/>
+    <xsl:variable name="ProtInfo" select="document(concat('cdrx:',$ref))"/>
   
 <!-- ================================================================
           test to see if the citation is a PDQ citation type
@@ -72,6 +72,10 @@
 <xsl:for-each select="AuthorList/Author">
 <xsl:value-of select="LastName"/><xsl:text> </xsl:text>
 <xsl:value-of select="FirstName"/><xsl:text/>
+ <xsl:if test="position()=last()">
+ <xsl:if test="../../CitationType='Book'">
+<xsl:text>,</xsl:text></xsl:if>
+</xsl:if>
 <xsl:if test="position() !=last()"><xsl:text>, </xsl:text></xsl:if>
 <xsl:if test="position()=last()">
 <xsl:if test="not($CitInfo/Citation/PDQCitation/AuthorList/@Editors='Yes')">
@@ -90,7 +94,7 @@
 <xsl:text> </xsl:text>
 </xsl:if>
 <xsl:if test="position() &gt; 1">
-<xsl:text>, eds.: </xsl:text>
+<xsl:text> eds.: </xsl:text>
 </xsl:if>
 <xsl:if test="position() &lt; 2">
 <xsl:text>, ed.: </xsl:text>
@@ -114,7 +118,7 @@
   <xsl:variable name="RefID" select="PublishedIn/@cdr:ref"/>
   <!--<xsl:value-of select="$RefID"/>-->
  <xsl:if test="contains($RefID,'CDR')">
-  <xsl:variable name="RefInfo" select="document(concat('cdr:',$RefID,'/lastp'))"/>
+  <xsl:variable name="RefInfo" select="document(concat('cdrx:',$RefID,'/lastp'))"/>
  <!--<xsl:value-of select="$RefInfo"/>-->
 <!-- <xsl:value-of select="$RefInfo/Citation/PDQCitation/CitationTitle"/>
  <xsl:text> </xsl:text>-->
@@ -143,7 +147,7 @@
 <xsl:text> ,et al.: </xsl:text>
 </xsl:if>
 <xsl:if test="$RefInfo/Citation/PDQCitation/AuthorList/@Complete='Yes'">
-<xsl:text>, eds.: </xsl:text>
+<xsl:text> eds.: </xsl:text>
 </xsl:if>
 </xsl:if>
 <xsl:if test="$RefInfo/Citation/PDQCitation/AuthorList/@Editors='Yes'">
@@ -320,7 +324,7 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
 <xsl:if test="PersonRole='Protocol chair'">
 <xsl:if test="contains(Person/@cdr:ref,'CDR')">
   <xsl:variable name="PerID" select="substring-before(Person/@cdr:ref,'#')"/>
-  <xsl:variable name="PerInfo" select="document(concat('cdr:',$PerID,'/last'))"/>
+  <xsl:variable name="PerInfo" select="document(concat('cdrx:',$PerID,'/last'))"/>
   <xsl:value-of select="$PerInfo/Person/PersonNameInformation/SurName"/>
   <xsl:text> </xsl:text>
   <xsl:value-of select="substring($PerInfo/Person/PersonNameInformation/GivenName,1,1)"/>
@@ -342,7 +346,7 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
 <xsl:if test="../LeadOrgRole='Primary'">
 <xsl:if test="contains(@cdr:ref,'CDR')">
   <xsl:variable name="OrgID" select="@cdr:ref"/>
-  <xsl:variable name="OrgInfo" select="document(concat('cdr:',$OrgID,'/last'))"/>
+  <xsl:variable name="OrgInfo" select="document(concat('cdrx:',$OrgID,'/last'))"/>
 <xsl:value-of select="$OrgInfo/Organization/OrganizationNameInformation/OfficialName/Name"/>:
 </xsl:if>
 </xsl:if>
@@ -353,7 +357,7 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
 
 <xsl:if test="contains(Person/@cdr:ref,'CDR')">
   <xsl:variable name="PerID" select="$ProtInfo/InScopeProtocol/ProtocolAdminInfo/ProtocolLeadOrg/LeadOrgPersonnel/Person/@cdr:ref"/>
-  <xsl:variable name="PerInfo" select="document(concat('cdr:',$PerID,'/last'))"/>
+  <xsl:variable name="PerInfo" select="document(concat('cdrx:',$PerID,'/last'))"/>
   <xsl:value-of select="$PerInfo/Person/PersonNameInformation/SurName"/>
   <xsl:value-of select="$PerInfo/Person/PersonNameInformation/GivenName"/>
   <xsl:text>  </xsl:text>
