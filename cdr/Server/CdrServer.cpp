@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.21 2001-12-14 18:28:46 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.22 2002-01-28 23:10:36 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2001/12/14 18:28:46  bkline
+ * Added use of heap debugging conditional macros.
+ *
  * Revision 1.20  2001/12/14 15:18:14  bkline
  * Made code friendlier for optional heap debugging.
  *
@@ -544,6 +547,20 @@ cdr::String processCommand(cdr::Session& session,
                                           + L"Resp><Errors><Err>SAX Exception: "
                                           + se.getMessage()
                                           + L"</Err></Errors></"
+                                          + cmdName
+                                          + L"Resp></CdrResponse>");
+            }
+            catch (...) {
+                if (!conn.getAutoCommit())
+                    conn.rollback();
+                elapsedTime = getElapsedTime(start);
+                return cdr::String(rspTag + L"failure' Elapsed='"
+                                          + elapsedTime
+                                          + L"'><"
+                                          + cmdName 
+                                          + L"Resp><Errors><Err>Unexpected "
+                                            L"exception caught."
+                                            L"</Err></Errors></"
                                           + cmdName
                                           + L"Resp></CdrResponse>");
             }
