@@ -38,14 +38,17 @@
       <xsl:apply-templates select="SummaryMetaData/SummaryLanguage" mode="copy"/>
    <!-- denormalize PDQBoard and Board Members 11/5/2002 CB -->
 
-     <xsl:for-each select="SummaryMetaData">
-     <xsl:for-each select="PDQBoard">
+     
+     <xsl:for-each select="SummaryMetaData/PDQBoard">
       <PDQBoard>
       <xsl:if test="contains(Board/@cdr:ref,'CDR')">
       <xsl:variable name="BoardID" select="Board/@cdr:ref"/>
       <xsl:variable name="BoardInfo" 
               select="document(concat('cdr:',$BoardID,'/last'))"/>
-<Board cdr:ref='{$BoardID}'><xsl:value-of select="$BoardInfo/Organization/OrganizationNameInformation/OfficialName/Name"/></Board>
+      <xsl:element name="Board">
+      <xsl:attribute name="cdr:ref"></xsl:attribute>
+      <xsl:value-of select="$BoardInfo/Organization/OrganizationNameInformation/OfficialName/Name"/>
+     </xsl:element>
      <xsl:for-each select="BoardMember">
       <xsl:variable name="BoardMemberID" select="@cdr:ref"/>
       <xsl:variable name="BoardMemberInfo" 
@@ -60,7 +63,7 @@
    </PDQBoard>
    </xsl:for-each>
    
-   </xsl:for-each>
+   
    
  
 <!-- Modified 11/1/2002(CB) to link to term records for term preferred name -->
