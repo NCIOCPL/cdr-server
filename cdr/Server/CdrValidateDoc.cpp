@@ -1,10 +1,13 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.18 2002-07-03 12:55:19 bkline Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.19 2002-07-15 18:57:05 bkline Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2002/07/03 12:55:19  bkline
+ * Fixed check for Schema doctype.
+ *
  * Revision 1.17  2002/03/15 21:56:50  bkline
  * Fixed log comment for previous version.
  *
@@ -257,7 +260,7 @@ cdr::String cdr::execValidateDoc (
 
         // Validate the document against the schema if appropriate.
         if (validationTypes.empty()
-        ||   validationTypes.find(L"schema") != validationTypes.npos) {
+        ||   validationTypes.find(L"Schema") != validationTypes.npos) {
             cdr::validateDocAgainstSchema (docXml, docTypeString,
                                            docObj.getConn(), errList);
 
