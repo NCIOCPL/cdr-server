@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
-      $Id: Media.xml,v 1.4 2004-11-03 18:18:42 bkline Exp $
+      $Id: Media.xml,v 1.5 2004-11-04 23:18:21 bkline Exp $
 
      $Log: not supported by cvs2svn $
+     Revision 1.4  2004/11/03 18:18:42  bkline
+     Version used for first new Media documents created in Mahler.
+
      Revision 1.3  2004/10/21 23:22:01  bkline
      Made MinWidthPixels optional, dropped MinHeightPixels, fixed a typo
      (malformed end tag), and changed Title to MediaTitle (to avoid a
@@ -89,8 +92,7 @@
   <complexType       name            = 'MediaContent'>
     <sequence>
       <element       name            = 'Categories'
-                     type            = 'Categories'
-                     minOccurs       = '0'/>
+                     type            = 'Categories'/>
       <element       name            = 'Diagnoses'
                      type            = 'Diagnoses'
                      minOccurs       = '0'/>
@@ -98,16 +100,13 @@
                      type            = 'Topics'
                      minOccurs       = '0'/>
       <element       name            = 'ContentDescriptions'
-                     type            = 'ContentDescriptions'
-                     minOccurs       = '0'/>
+                     type            = 'ContentDescriptions'/>
       <element       name            = 'Captions'
                      type            = 'Captions'
                      minOccurs       = '0'/>
       <element       name            = 'Comment'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
-      <element       name            = 'AlternativeText'
-                     type            = 'NotEmptyString'/>
       <!-- language of the media itself, if it includes text or speech
            See also Caption language -->
       <element       name            = 'MediaLanguage'
@@ -128,9 +127,6 @@
                      type            = 'ImageEncoding'/>
       <element       name            = 'Color'
                      type            = 'Color'/>
-      <element       name            = 'BackgroundColor'
-                     type            = 'Color'
-                     minOccurs       = '0'/>
       <element       name            = 'Labeled'
                      type            = 'YesNo'/>
       <element       name            = 'ImageDimensions'
@@ -276,9 +272,9 @@
   <complexType       name            = 'FromObject'>
     <sequence>
       <choice>
-        <element     name            = 'FromDoc'
-                     type            = 'MiscellaneousLink'/>
-        <element     name            = 'FromFile'
+        <element     name            = 'FromCdrMedia'
+                     type            = 'MediaLink'/>
+        <element     name            = 'FromExternalFile'
                      type            = 'NotEmptyString'/>
       </choice>
       <element       name            = 'FromMethod'
@@ -310,7 +306,7 @@
     <sequence>
       <element       name            = 'Category'
                      type            = 'Category'
-                     maxOccurs       = '6'/>
+                     maxOccurs       = 'unbounded'/>
     </sequence>
   </complexType>
 
@@ -320,19 +316,22 @@
       <enumeration   value           = 'anatomy'/>
       <enumeration   value           = 'medical device'/>
       <enumeration   value           = 'normal cells or tissues'/>
+      <enumeration   value           = 'staging'/>
       <enumeration   value           = 'test or procedure'/>
       <enumeration   value           = 'treatment'/>
+      <enumeration   value           = 'to be specified'/>
     </restriction>
   </simpleType>
 
   <complexType       name            = 'Diagnoses'>
     <sequence>
       <element       name            = 'Diagnosis'
-                     type            = 'TerminologyLink'
+                     type            = 'DiagnosisLink'
                      maxOccurs       = 'unbounded'/>
     </sequence>
   </complexType>
 
+  <!-- Links to other, non-diagnosis terminology documents. -->
   <complexType       name            = 'Topics'>
     <sequence>
       <element       name            = 'Topic'
@@ -341,10 +340,11 @@
     </sequence>
   </complexType>
 
+  <!-- Alternate text generated from these elements, for 508 compliance. -->
   <complexType       name            = 'ContentDescriptions'>
     <sequence>
       <element       name            = 'ContentDescription'
-                     type            = 'GeneralText'
+                     type            = 'ContentDescription'
                      maxOccurs       = 'unbounded'/>
     </sequence>
   </complexType>
@@ -355,6 +355,17 @@
                      type            = 'Caption'
                      maxOccurs       = 'unbounded'/>
     </sequence>
+  </complexType>
+
+  <complexType       name            = 'ContentDescription'>
+    <simpleContent>
+      <extension     base            = 'NotEmptyString'>
+        <attribute   name            = 'audience'
+                     type            = 'Audience'/>
+        <attribute   name            = 'language'
+                     type            = 'Language'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
   <complexType       name            = 'Caption'
@@ -372,8 +383,8 @@
 
   <simpleType        name            = 'Language'>
     <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'English'/>
-      <enumeration   value           = 'Spanish'/>
+      <enumeration   value           = 'en'/>
+      <enumeration   value           = 'es'/>
     </restriction>
   </simpleType>
 
