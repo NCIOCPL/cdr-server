@@ -6,6 +6,15 @@
 <ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!--
+ ================================================================
+     $Id: CDR0000343376.xml,v 1.7 2004-08-04 17:42:49 venglisc Exp $
+
+     Filter to prepare Person addresses by using global templates
+        Written by Volker Englisch
+
+     $Log: not supported by cvs2svn $
+ ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr">
@@ -40,19 +49,6 @@
                                 select = "PrivatePractice/
                                           PrivatePracticeLocation/@cdr:id |
                                           Home/@cdr:id"/>
-<!-- 
-  <xsl:variable                   name = "contactFID"
-                                select = "OtherPracticeLocation/@cdr:id     |
-                                          PrivatePractice/
-                                          PrivatePracticeLocation/@cdr:id |
-                                          Home/@cdr:id"/>
-  <xsl:variable                   name = "orgAddressFID"
-                                select = "substring-after(
-                                          OtherPracticeLocation
-                                            [@cdr:id = $contactFID]/
-                                          OrganizationLocation/
-                                          Organization/@cdr:ref, '#')"/>
--->
 
   <xsl:for-each                 select = "PrivatePractice/
                                           PrivatePracticeLocation
@@ -77,66 +73,10 @@
 
   <xsl:apply-templates          select = "OtherPracticeLocation"/>
 
-<!-- 
-  <xsl:for-each                 select = "OtherPracticeLocation">
-   <OtherPracticeLocation>
-    <xsl:for-each               select = "@*">
-     <xsl:attribute               name = "{name()}">
-      <xsl:value-of             select = "."/>
-     </xsl:attribute>
-    </xsl:for-each>
-    <OrganizationLocation>
-     <OrganizationName> 
-      <xsl:value-of             select = "OrganizationLocation/
-                                          Organization/
-                                          OrganizationName"/>
-     </OrganizationName>
-
-   111 <xsl:value-of             select = "$contactFID"/>
-<xsl:value-of             select = "$orgAddressFID"/> 111
-
-   <xsl:call-template             name = "getPostalAddress">
-    <xsl:with-param               name = "orgAddressFID"
-                                select = "$orgAddressFID"/>
-   </xsl:call-template>
-   222<xsl:call-template             name = "getPersonOrgPhone">
-    <xsl:with-param               name = "orgAddressFID"
-                                select = "$orgAddressFID"/>
-   </xsl:call-template>
-   <xsl:call-template             name = "getPersonOrgTollFreePhone">
-    <xsl:with-param               name = "orgAddressFID"
-                                select = "$orgAddressFID"/>
-   </xsl:call-template>
-   <xsl:call-template             name = "getPersonOrgFax">
-    <xsl:with-param               name = "orgAddressFID"
-                                select = "$orgAddressFID"/>
-   </xsl:call-template>
-   <xsl:call-template             name = "getPersonOrgEmail">
-    <xsl:with-param               name = "orgAddressFID"
-                                select = "$orgAddressFID"/>
-   </xsl:call-template>
-   <xsl:call-template             name = "getPersonOrgWebSite">
-    <xsl:with-param               name = "orgAddressFID"
-                                select = "$orgAddressFID"/>
-   </xsl:call-template>
-   </OrganizationLocation>
-
-   <xsl:copy-of                 select = "PersonTitle"/>
-   <xsl:copy-of                 select = "PersonRole"/>
-
-   <xsl:for-each                select = "ComplexAffiliation">
-    <ComplexAffiliation>
-     <xsl:copy-of               select = "Organization/
-                                          Organization/
-                                          OrganizationName"/>
-     <xsl:copy-of               select = "RoleAtAffiliatedOrganization"/>
-    </ComplexAffiliation>
-   </xsl:for-each>
-   </OtherPracticeLocation>
-  </xsl:for-each>
--->
-
   <xsl:copy-of                  select = "CIPSContact"/>
+  <xsl:for-each                 select = "UpdateMode">
+   <xsl:copy-of                 select = "."/>
+  </xsl:for-each>
   </xsl:copy>
  </xsl:template>
 
