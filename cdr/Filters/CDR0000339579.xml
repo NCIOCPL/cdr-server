@@ -66,37 +66,14 @@
   If they don't match, copy them
   Else don't copy, i.e. delete
  ================================================================ -->
- <xsl:template  match = "Eligibility/Diagnosis |
-                Eligibility/ExclusionCriteria |
-                ProtocolDetail/Gene |
-                ProtocolDetail/Condition">
+ <xsl:template            match = "Eligibility/Diagnosis |
+                                   Eligibility/ExclusionCriteria |
+                                   ProtocolDetail/Gene |
+                                   ProtocolDetail/Condition">
   <xsl:if                  test = "name()!=$deleteElement or
                                    @cdr:ref!=$deleteTermID">
    <xsl:copy-of          select = "."/>
   </xsl:if>
- </xsl:template>
-
- <!-- ===============================================================
-  If the deletion is qualified by a particular StudyCategory, just
-  copy any other StudyCategory elements.  It's only the qualified
-  one we need to examine.
- ================================================================ -->
- <xsl:template            match = "ProtocolDetail/StudyCategory">
-  <xsl:choose>
-   <xsl:when               test = "$studyCategory">
-    <xsl:choose>
-     <xsl:when             test = "current() != $studyCategory">
-      <xsl:copy-of       select = "."/>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:apply-templates/>
-     </xsl:otherwise>
-    </xsl:choose>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:apply-templates/>
-   </xsl:otherwise>
-  </xsl:choose>
  </xsl:template>
 
  <!-- ===============================================================
@@ -106,42 +83,49 @@
  Else copy it to output.
  ================================================================ -->
  <xsl:template            match = "ProtocolDetail/StudyCategory/Intervention">
-   <xsl:if                 test = "$deleteElement!='InterventionType' or
-                                   InterventionType/@cdr:ref!=$deleteTermID">
+  <xsl:choose>
+   <xsl:when               test = "$deleteElement='InterventionType' and
+                            InterventionType[@cdr:ref=$deleteTermID] and
+                      ../../StudyCategory/StudyCategoryName=$studyCategory"/>
+   <xsl:otherwise>
     <xsl:copy>
-     <xsl:apply-templates/>
+     <xsl:apply-templates  select = "@*|comment()|*|
+                                     processing-instruction()|text()"/>
     </xsl:copy>
-   </xsl:if>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
-
 
  <!-- ===============================================================
  InterventionNameLink goes away:
         If the user deleted it
+   AND  Passed study category matches the category for this name link.
    AND  Passed InterventionType matches the sibling for this name link.
 
   Note: InterventionNameLink also goes away if entire Intervention is
         deleted by previous template.
  ================================================================ -->
- <xsl:template        match = "ProtocolDetail/StudyCategory/
+ <xsl:template            match = "ProtocolDetail/StudyCategory/
                                    Intervention/InterventionNameLink">
   <xsl:choose>
    <!-- Deleting sibling InterventionType, don't copy this NameLink -->
-   <xsl:when           test = "./InterventionType/@cdr:ref=$deleteTermID"/>
+   <xsl:when               test = "../InterventionType/@cdr:ref=$deleteTermID"/>
 
    <!-- Deleting this specific NameLink - but must match passed Type -->
-   <xsl:when           test = "name()=$deleteElement and
-                              @cdr:ref=$deleteTermID and
-                              ../InterventionType/@cdr:ref=$interventionType"/>
+   <xsl:when               test = "$deleteElement='InterventionNameLink' and
+                                                  @cdr:ref=$deleteTermID and
+                 ../../../StudyCategory/StudyCategoryName=$studyCategory and
+                    ../InterventionType/@cdr:ref=$interventionType"/>
 
    <!-- Else it's copied to output -->
    <xsl:otherwise>
-    <xsl:copy-of          select = "."/>
+    <xsl:copy-of         select = "."/>
    </xsl:otherwise>
   </xsl:choose>
 
  </xsl:template>
 
-</xsl:transform>]]>
+</xsl:transform>
+]]>
 </CdrDocXml>
 </CdrDoc>
