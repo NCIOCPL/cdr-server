@@ -1,5 +1,5 @@
 /*
- * $Id: CdrTestClient.cpp,v 1.2 2000-04-17 03:16:12 bkline Exp $
+ * $Id: CdrTestClient.cpp,v 1.3 2000-08-24 20:08:21 ameyer Exp $
  *
  * Test client (C++ version) for sending commands to CDR server.
  *
@@ -11,11 +11,14 @@
  *
  * Default for host is "localhost"; default for port is 2019.
  * If no command-line arguments are given, commands are read from standard
- * input.  Command buffer must be valid XML, conforming to the DTD 
+ * input.  Command buffer must be valid XML, conforming to the DTD
  * CdrCommandSet.dtd, and the top-level element must be <CdrCommandSet>.
  * The encoding for the XML must be UTF-8.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/17 03:16:12  bkline
+ * Allowed "-" to mean standard input on command line.
+ *
  * Revision 1.1  2000/04/15 14:10:50  bkline
  * Initial revision
  *
@@ -29,6 +32,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <string>
+#include "catchexp.h"
 
 // Local constants.
 const short CDR_PORT = 2019;
@@ -47,6 +51,10 @@ main(int ac, char **av)
     struct sockaddr_in  addr;
     struct hostent *    ph;
     std::string         requests;
+
+    // In case of catastrophe, don't hang up on console
+    if (!getenv ("NOCATCHCRASH"))
+        set_exception_catcher ("CdrTestClient.crash");
 
     // Load the requests.
     if (ac > 1 && strcmp(av[1], "-")) {

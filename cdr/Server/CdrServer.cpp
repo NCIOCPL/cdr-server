@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.14 2000-06-23 15:29:01 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.15 2000-08-24 20:07:33 ameyer Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2000/06/23 15:29:01  bkline
+ * Added additional logging (for startup and shutdown).
+ *
  * Revision 1.13  2000/06/15 23:02:20  ameyer
  * Modified logging in processCommand().
  *
@@ -58,6 +61,7 @@
 #include <ctime>
 
 // Project headers.
+#include "catchexp.h"
 #include "CdrCommand.h"
 #include "CdrSession.h"
 #include "CdrDom.h"
@@ -97,6 +101,10 @@ main(int ac, char **av)
     WSAData             wsadata;
     int                 sock;
     struct sockaddr_in  addr;
+
+    // In case of catastrophe, don't hang up on console
+    if (!getenv ("NOCATCHCRASH"))
+        set_exception_catcher ("CdrServer.crash");
 
     if (WSAStartup(0x0101, &wsadata) != 0) {
         std::cerr << "WSAStartup: " << WSAGetLastError() << '\n';
@@ -155,7 +163,7 @@ main(int ac, char **av)
 void cleanup()
 {
     log.Write("CdrServer", "Stopping");
-    WSACleanup(); 
+    WSACleanup();
 }
 
 /**
