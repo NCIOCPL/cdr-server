@@ -15,9 +15,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.1 2000-09-26 19:04:26 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.2 2000-09-27 11:28:44 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/09/26 19:04:26  ameyer
+ * Initial revision
+ *
  *
  */
 
@@ -235,6 +238,51 @@ int cdr::link::CdrLink::validateLink (
 } // validateLink
 
 
+/**
+ * Delete all links from a document.
+ *
+ * See CdrLink.h
+ */
+int cdr::link::CdrDelLinks (
+    cdr::db::Connection& dbConn,
+    int                  docId,
+    cdr::ValidRule       vRule,
+    cdr::StringList&     errList
+) {
+
+    // Find out if any other documents link to this one
+    std::string breakQry =
+            "SELECT source_doc FROM link_net WHERE target_doc = ?";
+    cdr::db::PreparedStatement breakSel = dbConn.prepareStatement (breakQry);
+    breakSel.setInt (1, docId);
+    cdr::db::ResultSet breakRs = breakSel.executeQuery();
+
+    while (breakRs.next())
+        errList.push_back (L"Document " +
+                           cdr::String::toString (breakRs.getInt (1)) +
+                           L" links to this document");
+
+    // If only validating, or if only updating if valid, then
+    // Stop here if there were links to this doc
+    if (vRule == ValidateOnly || (vRule == UpdateIfValid && !errList.empty()))
+        return errList.size();
+
+    // Delete all links from this document to other documents
+    std::string delLinkQry = "DELETE FROM link_net WHERE source_doc = ?";
+    cdr::db::PreparedStatement delLinkSel =
+                dbConn.prepareStatement (delLinkQry);
+    delLinkSel.setInt (1, docId);
+    cdr::db::ResultSet delLinkRs = delLinkSel.executeQuery();
+
+    // Delete all fragment table entries for this document
+    std::string delFragQry = "DELETE FROM link_fragment WHERE doc_id = ?";
+    cdr::db::PreparedStatement delFragSel =
+                dbConn.prepareStatement (delFragQry);
+    delFragSel.setInt (1, docId);
+    cdr::db::ResultSet delFragRs = delFragSel.executeQuery();
+
+    return errList.size();
+}
 /**
  * Dump link info in XML format
  * See CdrLink.h for documentation
@@ -830,3 +878,26 @@ static void updateFragList (
         ++i;
     }
 } // updateFragList()
+
+void cdr::link::findTargetDocTypes(
+        cdr::db::Connection&    conn,
+        const cdr::String&      srcElem,
+        const cdr::String&      srcDocType,
+        std::vector<int>        typeList)
+{
+    std::string qry = "SELECT lt.target_doc_type"
+                      "  FROM link_target lt,"
+                      "       link_xml lx,"
+                      "       doc_type dt"
+                      " WHERE lx.doc_type = dt.id"
+                      "   AND lx.element = ?"
+                      "   AND dt.name = ?"
+                      "   AND lt.source_link_type = lx.link_id";
+    typeList.clear();
+    cdr::db::PreparedStatement stmt = conn.prepareStatement(qry);
+    stmt.setString(1, srcElem);
+    stmt.setString(2, srcDocType);
+    cdr::db::ResultSet rs = stmt.executeQuery();
+    while (rs.next())
+        typeList.push_back(rs.getInt(1));
+}

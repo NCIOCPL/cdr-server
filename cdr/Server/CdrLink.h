@@ -1,10 +1,13 @@
 /*
- * $Id: CdrLink.h,v 1.1 2000-09-26 19:05:00 ameyer Exp $
+ * $Id: CdrLink.h,v 1.2 2000-09-27 11:29:23 bkline Exp $
  *
  * Header for Link Module software - to maintain the link_net
  * table describing the link relationships among CDR documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/09/26 19:05:00  ameyer
+ * Initial revision
+ *
  */
 
 #ifndef CDR_LINK_
@@ -13,6 +16,7 @@
 #include "CdrString.h"
 #include "CdrValidateDoc.h"
 #include "CdrDbConnection.h"
+#include <vector>
 
 /**@#-*/
 
@@ -214,6 +218,51 @@ namespace cdr {
      */
     extern int CdrSetLinks (cdr::dom::Node&, cdr::db::Connection&,
                    int, cdr::String, cdr::ValidRule, cdr::StringList&);
+
+    /**
+     * Delete all link table entries for which a document is the source.
+     * Do this when deleting a document.
+     *
+     * We also check to see if the document is a target of links.  The
+     * calling program can control whether to delete links from a document
+     * based on whether there are any links to it.
+     *
+     * Called by cdrDelDoc() when deleting a document.
+     *
+     *  @param      conn        Reference to the connection object for the
+     *                           CDR database.
+     *  @param      docId       Document UI, as an integer.
+     *  @param      validRule   Relationship between validation and link_net
+     *                           update.  Values are:
+     *                             ValidateOnly
+     *                             UpdateIfValid
+     *                             UpdateUnconditionally
+     *  @param      errlist     Reference to string to receive errors.
+     *  @return                 Count of errors.
+     *                           0 = complete success.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern int CdrDelLinks (cdr::db::Connection&, int, cdr::ValidRule,
+                            cdr::StringList&);
+
+    /**
+     * Looks up the document types to which links can be made from a
+     * particular element type in a given source document type.
+     *
+     *  @param      conn        reference to the connection object for the
+     *                           CDR database.
+     *  @param      srcElem     reference to a string containing the source
+     *                          element name.
+     *  @param      srcDocType  reference to a string containing the source
+     *                          document type.
+     *  @param      typeList    reference to a list of keys into the doc_type
+     *                          table (out parameter).
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern void findTargetDocTypes(cdr::db::Connection& conn,
+                                   const String&        srcElem,
+                                   const String&        srcDocType,
+                                   std::vector<int>     typeList);
   }
 }
 
