@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.101 2005-01-22 16:46:11 bkline Exp $
+ * $Id: tables.sql,v 1.102 2005-03-04 22:18:29 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.101  2005/01/22 16:46:11  bkline
+ * Added status column to import_job table.
+ *
  * Revision 1.100  2005/01/22 16:04:15  bkline
  * Added ctgov_export table.
  *
@@ -2027,7 +2030,8 @@ GO
  * from an outside organization.
  *
  *           id  uniquely identifies the status value
- *         name  string used to represent the value
+ *         name  string used to represent the value; e.g. 'imported',
+ *               'pending', 'unmatched'
  *      comment  optional user comments
  */
 CREATE TABLE import_disposition
@@ -2063,7 +2067,7 @@ GO
  *  disposition  foreign key into ctgov_disposition table
  *      disp_dt  date/time of most recent disposition change
  *       cdr_id  document ID in CDR (if imported)
- *      dropped  flag indicating that this document is no being exported
+ *      dropped  records when we detect that document is no longer exported
  *      comment  user comments, if any
  */
 CREATE TABLE import_doc
@@ -2078,7 +2082,7 @@ CREATE TABLE import_doc
     verified DATETIME          NULL,
      changed DATETIME          NULL,
       cdr_id INTEGER           NULL REFERENCES all_docs,
-     dropped CHAR          NOT NULL DEFAULT 'N',
+     dropped DATETIME          NULL,
      comment NTEXT             NULL,
 CONSTRAINT import_doc_unique UNIQUE (source, source_id))
 GO
