@@ -17,9 +17,13 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.2 2001-04-13 16:23:04 ameyer Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.3 2001-09-25 14:55:07 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2001/04/13 16:23:04  ameyer
+ * Changed database structure for link properties table, required a
+ * change to the select statement.
+ *
  * Revision 1.1  2001/04/06 00:07:48  ameyer
  * Initial revision
  *
@@ -29,11 +33,11 @@
 static bool LinkTargetContainsCheck (cdr::db::Connection&,
                       cdr::link::CdrLink*, cdr::String&);
 static std::string parseTag (const char **);
-static LinkChkRelator parseRelator (const char **);
+static cdr::link::LinkChkRelator parseRelator (const char **);
 static std::string parseValue (const char **);
-static LinkChkBoolOp parseBoolOp (const char **);
-static LinkChkRelation *parseRelation (const char **);
-static LinkChkPair *parseRule (const char **);
+static cdr::link::LinkChkBoolOp parseBoolOp (const char **);
+static cdr::link::LinkChkRelation *parseRelation (const char **);
+static cdr::link::LinkChkPair *parseRule (const char **);
 
 /*
  * Check for, resolve, and execute custom processing routines for a link.
@@ -95,48 +99,52 @@ int cdr::link::customLinkCheck (
  *
  *  The following collection of classes is used in creating customized
  *  link target checking instructions.
+ *
+ *  A fair amount of common code is used both for validating complex
+ *  link target checking (does the target of a link contain appropriate
+ *  fields for this kind of link) and for pick list creation (create a
+ *  list of potential target links which have appropriate fields for
+ *  this kind of link.)
  **********************************************************************/
 
-const static char *LinkTargMutex = "LinkTargetMutex";
-
 /**
- * Top level routine to find out if a target document contains one or
- * more fields matching a particular custom link check rule.
+ * Find or create a parse tree for a link target contains rule.
  *
- * The routine maintains a static vector of parse tree objects.  When
+ * The routine maintains a static array of parse tree objects.  When
  * asked to check a certain rule it first looks to see if it already has
  * a parse of the rule.  If so, it uses that parse.  Else it parses
  * the rule.
  *
- * @param  dbConn       Reference to database connection.
- * @param  link         Link object to check for conformance to rule.
  * @param  rule         Pointer to rule to check
  *
- * @return              True=Link passes rule, else false.
- * @throws CdrException if any system failure occurs.
+ * @return              Top of the parse tree.
+ * @throws CdrException If rule cannot be parsed.
  */
 
-static bool LinkTargetContainsCheck (
-    cdr::db::Connection& dbConn,
-    cdr::link::CdrLink*  link,
-    cdr::String&         rule
+static cdr::link::LinkChkTargContains *findOrMakeRuleTree (
+    cdr::String& rule
 ) {
+    // Mutex name to prevent concurrent, conflicting updates
+    //   of our saved rule array.
+    const static char *LinkTargMutex = "LinkTargetMutex";
+
     // We allow this many rules
     // I don't use an expandable structure like vector or list because
     //   I want to find out if there is a runaway failure, compiling
     //   the same rule multiple times.
+    // If we ever exceed this number legitimately, then we must recompile
     const int maxRules = 50;
 
-    // Static vector of parsed rule objects
-    static LinkChkTargContains *s_parsedRule[maxRules];
+    // Static array of parsed rule objects
+    static cdr::link::LinkChkTargContains *s_parsedRule[maxRules];
     static int                 s_parsedCount = 0;
 
-    // Named mutex used for synchronizing access to vector of
+    // Named mutex used for synchronizing access to array of
     // LinkChkTargContains objects
     static HANDLE s_LinkContainsMutex = 0;
 
     // Pointer to single parse tree we'll use
-    LinkChkTargContains *ruleTree = 0;
+    cdr::link::LinkChkTargContains *ruleTree = 0;
 
     // Loop counter.  MSVC++ complains if this is defined in the loop
     // Non-standard MSVC extension is responsible
@@ -144,11 +152,11 @@ static bool LinkTargetContainsCheck (
 
 
     // If this is the first thread in the current process, create a mutex
-    //   to control the static vector of rule parse trees
+    //   to control the static array of rule parse trees
     if (s_LinkContainsMutex == 0)
         s_LinkContainsMutex = CreateMutex (0, false, LinkTargMutex);
 
-    // Lock and search vector of parse trees to see if we can find
+    // Lock and search array of parse trees to see if we can find
     //   an existing parse of the rule we want
     if (s_LinkContainsMutex != 0) {
 
@@ -158,7 +166,7 @@ static bool LinkTargetContainsCheck (
 
             case WAIT_OBJECT_0:
             case WAIT_ABANDONED:
-                // Have exclusive ownership of the parse tree vector
+                // Have exclusive ownership of the parse tree array
                 // Search it for an existing parse of the passed rule
                 for (i=0; i<s_parsedCount; i++) {
                     if (s_parsedRule[i]->ruleCompare (rule)) {
@@ -180,7 +188,7 @@ static bool LinkTargetContainsCheck (
 
                     // Parse this rule
                     // Throws exception if parse fails
-                    ruleTree = new LinkChkTargContains (rule);
+                    ruleTree = new cdr::link::LinkChkTargContains (rule);
 
                     // Add it to the array
                     s_parsedRule[s_parsedCount++] = ruleTree;
@@ -211,6 +219,37 @@ static bool LinkTargetContainsCheck (
               cdr::String::toString (GetLastError ()));
     }
 
+    return ruleTree;
+}
+
+
+const static char *LinkTargMutex = "LinkTargetMutex";
+
+/**
+ * Top level routine to find out if a target document contains one or
+ * more fields matching a particular custom link check rule.
+ *
+ * The routine maintains a static array of parse tree objects.  When
+ * asked to check a certain rule it first looks to see if it already has
+ * a parse of the rule.  If so, it uses that parse.  Else it parses
+ * the rule.
+ *
+ * @param  dbConn       Reference to database connection.
+ * @param  link         Link object to check for conformance to rule.
+ * @param  rule         Pointer to rule to check
+ *
+ * @return              True=Link passes rule, else false.
+ * @throws CdrException if any system failure occurs.
+ */
+
+static bool LinkTargetContainsCheck (
+    cdr::db::Connection& dbConn,
+    cdr::link::CdrLink*  link,
+    cdr::String&         rule
+) {
+    // Find or create a parse of the rule
+    cdr::link::LinkChkTargContains *ruleTree = findOrMakeRuleTree (rule);
+
     // Evaluate the rule
     if (!ruleTree->ruleEval (dbConn, link->getTrgId())) {
 
@@ -229,7 +268,7 @@ static bool LinkTargetContainsCheck (
  * Constructor for LinkChkTargContains.
  */
 
-LinkChkTargContains::LinkChkTargContains (cdr::String linkRule)
+cdr::link::LinkChkTargContains::LinkChkTargContains (cdr::String linkRule)
 {
     // Save full copy of the rule
     ruleString = linkRule;
@@ -334,17 +373,17 @@ static std::string parseTag (const char **stringpp)
  * @throws              CdrException if no valid relator found.
  */
 
-static LinkChkRelator parseRelator (const char **stringpp)
+static cdr::link::LinkChkRelator parseRelator (const char **stringpp)
 {
     // Do simple, dumb comparisons to try to match against known relators
     const char *p = *stringpp;
     if (strncmp (p, "==", 2)) {
         *stringpp += 2;
-        return relEqual;
+        return cdr::link::relEqual;
     }
     if (strncmp (p, "!=", 2)) {
         *stringpp += 2;
-        return relNotEqual;
+        return cdr::link::relNotEqual;
     }
 
     // No match where one was required
@@ -425,16 +464,16 @@ static std::string parseValue (const char **stringpp)
  * @throws              CdrException if no valid operator found.
  */
 
-static LinkChkBoolOp parseBoolOp (const char **stringpp)
+static cdr::link::LinkChkBoolOp parseBoolOp (const char **stringpp)
 {
     // Simple comparisons
     if (**stringpp == '|') {
         ++*stringpp;
-        return boolOr;
+        return cdr::link::boolOr;
     }
     if (**stringpp == '&') {
         ++*stringpp;
-        return boolAnd;
+        return cdr::link::boolAnd;
     }
 
     // No match where one was required
@@ -452,11 +491,11 @@ static LinkChkBoolOp parseBoolOp (const char **stringpp)
  * @throws              CdrException if syntax or other error.
  */
 
-static LinkChkRelation *parseRelation (const char **stringpp)
+static cdr::link::LinkChkRelation *parseRelation (const char **stringpp)
 {
     std::string    tag;         // Tag in format used in query_term table
-    LinkChkRelator relator;     // Relationship
     std::string    value;       // Value to compare against linked doc
+    cdr::link::LinkChkRelator relator; // Relationship
 
     // Skip initial whitespace
     skipSpace (stringpp);
@@ -470,7 +509,7 @@ static LinkChkRelation *parseRelation (const char **stringpp)
     skipSpace (stringpp);
 
     // If we got this far without throwing an exception, we have all we need
-    return new LinkChkRelation (tag, relator, value);
+    return new cdr::link::LinkChkRelation (tag, relator, value);
 }
 
 
@@ -483,12 +522,12 @@ static LinkChkRelation *parseRelation (const char **stringpp)
  * @throws              CdrException if syntax or other error.
  */
 
-static LinkChkPair *parseRule (const char **rulepp)
+static cdr::link::LinkChkPair *parseRule (const char **rulepp)
 {
     // Data to put in the top of the parse tree
-    LinkChkNode   *leftNode;
-    LinkChkNode   *rightNode;
-    LinkChkBoolOp boolConnector;
+    cdr::link::LinkChkNode   *leftNode;
+    cdr::link::LinkChkNode   *rightNode;
+    cdr::link::LinkChkBoolOp boolConnector;
 
 
     // Recursive descent parser
@@ -529,7 +568,7 @@ static LinkChkPair *parseRule (const char **rulepp)
     } while (**rulepp);
 
     // If we got this far, no syntax errors
-    return new LinkChkPair (leftNode, rightNode, boolConnector);
+    return new cdr::link::LinkChkPair (leftNode, rightNode, boolConnector);
 }
 
 
@@ -537,7 +576,7 @@ static LinkChkPair *parseRule (const char **rulepp)
  * Evaluate a single relation expression.
  */
 
-bool LinkChkRelation::evalRelation (
+bool cdr::link::LinkChkRelation::evalRelation (
     cdr::db::Connection& dbConn,
     int                  docId
 ) {
@@ -558,13 +597,13 @@ bool LinkChkRelation::evalRelation (
     // We don't actually need to examine anything, all we need to know is ...
     // Was there a hit?
     if (!rs.next()) {
-        if (relator == relEqual)
+        if (relator == cdr::link::relEqual)
             return true;
         return false;
     }
 
     // If got here, then no hit in query term table
-    if (relator == relEqual)
+    if (relator == cdr::link::relEqual)
         return false;
     return true;
 }
@@ -574,7 +613,7 @@ bool LinkChkRelation::evalRelation (
  * Evaluate a complete parse tree.
  */
 
-bool LinkChkPair::evalRule (
+bool cdr::link::LinkChkPair::evalRule (
     cdr::db::Connection& dbConn,
     int                  docId
 ) {
@@ -586,16 +625,17 @@ bool LinkChkPair::evalRule (
     // If a particular node is a leaf, call evalRelation() to evaluate it.
     // Else call evalRule() recursively to process the subtree.
     if (lNode->getNodeType() == typePair)
-        result = ((LinkChkPair *) lNode)->evalRule (dbConn, docId);
+        result = ((cdr::link::LinkChkPair *) lNode)->evalRule (dbConn, docId);
     else
-        result = ((LinkChkRelation *) lNode)->evalRelation (dbConn, docId);
+        result =
+          ((cdr::link::LinkChkRelation *) lNode)->evalRelation (dbConn, docId);
 
     // See if there is no right hand node, or if we can short circuit it
     if (!rNode)
         return result;
-    if (connector == boolAnd && result == false)
+    if (connector == cdr::link::boolAnd && result == false)
         return result;
-    if (connector == boolOr && result == true)
+    if (connector == cdr::link::boolOr && result == true)
         return result;
 
     // Have to evaluate the right hand side of the node pair
@@ -606,7 +646,127 @@ bool LinkChkPair::evalRule (
     // In either case we can just return the result of the evaluation
     //   of the right hand node
     if (rNode->getNodeType() == typePair)
-        return (((LinkChkPair *) rNode)->evalRule (dbConn, docId));
+        return (((cdr::link::LinkChkPair *) rNode)->evalRule (dbConn, docId));
     else
-        return (((LinkChkRelation *) rNode)->evalRelation (dbConn, docId));
+        return (
+         ((cdr::link::LinkChkRelation *) rNode)->evalRelation (dbConn, docId));
+}
+
+#if 0
+/*
+ * Get SQL WHERE clause for a particular link source, given the
+ * document type and source element for the link.
+ */
+
+bool getLinkTargetRestrictions (
+    cdr::db::Connection conn,
+    int                 docType,
+    cdr::String&        elemName,
+    std::string&        sql,
+    std::string&        tagColumn,
+    std::string&        valColumn
+) {
+    // Query to find a LinkTargetContains property in the link
+    //   control tables, if there is one, given a specific document
+    //   type and element name for the source of the link.
+    std::string qry =
+        "SELECT value FROM "
+        "  link_properties lp, "
+        "  link_prop_type lpt, "
+        "  link_xml lx "
+        "WHERE "
+        "  lx.doc_type = ? AND "
+        "  lx.element = ? AND "
+        "  lx.link_id = lp.link_id AND "
+        "  lp.property_id = lpt.id AND "
+        "  lpt.name = 'LinkTargetContains'";
+
+    // Execute it
+    cdr::db::PreparedStatement stmt = conn.prepareStatement (qry);
+    stmt.setInt (1, docType);
+    stmt.setString (2, elemName);
+    cdr::db::ResultSet rs = stmt.executeQuery();
+
+    // If no hits, that's okay, there's no rule concerning this link type
+    if (!rs.next())
+        return false;
+
+    // If we got a rule, convert it to a SQL WHERE clause
+    cdr::String rule = rs.getString (1);
+    cdr::link::LinkChkTargContains *ruleTree = findOrMakeRuleTree (rule);
+
+    XXXX LEFT OFF HERE, NOT SURE WE NEED THIS XXXX
+}
+#endif
+
+/*
+ * Generate SQL for a complete parse tree - to be evaluated separately.
+ */
+
+void cdr::link::LinkChkNode::makeWhere (
+    std::string& sql,
+    std::string& tagColumn,
+    std::string& valColumn
+) {
+    // Enclose everything in parentheses
+    // It's not always necessary, but it never does any harm
+    sql += "(";
+
+    // If we're at a leaf node (cdr::link::LinkChkRelation), generate SQL
+    if (this->getNodeType() == typeRel) {
+
+        cdr::link::LinkChkRelation *node =
+                static_cast<cdr::link::LinkChkRelation*> (this);
+
+        // Parenthesize this node - safe and conservative
+        sql += "(";
+
+        // Append tag to search for in query_term table
+        sql += tagColumn;
+        sql += "=";
+        sql += node->getTag();
+
+        // Connector for value
+        sql += " AND ";
+
+        // Value
+        sql += valColumn;
+        if (node->getRelator() == cdr::link::relEqual)
+            sql += "=";
+        else if (node->getRelator() == cdr::link::relNotEqual)
+            sql += "<>";
+        sql += "'";
+        sql += node->getTag();
+        sql += "'";
+
+        sql += ")";
+    }
+
+    // Else it's an intermediate node.  Recursive descent.
+    else {
+        // Parenthesize this node - not always necessary, but why not?
+        sql += "(";
+
+        cdr::link::LinkChkPair *node  =
+                    static_cast<cdr::link::LinkChkPair*> (this);
+        cdr::link::LinkChkNode *lNode = node->getLNode();
+        cdr::link::LinkChkNode *rNode = node->getRNode();
+
+        // There's always a left node
+        lNode->makeWhere (sql, tagColumn, valColumn);
+
+        // Not always a right node
+        if (rNode) {
+            // Output the appropriate boolean operator between nodes
+            if (node->getConnector() == cdr::link::boolAnd)
+                sql += " AND ";
+            else if (node->getConnector() == cdr::link::boolOr)
+                sql += " OR ";
+            else
+                throw cdr::Exception (L"Invalid connector, can't happen");
+            rNode->makeWhere (sql, tagColumn, valColumn);
+        }
+
+        sql += ")";
+    }
 }
