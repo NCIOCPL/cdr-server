@@ -5,84 +5,517 @@
 <DocTitle readonly="yes">InScopeProtocol Status and Participant Mailer</DocTitle>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
- <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                version="1.0"
-                xmlns:cdr="cips.nci.nih.gov/cdr">
-  <!-- for testing 
-  <xsl:param     name="leadOrgId">CDR0000051374</xsl:param>
-    -->
-  <xsl:param     name="leadOrgId"/>
+<xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                              version = "1.0"
+                            xmlns:cdr = "cips.nci.nih.gov/cdr">
 
-  <xsl:template match="/">
-   <InScopeProtocol>
-    <xsl:apply-templates select="InScopeProtocol"/>
-   </InScopeProtocol>
-  </xsl:template>
+ <!--
+ ==========================================================================
+ Tells us which of the lead organizations we a dealing with.
+ ========================================================================== -->
+ <xsl:param                      name = "leadOrgId"/>
 
-  <xsl:template match='InScopeProtocol'>
-   <xsl:for-each select = "ProtocolTitle[@Type='Original']">
-    <Title><xsl:value-of select='.'/></Title>
-   </xsl:for-each>
-   <xsl:apply-templates select="ProtocolAdminInfo"/>
-  </xsl:template>
+ <!--
+ ==========================================================================
+ Rule for the root of the document.
+ ========================================================================== -->
+ <xsl:template                  match = "/">
+  <SPSCheck>
+   <xsl:apply-templates        select = "InScopeProtocol"/>
+  </SPSCheck>
+ </xsl:template>
 
-  <xsl:template match="ProtocolAdminInfo">
-   <xsl:for-each select="ProtocolLeadOrg">
-    <xsl:if test="LeadOrganizationID/@cdr:ref=$leadOrgId">
-     <LeadOrg>
-      <xsl:apply-templates select="LeadOrganizationID"/>
-      <xsl:apply-templates select="LeadOrgProtocolStatuses/CurrentOrgStatus"/>
-      <xsl:apply-templates select="ProtocolSites"/>
-     </LeadOrg>
-    </xsl:if>
-   </xsl:for-each>
-  </xsl:template>
+ <!--
+ ==========================================================================
+ Gather some additional parameter values and jump to the admin info.
+ ========================================================================== -->
+ <xsl:template                  match = "InScopeProtocol">
+  <xsl:apply-templates         select = "ProtocolAdminInfo">
+   <xsl:with-param               name = "title"
+                               select = "ProtocolTitle[@Type = 'Original']"/>
+   <xsl:with-param               name = "protId"
+                               select = "ProtocolIDs/PrimaryID/IDString"/>
+  </xsl:apply-templates>
+ </xsl:template>
 
-  <xsl:template match="ProtocolSites">
-   <xsl:for-each select="OrgSite">
-    <ParticipatingOrg>
-     <xsl:apply-templates select="OrgSiteID"/>
-     <xsl:apply-templates select="OrgSiteContact/SpecificPerson"/>
-    </ParticipatingOrg>
-   </xsl:for-each>
-  </xsl:template>
+ <!--
+ ==========================================================================
+ Grab the protocol status and descend to the lead org of interest.
+ ========================================================================== -->
+ <xsl:template                  match = "ProtocolAdminInfo">
+  <xsl:param                     name = "title"/>
+  <xsl:param                     name = "protId"/>
+  <xsl:apply-templates         select = "ProtocolLeadOrg
+                                        [LeadOrganizationID/
+                                        @cdr:ref = $leadOrgId]">
+   <xsl:with-param               name = "title"
+                               select = "$title"/>
+   <xsl:with-param               name = "protId"
+                               select = "$protId"/>
+   <xsl:with-param               name = "status"
+                               select = "CurrentProtocolStatus"/>
+  </xsl:apply-templates>
+ </xsl:template>
 
-  <xsl:template match="SpecificPerson">
-   <xsl:variable name="person" 
-                 select="document(concat('cdrx:', Person/@cdr:ref))"/>
-   <Contact>
-    <Surname>
-     <xsl:value-of select="$person/Person/PersonNameInformation/SurName"/>
-    </Surname>
-    <GivenName>
-     <xsl:value-of select="$person/Person/PersonNameInformation/GivenName"/>
-    </GivenName>
-    <Role>
-     <xsl:value-of select="Role"/>
-    </Role>
-   </Contact>
-  </xsl:template>
+ <!--
+ ==========================================================================
+ This is the main work horse; invoked once for the lead organization
+ whose CDR document ID matches the ID passed in by the caller.
+ ========================================================================== -->
+ <xsl:template                  match = "ProtocolLeadOrg">
+  <xsl:param                     name = "title"/>
+  <xsl:param                     name = "protId"/>
+  <xsl:param                     name = "status"/>
+  <xsl:variable                  name = "uri"
+                               select = "concat('cdrx:', $leadOrgId)"/>
+  <xsl:variable                  name = "org"
+                               select = "document($uri)"/>
+  <xsl:variable                  name = "orgName"
+                               select = "$org/Organization/
+                                         OrganizationNameInformation/
+                                         OfficialName/Name"/>
+  <xsl:if                        test = "not($orgName)">
+   <xsl:message             terminate = "yes">
+    <xsl:value-of              select = "concat('Cannot load lead org ',
+                                                'document using URI: ',
+                                                $uri)"/>
+   </xsl:message>
+  </xsl:if>
+  <PUP>
+   <xsl:apply-templates        select = "LeadOrgPersonnel
+                                        [PersonRole = 'Update person']">
+    <xsl:with-param              name = "isPup"
+                               select = "'yes'"/>
+   </xsl:apply-templates>
+  </PUP>
+  <Protocol>
+   <ProtocolTitle>
+    <xsl:value-of              select = "$title"/>
+   </ProtocolTitle>
+   <CurrentStatus>
+    <xsl:value-of              select = "$status"/>
+   </CurrentStatus>
+   <ID>
+    <xsl:value-of              select = "$protId"/>
+   </ID>
+   <LeadOrg>
+    <xsl:value-of              select = "$orgName"/>
+   </LeadOrg>
+   <Personnel>
+    <xsl:apply-templates       select = "LeadOrgPersonnel"/>
+   </Personnel>
+   <xsl:apply-templates        select = "ProtocolSites"/>
+  </Protocol>
+ </xsl:template>
 
-  <xsl:template match="LeadOrganizationID|OrgSiteID">
-   <xsl:variable name="org" select="document(concat('cdrx:', @cdr:ref))"/>
-   <xsl:variable name="nameInfo"
-                 select="$org/Organization/OrganizationNameInformation"/>
-   <xsl:variable name="orgName" select="$nameInfo/OfficialName/Name"/>
+ <!--
+ ==========================================================================
+ Create a LeadOrgPerson element for each LeadOrgPersonnel element found
+ under the lead org.  Volker's original LaTeX rules were also looking
+ for Street and Phone elements, but the output sample doesn't show what
+ to do with these, so for right now we're just picking up a name string
+ and the person's role.
+ ========================================================================== -->
+ <xsl:template                  match = "LeadOrgPersonnel">
+  <xsl:param                     name = "isPup"
+                               select = "'no'"/>
+  <xsl:variable                  name = "uri"
+                               select = "concat('cdrx:', Person/@cdr:ref)"/>
+  <xsl:variable                  name = "doc"
+                               select = "document($uri)"/>
+  <xsl:if                        test = "not($doc)">
+   <xsl:message             terminate = "yes">
+    <xsl:value-of              select = "concat('Unable to open lead org ',
+                                                'personnel document from URI: ',
+                                                $uri)"/>
+   </xsl:message>
+  </xsl:if>
+  <xsl:variable                  name = "name">
+   <xsl:apply-templates        select = "$doc/Person/PersonNameInformation"/>
+  </xsl:variable>
+  <xsl:choose>
+   <xsl:when                     test = "$isPup = 'yes'">
+    <Name>
+     <xsl:value-of             select = "$name"/>
+    </Name>
+    <xsl:call-template           name = "pupLocation">
+     <xsl:with-param             name = "personDoc"
+                               select = "$doc"/>
+     <xsl:with-param             name = "personUri"
+                               select = "$uri"/>
+    </xsl:call-template>
+   </xsl:when>
+   <xsl:otherwise>
+    <LeadOrgPerson>
+     <Name>
+      <xsl:value-of            select = "$name"/>
+     </Name>
+     <Role>
+      <xsl:value-of            select = "PersonRole"/>
+     </Role>
+    </LeadOrgPerson>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+ <!--
+ ==========================================================================
+ Paste together a personal name string.
+ ========================================================================== -->
+ <xsl:template                  match = "PersonNameInformation">
+  <xsl:value-of                select = "concat(GivenName, ' ', SurName)"/>
+ </xsl:template>
+
+ <!--
+ ==========================================================================
+ Pull in the location information for the protocol update person.
+ ========================================================================== -->
+ <xsl:template                   name = "pupLocation">
+  <xsl:param                     name = "personUri"/>
+  <xsl:param                     name = "personDoc"/>
+  <xsl:if                        test = "not(contains($personUri, '#'))">
+   <xsl:message             terminate = "yes">
+    <xsl:value-of              select = "concat('Protocol update person ',
+                                                'link fragment not found ',
+                                                'in URI: ',
+                                                $personUri)"/>
+   </xsl:message>
+  </xsl:if>
+  <xsl:variable                  name = "fragId"
+                               select = "substring-after($personUri, '#')"/>
+  <xsl:apply-templates         select = "$personDoc/Person
+                                                   /PersonLocations
+                                                   /PrivatePractice
+                                                   /PrivatePracticeLocation
+                                                   [@cdr:id = $fragId]"/>
+  <xsl:apply-templates         select = "$personDoc/Person
+                                                   /PersonLocations
+                                                   /OtherPracticeLocation
+                                                   [@cdr:id = $fragId]"/>
+ </xsl:template>
+
+ <!--
+ ==========================================================================
+ Rule for private practice location information.
+ ========================================================================== -->
+ <xsl:template                  match = "PrivatePracticeLocation">
+  <Location>
+   <xsl:apply-templates        select = "PostalAddress"/>
+   <xsl:copy-of                select = "Phone"/>
+  </Location>
+ </xsl:template>
+
+ <!--
+ ==========================================================================
+ Rule for other practice location.
+ ========================================================================== -->
+ <xsl:template                  match = "OtherPracticeLocation">
+  <xsl:variable                  name = "link"
+                               select = "OrganizationLocation/@cdr:ref"/>
+  <xsl:variable                  name = "uri"
+                               select = "concat('cdrx:', $link)"/>
+  <xsl:variable                  name = "doc"
+                               select = "document($uri)"/>
+  <xsl:if                        test = "not($doc)">
+   <xsl:message             terminate = "yes">
+    <xsl:value-of              select = "concat('Unable to resolve org ',
+                                                'link for other practice ',
+                                                'location using URI: ',
+                                                $uri)"/>
+   </xsl:message>
+  </xsl:if>
+  <xsl:if                        test = "not(contains($uri, '#'))">
+   <xsl:message             terminate = "yes">
+    <xsl:value-of              select = "concat('Organization location link ',
+                                                $uri,
+                                                ' does not contain a ',
+                                                'fragment identifier')"/>
+   </xsl:message>
+  </xsl:if>
+  <xsl:variable                  name = "fragId"
+                               select = "substring-after($uri, '#')"/>
+  <Location>
+   <xsl:copy-of                select = "PersonTitle"/>
+   <Org>
+    <xsl:value-of              select = "$doc/Organization
+                                             /OrganizationNameInformation
+                                             /OfficialName/Name"/>
+   </Org>
    <xsl:choose>
-    <xsl:when test="$orgName">
-     <OrgName><xsl:value-of select="$orgName"/></OrgName>
+    <xsl:when                    test = "SpecificPostalAddress">
+     <xsl:apply-templates      select = "SpecificPostalAddress"/>
     </xsl:when>
     <xsl:otherwise>
-     <OrgName>*** Name not found ***</OrgName>
+     <xsl:apply-templates      select = "$doc/Organization
+                                             /OrganizationLocations
+                                             /OrganizationLocation
+                                             /Location[@cdr:id = $fragId]
+                                             /PostalAddress"/>
     </xsl:otherwise>
    </xsl:choose>
-   <OrgId><xsl:value-of select="@cdr:ref"/></OrgId>
-  </xsl:template>
+   <xsl:choose>
+    <xsl:when                    test = "SpecificPhone">
+     <Phone>
+      <xsl:value-of            select = "SpecificPhone"/>
+     </Phone>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:copy-of              select = "$doc/Organization
+                                             /OrganizationLocations
+                                             /OrganizationLocation
+                                             /Location[@cdr:id = $fragId]
+                                             /Phone"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </Location>
+ </xsl:template>
 
-  <xsl:template match="CurrentOrgStatus">
-   <Status><xsl:value-of select="StatusName"/></Status>
-  </xsl:template>
+ <!--
+ ==========================================================================
+ Assemble the postal address information.
+ ========================================================================== -->
+ <xsl:template                  match = "PostalAddress | SpecificPostalAddress">
+  <PostalAddress>
+   <xsl:copy-of                select = "Street | City | CitySuffix"/>
+   <xsl:apply-templates        select = "PoliticalSubUnit_State"/>
+   <xsl:apply-templates        select = "Country"/>
+   <xsl:copy-of                select = "PostalCode_ZIP"/>
+  </PostalAddress>
+ </xsl:template>
 
- </xsl:transform>]]>
+ <!--
+ ==========================================================================
+ Denormalize the state link.
+ ========================================================================== -->
+ <xsl:template                  match = "PoliticalSubUnit_State">
+  <xsl:variable                  name = "link"
+                               select = "@cdr:ref"/>
+  <xsl:variable                  name = "uri"
+                               select = "concat('cdrx:', $link)"/>
+  <xsl:variable                  name = "doc"
+                               select = "document($uri)"/>
+  <xsl:if                        test = "not($doc)">
+   <xsl:message             terminate = "yes">
+    <xsl:value-of              select = "concat('Unable to load state ',
+                                                'document from URI: ',
+                                                $uri)"/>
+   </xsl:message>
+  </xsl:if>
+  <xsl:copy-of                 select = "$doc/PoliticalSubUnit
+                                             /PoliticalSubUnitFullName"/>
+  <xsl:copy-of                 select = "$doc/PoliticalSubUnit
+                                             /PoliticalSubUnitShortName"/>
+ </xsl:template>
+
+ <!--
+ ==========================================================================
+ Denormalize the country link.
+ ========================================================================== -->
+ <xsl:template                  match = "Country">
+  <xsl:variable                  name = "link"
+                               select = "@cdr:ref"/>
+  <xsl:variable                  name = "uri"
+                               select = "concat('cdrx:', $link)"/>
+  <xsl:variable                  name = "doc"
+                               select = "document($uri)"/>
+  <xsl:if                        test = "not($doc)">
+   <xsl:message             terminate = "yes">
+    <xsl:value-of              select = "concat('Unable to load country ',
+                                                'document from URI: ',
+                                                $uri)"/>
+   </xsl:message>
+  </xsl:if>
+  <xsl:copy-of                 select = "$doc/Country/CountryFullName"/>
+  <xsl:copy-of                 select = "$doc/Country/CountryShortName"/>
+ </xsl:template>
+
+ <!--
+ ==========================================================================
+ Assemble the collection of participating organizations.
+ ========================================================================== -->
+ <xsl:template                  match = "ProtocolSites">
+  <ProtocolSites>
+   <xsl:apply-templates        select = "OrgSite"/>
+  </ProtocolSites>
+ </xsl:template>
+
+ <!--
+ ==========================================================================
+ Rule for a single participating organization.
+ ========================================================================== -->
+ <xsl:template                  match = "OrgSite">
+  <ParticipatingSite>
+   <xsl:apply-templates        select = "OrgSiteID"/>
+   <xsl:apply-templates        select = "OrgSiteStatus"/>
+   <xsl:apply-templates        select = "OrgSiteContact/SpecificPerson
+                                        [Role = 'Principal investigator']"/>
+  </ParticipatingSite>
+ </xsl:template>
+
+ <!--
+ ==========================================================================
+ Find the name for a participating organization.
+ ========================================================================== -->
+ <xsl:template                  match = "OrgSiteID">
+  <xsl:variable                  name = "uri"
+                               select = "concat('cdrx:', @cdr:ref)"/>
+  <xsl:variable                  name = "doc"
+                               select = "document($uri)"/>
+  <xsl:if                        test = "not($doc)">
+   <xsl:message             terminate = "yes">
+    <xsl:value-of              select = "concat('Unable to load document for ',
+                                                'participating organization ',
+                                                'from URI: ',
+                                                $uri)"/>
+   </xsl:message>
+  </xsl:if>
+  <Site>
+   <xsl:value-of               select = "$doc/Organization/
+                                         OrganizationNameInformation/
+                                         OfficialName/Name"/>
+  </Site>
+ </xsl:template>
+
+ <!--
+ ==========================================================================
+ Find the status for a participating organization.
+ ========================================================================== -->
+ <xsl:template                  match = "OrgSiteStatus">
+  <SiteStatus>
+   <xsl:value-of               select = "."/>
+  </SiteStatus>
+ </xsl:template>
+
+ <!--
+ ==========================================================================
+ Extract the name and telephone for a principal investigator.
+ ========================================================================== -->
+ <xsl:template                  match = "SpecificPerson">
+  <xsl:variable                  name = "link"
+                               select = "Person/@cdr:ref"/>
+  <xsl:variable                  name = "uri"
+                               select = "concat('cdrx:', $link)"/>
+  <xsl:variable                  name = "doc"
+                               select = "document($uri)"/>
+  <xsl:if                        test = "not($doc)">
+   <xsl:message             terminate = "yes">
+    <xsl:value-of              select = "concat('Unable to open specific ',
+                                                'person document from URI: ',
+                                                $uri)"/>
+   </xsl:message>
+  </xsl:if>
+  <xsl:if                        test = "$doc">
+   <PI>
+    <xsl:apply-templates       select = "$doc/Person/PersonNameInformation"/>
+   </PI>
+   <xsl:call-template            name = "findPhone">
+    <xsl:with-param              name = "doc"
+                               select = "$doc"/>
+    <xsl:with-param              name = "link"
+                               select = "$link"/>
+   </xsl:call-template>
+  </xsl:if>
+ </xsl:template>
+
+ <!--
+ ==========================================================================
+ Find the telephone number for a principal investigator.
+ ========================================================================== -->
+ <xsl:template                   name = "findPhone">
+  <xsl:param                     name = "doc"/>
+  <xsl:param                     name = "link"/>
+  <xsl:variable                  name = "phone">
+   <xsl:choose>
+
+    <!-- A specific phone number in the protocol takes highest precedence. -->
+    <xsl:when                    test = "SpecificPhone">
+     <xsl:value-of             select = "SpecificPhone"/>
+    </xsl:when>
+
+    <!-- If the protocol has no phone, look in the person's address fragment. -->
+    <xsl:otherwise>
+     <xsl:variable               name = "frag">
+      <xsl:call-template         name = "findPersonFragment">
+       <xsl:with-param           name = "doc"
+                               select = "$doc"/>
+       <xsl:with-param           name = "link"
+                               select = "$link"/>
+      </xsl:call-template>
+     </xsl:variable>
+
+     <!-- Use the person's specific phone if present, otherwise the org's. -->
+     <xsl:if                     test = "$frag">
+      <xsl:choose>
+       <xsl:when                 test = "$frag/OtherPracticeLocation
+                                              /SpecificPhone">
+        <xsl:value-of          select = "$frag/OtherPracticeLocation
+                                              /SpecificPhone"/>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:call-template       name = "findOrgPhone">
+         <xsl:with-param         name = "personFrag"
+                               select = "$frag"/>
+        </xsl:call-template>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:if>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
+  <!-- Did we find a phone number anywhere? -->
+  <xsl:if                        test = "$phone and not($phone = '')">
+   <Phone>
+    <xsl:value-of              select = "$phone"/>
+   </Phone>
+  </xsl:if>
+ </xsl:template>
+
+ <!--
+ ==========================================================================
+ Find the address fragment for a principal investigator.
+ ========================================================================== -->
+ <xsl:template                   name = "findPersonFragment">
+  <xsl:param                     name = "doc"/>
+  <xsl:param                     name = "link"/>
+  <xsl:if                        test = "contains($link, '#')">
+   <xsl:variable                 name = "fragId">
+    <xsl:value-of              select = "substring-after($link, '#')"/>
+   </xsl:variable>
+   <xsl:copy-of                select = "$doc/Person/PersonLocations/
+                                        OtherPracticeLocation
+                                        [@cdr:id = $fragId]"/>
+  </xsl:if>
+ </xsl:template>
+
+ <!--
+ ==========================================================================
+ Find the organization telephone number behind a principal investigator's
+ address fragment.
+ ========================================================================== -->
+ <xsl:template                   name = "findOrgPhone">
+  <xsl:param                     name = "personFrag"/>
+  <xsl:variable                  name = "link"
+                               select = "$personFrag/OtherPracticeLocation
+                                                    /OrganizationLocation
+                                                    /@cdr:ref"/>
+  <xsl:if                        test = "contains($link, '#')">
+   <xsl:variable                 name = "fragId"
+                               select = "substring-after($link, '#')"/>
+   <xsl:variable                 name = "uri"
+                               select = "concat('cdrx:', $link)"/>
+   <xsl:variable                 name = "doc"
+                               select = "document($uri)"/>
+   <xsl:if                       test = "$doc">
+    <xsl:value-of              select = "$doc/Organization
+                                             /OrganizationLocations
+                                             /OrganizationLocation
+                                             /Location[@cdr:id = $fragId]
+                                             /Phone"/>
+   </xsl:if>
+  </xsl:if>
+ </xsl:template>
+
+</xsl:transform>]]>
 </CdrDocXml>
 </CdrDoc>
