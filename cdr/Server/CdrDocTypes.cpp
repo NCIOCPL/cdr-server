@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDocTypes.cpp,v 1.7 2001-06-12 11:07:58 bkline Exp $
+ * $Id: CdrDocTypes.cpp,v 1.8 2001-06-28 17:38:17 bkline Exp $
  *
  * Support routines for CDR document types.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2001/06/12 11:07:58  bkline
+ * Added code to report linking elements to the caller of CdrGetDocType.
+ *
  * Revision 1.6  2001/05/21 20:48:29  bkline
  * Eliminated checks for permission to perform read-only doctype actions.
  *
@@ -28,6 +31,7 @@
 // Eliminate annoying warnings about truncated debugging information.
 #pragma warning(disable : 4786)
 
+#include <algorithm>
 #include "CdrDom.h"
 #include "CdrCommand.h"
 #include "CdrException.h"
@@ -548,4 +552,46 @@ cdr::String cdr::delDocType(Session&          session,
 
     // Report success.
     return L"<CdrDelDocTypeResp/>";
+}
+
+/**
+ * Send the complete set of CSS stylesheets to the client.
+ *
+ *  @param      session     contains information about the current user.
+ *  @param      node        contains the XML for the command.
+ *  @param      conn        reference to the connection object for the
+ *                          CDR database.
+ *  @return                 String object containing the XML for the
+ *                          command response.
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::getCssFiles(Session&          session,
+                             const dom::Node&  node,
+                             db::Connection&   conn)
+{
+    // Submit the query to the database
+    cdr::db::Statement s = conn.createStatement();
+    cdr::db::ResultSet r = s.executeQuery(" SELECT d.title, b.data     "
+                                          "   FROM document d,         "
+                                          "        doc_blob b,         "
+                                          "        doc_type t          "
+                                          "  WHERE t.name = 'css'      "
+                                          "    AND t.id   = d.doc_type "
+                                          "    AND d.id   = b.id       ");
+
+    // Construct the response.
+    cdr::String resp = L"<CdrGetCssFiles>";
+    while (r.next()) {
+        cdr::String title = r.getString(1);
+        cdr::Blob   blob  = r.getBytes(2);
+
+        // Preserve Latin-1 encoding; these files aren't using utf-8.
+        cdr::String css(blob.size(), L'\0');
+        std::copy(blob.begin(), blob.end(), css.begin());
+        resp += L"<File><Name>" + title + L"</Name><Data>"
+                                + css   + L"</Data></File>";
+    }
+
+    // Send back the set.
+    return resp + L"</CdrGetCssFiles>";
 }
