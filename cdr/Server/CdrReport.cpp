@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.15 2003-04-15 18:15:08 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.16 2003-04-15 21:01:22 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2003/04/15 18:15:08  bkline
+ * Added MenuTermTree report.
+ *
  * Revision 1.14  2003/02/14 17:57:42  bkline
  * Fixed typo in query for PUP picklist (issue #595).
  *
@@ -743,6 +746,12 @@ namespace
                                     cdr::db::Connection& dbConnection,
                                     cdr::Report::ReportParameters parm)
   {
+    // See if the client wants to restrict the report to one menu type.
+    cdr::String menuType = "%";
+    ReportParameters::iterator i = parm.find(L"MenuType");
+    if (i != parm.end())
+      menuType = i->second;
+
     // Pull the menu term information from the database.
     char* query =
         "SELECT DISTINCT a.doc_id  AS term_id,                                "
@@ -769,11 +778,13 @@ namespace
         "          WHERE a.path = '/Term/PreferredName'                       "
         "            AND b.path = '/Term/MenuInformation/MenuItem/MenuType'   "
         "            AND c.path = '/Term/MenuInformation/MenuItem/MenuStatus' "
+        "            AND b.value LIKE ?                                       "
         "       ORDER BY a.doc_id                                             "
         ;
       
-    cdr::db::Statement select = dbConnection.createStatement();
-    cdr::db::ResultSet rs = select.executeQuery(query);
+    cdr::db::PreparedStatement ps = dbConnection.prepareStatement(query);
+    ps.setString(1, menuType);
+    cdr::db::ResultSet rs = ps.executeQuery();
     std::wostringstream result;
     result << L"<ReportBody><![CDATA[\n"
               L"<ReportName>" << getName() << L"</ReportName>\n";
