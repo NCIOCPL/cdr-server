@@ -60,17 +60,13 @@
    <xsl:apply-templates     select = "ReimbursementApproval"
                               mode = "copy"/>
 
-   <!-- Rename the ProtocolTitle Type attribute to Audience. -->
-   <xsl:if                    test = "ProtocolTitle[@Type='Professional']">
-    <ProtocolTitle        Audience = "Professional">
-     <xsl:value-of          select = "ProtocolTitle[@Type='Professional']"/>
-    </ProtocolTitle>
-   </xsl:if>
-   <xsl:if                    test = "ProtocolTitle[@Type='Patient']">
-    <ProtocolTitle        Audience = "Patient">
-     <xsl:value-of          select = "ProtocolTitle[@Type='Patient']"/>
-    </ProtocolTitle>
-   </xsl:if>
+   <!-- Output only the Professional and Patient title
+        The Type attribute is being renamed to Audience elsewhere. 
+        ==========================================================     -->
+   <xsl:apply-templates     select = "ProtocolTitle[@Type='Professional']"
+                              mode = "copy"/>
+   <xsl:apply-templates     select = "ProtocolTitle[@Type='Patient']"
+                              mode = "copy"/>
  
    <!-- Use custom templates for these. -->
    <xsl:apply-templates     select = "ProtocolAbstract"/>
@@ -317,6 +313,19 @@
     <xsl:value-of           select = "."/>
    </xsl:attribute>
  </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Rename the Protocol Title Type attribute to Audience.
+ ==================================================================== -->
+ <xsl:template               match = "@Type"
+                              mode = "copy">
+   <xsl:attribute             name = "Audience">
+    <xsl:value-of           select = "."/>
+   </xsl:attribute>
+ </xsl:template>
+
 
  <!--
  ====================================================================
@@ -962,10 +971,11 @@
  <!--
  ====================================================================
  Template for inline Note elements
+ Could be dropped when switch to mode="copy" is completed.
  ==================================================================== -->
  <xsl:template                   match = "Note">
   <xsl:element                    name = "Note">
-   <xsl:apply-templates/>
+   <xsl:apply-templates           mode = "copy"/>
   </xsl:element>
  </xsl:template>
 
