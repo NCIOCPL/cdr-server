@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.41 2002-07-25 09:57:32 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.42 2002-07-26 17:32:45 bkline Exp $
  *
  */
 
@@ -814,9 +814,15 @@ static cdr::String CdrPutDoc (
     SHOW_ELAPSED("back from updateQueryTerms", incrementalTimer);
 
     // A <Comment> may have been specified to store in the document table,
-    //   and a <Reason> to store in the version table.
-    // If no Reason was specified, we'll use the Comment for versioning
+    //   and a <Reason> to store in the audit_trail table.
+    // If no Reason was specified, we'll use the Comment for auditing
     //   also.
+    // XXX It's not clear that we should have separate comment columns
+    //     in the all_docs and doc_version tables.  The theory was that
+    //     these would bear the answer to the question "what did you do?"
+    //     and the comment column in the audit_trail table would be for
+    //     "why did you do it?" but no one has come up with a convincing
+    //     use case.
     if (cmdReason == L"")
         cmdReason = doc.getComment();
 
