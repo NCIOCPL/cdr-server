@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.46 2001-12-23 14:55:12 bkline Exp $
+ * $Id: tables.sql,v 1.47 2001-12-24 00:59:36 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.46  2001/12/23 14:55:12  bkline
+ * Moved GRANT statements out to separate file.
+ *
  * Revision 1.45  2001/12/22 01:38:34  bkline
  * Temporarily disabled foreign key constraint on link_net.target_doc.
  *
@@ -154,6 +157,12 @@
  * Initial revision
  */
 
+USE master
+GO
+DROP DATABASE cdr
+GO
+CREATE DATABASE cdr
+GO
 USE cdr
 GO
 
