@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<!-- $Id: CdrCommonSchema.xml,v 1.31 2001-12-03 23:17:39 ArkD Exp $ 
+<!-- $Id: CdrCommonSchema.xml,v 1.32 2001-12-10 13:51:06 ArkD Exp $ 
 
      $Log: not supported by cvs2svn $
+     Revision 1.31  2001/12/03 23:17:39  ArkD
+     PoliticalUnit=>PoliticalSubUnit.
+     GeographicEntityLink and GeographicEntityFragmentLink deleted.
+     CountryLink and PoliticalSubUnitLink created.
+     In Row entry=>Entry.
+     ProtocolLink added to OtherPhraseElements.
+
      Revision 1.30  2001/10/24 18:24:36  ArkD
      InterventionName type changed back to PhraseLevel.
 
@@ -117,6 +124,9 @@
       <element       name            = 'Comment'
                      type            = 'string'
                      minOccurs       = '0'/>
+      <element       name            = 'Section'
+                     type            = 'Section'
+                     minOccurs       = '0'/>
     </choice>
   </group>
 
@@ -155,10 +165,10 @@
                      type            = 'CitationLink'/>
       <element       name            = 'CitationRef'
                      type            = 'CitationRef'/>
-      <element       name            = 'CitationFragmentLink'
+      <!--<element       name            = 'CitationFragmentLink'
                      type            = 'CitationFragmentLink'/>
       <element       name            = 'CitationFragmentRef'
-                     type            = 'CitationFragmentRef'/>
+                     type            = 'CitationFragmentRef'/>-->
       <element       name            = 'SummaryRef'
                      type            = 'SummaryRef'/>
       <element       name            = 'SummaryFragmentRef'
@@ -363,7 +373,8 @@
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
       <element       name            = 'City'
-                     type            = 'string'/>
+                     type            = 'string'
+                     minOccurs       = '0'/>
       <element       name            = 'CitySuffix'
                      type            = 'string'
                      minOccurs       = '0'/>
@@ -371,8 +382,7 @@
                      type            = 'PoliticalSubUnitLink'
                      minOccurs       = '0'/>
       <element       name            = 'Country'
-                     type            = 'CountryLink'
-                     minOccurs       = '0'/>
+                     type            = 'CountryLink'/>
       <element       name            = 'PostalCode_ZIP'
                      type            = 'string'
                      minOccurs       = '0'/>
@@ -470,6 +480,7 @@
       </extension>
     </simpleContent>
   </complexType>
+  <!--CdrHref and CdrRef are not currently used but should be left for future possible use-->
 
   <complexType       name            = 'ExternalRef'>
     <simpleContent>
@@ -1011,7 +1022,7 @@
 
   <complexType       name            = 'Row'>
     <sequence>
-      <element       name            = 'Entry'
+      <element       name            = 'entry'
                      type            = 'Entry'
                      maxOccurs       = 'unbounded'/>
     </sequence>
@@ -1150,18 +1161,6 @@
         4. Phone should be required
       -->
       <enumeration   value           = 'Non US'/>
-    <!--Will enforce (through programming outside schema):
-        if PostalCode_Zip is not Null then CodePosition should be required
-      -->
-    </restriction>
-  </simpleType>
-
-  <simpleType        name            = 'CodePosition'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'after City'/>
-      <enumeration   value           = 'after Country'/>
-      <enumeration   value           = 'after PoliticalUnit_State'/>
-      <enumeration   value           = 'before City'/>
     </restriction>
   </simpleType>
 
@@ -1184,3 +1183,10 @@
     </restriction>
   </simpleType>
 
+  <simpleType        name            = 'YN'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Y'/>
+      <enumeration   value           = 'N'/>
+      <!--For possible use in PubMed citations only-->
+    </restriction>
+  </simpleType>
