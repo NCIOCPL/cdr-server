@@ -1,5 +1,5 @@
 /*
- * $Id: CdrTestClient.cpp,v 1.7 2004-03-17 20:58:28 bkline Exp $
+ * $Id: CdrTestClient.cpp,v 1.8 2004-03-31 03:29:55 ameyer Exp $
  *
  * Test client (C++ version) for sending commands to CDR server.
  *
@@ -16,6 +16,9 @@
  * The encoding for the XML must be UTF-8.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2004/03/17 20:58:28  bkline
+ * Fixed setmode() call.
+ *
  * Revision 1.6  2001/05/03 18:43:11  bkline
  * Used binary mode for file I/O.
  *
@@ -69,8 +72,9 @@ main(int ac, char **av)
     std::string         requests;
 
     // In case of catastrophe, don't hang up on console
+    // But do abort
     if (!getenv ("NOCATCHCRASH"))
-        set_exception_catcher ("CdrTestClient.crash");
+        set_exception_catcher ("CdrTestClient.crash", 1);
 
     // Load the requests.
     if (ac > 1 && strcmp(av[1], "-")) {
