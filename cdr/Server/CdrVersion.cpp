@@ -1,9 +1,14 @@
 /*
- * $Id: CdrVersion.cpp,v 1.23 2003-11-05 01:43:12 ameyer Exp $
+ * $Id: CdrVersion.cpp,v 1.24 2004-11-05 06:02:04 ameyer Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2003/11/05 01:43:12  ameyer
+ * Fixed bug in isChanged().  Was looking at the date/time of the last
+ * entry in the audit_trail to compare to date/time of last version.  But
+ * should have looked only at ADD or MODIFY transactions in the audit trail.
+ *
  * Revision 1.22  2003/08/04 17:03:26  bkline
  * Fixed breakage caused by upgrade to latest version of Microsoft's
  * C++ compiler.
@@ -93,11 +98,14 @@
 #include "CdrException.h"
 #include "CdrString.h"
 #include "CdrVersion.h"
+#include "CdrBlobExtern.h"
 
 using std::string;
 using std::auto_ptr;
 using std::wostringstream;
 using std::wistringstream;
+
+static void cdr::getVerBlob(cdr::db::Connection& conn, CdrVerDoc* verdoc);
 
 bool cdr::allowVersion(int docId, cdr::db::Connection& conn)
 {
@@ -203,7 +211,6 @@ int cdr::checkIn(cdr::Session& session, int docId,
     throw cdr::Exception(L"Document not checked out");
   }
 
-
   // now add new version if not abandoned
   if (!abandon)
   {
@@ -215,10 +222,10 @@ int cdr::checkIn(cdr::Session& session, int docId,
     ++version;
     string query = "SELECT d.val_status, d.val_date, "
                    "       d.doc_type, d.title, d.xml, "
-                   "       d.comment, a.dt, b.data "
+                   "       d.comment, a.dt, b.blob_id "
                    "FROM document d "
                    "JOIN audit_trail a ON a.document = d.id "
-                   "LEFT OUTER JOIN doc_blob b ON b.id = d.id "
+                   "LEFT OUTER JOIN doc_blob_usage b ON b.doc_id = d.id "
                    "WHERE d.id = ? "
                    "  AND a.dt = (SELECT MAX(dt) "
                    "              FROM audit_trail aa"
@@ -237,13 +244,13 @@ int cdr::checkIn(cdr::Session& session, int docId,
     cdr::String xml = rs.getString(5);
     cdr::String doc_comment = rs.getString(6);
     cdr::String updated_dt = rs.getString(7);
-    cdr::Blob data = rs.getBytes(8);
+    cdr::Int blobId = rs.getInt(8);
 
     string newver = "INSERT INTO doc_version "
                     "            (id, num, dt, updated_dt, usr, val_status, "
                     "             val_date, doc_type, title, "
-                    "             xml, data, comment, publishable) "
-      "VALUES (?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    "             xml, comment, publishable) "
+      "VALUES (?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     cdr::db::PreparedStatement insert = conn.prepareStatement(newver);
     insert.setInt(1, docId);
     insert.setInt(2, version);
@@ -254,10 +261,13 @@ int cdr::checkIn(cdr::Session& session, int docId,
     insert.setInt(7, doc_type);
     insert.setString(8, title);
     insert.setString(9, xml);
-    insert.setBytes(10, data);
-    insert.setString(11, doc_comment);
-    insert.setString(12, publishable);
+    insert.setString(10, doc_comment);
+    insert.setString(11, publishable);
     insert.executeQuery();
+
+    // If there was a blob, version it too
+    if (!blobId.isNull())
+        cdr::addVersionBlobUsage(conn, docId, blobId);
   }
 
   // Track unlock actions.
@@ -389,11 +399,13 @@ int cdr::checkOut(cdr::Session& session,
 bool cdr::getVersion(int docId, cdr::db::Connection& conn, int num,
                      CdrVerDoc* verdoc)
 {
-  string query = "SELECT dt, updated_dt, usr, val_status, val_date, "
-                        "doc_type, title, "
-                        "xml, data, comment, publishable "
-                 "FROM doc_version "
-                 "WHERE id = ? and num = ?";
+  string query = "SELECT v.dt, v.updated_dt, v.usr, v.val_status, "
+                        "v.val_date, v.doc_type, v.title, "
+                        "v.xml, b.blob_id, v.comment, v.publishable "
+                 "FROM doc_version d "
+                 "LEFT OUTER JOIN version_blob_usage "
+                 "  ON d.id = b.doc_id AND d.num = b.doc_version "
+                 "WHERE d.id = ? and d.num = ?";
   cdr::db::PreparedStatement select = conn.prepareStatement(query);
   select.setInt(1, docId);
   select.setInt(2, num);
@@ -414,9 +426,12 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn, int num,
     verdoc->doc_type = rs.getInt(6);
     verdoc->title = rs.getString(7);
     verdoc->xml = rs.getString(8);
-    verdoc->data = rs.getBytes(9);
+    verdoc->blob_id = rs.getInt(9);
     verdoc->comment = rs.getString(10);
     verdoc->publishable = rs.getString(11);
+
+    // Check for blob id and get bytes if there are any
+    getVerBlob(conn, verdoc);
   }
 
   return true;
@@ -426,10 +441,13 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn,
                      const cdr::String& dt,
                      CdrVerDoc* verdoc)
 {
-  string query = "SELECT num, dt, updated_dt, usr, val_status, val_date, "
-                        "doc_type, title, "
-                        "xml, data, comment, publishable "
-                 "FROM doc_version "
+  string query = "SELECT v.num, v.dt, v.updated_dt, v.usr, v.val_status, "
+                        "v.val_date, v.doc_type, v.title, "
+                        "v.xml, b.blob_id, v.comment, v.publishable "
+                 "FROM doc_version v "
+                 "LEFT OUTER JOIN version_blob_usage b "
+                 "  ON v.id = b.doc_id "
+                 " AND v.num = b.doc_version "
                  "WHERE document = ? "
                  "  AND dt = (SELECT MAX(dt) FROM doc_version "
                  "WHERE document = ? AND dt <= ?)";
@@ -454,9 +472,12 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn,
     verdoc->doc_type = rs.getInt(7);
     verdoc->title = rs.getString(8);
     verdoc->xml = rs.getString(9);
-    verdoc->data = rs.getBytes(10);
+    verdoc->blob_id = rs.getInt(10);
     verdoc->comment = rs.getString(11);
     verdoc->publishable = rs.getString(12);
+
+    // Search for blob data, if needed
+    getVerBlob(conn, verdoc);
   }
 
   return true;
@@ -468,12 +489,15 @@ bool cdr::getLabelVersion(int docId, cdr::db::Connection& conn,
 {
   string query = "SELECT d.num, d.dt, d.updated_dt, d.usr, d.val_status, "
                         "d.val_date, d.doc_type, d.title, "
-                        "d.xml, d.data, d.comment, d.publishable "
+                        "d.xml, b.blob_id, d.comment, d.publishable "
                         "FROM doc_version d "
                         "INNER JOIN doc_version_label dl "
-                        "ON d.id = dl.document "
+                        "   ON d.id = dl.document "
                         "INNER JOIN version_label vl "
-                        "ON dl.label = vl.id "
+                        "   ON dl.label = vl.id "
+                        "LEFT OUTER JOIN version_blob_usage b "
+                        "  ON d.id = b.doc_id "
+                        " AND dl.num = b.doc_version "
                         "WHERE d.id = ? "
                         "  AND vl.name = ?";
   cdr::db::PreparedStatement select = conn.prepareStatement(query);
@@ -496,9 +520,12 @@ bool cdr::getLabelVersion(int docId, cdr::db::Connection& conn,
     verdoc->doc_type = rs.getInt(7);
     verdoc->title = rs.getString(8);
     verdoc->xml = rs.getString(9);
-    verdoc->data = rs.getBytes(10);
+    verdoc->blob_id = rs.getInt(10);
     verdoc->comment = rs.getString(11);
     verdoc->publishable = rs.getString(12);
+
+    // Check for blob id and get bytes if there are any
+    getVerBlob(conn, verdoc);
   }
 
   return true;
@@ -1092,4 +1119,38 @@ cdr::String cdr::lastVersions(Session& session,
   response << L"</LastVersionsResp>\n";
 
   return response.str();
+}
+
+/*
+ * Fill in the blob data in a CdrVerDoc structure, if and only if
+ * verdoc->blob_id is not null.
+ */
+static void cdr::getVerBlob(cdr::db::Connection& conn, CdrVerDoc* verdoc)
+{
+    // If there is a blob for this version
+    if (!verdoc->blob_id.isNull()) {
+
+        // Get pointer to dynamically allocated blob
+        cdr::Blob *pBlob;
+        if ((pBlob = cdr::getBlobPtrByBlobId(conn, verdoc->blob_id)) == 0) {
+            wchar_t msg[128];
+            swprintf (msg, L"getVerBlob: version has blob_id but not blob.  "
+                           L"DocId=%d, Version=%d, BlobId=%d",
+                           verdoc->document, verdoc->num, verdoc->blob_id);
+            throw cdr::Exception (msg);
+        }
+
+        // Deep copy from heap to verdoc memory
+        // Takes more memory and milliseconds than optimum, but shouldn't
+        //   happen too often.
+        // If it becomes a problem, can optimize with a lazy evaluation,
+        //   i.e., only fetch the actual blob before returning to the
+        //   client - if the client has actually requested it.
+        // But that would require more change to running code and may not
+        //   be necessary.
+        verdoc->data = cdr::Blob(*pBlob);
+
+        // Release heap memory
+        delete pBlob;
+    }
 }
