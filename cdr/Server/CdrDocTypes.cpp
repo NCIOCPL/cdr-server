@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDocTypes.cpp,v 1.3 2001-02-28 02:36:18 bkline Exp $
+ * $Id: CdrDocTypes.cpp,v 1.4 2001-04-13 12:23:14 bkline Exp $
  *
  * Support routines for CDR document types.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2001/02/28 02:36:18  bkline
+ * Fixed a bug which was preventing comments from being saved.
+ *
  * Revision 1.2  2001/01/17 21:50:33  bkline
  * Added CdrAdd/Mod/Del/GetDocType commands.
  *
@@ -73,11 +76,6 @@ cdr::String cdr::getDocType(Session&          session,
                             const dom::Node&  node,
                             db::Connection&   conn)
 {
-    // Make sure the user is authorized to retrieve doctype information.
-    if (!session.canDo(conn, L"GET DOCTYPE", L""))
-        throw cdr::Exception(
-                L"GET DOCTYPE action not authorized for this user");
-
     // Find out which document type we are supposed to retrieve.
     const cdr::dom::Element& cmdElement = 
         static_cast<const cdr::dom::Element&>(node);
@@ -85,6 +83,11 @@ cdr::String cdr::getDocType(Session&          session,
     if (docTypeString.empty())
         throw cdr::Exception(L"Type attribute missing from CdrGetDocType "
                              L"command element");
+
+    // Make sure the user is authorized to retrieve the doctype's information.
+    if (!session.canDo(conn, L"GET DOCTYPE", docTypeString))
+        throw cdr::Exception(
+                L"GET DOCTYPE action not authorized for this user/doctype");
 
     // Load the document type information.
     std::string query = "SELECT f.name,        "
@@ -269,11 +272,6 @@ cdr::String cdr::modDocType(Session&          session,
                             const dom::Node&  node,
                             db::Connection&   conn)
 {
-    // Make sure the user is authorized to modify an existing document type.
-    if (!session.canDo(conn, L"MODIFY DOCTYPE", L""))
-        throw cdr::Exception(
-                L"MODIFY DOCTYPE action not authorized for this user");
-
     // Extract the attributes from the command element.
     const cdr::dom::Element& cmdElement = 
         static_cast<const cdr::dom::Element&>(node);
@@ -290,6 +288,11 @@ cdr::String cdr::modDocType(Session&          session,
     if (versioningString != L"Y" && versioningString != L"N")
         throw cdr::Exception(L"Versioning attribute can only be Y or N; was",
                              versioningString);
+
+    // Make sure the user is authorized to modify an existing document type.
+    if (!session.canDo(conn, L"MODIFY DOCTYPE", docTypeString))
+        throw cdr::Exception(
+                L"MODIFY DOCTYPE action not authorized for this user");
 
     // Extract the schema.
     cdr::String schema;
