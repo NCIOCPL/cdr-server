@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.3 2000-04-12 14:25:34 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.4 2000-04-16 22:45:15 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/04/12 14:25:34  bkline
+ * Removed debugging output.
+ *
  * Revision 1.2  2000/04/11 21:22:58  bkline
  * Fleshed out support for simple types; added true type inheritance.
  *
@@ -9,6 +12,9 @@
  * Initial revision
  *
  */
+
+// Eliminate annoying warnings about truncated debugging information.
+#pragma warning(disable : 4786)
 
 // System headers.
 #include <climits>
