@@ -1,10 +1,13 @@
 /*
- * $Id: CdrSearch.h,v 1.5 2000-05-04 12:39:43 bkline Exp $
+ * $Id: CdrSearch.h,v 1.6 2000-08-10 15:45:25 bkline Exp $
  *
  * Interface for CDR search implementation.  Used by implementation of search
  * command and by the query parser.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/05/04 12:39:43  bkline
+ * More ccdoc comments.
+ *
  * Revision 1.4  2000/04/26 01:37:28  bkline
  * Tweaking ccdoc comments.
  *
@@ -59,7 +62,7 @@ namespace cdr {
          * or the type of boolean combination of two nodes found in the query
          * (AND or OR).
          */
-        enum OpType { EQ, NE, GT, LT, GTE, LTE, CONTAINS, AND, OR };
+        enum OpType { EQ, NE, GT, LT, GTE, LTE, CONTAINS, BEGINS, AND, OR };
 
         /**
          * The current implementation of CDR searching allows two types of
