@@ -1,10 +1,14 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.81 2005-03-23 01:17:58 ameyer Exp $
+# $Id: Makefile,v 1.82 2005-03-24 22:13:51 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.81  2005/03/23 01:17:58  ameyer
+# My original Xerces conversion was for debug versions only.  This adds
+# support for non-debug versions needed for our test and production servers.
+#
 # Revision 1.80  2005/03/04 03:00:43  ameyer
 # Modified to use Xerces libraries instead of xml4c.
 #
@@ -277,12 +281,12 @@
 
 DRV    =d:
 CDR    =$(DRV)/cdr
-XERCES =$(DRV)/usr/xerces-c-src_2_6_0
+XERCES =$(DRV)/usr/xerces
 XERINC =$(XERCES)/src
 !IF "$(DBG)" == ""
-XERLIB =$(XERCES)/Build/Win32/VC7/Release/xerces-c_2
+XERLIB =$(XERCES)/lib/xerces-c_2
 !ELSE
-XERLIB =$(XERCES)/Build/Win32/VC7/Debug/xerces-c_2D
+XERLIB =$(XERCES)/lib/xerces-c_2D
 !ENDIF
 SABLOT =$(DRV)/usr/sablot
 REGEX  =$(DRV)/usr/regex
