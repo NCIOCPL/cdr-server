@@ -11,12 +11,13 @@
            exclude-result-prefixes = "cdr"
                            version = "1.0">
 
- <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
-
  <xsl:output                method = "xml"
               omit-xml-declaration = "no"
                           encoding = "UTF-8"
                             indent = 'yes'/>
+
+ <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
+ <xsl:include href = "cdr:name:Module: Vendor Filter Templates"/>
 
 
  <!-- *
@@ -24,8 +25,7 @@
  Root element.
  ==================================================================== -->
  <xsl:template               match = "/">
-  <xsl:text disable-output-escaping="yes">&lt;!DOCTYPE Protocol &gt;</xsl:text>
-  <xsl:apply-templates      select = "InScopeProtocol"/>
+  <xsl:apply-templates      select = "Protocol"/>
  </xsl:template>
 
  <!-- xsl:template               match = "*">
@@ -52,7 +52,9 @@
     </ContactDetail>
    </xsl:when>
    <xsl:otherwise>
-    <xsl:copy-of           select = "."/>
+    <xsl:copy>
+     <xsl:apply-templates/>
+    </xsl:copy>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
@@ -92,6 +94,10 @@
  </xsl:template>
 
 
+ <!--
+ =======================================================================
+ Template to print out the OrganizationName elements
+ ======================================================================= -->
  <xsl:template              match = "OrganizationName">
   <OrganizationName>
    <xsl:value-of       select = "."/>
