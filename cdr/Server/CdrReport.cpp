@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.8 2002-03-14 13:32:22 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.9 2002-06-07 13:53:18 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2002/03/14 13:32:22  bkline
+ * Modified the dated action report to avoid conflicting database locks.
+ *
  * Revision 1.7  2002/03/12 20:42:44  bkline
  * Added report for dated actions.
  *
@@ -575,6 +578,7 @@ namespace
       cdr::String poPath = rs.getString(3);
       cdr::Int    piId   = rs.getInt(4);
       cdr::String piName = rs.getString(5);
+      cdr::String fragId = rs.getString(6);
       if (poId != prevId) 
       {
         cdr::String groupElem;
@@ -595,6 +599,8 @@ namespace
       if (!piName.isNull()) {
         result << L"<PI cdr:ref='"
                << cdr::stringDocId(piId)
+               << L"#"
+               << fragId
                << L"'>"
                << piName
                << L"</PI>";
