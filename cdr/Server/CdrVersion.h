@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.h,v 1.1 2000-10-26 15:31:41 mruben Exp $
+ * $Id: CdrVersion.h,v 1.2 2000-10-31 15:48:15 mruben Exp $
  *
  * Internal support functions for CDR verison control
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/10/26 15:31:41  mruben
+ * Initial revision
+ *
  *
  */
 
@@ -40,9 +43,9 @@ namespace cdr {
      *                      new version not stored because no change
      *
      */
-    extern int checkIn(int                     docId,
+    extern int checkIn(cdr::Session&           session,
+                       int                     docId,
                        cdr::db::Connection&    conn,
-                       int                     usr,
                        const cdr::String*      comment = NULL,
                        bool                    abandon = false,
                        bool                    force = false);
@@ -63,9 +66,9 @@ namespace cdr {
      *                      this is not an error.
      *
      */
-    int checkOut(int                    docId,
+    int checkOut(cdr::Session           &session,
+                 int                    docId,
                  cdr::db::Connection&   conn,
-                 int                    usr,
                  const cdr::String&     comment = L"",
                  bool                   force = false);
 
