@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.10 2000-05-21 00:53:13 bkline Exp $
+ * $Id: CdrCommand.h,v 1.11 2000-10-04 18:21:06 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2000/05/21 00:53:13  bkline
+ * Added shutdown command.
+ *
  * Revision 1.9  2000/05/10 20:29:50  mruben
  * added declaration for DOMtoString
  *
@@ -358,6 +361,22 @@ namespace cdr {
                               db::Connection&   conn);
 
     /**
+     * Retrieves a list of potential link targets for a specified combination
+     * of source document type and element.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String searchLinks(Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
+
+    /**
      * Retrieves a &lt;CdrDoc&gt; element for the specified CDR document.
      *
      *  @param      session     contains information about the current user.
@@ -450,6 +469,21 @@ namespace cdr {
     extern String getLinks   (Session&          session,
                               const dom::Node&  node,
                               db::Connection&   conn);
+
+    /**
+     * Provides a list of document types currently defined for the CDR.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String listDocTypes(Session&          session,
+                               const dom::Node&  node,
+                               db::Connection&   conn);
 
     /**
      * Converts a DOM node to its String representation
