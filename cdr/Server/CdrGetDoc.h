@@ -1,9 +1,12 @@
 /*
- * $Id: CdrGetDoc.h,v 1.6 2001-03-13 22:05:54 mruben Exp $
+ * $Id: CdrGetDoc.h,v 1.7 2001-04-05 23:58:50 ameyer Exp $
  *
  * Internal support functions for CDR document retrieval.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2001/03/13 22:05:54  mruben
+ * modified to support filtering on CdrDoc
+ *
  * Revision 1.5  2000/10/27 02:34:12  ameyer
  * Added version retrieval and control.
  *
@@ -69,7 +72,7 @@ namespace cdr {
     extern cdr::String getDocString(const cdr::String&    docId,
                                     cdr::db::Connection&  conn,
                                     struct cdr::CdrVerDoc *verDoc,
-                                    bool usecdata);
+                                    bool usecdata = true);
 
     /**@#-*/
 
