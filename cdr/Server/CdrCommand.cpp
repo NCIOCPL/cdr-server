@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.cpp,v 1.32 2002-06-18 20:33:39 ameyer Exp $
+ * $Id: CdrCommand.cpp,v 1.33 2002-06-26 02:22:14 ameyer Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2002/06/18 20:33:39  ameyer
+ * Added CdrCanDo command.
+ *
  * Revision 1.31  2002/05/03 20:35:45  bkline
  * New CdrListVersions command added.
  *
@@ -148,6 +151,7 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
         CommandMap(L"CdrCheckOut",           cdr::checkVerOut),
         CommandMap(L"CdrCheckIn",            cdr::checkVerIn),
         CommandMap(L"CdrListVersions",       cdr::listVersions),
+        CommandMap(L"CdrLastVersions",       cdr::lastVersions),
         CommandMap(L"CdrCreateLabel",        cdr::createLabel),
         CommandMap(L"CdrDeleteLabel",        cdr::deleteLabel),
         CommandMap(L"CdrLabelDocument",      cdr::labelDocument),
