@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.30 2002-08-10 19:28:22 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.31 2002-08-10 20:18:46 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2002/08/10 19:28:22  bkline
+ * Guest session support; better hacker protection; message logging.
+ *
  * Revision 1.29  2002/07/11 18:56:19  ameyer
  * Added directory path for exception catcher crash log.
  *
@@ -286,6 +289,8 @@ void realDispatcher(void* arg) {
     // Done early in thread creation so anything in the thread can
     //   log whatever it wants to.
     cdr::log::pThreadLog = new cdr::log::Log;
+    cdr::String threadId = cdr::String::toString(GetCurrentThreadId());
+    cdr::log::pThreadLog->Write(L"Thread Starting", threadId);
 
     int fd = (int)arg;
     std::string request;
@@ -304,6 +309,7 @@ void realDispatcher(void* arg) {
     }
 
     // Thread is about to go, done with thread specific log
+    cdr::log::pThreadLog->Write(L"Thread Stopping", threadId);
     delete cdr::log::pThreadLog;
     closesocket(fd);
 }
