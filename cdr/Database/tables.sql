@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.67 2002-08-12 20:30:46 bkline Exp $
+ * $Id: tables.sql,v 1.68 2002-08-23 01:10:27 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.67  2002/08/12 20:30:46  bkline
+ * Added command_log table.
+ *
  * Revision 1.66  2002/08/07 18:03:08  pzhang
  * Added 'subdir' column to pub_proc_doc.
  *
@@ -967,6 +970,13 @@ CREATE TABLE link_net (
                 url VARCHAR(256)    NULL
 )
 GO
+CREATE INDEX link_net_source_idx ON link_net(source_doc)
+GO
+CREATE INDEX link_net_target_idx ON link_net(target_doc)
+GO
+CREATE INDEX link_net_targ_frag_idx ON link_net(target_doc, target_frag)
+GO
+
 
 /*
  * Document fragment link targets found in the system.
