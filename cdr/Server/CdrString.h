@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.17 2000-10-18 03:20:00 ameyer Exp $
+ * $Id: CdrString.h,v 1.18 2000-10-25 19:07:08 mruben Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2000/10/18 03:20:00  ameyer
+ * Added optional parameter to tagWrap allowing attributes to be included.
+ *
  * Revision 1.16  2000/10/05 17:14:44  ameyer
  * Declaration of entConvert()
  *
@@ -345,6 +348,24 @@ namespace cdr {
      *                      the <code>errors</code> list.
      */
     extern String packErrors(const StringList& errors);
+  
+    /**
+     * Puts a date in format suitable for use in database
+     *
+     *  @param  date        string date in format suitable for either database
+     *                      or XML
+     *  @return             string date in format suitable for database
+     */
+     extern String toDbDate(String date);
+
+    /**
+     * Puts a date in format suitable for use in XML
+     *
+     *  @param  date        string date in format suitable for either database
+     *                      or XML
+     *  @return             string date in format suitable for XML
+     */
+     extern String toXmlDate(String date);
 }
 
 #endif

@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.10 2000-10-18 03:19:15 ameyer Exp $
+ * $Id: CdrString.cpp,v 1.11 2000-10-25 19:06:01 mruben Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2000/10/18 03:19:15  ameyer
+ * Added optional parameter to tagWrap allowing attributes to be included.
+ *
  * Revision 1.9  2000/08/15 20:16:18  ameyer
  * Added entConvert function for converting "<>&" and others if need.
  *
@@ -239,4 +242,26 @@ cdr::String cdr::packErrors(const cdr::StringList& errors)
         s += L"    <Err>" + *i++ + L"</Err>\n";
     s += L"   </Errors>\n";
     return s;
+}
+
+/**
+ * Puts date in database format (space separating date and time)
+ */
+cdr::String cdr::toDbDate(cdr::String date)
+{
+  if (date.length() > 10 && date[10] == L'T')
+    date[10] = L' ';
+
+  return date;
+}
+
+/**
+ * Puts date in XML schema format ('T' separating date and time)
+ */
+cdr::String cdr::toXmlDate(cdr::String date)
+{
+  if (date.length() > 10 && date[10] == L' ')
+    date[10] = L'T';
+
+  return date;
 }
