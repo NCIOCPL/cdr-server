@@ -21,8 +21,8 @@
                    <xsl:output method="html"/>
    <xsl:template match="/">
 
-  <!--Filter written by C.
-Burg - 6/21/2001 -->
+  <!--Filter written by C. Burg - 6/21/2001 -->
+  <!-- Made tabular by Nanci - 8/7/2003 -->
   
    <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
     <HTML>
@@ -38,9 +38,9 @@ Burg - 6/21/2001 -->
     </HEAD>
     <STYLE>
       li.lnone {list-style-type: none}
-       ol.a { list-style: lower-alpha; }
+       ol.little-alpha { list-style: lower-alpha; }
        ol.A { list-style: upper-alpha; }
-       ol.i { list-style: lower-roman; }
+       ol.little-roman { list-style: lower-roman; }
        ol.I { list-style: upper-roman; }
        ol.d { list-style: decimal; }
 
@@ -59,7 +59,10 @@ Burg - 6/21/2001 -->
   
   <b><font size='4'><center>Patient Protocol Content<br />QC Report</center></font></b>
  <b><font size='3'><center><xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/></center></font></b><br /><br />
-<b><xsl:value-of select="document('cdrutil:/docid')"/></b><br />
+
+  <p>
+    <b><xsl:value-of select="document('cdrutil:/docid')"/></b>
+  </p>
  <xsl:variable name="cdrdoc" select="document('cdrx:/*/CdrCtl')"/>
  <xsl:value-of select="$cdrdoc/CdrDocCtl/DocTitle"/><br /><br />
      
@@ -73,18 +76,33 @@ Burg - 6/21/2001 -->
 <!-- ===================================================================
       Display Creation Date,User, and Modification Date and User
      ================================================================== -->
-<br /><br />
-<b><font size='4'>Record Information</font></b><br /><br />
-<xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
-<b><xsl:text>Date Created</xsl:text></b><xsl:text>....................</xsl:text>
-<xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/Date"/><br />
-<b><xsl:text>User</xsl:text></b><xsl:text>....................................</xsl:text>
-<xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/User"/><br />
-<b><xsl:text>Date Modfied</xsl:text></b><xsl:text>....................</xsl:text>
-<xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/Date"/><br />
-<b><xsl:text>User</xsl:text></b><xsl:text>....................................</xsl:text>
-<xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/User"/>
+  <br /><br />
+  <b><font size='4'>Record Information</font></b>
+  <br /><br />
 
+  <xsl:variable name = "cdrmydoc" 
+              select = "document('cdrx:/*/CdrCtl')"/>
+
+  <table width = '90%' cellspacing = '0'>
+    <tr>
+      <td width = '20%'><b>Date Created</b></td>
+      <td width = '80%'>
+         <xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/Date"/>
+      </td>
+    </tr>
+    <tr>
+      <td><b>User</b></td>
+      <td><xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/User"/></td>
+    </tr>
+    <tr>
+      <td><b>Date Modfied</b></td>
+      <td><xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/Date"/></td>
+    </tr>
+    <tr>
+      <td><b>User</b></td>
+      <td><xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/User"/></td>
+    </tr>
+  </table> 
 </BODY>
 </xsl:template>
 
@@ -92,51 +110,53 @@ Burg - 6/21/2001 -->
                          Display the PDQKey
      ==================================================================== -->
 
-<xsl:template match="PdqKey">
-<b><font size='4'>Identification Information</font></b><br /><br />
-<b><xsl:text>PDQ ID</xsl:text></b>
-<xsl:text>.................................</xsl:text>
-<xsl:apply-templates/><br />
+  <xsl:template match="PdqKey">
+    <b><font size='4'>Identification Information</font></b>
+    <br /><br />
+
+    <table width = '90%' cellspacing = '0'>
+      <tr>
+        <td width = '20%'><b>PDQ ID</b> </td>
+        <td widht = '80%'><xsl:apply-templates/></td>
+      </tr>
+    </table>
 </xsl:template>
 
 <!-- ==================================================================
         Display the Primary ID and OtherIDs and ID types and comments
      ==================================================================  -->
 
-<xsl:template match="PrimaryID">
-<b><xsl:text>Primary ID</xsl:text></b>
-<xsl:text>...........................</xsl:text>
+  <xsl:template match="PrimaryID">
+    <table width = '90%' cellspacing = '0'>
+      <tr>
+        <td width = '20%'><b>Primary ID</b></td>
+        <td width = '80%'><xsl:apply-templates select="IDString"/></td>
+      </tr>
+    </table>
+    <b>Comment</b>
+    <br />
+    <xsl:apply-templates select="Comment"/>
+    <br /><br />
+  </xsl:template> 
 
-<xsl:apply-templates select="IDString"/><br />
-<b><xsl:text>Comment</xsl:text></b><br />
-<xsl:apply-templates select="Comment"/><br /><br />
+  <xsl:template match="OtherID">
+    <table width = '90%' cellspacing = '0'>
+      <tr>
+        <td width = '20%'><b>Other ID</b></td>
+        <td width = '80%'><xsl:apply-templates  select = "IDType"/>,
+                         <xsl:apply-templates  select = "IDString"/>
+        </td>
+      </tr>
+    </table>
+    <b>Comment</b>
+    <br />
+    <xsl:if  test = "Comment">
+      <xsl:apply-templates  select = "Comment"/>
+    </xsl:if>
+    <br /><br />
+  </xsl:template>
 
-</xsl:template> 
 
-<xsl:template match="OtherID">
-
-<b><xsl:text>Other ID</xsl:text></b>
-<xsl:text>................................</xsl:text>
-<xsl:apply-templates select="IDType"/>,
-<xsl:apply-templates select="IDString"/><br />
-<b><xsl:text>Comment</xsl:text></b><br />
-<xsl:if test="Comment">
-<xsl:apply-templates select="Comment"/>
-</xsl:if>
-<br /><br />
-</xsl:template>
-
-<!-- ====================================================================
-                 Display Protocol Phase
-     ==================================================================== -->
-
- <xsl:template match="ProtocolPhase">
-<b><font size='4'>Protocol Phase</font></b>
-<xsl:text>.......................</xsl:text>
- <xsl:value-of select="."/><br /><br />
- </xsl:template>
-
- 
 <!-- Display Professional title-->
 
 <!--<xsl:template match="ProtocolAbstract">
@@ -199,64 +219,73 @@ Burg - 6/21/2001 -->
 <xsl:template match="DoseSchedule">
  <br /><br />
  <h3>Dose Schedule</h3><br />
-  <xsl:apply-templates/>
-  <br /><br />
- </xsl:template>
+ <xsl:apply-templates/>
+ <br /><br />
+</xsl:template>
 
 
 <xsl:template match="Outline">
-<h3>Outline</h3>
- <xsl:apply-templates/><br />
+  <h3>Outline</h3>
+  <xsl:apply-templates/><br />
 </xsl:template>
 
-<xsl:template match="ProtocolAbstract/Professional/EnteredBy">
-   
- <b><font size='3'>Entered By</font></b>
- <xsl:text>....................</xsl:text>
- <xsl:value-of select="."/><br />
+<!-- <xsl:template match="ProtocolAbstract/Professional/EnteredBy">
+ 
+  <table width = '90%' cellspacing = '0'>  
+    <tr>
+      <td width = '20%'><b><font size='3'>Entered By</font></b></td>
+      <td width = '80%'><xsl:value-of select="."/></td>
+    </tr>
+  </table>
  </xsl:template>
 
 <xsl:template match="ProtocolAbstract/Professional/EntryDate">
-   
- <b><font size='3'>Entry Date</font></b>
- <xsl:text>.....................</xsl:text>
- <xsl:value-of select="."/><br /><br />
- </xsl:template>
 
-
+  <table width = '90%' cellspacing = '0'>  
+    <tr>
+      <td width = '20%'><b><font size='3'>Entered Date</font></b></td>
+      <td width = '80%'><xsl:value-of select="."/></td>
+    </tr>
+  </table> 
+  <br />
+ </xsl:template> -->
 
 <!-- ==================================================================
       Display the Patient Purpose, Eligibility, Treatment Intervention
      ================================================================== -->  
 
  <xsl:template match="Purpose">
- <b><font size='3'>Purpose</font></b><br />
- <xsl:apply-templates/>
+   <b><font size='3'>Purpose</font></b><br />
+   <xsl:apply-templates/>
  </xsl:template>
 
-<xsl:template match="Rationale">
- <b><font size='4'>Patient Abstract</font></b><br /><br />
- <b><font size='3'>Rationale</font></b><br />
- <xsl:apply-templates/>
-  </xsl:template>
+ <xsl:template match="Rationale">
+   <b><font size='4'>Patient Abstract</font></b><br /><br />
+   <b><font size='3'>Rationale</font></b><br />
+   <xsl:apply-templates/>
+ </xsl:template>
 
-<xsl:template match="EligibilityText">
-<b><font size='3'>Eligibility</font></b><br /><br />
- <xsl:apply-templates/>
-  </xsl:template>
+ <xsl:template match="EligibilityText">
+   <b><font size='3'>Eligibility</font></b><br /><br />
+   <xsl:apply-templates/>
+ </xsl:template>
 
 <xsl:template match="TreatmentIntervention">
-   <br /><br />
+  <br /><br />
   <b><font size='3'>Treatment Intervention</font></b><br />
   <xsl:apply-templates/>
 
- <b><font size='3'>Entered By</font></b>
- <xsl:text>....................</xsl:text>
- <xsl:value-of select="../EnteredBy"/><br />
-   
- <b><font size='3'>Entry Date</font></b>
- <xsl:text>.....................</xsl:text>
- <xsl:value-of select="../EntryDate"/><br />
+  <table width = '90%' cellspacing = '0'>
+    <tr>
+      <td width = '20%'><b><font size='3'>Entered By</font></b></td>
+      <td width = '80%'><xsl:value-of select="../EnteredBy"/></td>
+    </tr>
+    <tr>
+      <td><b><font size='3'>Entry Date</font></b></td>
+      <td><xsl:value-of select="../EntryDate"/></td>
+    </tr>
+  </table>
+  <br />
 
  </xsl:template>
 
