@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.28 2004-11-05 05:57:36 ameyer Exp $
+ * $Id: CdrString.h,v 1.29 2005-03-04 02:58:18 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2004/11/05 05:57:36  ameyer
+ * Added hashBytes().  Not currently used, but there it is.
+ *
  * Revision 1.27  2004/05/12 02:45:50  ameyer
  * Added trimWhiteSpace().
  *
@@ -97,8 +100,8 @@
 #include <list>
 #include <map>
 
-// IBM DOM implementation.
-#include <xercesc/dom/deprecated/DOMString.hpp>
+// Apache Xerces definition of text
+#include <xercesc/dom/DOMtext.hpp>
 
 /**@#-*/
 
@@ -198,8 +201,8 @@ namespace cdr {
          *
          *  @param  s           reference to DOM string to be copied.
          */
-        String(const xml4c::DOMString& s)
-            : StdWstring(s.rawBuffer(), s.length()), null(false) {}
+        String(const XERCES_CPP_NAMESPACE::DOMText& s)
+            : StdWstring(s.getData(), s.getLength()), null(false) {}
 
         /**
          * Copy constructor.
@@ -221,8 +224,8 @@ namespace cdr {
             { assign(s); null = false; return *this; }
         String& operator=(const wchar_t* s)
             { assign(s); null = false; return *this; }
-        String& operator=(const xml4c::DOMString& s)
-            { assign(s.rawBuffer(), s.length()); null = false; return *this; }
+        String& operator=(const XERCES_CPP_NAMESPACE::DOMText& s)
+            { assign(s.getData(), s.getLength()); null = false; return *this; }
         String& operator=(const std::string& s)
             { utf8ToUtf16(s.c_str()); null = false; return *this; }
         String& operator=(const char* s)
