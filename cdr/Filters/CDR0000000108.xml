@@ -279,24 +279,18 @@
 
  <!-- 
  ==============================================================
- Template for extracting Glossary Term definitions for
- Rationale, Purpose, and TreatmentIntervention elements
+ Template for displaying Glossary Term definitions and in-line
+ markup elements for the HP and patient versions. 
  ============================================================== -->
- <xsl:template                   match = "Rationale | 
-                                          Purpose   | 
+ <xsl:template                   match = "Objectives      |
+                                          Outline         |
+                                          ProjectedAccrual|
+                                          Rationale       |
+                                          Purpose         |
+                                          EligibilityText | 
                                           TreatmentIntervention">
-  <xsl:apply-templates          select = "Para"/>
-  <xsl:call-template              name = "glossaryDef"/>
- </xsl:template>
-
-
- <!-- 
- ==============================================================
- Template for extracting Outline and ProjectedAccrual elements
- ============================================================== -->
- <xsl:template                   match = "Outline |
-                                          ProjectedAccrual">
   <xsl:apply-templates/>
+  <xsl:call-template              name = "glossaryDef"/>
  </xsl:template>
 
 
@@ -313,16 +307,6 @@
   </xsl:apply-templates>
  </xsl:template>
 
-
-
- <!-- 
- ==============================================================
- Template for extracting Glossary Term definitions for 
- EligibilityText element
- ============================================================== -->
- <xsl:template                   match = "EligibilityText|Objectives">
-  <xsl:apply-templates/>
- </xsl:template>
 
 
  <!-- 
@@ -446,42 +430,6 @@
        </xsl:choose>
 
       </RelatedProtocolsForQC>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:element               name = "RelatedWebsites">
-       <xsl:attribute            name = "xref">
-        <xsl:value-of          select = "@cdr:xref"/>
-       </xsl:attribute>
-       <xsl:apply-templates/>
-      </xsl:element>
-     </xsl:otherwise>
-    </xsl:choose>
-   </xsl:for-each>
-
-  </xsl:element>
- </xsl:template>
-
-
- <!-- 
- ==============================================================
- Template for displaying ProtocolRelatedLinkForQC section
- The QC reports will need to display additional information 
- including the OtherProtocolIDs and Professional Title of those
- protocols.  Therefore the related protocol info will have to get
- denormalized.
- ============================================================== -->
- <xsl:template                  match = "ProtocolRelatedLinksForQC">
-  <xsl:element                   name = "ProtocolRelatedLinksForQC">
-
-   <xsl:for-each               select = "RelatedProtocols | RelatedWebsites">
-    <xsl:choose>
-     <xsl:when                   test = "name() = 'RelatedProtocols'">
-      <xsl:element               name = "RelatedProtocols">
-       <xsl:attribute            name = "ref">
-        <xsl:value-of          select = "@cdr:ref"/>
-       </xsl:attribute>
-       <xsl:apply-templates/>
-      </xsl:element>
      </xsl:when>
      <xsl:otherwise>
       <xsl:element               name = "RelatedWebsites">
@@ -1662,10 +1610,12 @@
  <!--
  =========================================================================
  ========================================================================= -->
- <xsl:template                   match = "Emphasis       | Strong         |
-                                          Subscript      | Superscript    |
-                                          GeneName       | ScientificName |
-                                          ForeignName">
+ <xsl:template                   match = "DrugName         | Emphasis     | 
+                                          ForeignWord      | GeneName     | 
+                                          InterventionName | Note         |
+                                          Strong           |
+                                          Subscript        | Superscript  |
+                                          ScientificName">
   <xsl:copy>
     <xsl:apply-templates/>
   </xsl:copy>
