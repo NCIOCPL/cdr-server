@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.h,v 1.17 2002-11-25 21:17:33 bkline Exp $
+ * $Id: CdrXsd.h,v 1.18 2005-03-15 01:09:22 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2002/11/25 21:17:33  bkline
+ * Finished custom validation support.
+ *
  * Revision 1.16  2002/09/02 14:06:48  bkline
  * Plugged memory leak in Schema constructor.
  *
@@ -2109,11 +2112,14 @@ namespace cdr {
             const SimpleType*   resolveType() const {
                 if (!simpleType) simpleType = 
                     dynamic_cast<const SimpleType*>(schema->lookupType(name));
+                if (!simpleType)
+                    throw cdr::Exception(L"Base type not found "
+                                         L"for simpleType ", name);
                 return simpleType;
             }
 
             const SimpleType mutable* simpleType;
-            const Schema*       schema;
+            const Schema*             schema;
         };
 
         /**
