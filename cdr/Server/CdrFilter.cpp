@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.20 2002-03-07 12:58:52 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.21 2002-04-04 19:06:12 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2002/03/07 12:58:52  bkline
+ * Added missing break statement in switch (message handler).
+ *
  * Revision 1.19  2002/03/07 02:03:21  bkline
  * Delayed throwing an exception until we are no longer in a Sablotron
  * callback function (which was causing a memory leak).
@@ -805,12 +808,10 @@ cdr::String cdr::filter(cdr::Session& session,
   cdr::dom::NamedNodeMap cmdattr = commandNode.getAttributes();
   cdr::dom::Node attr = cmdattr.getNamedItem("Output");
 
-  cdr::String foo;
-
   if (attr != NULL && cdr::String(attr.getNodeValue()) == L"N")
     output = false;
 
-  // we need to get the document first so we'll have it's type if needed
+  // we need to get the document first so we'll have its type if needed
   // to determine the filter name
 
   // extract document from the command
