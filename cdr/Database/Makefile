@@ -1,11 +1,14 @@
 #----------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.6 2002-04-20 02:53:33 bkline Exp $
+# $Id: Makefile,v 1.7 2002-04-20 12:20:27 bkline Exp $
 #
 # Rules for initializing CDR database at data conversion time.
 # Must be run as system administrator.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.6  2002/04/20 02:53:33  bkline
+# Switched version control rules from RCS to CVS.
+#
 # Revision 1.5  2001/12/24 01:00:28  bkline
 # Separated creation of logins to end of process.
 #
@@ -45,8 +48,6 @@ _all: $(SQL)
 	osql -n -E -i tables.sql
 	osql -n -E -i procs.sql
 	osql -n -E -i LoadControlData.sql
-	python FixDocumentationLinks.py > FixDocumentationLinks.out
-	python VersionPubControlDocs.py > VersionPubControlDocs.out
 	osql -n -E -i CreateLogins.sql
 	osql -n -E -i ShowCounts.sql
 	mv -f LoadControlData.sql LoadControlData.sql.old
