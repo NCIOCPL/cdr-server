@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.cpp,v 1.1 2000-04-15 12:21:38 bkline Exp $
+ * $Id: CdrDbResultSet.cpp,v 1.2 2000-04-17 21:26:06 bkline Exp $
  *
  * Implementation for ODBC result fetching wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/15 12:21:38  bkline
+ * Initial revision
+ *
  */
 
 #include "CdrDbResultSet.h"
@@ -63,10 +66,12 @@ cdr::String cdr::db::ResultSet::getString(int pos)
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
         throw cdr::Exception("Database failure extracting data",
                              st.getErrorMessage(rc));
+    if (cb_data == SQL_NULL_DATA)
+        return cdr::String(true);
     return cdr::String(data);
 }
 
-int cdr::db::ResultSet::getInt(int pos)
+cdr::Int cdr::db::ResultSet::getInt(int pos)
 {
     SQLRETURN rc;
     int data;
@@ -76,5 +81,7 @@ int cdr::db::ResultSet::getInt(int pos)
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
         throw cdr::Exception("Database failure extracting data",
                              st.getErrorMessage(rc));
+    if (cb_data == SQL_NULL_DATA)
+        return cdr::Int(true);
     return data;
 }
