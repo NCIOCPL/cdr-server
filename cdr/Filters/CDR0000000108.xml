@@ -1,4 +1,10 @@
-<?xml version="1.0"?>
+<CdrDoc Type='Filter' Id='CDR0000000108'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Denormalization Filter (1/1): InScope Protocol</DocTitle>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
 
 <!--myTitle>Denormalization Filter: InScope Protocol
               Creator:  Volker Englisch
@@ -21,7 +27,7 @@
 
   <xsl:template match="InScopeProtocol">
     <xsl:copy>
-    <xsl:apply-templates select="document(''cdrutil:/docid'')" mode="copy"/>
+    <xsl:apply-templates select="document('cdrutil:/docid')" mode="copy"/>
 
 <!-- ==================================================================
      Copy second tier fields without any reference links
@@ -67,7 +73,7 @@
         XXXXX Replace with Professional Disclaimer when available XXXXXXXXXXX
         <xsl:variable               name = "ProfDisclaimer" 
                                   select = "document
-                                           (concat(''cdrx:'',''CDR0000000000''))"/>
+                                           (concat('cdrx:','CDR0000000000'))"/>
         <xsl:apply-templates      select = "$ProfDisclaimer/
                                             MiscellaneousDocument/
                                             MiscellaneousDocumentText"/>
@@ -127,7 +133,7 @@
        <PatientDisclaimer>
         <xsl:variable               name = "PatDisclaimer" 
                                   select = "document
-                                           (concat(''cdrx:'',''CDR0000000313''))"/>
+                                           (concat('cdrx:','CDR0000000313'))"/>
         <xsl:apply-templates      select = "$PatDisclaimer/
                                             MiscellaneousDocument/
                                             MiscellaneousDocumentText"/>
@@ -158,7 +164,7 @@
             <xsl:variable          name   = "PubCit" 
                                    select = "@cdr:ref"/>
             <xsl:variable            name = "CitInfo" 
-                                  select = "document(concat(''cdrx:'',$PubCit))"/>
+                                  select = "document(concat('cdrx:',$PubCit))"/>
 
             <xsl:if test="$CitInfo/Citation/PDQCitation">
               <Citation ref = "{$PubCit}">
@@ -168,7 +174,7 @@
               <CitationText>
               <xsl:for-each        select = "$CitInfo/Citation/PDQCitation">
                 <xsl:for-each      select = "AuthorList/Author">
-                  <xsl:value-of    select = "concat(LastName,'' '',FirstName)"/>
+                  <xsl:value-of    select = "concat(LastName,' ',FirstName)"/>
                   <xsl:if            test = "position() != last()">, </xsl:if>
                 </xsl:for-each>
 
@@ -177,7 +183,7 @@
      has to be added with et al.
      ======================================================== -->
                 <xsl:choose>
-                  <xsl:when        test = "contains(AuthorList/@Complete,''No'')">
+                  <xsl:when        test = "contains(AuthorList/@Complete,'No')">
                     <xsl:text>, et al.: </xsl:text>
                   </xsl:when>
                   <xsl:otherwise>
@@ -220,7 +226,7 @@
                                              MedlineCitation/Article/
                                              AuthorList/Author">
                   <xsl:if            test = "position() &lt; 4">
-                    <xsl:value-of  select = "concat(LastName,'' '',Initials)"/>
+                    <xsl:value-of  select = "concat(LastName,' ',Initials)"/>
                     <xsl:if          test = "position()!=3">, </xsl:if>
                   </xsl:if>
                 </xsl:for-each>
@@ -246,13 +252,13 @@
                                              Journal/JournalIssue">
                 <xsl:text>&#xa;</xsl:text>
                 <xsl:value-of      select = "concat
-                                             (Volume,''('',Issue,'')'','': '')"/>
+                                             (Volume,'(',Issue,')',': ')"/>
               </xsl:for-each>
 
               <xsl:for-each        select = "$CitInfo/Citation/PubmedArticle/
                                              MedlineCitation/Article/
                                              Pagination">
-                <xsl:value-of      select = "concat(MedlinePgn,'', '')"/>
+                <xsl:value-of      select = "concat(MedlinePgn,', ')"/>
               </xsl:for-each>
 
               <xsl:for-each        select = "$CitInfo/Citation/PubmedArticle/
@@ -375,11 +381,11 @@
       <xsl:for-each            select = "/InScopeProtocol/ProtocolAbstract/
                                          Patient/Rationale/
                                          Para/GlossaryTermRef" >
-        <xsl:if                  test = "contains(@cdr:href,''CDR'')">
+        <xsl:if                  test = "contains(@cdr:href,'CDR')">
           <xsl:variable          name = "GlossID" 
                                select = "@cdr:href"/>
           <xsl:variable        name   = "GlossInfo" 
-                               select = "document(concat(''cdrx:'',$GlossID))"/>
+                               select = "document(concat('cdrx:',$GlossID))"/>
           <GlossaryTerm>
           <xsl:apply-templates select = "$GlossInfo/GlossaryTerm/TermName" 
                                  mode = "copy"/>
@@ -445,7 +451,7 @@
       <xsl:variable       name   = "DiagID" 
                           select = "@cdr:ref"/>
       <xsl:variable       name   = "DiagInfo" 
-                          select = "document(concat(''cdrx:'',$DiagID))"/>
+                          select = "document(concat('cdrx:',$DiagID))"/>
 
       <Diagnosis>
         <SpecificDiagnosis   ref = "{$DiagID}">
@@ -461,6 +467,24 @@
         </DiagnosisParent>
       </Diagnosis>
     </xsl:for-each>
+
+
+    <!-- Resolving the Exclusion Criteria                         
+         ======================================================== -->
+    <xsl:for-each         select = "ExclusionCriteria">
+      <xsl:variable       name   = "ExcludeID" 
+                          select = "@cdr:ref"/>
+      <xsl:variable       name   = "ExcludeInfo" 
+                          select = "document(concat('cdrx:',$ExcludeID))"/>
+
+      <ExclusionCriteria>
+        <xsl:attribute    name   = "ref">
+          <xsl:value-of   select = "$ExcludeID"/>
+        </xsl:attribute>
+        <xsl:value-of     select = "$ExcludeInfo/Term/PreferredName"/>
+      </ExclusionCriteria>
+    </xsl:for-each>
+
   </xsl:template>
 
 
@@ -485,7 +509,7 @@
             <xsl:for-each         select = "Intervention">
               <Intervention>
               <xsl:if               test = "contains
-                                           (InterventionType/@cdr:ref,''CDR'')">
+                                           (InterventionType/@cdr:ref,'CDR')">
                 <xsl:variable       name = "IntervenID" 
                                   select = "InterventionType/@cdr:ref"/>
 
@@ -494,7 +518,7 @@
      ===================================================================== -->
               <xsl:choose>
                 <xsl:when           test = "contains
-                                           ($IntervenID, ''CDR0000000000'')">
+                                           ($IntervenID, 'CDR0000000000')">
                   <DocError>
                     <xsl:value-of select = "$IntervenID"/>  
                   </DocError>
@@ -502,14 +526,14 @@
                 <xsl:otherwise>
                     <xsl:variable   name = "IntervenInfo" 
                                   select = "document(concat 
-                                           (''cdrx:'',$IntervenID))"/>
+                                           ('cdrx:',$IntervenID))"/>
                   <InterventionType  ref = "{$IntervenID}">
                   <xsl:value-of   select = "$IntervenInfo/Term/PreferredName"/>
                   </InterventionType>
       <!-- xsl:apply-templates select = "$IntervenInfo/Term" mode = "copy"/-->
                   <xsl:if           test = "contains($IntervenInfo/Term/
                                             TermRelationship/ParentTerm/
-                                            TermId/@cdr:ref,''CDR'')">
+                                            TermId/@cdr:ref,'CDR')">
                     <xsl:variable   name = "ParentID" 
                                   select = "$IntervenInfo/Term/
                                             TermRelationship/ParentTerm/
@@ -524,20 +548,21 @@
               </xsl:choose>
             </xsl:if>
 
-            <xsl:if                 test = "contains
-                                         (InterventionNameLink/@cdr:ref,''CDR'')">
-              <xsl:variable         name = "IntervenNameID"
-                                  select = "InterventionNameLink/@cdr:ref"/>
-              <xsl:variable         name = "IntervenNameInfo" 
-                                  select = "document
-                                           (concat(''cdrx:'',$IntervenNameID))"/>
-              <InterventionNameLink  ref = "{$IntervenNameID}">
-              <xsl:value-of       select = "$IntervenNameInfo/Term/
+            <xsl:for-each          select = "InterventionNameLink">
+             <xsl:if                 test = "@cdr:ref">
+               <xsl:variable         name = "IntervenNameID"
+                                   select = "@cdr:ref"/>
+               <xsl:variable         name = "IntervenNameInfo" 
+                                   select = "document
+                                            (concat('cdrx:',$IntervenNameID))"/>
+               <InterventionNameLink  ref = "{$IntervenNameID}">
+               <xsl:value-of       select = "$IntervenNameInfo/Term/
                                             PreferredName"/>
-              </InterventionNameLink>
-            </xsl:if>
-            </Intervention>
-          </xsl:for-each> 
+               </InterventionNameLink>
+               </xsl:if>
+              </xsl:for-each>
+             </Intervention>
+            </xsl:for-each> 
           </StudyCategory>
         </xsl:for-each>
 
@@ -567,7 +592,7 @@
    <xsl:variable            name = "orgID"
                           select = "LeadOrganizationID/@cdr:ref"/>
    <xsl:variable            name = "org"
-                          select = "document(concat(''cdrx:'', $orgID))"/>
+                          select = "document(concat('cdrx:', $orgID))"/>
    <ProtocolLeadOrg          ref = "{$orgID}">
     <xsl:apply-templates  select = "$org/Organization/
                                     OrganizationNameInformation/OfficialName"
@@ -603,12 +628,12 @@
   =================================================================== -->
   <xsl:template            match = "LeadOrgPersonnel">
    <xsl:variable            name = "personId"
-                          select = "substring-before(Person/@cdr:ref, ''#'')"/>
+                          select = "substring-before(Person/@cdr:ref, '#')"/>
    <xsl:variable            name = "fragId"
-                          select = "substring-after(Person/@cdr:ref, ''#'')"/>
+                          select = "substring-after(Person/@cdr:ref, '#')"/>
    <xsl:variable            name = "person"
-                          select = "document(concat(''cdrx:'',
-                                                        $personId,''/lastp''))"/>
+                          select = "document(concat('cdrx:',
+                                                        $personId,'/lastp'))"/>
    <LeadOrgPersonnel>
     <Person                  ref = "{$personId}#{$fragId}">
      <xsl:apply-templates select = "$person/Person/PersonNameInformation"
@@ -651,7 +676,7 @@
    <xsl:variable            name = "orgId" 
                           select = "OrgSiteID/@cdr:ref"/>
    <xsl:variable            name = "org"
-                          select = "document(concat(''cdrx:'', $orgId))"/>
+                          select = "document(concat('cdrx:', $orgId))"/>
    <OrgSite                  ref = "{$orgId}">
 
 <!-- Remove for Production: Start ============================= -->
@@ -691,9 +716,9 @@
    <xsl:variable            name = "SPID" 
                           select = "Person/@cdr:ref"/>
    <xsl:variable            name = "SPFrag"
-                          select = "substring-after($SPID, ''#'')"/>
+                          select = "substring-after($SPID, '#')"/>
    <xsl:variable            name = "SPInfo" 
-                          select = "document(concat(''cdrx:'',$SPID))"/>
+                          select = "document(concat('cdrx:',$SPID))"/>
    <SpecificPerson           ref = "{$SPID}">
     <xsl:apply-templates  select = "$SPInfo/Person/PersonNameInformation"
                             mode = "copy"/>
@@ -732,7 +757,7 @@
                             mode = "copy"/>
 
    <!-- Phone element gets special treatment. -->
-   <!-- Do phone first, because that''s what Volker''s original does. -->
+   <!-- Do phone first, because that's what Volker's original does. -->
    <xsl:choose>
     <xsl:when               test = "$SpecificPhone">
      <Phone>
@@ -763,10 +788,10 @@
    <xsl:variable            name = "fragRef"
                           select = "OrganizationLocation/@cdr:ref"/>
    <xsl:variable            name = "orgDoc"
-                          select = "document(concat(''cdrx:'', 
+                          select = "document(concat('cdrx:', 
                                                     $fragRef))"/>
    <xsl:variable            name = "fragId"
-                          select = "substring-after($fragRef, ''#'')"/>
+                          select = "substring-after($fragRef, '#')"/>
    <xsl:variable            name = "orgLoc"
                           select = "$orgDoc/Organization/
                                     OrganizationLocations/
@@ -784,7 +809,7 @@
     <xsl:value-of       select = "$orgName/Name"/>
    </OrganizationLocation>
 
-   <!-- Do phone first, because that''s what Volker''s original does. -->
+   <!-- Do phone first, because that's what Volker's original does. -->
    <xsl:choose>
     <xsl:when               test = "$specificPhone">
      <Phone>
@@ -853,21 +878,21 @@
    <xsl:variable            name = "stateId"
                           select = "PoliticalSubUnit_State/@cdr:ref"/>
    <xsl:variable            name = "country"
-                          select = "document(concat(''cdrx:'', $countryId))"/>
+                          select = "document(concat('cdrx:', $countryId))"/>
 
    <xsl:apply-templates   select = "Street"
                             mode = "copy"/>
    <xsl:apply-templates   select = "City"
                             mode = "copy"/>
 
-   <!-- Not in Volker''s original; added it here so we''ll have it for the
+   <!-- Not in Volker's original; added it here so we'll have it for the
         licensee output. -->
    <xsl:apply-templates   select = "CitySuffix"
                             mode = "copy"/>
 
    <xsl:if                  test = "$stateId">
     <xsl:variable           name = "state"
-                          select = "document(concat(''cdrx:'', $stateId))"/>
+                          select = "document(concat('cdrx:', $stateId))"/>
     <xsl:if                 test = "$state">
      <PoliticalSubUnit_State>
       <xsl:attribute        name = "ref">
@@ -1053,3 +1078,6 @@
     </xsl:copy>
   </xsl:template>
 </xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
