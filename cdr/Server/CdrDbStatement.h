@@ -1,9 +1,13 @@
 /*
- * $Id: CdrDbStatement.h,v 1.8 2000-05-04 00:04:08 bkline Exp $
+ * $Id: CdrDbStatement.h,v 1.9 2000-05-21 00:54:11 bkline Exp $
  *
  * Wrapper for ODBC HSTMT.  Modeled after JDBC interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2000/05/04 00:04:08  bkline
+ * Removed see also reference for field member (ccdoc can't find references
+ * to these).
+ *
  * Revision 1.7  2000/05/03 23:50:42  bkline
  * More ccdoc comments.
  *
@@ -81,6 +85,20 @@ namespace cdr {
              *                  retrieved.
              */
             ResultSet       executeQuery(const char* q);
+
+            /**
+             * Submits a SQL request to the CDR database and returns the
+             * number of rows affected for an UPDATE, INSERT, or DELETE 
+             * statement.  Other SQL statements (including DDL) can be 
+             * submitted using this method, but if the query is not an
+             * UPDATE, INSERT, or DELETE statement the return value is
+             * undefined.
+             *
+             *  @param  query   address of null-terminated string containing
+             *                  the SQL query to be executed.
+             *  @return         number of rows affected, if applicable.
+             */
+            int cdr::db::Statement::executeUpdate(const char* query);
 
             /**
              * Closes any open cursors associated with the query,
