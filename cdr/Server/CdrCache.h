@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCache.h,v 1.2 2004-05-26 01:14:30 ameyer Exp $
+ * $Id: CdrCache.h,v 1.3 2004-07-02 01:27:23 ameyer Exp $
  *
  * Header for cacheing used to speed operations.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/05/26 01:14:30  ameyer
+ * New handling of PdqKey and cdr:ref attributes.
+ *
  * Revision 1.1  2004/05/14 02:04:04  ameyer
  * Header for CdrCache serverside cacheing to speed publishing.
  *
@@ -49,6 +52,19 @@ namespace cdr {
         public:
             /**
              * Initialize cacheing for terminology denormalization.
+             *
+             * Cacheing requests are stacked.  If there are three
+             * calls to turn on cacheing, followed by two to turn
+             * it off, cacheing remains on until the third request
+             * arrives to turn it off.
+             *
+             * This enables publishing jobs to be run in parallel in
+             * the future, with cacheing enabled in all of them,
+             * without having one job turn it off for all.
+             *
+             * The age of the cache is checked on every call to
+             * denormalize a term.  If it's beyond MAX_CACHE_DURATION,
+             * the cache will be cleared.  A log entry is written.
              *
              * @param state        True=turn on system-wide cacheing.
              *                     False=Turn it off
@@ -133,6 +149,9 @@ namespace cdr {
             // Looking up more levels than this must be a loop error
             const static int MAX_HIERARCHY = 15;
 
+            // Number of seconds cache can live = 1 day
+            const static time_t MAX_CACHE_DURATION = (60 * 60 * 24);
+
             //--------------------------
             // Instance data
             //--------------------------
@@ -179,13 +198,31 @@ namespace cdr {
              *  @param pMap        Ptr to map of id -> Term.
              *  @param depth       How many levels of the tree have already
              *                      been examined.  Stops infinite recursion.
-             *  @param docIdStr    Document ID, in string form.
+             *  @param xsltParms   Document, in string form.
              *
              *  @return            Ptr to Term object
              *  @throws cdr::Exception if fatal error.
              */
             static Term *getTerm(cdr::db::Connection& conn, TERM_MAP *pMap,
                                  const int depth, const cdr::String &docIdStr);
+
+            /**
+             * Create the XML that begins the start of a Term.
+             * Includes:
+             * <ul>
+             *    <li>Term start tag</li>
+             *    <li>cdr namespace declaration</li>
+             *    <li>optional PdqKey attribute - if pdqkey is known</li>
+             *    <li>cdr:ref to term id</li>
+             *    <li>PreferredName of Term</li>
+             * </ul>
+             *
+             * Caller must provide any additional internal element content
+             * if desired (i.e., parent terms) and the Term end tag.
+             *
+             * @return              String beginning Term XML.
+             */
+            std::string makeTermStart();
 
             /**
              * Clear all Term pointers from a map of id -> Term,
