@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.h,v 1.4 2000-04-22 18:57:38 bkline Exp $
+ * $Id: CdrXsd.h,v 1.5 2000-04-26 01:38:13 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/04/22 18:57:38  bkline
+ * Added ccdoc comment markers for namespaces and @pkg directives.
+ *
  * Revision 1.3  2000/04/22 18:01:26  bkline
  * Fleshed out documentation comments.
  *
@@ -80,6 +83,18 @@ namespace cdr {
         class Attribute;
 
         /**
+         * Aliases for container types.  Provided for convenience (and as a
+         * workaround for MSVC++ bugs).
+         */
+        typedef std::list<Element*>             ElementList;
+        typedef std::list<Attribute*>           AttributeList;
+        typedef ElementList::const_iterator     ElemEnum;
+        typedef AttributeList::const_iterator   AttrEnum;
+        typedef std::map<cdr::String, Element*> ElementMap;
+        typedef std::map<cdr::String, 
+                         cdr::String>           ElementTypeMap;
+
+        /**
          * An object of type <code>Schema</code> represents the types
          * and structure for an XML document type.
          */
@@ -88,23 +103,18 @@ namespace cdr {
             Schema(const cdr::dom::Node&);
             ~Schema();
             const Type*         lookupType(const cdr::String&) const;
+            cdr::String         lookupElementType(const cdr::String&) const;
             Element&            getTopElement() const { return *topElement; }
+            void                registerElement(const cdr::String&,
+                                                const cdr::String&);
         private:
             typedef std::map<cdr::String, const Type*> TypeMap;
             TypeMap             types;
+            ElementTypeMap      elements;
             Element*            topElement;
             void                seedBuiltinTypes();
             void                registerType(const cdr::xsd::Type*);
         };
-
-        /**
-         * Aliases for container types.  Provided for convenience (and as a
-         * workaround for MSVC++ bugs).
-         */
-        typedef std::list<Element*>             ElementList;
-        typedef std::list<Attribute*>           AttributeList;
-        typedef ElementList::const_iterator     ElemEnum;
-        typedef AttributeList::const_iterator   AttrEnum;
 
         /**
          * Base class for schema elements and attributes.
@@ -114,6 +124,7 @@ namespace cdr {
             Node() : type(0) {}
             virtual ~Node() {}
             cdr::String     getName() const { return name; }
+            cdr::String     getTypeName() const { return typeName; }
             const Type*     getType(const Schema& s) { 
                 return resolveType(s); 
             }
@@ -210,19 +221,22 @@ namespace cdr {
          */
         class ComplexType : public Type {
         public:
-            ComplexType(const cdr::dom::Node&);
+            ComplexType(Schema&, const cdr::dom::Node&);
             ~ComplexType();
             enum ContentType { MIXED, ELEMENT_ONLY, TEXT_ONLY, EMPTY };
             ContentType     getContentType() const { return contentType; }
-            ElemEnum        getElements() const { return elementList.begin(); }
-            AttrEnum        getAttributes() const { return attributeList.begin(); }
-            ElemEnum        getElemEnd() const { return elementList.end(); }
-            AttrEnum        getAttrEnd() const { return attributeList.end(); }
-            int             getElemCount() const { return elementList.size(); }
-            int             getAttrCount() const { return attributeList.size(); }
+            ElemEnum        getElements() const { return elemList.begin(); }
+            AttrEnum        getAttributes() const { return attrList.begin();}
+            ElemEnum        getElemEnd() const { return elemList.end(); }
+            AttrEnum        getAttrEnd() const { return attrList.end(); }
+            int             getElemCount() const { return elemList.size(); }
+            int             getAttrCount() const { return attrList.size(); }
+            bool            hasElement(const cdr::String& name) const
+                { return elemNames.find(name) != elemNames.end(); }
         private:
-            ElementList     elementList;
-            AttributeList   attributeList;
+            ElementList     elemList;
+            AttributeList   attrList;
+            cdr::StringSet  elemNames;
             ContentType     contentType;
         };
     }
