@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.6 2001-02-26 16:09:53 mruben Exp $
+ * $Id: CdrVersion.cpp,v 1.7 2001-05-03 18:43:48 bkline Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2001/02/26 16:09:53  mruben
+ * expanded information saved for version
+ *
  * Revision 1.5  2000/12/07 22:53:08  ameyer
  * Moved allowVersion from unnamed to cdr namespace so delDoc can see it.
  *
@@ -124,8 +127,8 @@ int cdr::checkIn(cdr::Session& session, int docId,
                       "WHERE id = ? and dt_in is NULL";
       cdr::db::PreparedStatement up = conn.prepareStatement(update);
       up.setInt(1, abandon ? Int(true) : version);
-      up.setInt(2, docId);
-      up.setString(3, *comment);
+      up.setString(2, *comment);
+      up.setInt(3, docId);
       up.executeQuery();    }
     else
     {
