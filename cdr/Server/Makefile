@@ -1,10 +1,14 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.12 2000-05-03 15:27:13 bkline Exp $
+# $Id: Makefile,v 1.13 2000-05-04 12:46:32 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.12  2000/05/03 15:27:13  bkline
+# Added CdrDbPreparedStatement module; fixed rm invocation; added warning
+# option for compiler.
+#
 # Revision 1.11  2000/05/02 21:54:41  ameyer
 # Changed to generic rules.
 # Added error redirection to a file.
@@ -64,24 +68,23 @@ DOCS   =$(DOC)default.htm
 CDRLIB =$(CDR)/lib/cdr.lib
 CDRBIN =$(CDR)/bin
 CDRSVR =$(CDRBIN)/CdrServer.exe
-HDRS   =$(CDRINC)/CdrString.h \
-        $(CDRINC)/CdrXsd.h \
-        $(CDRINC)/CdrException.h \
-        $(CDRINC)/CdrDom.h \
+HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrCommand.h \
         $(CDRINC)/CdrDbConnection.h \
-        $(CDRINC)/CdrDbStatement.h \
         $(CDRINC)/CdrDbPreparedStatement.h \
         $(CDRINC)/CdrDbResultSet.h \
-        $(CDRINC)/CdrCommand.h \
-        $(CDRINC)/CdrSession.h \
-        $(CDRINC)/CdrParserInput.h \
-        $(CDRINC)/CdrInt.h \
-        $(CDRINC)/CdrSearch.h \
-        $(CDRINC)/CdrRegEx.h \
-        $(CDRINC)/CdrBlob.h \
+        $(CDRINC)/CdrDbStatement.h \
+        $(CDRINC)/CdrDom.h \
+        $(CDRINC)/CdrException.h \
         $(CDRINC)/CdrGetDoc.h \
-        $(CDRINC)/CdrValidateDoc.h
+        $(CDRINC)/CdrInt.h \
+        $(CDRINC)/CdrParserInput.h \
+        $(CDRINC)/CdrRegEx.h \
+        $(CDRINC)/CdrSearch.h \
+        $(CDRINC)/CdrSession.h \
+        $(CDRINC)/CdrString.h \
+        $(CDRINC)/CdrValidateDoc.h \
+        $(CDRINC)/CdrXsd.h
 LIBOBJS=CdrString.obj \
         CdrXsd.obj \
         CdrDom.obj \
