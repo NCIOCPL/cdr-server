@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.16 2003-04-15 21:01:22 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.17 2004-10-19 22:02:33 venglisc Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2003/04/15 21:01:22  bkline
+ * Added parameter for MenuType in menu tree hierarchy report.
+ *
  * Revision 1.15  2003/04/15 18:15:08  bkline
  * Added MenuTermTree report.
  *
@@ -779,6 +782,7 @@ namespace
         "            AND b.path = '/Term/MenuInformation/MenuItem/MenuType'   "
         "            AND c.path = '/Term/MenuInformation/MenuItem/MenuStatus' "
         "            AND b.value LIKE ?                                       "
+	"            AND c.value != 'Offline'                                 "
         "       ORDER BY a.doc_id                                             "
         ;
       
