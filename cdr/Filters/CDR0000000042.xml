@@ -29,6 +29,7 @@
   <xsl:copy>
      <xsl:apply-templates select="document('cdrutil:/docid')" mode="copy"/>
      <xsl:apply-templates select="document('cdr:/*/CdrCtl')" mode="copy"/>
+
    <!-- ===============================================
          copy summary meta data, and title 
         ===============================================-->
@@ -46,26 +47,26 @@
       <xsl:variable name="BoardInfo" 
               select="document(concat('cdr:',$BoardID,'/last'))"/>
       <xsl:element name="Board">
-      <xsl:attribute name="cdr:ref"></xsl:attribute>
+      <xsl:attribute name="cdr:ref"><xsl:value-of select="Board/@cdr:ref"/></xsl:attribute>
       <xsl:value-of select="$BoardInfo/Organization/OrganizationNameInformation/OfficialName/Name"/>
      </xsl:element>
      <xsl:for-each select="BoardMember">
-      <xsl:variable name="BoardMemberID" select="@cdr:ref"/>
+     <xsl:if test="contains(@cdr:ref,'CDR')">
+     <xsl:variable name="BoardMemberID" select="@cdr:ref"/>
       <xsl:variable name="BoardMemberInfo" 
               select="document(concat('cdr:',$BoardMemberID,'/last'))"/>
    <xsl:element name="BoardMember">
     <xsl:attribute name="cdr:ref"><xsl:value-of select="@cdr:ref"/></xsl:attribute>
-    <xsl:value-of select="$BoardMemberInfo/Person/PersonNameInformation/SurName"/>, 
-      <xsl:value-of select="$BoardMemberInfo/Person/PersonNameInformation/GivenName"/>   
+    <xsl:value-of select="concat($BoardMemberInfo/Person/PersonNameInformation/SurName,', ',
+    $BoardMemberInfo/Person/PersonNameInformation/GivenName)"/>   
   </xsl:element>
+  </xsl:if>
   </xsl:for-each>
-   </xsl:if>
-   </PDQBoard>
-   </xsl:for-each>
+  </xsl:if>
+  </PDQBoard>
+  </xsl:for-each>
    
-   
-   
- 
+    
 <!-- Modified 11/1/2002(CB) to link to term records for term preferred name -->
 
       <xsl:for-each select="SummaryMetaData/MainTopics">
@@ -129,9 +130,43 @@
                </SummarySection>
                </xsl:for-each>
                <xsl:apply-templates select="DateLastModified" mode="copy"/>
-               <xsl:apply-templates select="PatientVersionOf" mode="copy"/>
+    
+               <xsl:element name="PatientVersionOf">
+               <xsl:attribute name="cdr:ref"><xsl:value-of select="PatientVersionOf/@cdr:ref"/></xsl:attribute>
+               </xsl:element>  
+                      
+              <!-- Code to link to summary title if needed 
+               <xsl:for-each select="PatientVersionOf">
+               <xsl:if test="contains(@cdr:ref,'CDR')">
+               <xsl:variable name="PatientID" select="@cdr:ref"/>
+               <xsl:variable name="PatientInfo" 
+              select="document(concat('cdr:',$PatientID,'/lastp'))"/>
+              <xsl:element name="PatientVersionOf">
+              <xsl:attribute name="cdr:ref"><xsl:value-of select="@cdr:ref"/></xsl:attribute>
+              <xsl:value-of select="$PatientInfo/Summary/SummaryTitle"/>   
+              </xsl:element>
+              </xsl:if>
+              </xsl:for-each>-->
+
+                <xsl:element name="TranslationOf">
+               <xsl:attribute name="cdr:ref"><xsl:value-of select="TranslationOf/@cdr:ref"/></xsl:attribute>
+               </xsl:element>  
+                        
+             <!-- Code to link to SummaryTitle if needed 11/5/2002 CB 
+               <xsl:for-each select="TranslationOf">
+               <xsl:if test="contains(@cdr:ref,'CDR')">
+               <xsl:variable name="PatientID" select="@cdr:ref"/>
+               <xsl:variable name="PatientInfo" 
+              select="document(concat('cdr:',$PatientID,'/lastp'))"/>
+              <xsl:element name="TranslationOf">
+              <xsl:attribute name="cdr:ref"><xsl:value-of select="@cdr:ref"/></xsl:attribute>
+              <xsl:value-of select="$PatientInfo/Summary/SummaryTitle"/>   
+              </xsl:element>
+              </xsl:if>
+              </xsl:for-each>-->
+  
                <xsl:apply-templates select="PdqKey" mode="copy"/>
-               <xsl:apply-templates select="TranslationOf" mode="copy"/>
+             
              </xsl:copy>   
              </xsl:template>
 
@@ -146,6 +181,8 @@
        <xsl:apply-templates mode="copy"/>
      </xsl:copy> 
    </xsl:template>  
+  
+  
 
 </xsl:transform>]]>
 </CdrDocXml>
