@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.50 2002-01-31 21:23:26 mruben Exp $
+# $Id: Makefile,v 1.51 2002-01-31 21:44:11 mruben Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.50  2002/01/31 21:23:26  mruben
+# Changed BISON_SIMPLE variable to avoid clash with environment variable
+#
 # Revision 1.49  2002/01/31 16:42:22  bkline
 # Added DRV=$(DRV) to recursive make invocation.
 #
@@ -188,7 +191,7 @@ BISON  =bison
 LN     =link
 CP     =cp -f
 CVSUPD =cvs update
-DOC    =../../InetPub/wwwtest/cdr/
+DOC    =$(DRV)/InetPub/wwwtest/cdr/
 DOCS   =$(DOC)default.htm
 CDRLIB =$(CDR)/lib/cdr.lib
 CDRBIN =$(CDR)/bin
