@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #
-# $Id: PullDevDocs.py,v 1.1 2002-09-07 14:12:49 bkline Exp $
+# $Id: PullDevDocs.py,v 1.2 2003-06-10 17:30:02 bkline Exp $
 #
 # Pulls control document which need to be preserved from the
 # development server in preparation for refreshing the CDR
@@ -8,6 +8,9 @@
 # with PushDevDocs.py.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.1  2002/09/07 14:12:49  bkline
+# Tools for preserving development versions of control docs.
+#
 #----------------------------------------------------------------------
 import cdr, cdrdb, os, re, sys, time
 
@@ -78,6 +81,13 @@ def makeOutputDir():
     return dir
 
 #----------------------------------------------------------------------
+# Encode data delimiters.
+#----------------------------------------------------------------------
+def fixUp(s):
+    if not s: return ""
+    return s.replace("\t", "@@TAB@@").replace("\n", "@@NL@@").replace("\r", "")
+
+#----------------------------------------------------------------------
 # Initialize parameters for the job.
 #----------------------------------------------------------------------
 docTypes  = ('Filter', 'css', 'PublishingSystem', 'Schema')
@@ -95,6 +105,33 @@ prdCursor = prdConn.cursor()
 devCursor = devConn.cursor()
 pattern   = re.compile(r"""\s+Id\s*=\s*['"]CDR\d+['"]""")
 
+#----------------------------------------------------------------------
+# Preserve the filter sets from the development server.
+#----------------------------------------------------------------------
+log('Preserving filter sets from %s' % devServer)
+devCursor.execute("""\
+    SELECT id, name, description, notes
+      FROM filter_set""")
+filterSets = open('%s/FilterSets.tab' % outputDir, 'w')
+for row in devCursor.fetchall():
+    name = fixUp(row[1])
+    desc = fixUp(row[2])
+    note = fixUp(row[3])
+    filterSets.write("%d\t%s\t%s\t%s\n" % (row[0], name, desc, note))
+filterSets.close()
+devCursor.execute("""\
+         SELECT m.filter_set, m.position, d.title, m.subset
+           FROM filter_set_member m
+LEFT OUTER JOIN document d
+             ON d.id = m.filter""")
+filterSetMembers = open('%s/FilterSetMembers.tab' % outputDir, 'w')
+for row in devCursor.fetchall():
+    filterSetMembers.write("%d\t%d\t%s\t%s\n" % (row[0], row[1],
+                                                 fixUp(row[2]),
+                                                 row[3] and str(row[3]) or ""))
+filterSetMembers.close()
+
+      
 #----------------------------------------------------------------------
 # Walk through each of the control document types.  For each type,
 # gather all documents of that type from the production and the
