@@ -1,10 +1,17 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.42 2002-01-24 23:29:03 ameyer Exp $
+# $Id: Makefile,v 1.43 2002-01-25 00:35:29 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.42  2002/01/24 23:29:03  ameyer
+# Added some extra control for what drive to use to enable the makefile to
+# work on other machines while still building for the main CDR development
+# machine.
+# See cdrsetmak.bat, but beware of pulling in things from a local machine
+# that should not be installed in cdr.lib or cdrserver.exe!
+#
 # Revision 1.41  2002/01/08 18:27:57  bkline
 # Rebuilt CDR Service with DEBUG turned on.
 #
@@ -152,6 +159,7 @@ LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
 CC     =cl
 BISON  =bison
 LN     =link
+CP     =copy >nul
 CVSUPD =cvs update
 DOC    =../../InetPub/wwwtest/cdr/
 DOCS   =$(DOC)default.htm
@@ -243,21 +251,22 @@ LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
 #--------------------------------------------------------------------------
 # Targets
 #--------------------------------------------------------------------------
-all: init CdrServer.exe CdrTestClient.exe CdrDocs #$(SERVICE)
+all: init CdrServer.exe CdrTestClient.exe #CdrDocs $(SERVICE)
 
 service: $(SERVICE)
 
 install: CdrServer.exe
 	-net stop Cdr
-	copy CdrServer.exe ../bin/CdrServer.exe
+	$(CP) CdrServer.exe ../bin/CdrServer.exe
 	net start Cdr
 
 #--------------------------------------------------------------------------
 # Initialization, saving two generations of old errors
 #--------------------------------------------------------------------------
 init:
-	-copy errs.1 errs.2
-	-copy errs errs.1
+	cvs update
+	-$(CP) errs.1 errs.2
+	-$(CP) errs errs.1
 	-rm -f errs
 
 #--------------------------------------------------------------------------
@@ -287,9 +296,9 @@ service.obj: service.c service.h
 # Rule for building test client.
 #--------------------------------------------------------------------------
 
-CdrTestClient.exe: CdrTestClient.cpp ../lib/cdr.lib
+CdrTestClient.exe: CdrTestClient.cpp $(CDRLIB)
 	$(CVSUPD)
-	$(CC) $(CFLAGS) CdrTestClient.cpp ../lib/cdr.lib wsock32.lib
+	$(CC) $(CFLAGS) CdrTestClient.cpp $(CDRLIB) wsock32.lib
 
 #--------------------------------------------------------------------------
 # We're not doing dependency checking.
@@ -304,7 +313,8 @@ CdrServer.obj: CdrServer.cpp $(HDRS)
 #--------------------------------------------------------------------------
 # Rule for building CDR library.
 #--------------------------------------------------------------------------
-$(CDRLIB): $(LIBOBJS) lib /OUT:$(CDRLIB) $(LIBOBJS) >> errs
+$(CDRLIB): $(LIBOBJS)
+	lib /OUT:$(CDRLIB) $(LIBOBJS) >> errs
 
 #--------------------------------------------------------------------------
 # For Bison, we're not attempting a generic rule
@@ -319,12 +329,14 @@ CdrSearch_tab.c: CdrSearch.y $(HDRS)
 
 #--------------------------------------------------------------------------
 # Rule for building CDR programmer documentation.
+# Uses hardwired "cp" command to force overwrite of readonly files
+# Only use this on the server.  See definition of CdrDocs above.
 #--------------------------------------------------------------------------
 CdrDocs: $(DOCS)
 
 $(DOCS): $(HDRS)
 	ccdoc -html $(DOC) -imgurl images/ $(HDRS)
-	copy -f $(DOC)ccdoc.index.html $(DOCS)
+	cp -f $(DOC)ccdoc.index.html $(DOCS)
 
 #--------------------------------------------------------------------------
 # Generic rules for object files
