@@ -3,6 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Global Change: Org Status</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 
@@ -24,7 +25,7 @@
 
  that contains a passed value.
 
- So three values are passed in:
+ So three mandatory values are passed in:
 
  1. A cdr document ID to match against the OrgSiteID/@cdr:ref (orgId).
 
@@ -33,8 +34,22 @@
  3. A new value for OrgSiteStatus to replace the existing one when
     a match is found (newStatus).
 
- ================================================================== -->
+ Additionally, if multiple Lead Organizations exist, it is now possible 
+ to specify the Lead Org, under which the org status should be changed.
+ It is also possible to specify that the status should only be changed
+ under a specified Lead Org for a particular SpecificPerson.  However, 
+ this functionallity fails if a SpecificPerson is NOT the only person
+ under that specified organization.
+ If no leadOrgId is provided but a personId the value of the personId 
+ will be ignored.
+ 
+ The two additional optional values are passed in as:
+ 
+ 4. A lead organization ID matching LeadOrganizationID/@cdr:ref 
+    (leadOrgId)
 
+ 5. An ID for the person matching Person/@cdr:ref (personId).
+ ================================================================== -->
 <xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                             xmlns:cdr = "cips.nci.nih.gov/cdr"
                               version = "1.0">
@@ -45,10 +60,13 @@
  <!--
  ================================================================
  Passed in by the caller.
- ================================================================ -->
+ Parameter 1, 2, and 3 are mandatory.
+  ================================================================ -->
  <xsl:param                      name = "orgId"/>
  <xsl:param                      name = "oldStatus"/>
  <xsl:param                      name = "newStatus"/>
+ <xsl:param                      name = "leadOrgId"/>
+ <xsl:param                      name = "personId"/>
 
  <!--
  ================================================================
@@ -81,22 +99,126 @@
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
+  <xsl:variable                  name = "thisLeadOrgId"
+                               select = "substring-before(
+                                         concat(
+                                         ../../../LeadOrganizationID/@cdr:ref, 
+                                                                  '#'),'#')"/>
+
+<!-- Change the status for the specified Organization
+     if no LeadOrgId is provided (default)
+     and the organization IDs match
+     ================================================ -->
   <xsl:choose>
-   <xsl:when                     test = ". = $oldStatus and 
-                                         $thisOrgId = $orgId">
-    <OrgSiteStatus>
-     <xsl:value-of             select = "$newStatus"/>
-    </OrgSiteStatus>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:copy>
-     <xsl:apply-templates      select = "@*|comment()|*|
+   <xsl:when                     test = "$leadOrgId">
+
+<!-- Both optional parameters - leadOrgId and personId are provided
+     If the person is NOT the only SpecificContact for this site
+     terminate the update with an error message.
+     ============================================================== -->
+     <xsl:choose>
+      <xsl:when                  test = "$leadOrgId = $thisLeadOrgId">
+
+       <!-- personId is provided and leadOrgId is provided
+            a) terminate update if an organization status should be changed
+               for which more then one SpecificPerson exists and the orgId
+               matches.
+            b) perform update if exactly one SpecificPerson exists and the 
+               ordId matches.
+            c) Copy as is if personId and orgId don't match.
+            =============================================================== -->
+       <xsl:choose>
+        <xsl:when                test = "$personId">
+         <xsl:for-each         select = "../OrgSiteContact/
+                                         SpecificPerson">
+          <xsl:choose>
+           <xsl:when             test = "last() != 1 and
+                                         substring-before(
+                                           concat(Person/@cdr:ref,'#'),'#')
+                                         = $personId and 
+                                         $thisLeadOrgId = $leadOrgId">
+            <xsl:message    terminate = "yes">
+             <xsl:text>Multiple contact persons for this OrgSite: </xsl:text> 
+              <xsl:value-of select = "$orgId"/><xsl:text>.</xsl:text>
+             <xsl:text>  Change was not made.</xsl:text>
+            </xsl:message>
+           </xsl:when>
+           <xsl:when             test = "last() = 1 and
+                                         substring-before(concat(
+                                           Person/@cdr:ref,'#'),'#')
+                                         = $personId and 
+                                         $thisLeadOrgId = $leadOrgId">
+            <OrgSiteStatus>
+             <xsl:value-of     select = "$newStatus"/>
+            </OrgSiteStatus>
+           </xsl:when>
+
+           <xsl:otherwise>
+            <!-- The program should never come to this default section -->
+            <xsl:text>DO NOTHING -- Notify Programming Staff</xsl:text>
+            <xsl:copy>
+             <xsl:apply-templates select = "@*|comment()|*|
                                          processing-instruction()|text()"/>
-    </xsl:copy>
+            </xsl:copy>
+           </xsl:otherwise>
+
+          </xsl:choose>
+         </xsl:for-each>
+        </xsl:when>
+
+       <!-- personId is not provided but leadOrgId is provided
+            ================================================== -->
+        <xsl:when                test = ". = $oldStatus and 
+                                         $thisOrgId = $orgId">
+         <OrgSiteStatus>
+          <xsl:value-of        select = "$newStatus"/>
+         </OrgSiteStatus>
+        </xsl:when>
+       </xsl:choose>
+      </xsl:when>
+
+      <xsl:otherwise>  <!-- "$leadOrgId NOT $thisLeadOrgId" -->
+     <!-- Copy input to output as is - No changes necessary        
+          ========================================================= -->
+       <xsl:copy>
+        <xsl:apply-templates   select = "@*|comment()|*|
+                                         processing-instruction()|text()"/>
+       </xsl:copy>
+      </xsl:otherwise>
+     </xsl:choose>
+   </xsl:when>
+
+<!-- ========================================================
+     THE DEFAULT - leadOrgId is empty
+     Only the parameters orgId, newStatus, oldStatus are 
+     prvided and all orgId occurences for all LeadOrgs are 
+     updated.
+     Note:  personId is not tested if leadOrgId is empty.  
+            The filter behaves as if both leadOrgId and personId
+            were empty.
+     ======================================================== -->
+   <xsl:otherwise>
+    <!-- organizationIds match:  Change the status 
+         =============================================================== -->
+    <xsl:choose>
+     <xsl:when                   test = ". = $oldStatus and 
+                                         $thisOrgId = $orgId">
+      <OrgSiteStatus>
+       <xsl:value-of           select = "$newStatus"/>
+      </OrgSiteStatus>
+     </xsl:when>
+     <!-- organizationIds don't match: No changes necessary, copy as is.        
+          ============================================================== -->
+     <xsl:otherwise>
+      <xsl:copy>
+       <xsl:apply-templates    select = "@*|comment()|*|
+                                         processing-instruction()|text()"/>
+      </xsl:copy>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
-
 </xsl:transform>
 ]]>
 </CdrDocXml>
