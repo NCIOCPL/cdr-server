@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Module: Vendor Phone Templates</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>Restored after refresh of CDR database on Mahler</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
  
@@ -133,33 +133,40 @@
 
  <!--
  ====================================================================
- Picking up the Specific Phone from Person Record or Phone from 
- Organization record.
+ Picking up the Specific Phone from Protocol Record, Person Record or
+ Phone from Organization record.
  ==================================================================== -->
  <xsl:template                 name = "getPersonOrgPhone">
   <xsl:param                   name = "orgAddressFID"/>
 
   <xsl:choose>
-   <xsl:when                   test = "SpecificPhone 
+   <xsl:when                   test = "../../../SpecificPhone">
+    <xsl:apply-templates     select = "../../../SpecificPhone"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>
+     <xsl:when                   test = "SpecificPhone 
                                        and
                                        not(SpecificPhone/@Public)">
-    <xsl:element               name = "Phone">
-     <xsl:value-of           select = "SpecificPhone"/>
-    </xsl:element>
-   </xsl:when>
-   <xsl:when                   test = "OrganizationLocation/
+      <xsl:element               name = "Phone">
+       <xsl:value-of           select = "SpecificPhone"/>
+      </xsl:element>
+     </xsl:when>
+     <xsl:when                   test = "OrganizationLocation/
                                        Organization/OrganizationLocations/
                                        OrganizationLocation/
                                        Location[@cdr:id = $orgAddressFID]/
                                        Phone">
-    <xsl:element               name = "Phone">
-     <xsl:value-of           select = "OrganizationLocation/
+      <xsl:element               name = "Phone">
+       <xsl:value-of           select = "OrganizationLocation/
                                        Organization/OrganizationLocations/
                                        OrganizationLocation/
                                        Location[@cdr:id = $orgAddressFID]/
                                        Phone"/>
-    </xsl:element>
-   </xsl:when>
+      </xsl:element>
+     </xsl:when>
+    </xsl:choose>
+   </xsl:otherwise>
   </xsl:choose>
  </xsl:template>     
 
@@ -269,6 +276,7 @@
      <xsl:value-of           select = "OrganizationLocation/
                                        Organization/OrganizationLocations/
                                        OrganizationLocation/
+
                                        Location[@cdr:id = $orgAddressFID]/
                                        WebSite"/>
     </xsl:element>
