@@ -1,9 +1,13 @@
 /*
- * $Id: xCdrCommand.cpp,v 1.21 2001-04-13 12:21:40 bkline Exp $
+ * $Id: xCdrCommand.cpp,v 1.22 2001-04-17 23:50:01 ameyer Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2001/04/13 12:21:40  bkline
+ * Added CdrListActions, CdrGetAction, CdrAddAction, CdrRepAction, and
+ * CdrDelAction.  Removed dead code for obsolete stubs.
+ *
  * Revision 1.20  2001/04/08 22:45:01  bkline
  * Added CdrGetTree.
  *
@@ -142,11 +146,4 @@ static cdr::String stub(const cdr::String name)
     return L"  <" + name + L"Resp>\n   <Stub>Got your Cdr" + name +
            L" command ... can't process it yet.</Stub>\n  </"
            + name + L"Resp>\n";
-}
-
-// Stubs.  Replace these as they are implemented.
-cdr::String cdr::getLinks(cdr::Session& session,
-                          const cdr::dom::Node& commandNode,
-                          cdr::db::Connection& dbConnection) {
-    return stub(L"GetLinks");
 }
