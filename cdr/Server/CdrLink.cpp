@@ -23,9 +23,13 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.6 2001-05-17 17:31:43 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.7 2001-09-25 14:56:35 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2001/05/17 17:31:43  ameyer
+ * Added administrative functions to maintain the link tables.
+ * Made minor modifications in error displays and catching errors.
+ *
  * Revision 1.5  2001/04/17 23:11:24  ameyer
  * Added links within a document to itself.
  * Added call to external link procs.
@@ -102,7 +106,7 @@ cdr::link::CdrLink::CdrLink (
     int                  docType,
     cdr::String          docTypeStr,
     cdr::String          refValue,
-    LinkStyle            lnkStyle
+    cdr::link::LinkStyle lnkStyle
 ) : fldNode (elemDom), srcId (docId), srcDocType (docType),
     srcDocTypeStr (docTypeStr), ref (refValue), style (lnkStyle)
 {
@@ -1616,3 +1620,108 @@ static bool findDocType (
     return true;
 
 } // findDocType()
+
+/**
+ * Finds the denormalized text for a CDR link if the link can be pasted
+ * given the current context.
+ *
+ * XXX This is Bob's stub version.  Alan will supply the real version which
+ * knows about fragment links.
+ *
+ * Takes standard parameters for a CdrCommand.
+ */
+
+cdr::String cdr::pasteLink (
+    cdr::Session&         session,
+    const cdr::dom::Node& commandNode,
+    cdr::db::Connection&  dbConnection
+) {
+    String sourceDocType;
+    String sourceElemName;
+    String targetDocId;
+    String targetFragId; // Temporary version ignores this.
+
+    // Extract parameters from command.
+    cdr::dom::Node node = commandNode.getFirstChild();
+    while (node != 0) {
+
+        if (node.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            String name = node.getNodeName();
+            if (name == L"SourceDocType")
+                sourceDocType = dom::getTextContent(node);
+            else if (name == L"SourceElementType")
+                sourceElemName = dom::getTextContent(node);
+            else if (name == L"TargetDocId")
+                targetDocId = dom::getTextContent(node);
+            else if (name == L"TargetFragmentId")
+                targetFragId = dom::getTextContent(node);
+            else
+                throw Exception(L"pasteLink: Element '" + 
+                                name + 
+                                L"' in CdrPasteLink request is "
+                                L"currently unsupported");
+        }
+        node = node.getNextSibling();
+    }
+
+    // Check for required elements.
+    if (sourceDocType.empty())
+        throw Exception(L"Required SourceDocType element missing");
+    if (sourceElemName.empty())
+        throw Exception(L"Required SourceDocType element missing");
+    if (targetDocId.empty())
+        throw Exception(L"Required TargetDocId element missing");
+
+    // Make sure the proposed linking combination is valid.
+    int docId = targetDocId.extractDocId();
+    const char* query = "SELECT COUNT(*)                       "
+                        "  FROM doc_type sdt                   "
+                        "  JOIN link_xml lx                    "
+                        "    ON sdt.id = lx.doc_type           "
+                        "  JOIN link_type lt                   "
+                        "    ON lt.id = lx.link_id             "
+                        "  JOIN link_target ltarg              "
+                        "    ON ltarg.source_link_type = lt.id "
+                        "  JOIN doc_type tdt                   "
+                        "    ON tdt.id = ltarg.target_doc_type "
+                        "  JOIN document d                     "
+                        "    ON d.doc_type = tdt.id            "
+                        " WHERE sdt.name = ?                   "
+                        "   AND lx.element = ?                 "
+                        "   AND d.id = ?                       ";
+    db::PreparedStatement stmt1 = dbConnection.prepareStatement(query);
+    stmt1.setString(1, sourceDocType);
+    stmt1.setString(2, sourceElemName);
+    stmt1.setInt(3, docId);
+    db::ResultSet rs1 = stmt1.executeQuery();
+    if (!rs1.next())
+        throw Exception(L"Failure checking link paste validity");
+    if (rs1.getInt(1) < 1) {
+        String err = L"Link from "
+                   + sourceElemName
+                   + L" elements of "
+                   + sourceDocType
+                   + L" documents to document "
+                   + targetDocId
+                   + L" not permitted.";
+        throw Exception(err);
+    }
+
+    // Get the denormalized data.
+    query = "SELECT title FROM document WHERE id = ?";
+    db::PreparedStatement stmt2 = dbConnection.prepareStatement(query);
+    stmt2.setInt(1, docId);
+    db::ResultSet rs2 = stmt2.executeQuery();
+    if (!rs2.next())
+        throw Exception(L"Failure fetching denormalized data");
+    String denormalizedData = rs2.getString(1);
+    if (denormalizedData.empty())
+        throw Exception(L"Denormalized data empty");
+
+    // Send back the response.
+    String rsp = L"<CdrPasteLinkResp><DenormalizedContent>"
+               + denormalizedData
+               + L"</DenormalizedContent></CdrPasteLinkResp>";
+    return rsp;
+
+} // pasteLink()
