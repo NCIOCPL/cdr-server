@@ -1,7 +1,11 @@
 /*
- * $Id: CdrXsd.cpp,v 1.20 2001-10-29 15:45:26 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.21 2001-11-25 04:53:51 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2001/10/29 15:45:26  bkline
+ * Fixed bug which was preventing non-required choice from validating
+ * correctly.
+ *
  * Revision 1.19  2001/10/17 13:49:40  bkline
  * Modified logic of matchSequence to let it skip over non-required schema
  * nodes.
@@ -1262,7 +1266,7 @@ bool validateAttributes(
     for (int i = 0; i < nAttrs; ++i) {
         cdr::dom::Node  attr = attrs.item(i);
         cdr::String     name = attr.getNodeName();
-        if (!type.hasAttribute(name)) {
+        if (name == L"readonly" || !type.hasAttribute(name)) {
             cdr::String err = cdr::String(L"Unexpected attribute ")
                             + name
                             + L"='"
