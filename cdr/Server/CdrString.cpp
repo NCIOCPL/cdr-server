@@ -1,7 +1,11 @@
 /*
- * $Id: CdrString.cpp,v 1.18 2002-03-14 13:33:13 bkline Exp $
+ * $Id: CdrString.cpp,v 1.19 2002-08-21 04:17:00 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2002/03/14 13:33:13  bkline
+ * Modified regular expression for matching CDR ID strings to accept the
+ * fragment linking form.
+ *
  * Revision 1.17  2001/06/12 22:38:31  bkline
  * Added code to set null attribute in Blob constructor.
  *
@@ -187,6 +191,45 @@ cdr::String cdr::entConvert (
 
 
 /**
+ * Normalize all whitespace characters in a string to single space.
+ */
+cdr::String cdr::normalizeWhiteSpace (
+    const cdr::String& inStr
+) {
+    const wchar_t *srcp;            // Pointer into source string
+    wchar_t       *destp,           // Pointer into dest buffer
+                  *bufp;            // Buffer for output
+    bool          inWhite=false;    // True=in run of whitespace
+
+    // Output buffer
+    destp = bufp = new wchar_t[inStr.size() + 1];
+
+    // Copy from source to dest
+    srcp = inStr.c_str();
+    while (*srcp) {
+        // Non-whites are copied
+        if (!iswspace (*srcp)) {
+            *destp++ = *srcp;
+            inWhite = false;
+        }
+        // First whitespace is copied as space, rest are ignored
+        else if (!inWhite) {
+            *destp++ = (wchar_t) ' ';
+            inWhite = true;
+        }
+        ++srcp;
+    }
+    *destp = (wchar_t) '\0';
+
+    // Returnable string
+    cdr::String outStr = (cdr::String) bufp;
+    delete[] bufp;
+
+    return outStr;
+}
+
+
+/**
  * Extracts integer value from wide string.
  */
 int cdr::String::getInt() const
@@ -310,7 +353,7 @@ cdr::Blob::Blob(const cdr::String& base64) : null(true)
 {
     // Keep this outside the try block so we can delete it in the catch.
     unsigned char* buf = 0;
-    
+
     try {
 
         // This will give us a buffer (not too much) larger than necessary.
@@ -367,7 +410,7 @@ cdr::Blob::Blob(const cdr::String& base64) : null(true)
             // States 0 and 1 are invalid if we got a padding character.
             if (state < 2)
                 throw cdr::Exception(L"Invalid number of significant "
-                                     L"characters in base-64 encoding", 
+                                     L"characters in base-64 encoding",
                                      base64);
 
             // For state 2 there should be two padding characters; get the
@@ -385,7 +428,7 @@ cdr::Blob::Blob(const cdr::String& base64) : null(true)
                 }
                 if (c != getPadChar())
                     throw cdr::Exception(L"Invalid number of significant "
-                                         L"characters in base-64 encoding", 
+                                         L"characters in base-64 encoding",
                                          base64);
             }
 
@@ -407,7 +450,7 @@ cdr::Blob::Blob(const cdr::String& base64) : null(true)
         // No padding: we should have come out on an even 4-character boundary.
         else if (state != 0)
             throw cdr::Exception(L"Invalid number of significant "
-                                 L"characters in base-64 encoding", 
+                                 L"characters in base-64 encoding",
                                  base64);
 
         // All done.

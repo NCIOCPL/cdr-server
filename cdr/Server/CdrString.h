@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.22 2002-04-04 01:07:25 bkline Exp $
+ * $Id: CdrString.h,v 1.23 2002-08-21 04:16:43 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2002/04/04 01:07:25  bkline
+ * Added typedef for NamedValues.
+ *
  * Revision 1.21  2001/04/05 22:34:21  ameyer
  * Added ynCheck() prototype.
  *
@@ -359,6 +362,15 @@ namespace cdr {
      *  @return             string with &...; in place of reserved chars
      */
     extern String entConvert (const String&);
+
+    /**
+     * Normalize all whitespace characters in a string to single space.
+     * Uses iswspace to define what is whitespace.
+     *
+     *  @param inStr        reference to string to normalize.
+     *  @return             copy of string, with space normalized.
+     */
+    extern String normalizeWhiteSpace (const String&);
 
     /**
      * Wrap an xml tag around a string, returning the wrapped string.
