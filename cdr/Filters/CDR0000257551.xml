@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Global Change: Org Status</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.3</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 
@@ -146,6 +146,8 @@
              <xsl:text>  Change was not made.</xsl:text>
             </xsl:message>
            </xsl:when>
+           <!-- (b) Print changed status element if variables match 
+                    and exactly one investigator is listed          -->
            <xsl:when             test = "last() = 1 and
                                          substring-before(concat(
                                            Person/@cdr:ref,'#'),'#')
@@ -155,13 +157,11 @@
              <xsl:value-of     select = "$newStatus"/>
             </OrgSiteStatus>
            </xsl:when>
+           <!-- (c) Print status element as is by default -->
            <xsl:otherwise>
-            <!-- The program should never come to this default section -->
-            <xsl:text>DO NOTHING -- Notify Programming Staff</xsl:text>
-            <xsl:copy>
-             <xsl:apply-templates select = "@*|comment()|*|
-                                         processing-instruction()|text()"/>
-            </xsl:copy>
+            <OrgSiteStatus>
+             <xsl:value-of     select = "$oldStatus"/>
+            </OrgSiteStatus>
            </xsl:otherwise>
           </xsl:choose>
          </xsl:for-each>
