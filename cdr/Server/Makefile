@@ -1,10 +1,14 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.65 2002-11-21 21:13:47 ameyer Exp $
+# $Id: Makefile,v 1.66 2002-11-25 21:16:28 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.65  2002/11/21 21:13:47  ameyer
+# Removed DOMtoString - obsolete function.
+# Should use operator<< in CdrDom.cpp instead.
+#
 # Revision 1.64  2002/10/30 12:27:59  bkline
 # Split debugging and production builds.
 #
@@ -246,6 +250,8 @@ LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
 CDRLIB =$(CDR)/lib/cdr.lib
 SVC_CFLAGS =-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT \
             -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MT
+LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
+        wsock32.lib odbc32.lib user32.lib 
 !ELSE
 CFLAGS =$(INC) -W3 -GX -MD -GR -nologo -Zi #-DSINGLE_THREAD_DEBUGGING
 LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
@@ -253,6 +259,8 @@ LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
 CDRLIB =$(CDR)/lib/cdrd.lib
 SVC_CFLAGS =-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT -DDEBUG \
             -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MT
+LIBS   =cdrd.lib xerces-c_1.lib sablot.lib \
+        wsock32.lib odbc32.lib user32.lib 
 !ENDIF
 HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrCommand.h \
@@ -325,8 +333,6 @@ OBJS   =CdrCommand.obj \
         CdrMergeProt.obj \
         CdrPublish.obj
 
-LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
-        wsock32.lib odbc32.lib user32.lib 
 
 #--------------------------------------------------------------------------
 # File suffixes examined for rule interpretation
