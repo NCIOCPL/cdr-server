@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.3 2001-09-04 19:38:06 bkline Exp $
+ * $Id: procs.sql,v 1.4 2001-09-04 20:30:28 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2001/09/04 19:38:06  bkline
+ * Added procedure get_participating_orgs.
+ *
  * Revision 1.2  2001/04/08 19:20:53  bkline
  * Added statement terminators.
  *
@@ -165,12 +168,12 @@ AS
                 AND qt2.value   = 'Yes'
                 AND qt1.path LIKE '/Organization' +
                                   '/OrganizationAffiliations' +
-                                  '/MemberOfCooperativeGroup' +
+                                  '/MemberOfCooperativeGroups' +
                                   '/%MemberOf' +
                                   '/CooperativeGroup/@cdr:ref'
                 AND qt2.path LIKE '/Organization' +
                                   '/OrganizationAffiliations' +
-                                  '/MemberOfCooperativeGroup' +
+                                  '/MemberOfCooperativeGroups' +
                                   '/%MemberOf' +
                                   '/ProtocolParticipation'
                 AND LEFT(qt1.node_loc, 12) =
