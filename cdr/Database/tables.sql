@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.28 2001-06-05 17:47:22 ameyer Exp $
+ * $Id: tables.sql,v 1.29 2001-06-21 17:59:28 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2001/06/05 17:47:22  ameyer
+ * Added active_status table to control status values in documents.
+ * Modified doc_version replacing approved and active_status with publishable.
+ *
  * Revision 1.27  2001/05/15 16:05:06  ameyer
  * Fixed wrong constraints on link tables.
  *
@@ -232,6 +236,8 @@ CREATE TABLE format
  *  schema_date  Date/time when schema was last modified.
  *          css  stylesheet for use by the client for editing documents of 
  *               this type.
+ * title_filter  Identifier (document title) of XSLT filter for generating
+ *               a document title from this document type.
  *      comment  optional free-text description of additional characteristics
  *               of documents of this type.
  */
@@ -245,6 +251,7 @@ CREATE TABLE doc_type
   xml_schema NTEXT NOT NULL,
  schema_date DATETIME NOT NULL DEFAULT GETDATE(),
          css NTEXT NOT NULL,
+title_filter VARCHAR(32) NULL,
      comment VARCHAR(255) NULL)
 
 /* 
