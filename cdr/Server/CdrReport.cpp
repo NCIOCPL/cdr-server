@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.4 2001-09-19 18:46:07 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.5 2002-02-01 22:43:15 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2001/09/19 18:46:07  bkline
+ * Added reports to support Protocol customization.
+ *
  * Revision 1.3  2001/04/08 22:47:11  bkline
  * Fixed name of response; added DocType element; fixed CDATA delimiter.
  *
@@ -328,25 +331,58 @@ namespace
     wostringstream result;
     result << L"<ReportBody><![CDATA[\n"
               L"<ReportName>" << getName() << L"</ReportName>\n";
+
+    // The reason we hold off on writing out a ReportRow element for each row
+    // in the result set is that with the join on the query_term table it is
+    // possible for the same organization to appear twice because of multiple
+    // occurrences of the OrganizationType element.  So we have to bide our
+    // time checking each row to find out if any of these occurrences makes
+    // our organization eligible to be considered as a Group organization.
+    cdr::String currentTitle = L"";
+    int         currentId    = 0;
+    cdr::String group        = L"No";
     while (rs.next())
     {
       int         id    = rs.getInt(1);
       cdr::String title = rs.getString(2);
       cdr::String type  = rs.getString(3);
-      cdr::String group = L"No";
-      for (size_t i = 0; i < sizeof grpTypes / sizeof *grpTypes; ++i) {
-          if (type == grpTypes[i]) {
-              group = L"Yes";
-              break;
-          }
+      if (id != currentId)
+      {
+        // Flush the previous organization's data ...
+        if (currentId)
+        {
+          result << L"<ReportRow>\n"
+                    L"<DocId>" << cdr::stringDocId(currentId) << L"</DocId>\n"
+                    L"<DocTitle>" << currentTitle << L"</DocTitle>\n"
+                    L"<Group>" << group << L"</Group>\n"
+                    L"</ReportRow>\n";
+        }
+
+        // ... and start a new one.
+        currentTitle = title;
+        currentId    = id;
+        group        = L"No";
       }
+
+      // Is the organization a group?
+      for (size_t i = 0; i < sizeof grpTypes / sizeof *grpTypes; ++i) {
+        if (type == grpTypes[i]) 
+        {
+          group = L"Yes";
+          break;
+        }
+      }
+    }
+
+    // Write out the last organization.
+    if (currentId)
+    {
       result << L"<ReportRow>\n"
-                L"<DocId>" << cdr::stringDocId(id) << L"</DocId>\n"
-                L"<DocTitle>" << title << L"</DocTitle>\n"
+                L"<DocId>" << cdr::stringDocId(currentId) << L"</DocId>\n"
+                L"<DocTitle>" << currentTitle << L"</DocTitle>\n"
                 L"<Group>" << group << L"</Group>\n"
                 L"</ReportRow>\n";
     }
-
     result << L"]]></ReportBody>\n";
     return result.str();
   }
