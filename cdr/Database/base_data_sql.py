@@ -1,10 +1,13 @@
 #----------------------------------------------------------------------
 #
-# $Id: base_data_sql.py,v 1.6 2002-03-02 00:46:57 bkline Exp $
+# $Id: base_data_sql.py,v 1.7 2002-05-24 13:05:51 bkline Exp $
 #
 # Generate SQL statements for loading the base CDR database records.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.6  2002/03/02 00:46:57  bkline
+# Added code to handle non-ASCII characters (in Documentation docs).
+#
 # Revision 1.5  2002/02/08 15:01:06  bkline
 # Added code to save MiscellaneousDocument and Documentation documents.
 #
@@ -557,6 +560,29 @@ INSERT INTO document(val_status, val_date, doc_type, title, xml,
     cursor.close()
 
 #----------------------------------------------------------------------
+# Generate SQL queries for loading the Documentation table of contents.
+#----------------------------------------------------------------------
+def load_documentation_toc():
+    cursor = conn.cursor()
+    cursor.execute("""\
+SELECT d.val_status, d.val_date, d.title, d.xml, d.comment, d.active_status
+  FROM document d
+  JOIN doc_type t
+    ON t.id = d.doc_type
+ WHERE t.name = 'DocumentationToC'""")
+    for row in cursor.fetchall():
+        print u"""\
+INSERT INTO document(val_status, val_date, doc_type, title, xml, 
+                     comment, active_status, last_frag_id)
+     SELECT %s, %s, id, %s, %s, %s, %s, 0
+       FROM doc_type
+      WHERE name = 'DocumentationToC'""" % (
+            quote(row[0]), quote(row[1]), quote(row[2]), quote(row[3]),
+            quote(row[4]), quote(row[5]))
+    print "GO"
+    cursor.close()
+
+#----------------------------------------------------------------------
 # Generate SQL queries for loading the MiscellaneousDocument documents.
 #----------------------------------------------------------------------
 def load_miscellaneous_docs():
@@ -619,5 +645,6 @@ load_filter_docs()
 load_publishing_system_docs()
 load_schema_docs()
 load_documentation_docs()
+load_documentation_toc()
 load_miscellaneous_docs()
 sys.exit(0)
