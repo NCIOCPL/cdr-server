@@ -63,6 +63,7 @@
    </Person>
    <xsl:copy-of                   select = "Role"/>
    <xsl:copy-of                   select = "SpecificPhone"/>
+   <xsl:copy-of                   select = "SpecificEmail"/>
   </xsl:element>
  </xsl:template>
 
@@ -198,6 +199,12 @@
  =================================================================== -->
  <xsl:template                    name = "getOrganization">
   <xsl:element                    name = "{name()}">
+   <xsl:for-each              select = "../@*">
+    <xsl:attribute              name = "{name()}">
+     <xsl:value-of            select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+
    <xsl:variable                  name = "orgID"
                                 select = "@cdr:ref"/>
    <xsl:variable                  name = "org"
@@ -270,12 +277,22 @@
                                           PreferredProtocolOrganization"/> -->
 
     </xsl:if>
+    <xsl:if                       test = "name() = 'ClinicalTrialOffice'">
+     <xsl:copy-of               select = "$org/Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact"/>
+    </xsl:if>
+
    </Organization>
    <xsl:if                        test = "name() = 'OrgSiteID'">
     <xsl:apply-templates        select = "../OrgSiteStatus"/>
     <OrgSiteContact>
      <xsl:apply-templates       select = "../OrgSiteContact/SpecificPerson |
                                           ../OrgSiteContact/GenericPerson"/>
+     <xsl:for-each              select = "../OrgSiteContact/
+                                             ClinicalTrialOffice">
+      <xsl:call-template          name = "getOrganization"/>
+     </xsl:for-each>
     </OrgSiteContact>
    </xsl:if>
   </xsl:element>
@@ -287,7 +304,15 @@
  Extract the information for one PrivatePractice Person.
  =================================================================== -->
  <xsl:template                    name = "getPrivatePracticeSite">
+  <!-- Carry over the SuppressContactInformation attribute from the 
+       PrivatePracticeSite element -->
   <xsl:element                    name = "{name()}">
+   <xsl:for-each                select = "../@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+
    <xsl:variable                  name = "privorgID"
                                 select = "@cdr:ref"/>
    <xsl:variable                  name = "privorg"
