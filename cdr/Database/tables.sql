@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.12 2000-05-11 21:09:37 ameyer Exp $
+ * $Id: tables.sql,v 1.13 2000-05-18 15:12:33 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2000/05/11 21:09:37  ameyer
+ * Eliminated creator/created, modifier/modified columns.
+ * The data is already in the audit trail.
+ *
  * Revision 1.11  2000/05/08 13:31:49  nanci
  * changed comments above document table and changed name to doc_attr
  *
@@ -289,17 +293,6 @@ CREATE TABLE checkout
  PRIMARY KEY (id, dt_out))
 
 /* 
- * Location of document data stored outside the database.
- *
- *           id  identification of the document to which this data belongs
- *          url  location of the document's data
- */
-CREATE TABLE url
-         (id INTEGER NOT NULL REFERENCES document,
-         url VARCHAR(128),
- PRIMARY KEY (id))
-
-/* 
  * Non-XML data for document. 
  *
  *           id  identification of the document to which this data belongs
@@ -580,7 +573,7 @@ CREATE TABLE link_prop (
  */
 CREATE TABLE link_net (
           link_type INTEGER NOT NULL REFERENCES link_type,
-         val_status CHAR NOT NULL CHECK (val_status IN ('P', 'F', 'N')),
+         val_status CHAR NOT NULL REFERENCES doc_status,
          source_doc INTEGER NOT NULL REFERENCES document,
      source_doctype INTEGER NOT NULL REFERENCES doc_type,
         source_elem VARCHAR(32) NOT NULL,
