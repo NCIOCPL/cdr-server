@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCheckAuth.cpp,v 1.3 2000-05-03 15:25:41 bkline Exp $
+ * $Id: CdrCheckAuth.cpp,v 1.4 2000-05-09 20:14:10 bkline Exp $
  *
  * Reports which actions are allowed for the current session.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/05/03 15:25:41  bkline
+ * Fixed database statement creation.
+ *
  * Revision 1.2  2000/04/20 17:12:53  bkline
  * Fixed <CdrCheckAuthResp> tags.
  *
@@ -51,7 +54,7 @@ cdr::String cdr::checkAuth(cdr::Session& session,
             cdr::String name = authNode.getNodeName();
             if (name != L"Auth")
                 throw cdr::Exception(L"Unexpected element", name);
-            lookupAuth(authNode, actions, conn, session.uid);
+            lookupAuth(authNode, actions, conn, session.getUserId());
         }
         authNode = authNode.getNextSibling();
     }
