@@ -1,9 +1,12 @@
 /*
- * $Id: CdrLogoff.cpp,v 1.2 2000-05-03 15:25:41 bkline Exp $
+ * $Id: CdrLogoff.cpp,v 1.3 2000-05-09 20:14:56 bkline Exp $
  *
  * Closes a CDR session.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/05/03 15:25:41  bkline
+ * Fixed database statement creation.
+ *
  * Revision 1.1  2000/04/16 21:41:18  bkline
  * Initial revision
  *
@@ -25,10 +28,7 @@ cdr::String cdr::logoff(cdr::Session& session,
 
     
     // Clear out the session object's state.
-    session.id    = 0;
-    session.uid   = 0;
-    session.name  = L"";
-    session.uName = L"";
+    session.clear();
 
     // Send back the command response.
     return L"  <CdrLogoffResp/>\n";
