@@ -14,6 +14,7 @@
 
    <!--Filter written by C.Burg 9/25/2001 -->
    <!-- Made Tabular 6/20/2003 - Nanci -->
+   <!-- modified due to glossary schema changes 8/25/03 - Nanci -->
    <!-- ======================================================
          This program is a filter to create a Glossary term
          Content QC Report 
@@ -88,8 +89,7 @@
 
   <table width = '90%'>
     <tr>
-      <td width = '25%'><b><font size='3'>Name</font></b></td>
-      <td width = '5%'>&#xa0;</td>
+      <td width = '30%'><b><font size='3'>Name</font></b></td>
       <td width = '70%'><xsl:apply-templates select="TermName"/></td>
     </tr>
     <tr>
@@ -103,7 +103,6 @@
       </xsl:if>
       <xsl:if test="TermPronunciation">
         <td><b><font size='3'>Pronunciation</font></b></td>
-        <td></td>
         <td><xsl:apply-templates select="TermPronunciation"/></td>
       </xsl:if>
     </tr>
@@ -111,8 +110,35 @@
 
   <br />
           
-           <xsl:for-each select="TermDefinition">
-            <xsl:choose>
+  <xsl:for-each select="TermDefinition">
+    <b><font size='3'>Definition</font></b>
+    <br />
+    <xsl:apply-templates select="DefinitionText"/>
+    <br /><br />
+    <table width = '90%'>
+      <tr>
+        <td width = '30%'><b><font size='3'>Dictionary</font></b></td>
+        <td width = '70%'>
+          <xsl:apply-templates select="Dictionary"/>
+        </td>
+      </tr>
+      <tr>
+        <td><b><font size='3'>Audience</font></b></td>
+        <td>
+          <xsl:for-each select = "Audience">
+            <xsl:if test = "position() = last()">
+              <xsl:value-of select="."/>
+            </xsl:if>
+            <xsl:if test = "not(position() = last())">
+              <xsl:value-of select="."/>
+              <xsl:text>;</xsl:text> &#xa0;
+            </xsl:if>
+          </xsl:for-each> 
+        </td>
+      </tr>
+    </table>
+
+     <!--       <xsl:choose>
             <xsl:when test="not(@Audience)">
            <b><font size='3'>Definition</font>
               </b><br />
@@ -121,15 +147,56 @@
             <b><font size='3'>Definition[Health Professional]</font>
                </b><br />
             </xsl:otherwise>
-            </xsl:choose>
-            <xsl:apply-templates select="."/><br /><br />
-            </xsl:for-each>
-            
+            </xsl:choose> 
+            <xsl:apply-templates select="."/><br /><br />  -->
+
+           <hr/>
+           <br />
+         </xsl:for-each>
+
+  <xsl:if test="SpanishTermName">
+    <table width = '90%'>
+      <tr>
+        <td width = '30%'><b><font size='3'>Spanish Term</font></b></td>
+        <td width = '70%'><xsl:apply-templates select="SpanishTermName"/></td>
+      </tr>
+    </table>
+    <br />
+
+    <b><font size='3'>Spanish Term Definition</font></b>
+    <br />
+    <xsl:apply-templates select="SpanishTermDefinition/DefinitionText"/>
+    <br /><br />
+    
+    <table width = '90%'>
+      <tr>
+        <td width = '30%'><b><font size='3'>Dictionary</font></b></td>
+        <td width = '70%'>
+          <xsl:apply-templates select="Dictionary"/>
+        </td>
+      </tr>
+      <tr>
+        <td><b><font size='3'>Spanish Term Audience</font></b></td>
+        <td>
+          <xsl:for-each select = "SpanishTermDefinition/Audience">
+            <xsl:if test = "position() = last()">
+              <xsl:value-of select="."/>
+            </xsl:if>
+            <xsl:if test = "not(position() = last())">
+              <xsl:value-of select="."/>
+              <xsl:text>;</xsl:text> &#xa0;
+            </xsl:if>
+          </xsl:for-each> 
+        </td>
+      </tr>
+    </table> 
+    <br />
+  </xsl:if>          
+
   <table width = '90%'>
     <tr>
-      <td width = '25%'><b><font size='3'>Source</font></b></td>
-      <td width = '5%'>&#xa0;</td>
-      <td width = '70%'><xsl:apply-templates select="TermSource"/></td>
+      <td width = '30%'><b><font size='3'>Source</font></b></td>
+       <td width = '70%'><xsl:apply-templates select="TermSource"/></td>
     </tr>
     <tr>
       <td>
@@ -138,7 +205,6 @@
     </tr>
     <tr>
       <td><b><font size='3'>Type</font></b></td>
-      <td></td>
       <td><xsl:apply-templates select="TermType"/></td>
     </tr>
     <tr>
@@ -148,7 +214,6 @@
     </tr>
     <tr>
       <td><b><font size='3'>Status</font></b></td>
-      <td></td>
       <td><xsl:apply-templates select="TermStatus"/></td>
     </tr>
     <tr>
@@ -158,7 +223,6 @@
     </tr>
     <tr>
       <td><b><font size='3'>Date</font></b></td>
-      <td></td>
       <td><xsl:apply-templates select="StatusDate"/></td>
     </tr>
     <tr>
@@ -166,16 +230,6 @@
         &#xa0;
       </td>
     </tr>
-<!--    <tr>
-      <td><b><font size='3'>PDQ Key</font></b></td>
-      <td></td>
-      <td><xsl:apply-templates select="PdqKey"/></td>
-    </tr> 
-    <tr>
-      <td>
-        &#xa0;
-      </td>
-    </tr> -->
   </table>
 
 
@@ -196,8 +250,7 @@
   <xsl:if test="DateLastModified">
     <table width = '90%'>
       <tr>
-        <td width = '25%'><b><font size='3'>Date Last Modified</font></b></td>
-        <td width = '5%'>&#xa0;</td>
+        <td width = '30%'><b><font size='3'>Date Last Modified</font></b></td>
         <td width = '70%'><xsl:apply-templates select="DateLastModified"/></td>
       </tr>
     </table>
