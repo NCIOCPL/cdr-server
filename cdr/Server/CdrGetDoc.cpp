@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.25 2002-07-01 21:00:02 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.26 2002-07-03 12:55:59 bkline Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2002/07/01 21:00:02  bkline
+ * Blocked denormalization of filters and schemas.
+ *
  * Revision 1.24  2002/06/28 20:41:10  ameyer
  * Fixed bug in call to denormalization in getDocString().
  *
@@ -509,6 +512,34 @@ static cdr::String getCommonCtlString(int docId,
     select.close();
   }
 
+  if (elements & cdr::DocCtlComponents::DocFirstPub)
+  {
+    std::string query = "SELECT p.completed,                         "
+                        "       u.name                               "
+                        "  FROM pub_proc p                           "
+                        "  JOIN usr u                                "
+                        "    ON u.id = p.usr                         "
+                        " WHERE p.id = (SELECT MIN(id)               "
+                        "                 FROM primary_pub_job ppj   "
+                        "                 JOIN pub_proc_doc ppd      "
+                        "                   ON ppd.pub_proc = ppj.id "
+                        "                  AND ppd.doc_id = ?        "
+                        "                  AND (ppd.failure IS NULL  "
+                        "                   OR  ppd.failure <> 'Y')) ";
+
+    cdr::db::PreparedStatement select = conn.prepareStatement(query);
+    select.setInt(1, docId);
+    cdr::db::ResultSet rs = select.executeQuery();
+    if (rs.next())
+    {
+      cdr::String date = cdr::toXmlDate(rs.getString(1));
+      cdr::String user = rs.getString(2);
+      cdrDoc += L"<Modify><Date>" + date + L"</Date><User>"
+              + user + L"</User></Modify>";
+    }
+    select.close();
+  }
+
   return cdrDoc;
 }
 
@@ -529,7 +560,7 @@ cdr::String denormalizeLinks(const cdr::String& xml,
     // Watch out for some document types which shouldn't be denormalized.
     if (docType == L"Filter"
     ||  docType == L"css"
-    ||  docType == L"Schema")
+    ||  docType == L"schema")
         return xml;
 
     // Empty parameter list.

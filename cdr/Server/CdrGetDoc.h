@@ -1,9 +1,12 @@
 /*
- * $Id: CdrGetDoc.h,v 1.10 2002-06-28 20:40:44 ameyer Exp $
+ * $Id: CdrGetDoc.h,v 1.11 2002-07-03 12:55:59 bkline Exp $
  *
  * Internal support functions for CDR document retrieval.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2002/06/28 20:40:44  ameyer
+ * Made docVer parameter constant on call to getDocString()
+ *
  * Revision 1.9  2002/01/23 18:24:12  mruben
  * added new optional components for CdrDocCtl
  *
@@ -127,6 +130,7 @@ namespace cdr {
              std                 = 0x001f,
              DocCreate           = 0x0020,  // date & user
              DocMod              = 0x0040,  // date & user
+             DocFirstPub         = 0x0080,  // date & user
       };
     }
 
