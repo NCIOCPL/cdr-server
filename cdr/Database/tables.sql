@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.79 2003-02-07 21:03:13 pzhang Exp $
+ * $Id: tables.sql,v 1.80 2003-02-10 15:37:34 pzhang Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.79  2003/02/07 21:03:13  pzhang
+ * Deleted filtering removed in primary_pub_doc table because we need
+ * to show removed docs in Cancer.gov job.
+ *
  * Revision 1.78  2003/02/07 20:10:11  pzhang
  * Selected started instead of completed, added output_dir,
  * and filtered removed and failure in primary_pub_doc table.
@@ -1596,7 +1600,8 @@ GO
 
 CREATE VIEW primary_pub_doc
 AS
-    SELECT pub_proc_doc.*, primary_pub_job.started, primary_pub_job.output_dir
+    SELECT pub_proc_doc.*, primary_pub_job.completed,
+           primary_pub_job.started, primary_pub_job.output_dir
       FROM pub_proc_doc
       JOIN primary_pub_job
         ON pub_proc_doc.pub_proc = primary_pub_job.id
