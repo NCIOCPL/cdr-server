@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.20 2001-01-02 23:30:23 ameyer Exp $
+ * $Id: tables.sql,v 1.21 2001-02-16 00:53:35 mruben Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2001/01/02 23:30:23  ameyer
+ * Changed length of link_prop[value] from 64 to 1024 max chars.
+ *
  * Revision 1.19  2000/12/08 03:45:28  ameyer
  * Added active_status to document table, with new index and two new views.
  *
@@ -499,17 +502,21 @@ CREATE TABLE debug_log
  *               of the document
  */
 CREATE TABLE doc_version
-         (id INTEGER NOT NULL REFERENCES document,
-         num INTEGER NOT NULL,
-          dt DATETIME NOT NULL,
-  updated_dt DATETIME NOT NULL,
-         usr INTEGER NOT NULL REFERENCES usr,
-    doc_type INTEGER NOT NULL REFERENCES doc_type,
-       title VARCHAR(255) NOT NULL,
-         xml NTEXT NOT NULL,
-        data IMAGE NULL,
-     comment VARCHAR(255) NULL,
- PRIMARY KEY (document, num))
+             (id INTEGER NOT NULL REFERENCES document,
+             num INTEGER NOT NULL,
+              dt DATETIME NOT NULL,
+      updated_dt DATETIME NOT NULL,
+             usr INTEGER NOT NULL REFERENCES usr,
+      val_status CHAR NOT NULL REFERENCES doc_status,
+        val_date DATETIME NULL,
+        approved CHAR NOT NULL,
+   active_status CHAR NOT NULL,
+        doc_type INTEGER NOT NULL REFERENCES doc_type,
+           title VARCHAR(255) NOT NULL,
+             xml NTEXT NOT NULL,
+            data IMAGE NULL,
+         comment VARCHAR(255) NULL,
+     PRIMARY KEY (id, num))
 
 /*
  * Marks a version for later retrieval by name.  Note that a single version of
