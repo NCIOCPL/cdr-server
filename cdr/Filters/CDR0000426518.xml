@@ -1,0 +1,157 @@
+<CdrDoc Type='Filter' Id='CDR0000426518'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Person Contact Fragment With Name</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+
+ <!--
+ ===========================================================================
+ This script inherits most of its behavior from the 'Person Address
+ Fragment With Name' script, and extends that script to pick up the
+ phone, fax, and email elements needed for the board member mailers.
+ =========================================================================== -->
+<xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                           xmlns:cdr = "cips.nci.nih.gov/cdr"
+                             version = "1.0">
+
+ <xsl:import href = "cdr:name:Person Address Fragment With Name"/>
+
+ <!--
+ ===========================================================================
+ Passed in by the caller.  This is used to identify which of several
+ addresses the caller wants extracted.  Example: "F1".
+ =========================================================================== -->
+ <xsl:param                     name = "fragId"/>
+
+ <!--
+ ===========================================================================
+ Overrides stub in imported sheet to get real data.
+ =========================================================================== -->
+ <xsl:template                  name = "getPhoneFaxAndEmail">
+  <xsl:param                    name = "orgLoc"/>
+  <xsl:variable                 name = "phone">
+   <xsl:call-template           name = "getOnePhoneNumber">
+    <xsl:with-param             name = "orgLoc"
+                              select = "$orgLoc"/>
+   </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable                 name = "fax">
+   <xsl:call-template           name = "getOneFaxNumber">
+    <xsl:with-param             name = "orgLoc"
+                              select = "$orgLoc"/>
+   </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable                 name = "email">
+   <xsl:call-template           name = "getOneEmailAddress">
+    <xsl:with-param             name = "orgLoc"
+                              select = "$orgLoc"/>
+   </xsl:call-template>
+  </xsl:variable>
+  <xsl:if                       test = "$phone != ''">
+   <Phone>
+    <xsl:value-of             select = "$phone"/>
+   </Phone>
+  </xsl:if>
+  <xsl:if                       test = "$fax != ''">
+   <Fax>
+    <xsl:value-of             select = "$fax"/>
+   </Fax>
+  </xsl:if>
+  <xsl:if                       test = "$email != ''">
+   <Email>
+    <xsl:value-of             select = "$email"/>
+   </Email>
+  </xsl:if>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Pick the most desirable phone number from a hierarchy of possibilities.
+ =========================================================================== -->
+ <xsl:template                  name = "getOnePhoneNumber">
+  <xsl:param                    name = "orgLoc"/>
+  <xsl:choose>
+   <xsl:when                    test = "normalize-space(Phone) !=''">
+    <xsl:value-of             select = "normalize-space(Phone)"/>
+   </xsl:when>
+   <xsl:when                    test = "normalize-space(SpecificPhone) !=''">
+    <xsl:value-of             select = "normalize-space(SpecificPhone)"/>
+   </xsl:when>
+   <xsl:when                    test = "normalize-space(TollFreePhone) !=''">
+    <xsl:value-of             select = "normalize-space(TollFreePhone)"/>
+   </xsl:when>
+   <xsl:when                    test = "normalize-space(
+                                        SpecificTollFreePhone) !=''">                                                                
+    <xsl:value-of             select = "normalize-space(
+                                        SpecificTollFreePhone)"/>
+   </xsl:when>
+   <xsl:when                    test = "$orgLoc">
+    <xsl:choose>
+     <xsl:when                  test = "normalize-space(
+                                        $orgLoc/Location/Phone) !=''">                                                                
+      <xsl:value-of           select = "normalize-space(
+                                        $orgLoc/Location/Phone)"/>
+     </xsl:when>
+     <xsl:when                  test = "normalize-space(
+                                        $orgLoc/Location/TollFreePhone) !=''">
+      <xsl:value-of           select = "normalize-space(
+                                        $orgLoc/Location/TollFreePhone)"/>
+     </xsl:when>
+    </xsl:choose>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Pick the most desirable fax number from a hierarchy of possibilities.
+ =========================================================================== -->
+ <xsl:template                  name = "getOneFaxNumber">
+  <xsl:param                    name = "orgLoc"/>
+  <xsl:choose>
+   <xsl:when                    test = "normalize-space(Fax) !=''">
+    <xsl:value-of             select = "normalize-space(Fax)"/>
+   </xsl:when>
+   <xsl:when                    test = "normalize-space(SpecificFax) !=''">
+    <xsl:value-of             select = "normalize-space(SpecificFax)"/>
+   </xsl:when>
+   <xsl:when                    test = "$orgLoc">
+    <xsl:if                     test = "normalize-space(
+                                        $orgLoc/Location/Fax) !=''">                                                                
+     <xsl:value-of            select = "normalize-space(
+                                        $orgLoc/Location/Fax)"/>
+    </xsl:if>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Pick the most desirable email address from a hierarchy of possibilities.
+ =========================================================================== -->
+ <xsl:template                  name = "getOneEmailAddress">
+  <xsl:param                    name = "orgLoc"/>
+  <xsl:choose>
+   <xsl:when                    test = "normalize-space(Email) !=''">
+    <xsl:value-of             select = "normalize-space(Email)"/>
+   </xsl:when>
+   <xsl:when                    test = "normalize-space(SpecificEmail) !=''">
+    <xsl:value-of             select = "normalize-space(SpecificEmail)"/>
+   </xsl:when>
+   <xsl:when                    test = "$orgLoc">
+    <xsl:if                     test = "normalize-space(
+                                        $orgLoc/Location/Email) !=''">                                                                
+     <xsl:value-of            select = "normalize-space(
+                                        $orgLoc/Location/Email)"/>
+    </xsl:if>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
