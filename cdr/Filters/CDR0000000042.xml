@@ -7,67 +7,76 @@
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 
+<!-- Written by Cheryl Burg 7-24-2001 -->
 <!-- =====================================================================
       Filter to create XML data for Hp summary to add references to end of
       each summary section 
-     ======================================================================-->
-<!-- Written by Cheryl Burg 7-24-2001 -->
-<!-- ======================================================================
+
       Select data elements to be copied and add tags when an incomplete
       node is copied 
-     ======================================================================-->
-<!-- ======================================================================
+
       This filter copies the citation links in the summary sections to the
       end of each section
      ======================================================================-->
-<xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                 version="1.0"
-               xmlns:cdr="cips.nci.nih.gov/cdr">
-<xsl:output method="xml" omit-xml-declaration="no"/>
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+<xsl:output                     method = "xml" 
+                  omit-xml-declaration = "no"/>
 
-<xsl:template match="Summary">
- <xsl:copy>
-  <xsl:apply-templates select="document('cdrutil:/docid')" mode="copy"/>
-  <xsl:apply-templates select="document('cdr:/*/CdrCtl')" mode="copy"/>
+ <xsl:template                   match = "Summary">
+  <xsl:copy>
+   <xsl:apply-templates         select = "document('cdrutil:/docid')" 
+                                  mode = "copy"/>
+   <xsl:apply-templates         select = "document('cdr:/*/CdrCtl')" 
+                                  mode = "copy"/>
 
-  <!-- ===============================================
-        copy summary meta data, and title 
-       ===============================================-->
+<!-- ===============================================
+     copy summary meta data, and title 
+     =============================================== -->
    <SummaryMetaData>
-    <xsl:apply-templates select="SummaryMetaData/SummaryType" mode="copy"/>
-    <xsl:apply-templates select="SummaryMetaData/SummaryAudience" mode="copy"/>
-    <xsl:apply-templates select="SummaryMetaData/SummaryLanguage" mode="copy"/>
-  <!-- denormalize PDQBoard and Board Members 11/5/2002 CB -->
+    <xsl:apply-templates        select = "SummaryMetaData/SummaryType" 
+                                  mode = "copy"/>
+    <xsl:apply-templates        select = "SummaryMetaData/SummaryAudience" 
+                                  mode = "copy"/>
+    <xsl:apply-templates        select = "SummaryMetaData/SummaryLanguage" 
+                                  mode = "copy"/>
 
-     
-    <xsl:for-each select="SummaryMetaData/PDQBoard">
+  <!-- denormalize PDQBoard and Board Members 11/5/2002 CB -->
+    <xsl:for-each               select = "SummaryMetaData/PDQBoard">
      <PDQBoard>
-      <xsl:if test="contains(Board/@cdr:ref,'CDR')">
-       <xsl:variable name="BoardID" select="Board/@cdr:ref"/>
-       <xsl:variable name="BoardInfo" 
-                     select="document(concat('cdr:',$BoardID,'/last'))"/>
-       <xsl:element name="Board">
-        <xsl:attribute name="cdr:ref">
-         <xsl:value-of select="Board/@cdr:ref"/>
+      <xsl:if                     test = "contains(Board/@cdr:ref,'CDR')">
+       <xsl:variable              name = "BoardID" 
+                                select = "Board/@cdr:ref"/>
+       <xsl:variable              name = "BoardInfo" 
+                                select = "document(concat('cdr:',$BoardID,
+                                                          '/last'))"/>
+       <xsl:element               name = "Board">
+        <xsl:attribute            name = "cdr:ref">
+         <xsl:value-of          select = "Board/@cdr:ref"/>
         </xsl:attribute>
-        <xsl:value-of select = "$BoardInfo/Organization/
-                                OrganizationNameInformation/
-                                OfficialName/Name"/>
+        <xsl:value-of           select = "$BoardInfo/Organization/
+                                          OrganizationNameInformation/
+                                          OfficialName/Name"/>
        </xsl:element>
 
-       <xsl:for-each select="BoardMember">
-        <xsl:if test="contains(@cdr:ref,'CDR')">
-         <xsl:variable name="BoardMemberID" select="@cdr:ref"/>
-         <xsl:variable name="BoardMemberInfo" 
-              select="document(concat('cdr:',$BoardMemberID,'/last'))"/>
-         <xsl:element name="BoardMember">
-          <xsl:attribute name="cdr:ref">
-           <xsl:value-of select="@cdr:ref"/>
+       <xsl:for-each            select = "BoardMember">
+        <xsl:if                   test = "contains(@cdr:ref,'CDR')">
+         <xsl:variable            name = "BoardMemberID" 
+                                select = "@cdr:ref"/>
+         <xsl:variable            name = "BoardMemberInfo" 
+                                select = "document(concat('cdr:',$BoardMemberID,
+                                                          '/last'))"/>
+         <xsl:element             name = "BoardMember">
+          <xsl:attribute          name = "cdr:ref">
+           <xsl:value-of        select = "@cdr:ref"/>
           </xsl:attribute>
-          <xsl:value-of select="concat($BoardMemberInfo/Person/
-                                        PersonNameInformation/SurName,', ',
-                                       $BoardMemberInfo/Person/
-                                        PersonNameInformation/GivenName)"/>   
+          <xsl:value-of         select = "concat($BoardMemberInfo/Person/
+                                                 PersonNameInformation/
+                                                 SurName,', ',
+                                                 $BoardMemberInfo/Person/
+                                                 PersonNameInformation/
+                                                 GivenName)"/>   
          </xsl:element>
         </xsl:if>
        </xsl:for-each>
@@ -77,112 +86,125 @@
    
     
 <!-- Modified 11/1/2002(CB) to link to term records for term preferred name -->
-
-    <xsl:for-each select="SummaryMetaData/MainTopics">
-     <xsl:if test="contains(Term/@cdr:ref,'CDR')">
-      <xsl:variable name="TermID" select="Term/@cdr:ref"/>
-      <xsl:variable name="TermInfo" 
-                    select="document(concat('cdr:',$TermID,'/lastp'))"/>
+    <xsl:for-each               select = "SummaryMetaData/MainTopics">
+     <xsl:if                      test = "contains(Term/@cdr:ref,'CDR')">
+      <xsl:variable               name = "TermID" 
+                                select = "Term/@cdr:ref"/>
+      <xsl:variable               name = "TermInfo" 
+                                select = "document(concat('cdr:',$TermID,
+                                                          '/lastp'))"/>
       <MainTopics>
-       <Term cdr:ref='{$TermID}'>
-        <xsl:value-of select="$TermInfo/Term/PreferredName"/>
+       <Term                   cdr:ref = '{$TermID}'>
+        <xsl:value-of           select = "$TermInfo/Term/PreferredName"/>
        </Term>
       </MainTopics>
      </xsl:if>
     </xsl:for-each>
 
-    <xsl:for-each select="SummaryMetaData/SecondaryTopics">
-     <xsl:if test="contains(Term/@cdr:ref,'CDR')">
-      <xsl:variable name="TermID" select="Term/@cdr:ref"/>
-      <xsl:variable name="TermInfo" 
-                    select="document(concat('cdr:',$TermID,'/lastp'))"/>
+    <xsl:for-each               select = "SummaryMetaData/SecondaryTopics">
+     <xsl:if                      test = "contains(Term/@cdr:ref,'CDR')">
+      <xsl:variable               name = "TermID" 
+                                select = "Term/@cdr:ref"/>
+      <xsl:variable               name = "TermInfo" 
+                                select = "document(concat('cdr:',$TermID,
+                                                          '/lastp'))"/>
       <SecondaryTopics>
-       <Term cdr:ref='{$TermID}'>
-        <xsl:value-of select="$TermInfo/Term/PreferredName"/>
+       <Term                   cdr:ref = '{$TermID}'>
+        <xsl:value-of           select = "$TermInfo/Term/PreferredName"/>
        </Term>
       </SecondaryTopics>
      </xsl:if>
     </xsl:for-each>
    </SummaryMetaData>
 
-   <xsl:apply-templates select="SummaryTitle" mode="copy"/>
+   <xsl:apply-templates         select = "SummaryTitle" 
+                                  mode = "copy"/>
 <!-- =====================================================================
      copy summary sections and add references at the end of each section 
      =====================================================================-->
-   <xsl:for-each select="SummarySection | Insertion | Deletion">
-    <xsl:variable name="ID" select="@cdr:id"/>
-    <xsl:element     name = "{name()}">
+   <xsl:for-each                select = "SummarySection | Insertion
+                                                         | Deletion">
+    <xsl:variable                 name = "ID" 
+                                select = "@cdr:id"/>
+    <xsl:element                  name = "{name()}">
     <xsl:choose>
-     <xsl:when    test = "name() = 'SummarySection'">
-      <xsl:attribute name= "cdr:id">
-       <xsl:value-of select= "$ID"/>
+     <xsl:when                    test = "name() = 'SummarySection'">
+      <xsl:attribute              name = "cdr:id">
+       <xsl:value-of            select = "$ID"/>
       </xsl:attribute>
      </xsl:when>
-     <xsl:when    test = "name() = 'Deletion'">
-       <xsl:attribute name= "UserName">
-        <xsl:value-of select= "@UserName"/>
+     <xsl:when                    test = "name() = 'Deletion'">
+       <xsl:attribute             name = "UserName">
+        <xsl:value-of           select = "@UserName"/>
        </xsl:attribute>
-       <xsl:attribute name= "Time">
-        <xsl:value-of select= "@Time"/>
+       <xsl:attribute             name = "Time">
+        <xsl:value-of           select = "@Time"/>
        </xsl:attribute>
-       <xsl:attribute name= "RevisionLevel">
-        <xsl:value-of select= "@RevisionLevel"/>
+       <xsl:attribute             name = "RevisionLevel">
+        <xsl:value-of           select = "@RevisionLevel"/>
        </xsl:attribute>
      </xsl:when>
      <xsl:otherwise>
-       <xsl:attribute name= "UserName">
-        <xsl:value-of select= "@UserName"/>
+       <xsl:attribute             name = "UserName">
+        <xsl:value-of           select = "@UserName"/>
        </xsl:attribute>
-       <xsl:attribute name= "Time">
-        <xsl:value-of select= "@Time"/>
+       <xsl:attribute             name = "Time">
+        <xsl:value-of           select = "@Time"/>
        </xsl:attribute>
-       <xsl:attribute name= "RevisionLevel">
-        <xsl:value-of select= "@RevisionLevel"/>
+       <xsl:attribute             name = "RevisionLevel">
+        <xsl:value-of           select = "@RevisionLevel"/>
        </xsl:attribute>
      </xsl:otherwise>
     </xsl:choose>
 
     <!-- denormalize Diagnosis  11/5/2002 CB -->
-     <xsl:if test="SectMetaData">
+     <xsl:if                      test = "SectMetaData">
       <SectMetaData>
-       <xsl:for-each select="SectMetaData/Diagnosis">
-        <xsl:if test="contains(@cdr:ref,'CDR')">
-         <xsl:variable name="DiagID" select="@cdr:ref"/>
-         <xsl:variable name="DiagInfo" 
-                       select="document(concat('cdr:',$DiagID,'/lastp'))"/>
-         <Diagnosis cdr:ref='{$DiagID}'>
-          <xsl:value-of select="$DiagInfo/Term/PreferredName"/>
+       <xsl:for-each            select = "SectMetaData/Diagnosis">
+        <xsl:if                   test = "contains(@cdr:ref,'CDR')">
+         <xsl:variable            name = "DiagID" 
+                                select = "@cdr:ref"/>
+         <xsl:variable            name = "DiagInfo" 
+                                select = "document(concat('cdr:',$DiagID,
+                                                          '/lastp'))"/>
+         <Diagnosis            cdr:ref = '{$DiagID}'>
+          <xsl:value-of         select = "$DiagInfo/Term/PreferredName"/>
          </Diagnosis>
         </xsl:if>
        </xsl:for-each>
 
 
-       <xsl:apply-templates select="SectMetaData/SectionType" mode="copy"/>
+       <xsl:apply-templates     select = "SectMetaData/SectionType" 
+                                  mode = "copy"/>
       </SectMetaData>
      </xsl:if>
                 
-     <xsl:apply-templates select="KeyPoint" mode="copy"/>
-     <xsl:apply-templates select="Title" mode="copy"/>
+     <xsl:apply-templates       select = "KeyPoint" 
+                                  mode = "copy"/>
+     <xsl:apply-templates       select = "Title" 
+                                  mode = "copy"/>
 
      <!-- Added Insertion and Deletion tags to copy 10/07/2002 CB -->
 
-     <xsl:apply-templates select = "Para           | OrderedList    | 
-                                    ItemizedList   | SummarySection |
-                                    Table          | Insertion      |
-                                    Deletion"  
-                            mode = "copy"/>
+     <xsl:apply-templates       select = "Para           | OrderedList    | 
+                                          ItemizedList   | SummarySection |
+                                          Table          | Insertion      |
+                                          Deletion"  
+                                  mode = "copy"/>
                            
-     <xsl:apply-templates select = "PdqKey" mode="copy"/>
+     <xsl:apply-templates       select = "PdqKey" 
+                                  mode = "copy"/>
      <ReferenceList>
-      <xsl:for-each       select = ".//CitationLink/@cdr:ref |
-                                    .//ProtocolLink/@cdr:ref"> 
+      <xsl:for-each             select = ".//CitationLink/@cdr:ref |
+                                          .//ProtocolLink/@cdr:ref"> 
        <Reference>
-        <xsl:if test = "name(..) = 'ProtocolLink'">
-         <xsl:attribute name= "ProtocolID">
-          <xsl:value-of select= "."/>
+        <xsl:if                   test = "name(..) = 'ProtocolLink'">
+         <xsl:attribute           name = "ProtocolID">
+          <xsl:value-of         select = "."/>
          </xsl:attribute>
         </xsl:if>
-        <xsl:apply-templates select="." mode="copy"/>
+        <xsl:apply-templates    select = "." 
+                                  mode = "copy"/>
        </Reference>
       </xsl:for-each>
      </ReferenceList>
@@ -191,71 +213,79 @@
 <!--    </SummarySection> -->
    </xsl:for-each>
 
-   <xsl:apply-templates select="DateLastModified" mode="copy"/>
+   <xsl:apply-templates         select = "DateLastModified" 
+                                  mode = "copy"/>
 
-   <xsl:if test="PatientVersionOf">
-    <xsl:element name="PatientVersionOf">
-     <xsl:attribute name="cdr:ref">
-      <xsl:value-of select="PatientVersionOf/@cdr:ref"/>
+   <xsl:if                        test = "PatientVersionOf">
+    <xsl:element                  name = "PatientVersionOf">
+     <xsl:attribute               name = "cdr:ref">
+      <xsl:value-of             select = "PatientVersionOf/@cdr:ref"/>
      </xsl:attribute>
     </xsl:element>  
    </xsl:if>
                       
 <!-- Code to link to summary title if needed 
-   <xsl:for-each select="PatientVersionOf">
-    <xsl:if test="contains(@cdr:ref,'CDR')">
-     <xsl:variable name="PatientID" select="@cdr:ref"/>
-     <xsl:variable name="PatientInfo" 
-                   select="document(concat('cdr:',$PatientID,'/lastp'))"/>
-     <xsl:element name="PatientVersionOf">
-      <xsl:attribute name="cdr:ref">
-       <xsl:value-of select="@cdr:ref"/>
+   <xsl:for-each                select = "PatientVersionOf">
+    <xsl:if                       test = "contains(@cdr:ref,'CDR')">
+     <xsl:variable                name = "PatientID" 
+                                select = "@cdr:ref"/>
+     <xsl:variable                name = "PatientInfo" 
+                                select = "document(concat('cdr:',$PatientID,
+                                                          '/lastp'))"/>
+     <xsl:element                 name = "PatientVersionOf">
+      <xsl:attribute              name = "cdr:ref">
+       <xsl:value-of            select = "@cdr:ref"/>
       </xsl:attribute>
-      <xsl:value-of select="$PatientInfo/Summary/SummaryTitle"/>   
+      <xsl:value-of             select = "$PatientInfo/Summary/
+                                          SummaryTitle"/>   
      </xsl:element>
     </xsl:if>
    </xsl:for-each>-->
               
-   <xsl:if test="TranslationOf">  
-    <xsl:element name="TranslationOf">
-     <xsl:attribute name="cdr:ref">
-      <xsl:value-of select="TranslationOf/@cdr:ref"/>
+   <xsl:if                        test = "TranslationOf">  
+    <xsl:element                  name = "TranslationOf">
+     <xsl:attribute               name = "cdr:ref">
+      <xsl:value-of             select = "TranslationOf/@cdr:ref"/>
      </xsl:attribute>
     </xsl:element> 
    </xsl:if> 
                         
 <!-- Code to link to SummaryTitle if needed 11/5/2002 CB 
-   <xsl:for-each select="TranslationOf">
-    <xsl:if test="contains(@cdr:ref,'CDR')">
-     <xsl:variable name="PatientID" select="@cdr:ref"/>
-     <xsl:variable name="PatientInfo" 
-                   select="document(concat('cdr:',$PatientID,'/lastp'))"/>
-     <xsl:element name="TranslationOf">
-      <xsl:attribute name="cdr:ref">
-       <xsl:value-of select="@cdr:ref"/>
+   <xsl:for-each                select = "TranslationOf">
+    <xsl:if                       test = "contains(@cdr:ref,'CDR')">
+     <xsl:variable                name = "PatientID" 
+                                select = "@cdr:ref"/>
+     <xsl:variable                name = "PatientInfo" 
+                                select = "document(concat('cdr:',$PatientID,
+                                                          '/lastp'))"/>
+     <xsl:element                 name = "TranslationOf">
+      <xsl:attribute              name = "cdr:ref">
+       <xsl:value-of            select = "@cdr:ref"/>
       </xsl:attribute>
-      <xsl:value-of select="$PatientInfo/Summary/SummaryTitle"/>   
+      <xsl:value-of             select = "$PatientInfo/Summary/
+                                          SummaryTitle"/>   
      </xsl:element>
     </xsl:if>
    </xsl:for-each>-->
   
-   <xsl:apply-templates select="PdqKey" mode="copy"/>
-             
+   <xsl:apply-templates         select = "PdqKey" 
+                                  mode = "copy"/>
   </xsl:copy>   
  </xsl:template>
 
 
 <!-- =================================================================
-      Template rule used to do XML to XML transformations which
-      copies any attribute node, or node that is child of of something 
-     ==================================================================-->
-<xsl:template match="@*|node()" mode="copy">
- <xsl:copy>
-  <xsl:apply-templates select="@*" mode="copy"/>
-  <xsl:apply-templates mode="copy"/>
- </xsl:copy> 
-</xsl:template>  
-  
+     Template rule used to do XML to XML transformations which
+     copies any attribute node, or node that is child of of something 
+     ================================================================== -->
+ <xsl:template                   match = "@*|node()" 
+                                  mode = "copy">
+  <xsl:copy>
+   <xsl:apply-templates         select = "@*" 
+                                  mode = "copy"/>
+   <xsl:apply-templates           mode = "copy"/>
+  </xsl:copy> 
+ </xsl:template>  
 
 </xsl:transform>]]>
 </CdrDocXml>
