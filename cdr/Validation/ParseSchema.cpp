@@ -1,9 +1,12 @@
 /*
- * $Id: ParseSchema.cpp,v 1.6 2001-04-15 13:00:43 bkline Exp $
+ * $Id: ParseSchema.cpp,v 1.7 2001-04-16 18:02:29 bkline Exp $
  *
  * Prototype for CDR schema parser.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2001/04/15 13:00:43  bkline
+ * Upgraded to match XML Schema 2001 release candidate.
+ *
  * Revision 1.5  2001/03/21 02:47:57  bkline
  * Support for more schema features.  Better support for mixed content.
  * Moved NMTOKEN check to library code.
@@ -36,17 +39,21 @@
 // Local support functions.
 static std::string        readSchemaFile(const char*);
 static bool               areNMTokens(const cdr::StringSet&);
-static void               writeDtd(const cdr::xsd::Schema&, const std::string&);
-static const char* const  getCountCharacter(const cdr::xsd::CountConstrained&);
-static std::ostream&      operator<<(std::ostream&, const cdr::xsd::Node*);
+static cdr::String        makeDtd(const cdr::xsd::Schema&, const cdr::String&);
+static const wchar_t* const  
+                          getCountCharacter(const cdr::xsd::CountConstrained&);
+static std::wostream&     operator<<(std::wostream&, const cdr::xsd::Node*);
 static void               outputMixedContent(const cdr::xsd::Node*, 
-                                             cdr::StringSet&);
+                                             cdr::StringSet&,
+                                             std::wostream&);
 static void               writeElement(const cdr::xsd::Schema&, 
                                        cdr::xsd::Element&,
+                                       std::wostream&,
                                        bool = false);
 static void               declareChildElements(const cdr::xsd::Schema&,
                                                cdr::StringSet&,
-                                               const cdr::xsd::Node*);
+                                               const cdr::xsd::Node*,
+                                               std::wostream&);
 
 /**
  * Parses schema document, extracts document type information, and
@@ -63,7 +70,7 @@ int main(int ac, char** av)
         cdr::dom::Document document = parser.getDocument();
         cdr::dom::Element docElement = document.getDocumentElement();
         cdr::xsd::Schema schema(docElement);
-        writeDtd(schema, name);
+        std::cout << makeDtd(schema, name).toUtf8();
     }
 
     catch (const cdr::Exception& cdrEx) {
@@ -125,17 +132,18 @@ std::string readSchemaFile(const char* name)
 /**
  * Writes the DTD equivalent of the schema to standard output.
  */
-void writeDtd(const cdr::xsd::Schema& schema, const std::string& name)
+cdr::String makeDtd(const cdr::xsd::Schema& schema, const cdr::String& name)
 {
     if (!&schema.getTopElement())
         throw cdr::Exception(L"No top element declared");
     time_t now = time(0);
-    const char* when = asctime(localtime(&now));
-    std::cout << "<!--\n\n     Machine generated " << when
-              << "     From XML Schema " << name 
-              << "\n\n  -->\n\n";
-    //std::cout << "<?xml version='1.0' encoding='UTF-8'?>\n";
-    writeElement(schema, schema.getTopElement(), true);
+    cdr::String when = asctime(localtime(&now));
+    std::wostringstream os;
+    os << L"<!--\n\n     Machine generated " << when
+       << L"     From XML Schema " << name 
+       << L"\n\n  -->\n\n";
+    writeElement(schema, schema.getTopElement(), os, true);
+    return os.str();
 }
 
 /**
@@ -144,7 +152,7 @@ void writeDtd(const cdr::xsd::Schema& schema, const std::string& name)
  * and store its type information.
  */
 void writeElement(const cdr::xsd::Schema& schema, cdr::xsd::Element& elem,
-                  bool isTopElement)
+                  std::wostream& os, bool isTopElement)
 {
     // Find out what type we are (from the type name).
     const cdr::xsd::Type *type = elem.getType(schema);
@@ -152,7 +160,7 @@ void writeElement(const cdr::xsd::Schema& schema, cdr::xsd::Element& elem,
         throw cdr::Exception(L"Missing type for element", elem.getName());
 
     // Start the element declaration.
-    std::cout << "<!ELEMENT " << elem.getName().toUtf8() << " ";
+    os << L"<!ELEMENT " << elem.getName() << L" ";
 
     // Use RTTI to determine whether this is a simple or complex type.
     const cdr::xsd::SimpleType *sType = 
@@ -160,7 +168,7 @@ void writeElement(const cdr::xsd::Schema& schema, cdr::xsd::Element& elem,
     const cdr::xsd::ComplexType *cType = 
         dynamic_cast<const cdr::xsd::ComplexType*>(type);
     if (sType)
-        std::cout << "(#PCDATA)>\n";
+        os << L"(#PCDATA)>\n";
     else {
 
         // Sanity check.
@@ -176,12 +184,12 @@ void writeElement(const cdr::xsd::Schema& schema, cdr::xsd::Element& elem,
             if (elements)
                 throw cdr::Exception(L"Elements not allowed for "
                                      L"empty content");
-            std::cout << "EMPTY>\n";
+            os << L"EMPTY>\n";
             break;
 
         case cdr::xsd::ComplexType::TEXT_ONLY:
 
-            std::cout << "(#PCDATA)>\n";
+            os << L"(#PCDATA)>\n";
             break;
 
         case cdr::xsd::ComplexType::MIXED: {
@@ -202,48 +210,48 @@ void writeElement(const cdr::xsd::Schema& schema, cdr::xsd::Element& elem,
             // For keeping track of elements which have been declared.
             cdr::StringSet mixedElements;
 
-            std::cout << "(#PCDATA";
-            outputMixedContent(elements, mixedElements);
+            os << L"(#PCDATA";
+            outputMixedContent(elements, mixedElements, os);
             if (mixedElements.empty())
                 throw cdr::Exception(L"Element with mixed content has no "
                                      L"child elements",  elem.getName());
-            std::cout << ")*>\n";
+            os << L")*>\n";
             break;
         }
 
         case cdr::xsd::ComplexType::ELEMENT_ONLY: {
 
             // Create a working string for the content.
-            std::ostringstream os;
+            std::wostringstream contentStream;
 
             // Add the CdrDocCtl element for the benefit of XMetaL.
             if (isTopElement)
-                os << "(CdrDocCtl,";
+                contentStream << L"(CdrDocCtl,";
 
             // Recursively add the elements for the content model.
-            os << elements;
+            contentStream << elements;
 
             // Close the sequence for the top element.
             if (isTopElement)
-                os << ")";
+                contentStream << L")";
 
             // Extract the working string.
-            std::string s = os.str();
+            cdr::String s = contentStream.str();
 
             // Sanity check.
-            if (s.empty() || s == "(CdrDocCtl,)")
+            if (s.empty() || s == L"(CdrDocCtl,)")
                 throw cdr::Exception(L"Elements required for elementOnly "
                                      L"content");
 
             // Add parens if needed.
+            if (s[0] != L'(')
+                os << L"(";
+            os << s;
             if (s[0] != '(')
-                std::cout << '(';
-            std::cout << s;
-            if (s[0] != '(')
-                std::cout << ')';
+                os << L")";
 
             // Finish off the line.
-            std::cout << ">\n";
+            os << L">\n";
             break;
         }
 
@@ -257,53 +265,52 @@ void writeElement(const cdr::xsd::Schema& schema, cdr::xsd::Element& elem,
 
         // Handle the attributes, if any.
         if (cType->getAttrCount() > 0) {
-            std::cout << "<!ATTLIST " << elem.getName().toUtf8();
+            os << L"<!ATTLIST " << elem.getName();
             cdr::xsd::AttrEnum attrs = cType->getAttributes();
             while (attrs != cType->getAttrEnd()) {
                 cdr::xsd::Attribute* a = (attrs++)->second;
-                std::cout << ' ' << a->getName().toUtf8() << ' ';
+                os << L" " << a->getName() << L" ";
                 const cdr::xsd::SimpleType* aType = 
                     dynamic_cast<const cdr::xsd::SimpleType*>
                     (a->getType(schema));
                 if (!aType)
                     throw cdr::Exception(L"Missing type for attribute", 
                                          a->getName());
-#if 1
+
                 // DTD's can't handle enumerated values which aren't NMTOKENS.
                 const cdr::StringSet& enums = aType->getEnumSet();
                 if (!enums.empty() && areNMTokens(enums)) {
-                    char sep = '(';
+                    const wchar_t* sep = L"(";
                     cdr::StringSet::const_iterator i = enums.begin();
                     while (i != enums.end()) {
-                        std::cout << sep << (*i++).toUtf8();
-                        sep = '|';
+                        os << sep << (*i++);
+                        sep = L"|";
                     }
-                    std::cout << ')';
+                    os << L")";
                 }
                 else
-#endif
-                    std::cout << a->getDtdType(); //"CDATA";
+                    os << a->getDtdType();
                 if (a->isOptional())
-                    std::cout << " #IMPLIED";
+                    os << L" #IMPLIED";
                 else
-                    std::cout << " #REQUIRED";
+                    os << L" #REQUIRED";
             }
-            std::cout << ">\n";
+            os << L">\n";
         }
 
         // Declare any child elements which have not already been declared.
         static cdr::StringSet declaredElems;
         if (isTopElement) {
-            std::cout << "<!ELEMENT CdrDocCtl (DocId, DocTitle)>\n";
-            std::cout << "<!ELEMENT DocId (#PCDATA)>\n";
-            std::cout << "<!ELEMENT DocTitle (#PCDATA)>\n";
+            os << L"<!ELEMENT CdrDocCtl (DocId, DocTitle)>\n";
+            os << L"<!ELEMENT DocId (#PCDATA)>\n";
+            os << L"<!ELEMENT DocTitle (#PCDATA)>\n";
             declaredElems.clear();
             declaredElems.insert(elem.getName());
             declaredElems.insert(L"CdrDocCtl");
             declaredElems.insert(L"DocId");
             declaredElems.insert(L"DocTitle");
         }
-        declareChildElements(schema, declaredElems, elements);
+        declareChildElements(schema, declaredElems, elements, os);
     }
 }
 
@@ -314,7 +321,8 @@ void writeElement(const cdr::xsd::Schema& schema, cdr::xsd::Element& elem,
  *  @param  elements    set of elements which have already been written
  *                      for this type (so we don't repeat them).
  */
-void outputMixedContent(const cdr::xsd::Node* node, cdr::StringSet& elements)
+void outputMixedContent(const cdr::xsd::Node* node, cdr::StringSet& elements,
+                        std::wostream& os)
 {
     // Safety measure.
     if (!node)
@@ -332,7 +340,7 @@ void outputMixedContent(const cdr::xsd::Node* node, cdr::StringSet& elements)
 
         // Only output this element if we haven't already done so.
         if (elements.find(name) == elements.end()) {
-            std::cout << '|' << name.toUtf8();
+            os << L"|" << name;
             elements.insert(name);
         }
         return;
@@ -341,7 +349,7 @@ void outputMixedContent(const cdr::xsd::Node* node, cdr::StringSet& elements)
     // Is this node a named group?
     const cdr::xsd::Group* g = dynamic_cast<const cdr::xsd::Group*>(node);
     if (g) {
-        outputMixedContent(g->getContent(), elements);
+        outputMixedContent(g->getContent(), elements, os);
         return;
     }
 
@@ -351,7 +359,7 @@ void outputMixedContent(const cdr::xsd::Node* node, cdr::StringSet& elements)
     if (cs) {
         cdr::xsd::NodeEnum ne = cs->getNodes();
         while (ne != cs->getListEnd())
-            outputMixedContent(*ne++, elements);
+            outputMixedContent(*ne++, elements, os);
         return;
     }
 
@@ -367,7 +375,7 @@ void outputMixedContent(const cdr::xsd::Node* node, cdr::StringSet& elements)
  *  @param  n           element, sequence, choice, or named group.
  *  @return             reference to output stream.
  */
-std::ostream& operator<<(std::ostream& os, const cdr::xsd::Node* n)
+std::wostream& operator<<(std::wostream& os, const cdr::xsd::Node* n)
 {
     // Safety measure.
     if (!n)
@@ -384,7 +392,7 @@ std::ostream& operator<<(std::ostream& os, const cdr::xsd::Node* n)
     // Is this an element?
     const cdr::xsd::Element* e = dynamic_cast<const cdr::xsd::Element*>(n);
     if (e) {
-        std::string name = e->getName().toUtf8();
+        cdr::String name = e->getName();
 
         // Sanity check.
         if (name.empty())
@@ -413,19 +421,19 @@ std::ostream& operator<<(std::ostream& os, const cdr::xsd::Node* n)
 
         // Add parentheses around multi-node list.
         if (cs->getNodeCount() > 1)
-            os << '(';
+            os << L"(";
 
         // Walk through the nodes in the sequence or choice.
         cdr::xsd::NodeEnum e = cs->getNodes();
-        const char* sep = "";
+        const wchar_t* sep = L"";
         while (e != cs->getListEnd()) {
             os << sep << *e++;
-            sep = s ? "," : "|";
+            sep = s ? L"," : L"|";
         }
 
         // Add parentheses around multi-node list.
         if (cs->getNodeCount() > 1)
-            os << ')';
+            os << L")";
         return os << getCountCharacter(*cs);
     }
 
@@ -449,13 +457,13 @@ std::ostream& operator<<(std::ostream& os, const cdr::xsd::Node* n)
  *                      "+" if one or more repetitions are allowed;
  *                      otherwise "".
  */
-const char* const getCountCharacter(const cdr::xsd::CountConstrained& ccNode)
+const wchar_t* const getCountCharacter(const cdr::xsd::CountConstrained& ccNode)
 {
     if (ccNode.getMinOccs() < 1)
-        return ccNode.getMaxOccs() == 1 ? "?" : "*";
+        return ccNode.getMaxOccs() == 1 ? L"?" : L"*";
     else if (ccNode.getMaxOccs() > 1)
-        return "+";
-    return "";
+        return L"+";
+    return L"";
 }
 
 /**
@@ -470,7 +478,8 @@ const char* const getCountCharacter(const cdr::xsd::CountConstrained& ccNode)
  */
 void declareChildElements(const cdr::xsd::Schema& schema,
                           cdr::StringSet& declaredElems, 
-                          const cdr::xsd::Node* n)
+                          const cdr::xsd::Node* n,
+                          std::wostream& os)
 {
     // Safety check.
     if (!n)
@@ -488,14 +497,14 @@ void declareChildElements(const cdr::xsd::Schema& schema,
 
         // Const cast is required because elements need to resolve their type
         // name to their type when first used.
-        writeElement(schema, const_cast<cdr::xsd::Element&>(*e));
+        writeElement(schema, const_cast<cdr::xsd::Element&>(*e), os);
         return;
     }
 
     // Is this a named group?
     const cdr::xsd::Group* g = dynamic_cast<const cdr::xsd::Group*>(n);
     if (g) {
-        declareChildElements(schema, declaredElems, g->getContent());
+        declareChildElements(schema, declaredElems, g->getContent(), os);
         return;
     }
 
@@ -505,18 +514,15 @@ void declareChildElements(const cdr::xsd::Schema& schema,
     if (cs) {
         cdr::xsd::NodeEnum e = cs->getNodes();
         while (e != cs->getListEnd())
-            declareChildElements(schema, declaredElems, *e++);
+            declareChildElements(schema, declaredElems, *e++, os);
         return;
     }
 
-    // Is this simple content?
+    // Sanity check.
     if (dynamic_cast<const cdr::xsd::SimpleContent*>(n))
-        return;
-
-    // Sanity check.  Should never reach this point.
-    throw cdr::Exception(L"Internal error",
-            L"Content must be element, group, choice, sequence"
-            L" or simpleContent");
+        throw cdr::Exception(L"Internal error",
+                             L"Content must be element, group, choice, "
+                             L"sequence, or simpleContent");
 }
 
 /**
