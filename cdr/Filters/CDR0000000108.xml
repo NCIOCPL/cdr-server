@@ -12,10 +12,15 @@
      Creator:  Volker Englisch
      Created:  04/01/2002
      Modified: 10/29/2002
+     Modified: 2002-12-02
 -->
 
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
+                          xmlns:cdrscr = "cips.nci.nih.gov/cdr/script"
+                           xmlns:exslt = "http://www.exslt.org/functions"
+               exclude-result-prefixes = "cdrscr"
+            extension-element-prefixes = "exslt"
                                version = "1.0">
 
  <xsl:output                    method = "xml" 
@@ -24,6 +29,41 @@
 
  <xsl:include                     href = "cdr:name:Module: Citation Formatting"/>
 
+ <!--                                          
+ ==================================================================
+ Custom scripting for terminology upcoding support.
+ ================================================================== -->
+ <exslt:script       implements-prefix = "cdrscr"
+                              language = "ecmascript">
+
+    // Global collection of links we've already processed.
+    var seenThese = new Object();
+
+    // Construct a URI for a new base term.  Note that invoking this
+    // function has the intended side effect of initializing the
+    // set of parents we have already seen to an empty set.
+    function newUri(nodeSet) { 
+        var cdrId = nodeSet[0];
+        seenThese = new Object(); 
+        return "cdr:" + cdrId + "/lastp"; 
+    }
+
+    // Check to see if we have already picked up this parent term.
+    // If we haven't, say no but remember it so we can say yes next
+    // time.
+    function seenMe(nodeSet) {
+        var cdrId = nodeSet[0];
+        if (seenThese[cdrId])
+            return 1;
+        seenThese[cdrId] = 1;
+        return 0;
+    }
+
+  <xsl:fallback>
+   <xsl:text>ECMAScript extensions are not supported!</xsl:text>
+  </xsl:fallback>
+ </exslt:script>
+ 
  <xsl:variable                    name = "pa_hp" 
                                 select = "/InScopeProtocol
                                           /ProtocolAbstract/Professional |
@@ -394,42 +434,33 @@
   <!--
   ========================================================
   Resolving the Diagnosis to include SpecificDiagnosis and
-  DiagnosisParent                                          
+  DiagnosisParent.  Don't eliminate the call to 
+  cdrscr:newUri(); we rely on its side effect!
   ======================================================== -->
   <xsl:for-each                 select = "Diagnosis">
    <xsl:variable                  name = "DiagID" 
                                 select = "@cdr:ref"/>
+   <xsl:variable                  name = "uri"
+                                select = "cdrscr:newUri($DiagID)"/>
    <xsl:variable                  name = "DiagInfo" 
-                                select = "document(concat('cdr:',
-                                                          $DiagID, 
-                                                          '/lastp'))"/>
+                                select = "document($uri)"/>
 
    <Diagnosis>
     <SpecificDiagnosis             ref = "{$DiagID}">
      <xsl:value-of              select = "$DiagInfo/Term/PreferredName"/>
     </SpecificDiagnosis>
-    <xsl:variable                 name = "ParentID" 
-                                select = "$DiagInfo/Term/TermRelationship/
-                                          ParentTerm/TermId/@cdr:ref"/>
 
     <!-- 
     ====================================================
     Upcode the parent terms
-    Pass the term ID to extract the parent
     ==================================================== -->
-    <xsl:call-template            name = "upcodeDiagnosis">
-     <xsl:with-param              name = "diagnosisID"
-                                select = "$DiagID"/>
-     <xsl:with-param              name = "diagnosisDoc"
+    <xsl:call-template            name = "upcodeTerm">
+     <xsl:with-param              name = "termDoc"
                                 select = "$DiagInfo"/>
+     <xsl:with-param              name = "parentElementName"
+                                select = "'DiagnosisParent'"/>
     </xsl:call-template>
 
-    <!-- 
-    <DiagnosisParent               ref = "{$ParentID}">
-     <xsl:value-of              select = "$DiagInfo/Term/TermRelationship/
-                                           ParentTerm/TermId"/>
-    </DiagnosisParent>
-    -->
    </Diagnosis>
   </xsl:for-each>
 
@@ -494,10 +525,15 @@
           </xsl:when>
 
           <xsl:otherwise>
+           <!-- 
+           ===============================================================
+           Don't eliminate the call to cdrscr:newUri(); we need the side
+           effect!
+           =============================================================== -->
+           <xsl:variable          name = "uri"
+                                select = "cdrscr:newUri($IntervenID)"/>
            <xsl:variable          name = "IntervenInfo" 
-                                select = "document(concat('cdr:',
-                                                          $IntervenID, 
-                                                          '/lastp'))"/>
+                                select = "document($uri)"/>
            <InterventionType       ref = "{$IntervenID}">
             <xsl:value-of       select = "$IntervenInfo/Term/PreferredName"/>
            </InterventionType>
@@ -505,13 +541,12 @@
            <!-- 
            ====================================================
            Upcode the parent terms
-           Pass the term ID to extract the parent
            ==================================================== -->
            <xsl:call-template     name = "upcodeTerm">
-            <xsl:with-param       name = "termID"
-                                select = "$IntervenID"/>
             <xsl:with-param       name = "termDoc"
                                 select = "$IntervenInfo"/>
+            <xsl:with-param       name = "parentElementName"
+                                select = "'InterventionTypeParent'"/>
            </xsl:call-template>
           </xsl:otherwise>
          </xsl:choose>
@@ -538,33 +573,31 @@
 
     <!-- 
     ========================================================
-    Resolving the Condition to include ConditionParent 
+    Resolving the Condition to include ConditionParent.
+    Don't eliminate the call to cdrscr:newUri(); we rely on
+    its side effect!
     ======================================================== -->
     <xsl:for-each               select = "Condition">
      <xsl:variable                name = "CondID" 
                                 select = "@cdr:ref"/>
+     <xsl:variable                name = "uri"
+                                select = "cdrscr:newUri($CondID)"/>
      <xsl:variable                name = "CondInfo" 
-                                select = "document(concat('cdr:',
-                                                          $CondID, 
-                                                          '/lastp'))"/>
+                                select = "document($uri)"/>
      <StudyCondition>
       <SpecificCondition           ref = "{$CondID}">
        <xsl:value-of            select = "$CondInfo/Term/PreferredName"/>
       </SpecificCondition>
-      <xsl:variable               name = "ParentID" 
-                                select = "$CondInfo/Term/TermRelationship/
-                                           ParentTerm/TermId/@cdr:ref"/>
 
       <!-- 
       ====================================================
       Upcode the parent terms
-      Pass the term ID to extract the parent
       ==================================================== -->
-      <xsl:call-template          name = "upcodeCondition">
-       <xsl:with-param            name = "conditionID"
-                                select = "$CondID"/>
-       <xsl:with-param            name = "conditionDoc"
-                                select = "$CondInfo"/>
+      <xsl:call-template          name = "upcodeTerm">
+       <xsl:with-param            name = "termDoc"
+                                select = "$DiagInfo"/>
+       <xsl:with-param            name = "parentElementName"
+                                select = "'ConditionParent'"/>
       </xsl:call-template>
 
      </StudyCondition>
@@ -586,169 +619,67 @@
  </xsl:template>
 
 
-
  <!--
  ===================================================================
- Upcoding the InterventionTypeParent terms.
+ Bring in the parents for a terminology document.  Called by at
+ least three places in this script.
  =================================================================== -->
  <xsl:template                    name = "upcodeTerm">
-  <xsl:param                      name = "termID"/>
   <xsl:param                      name = "termDoc"/>
-
-  <xsl:if                         test = "$termDoc/Term/
-                                           TermRelationship/ParentTerm">
-
-   <!-- 
-   ===========================================================
-   Once the parent term has been printed select the term to be
-   searched for the next level parent and call template again
-   =========================================================== -->
-   <xsl:variable                  name = "nextTermID"
-                                select = "$termDoc/Term/TermRelationship/
-                                           ParentTerm/TermId/@cdr:ref"/>
-   <xsl:variable                  name = "nextTermDoc" 
-                                select = "document(concat('cdr:',
-                                                          $nextTermID, 
-                                                          '/lastp'))"/>
-
-   <!-- 
-   ===============================================
-   The Parent Term is only printed if it is not of 
-   TermTypeName = Header term | Obsolete term
-   =============================================== -->
-   <xsl:if                        test = "not($nextTermDoc/Term/
-                                              TermType/TermTypeName = 
-                                              'Header term') and
-                                          not($nextTermDoc/Term/
-                                              TermType/TermTypeName = 
-                                              'Obsolete term')">
-    <InterventionTypeParent>
-     <xsl:attribute               name = "ref">
-      <xsl:value-of             select = "$termDoc/Term/TermRelationship/
-                                           ParentTerm/TermId/@cdr:ref"/>
-     </xsl:attribute>
-
-     <xsl:value-of              select = "$nextTermDoc/Term/PreferredName"/>
-    </InterventionTypeParent>
-   </xsl:if>
-
-   <xsl:call-template             name = "upcodeTerm">
-    <xsl:with-param               name = "termID"
-                                select = "$nextTermID"/>
-    <xsl:with-param               name = "termDoc"
-                                select = "$nextTermDoc"/>
-   </xsl:call-template>
-  </xsl:if>
- </xsl:template>
-
- <!--
- ===================================================================
- Upcoding the Diagnosis terms.
- =================================================================== -->
- <xsl:template                    name = "upcodeDiagnosis">
-  <xsl:param                      name = "diagnosisID"/>
-  <xsl:param                      name = "diagnosisDoc"/>
-
-  <xsl:if                         test = "$diagnosisDoc/Term/
-                                           TermRelationship/ParentTerm">
+  <xsl:param                      name = "parentElementName"/>
 
   <!-- 
   =================================================================
-  We need the Parent Term ID to be passed on for selecting the next
-  Term in the hirarchy
+  There can be more than one parent!
   ================================================================= -->
-   <xsl:variable                  name = "nextTermID"
-                                select = "$diagnosisDoc/Term/TermRelationship/
-                                           ParentTerm/TermId/@cdr:ref"/>
-   <xsl:variable                  name = "nextTermDoc" 
-                                select = "document(concat('cdr:',
-                                                          $nextTermID, 
-                                                          '/lastp'))"/>
+  <xsl:for-each                 select = "$termDoc/Term
+                                           /TermRelationship/ParentTerm
+                                           /TermId">
 
    <!-- 
-   ===============================================
-   The Parent Term is only printed if it is not of 
-   TermTypeName = Header term | Obsolete term
-   =============================================== -->
-   <xsl:if                        test = "not($nextTermDoc/Term/
+   ================================================================
+   Filter out duplicates.
+   ================================================================ -->
+   <xsl:if                        test = "not(cdrscr:seenMe(@cdr:ref))">
+    <xsl:variable                 name = "uri"
+                                select = "concat('cdr:', @cdr:ref, '/lastp')"/>
+    <xsl:variable                 name = "parent"
+                                select = "document($uri)"/>
+
+    <!-- 
+    ===============================================================
+    The Parent Term is only printed if it is not of TermTypeName = 
+    Header term | Obsolete term
+    =============================================================== -->
+    <xsl:if                       test = "not($parent/Term/
                                               TermType/TermTypeName = 
                                               'Header term') and
-                                          not($nextTermDoc/Term/
+                                          not($parent/Term/
                                               TermType/TermTypeName = 
                                               'Obsolete term')">
-    <DiagnosisParent>
-     <xsl:attribute               name = "ref">
-      <xsl:value-of             select = "$diagnosisDoc/Term/TermRelationship/
-                                           ParentTerm/TermId/@cdr:ref"/>
-     </xsl:attribute>
+     <xsl:element                 name = "{$parentElementName}">
+      <xsl:attribute              name = "ref">
+       <xsl:value-of            select = "@cdr:ref"/>
+      </xsl:attribute>
+      <xsl:value-of             select = "$parent/Term/PreferredName"/>
+     </xsl:element>
+    </xsl:if>
 
-     <xsl:value-of              select = "$nextTermDoc/Term/PreferredName"/>
-    </DiagnosisParent>
+    <!-- 
+    ===============================================================
+    Even if we skip this parent, we keep crawling up the hierarchy,
+    looking for ancestor terms which do meet the criteria (per Lakshmi,
+    2002-12-02).
+    =============================================================== -->
+    <xsl:call-template            name = "upcodeTerm">
+     <xsl:with-param              name = "termDoc"
+                                select = "$parent"/>
+     <xsl:with-param              name = "parentElementName"
+                                select = "$parentElementName"/>
+    </xsl:call-template>
    </xsl:if>
-
-   <xsl:call-template             name = "upcodeDiagnosis">
-    <xsl:with-param               name = "diagnosisID"
-                                select = "$nextTermID"/>
-    <xsl:with-param               name = "diagnosisDoc"
-                                select = "$nextTermDoc"/>
-   </xsl:call-template>
-  </xsl:if>
+  </xsl:for-each>
  </xsl:template>
-
- <!--
- ===================================================================
- Upcoding the Condition terms.
- =================================================================== -->
- <xsl:template                    name = "upcodeCondition">
-  <xsl:param                      name = "conditionID"/>
-  <xsl:param                      name = "conditionDoc"/>
-
-  <xsl:if                         test = "$conditionDoc/Term/
-                                           TermRelationship/ParentTerm">
-
-   <!-- 
-   ===========================================================
-   Once the parent term has been printed select the term to be
-   searched for the next level parent and call template again
-   =========================================================== -->
-   <xsl:variable                  name = "nextTermID"
-                                select = "$conditionDoc/Term/TermRelationship/
-                                           ParentTerm/TermId/@cdr:ref"/>
-   <xsl:variable                  name = "nextTermDoc" 
-                                select = "document(concat('cdr:',
-                                                          $nextTermID, 
-                                                          '/lastp'))"/>
-
-   <!-- 
-   ===============================================
-   The Parent Term is only printed if it is not of 
-   TermTypeName = Header term | Obsolete term
-   =============================================== -->
-   <xsl:if                        test = "not($nextTermDoc/Term/
-                                              TermType/TermTypeName = 
-                                              'Header term') and
-                                          not($nextTermDoc/Term/
-                                              TermType/TermTypeName = 
-                                              'Obsolete term')">
-    <ConditionParent>
-     <xsl:attribute               name = "ref">
-      <xsl:value-of             select = "$conditionDoc/Term/TermRelationship/
-                                           ParentTerm/TermId/@cdr:ref"/>
-     </xsl:attribute>
-
-     <xsl:value-of              select = "$nextTermDoc/Term/PreferredName"/>
-    </ConditionParent>
-   </xsl:if>
-
-   <xsl:call-template             name = "upcodeCondition">
-    <xsl:with-param               name = "conditionID"
-                                select = "$nextTermID"/>
-    <xsl:with-param               name = "conditionDoc"
-                                select = "$nextTermDoc"/>
-   </xsl:call-template>
-  </xsl:if>
- </xsl:template>
-
 
 
  <!--
