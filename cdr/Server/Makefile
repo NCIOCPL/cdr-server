@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.78 2004-08-11 17:48:15 bkline Exp $
+# $Id: Makefile,v 1.79 2004-11-05 06:05:16 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.78  2004/08/11 17:48:15  bkline
+# Adding new command CdrAddExternalMapping.
+#
 # Revision 1.77  2004/07/08 00:32:38  bkline
 # Added CdrGetGlossaryMap command; added cdr.lib to 'make clean' target.
 #
@@ -301,6 +304,7 @@ LFLAGS =$(LFLAGS) /DEBUG
 SVCFLGS=-DDEBUG $(SVCFLGS)
 !ENDIF
 HDRS   =$(CDRINC)/CdrBlob.h \
+        $(CDRINC)/CdrBlobExtern.h \
         $(CDRINC)/CdrCommand.h \
         $(CDRINC)/CdrDbConnection.h \
         $(CDRINC)/CdrDbPreparedStatement.h \
@@ -331,6 +335,7 @@ HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/HeapDebug.h \
         $(CDRINC)/catchexp.h
 LIBOBJS=CdrString.obj \
+        CdrBlob.obj \
         CdrXsd.obj \
         CdrDom.obj \
         CdrDbConnection.obj \
