@@ -1,9 +1,13 @@
 /*
- * $Id: CdrCommand.h,v 1.20 2001-06-28 17:39:32 bkline Exp $
+ * $Id: CdrCommand.h,v 1.21 2001-09-19 18:41:54 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2001/06/28 17:39:32  bkline
+ * Added getCssFiles().  Added optional contents_only argument to function
+ * DOMtoString().
+ *
  * Revision 1.19  2001/05/21 20:29:31  bkline
  * Added commands for query term definition support.
  *
@@ -783,6 +787,22 @@ namespace cdr {
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
     extern String listLinkProps (Session&          session,
+                                 const dom::Node&  node,
+                                 db::Connection&   conn);
+
+    /**
+     * Retrieves the denormalized data for a link if it is valid to paste the
+     * link at the proposed location.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String pasteLink     (Session&          session,
                                  const dom::Node&  node,
                                  db::Connection&   conn);
 
