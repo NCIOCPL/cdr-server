@@ -1,9 +1,12 @@
 /*
- * $Id: CdrActions.cpp,v 1.1 2001-11-28 19:28:20 bkline Exp $
+ * $Id: CdrActions.cpp,v 1.2 2003-05-27 19:44:40 ameyer Exp $
  *
  * Commands for viewing, editing, creating CDR actions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2001/11/28 19:28:20  bkline
+ * Initial revision
+ *
  */
 
 #include "CdrCommand.h"
@@ -14,9 +17,9 @@
  * Selects all rows in the action table and displays the values from the name
  * and doctype_specific columns.
  */
-cdr::String cdr::listActions(cdr::Session& session, 
+cdr::String cdr::listActions(cdr::Session& session,
                              const cdr::dom::Node& commandNode,
-                             cdr::db::Connection& dbConnection) 
+                             cdr::db::Connection& dbConnection)
 {
     // Make sure our user is authorized to list groups.
     if (!session.canDo(dbConnection, L"LIST ACTIONS", L""))
@@ -28,7 +31,7 @@ cdr::String cdr::listActions(cdr::Session& session,
     cdr::db::ResultSet r = s.executeQuery("SELECT name,"
                                           "       doctype_specific"
                                           "  FROM action");
-    
+
     // Pull in the rows from the result set.
     cdr::String resp;
     while (r.next()) {
@@ -49,9 +52,9 @@ cdr::String cdr::listActions(cdr::Session& session,
 /**
  * Retrieves the information for a single CDR action.
  */
-cdr::String cdr::getAction(cdr::Session& session, 
+cdr::String cdr::getAction(cdr::Session& session,
                            const cdr::dom::Node& commandNode,
-                           cdr::db::Connection& dbConnection) 
+                           cdr::db::Connection& dbConnection)
 {
     // Make sure our user is authorized to list groups.
     if (!session.canDo(dbConnection, L"GET ACTION", L""))
@@ -86,7 +89,7 @@ cdr::String cdr::getAction(cdr::Session& session,
     cdr::String name    = rs.getString(1);
     cdr::String flag    = rs.getString(2);
     cdr::String comment = rs.getString(3);
-    
+
     // Create the response.
     cdr::String resp = L"<CdrGetActionResp>"
                        L"<Name>" + name + L"</Name>"
@@ -99,9 +102,9 @@ cdr::String cdr::getAction(cdr::Session& session,
 /**
  * Adds a row to the action table.
  */
-cdr::String cdr::addAction(cdr::Session& session, 
+cdr::String cdr::addAction(cdr::Session& session,
                            const cdr::dom::Node& commandNode,
-                           cdr::db::Connection& conn) 
+                           cdr::db::Connection& conn)
 {
     // Make sure our user is authorized to add an action.
     if (!session.canDo(conn, L"ADD ACTION", L""))
@@ -142,7 +145,7 @@ cdr::String cdr::addAction(cdr::Session& session,
         throw cdr::Exception(L"Action already exists", action);
 
     // Add a new row to the action table.
-    std::string insertString = 
+    std::string insertString =
         "INSERT INTO action(name,"
         "                   doctype_specific,"
         "                   comment)"
@@ -153,15 +156,15 @@ cdr::String cdr::addAction(cdr::Session& session,
     insert.setString(3, comment);
     insert.executeQuery();
 
-    return L"<CdrAddAction/>";
+    return L"<CdrAddActionResp/>";
 }
 
 /**
  * Modifies an existing row in the action table.
  */
-cdr::String cdr::repAction(cdr::Session& session, 
+cdr::String cdr::repAction(cdr::Session& session,
                            const cdr::dom::Node& commandNode,
-                           cdr::db::Connection& conn) 
+                           cdr::db::Connection& conn)
 {
     // Make sure our user is authorized to modify actions.
     if (!session.canDo(conn, L"MODIFY ACTION", L""))
@@ -244,7 +247,7 @@ cdr::String cdr::repAction(cdr::Session& session,
                              L"must contain 'Y' or 'N'");
 
     // Update the row for the action.
-    std::string updateString = 
+    std::string updateString =
         "UPDATE action"
         "   SET name = ?,"
         "       doctype_specific = ?,"
@@ -257,16 +260,16 @@ cdr::String cdr::repAction(cdr::Session& session,
     update.setInt(4, id);
     update.executeQuery();
 
-    return L"<CdrModAction/>";
+    return L"<CdrRepActionResp/>";
 }
 
 /**
- * Drops any rows from the grp_action table associated with this action, 
+ * Drops any rows from the grp_action table associated with this action,
  * then drops the row from the action table.
  */
-cdr::String cdr::delAction(cdr::Session& session, 
+cdr::String cdr::delAction(cdr::Session& session,
                            const cdr::dom::Node& commandNode,
-                           cdr::db::Connection& conn) 
+                           cdr::db::Connection& conn)
 {
     // Make sure our user is authorized to delete CDR actions.
     if (!session.canDo(conn, L"DELETE ACTION", L""))
