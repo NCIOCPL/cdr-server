@@ -1,9 +1,14 @@
 /*
- * $Id: tables.sql,v 1.84 2003-09-29 15:25:13 bkline Exp $
+ * $Id: tables.sql,v 1.85 2003-09-29 17:26:23 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.84  2003/09/29 15:25:13  bkline
+ * Modified external_id tables (now external_map and external_map_usage)
+ * to be put into service for mapping NLM names for persons and
+ * organizations when importing documents from ClinicalTrials.gov.
+ *
  * Revision 1.83  2003/08/22 16:34:12  bkline
  * Fixed definition of published_doc view.
  *
@@ -719,7 +724,7 @@ GO
  *               of this category of external identifier
  */
 CREATE TABLE external_map_usage
-   (category INTEGER      IDENTITY PRIMARY KEY,
+         (id INTEGER      IDENTITY PRIMARY KEY,
         name VARCHAR(32)  NOT NULL UNIQUE,
      comment NVARCHAR(255)    NULL)
 GO
