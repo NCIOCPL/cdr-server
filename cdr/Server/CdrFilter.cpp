@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.2 2000-08-24 13:43:11 mruben Exp $
+ * $Id: CdrFilter.cpp,v 1.3 2000-09-25 14:00:14 mruben Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/08/24 13:43:11  mruben
+ * added support for cdr: URIs
+ *
  * Revision 1.1  2000/08/23 14:19:03  mruben
  * Initial revision
  *
@@ -22,6 +25,9 @@
 #include "sablot.h"
 
 #include "CdrCommand.h"
+#include "CdrDbPreparedStatement.h"
+#include "CdrDbResultSet.h"
+#include "CdrException.h"
 #include "CdrGetDoc.h"
 #include "CdrString.h"
 
@@ -144,8 +150,11 @@ namespace
   int uri_open(void* data, SablotHandle, const char* scheme, const char* rest,
                int* handle)
   {
-    if (scheme != NULL && scheme[0] != '\0' && strcmp(scheme, "cdr") != 0)
+    if (scheme != NULL && scheme[0] != '\0' && strcmp(scheme, "cdr") != 0
+            && strcmp(scheme, "cdrx") != 0)
       return SH_ERR_UNSUPPORTED_SCHEME;
+
+    bool conditional = (strcmp(scheme, "cdrx") == 0);
 
     UriInfo u;
     cdr::db::Connection& connection = *static_cast<cdr::db::Connection*>(data);
@@ -160,11 +169,33 @@ namespace
     // get the document
     try
     {
-      u.doc = getDocument(cdr::String(rest), connection).toUtf8();
+      // ***TODO***
+      // for now we only implement simple UI to get the document XML and
+      // ui/CdrCtl to get the entire doc control string
+      cdr::String uid(rest);
+      cdr::String type;
+      cdr::String::size_type sep = uid.find(L'/');
+      if (sep != cdr::String::npos)
+      {
+        type = uid.substr(sep + 1);
+        uid = uid.substr(0, sep);
+        sep = type.find(L'/');
+        if (sep != cdr::String::npos)
+          type = type.substr(0, sep);
+      }
+
+      if (type == L"CdrCtl")
+        u.doc = cdr::getDocCtlString(uid, connection,
+                                     cdr::DocCtlComponents::DocTitle).toUtf8();
+      else
+        u.doc = getDocument(uid, connection).toUtf8();
     }
     catch (...)
     {
-      return 1;
+      if (!conditional)
+        return 1;
+
+      u.doc = "<CdrDocCtl><NotFound>Y</NotFound></CdrDocCtl>";
     }
 
     u.inuse = true;
@@ -201,8 +232,8 @@ namespace
     }
 
     *count = uri_list[handle].doc.size();
-    *buffer = new char[*count];
-    memcpy(*buffer, uri_list[handle].doc.data(), *count);
+    *buffer = new char[*count + 1];
+    strcpy(*buffer, uri_list[handle].doc.c_str());
     return 0;
   }
 
