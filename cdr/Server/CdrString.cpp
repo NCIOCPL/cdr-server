@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.19 2002-08-21 04:17:00 ameyer Exp $
+ * $Id: CdrString.cpp,v 1.20 2002-11-25 21:15:48 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2002/08/21 04:17:00  ameyer
+ * Added normalizeWhiteSpace().
+ *
  * Revision 1.18  2002/03/14 13:33:13  bkline
  * Modified regular expression for matching CDR ID strings to accept the
  * fragment linking form.
@@ -146,40 +149,42 @@ void cdr::String::utf8ToUtf16(const char* s)
     }
 }
 
-
 /**
  * Convert reserved XML characters to character entities in a string.
  *
  *  @param  inStr           reference to original string, possibly containing
  *                          reserved XML characters, such as & or <.
+ *  @param  doQuotes        if true, also replace " with &quot; entity
+ *                          and ' with &apos; entity.
  *  @return                 copy of string with reserved characters replaced
  *                          as appropriate; note that in the common case in
  *                          which no replacements are needed the runtime
  *                          library will optimize away the copy of the
  *                          original string using reference counting.
  */
-
-cdr::String cdr::entConvert (
-    const cdr::String& inStr
-) {
+cdr::String cdr::entConvert(const String& inStr, bool doQuotes) 
+{
     // Ampersand MUST be first element in this table!
     static struct { wchar_t ch; wchar_t* ent; } eTable[] = {
-        { L'&', L"&amp;" },
-        { L'<', L"&lt;"  },
-        { L'>', L"&gt;"  }
+        { L'&',  L"&amp;"  },
+        { L'<',  L"&lt;"   },
+        { L'>',  L"&gt;"   },
+        { L'"',  L"&quot;" },
+        { L'\'', L"&apos;" }
     };
+    int numConversions = doQuotes ? 5 : 3;
 
     // If we make no changes no memory allocations or copying will happen.
-    cdr::String outStr = inStr;
+    String outStr = inStr;
     if (outStr.isNull())
         return outStr;
 
     // Replace each reserved character with its entity equivalent.
-    for (int i = 0; i < sizeof eTable / sizeof *eTable; ++i) {
+    for (int i = 0; i < numConversions; ++i) {
         wchar_t                ch  = eTable[i].ch;
         wchar_t*               ent = eTable[i].ent;
-        cdr::String::size_type len = wcslen(ent);
-        cdr::String::size_type pos = outStr.find(ch);
+        String::size_type len = wcslen(ent);
+        String::size_type pos = outStr.find(ch);
         while (pos != outStr.npos) {
             outStr.replace(pos, 1, ent);
             pos = outStr.find(ch, pos + len);

@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.23 2002-08-21 04:16:43 ameyer Exp $
+ * $Id: CdrString.h,v 1.24 2002-11-25 21:15:48 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2002/08/21 04:16:43  ameyer
+ * Added normalizeWhiteSpace().
+ *
  * Revision 1.22  2002/04/04 01:07:25  bkline
  * Added typedef for NamedValues.
  *
@@ -359,9 +362,10 @@ namespace cdr {
      * Convert reserved XML characters to character entities in a string
      *
      *  @param  inStr       reference to string to be converted.
+     *  @param  doQuotes    flag indicating " and ' need conversion also.
      *  @return             string with &...; in place of reserved chars
      */
-    extern String entConvert (const String&);
+    extern String entConvert (const String&, bool = false);
 
     /**
      * Normalize all whitespace characters in a string to single space.
