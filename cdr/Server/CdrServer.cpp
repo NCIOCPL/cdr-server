@@ -1,9 +1,14 @@
 /*
- * $Id: CdrServer.cpp,v 1.3 2000-04-16 21:55:48 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.4 2000-04-22 09:33:56 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/04/16 21:55:48  bkline
+ * Fixed code for getting sessionId.  Added calls to lookupSession() and
+ * setLastActivity().  Added code to set Status attribute in <CdrResponse>
+ * element.
+ *
  * Revision 1.2  2000/04/15 14:12:07  bkline
  * Added conditional Sleep() for 0-byte recv.  Replaced cdr::DbConnection*
  * with cdr::db::Connection&.  Catch added for exception thrown by
@@ -185,6 +190,7 @@ int readRequest(int fd, std::string& request) {
  */
 void processCommands(int fd, const std::string& buf)
 {
+    cdr::db::Connection conn;
     try {
         cdr::dom::Parser parser;
         parser.parse(buf);
@@ -204,7 +210,6 @@ void processCommands(int fd, const std::string& buf)
             return;
         }
         cdr::Session session;
-        cdr::db::Connection conn;
         cdr::String response = L"<CdrResponseSet>\n";
         cdr::dom::Node n = docElement.getFirstChild();
         while (n != 0) {
@@ -225,12 +230,18 @@ void processCommands(int fd, const std::string& buf)
         sendResponse(fd, response);
     }
     catch (const cdr::Exception& cdrEx) {
+        if (!conn.getAutoCommit())
+            conn.rollback();
         sendErrorResponse(fd, cdrEx.getString());
     }
     catch (const cdr::dom::DOMException& ex) {
+        if (!conn.getAutoCommit())
+            conn.rollback();
         sendErrorResponse(fd, cdr::String(ex.getMessage()));
     }
     catch (...) {
+        if (!conn.getAutoCommit())
+            conn.rollback();
         sendErrorResponse(fd, L"Unexpected exception caught");
     }
 }
@@ -269,6 +280,7 @@ cdr::String processCommand(cdr::Session& session,
         int type = specificCmd.getNodeType();
         if (type == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String cmdName = specificCmd.getNodeName();
+            //std::wcerr << L"Received command: " << cmdName << L"\n";
             cdr::Command cdrCommand = cdr::lookupCommand(cmdName);
             if (!cdrCommand)
                 return cdr::String(rspTag + L"failure'>\n  <Errors>\n   "
@@ -295,9 +307,12 @@ cdr::String processCommand(cdr::Session& session,
 
                 // Optimistic assumption.
                 session.lastStatus = L"success";
+                conn.setAutoCommit(true);
                 cmdResponse = cdrCommand(session, specificCmd, conn);
             }
             catch (cdr::Exception e) {
+                if (!conn.getAutoCommit())
+                    conn.rollback();
                 return cdr::String(rspTag + L"failure'>\n  <"
                                           + cmdName
                                           + L"Resp>\n"
