@@ -330,6 +330,10 @@ InScopeProtocol citations.
     <xsl:value-of             select = "LastName"/>
     <xsl:text> </xsl:text>
     <xsl:value-of             select = "FirstName | Initials"/>
+    <xsl:if                     test = "Suffix">
+     <xsl:text> </xsl:text>
+     <xsl:value-of             select = "Suffix"/>
+    </xsl:if>
 
     <xsl:if                   test   = "position() != last() and 
                                         position() != 3">
@@ -392,7 +396,26 @@ InScopeProtocol citations.
  <xsl:value-of              select = "."/>
  <xsl:choose>
   <xsl:when                   test = "$period = 'Yes'">
-   <xsl:text>. </xsl:text>
+   <!-- 
+   In case a title ends in a question mark or exclamation mark the
+   final period has to be suppressed
+   =============================================================== -->
+   <xsl:choose>
+    <xsl:when                 test = "substring(
+                                       normalize-space(.), 
+                                       string-length(normalize-space(.)), 1) 
+                                                                         = '?'
+                                      or
+                                      substring(
+                                       normalize-space(.), 
+                                       string-length(normalize-space(.)), 1) 
+                                                                         = '!'">
+     <xsl:text> </xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>. </xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
   </xsl:when>
   <xsl:otherwise>
    <xsl:text> </xsl:text>
