@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGlossaryMap.cpp,v 1.2 2004-09-09 18:43:26 bkline Exp $
+ * $Id: CdrGlossaryMap.cpp,v 1.3 2004-12-21 19:30:24 bkline Exp $
  *
  * Returns a document identifying which glossary terms should be used
  * for marking up phrases found in a CDR document.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/09/09 18:43:26  bkline
+ * Added Name element for each term.
+ *
  * Revision 1.1  2004/07/08 00:32:38  bkline
  * Added CdrGetGlossaryMap command; added cdr.lib to 'make clean' target.
  *
@@ -100,9 +103,13 @@ void mapPreferredTerms(cdr::StringSet& phrases,
 {
     cdr::db::Statement stmt = conn.createStatement();
     cdr::db::ResultSet rs = stmt.executeQuery(
-        "SELECT doc_id, value                  "
-        "  FROM query_term                     "
-        " WHERE path = '/GlossaryTerm/TermName'");
+        "SELECT n.doc_id, n.value                   "
+        "  FROM query_term n                        "
+        "  JOIN query_term s                        "
+        "    ON s.doc_id = n.doc_id                 "
+        " WHERE n.path = '/GlossaryTerm/TermName'   "
+        "   AND s.path = '/GlossaryTerm/TermStatus' "
+        "   AND s.value <> 'Rejected'               ");
     while (rs.next()) {
         int         id   = rs.getInt(1);
         cdr::String name = rs.getString(2);
@@ -121,11 +128,15 @@ void mapExternalPhrases(cdr::StringSet& phrases,
 {
     cdr::db::Statement stmt = conn.createStatement();
     cdr::db::ResultSet rs = stmt.executeQuery(
-        "SELECT m.doc_id, m.value              "
-        "  FROM external_map m                 "
-        "  JOIN external_map_usage u           "
-        "    ON u.id   = m.usage               "
-        " WHERE u.name = 'GlossaryTerm Phrases'");
+        "SELECT m.doc_id, m.value                   "
+        "  FROM external_map m                      "
+        "  JOIN external_map_usage u                "
+        "    ON u.id   = m.usage                    "
+        "  JOIN query_term s                        "
+        "    ON s.doc_id = m.doc_id                 "
+        " WHERE u.name = 'GlossaryTerm Phrases'     "
+        "   AND s.path = '/GlossaryTerm/TermStatus' "
+        "   AND s.value <> 'Rejected'               ");
     while (rs.next()) {
         int         id   = rs.getInt(1);
         cdr::String name = rs.getString(2);
