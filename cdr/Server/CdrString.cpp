@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.9 2000-08-15 20:16:18 ameyer Exp $
+ * $Id: CdrString.cpp,v 1.10 2000-10-18 03:19:15 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2000/08/15 20:16:18  ameyer
+ * Added entConvert function for converting "<>&" and others if need.
+ *
  * Revision 1.8  2000/07/21 21:07:19  ameyer
  * Added tagWrap().
  *
@@ -213,9 +216,14 @@ cdr::String cdr::stringDocId(const int id)
 /**
  * Wrap an xml tag around a string, returning the wrapped string.
  */
-cdr::String cdr::tagWrap (const cdr::String& data, const cdr::String& tag)
+cdr::String cdr::tagWrap (const cdr::String& data, const cdr::String& tag,
+                          const cdr::String& attrs)
 {
-    return (L"<" + tag + L">" + data + L"</" + tag + L">");
+    cdr::String elem = L"<" + tag;
+    if (attrs.size() > 0)
+        elem += L" " + attrs;
+    elem += L">" + data + L"</" + tag + L">";
+    return elem;
 }
 
 

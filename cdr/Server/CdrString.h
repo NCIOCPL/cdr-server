@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.16 2000-10-05 17:14:44 ameyer Exp $
+ * $Id: CdrString.h,v 1.17 2000-10-18 03:20:00 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2000/10/05 17:14:44  ameyer
+ * Declaration of entConvert()
+ *
  * Revision 1.15  2000/07/21 21:08:08  ameyer
  * Added tagWrap().
  *
@@ -325,9 +328,11 @@ namespace cdr {
      *
      *  @param  data        reference to string to be wrapped as element data.
      *  @param  tag         reference to tag to wrap around data.
+     *  @param  attrs       optional attribute info as a single string.
      *  @return             string with <tag>data</tag>
      */
-    extern String tagWrap (const String&, const String&);
+    extern String tagWrap (const String& data, const String& tag,
+                           const String& = L"");
 
     /**
      * Packs the error messages contained in the caller's list into a
