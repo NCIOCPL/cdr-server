@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.15 2001-06-15 02:29:23 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.16 2001-06-20 00:53:28 ameyer Exp $
  *
  */
 
@@ -22,6 +22,7 @@
 #include "CdrDbStatement.h"
 #include "CdrDbResultSet.h"
 #include "CdrVersion.h"
+#include "CdrFilter.h"
 #include "CdrDoc.h"
 #include "CdrLink.h"
 #include "CdrValidateDoc.h"
@@ -55,7 +56,9 @@ cdr::CdrDoc::CdrDoc (
     DocType (0),
     ActiveStatus (L"A"),
     Xml (L""),
-    filteredXml (L""),
+    revisedXml (L""),
+    revFilterFailed (false),
+    revFilterLevel (0),
     Title (L"")
 {
 
@@ -225,11 +228,15 @@ cdr::CdrDoc::CdrDoc (
     select.close();
 
     // We haven't filtered this for insertion, deletion markup
-    filteredXml = L"";
+    revisedXml = L"";
 
     // We have not parsed the xml yet and don't know of anything wrong with it
     parsed    = false;
     malformed = false;
+
+    // Haven't filtered it either
+    revFilterFailed = false;
+    revFilterLevel  = 0;
 }
 
 
@@ -392,8 +399,7 @@ static cdr::String CdrPutDoc (
          cmdVersion,            // True=Create new version in version control
          cmdPublishVersion,     // True=New version ctl version is publishable
          cmdValidate;           // True=Perform validation, else just store
-    cdr::String cmdReason,      // Reason to associate with new version
-                errorStr;       // Error string returned by validation
+    cdr::String cmdReason;      // Reason to associate with new version
     cdr::dom::Node child,       // Child node in command
                    docNode;     // Node containing CdrDoc
     cdr::dom::NamedNodeMap attrMap; // Map of attributes in DocCtl subelement
@@ -542,12 +548,11 @@ static cdr::String CdrPutDoc (
 
     // If new record, store it so we can get the new ID
     // Perform validation if requested
-    errorStr = L"";
     if (cmdValidate) {
         // Any other validation
         // Set valid_status and valid_date in the doc object
         // Will overwrite whatever is there
-        errorStr = cdr::execValidateDoc (doc, cdr::UpdateUnconditionally);
+        cdr::execValidateDoc (doc, cdr::UpdateUnconditionally);
     }
 
     // If we haven't already done so, store it
@@ -594,7 +599,7 @@ static cdr::String CdrPutDoc (
     cdr::String rtag = newrec ? L"Add" : L"Rep";
     cdr::String resp = cdr::String (L"  <Cdr") + rtag + L"DocResp>\n"
                      + L"   <DocId>" + doc.getTextId() + L"</DocId>\n"
-                     + errorStr + L"  </Cdr" + rtag + L"DocResp>\n";
+                     + doc.getErrString() + L"  </Cdr" + rtag + L"DocResp>\n";
     return resp;
 
 } // CdrPutDoc
@@ -758,19 +763,19 @@ bool cdr::CdrDoc::parseAvailable ()
 {
     cdr::String data;
 
-    // XXXX Invoke filter here to create filteredXml
-    if (filteredXml.size() == 0) {
+    // XXXX Invoke filter here to create revisedXml
+    if (revisedXml.size() == 0) {
         ;
     }
 
     // Parse whatever is available
-    if (filteredXml.size() > 0)
-        data = filteredXml;
+    if (revisedXml.size() > 0)
+        data = revisedXml;
     else if (Xml.size() > 0)
         data = Xml;
     else {
         // Nothing to build a tree from
-        parseErrMsg = L"No XML in this document to parse";
+        errList.push_back (L"No XML in this document to parse");
         return false;
     }
 
@@ -789,12 +794,12 @@ bool cdr::CdrDoc::parseAvailable ()
         this->malFormed();
 
         // Save error message from parser
-        parseErrMsg = e.getMessage();
+        errList.push_back (L"Parsing XML: " + cdr::String (e.getMessage ()));
         return false;
     }
     catch (...) {
         this->malFormed();
-        parseErrMsg = L"Unknown error parsing XML";
+        errList.push_back (L"Unknown error parsing XML");
         return false;
     }
 
@@ -806,6 +811,78 @@ bool cdr::CdrDoc::parseAvailable ()
 
 } // parseAvailable
 
+
+/**
+ * Return an XML string with revision markup filtered out as per the
+ * standard techniques.
+ */
+
+cdr::String cdr::CdrDoc::getRevisionFilteredXml (
+    cdr::String &errorStr,
+    int         revisionLevel,
+    bool        getIfUnfiltered
+) {
+    // Validate parameter
+    if (revisionLevel < 1 || revisionLevel > 3)
+        throw cdr::Exception (L"CdrDoc::getRevisedXml: Illegal revision filter "
+                             + cdr::String::toString (revisionLevel)
+                             + L" requested for document");
+
+// XXXX NO FILTERS YET, NEED A BLANK ONE AT LEAST FOR TESTING
+//      SO I'VE DISABLED THIS FUNCTION FOR NOW
+return Xml;
+
+    // Need to filter revision markup if:
+    //   Filtering never attempted (revisedXmlLevel == 0)
+    //   Filtering done but at level other than what we want
+    //   Filter attempt has not already failed (!revFilterFailed)
+    if (revisionLevel != revFilterLevel && !revFilterFailed) {
+
+        // Attempt to filter at the requested level
+        cdr::FilterParmVector pv;        // Parameters passed to it
+        pv.push_back (
+                std::pair<cdr::String,cdr::String>
+                   (L"RevisionFilterLevel",
+                    cdr::String::toString (revisionLevel)));
+
+        try {
+            revisedXml = cdr::filterDocument (Xml, L"Revision Markup Filter",
+                                              docDbConn, &errorStr, &pv);
+        }
+        catch (cdr::Exception e) {
+            // Don't try filtering this doc again
+            revFilterFailed = true;
+
+            // Save error msg for client
+            errList.push_back (L"Filtering revision markup: " +
+                               cdr::String (e.what ()));
+        }
+
+        // If successful, save level info
+        if (!revFilterFailed) {
+            if (revisedXml.size() > 0)
+                revFilterLevel = revisionLevel;
+            else {
+                // Didn't really succeed
+                revFilterLevel  = 0;
+                revFilterFailed = true;
+                errList.push_back (
+                        L"Filtering revision markup: Got 0 length result");
+            }
+        }
+    }
+
+    // If everything still looks good, return the filtered xml
+    if (!revFilterFailed)
+        return revisedXml;
+
+    // Else return depends on whether caller asked for unfiltered data
+    if (getIfUnfiltered)
+        return Xml;
+
+    // Nothing left to return
+    return L"";
+}
 
 /**
  * Mark a document as malformed
