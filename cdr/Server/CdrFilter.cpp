@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.30 2002-10-03 02:56:08 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.31 2002-11-12 11:44:37 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2002/10/03 02:56:08  bkline
+ * Added a custom function to map a Cancer.gov GUID to a pretty URL.
+ *
  * Revision 1.29  2002/09/29 01:43:20  bkline
  * Fixed bug in code to extract CDATA section (wasn't checking for missing
  * node).
@@ -125,11 +128,23 @@ using std::string;
 using std::vector;
 using std::wostringstream;
 
+const int MAX_FILTER_SET_DEPTH = 20;
+
 static int getDocIdFromTitle(const cdr::String& title,
                              cdr::db::Connection& connection);
 static cdr::String getDocTitle(const cdr::String& id,
-                             cdr::db::Connection& connection);
+                               cdr::db::Connection& connection);
 static cdr::String getPrettyUrl(const cdr::String& guid);
+
+static void getFiltersInSet(const cdr::String& name,
+                            std::vector<int>& filterSet, 
+                            int depth,
+                            cdr::db::Connection& conn);
+
+static void getFiltersInSet(int,
+                            std::vector<int>& filterSet, 
+                            int depth,
+                            cdr::db::Connection& conn);
 
 namespace
 {
@@ -1256,5 +1271,449 @@ cdr::String getPrettyUrl(const cdr::String& guid)
     }
     catch (...) {
         return L"";
+    }
+}
+
+struct FilterSetMember {
+    int foreignKey;
+    bool nested;
+    FilterSetMember(int fk, bool flag) : foreignKey(fk), nested(flag) {}
+};
+typedef std::vector<FilterSetMember> FilterSetMembers;
+
+static void addFilterSetMembers(cdr::db::Connection& connection,
+                                int id,
+                                const FilterSetMembers& filterSetMembers)
+{
+    cdr::db::PreparedStatement ps = connection.prepareStatement(
+            "INSERT INTO filter_set_member (filter_set, "
+            "                               position,   "
+            "                               filter,     "
+            "                               subset)     "
+            "     VALUES (?, ?, ?, ?)                   ");
+    cdr::Int nullInt(true);
+    for (int i = 0; i < (int)filterSetMembers.size(); ++i) {
+        ps.setInt(1, id);
+        ps.setInt(2, i + 1);
+        if (filterSetMembers[i].nested) {
+            ps.setInt(3, nullInt);
+            ps.setInt(4, filterSetMembers[i].foreignKey);
+        }
+        else {
+            ps.setInt(3, filterSetMembers[i].foreignKey);
+            ps.setInt(4, nullInt);
+        }
+        ps.executeUpdate();
+    }
+}
+
+static void extractFilterSetParams(const cdr::dom::Node& commandNode,
+                                   cdr::String& filterSetName,
+                                   cdr::String& filterSetDescription,
+                                   cdr::String& filterSetNotes,
+                                   FilterSetMembers& filterSetMembers)
+{
+    cdr::dom::Node child = commandNode.getFirstChild();
+    while (child != 0) {
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String name = child.getNodeName();
+            if (name == L"FilterSetName")
+                filterSetName = cdr::dom::getTextContent(child);
+            else if (name == L"FilterSetDescription")
+                filterSetDescription = cdr::dom::getTextContent(child);
+            else if (name == L"FilterSetNotes")
+                filterSetNotes = cdr::dom::getTextContent(child);
+            else if (name == L"Filter") {
+                const cdr::dom::Element& e = 
+                    static_cast<const cdr::dom::Element&>(child);
+                cdr::String idString = e.getAttribute("DocId");
+                if (idString.empty())
+                    throw cdr::Exception(
+                            L"Missing DocId attribute for Filter");
+                int id = idString.extractDocId();
+                filterSetMembers.push_back(FilterSetMember(id, false));
+            }
+            else if (name == L"FilterSet") {
+                const cdr::dom::Element& e = 
+                    static_cast<const cdr::dom::Element&>(child);
+                cdr::String idString = e.getAttribute("SetId");
+                if (idString.empty())
+                    throw cdr::Exception(
+                            L"Missing SetId attribute for FilterSet");
+                int id = idString.getInt();
+                filterSetMembers.push_back(FilterSetMember(id, true));
+            }
+        }
+        child = child.getNextSibling();
+    }
+    if (filterSetName.empty())
+        throw cdr::Exception(L"FilterSetName element is required.");
+    if (filterSetDescription.empty())
+        throw cdr::Exception(L"FilterSetDescription element is required.");
+}
+
+/**
+ * Creates a new named filter set, establishing its attributes and
+ * composition.
+ *
+ *  @param      session     contains information about the current user.
+ *  @param      node        contains the XML for the command.
+ *  @param      conn        reference to the connection object for the
+ *                          CDR database.
+ *  @return                 String object containing the XML for the
+ *                          command response.
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::addFilterSet(cdr::Session& session,
+                              const cdr::dom::Node& commandNode,
+                              cdr::db::Connection& connection)
+{
+    // Check user authorization.
+    if (!session.canDo(connection, L"ADD FILTER SET", L""))
+        throw Exception (L"CdrPutDoc: User '" + session.getUserName() +
+                         L"' not authorized to create new filter sets.");
+
+    // Extract the parameters from the command.
+    String filterSetName;
+    String filterSetDescription;
+    String filterSetNotes(true); // initiated as NULL.
+    FilterSetMembers filterSetMembers;
+    extractFilterSetParams(commandNode, filterSetName, filterSetDescription,
+                           filterSetNotes, filterSetMembers);
+
+    // Add the new set.
+    connection.setAutoCommit(false);
+    db::PreparedStatement stmt = connection.prepareStatement(
+            "INSERT INTO filter_set (name, description, notes)"
+            "     VALUES (?, ?, ?)");
+    stmt.setString(1, filterSetName);
+    stmt.setString(2, filterSetDescription);
+    stmt.setString(3, filterSetNotes);
+    stmt.executeUpdate();
+    int id = connection.getLastIdent();
+
+    // Populate the set.
+    addFilterSetMembers(connection, id, filterSetMembers);
+
+    // Do this mostly to detect infinitely recursive set.
+    std::vector<int> filters;
+    getFiltersInSet(id, filters, 0, connection);
+    connection.commit();
+
+    // Report success.
+    return L"<CdrAddFilterSetResp TotalFilters='"
+        + String::toString(filters.size())
+        + L"'/>";
+}
+
+/**
+ * Replaces the attributes and composition of a named filter set.
+ *
+ *  @param      session     contains information about the current user.
+ *  @param      node        contains the XML for the command.
+ *  @param      conn        reference to the connection object for the
+ *                          CDR database.
+ *  @return                 String object containing the XML for the
+ *                          command response.
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::repFilterSet(cdr::Session& session,
+                              const cdr::dom::Node& commandNode,
+                              cdr::db::Connection& connection)
+{
+    // Check user authorization.
+    if (!session.canDo(connection, L"MODIFY FILTER SET", L""))
+        throw Exception (L"CdrPutDoc: User '" + session.getUserName() +
+                         L"' not authorized to modify existing filter sets.");
+
+    // Extract the parameters from the command.
+    String filterSetName;
+    String filterSetDescription;
+    String filterSetNotes(true); // initiated as NULL.
+    FilterSetMembers filterSetMembers;
+    extractFilterSetParams(commandNode, filterSetName, filterSetDescription,
+                           filterSetNotes, filterSetMembers);
+
+    // Find the filter set.
+    db::PreparedStatement query = connection.prepareStatement(
+            "SELECT id FROM filter_set WHERE name = ?");
+    query.setString(1, filterSetName);
+    db::ResultSet rs = query.executeQuery();
+    if (!rs.next())
+        throw Exception(L"Filter set not found", filterSetName);
+    int id = rs.getInt(1);
+    if (!id)
+        throw Exception(L"Filter set not found", filterSetName);
+
+    // Replace the set's attributes.
+    connection.setAutoCommit(false);
+    db::PreparedStatement stmt = connection.prepareStatement(
+            "UPDATE filter_set       "
+            "   SET name = ?,        "
+            "       description = ?, "
+            "       notes = ?        "
+            " WHERE id = ?           ");
+    stmt.setString(1, filterSetName);
+    stmt.setString(2, filterSetDescription);
+    stmt.setString(3, filterSetNotes);
+    stmt.setInt   (4, id);
+    stmt.executeUpdate();
+
+    // Clear out the set's membership.
+    db::PreparedStatement del = connection.prepareStatement(
+            "DELETE FROM filter_set_member WHERE filter_set = ?");
+    del.setInt(1, id);
+    del.executeUpdate();
+
+    // Populate the set.
+    addFilterSetMembers(connection, id, filterSetMembers);
+
+    // Do this mostly to detect infinitely recursive set.
+    std::vector<int> filters;
+    getFiltersInSet(id, filters, 0, connection);
+    connection.commit();
+
+    // Report success.
+    return L"<CdrAddFilterSetResp TotalFilters='"
+        + String::toString(filters.size())
+        + L"'/>";
+}
+
+/**
+ * Returns the attributes and contents of a named filter set.
+ *
+ *  @param      session     contains information about the current user.
+ *  @param      node        contains the XML for the command.
+ *  @param      conn        reference to the connection object for the
+ *                          CDR database.
+ *  @return                 String object containing the XML for the
+ *                          command response.
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::getFilterSet(Session& session,
+                              const dom::Node& commandNode,
+                              db::Connection& connection)
+{
+    String filterSetName;
+    dom::Node child = commandNode.getFirstChild();
+    while (child != 0) {
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String name = child.getNodeName();
+            if (name == L"FilterSetName")
+                filterSetName = cdr::dom::getTextContent(child);
+        }
+        child = child.getNextSibling();
+    }
+    if (filterSetName.empty())
+        throw Exception(L"FilterSetName element required");
+
+    // Find the filter set.
+    db::PreparedStatement q1 = connection.prepareStatement(
+            "SELECT id,          "
+            "       name,        "
+            "       description, "
+            "       notes        "
+            "  FROM filter_set   "
+            "  WHERE name = ?    ");
+    q1.setString(1, filterSetName);
+    db::ResultSet rs1 = q1.executeQuery();
+    if (!rs1.next())
+        throw Exception(L"Filter set not found", filterSetName);
+    int    id    = rs1.getInt(1);
+    String name  = rs1.getString(2);
+    String desc  = rs1.getString(3);
+    String notes = rs1.getString(4);
+
+    // Start the response.
+    std::wostringstream response;
+    response << L"<CdrGetFilterSetResp><FilterSetName>"
+             << name
+             << L"</FilterSetName><FilterSetDescription>"
+             << desc
+             << L"</FilterSetDescription>";
+    if (!notes.isNull())
+        response << L"<FilterSetNotes>" << notes << L"</FilterSetNotes>";
+
+    // Find the filter set members.
+    db::PreparedStatement q2 = connection.prepareStatement(
+            "  SELECT m.filter,             "
+            "         d.title,              "
+            "         m.position,           "
+            "         'F'                   "
+            "    FROM filter_set_member m   "
+            "    JOIN document d            "
+            "      ON d.id = m.filter       "
+            "   WHERE m.filter_set = ?      "
+            "     AND m.filter IS NOT NULL  "
+            "   UNION                       "
+            "  SELECT m.subset,             "
+            "         s.name,               "
+            "         m.position,           "
+            "         'S'                   "
+            "    FROM filter_set_member m   "
+            "    JOIN filter_set s          "
+            "      ON s.id = m.subset       "
+            "   WHERE filter_set = ?        "
+            "     AND m.subset IS NOT NULL  "
+            "ORDER BY 3                     ");
+    q2.setInt(1, id);
+    q2.setInt(2, id);
+    db::ResultSet rs2 = q2.executeQuery();
+    while (rs2.next()) {
+        int foreignKey = rs2.getInt(1);
+        String name    = rs2.getString(2);
+        int position   = rs2.getInt(3);
+        String type    = rs2.getString(4);
+        if (type == L"F") {
+            response << L"<Filter DocId='"
+                     << stringDocId(foreignKey)
+                     << L"'>"
+                     << name
+                     << L"</Filter>";
+        }
+        else {
+            response << L"<FilterSet SetId='"
+                     << foreignKey
+                     << L"'>"
+                     << name
+                     << L"</FilterSet>";
+        }
+    }
+    response << L"</CdrGetFilterSetResp>";
+    return response.str();
+}
+
+/**
+ * Returns a list of the named filter sets in the CDR.
+ *
+ *  @param      session     contains information about the current user.
+ *  @param      node        contains the XML for the command.
+ *  @param      conn        reference to the connection object for the
+ *                          CDR database.
+ *  @return                 String object containing the XML for the
+ *                          command response.
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::getFilterSets(cdr::Session& session,
+                               const cdr::dom::Node& commandNode,
+                               cdr::db::Connection& connection)
+{
+    // Find the filter sets.
+    std::wostringstream response;
+    response << L"<CdrGetFilterSetsResp>";
+    db::Statement stmt = connection.createStatement();
+    db::ResultSet rs = stmt.executeQuery(
+            "  SELECT id,        "
+            "         name       "
+            "    FROM filter_set "
+            "ORDER BY name       ");
+    while (rs.next()) {
+        int    id   = rs.getInt(1);
+        String name = rs.getString(2);
+        response << L"<FilterSet SetId='"
+                 << id
+                 << L"'>"
+                 << name
+                 << L"</FilterSet>";
+    }
+    response << L"</CdrGetFilterSetsResp>";
+    return response.str();
+}
+
+/**
+ * Returns a list of the filter documents in the CDR repository.
+ *
+ *  @param      session     contains information about the current user.
+ *  @param      node        contains the XML for the command.
+ *  @param      conn        reference to the connection object for the
+ *                          CDR database.
+ *  @return                 String object containing the XML for the
+ *                          command response.
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::getFilters(cdr::Session& session,
+                            const cdr::dom::Node& commandNode,
+                            cdr::db::Connection& connection)
+{
+    // Find the filter documents.
+    std::wostringstream response;
+    response << L"<CdrGetFiltersResp>";
+    db::Statement stmt = connection.createStatement();
+    db::ResultSet rs = stmt.executeQuery(
+            "  SELECT d.id,             "
+            "         d.title           "
+            "    FROM document d        "
+            "    JOIN doc_type t        "
+            "      ON t.id = d.doc_type "
+            "   WHERE t.name = 'Filter' "
+            "ORDER BY d.title           ");
+    while (rs.next()) {
+        int    id    = rs.getInt(1);
+        String title = rs.getString(2);
+        response << L"<Filter DocId='"
+                 << stringDocId(id)
+                 << L"'>"
+                 << title
+                 << L"</Filter>";
+    }
+    response << L"</CdrGetFiltersResp>";
+    return response.str();
+}
+
+void getFiltersInSet(const cdr::String& name,
+                     std::vector<int>& filterSet, 
+                     int depth,
+                     cdr::db::Connection& conn)
+{
+    cdr::db::PreparedStatement stmt = conn.prepareStatement(
+            "SELECT id         "
+            "  FROM filter_set "
+            " WHERE name = ?   ");
+    stmt.setString(1, name);
+    cdr::db::ResultSet rs = stmt.executeQuery();
+    if (!rs.next())
+        throw cdr::Exception(L"Unable to find filter set", name);
+    int id = rs.getInt(1);
+    getFiltersInSet(id, filterSet, 0, conn);
+}
+
+void getFiltersInSet(int id, 
+                     std::vector<int>& filterSet, 
+                     int depth,
+                     cdr::db::Connection& conn)
+{
+    FilterSetMembers setMembers;
+    if (depth > MAX_FILTER_SET_DEPTH)
+        throw cdr::Exception(L"getFiltersInSet(): infinite recursion");
+    cdr::db::PreparedStatement stmt = conn.prepareStatement(
+            "  SELECT filter,           "
+            "         subset,           "
+            "         position          "
+            "    FROM filter_set_member "
+            "   WHERE filter_set = ?    "
+            "ORDER BY position          ");
+    stmt.setInt(1, id);
+    cdr::db::ResultSet rs = stmt.executeQuery();
+    while (rs.next()) {
+        cdr::Int filterId = rs.getInt(1);
+        cdr::Int subsetId = rs.getInt(2);
+        int      position = rs.getInt(3);
+        if (!filterId.isNull())
+            setMembers.push_back(FilterSetMember(filterId, false));
+        else if (!subsetId.isNull())
+            setMembers.push_back(FilterSetMember(subsetId, true));
+        else
+            throw cdr::Exception(L"filter and subset foreign keys both "
+                                 L"null at position " +
+                                 cdr::String::toString(position) +
+                                 L" in filter set " +
+                                 cdr::String::toString(id));
+    }
+    for (size_t i = 0; i < setMembers.size(); ++i) {
+        if (setMembers[i].nested)
+            getFiltersInSet(setMembers[i].foreignKey, filterSet, depth + 1, 
+                            conn);
+        else
+            filterSet.push_back(setMembers[i].foreignKey);
     }
 }

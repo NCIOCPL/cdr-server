@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.26 2002-06-26 02:21:52 ameyer Exp $
+ * $Id: CdrCommand.h,v 1.27 2002-11-12 11:44:37 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2002/06/26 02:21:52  ameyer
+ * Added lastVersions(), plus a bit of extra documentation on listVersions().
+ *
  * Revision 1.25  2002/06/18 20:33:52  ameyer
  * Added CdrCanDo command.
  *
@@ -780,6 +783,82 @@ namespace cdr {
     extern String filter     (Session&          session,
                               const dom::Node&  node,
                               db::Connection&   conn);
+
+    /**
+     * Returns a list of the filter documents in the CDR repository.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String getFilters (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
+
+    /**
+     * Returns a list of the named filter sets in the CDR.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String getFilterSets(Session&          session,
+                                const dom::Node&  node,
+                                db::Connection&   conn);
+
+    /**
+     * Returns the attributes and contents of a named filter set.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String getFilterSet (Session&          session,
+                                const dom::Node&  node,
+                                db::Connection&   conn);
+
+    /**
+     * Replaces the attributes and composition of a named filter set.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String repFilterSet (Session&          session,
+                                const dom::Node&  node,
+                                db::Connection&   conn);
+
+    /**
+     * Creates a new named filter set, establishing its attributes and
+     * composition.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String addFilterSet (Session&          session,
+                                const dom::Node&  node,
+                                db::Connection&   conn);
 
     /**
      * Reports the links which exist in the CDR to and from the specified
