@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.94 2004-01-14 13:13:30 bkline Exp $
+ * $Id: tables.sql,v 1.95 2004-04-30 01:04:25 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.94  2004/01/14 13:13:30  bkline
+ * Added index on dt column of ctgov_download_stats table.
+ *
  * Revision 1.93  2004/01/14 13:11:01  bkline
  * Added id column to ctgov_download_stats table.
  *
@@ -1058,10 +1061,14 @@ GO
  *     target_doc     Doc id linked to by source (null if url used)
  *     target_frag    Fragment id linked to, if any.
  *     url            Alternative to target id + fragment for non CDR targets.
+ *                    Note: url is not currently of any value because we
+ *                          are not currently storing external references
+ *                          in the link_net table.  But we've left it in
+ *                          in case we ever do.
  *
- * XXX NOTE: foreign key constraint on target_doc column temporarily 
- *           disabled until link management software is modified to 
- *           avoid inserting rows for links to ID 0.
+ * XXX NOTE: foreign key constraint on target_doc column was
+ *           disabled because we had been inserting links to doc 0.
+ *           That is now changed and the constraint could be re-imposed.
  */
 CREATE TABLE link_net (
           link_type INTEGER     NOT NULL REFERENCES link_type,
@@ -1889,4 +1896,29 @@ out_of_scope INTEGER  NOT NULL,
       closed INTEGER  NOT NULL)
 GO
 CREATE INDEX ctgov_download_stats_dt ON ctgov_download_stats (dt)
+GO
+
+/*
+ * Logs filter document IDs when filter profiling is turned on by
+ * setting the environment variable CDR_FILTER_PROFILING before
+ * starting the CdrServer.  See CdrFilter.cpp.
+ *
+ *      id  CDR document ID of a filter that was invoked
+ *  millis  Number of milliseconds elapsed between start/end of filtering
+ *      dt  Date/time of invocation
+ *
+ * Typical usage is:
+ *   SELECT id AS FilterID, COUNT(millis) AS Count, AVG(millis) AS AvgMils, 
+ *          MAX(millis) AS Max, MIN(millis) AS Min, STDEV(millis) AS StdDev
+ *     FROM filter_profile
+ *    WHERE dt BETWEEN (... AND ...)
+ * GROUP BY id
+ * ORDER BY id
+ *
+ * Rows may be deleted at any time without harming CDR operations.
+ */
+CREATE TABLE filter_profile
+        (id INTEGER,
+     millis INTEGER,
+         dt DATETIME)
 GO
