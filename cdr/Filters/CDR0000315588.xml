@@ -144,9 +144,10 @@
 
  <!--
  ====================================================================
- Drop the CIPSContact attribute which is needed for mailers only
+ Drop the CIPSContact attribute which is needed for mailers only.
+ Ditto for MailAbstractTo.
  ==================================================================== -->
- <xsl:template               match = "@CIPSContact"
+ <xsl:template               match = "@CIPSContact | @MailAbstractTo"
                               mode = "copy"/>
 
  <!-- 
@@ -167,6 +168,61 @@
                                       ProtocolDesign"
                               mode = "copy"/>
 
+
+ <!-- 
+ =====================================================================
+ Don't export protocol lead organizations with status of "Withdrawn."
+ ===================================================================== -->
+ <xsl:template               match = "ProtocolLeadOrg
+                                      [LeadOrgProtocolStatus/
+                                       StatusName = 'Withdrawn']"/>
+ <xsl:template               match = "ProtocolLeadOrg
+                                      [LeadOrgProtocolStatus/
+                                       StatusName = 'Withdrawn']"
+                              mode = "copy"/>
+
+ <!-- 
+ =====================================================================
+ Suppress LeadOrgPersonnel which are not public.
+ ===================================================================== -->
+ <xsl:template               match = "ProtPerson[@Public = 'No']"/>
+ <xsl:template               match = "ProtPerson[@Public = 'No']"
+                              mode = "copy"/>
+
+ <!-- 
+ =====================================================================
+ Don't keep LeadOrgPersonnel whose only role is 'Update person'.
+ NOTE: We don't have business rules from the users for what to do
+       if more than one PersonRole with values other than 'Update
+       person' are present, so we just pass them all through, making
+       the resulting output invalid (since the DTD only allows one
+       occurrence here).
+ ===================================================================== -->
+ <xsl:template               match = "LeadOrgPersonnel/ProtPerson"
+                              mode = "copy">
+  <xsl:if                     test = "(PersonRole != 'Update person') or
+                                      (PersonRole = 'Update person' and
+                                       count(PersonRole) &gt; 1)">
+   <ProtPerson>
+    <xsl:if                   test = "@ref">
+     <xsl:copy-of           select = "@ref"/>
+    </xsl:if>
+    <xsl:if                   test = "@status">
+     <xsl:copy-of           select = "@status"/>
+    </xsl:if>
+    <xsl:apply-templates    select = "PersonNameInformation"
+                              mode = "copy"/>
+    <xsl:for-each           select = "PersonRole">
+     <xsl:if                  test = ". != 'Update person'">
+      <xsl:apply-templates  select = "."
+                              mode = "copy"/>
+     </xsl:if>
+    </xsl:for-each>
+    <xsl:apply-templates    select = "Contact"
+                              mode = "copy"/>
+   </ProtPerson>
+  </xsl:if>  
+ </xsl:template>
 
  <!--
  ====================================================================
@@ -201,6 +257,7 @@
  ===================================================================== -->
  <xsl:template               match = "ProtocolTitle[@Audience = 'Original']"
                               mode = "copy"/>  
+
  <!--
  =========================================================================
  Identify if an element with an href attribute points to a non-publishable
