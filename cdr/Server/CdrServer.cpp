@@ -1,9 +1,13 @@
 /*
- * $Id: CdrServer.cpp,v 1.40 2004-03-31 03:29:22 ameyer Exp $
+ * $Id: CdrServer.cpp,v 1.41 2004-04-30 01:31:17 ameyer Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.40  2004/03/31 03:29:22  ameyer
+ * Revised exception handling.  Now rethrowing OS level structured
+ * exceptions as CDR exceptions.
+ *
  * Revision 1.39  2004/03/22 14:27:24  bkline
  * Adjustments to use of _DEBUG and _NDEBUG symbols to prevent unwanted
  * linking of the debugging versions of Microsoft's runtime libraries.
@@ -147,6 +151,7 @@
 #include "CdrDbStatement.h"
 #include "CdrString.h"
 #include "HeapDebug.h"
+#include "CdrFilter.h"
 
 // Local constants.
 const short CDR_PORT = 2019;
@@ -263,6 +268,16 @@ main(int ac, char **av)
 #else
     std::cout << "running single-threaded for debugging...\n";
 #endif
+
+    // If profiling filters, we need to create
+    //   a map of filter strings to IDs.
+    // Will be used to find the ID of any filter used in the
+    //   filter module, and then track timings by filter.
+    // This only actually happens in debugging modes.  See
+    //   CdrFilter.h / .cpp.
+    // It's easier and more efficient to initialize this
+    //   before multi-threading begins.
+    cdr::buildFilterString2IdMap();
 
     while (!timeToShutdown) {
         try {
