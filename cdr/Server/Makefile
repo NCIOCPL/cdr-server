@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.58 2002-06-12 21:27:14 bkline Exp $
+# $Id: Makefile,v 1.59 2002-07-22 14:26:06 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.58  2002/06/12 21:27:14  bkline
+# Changed wwwtest to wwwroot.
+#
 # Revision 1.57  2002/06/12 20:24:35  bkline
 # Added option for Visual Studio 7.
 #
@@ -202,6 +205,7 @@ DRV    =d:
 CDR    =$(DRV)/cdr
 XML4C  =$(DRV)/usr/xml4c
 SABLOT =$(DRV)/usr/sablot
+#SABLOT = $(DRV)/Sablot-0.95
 REGEX  =$(DRV)/usr/regex
 VCVER  =6
 REVER  =vc$(VCVER)
