@@ -1,9 +1,12 @@
 /*
- * $Id: CdrMergeProt.cpp,v 1.3 2002-08-23 20:28:52 bkline Exp $
+ * $Id: CdrMergeProt.cpp,v 1.4 2005-03-04 02:54:56 ameyer Exp $
  *
  * Merge scientific protocol information into main in-scope protocol document.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/08/23 20:28:52  bkline
+ * Changed ProtocolDetails to ProtocolDetail.
+ *
  * Revision 1.2  2002/04/09 12:51:53  bkline
  * Added ProtocolTitle to scientific element list.
  *
@@ -32,30 +35,30 @@ static cdr::StringList getTargElemSequence(
         cdr::db::Connection&);
 static cdr::StringSet getScientificElemNames();
 static void getElementNames(
-        cdr::StringList&, 
+        cdr::StringList&,
         const cdr::xsd::Node*);
 static cdr::dom::Element checkOut(
-        const cdr::String&, 
+        const cdr::String&,
         cdr::Session&,
         cdr::db::Connection&);
 static void checkIn(
-        const cdr::String&, 
-        const cdr::String&, 
-        const cdr::String&, 
+        const cdr::String&,
+        const cdr::String&,
+        const cdr::String&,
         const cdr::String&,
         cdr::Session&,
         cdr::db::Connection&);
 static void deleteDoc(
-        const cdr::String&, 
+        const cdr::String&,
         const cdr::String&,
         cdr::Session&,
         cdr::db::Connection&);
 static void checkForErrorResponse(
-        const cdr::String&, 
+        const cdr::String&,
         const cdr::String&);
 static bool goesBefore(
-        const cdr::String&, 
-        const cdr::String&, 
+        const cdr::String&,
+        const cdr::String&,
         const cdr::StringList&);
 
 /**
@@ -119,7 +122,8 @@ cdr::String cdr::mergeProt(Session& session,
     String topElementName = targetDoc.getNodeName();
     std::wostringstream os;
     os << L"<" << topElementName;
-    cdr::dom::NamedNodeMap attributes = targetDoc.getAttributes();
+    cdr::dom::NamedNodeMap attributes =
+                cdr::dom::Node(targetDoc).getAttributes();
     int nAttributes = attributes.getLength();
     for (int i = 0; i < nAttributes; ++i) {
         cdr::dom::Node attribute = attributes.item(i);
@@ -130,7 +134,7 @@ cdr::String cdr::mergeProt(Session& session,
             attrValue.replace(quot, 1, L"&quot;");
             quot = attrValue.find(L"\"", quot);
         }
-        os << L" " 
+        os << L" "
            << attrName
            << L" = \""
            << attrValue
@@ -213,7 +217,7 @@ cdr::String cdr::mergeProt(Session& session,
     // ... and the target gets saved with the new elements.
     os << L"</" << topElementName << L">";
     String docString = os.str();
-    checkIn(targetDocIdStr, sourceDocIdStr, docString, 
+    checkIn(targetDocIdStr, sourceDocIdStr, docString,
             L"InScopeProtocol", session, conn);
 
     // Report success.
@@ -245,7 +249,7 @@ cdr::StringList getTargElemSequence(cdr::db::Connection& conn)
         "   FROM document                            "
         "   JOIN doc_type                            "
         "     ON document.id   = doc_type.xml_schema "
-        "  WHERE doc_type.name = 'InScopeProtocol'   ";  
+        "  WHERE doc_type.name = 'InScopeProtocol'   ";
     cdr::db::Statement stmt = conn.createStatement();
     cdr::db::ResultSet rslt = stmt.executeQuery(query);
     if (!rslt.next())
@@ -253,18 +257,18 @@ cdr::StringList getTargElemSequence(cdr::db::Connection& conn)
     cdr::String schemaXml = rslt.getString(1);
     stmt.close();
 
-    // Parse it.
-    cdr::dom::Parser parser;
+    // Parse it using a parser whose DOM tree survives this function
+    cdr::dom::Parser parser(true);
     parser.parse(schemaXml);
     cdr::dom::Element docElem = parser.getDocument().getDocumentElement();
-    
+
     // Construct the schema.
     cdr::xsd::Schema schema(docElem, &conn);
 
     // Get the complex type for the top-level InScopeProtocol element.
     cdr::xsd::Element topElement = schema.getTopElement();
     const cdr::xsd::Type* topElemType = topElement.getType(schema);
-    const cdr::xsd::ComplexType* complexType = 
+    const cdr::xsd::ComplexType* complexType =
         dynamic_cast<const cdr::xsd::ComplexType*>(topElemType);
     if (!complexType)
         throw cdr::Exception(L"Unable to find InScopeProtocol complex type");
@@ -285,7 +289,7 @@ void getElementNames(cdr::StringList& elemList, const cdr::xsd::Node* node)
     // Find out what kind of node we have.
     const cdr::xsd::Element* e = dynamic_cast<const cdr::xsd::Element*>(node);
     const cdr::xsd::Group* g = dynamic_cast<const cdr::xsd::Group*>(node);
-    const cdr::xsd::ChoiceOrSequence* cs = 
+    const cdr::xsd::ChoiceOrSequence* cs =
         dynamic_cast<const cdr::xsd::ChoiceOrSequence*>(node);
 
     // Is this schema node for an element?
@@ -331,8 +335,8 @@ cdr::StringSet getScientificElemNames()
     return nameSet;
 }
 
-bool goesBefore(const cdr::String& thisElement, 
-                const cdr::String& thatElement, 
+bool goesBefore(const cdr::String& thisElement,
+                const cdr::String& thatElement,
                 const cdr::StringList& elemSequence)
 {
     cdr::StringList::const_iterator listIter = elemSequence.begin();
@@ -346,7 +350,7 @@ bool goesBefore(const cdr::String& thisElement,
     return false;
 }
 
-void deleteDoc(const cdr::String& sourceId, 
+void deleteDoc(const cdr::String& sourceId,
                const cdr::String& targetId,
                cdr::Session& session,
                cdr::db::Connection& conn)
@@ -396,6 +400,7 @@ cdr::dom::Element checkOut(
                     + docId
                     + L"</DocId><Lock>Y</Lock><Version>Current</Version>"
                       L"</CdrGetDoc>";
+
     cdr::dom::Parser parser;
     parser.parse(cmd);
     cdr::dom::Element cmdNode = parser.getDocument().getDocumentElement();
@@ -421,14 +426,17 @@ cdr::dom::Element checkOut(
     if (endPos == rsp.npos)
         throw cdr::Exception(L"Malformed response", rsp);
     cdr::String docXml = rsp.substr(pos, endPos - pos);
-    parser.parse(docXml);
-    return parser.getDocument().getDocumentElement();
+
+    // Create a new parser with persistent memory so we can return the tree
+    cdr::dom::Parser docParser(true);
+    docParser.parse(docXml);
+    return docParser.getDocument().getDocumentElement();
 }
 
 void checkIn(
-        const cdr::String& docId, 
+        const cdr::String& docId,
         const cdr::String& otherDocId,
-        const cdr::String& docString, 
+        const cdr::String& docString,
         const cdr::String& docType,
         cdr::Session& session,
         cdr::db::Connection& conn)
