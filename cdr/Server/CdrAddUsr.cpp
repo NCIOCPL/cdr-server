@@ -1,10 +1,12 @@
-
 /*
- * $Id: CdrAddUsr.cpp,v 1.3 2000-05-03 15:25:41 bkline Exp $
+ * $Id: CdrAddUsr.cpp,v 1.4 2000-05-09 21:06:56 bkline Exp $
  *
  * Adds new user to CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/05/03 15:25:41  bkline
+ * Fixed database statement creation.
+ *
  * Revision 1.2  2000/04/23 01:13:47  bkline
  * Added function-level comment.
  *
@@ -111,7 +113,7 @@ cdr::String cdr::addUsr(cdr::Session& session,
             if (!rs.next())
                 throw cdr::Exception(L"Unknown group", gName);
             int grpId = rs.getInt(1);
-            std::string insert = "INSERT INTO grp_usr(grp, usr), VALUES(?, ?)";
+            std::string insert = "INSERT INTO grp_usr(grp, usr) VALUES(?, ?)";
             cdr::db::PreparedStatement ps = conn.prepareStatement(insert);
             ps.setInt(1, grpId);
             ps.setInt(2, usrId);
