@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.cpp,v 1.13 2000-10-23 14:08:06 mruben Exp $
+ * $Id: CdrCommand.cpp,v 1.14 2000-10-24 13:13:16 mruben Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2000/10/23 14:08:06  mruben
+ * added version control commands
+ *
  * Revision 1.12  2000/10/04 18:24:20  bkline
  * Added CdrSearchLinks and CdrListDocTypes to command map.
  *
@@ -272,7 +275,6 @@ cdr::String cdr::checkVerIn(cdr::Session& session,
                             cdr::db::Connection& dbConnection) {
     return stub(L"CheckIn");
 }
-#endif
 
 cdr::String cdr::report(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
@@ -280,7 +282,6 @@ cdr::String cdr::report(cdr::Session& session,
     return stub(L"Report");
 }
 
-#if 0
 cdr::String cdr::filter(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
                         cdr::db::Connection& dbConnection) {

@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.26 2000-10-04 18:37:44 bkline Exp $
+# $Id: Makefile,v 1.27 2000-10-24 13:13:16 mruben Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.26  2000/10/04 18:37:44  bkline
+# Added -nologo flag to CFLAGS; added link and catchexp modules.
+#
 # Revision 1.25  2000/08/10 20:26:56  bkline
 # Added commands to stop/start Cdr service as part of install target rule.
 #
@@ -126,10 +129,12 @@ HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrLog.h \
         $(CDRINC)/CdrParserInput.h \
         $(CDRINC)/CdrRegEx.h \
+        $(CDRINC)/CdrReport.h \
         $(CDRINC)/CdrSearch.h \
         $(CDRINC)/CdrSession.h \
         $(CDRINC)/CdrString.h \
         $(CDRINC)/CdrValidateDoc.h \
+        $(CDRINC)/CdrVersion.h \
         $(CDRINC)/CdrXsd.h \
         $(CDRINC)/catchexp.h
 LIBOBJS=CdrString.obj \
@@ -166,6 +171,7 @@ OBJS   =CdrCommand.obj \
         CdrGetDoc.obj \
         CdrFilter.obj \
         CdrVersion.obj \
+        CdrReport.obj \
         CdrDocTypes.obj \
         CdrShutdown.obj \
         CdrDOMtoString.obj
