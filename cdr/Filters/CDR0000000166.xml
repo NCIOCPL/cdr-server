@@ -36,9 +36,25 @@
    <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
     <HTML>
     <xsl:variable name="cdrdocs" select="document('cdrx:/*/CdrCtl')"/>
-<HEAD>
-<TITLE><xsl:value-of select="document('cdrutil:/docid')"/>&#xa0;&#xa0;<xsl:value-of select="substring-before($cdrdocs/CdrDocCtl/DocTitle,';')"/></TITLE>
-    <STYLE type='text/css'>
+  <HEAD>
+    <xsl:variable                name="cdrmydoc" 
+                                 select="document('cdrx:/*/CdrCtl')"/>
+      
+     <xsl:variable      name = "docID"
+                                select = "document('cdrutil:/docid')"/>
+ 
+            <TITLE>
+         <xsl:value-of   select = "concat('CDR', 
+                                   number(
+                                   substring-after($docID, 'CDR')))"/>
+                                   &#xa0;&#xa0;
+                                   <xsl:value-of  select="
+                                   substring-before
+                                   ($cdrmydoc/CdrDocCtl/DocTitle,';')"/>  
+                                                                                                                                           
+            </TITLE>
+                    
+   <STYLE type='text/css'>
      <xsl:call-template           name = "defaultStyle"/>  
    
     </STYLE>
@@ -120,6 +136,17 @@
                           mode   = "RS"/>
  </xsl:template> 
  
+ 
+   <!-- 
+ ================================================================
+ Display a GlossaryTermRef-Health Professional
+ ================================================================ -->
+  
+  <xsl:template                match = "GlossaryTermRef | LOERef">
+  <xsl:apply-templates         select="."
+                               mode = "HPE"/>
+ </xsl:template>
+
  
 
 <!-- ====================================================================
