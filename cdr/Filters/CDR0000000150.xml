@@ -504,10 +504,7 @@
           the DTD. -->
      <!-- Phone with Public=No attribute is not to be published -->
      <!-- ===================================================== -->
-     <xsl:if                  test = "not(Person/Phone/@Public = 'No')">
-       <xsl:apply-templates select = "Person/Phone"
-                              mode = "copy"/>
-     </xsl:if>
+     <xsl:apply-templates   select = "Person/Phone"/>
      <xsl:apply-templates   select = "Person/TollFreePhone"
                               mode = "copy"/>
 
@@ -671,10 +668,7 @@
 
      <!-- Phone with Public=No attribute is not to be published -->
      <!-- ===================================================== -->
-     <xsl:if                  test = "not(Phone/@Public = 'No')">
-       <xsl:apply-templates select = "Phone"
-                              mode = "copy"/>
-     </xsl:if>
+     <xsl:apply-templates   select = "Phone"/> <!-- XXXX not tested (VE) -->
      <xsl:apply-templates   select = "TollFreePhone"
                               mode = "copy"/>
 
@@ -733,15 +727,12 @@
      </PostalAddress>
 
      <!-- Phone with Public=No attribute is not to be published -->
+     <!-- (Does it make sense to list a Generic Person with
+           Public=No?)  (VE)
      <!-- ===================================================== -->
-     <xsl:if                  test = "not(Phone/@Public = 'No')">
-       <xsl:apply-templates select = "Phone"
-                              mode = "copy"/>
-     </xsl:if>
+     <xsl:apply-templates   select = "Phone"/> <!-- XXXX not tested (VE) -->
      <xsl:apply-templates   select = "TollFreePhone"
                               mode = "copy"/>
-     <!--xsl:apply-templates   select = "Fax"
-                              mode = "copy"/-->
 
      <!-- Email with Public=No attribute is not to be published -->
      <!-- ===================================================== -->
@@ -859,6 +850,29 @@
      <xsl:value-of          select = "."/>
     </Email>
  </xsl:template>
+
+
+
+ <!--
+ ====================================================================
+ Process the Phone element 
+ ==================================================================== -->
+ <xsl:template               match = "Phone">
+     <xsl:choose>
+     <xsl:when                test = "not(@Public = 'No')">
+       <xsl:apply-templates select = "."
+                              mode = "copy"/>
+     </xsl:when>
+      <xsl:otherwise>
+       <xsl:if                test = "../OrgPhone">
+        <Phone>
+         <xsl:value-of       select = "../OrgPhone"/>
+        </Phone>
+       </xsl:if>
+      </xsl:otherwise>
+     </xsl:choose>
+ </xsl:template>
+
 
 
 
