@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.28 2002-02-12 23:09:42 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.29 2002-02-14 21:42:35 ameyer Exp $
  *
  */
 
@@ -579,6 +579,8 @@ static cdr::String CdrPutDoc (
     }
 
     // Construct a doc object containing all the data
+    // The constructor may look for additonal elements in the DocCtl
+    //   not parsed out by the above logic
     if (docNode == 0)
         throw cdr::Exception(L"CdrPutDoc: No 'CdrDoc' element in transaction");
     cdr::CdrDoc doc (dbConn, docNode);
@@ -703,6 +705,13 @@ static cdr::String CdrPutDoc (
 
     // Add support for queries.
     doc.updateQueryTerms();
+
+    // A <Comment> may have been specified to store in the document table,
+    //   and a <Reason> to store in the version table.
+    // If no Reason was specified, we'll use the Comment for versioning
+    //   also.
+    if (cmdReason == L"")
+        cmdReason = doc.getComment();
 
     // Append audit info
     // Have to do this before checkIn so checkIn can use the exact same
@@ -1486,6 +1495,9 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
         docElement = parser.getDocument().getDocumentElement();
     }
     catch (const cdr::dom::XMLException& e) {
+        // Eliminate warning on usused variable
+        void *foo = (void *) &e;
+
         // Validation will catch the fact that the document is malformed.
         return;
     }
