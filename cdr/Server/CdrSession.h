@@ -1,15 +1,17 @@
 /*
- * $Id: CdrSession.h,v 1.3 2000-04-16 21:37:25 bkline Exp $
+ * $Id: CdrSession.h,v 1.4 2000-04-21 14:02:06 bkline Exp $
  *
  * Information about the current login.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/04/16 21:37:25  bkline
+ * Changed member names, added new member variables and methods.
+ *
  * Revision 1.2  2000/04/15 12:15:37  bkline
  * Added uName and uid members.
  *
  * Revision 1.1  2000/04/14 16:01:08  bkline
  * Initial revision
- *
  */
 
 #ifndef CDR_SESSION_
@@ -27,6 +29,9 @@ namespace cdr {
         String lastStatus;
         void lookupSession(const String&, db::Connection&);
         void setLastActivity(db::Connection&) const;
+        bool canDo(db::Connection&, 
+                   const cdr::String&, 
+                   const cdr::String&) const;
     };
 }
 
