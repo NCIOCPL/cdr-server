@@ -1,10 +1,13 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.22 2004-08-20 19:58:56 bkline Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.23 2005-03-04 02:58:56 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2004/08/20 19:58:56  bkline
+ * Added new CdrSetDocStatus command.
+ *
  * Revision 1.21  2003/04/30 10:36:27  bkline
  * Implemented support for validation warning messages which do not
  * cause the document to be marked as invalid.
@@ -197,8 +200,7 @@ cdr::String cdr::validateDoc(
                     // If doc is in the database, we assume we want to
                     //  update the stored validation status, unless told
                     //  otherwise.
-                    cdr::dom::Element& elem =
-                        static_cast<cdr::dom::Element&>(child);
+                    cdr::dom::Element elem(child);
                     cdr::String validateOnlyAttr =
                         elem.getAttribute(L"ValidateOnly");
                     if (validateOnlyAttr == L"Y")
@@ -290,7 +292,8 @@ cdr::String cdr::execValidateDoc (
         // Validate links if appropriate
         if (validationTypes.empty()
         ||   validationTypes.find(L"Links") != validationTypes.npos)
-            cdr::link::CdrSetLinks (docXml, docObj.getConn(), docObj.getId(),
+            cdr::link::CdrSetLinks (cdr::dom::Node(docXml),
+                                    docObj.getConn(), docObj.getId(),
                                     docTypeString, validRule, errList);
     }
 
