@@ -10,7 +10,7 @@
 <!-- 
  ==================================================================
 
- Global Change: Insert Participating Org   XXXXXXXXXXX
+ Global Change: Insert Participating Org
 
  This filter has to add a new participating organization to an 
  InScopeProtocol.
@@ -18,30 +18,33 @@
  lead organization after a new organization joins the group led by 
  that lead org.
 
- So three mandatory values are passed in:
+ There are three mandatory values passed in and three additional optional
+ values:
+ 1. leadOrgID:    This is the value of the parent organization for which a
+                  participant will be added.
+                  If the parent does not exist the no changes to the document
+                  are performed.
+                  This ID has to match against LeadOrganizationID[@cdr:ref]. 
+ 2. newOrgSiteID: This is the value of the new participant to be added to the 
+                  existing protocol sites (if exist) or added as a new protocol 
+                  site for the lead organization.
+                  If the participant organization already exists under the 
+                  specified parent organization the filter returns with an 
+                  error.
+ 3. newPersonID:  This is the value of the person to be added as the specific
+                  contact person under the new participant.  The value is 
+                  entered as is.
 
- 1. A cdr document ID to match against the OrgSiteID/@cdr:ref (orgId).
+ The theee optional values are passed in as:
+ 4. coop:         This is the value that - if exists - specifies an optional 
+                  attribute named CoopMember for the OrgSite element.
+                  Valid entries are Main or Affiliate.
+                  E.g. <OrgSite CoopMember="Main">
+ 5. setRole:      This is the value that - if exists - overwrites the default
+                  Role of Principal Investigator for the SpecificPerson.
+ 6. setSpecificPhone:  This is the value that - if exists - specifies the 
+                  default SpecificPhone element.
 
- 2. An existing value of OrgSiteStatus to find (oldStatus).
-
- 3. A new value for OrgSiteStatus to replace the existing one when
-    a match is found (newStatus).
-
- Additionally, if multiple Lead Organizations exist, it is now possible 
- to specify the Lead Org, under which the org status should be changed.
- It is also possible to specify that the status should only be changed
- under a specified Lead Org for a particular SpecificPerson.  However, 
- this functionallity fails if a SpecificPerson is NOT the only person
- under that specified organization.
- If no leadOrgId is provided but a personId the value of the personId 
- will be ignored.
- 
- The two additional optional values are passed in as:
- 
- 4. A lead organization ID matching LeadOrganizationID/@cdr:ref 
-    (leadOrgId)
-
- 5. An ID for the person matching Person/@cdr:ref (personId).
  ================================================================== -->
 <xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                             xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -55,101 +58,190 @@
  Passed in by the caller.
  Parameter 1, 2, and 3 are mandatory.
   ================================================================ -->
- <!-- xsl:param                      name = "leadOrgID"/>
+ <xsl:param                      name = "leadOrgID"/>
  <xsl:param                      name = "newOrgSiteID"/>
  <xsl:param                      name = "newPersonID"/>
+ <xsl:param                      name = "coop"/>
  <xsl:param                      name = "setRole"/>
- <xsl:param                      name = "setSpecificPhone"/ -->
- <xsl:variable                   name = "leadOrgID"
-                               select = "'CDR0000027328'"/>
+ <xsl:param                      name = "setSpecificPhone"/>
+ <!-- xsl:variable               name = "leadOrgID"          
+                               select = "'CDR0000037698'"/>
  <xsl:variable                   name = "newOrgSiteID"
-                               select = "'CDR8888827316'"/>
+                               select = "'CDR0000034647'"/>
  <xsl:variable                   name = "newPersonID"
                                select = "'CDR7777777777'"/>
- <!-- xsl:variable                   name = "setRole"
+ <xsl:variable                   name = "coop"
+                               select = "'Main'"/>
+ <xsl:variable                   name = "setRole"
                                select = "'Kasper'"/>
  <xsl:variable                   name = "setSpecificPhone"
                                select = "'1-800-EAT-MEAT'" -->
- <xsl:variable                   name = "setRole"/>
- <xsl:variable                   name = "setSpecificPhone"/>
-
-
  <!--
  ===================================================================
- Template to change the Organization status.
+ Template to detect if the Lead org has already participants.
  =================================================================== -->
  <xsl:template                  match = "/InScopeProtocol/ProtocolAdminInfo
-                                         /ProtocolLeadOrg
-                                         /ProtocolSites">
-  <ProtocolSites>
-  <xsl:choose>
-  <xsl:when                      test = "../LeadOrganizationID
-                                         /@cdr:ref = $leadOrgID">
-    <xsl:apply-templates   select = "@*|comment()|*|
-                                     processing-instruction()|text()"/>
+                                         /ProtocolLeadOrg">
+  <ProtocolLeadOrg>
+   <xsl:for-each               select = "@*">
+    <xsl:attribute               name = "{name()}">
+     <xsl:value-of             select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+  <xsl:apply-templates/>
+  </ProtocolLeadOrg>
+ </xsl:template>
 
-    <!-- Insert the new Site Information
-         =============================== -->
-    <OrgSite>
-     <OrgSiteID  cdr:ref="{$newOrgSiteID}"/> <!-- Organization entered by Usr-->
-     <OrgSiteStatus>                         <!-- Status = Status of LeadOrg -->
-      <xsl:value-of                 select = "../LeadOrgProtocolStatuses
-                                              /CurrentOrgStatus/StatusName"/>
-     </OrgSiteStatus>
-     <OrgSiteContact>
-      <SpecificPerson>
-       <Person  cdr:ref="{$newPersonID}"/>   <!-- Person Entered by User -->
+
+
+<!--
+ ===================================================================
+ Template to add the new participant Organization if other 
+ participants already exist.
+ If this is the first participant for the lead org the 
+ LeadOrgPersonnel template is used instead.
+ =================================================================== -->
+ <xsl:template                   match = "ProtocolSites">
+   <xsl:call-template  name = "addSite"/>
+ </xsl:template>
+
+
+<!--
+ ===================================================================
+ Template to add the new participant Organization if no other 
+ participants exist.
+ The template will first output all LeadOrgPersonnel fragments and 
+ then attach the new ProtocolSites fragment by calling the addSite
+ template.
+ =================================================================== -->
+ <xsl:template                   match = "LeadOrgPersonnel">
+  <LeadOrgPersonnel>
+   <xsl:for-each               select = "@*">
+    <xsl:attribute               name = "{name()}">
+     <xsl:value-of             select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+   <xsl:apply-templates/>
+  </LeadOrgPersonnel>
+
+  <xsl:if                        test = "../LeadOrganizationID[@cdr:ref = 
+                                                                   $leadOrgID]
+                                          and
+                                          not(../ProtocolSites)">
+   <xsl:call-template            name = "addSite"/>
+  </xsl:if>
+
+ </xsl:template>
+
+
+
+<!--
+ ===================================================================
+ Template to add the new participant Organization.
+ =================================================================== -->
+ <xsl:template                   name = "addSite">
+
+  <!-- ERROR CHECK
+       If the new participating site already exists for this parent
+       terminate the process with an error message
+       This is done by going through all parent/participant 
+       combinations and checking the new combinations existence.
+       ============================================================ -->
+  <xsl:for-each                select = "/InScopeProtocol/ProtocolAdminInfo
+                                         /ProtocolLeadOrg
+                                         /ProtocolSites
+                                         /OrgSite/OrgSiteID">
+   <xsl:if                        test = "/InScopeProtocol/ProtocolAdminInfo
+                                          /ProtocolLeadOrg
+                                             [LeadOrganizationID = $leadOrgID]
+                                          and 
+                                          substring-before( 
+                                          concat(@cdr:ref, '#'), '#')  
+                                                       = $newOrgSiteID">
+    <xsl:message             terminate = "yes">
+     <xsl:text>&lt;b&gt;Error:  New participating site (</xsl:text>
+     <xsl:value-of              select = "$newOrgSiteID"/>
+     <xsl:text>) already exists for this parent (</xsl:text>
+     <xsl:value-of              select = "$leadOrgID"/>
+     <xsl:text>)!&lt;/b&gt;</xsl:text>
+    </xsl:message>
+   </xsl:if>
+  </xsl:for-each>
+  <!-- ERROR CHECK END ============================================== -->
+
+
+  <!-- Add the new participating site to the end of the list of 
+       already existing sites
+       ============================================================== -->
+  <ProtocolSites>
+
+  <!-- If multiple LeadOrgs exist only add the new site to the parent 
+       specified.                                              
+       The other LeadOrgs are displayed as is.                        
+       ============================================================== -->
+   <xsl:choose>
+    <xsl:when                     test = "../LeadOrganizationID
+                                          /@cdr:ref = $leadOrgID">
+
+    <!-- If we are coming in to the addSite template through the ProtocolSites
+         template instead of the LeadOrgPersonnel template we know that the
+         LeadOrg has already at least one ProtocolSite.  
+         The if block ensures that these old sites will be displayed first. 
+         =================================================================== -->
+     <xsl:if                      test = "not(name() = 'LeadOrgPersonnel')">
+      <xsl:apply-templates/>
+     </xsl:if>
+
+    <!-- ============================================================
+         Insert the new Site Information
+         ============================================================ -->
+     <OrgSite>
+      <xsl:if                     test = "($coop = 'Main') or 
+                                         ($coop = 'Affiliate')">
+       <xsl:attribute             name = "CoopMember">
+        <xsl:value-of           select = "$coop"/>
+       </xsl:attribute>
+      </xsl:if>
+      <OrgSiteID  cdr:ref="{$newOrgSiteID}"/> 
+                                            <!-- Organization entered by Usr-->
+      <OrgSiteStatus>                       <!-- Status = Status of LeadOrg -->
+       <xsl:value-of            select = "../LeadOrgProtocolStatuses
+                                          /CurrentOrgStatus/StatusName"/>
+      </OrgSiteStatus>
+      <OrgSiteContact>
+       <SpecificPerson>
+        <Person                cdr:ref = "{$newPersonID}"/> 
+                                            <!-- Person Entered by User    -->
 
        <!-- Role User entry is optional.  Default = Principle Investigator -->
        <!-- What to do if invalid Role has been entered????                -->
-       <xsl:choose>
-       <xsl:when                      test = "$setRole">
-        <Role>
-         <xsl:value-of              select = "$setRole"/>
-        </Role>
-       </xsl:when>
-       <xsl:otherwise>
-        <Role>Principal Investigator</Role>
-       </xsl:otherwise>
-      </xsl:choose>
+        <xsl:choose>
+         <xsl:when                test = "$setRole">
+          <Role>
+           <xsl:value-of        select = "$setRole"/>
+          </Role>
+         </xsl:when>
+         <xsl:otherwise>
+          <Role>Principal Investigator</Role>
+         </xsl:otherwise>
+        </xsl:choose>
 
-      </SpecificPerson>
-      <xsl:if                         test = "$setSpecificPhone">
-       <SpecificPhone>
-        <xsl:value-of               select = "$setSpecificPhone"/>
-       </SpecificPhone>
-      </xsl:if>
-     </OrgSiteContact>
-    </OrgSite>
-  </xsl:when>
-  <xsl:otherwise>
-    <xsl:apply-templates   select = "@*|comment()|*|
-                                     processing-instruction()|text()"/>
-  </xsl:otherwise>
-  </xsl:choose>
-  </ProtocolSites>
-
-
-
-  <!-- Pick the Org ID of the new site (if it exists) without the 
-       Fragment identifier
-       ========================================================== -->
-  <!-- xsl:variable                  name = "newOrgLink"
-                               select = "ProtocolSites/OrgSite
-                                         /OrgSiteID/@cdr:ref"/>
-  <xsl:variable                  name = "thisOrgId">
-   <xsl:choose>
-    <xsl:when                    test = "contains($newOrgLink, '#')">
-     <xsl:value-of             select = "substring-before($newOrgLink, '#')"/>
+       </SpecificPerson>
+       <xsl:if                    test = "$setSpecificPhone">
+        <SpecificPhone>
+         <xsl:value-of          select = "$setSpecificPhone"/>
+        </SpecificPhone>
+       </xsl:if>
+      </OrgSiteContact>
+     </OrgSite>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:value-of             select = "$newOrgLink"/>
+     <xsl:apply-templates/>
     </xsl:otherwise>
    </xsl:choose>
-  </xsl:variable -->
-
-
+  </ProtocolSites>
  </xsl:template>
+
 
  <!--
  ================================================================
