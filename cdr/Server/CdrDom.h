@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.h,v 1.4 2000-04-22 18:57:38 bkline Exp $
+ * $Id: CdrDom.h,v 1.5 2000-04-26 01:35:58 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/04/22 18:57:38  bkline
+ * Added ccdoc comment markers for namespaces and @pkg directives.
+ *
  * Revision 1.3  2000/04/22 15:38:53  bkline
  * Added more documentation comments.
  *
@@ -49,6 +52,7 @@ namespace cdr {
         class Parser : public ::DOMParser {
         public:
             void parse(const std::string& xml) throw(cdr::dom::DOMException);
+            void parse(const cdr::String& xml) throw(cdr::dom::DOMException);
         private:
             static bool initialized;
             static bool doInit() throw(cdr::dom::DOMException) { 
