@@ -12,7 +12,13 @@
                             xmlns:cdr = 'cips.nci.nih.gov/cdr'>
  
  <xsl:output                   method = 'xml'/>
- 
+
+ <!--
+ ====================================================================
+ Global parameters.
+ ==================================================================== -->
+ <xsl:param                   name = "source"/>
+
  <!--
  =======================================================================
  Copy most things straight through.
@@ -33,8 +39,8 @@
   <xsl:copy>
    <xsl:apply-templates       select = "@*|CurrentProtocolStatus|
                                         ProtocolLeadOrg|
-                                        ExternalSites[not(@Source='RSS')]"/>    
-    <xsl:value-of             select = "'@@RSSSITES@@'"/>
+                                        ExternalSites[not(@Source=$source)]"/>    
+    <xsl:value-of             select = "'@@EXTERNALSITES@@'"/>
    <xsl:apply-templates       select = "DatedAction"/>
   </xsl:copy>
  </xsl:template>
@@ -45,7 +51,7 @@
  ====================================================================== -->
  <xsl:template                 match = "ProtocolSites">
   <xsl:if                       test = "not(../UpdateMode[@MailerType=
-                                        'Protocol_SandP']='RSS')">
+                                        'Protocol_SandP']=$source)">
    <xsl:copy>
     <xsl:apply-templates       select = '@*|node()|comment()|
                                          processing-instruction()'/>
