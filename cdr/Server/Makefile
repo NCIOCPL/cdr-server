@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.80 2005-03-04 03:00:43 ameyer Exp $
+# $Id: Makefile,v 1.81 2005-03-23 01:17:58 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.80  2005/03/04 03:00:43  ameyer
+# Modified to use Xerces libraries instead of xml4c.
+#
 # Revision 1.79  2004/11/05 06:05:16  ameyer
 # Added CdrBlobExtern.h.
 #
@@ -275,8 +278,12 @@
 DRV    =d:
 CDR    =$(DRV)/cdr
 XERCES =$(DRV)/usr/xerces-c-src_2_6_0
-XERLIB =$(DRV)/usr/xerces-c-src_2_6_0/Build/Win32/VC7/Debug/xerces-c_2D
-XERINC =$(DRV)/usr/xerces-c-src_2_6_0/src
+XERINC =$(XERCES)/src
+!IF "$(DBG)" == ""
+XERLIB =$(XERCES)/Build/Win32/VC7/Release/xerces-c_2
+!ELSE
+XERLIB =$(XERCES)/Build/Win32/VC7/Debug/xerces-c_2D
+!ENDIF
 SABLOT =$(DRV)/usr/sablot
 REGEX  =$(DRV)/usr/regex
 VCVER  =7
