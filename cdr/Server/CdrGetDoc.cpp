@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.4 2000-05-23 18:22:50 mruben Exp $
+ * $Id: CdrGetDoc.cpp,v 1.5 2000-09-25 14:01:45 mruben Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/05/23 18:22:50  mruben
+ * implemented primitive form of CdrGetDoc
+ *
  * Revision 1.3  2000/05/19 00:07:22  bkline
  * Added required attributes to <CdrDoc> element.  Fixed control section.
  *
@@ -103,6 +106,55 @@ cdr::String cdr::getDocString(
 
     // Return the string to the caller.
     cdrDoc += L"</CdrDoc>";
+    return cdrDoc;
+}
+
+/**
+ * Builds the XML string for a <CdrDocCtl> element for a document
+ * extracted from the database.  I assume there will be another
+ * overloaded implementation which takes a parameter specifying the
+ * version number.  This implementation goes directly against the
+ * document table.
+ */
+cdr::String cdr::getDocCtlString(
+        const cdr::String&    docIdString,
+        cdr::db::Connection&  conn,
+        int elements)
+{
+    // For now we ignore the select and get everything
+    // Go get the document information.
+    int docId = docIdString.extractDocId();
+    std::string query = "          SELECT d.val_status,"
+                        "                 d.val_date,"
+                        "                 d.title,"
+                        "                 d.comment"
+                        "            FROM document d"
+                        "           WHERE d.id = ?";
+    cdr::db::PreparedStatement select = conn.prepareStatement(query);
+    select.setInt(1, docId);
+    cdr::db::ResultSet rs = select.executeQuery();
+    if (!rs.next())
+        throw cdr::Exception(L"Unable to load document", docIdString);
+    cdr::String     valStatus = rs.getString(1);
+    cdr::String     valDate   = rs.getString(2);
+    cdr::String     title     = fixString(rs.getString(3));
+    cdr::String     comment   = fixString(rs.getString(4));
+    select.close();
+
+    // Build the CdrDoc string.
+    cdr::String cdrDoc = cdr::String(L"<CdrDocCtl><DocValStatus>")
+                       + valStatus
+                       + L"</DocValStatus>";
+    if (!valDate.isNull() && valDate.length() > 0) {
+        if (valDate.length() > 10)
+            valDate[10] = L'T';
+        cdrDoc += cdr::String(L"<DocValDate>") + valDate + L"</DocValDate>";
+    }
+    cdrDoc += cdr::String(L"<DocTitle>") + title + L"</DocTitle>";
+    if (!comment.isNull() && comment.length() > 0)
+        cdrDoc += cdr::String(L"<DocComment>") + comment + L"</DocComment>";
+    cdrDoc += L"</CdrDocCtl>";
+
     return cdrDoc;
 }
 
