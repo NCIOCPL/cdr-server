@@ -9,9 +9,12 @@
 
 <!--
 
-     $Id: CDR0000349693.xml,v 1.5 2004-01-22 13:56:17 bkline Exp $
+     $Id: CDR0000349693.xml,v 1.6 2004-04-19 14:05:47 bkline Exp $
 
      $Log: not supported by cvs2svn $
+     Revision 1.5  2004/01/22 13:56:17  bkline
+     Added template for Gene elements.
+
      Revision 1.4  2003/12/23 21:52:53  bkline
      Modified handling of missing surnames.
 
@@ -90,20 +93,33 @@
  </xsl:template>
 
  <xsl:template                match = 'LeadSponsor | Collaborator'>
-  <xsl:if                      test = 'normalize-space(Organization/
+  <xsl:choose>
+   <xsl:when                   test = 'normalize-space(Organization/
                                        OrganizationNameInformation/
                                        OfficialName/Name) != ""'>
-   <xsl:element                 name = '{name()}'>
-    <xsl:if                     test = 'Organization/@cdr:ref != ""'>
-     <xsl:attribute             name = 'ref'>
-      <xsl:value-of           select = 'Organization/@cdr:ref'/>
+    <xsl:element               name = '{name()}'>
+     <xsl:if                   test = 'Organization/@cdr:ref != ""'>
+      <xsl:attribute           name = 'ref'>
+       <xsl:value-of         select = 'Organization/@cdr:ref'/>
+      </xsl:attribute>
+     </xsl:if>
+     <xsl:value-of           select = 'Organization/
+                                       OrganizationNameInformation/
+                                       OfficialName/Name'/>
+    </xsl:element>
+   </xsl:when>
+   <xsl:when                   test = 'Person/@cdr:ref != ""'>
+    <xsl:element               name = '{name()}'>
+     <xsl:attribute            name = 'ref'>
+      <xsl:value-of          select = 'Person/@cdr:ref'/>
      </xsl:attribute>
-    </xsl:if>
-    <xsl:value-of             select = 'Organization/
-                                        OrganizationNameInformation/
-                                        OfficialName/Name'/>
-   </xsl:element>
-  </xsl:if>
+     <xsl:call-template        name = 'concatPersonalName'>
+      <xsl:with-param          name = 'nameInfo'
+                             select = 'Person/PersonNameInformation'/>
+     </xsl:call-template>
+    </xsl:element>
+   </xsl:when>
+  </xsl:choose>
  </xsl:template>
 
  <xsl:template                match = 'CTEligibility'>
@@ -331,6 +347,31 @@
     <xsl:apply-templates     select = 'Term'/>
    </SpecificGene>
   </Gene>
+ </xsl:template>
+
+ <!--
+ =====================================================================
+ Combine personal name elements into a single text node.  Should be
+ hoisted out to a common module.
+ ===================================================================== -->
+ <xsl:template                 name = 'concatPersonalName'>
+  <xsl:param                   name = 'nameInfo'/>
+  <xsl:variable                name = 'frontPart'
+                             select = 'concat(
+                                       normalize-space($nameInfo/GivenName),
+                                       " ",
+                                       normalize-space($nameInfo/
+                                                       MiddleInitial))'/>
+  <xsl:value-of              select = 'concat($frontPart, " ",
+                                       normalize-space($nameInfo/SurName))'/>
+  <xsl:for-each              select = '$nameInfo/GenerationSuffix'>
+   <xsl:value-of             select = 'concat(", ", .)'/>
+  </xsl:for-each>
+  <xsl:for-each              select = '$nameInfo/ProfessionalSuffix/*'>
+   <xsl:if                     test = 'normalize-space() != ""'>
+    <xsl:value-of            select = 'concat(", ", normalize-space())'/>
+   </xsl:if>
+  </xsl:for-each>
  </xsl:template>
 
  <xsl:template                 name = 'extractPersonalName'>
