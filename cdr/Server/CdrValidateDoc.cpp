@@ -1,15 +1,27 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.1 2000-04-25 03:42:18 bkline Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.2 2000-04-26 01:25:01 bkline Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/25 03:42:18  bkline
+ * Initial revision
  */
 
+// Eliminate annoying warnings about truncated debugging information.
+#pragma warning(disable : 4786)
+
+// System headers.
+#include <exception>
+// XXX DEBUGGING ONLY.
+#include <iostream>
+
 // Project headers.
+#include "CdrString.h"
 #include "CdrCommand.h"
 #include "CdrDbResultSet.h"
+#include "CdrXsd.h"
 
 // Local functions.
 static void extractDoc (
@@ -27,27 +39,27 @@ static void retrieveDoc(
         cdr::db::Connection&    dbConnection);
 static cdr::String makeResponse(
         cdr::String&            docIdString,
-        cdr::String&            status,
+        const wchar_t*          status,
         cdr::StringList&        errors);
 static void setDocStatus(
         cdr::db::Connection&    dbConnection,
         int                     docId,
-        cdr::String&            status);
+        const wchar_t*          status);
 static void validateElement(
         cdr::dom::Element&      docElement,
-        cdr::xsd::Element&      schemaElement,
+        const cdr::xsd::Type&   type,
         cdr::xsd::Schema&       schema,
         cdr::StringList&        errors);
 static void validateSimpleType(
         cdr::dom::Element&      docElement,
-        cdr::xsd::SimpleType&   simpleType,
+        const cdr::xsd::SimpleType&   simpleType,
         cdr::StringList&        errors);
 static void verifyNoText(
         cdr::dom::Element&      docElement,
         cdr::StringList&        errors);
 static void verifyElementList(
         cdr::dom::Element&      docElement,
-        cdr::xsd::Element&      schemaElement,
+        const cdr::xsd::ComplexType&  parentType,
         cdr::xsd::Schema&       schema,
         cdr::StringList&        errors);
 static void verifyNoElements(
@@ -55,7 +67,7 @@ static void verifyNoElements(
         cdr::StringList&        errors);
 static void verifyElements(
         cdr::dom::Element&      docElement,
-        cdr::xsd::Element&      schemaElement,
+        const cdr::xsd::ComplexType&      type,
         cdr::xsd::Schema&       schema,
         cdr::StringList&        errors);
 
@@ -107,6 +119,7 @@ cdr::String cdr::validateDoc(cdr::Session& session,
                         docIdString = cdr::dom::getTextContent(child);
                         if (docIdString.size() == 0) {
                             errors.push_back(L"Empty document ID");
+                            session.lastStatus = L"failure";
                             return makeResponse(docIdString, L"U", errors);
                         }
                         memoryOnly = false;
@@ -115,9 +128,10 @@ cdr::String cdr::validateDoc(cdr::Session& session,
                     }
                     else
                         throw cdr::Exception(L"Unexpected element", name);
-                    if (!session.canDo(dbConnection, L"VALIDATE DOC",
+                    if (!session.canDo(dbConnection, L"VALIDATE DOCUMENT",
                                        docTypeString)) {
                         errors.push_back(L"User not authorized for action");
+                        session.lastStatus = L"failure";
                         return makeResponse(docIdString, L"U", errors);
                     }
                     break;
@@ -130,26 +144,28 @@ cdr::String cdr::validateDoc(cdr::Session& session,
                 errors.push_back(cdr::String(
                             L"Schema missing for document type: ") 
                             + docTypeString);
+                session.lastStatus = L"failure";
                 return makeResponse(docIdString, L"U", errors);
             }
             cdr::dom::Parser parser;
             parser.parse(schemaString);
-            cdr::dom::Document document = parser.getDocument();
-            cdr::dom::Element docElement = document.getDocumentElement();
-            cdr::xsd::Schema schema(docElement);
+            cdr::xsd::Schema schema(parser.getDocument().getDocumentElement());
 
             // Use the schema to validate the document
             cdr::xsd::Element schemaElement = schema.getTopElement();
             if (schemaElement.getName() != docElement.getNodeName()) {
-                cdr::String err = L"Wrong element at top of document: ";
-                err += docElement.getNodeName() 
+                cdr::String err;
+                err = cdr::String(L"Wrong element at top of document: ")
                     + L" (expected) "
-                    +  schemaElement
+                    + schemaElement.getName()
                     + L")";
                 errors.push_back(err);
             }
-            else 
-                validateElement(docElement, schemaElement, schema, errors);
+            else {
+                const cdr::xsd::Type& elementType =
+                    *schemaElement.getType(schema);
+                validateElement(docElement, elementType, schema, errors);
+            }
 
             // Validate the links if appropriate XXX NOT YET IMPLEMENTED
 #if 0
@@ -160,12 +176,17 @@ cdr::String cdr::validateDoc(cdr::Session& session,
 #endif
 
             // Report the outcome.
-            cdr::String status = errors.size() > 0 ? L"I" : L"U";
+            const wchar_t* status = errors.size() > 0 ? L"I" : L"V";
+            if (errors.size() > 0)
+                session.lastStatus = L"warning";
             return makeResponse(docIdString, status, errors);
         }
 
         // First handler for all exceptions.
         catch (...) {
+
+            // No matter which problem we hit here, set status to failure.
+            session.lastStatus = L"failure";
 
             /*
              * If we can't determine the doc type, we can't tell whether
@@ -173,18 +194,21 @@ cdr::String cdr::validateDoc(cdr::Session& session,
              */
             if (docTypeString.size() == 0) {
                 errors.push_back(L"Unable to determine document type");
-                return makeResponse(docIdString, L"U", errors);
+                //return makeResponse(docIdString, L"U", errors);
+                throw;
             }
 
             // Don't do anything further if user not authorized for command.
-            if (!session.canDo(dbConnection, L"VALIDATE DOC", docTypeString)) {
+            if (!session.canDo(dbConnection, L"VALIDATE DOCUMENT", 
+                               docTypeString)) {
                 errors.push_back(L"User not authorized for requested action");
-                return makeResponse(docIdString, L"U", errors);
+                //return makeResponse(docIdString, L"U", errors);
+                throw;
             }
 
             // Record the failure to determine validity if appropriate.
             if (!memoryOnly && docIdString.size() > 0)
-                setDocStatus(docIdString.extractDocId(), L"U");
+                setDocStatus(dbConnection, docIdString.extractDocId(), L"U");
 
             // Now we can use specific exception handlers.
             throw;
@@ -196,6 +220,12 @@ cdr::String cdr::validateDoc(cdr::Session& session,
     }
     catch (const cdr::dom::DOMException& ex) {
         errors.push_back(cdr::String(ex.getMessage()));
+        return makeResponse(docIdString, L"U", errors);
+    }
+    catch (std::exception& stdEx) {
+        cdr::String err = cdr::String(L"Standard exception caught: ")
+                        + cdr::String(stdEx.what());
+        errors.push_back(err);
         return makeResponse(docIdString, L"U", errors);
     }
     catch (...) {
@@ -213,10 +243,10 @@ void extractDoc (
         cdr::String&            schemaString, 
         cdr::String&            docIdString,
         cdr::String&            docTypeString,
-        cdr::db::Connection&    dbConnection);
+        cdr::db::Connection&    dbConnection)
 {
     // Extract attributes from the <CdrDoc> element.
-    cdr::dom::Element cdrDoc    = static_cast<cdr::dom::Element>(wrapperNode);
+    cdr::dom::Element& cdrDoc   = static_cast<cdr::dom::Element&>(wrapperNode);
     docIdString                 = cdrDoc.getAttribute(L"Id");
     docTypeString               = cdrDoc.getAttribute(L"Type");
 
@@ -271,11 +301,11 @@ void retrieveDoc(
         cdr::String&            schemaString, 
         cdr::String&            docIdString,
         cdr::String&            docTypeString,
-        cdr::db::Connection&    dbConnection);
+        cdr::db::Connection&    dbConnection)
 {
     // Submit a query to retrieve the document and schema from the database.
     cdr::db::Statement select(dbConnection);
-    int id = docId.extractDocId();
+    int id = docIdString.extractDocId();
     select.setInt(1, id);
     cdr::db::ResultSet rs = select.executeQuery("SELECT d.xml,"
                                                 "       t.xml_schema,"
@@ -288,10 +318,10 @@ void retrieveDoc(
         throw cdr::Exception(L"Document not found", docIdString);
     cdr::String docXml  = rs.getString(1);
     schemaString        = rs.getString(2);
-    docTypeName         = rs.getString(3);
-    if (doc.size() == 0)
+    docTypeString       = rs.getString(3);
+    if (docXml.size() == 0)
         throw cdr::Exception(L"XML for document is empty");
-    if (doctypeName.size() == 0)
+    if (docTypeString.size() == 0)
         throw cdr::Exception(L"Unable to retrieve document type name");
 
     // Parse the XML for the document.
@@ -305,21 +335,21 @@ void retrieveDoc(
  * Sends a response buffer to the client reporting the outcome of the
  * document validation process.
  */
-cdr::String makeResponse(cdr::String& docId,
-                         cdr::String& status,
+cdr::String makeResponse(cdr::String&     docId,
+                         const wchar_t*   status,
                          cdr::StringList& errors)
 {
     cdr::String response = L"  <CdrValidateDocResp>\n"
-                           L"   <DocId>
+                           L"   <DocId>"
                          + docId
-                         + L"</DocId>\n"   <DocStatus>"
+                         + L"</DocId>\n   <DocStatus>"
                          + status
                          + L"</DocStatus>\n";
     if (errors.size() > 0) {
         response += L"   <Errors>\n";
         cdr::StringList::iterator i = errors.begin();
-        while ( != errors.end())
-            response += L"    <Error> + *i++ + </Error>\n";
+        while (i != errors.end())
+            response += L"    <Error>" + *i++ + L"</Error>\n";
         response += L"   </Errors>\n";
     }
     return response + L"  </CdrValidateDocResp>\n";
@@ -328,7 +358,7 @@ cdr::String makeResponse(cdr::String& docId,
 /**
  * Records the new status of the document in the database.
  */
-void setDocStatus(cdr::db::Connection& conn, int id, cdr::String& status)
+void setDocStatus(cdr::db::Connection& conn, int id, const wchar_t* status)
 {
     cdr::db::Statement update(conn);
     update.setString(1, status);
@@ -339,49 +369,53 @@ void setDocStatus(cdr::db::Connection& conn, int id, cdr::String& status)
                         " WHERE id = ?");
 }
 
+void verifyAttributes(cdr::dom::Element& e, const cdr::xsd::ComplexType& t,
+        cdr::StringList& errors) 
+{
+    std::wcerr << L"Stub for verifyAttributes...\n";
+}
+
 /**
  * Recursively validates specified element against its schema specification.
  */
 void validateElement(
         cdr::dom::Element&      docElement,
-        cdr::xsd::Element&      schemaElement,
+        const cdr::xsd::Type&   type,
         cdr::xsd::Schema&       schema,
         cdr::StringList&        errors)
 {
-    cdr::xsd::Type* type = schemaElement.getType(schema);
-    cdr::xsd::SimpleType* simpleType;
-    cdr::xsd::ComplexType* complexType;
-    simpleType  = dynamic_cast<cdr::xsd::SimpleType*>(type);
-    complexType = dynamic_cast<cdr::xsd::ComplexType*>(type);
+    const cdr::xsd::SimpleType* simpleType;
+    const cdr::xsd::ComplexType* complexType;
+    simpleType  = dynamic_cast<const cdr::xsd::SimpleType*>(&type);
+    complexType = dynamic_cast<const cdr::xsd::ComplexType*>(&type);
     if (simpleType)
-        validateSimpleType(docElement, simpleType, errors);
+        validateSimpleType(docElement, *simpleType, errors);
     else {
         switch (complexType->getContentType()) {
-        case cdr::xsd::EMPTY:
+        case cdr::xsd::ComplexType::EMPTY:
             verifyNoText(docElement, errors);
             verifyNoElements(docElement, errors);
             break;
-        case cdr::xsd::ELEMENT_ONLY:
+        case cdr::xsd::ComplexType::ELEMENT_ONLY:
             verifyNoText(docElement, errors);
-            verifyElementList(docElement, schemaElement, complexType, schema, 
-                              errors);
+            verifyElementList(docElement, *complexType, schema, errors);
             break;
-        case cdr::xsd::TEXT_ONLY:
+        case cdr::xsd::ComplexType::TEXT_ONLY:
             verifyNoElements(docElement, errors);
             break;
-        case cdr::xsd::MIXED:
-            verifyElements(docElement, schemaElement, schema, errors);
+        case cdr::xsd::ComplexType::MIXED:
+            verifyElements(docElement, *complexType, schema, errors);
             break;
         }
 
-        verifyAttributes(docElement, schemaElement, errors);
+        verifyAttributes(docElement, *complexType, errors);
     }
 }
 
 void validateDate(
         cdr::String& name, 
         cdr::String& val, 
-        cdr::xsd::SimpleType& t,
+        const cdr::xsd::SimpleType& t,
         cdr::StringList& errors) 
 { 
     std::wcout << L"validateDate stub: " << name << L"=" << val << L"\n";
@@ -389,7 +423,7 @@ void validateDate(
 void validateTime(
         cdr::String& name, 
         cdr::String& val, 
-        cdr::xsd::SimpleType& t,
+        const cdr::xsd::SimpleType& t,
         cdr::StringList& errors) 
 { 
     std::wcout << L"validateTime stub: " << name << L"=" << val << L"\n";
@@ -397,7 +431,7 @@ void validateTime(
 void validateDecimal(
         cdr::String& name, 
         cdr::String& val, 
-        cdr::xsd::SimpleType& t,
+        const cdr::xsd::SimpleType& t,
         cdr::StringList& errors) 
 { 
     std::wcout << L"validateDecimal stub: " << name << L"=" << val << L"\n";
@@ -405,7 +439,7 @@ void validateDecimal(
 void validateInteger(
         cdr::String& name, 
         cdr::String& val, 
-        cdr::xsd::SimpleType& t,
+        const cdr::xsd::SimpleType& t,
         cdr::StringList& errors) 
 { 
     std::wcout << L"validateInteger stub: " << name << L"=" << val << L"\n";
@@ -413,7 +447,7 @@ void validateInteger(
 void validateUri(
         cdr::String& name, 
         cdr::String& val, 
-        cdr::xsd::SimpleType& t,
+        const cdr::xsd::SimpleType& t,
         cdr::StringList& errors) 
 { 
     std::wcout << L"validateUri stub: " << name << L"=" << val << L"\n";
@@ -421,7 +455,7 @@ void validateUri(
 void validateBinary(
         cdr::String& name, 
         cdr::String& val, 
-        cdr::xsd::SimpleType& t,
+        const cdr::xsd::SimpleType& t,
         cdr::StringList& errors) 
 { 
     std::wcout << L"validateBinary stub: " << name << L"=" << val << L"\n";
@@ -429,7 +463,7 @@ void validateBinary(
 void validateTimeInstant(
         cdr::String& name, 
         cdr::String& val, 
-        cdr::xsd::SimpleType& t,
+        const cdr::xsd::SimpleType& t,
         cdr::StringList& errors) 
 { 
     std::wcout << L"validateTimeInstant stub: " << name << L"=" << val << L"\n";
@@ -437,40 +471,39 @@ void validateTimeInstant(
 
 void validateSimpleType(
         cdr::dom::Element&      docElement,
-        cdr::xsd::SimpleType&   simpleType,
+        const cdr::xsd::SimpleType&   simpleType,
         cdr::StringList&        errors)
 {
     cdr::String name = docElement.getNodeName();
     cdr::String value = cdr::dom::getTextContent(docElement);
     switch (simpleType.getBuiltinType()) {
-    case cdr::xsd::simpleType::STRING:
+    case cdr::xsd::SimpleType::STRING:
         std::wcout << L"validateSimpleType: STRING\n";
         break;
-    case cdr::xsd::simpleType::DATE:
-        validateDate(name, value, simpleType);
+    case cdr::xsd::SimpleType::DATE:
+        validateDate(name, value, simpleType, errors);
         break;
-    case cdr::xsd::simpleType::TIME:
-        validateTime(name, value, simpleType);
+    case cdr::xsd::SimpleType::TIME:
+        validateTime(name, value, simpleType, errors);
         break;
-    case cdr::xsd::simpleType::DECIMAL:
-        validateDecimal(name, value, simpleType);
+    case cdr::xsd::SimpleType::DECIMAL:
+        validateDecimal(name, value, simpleType, errors);
         break;
-    case cdr::xsd::simpleType::INTEGER:
-        validateInteger(name, value, simpleType);
+    case cdr::xsd::SimpleType::INTEGER:
+        validateInteger(name, value, simpleType, errors);
         break;
-    case cdr::xsd::simpleType::URI:
-        validateUri(name, value, simpleType);
+    case cdr::xsd::SimpleType::URI:
+        validateUri(name, value, simpleType, errors);
         break;
-    case cdr::xsd::simpleType::BINARY:
-        validateBinary(name, value, simpleType);
+    case cdr::xsd::SimpleType::BINARY:
+        validateBinary(name, value, simpleType, errors);
         break;
-    case cdr::xsd::simpleType::TIME_INSTANT:
-        validateTimeInstant(name, value, simpleType);
+    case cdr::xsd::SimpleType::TIME_INSTANT:
+        validateTimeInstant(name, value, simpleType, errors);
         break;
     default:
         throw cdr::Exception(L"Unrecognized base type for element", name);
     }
-    errors.push_back(L"Stub for verifyElements");
 }
 
 /**
@@ -484,7 +517,7 @@ void verifyNoText(
     cdr::String value = cdr::dom::getTextContent(docElement);
     if (value.find_first_not_of(L" \t\r\n") != value.npos)
         errors.push_back(cdr::String(L"No text content allowed for element")
-                + docElement.getNodeName());
+                + cdr::String(docElement.getNodeName()));
 }
 
 /**
@@ -493,14 +526,101 @@ void verifyNoText(
  * occurrences of each meets the minOccurs and maxOccurs requirements.
  */
 void verifyElementList(
-        cdr::dom::Element&      docElement,
-        cdr::xsd::Element&      schemaElement,
-        cdr::xsd::Type&         parentType,
-        cdr::xsd::Schema&       schema,
-        cdr::StringList&        errors)
+        cdr::dom::Element&              docElement,
+        const cdr::xsd::ComplexType&    parentType,
+        cdr::xsd::Schema&               schema,
+        cdr::StringList&                errors)
 {
-    
-    errors.push_back(L"Stub for verifyElements");
+    cdr::xsd::ElemEnum i = parentType.getElements();
+    cdr::dom::Node     n = docElement.getFirstChild();
+    cdr::String        parentName = docElement.getNodeName();
+    cdr::String        occName;
+
+    // Check each expected element for the type.
+    while (i != parentType.getElemEnd()) {
+        cdr::xsd::Element* e = *i++;
+        int nOccs = 0;
+
+        // Skip nodes which aren't elements.
+        while (n != 0) {
+            if (n.getNodeType() != cdr::dom::Node::ELEMENT_NODE)
+                n = n.getNextSibling();
+            else
+                break;
+        }
+
+        // Check for too few occurrences.
+        occName = n.getNodeName();
+        if (n == 0 || occName != e->getName()) {
+            if (nOccs < e->getMinOccs()) {
+                cdr::String err;
+                if (nOccs == 0)
+                    err = cdr::String(L"Missing required element ")
+                        + e->getName()
+                        + L" within element "
+                        + parentName;
+                else
+                    err = cdr::String(L"Too few occurrences of element ")
+                        + e->getName()
+                        + L" within element "
+                        + parentName;
+                errors.push_back(err);
+            }
+
+            // Skip to next expected element.
+            continue;
+        }
+
+        // Check for too many occurrences.
+        if (nOccs > e->getMaxOccs()) {
+            cdr::String err = cdr::String(L"Too many occurrences of element ")
+                            + e->getName()
+                            + L" within element "
+                            + parentName;
+            errors.push_back(err);
+        }
+
+        // Recursively check the element.
+        validateElement(static_cast<cdr::dom::Element&>(n), 
+                        *e->getType(schema), schema, errors);
+        n = n.getNextSibling();
+    }
+
+    // Complain about leftover elements which weren't expected.
+    while (n != 0) {
+
+        // Skip nodes which aren't elements.
+        if (n.getNodeType() != cdr::dom::Node::ELEMENT_NODE) {
+            n = n.getNextSibling();
+            continue;
+        }
+
+        occName = n.getNodeName();
+        cdr::String err = cdr::String(L"Unexpected element ")
+                        + occName
+                        + L" within element "
+                        + parentName;
+        errors.push_back(err);
+
+        // Find the element's type so we can validate it.
+        cdr::String typeName = schema.lookupElementType(occName);
+        if (typeName.empty()) {
+            cdr::String err = cdr::String(L"Unable to find type for element ")
+                            + occName;
+            errors.push_back(err);
+        }
+        const cdr::xsd::Type* type = schema.lookupType(typeName);
+        if (!type) {
+            cdr::String err = cdr::String(L"Unable to find type ")
+                            + typeName
+                            + L" for element "
+                            + occName;
+            errors.push_back(err);
+        }
+        validateElement(static_cast<cdr::dom::Element&>(n), 
+                        *type, schema, errors);
+        n = n.getNextSibling();
+    }
 }
 
 /**
@@ -511,7 +631,17 @@ void verifyNoElements(
         cdr::dom::Element&      docElement,
         cdr::StringList&        errors)
 {
-    errors.push_back(L"Stub for verifyElements");
+    cdr::dom::Node child = docElement.getFirstChild();
+    while (child != 0) {
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String name = child.getNodeName();
+            errors.push_back(
+                    cdr::String(L"Sub-elements not allowed for element ")
+                                + cdr::String(docElement.getNodeName()));
+            return;
+        }
+        child = child.getNextSibling();
+    }
 }
 
 /**
@@ -521,9 +651,38 @@ void verifyNoElements(
  */
 void verifyElements(
         cdr::dom::Element&      docElement,
-        cdr::xsd::Element&      schemaElement,
+        const cdr::xsd::ComplexType&   type,
         cdr::xsd::Schema&       schema,
         cdr::StringList&        errors)
 {
-    errors.push_back(L"Stub for verifyElements");
+    cdr::String parentName = docElement.getNodeName();
+    cdr::dom::Node child = docElement.getFirstChild();
+    for ( ; child != 0; child = child.getNextSibling()) {
+        if (child.getNodeType() != cdr::dom::Node::ELEMENT_NODE) 
+            continue;
+        cdr::String name     = child.getNodeName();
+        cdr::String typeName = schema.lookupElementType(name);
+        if (typeName.empty()) {
+            cdr::String err = cdr::String(L"Undefined element ")
+                            + name;
+            errors.push_back(err);
+            continue;
+        }
+        const cdr::xsd::Type* childType = schema.lookupType(typeName);
+        if (!childType) {
+            cdr::String err = cdr::String(L"Undefined type ")
+                            + name;
+            errors.push_back(err);
+            continue;
+        }
+        if (!type.hasElement(name)) {
+            cdr::String err = cdr::String(L"Element ")
+                            + name
+                            + L" not allowed as part of element "
+                            + parentName;
+            errors.push_back(err);
+        }
+        validateElement(static_cast<cdr::dom::Element&>(child), 
+                        *childType, schema, errors);
+    }
 }
