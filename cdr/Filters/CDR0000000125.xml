@@ -7,8 +7,8 @@
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
- ================================================================
-     $Id: CDR0000000125.xml,v 1.3 2004-05-21 21:20:05 venglisc Exp $
+================================================================
+     $Id: CDR0000000125.xml,v 1.4 2004-09-09 19:39:18 venglisc Exp $
 
      Filter to create the HTML output for a single board member.
      The output of this filter will be concatenated for multiple
@@ -16,7 +16,7 @@
                            Written by Volker Englisch, 2004-04-09
 
      $Log: not supported by cvs2svn $
- ================================================================ -->
+================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -24,26 +24,13 @@
 
  <xsl:output                    method = "html"/>
 
- <!-- Defining standard HTML Attribute Sets -->
- <xsl:attribute-set               name = "table">
-  <xsl:attribute                  name = "border">0</xsl:attribute>
-  <xsl:attribute                  name = "width">100%</xsl:attribute>
-  <xsl:attribute                  name = "cellspacing">0</xsl:attribute>
-  <xsl:attribute                  name = "cellpadding">0</xsl:attribute>
- </xsl:attribute-set>
-
- <xsl:attribute-set               name = "cell1of2">
-  <xsl:attribute                  name = "width">35%</xsl:attribute>
-  <xsl:attribute                  name = "valign">top</xsl:attribute>
- </xsl:attribute-set>
-
- <xsl:attribute-set               name = "cell2of2">
-  <xsl:attribute                  name = "width">65%</xsl:attribute>
-  <xsl:attribute                  name = "valign">top</xsl:attribute>
- </xsl:attribute-set>
+ <xsl:include  href = "cdr:name:Module: Attribute Sets"/>
+ <xsl:include  href = "cdr:name:Module: Person QC Common"/>
 
  <xsl:variable                    name = "docID"
                                 select = "document('cdrutil:/docid')"/>
+ <xsl:variable                    name = "whoAmI"
+                                select = "'PdqBoardMemberRoster'"/>
  <xsl:param                       name = "eic"/>
  <xsl:param                       name = "assistant"/>
  <xsl:param                       name = "otherInfo" select = "'Yes'"/>
@@ -101,6 +88,7 @@
       </td>
      </tr>
     </table>
+    <br/>
    </xsl:if>
  </xsl:template>
 
@@ -128,6 +116,7 @@
   ====================================================================
   Display Name Header, and PersonNameInformation
   ==================================================================== -->
+
   <xsl:apply-templates          select = "PersonNameInformation"/>
 
   <!--
@@ -156,61 +145,6 @@
    </xsl:otherwise>
   </xsl:choose>
   <p/>
- </xsl:template>
-
-
- <!--
- =================================================================
- Template for PersonNameInformation
- ================================================================= -->
- <xsl:template                   match = "PersonNameInformation">
-  <br/>
-  <table        xsl:use-attribute-sets = "table">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <b>
-      <xsl:if                     test = "Prefix">
-       <xsl:apply-templates     select = "Prefix"/>
-       <xsl:text> </xsl:text>
-      </xsl:if>
-      <xsl:apply-templates      select = "GivenName"/>
-      <xsl:text> </xsl:text>
-      <xsl:apply-templates      select = "MiddleInitial"/>
-      <xsl:text> </xsl:text>
- 
-      <!-- check for Professional suffix and display -->
-      <xsl:choose>
-       <xsl:when                  test = "ProfessionalSuffix">
-        <xsl:apply-templates    select = "SurName"/>
-        <xsl:text>,</xsl:text>
-        <xsl:apply-templates    select = "GenerationSuffix"/>
-        <xsl:text> </xsl:text>
-        <xsl:for-each           select = "ProfessionalSuffix">
-         <xsl:value-of          select = "."/>
-         <xsl:if                  test = "position() !=last()">
-          <xsl:text>, </xsl:text>
-         </xsl:if>
-        </xsl:for-each>
-       </xsl:when>
-       <xsl:otherwise>
-       <!-- Display surname if no Suffix is present -->
-        <xsl:apply-templates    select = "SurName"/>
-       </xsl:otherwise>
-      </xsl:choose>
-      <br/>
-     </b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell1of2">
-    </td>
-   </tr>
-   <xsl:if                        test = "$eic = 'Yes'">
-    <tr>
-     <td>
-      <b>Editor-in-Chief</b>
-     </td>
-    </tr>
-   </xsl:if>
-  </table>
  </xsl:template>
 
 
@@ -345,118 +279,8 @@
     </td>
    </tr>
   </table>
- </xsl:template>
-
-
- <!--
- ========================================================================
- Named Template to display the Address
- ======================================================================== -->
- <xsl:template                    name = "listAddress">
-  <xsl:for-each                 select = "Street">
-   <xsl:value-of                select = "."/>
-   <br/>
-  </xsl:for-each>
-  <xsl:choose>
-   <xsl:when                      test = "PostalCodePosition = 'before City'">
-    <xsl:value-of               select = "PostalCode_ZIP"/>
-    <xsl:text> </xsl:text>
-    <xsl:value-of               select = "City"/>
-    <xsl:if                       test = "CitySuffix">
-     <xsl:text> </xsl:text>
-     <xsl:value-of              select = "CitySuffix"/>
-    </xsl:if>
-   </xsl:when>
-   <xsl:when                      test = "PostalCodePosition = 'after City'">
-    <xsl:value-of               select = "City"/>
-    <xsl:if                       test = "CitySuffix">
-     <xsl:text> </xsl:text>
-     <xsl:value-of              select = "CitySuffix"/>
-    </xsl:if>
-    <xsl:text> </xsl:text>
-    <xsl:value-of               select = "PostalCode_ZIP"/>
-   </xsl:when>
-   <!-- 
-   This section is for US addresses
-   =================================================================== -->
-   <xsl:when                      test = "PostalCodePosition = 
-                                         'after PoliticalSubUnit_State'">
-    <xsl:value-of               select = "City"/>
-    <xsl:if                       test = "CitySuffix">
-     <xsl:text> </xsl:text>
-     <xsl:value-of              select = "CitySuffix"/>
-    </xsl:if>
-    <xsl:text>, </xsl:text>
-    <xsl:value-of               select = "PoliticalSubUnitShortName"/>
-    <xsl:text> </xsl:text>
-    <xsl:value-of               select = "PostalCode_ZIP"/>
-   </xsl:when>
-  </xsl:choose>
   <br/>
-  <xsl:value-of                 select = "CountryName"/>
-  <br/><br/>
  </xsl:template>
-
-
- <!--
- ========================================================================
- Named Template to display the Phone, Fax, WebSite, Role information
- ======================================================================== -->
- <xsl:template                    name = "listPhone">
-  <!--
-  Display the Phone, Fax, Email, etc. in a table format
-  ========================================================== -->
-  <table        xsl:use-attribute-sets = "table">
-   <tr> 
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <xsl:text>Phone</xsl:text>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "../Phone"/>
-    </td>
-   </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <xsl:text>Fax</xsl:text>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "../Fax"/>
-    </td>
-   </tr>
-    <tr>
-     <td        xsl:use-attribute-sets = "cell1of2">Email</td>
-     <xsl:choose>
-      <xsl:when                   test = "../Email">
-       <td      xsl:use-attribute-sets = "cell2of2">
-        <xsl:call-template        name = "listEmail">
-         <xsl:with-param          name = "email"
-                                select = "../Email"/>
-        </xsl:call-template>
-       </td>
-      </xsl:when>
-     </xsl:choose>
-    </tr>
-  </table>
-  <p/>
- </xsl:template>
-
-
- <!--
- ========================================================================
- Named Template to display the Email information
- ======================================================================== -->
- <xsl:template                    name = "listEmail">
-  <xsl:param                      name = "email"/>
-
-  <xsl:element                    name = "a">
-   <xsl:attribute                 name = "href">
-    <xsl:text>mailto:</xsl:text>
-    <xsl:value-of               select = "$email"/>
-   </xsl:attribute>
-    <xsl:value-of               select = "$email"/>
-  </xsl:element>
- </xsl:template>
-
 </xsl:transform>
 ]]>
 </CdrDocXml>
