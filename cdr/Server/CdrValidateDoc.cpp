@@ -1,10 +1,14 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.5 2000-05-03 15:20:38 bkline Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.6 2000-05-17 12:50:49 bkline Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/05/03 15:20:38  bkline
+ * Reworked to expose document validation to other modules.  Fixed use
+ * of prepared db statements.
+ *
  * Revision 1.4  2000/04/29 15:50:13  bkline
  * First version with all stubs replaced.
  *
@@ -357,13 +361,8 @@ cdr::String makeResponse(cdr::String&     docId,
                          + L"</DocId>\n   <DocStatus>"
                          + status
                          + L"</DocStatus>\n";
-    if (errors.size() > 0) {
-        response += L"   <Errors>\n";
-        cdr::StringList::iterator i = errors.begin();
-        while (i != errors.end())
-            response += L"    <Err>" + *i++ + L"</Err>\n";
-        response += L"   </Errors>\n";
-    }
+    if (errors.size() > 0)
+        response += cdr::packErrors(errors);
     return response + L"  </CdrValidateDocResp>\n";
 }
 
