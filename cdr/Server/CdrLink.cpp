@@ -23,9 +23,13 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.11 2002-01-24 15:18:07 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.12 2002-01-31 16:40:06 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2002/01/24 15:18:07  ameyer
+ * Improved error messages.
+ * Changed fragment field to store null instead of "" in database.
+ *
  * Revision 1.10  2002/01/22 18:59:49  ameyer
  * Fixed dumb bug not initializing frag and srcId.
  *
@@ -131,6 +135,7 @@ cdr::link::CdrLink::CdrLink (
     srcField      = L"";
     trgId         = 0;
     trgIdStr      = L"";
+    trgFound      = false;
     trgDocType    = 0;
     trgDocTypeStr = L"";
     trgActiveStat = L"";
@@ -182,9 +187,30 @@ cdr::link::CdrLink::CdrLink (
 
         // If this is a self-link, we know things about the target
         if (trgId == srcId) {
+            trgFound      = true;
             trgDocType    = srcDocType;
             trgDocTypeStr = srcDocTypeStr;
             trgActiveStat = L"A";
+        }
+        else {
+            // Find out if target exists, get its type & deletion status
+            // This is needed whether or not we validate the link because
+            //   we can't save a link that doesn't point to an existing
+            //   document
+            qry = "SELECT doc_type, active_status FROM all_docs WHERE id = ?";
+            cdr::db::PreparedStatement doc_sel = conn.prepareStatement (qry);
+            doc_sel.setInt (1, trgId);
+            cdr::db::ResultSet doc_rs = doc_sel.executeQuery();
+            if (doc_rs.next()) {
+                trgFound      = true;
+                trgDocType    = doc_rs.getInt (1);
+                trgActiveStat = doc_rs.getString (2);
+            }
+            else {
+                // Target not in the database
+                // Saving the link would fail referential integrity
+                saveLink = false;
+            }
         }
     }
 
@@ -202,6 +228,7 @@ cdr::link::CdrLink::CdrLink (
     else
         type = rs.getInt (1);
 
+
 } // Constructor
 
 
@@ -217,43 +244,38 @@ int cdr::link::CdrLink::validateLink (
     std::string qry;        // For database SQL string
 
 
+    // If linked document not found, no other validation possible
+    if (!trgFound)
+        this->addLinkErr (L"Target document not found in CDR");
+
     // None of these checks can be made without a link type or target id
-    if (type != 0 && trgId != 0) {
+    else if (type != 0 && trgId != 0) {
 
         // Tests are done differently for links to self and links to other
         if (trgId != srcId) {
 
-            // Find out if target exists and get its deletion status and type
-            qry = "SELECT doc_type, active_status FROM document WHERE id = ?";
-            cdr::db::PreparedStatement doc_sel = dbConn.prepareStatement (qry);
-            doc_sel.setInt (1, trgId);
-            cdr::db::ResultSet doc_rs = doc_sel.executeQuery();
-            if (!doc_rs.next()) {
-                this->addLinkErr (L"Target document not found in CDR");
-            }
-            else {
-                trgDocType    = doc_rs.getInt (1);
-                trgActiveStat = doc_rs.getString (2);
+            // The target was searched for in the CdrLink constructor
+            if (trgFound) {
+                // Is it to an active document?
                 if (trgActiveStat == L"D")
                     this->addLinkErr (L"Target link is to deleted document");
-            }
 
-            // If we found the target, can check the fragment
-            // If a fragment is specified, it must exist in the target doc
-            if (trgDocType != 0 && trgFrag.size() > 0) {
+                // Does the target contain the expect fragment id, if any?
+                if (trgFrag.size() > 0) {
 
-                qry = "SELECT fragment FROM link_fragment "
-                      "WHERE doc_id = ? AND fragment = ?";
-                cdr::db::PreparedStatement frag_sel =
-                            dbConn.prepareStatement (qry);
-                frag_sel.setInt (1, trgId);
-                frag_sel.setString (2, trgFrag);
-                cdr::db::ResultSet frag_rs = frag_sel.executeQuery();
+                    qry = "SELECT fragment FROM link_fragment "
+                          "WHERE doc_id = ? AND fragment = ?";
+                    cdr::db::PreparedStatement frag_sel =
+                                dbConn.prepareStatement (qry);
+                    frag_sel.setInt (1, trgId);
+                    frag_sel.setString (2, trgFrag);
+                    cdr::db::ResultSet frag_rs = frag_sel.executeQuery();
 
-                // Error if it doesn't
-                if (!frag_rs.next())
-                    this->addLinkErr (L"cdr:id matching fragment '" +
-                            trgFrag + L"' not found in target document");
+                    // Error if it doesn't
+                    if (!frag_rs.next())
+                        this->addLinkErr (L"cdr:id matching fragment '" +
+                                trgFrag + L"' not found in target document");
+                }
             }
         }
 
@@ -280,7 +302,7 @@ int cdr::link::CdrLink::validateLink (
         bool match_target_doc_type = false;
         while (targ_rs.next()) {
             found_target_doc_type = true;
-            if (trgDocType == targ_rs.getInt (1))
+            if (trgFound && trgDocType == targ_rs.getInt (1))
                 match_target_doc_type = true;
         }
 
