@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.45 2002-01-25 15:10:01 bkline Exp $
+# $Id: Makefile,v 1.46 2002-01-28 23:11:53 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.45  2002/01/25 15:10:01  bkline
+# Working on getting cvs update invoked the correct number of times.
+#
 # Revision 1.44  2002/01/25 01:45:22  bkline
 # Fixed rule for CdrTestClient to avoid problems with cl command-line
 # option syntax, which gets confused by Unix path separators, which GNU
@@ -169,7 +172,7 @@ LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
 CC     =cl
 BISON  =bison
 LN     =link
-CP     =copy >nul
+CP     =cp -f
 CVSUPD =cvs update
 DOC    =../../InetPub/wwwtest/cdr/
 DOCS   =$(DOC)default.htm
@@ -261,20 +264,29 @@ LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
 #--------------------------------------------------------------------------
 # Targets
 #--------------------------------------------------------------------------
-all: init CdrServer.exe CdrTestClient.exe #CdrDocs $(SERVICE)
+all: cvsupdate
+	$(MAKE) _all
 
-service: $(SERVICE)
+cvsupdate:
+	$(CVSUPD)
 
-install: CdrServer.exe CdrDocs
+service: cvsupdate
+	$(MAKE) $(SERVICE)
+
+install: cvsupdate
+	$(MAKE) _install
+
+_all: init CdrServer.exe CdrTestClient.exe #CdrDocs $(SERVICE)
+
+_install: CdrServer.exe CdrDocs
 	-net stop Cdr
-	$(CP) CdrServer.exe ../bin/CdrServer.exe
+	$(CP) CdrServer.exe $(CDRSVR)
 	net start Cdr
 
 #--------------------------------------------------------------------------
 # Initialization, saving two generations of old errors
 #--------------------------------------------------------------------------
 init:
-	$(CVSUPD)
 	-$(CP) errs.1 errs.2
 	-$(CP) errs errs.1
 	-rm -f errs
@@ -291,15 +303,12 @@ CdrServer.exe: CdrServer.obj $(OBJS) $(CDRLIB)
 #--------------------------------------------------------------------------
 
 $(SERVICE): CdrService.obj service.obj
-	$(CVSUPD)
 	$(CC) -MT -Fe$(SERVICE) CdrService.obj service.obj advapi32.lib
 
 CdrService.obj: CdrService.c service.h
-	$(CVSUPD)
 	$(CC) -c $(SVC_CFLAGS) CdrService.c
 
 service.obj: service.c service.h
-	$(CVSUPD)
 	$(CC) -c $(SVC_CFLAGS) service.c
 
 #--------------------------------------------------------------------------
@@ -307,7 +316,6 @@ service.obj: service.c service.h
 #--------------------------------------------------------------------------
 
 CdrTestClient.exe: CdrTestClient.cpp $(CDRLIB)
-	$(CVSUPD)
 	$(CC) $(CFLAGS) CdrTestClient.cpp /link /LIBPATH:$(CDR)/lib \
     cdr.lib wsock32.lib
 
@@ -346,7 +354,7 @@ CdrDocs: $(DOCS)
 
 $(DOCS): $(HDRS)
 	ccdoc -html $(DOC) -imgurl images/ $(HDRS)
-	cp -f $(DOC)ccdoc.index.html $(DOCS)
+	$(CP) $(DOC)ccdoc.index.html $(DOCS)
 
 #--------------------------------------------------------------------------
 # Generic rules for object files
