@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.72 2002-11-11 16:09:08 bkline Exp $
+ * $Id: tables.sql,v 1.73 2002-11-11 17:18:36 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.72  2002/11/11 16:09:08  bkline
+ * Added filter_set and filter_set_member tables.
+ *
  * Revision 1.71  2002/11/01 05:10:52  ameyer
  * Made remailer_ids.recipient nullable.  Not used in directories.
  *
@@ -1648,10 +1651,10 @@ GO
  *               filter set.
  */
 CREATE TABLE filter_set
-         (id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(80),
- description NVARCHAR(256),
-       notes NTEXT)
+         (id INTEGER IDENTITY NOT NULL PRIMARY KEY,
+        name VARCHAR(80)      NOT NULL UNIQUE,
+ description NVARCHAR(256)    NOT NULL,
+       notes NTEXT                NULL)
 
 /*
  * Member of a filter set.
