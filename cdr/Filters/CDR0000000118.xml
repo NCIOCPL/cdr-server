@@ -14,18 +14,34 @@
    <xsl:template match="/">
     <html>
      <head>
-     <title><xsl:value-of select="document('cdrutil:/docid')"/></title>
+       <xsl:variable                name="cdrmydoc" 
+                                     select="document('cdrx:/*/CdrCtl')"/>
+      
+     <xsl:variable      name = "docID"
+                                select = "document('cdrutil:/docid')"/>
+ 
+            <title>
+            <xsl:value-of   select = "concat('CDR', 
+                                   number(
+                                   substring-after($docID, 'CDR')))"/>
+           <xsl:text>: </xsl:text>                        
+           <xsl:value-of  select="$cdrmydoc/CdrDocCtl/DocTitle"/>
+                                                          
+                                                                                                                                      
+                                                                                                                                           
+            </title>
+
      </head>
      <basefont face='Arial, Helvetica, sans-serif' />
      <xsl:apply-templates select="PoliticalSubUnit"/>
     </html>
    </xsl:template>
 
-   <xsl:template match='PoliticalSubUnit'>
+   <xsl:template match="PoliticalSubUnit">
     <body>
      <center>
       <b>
-       <font size='4'>Political SubUnit QC Report</font>
+       <font size='4'>Political SubUnit<br />QC Report</font>
       </b>
        <br />
       <b>
@@ -40,44 +56,72 @@
                                    select = "document('cdrutil:/docid')"/>
      <b>
      <font size='4'>
-     <xsl:value-of              select = "concat('CDR', 
-                                           number(
-                                           substring-after($docID, 'CDR')))"/>
+     <xsl:value-of              select = "concat('CDR',number( 
+                                          substring-after($docID,'CDR')))"/>
 
    </font>
    </b>
+   <br />
+   <br />
 
-     <table border ='0'>
-      <tr>
-       <th align='left' nowrap='1'>Full Name: </th>
-       <td><xsl:value-of select='PoliticalSubUnitFullName'/></td>
-      </tr>
-      <xsl:for-each select='PoliticalSubUnitShortName'>
+     <table  cellpadding='0' cellspacing='0' width='90%' border ='0'>
        <tr>
-        <th align='left' nowrap='1'>Short Name: </th>
-        <td><xsl:value-of select='.'/></td>
-       </tr>
-      </xsl:for-each>
-      <xsl:for-each select='PoliticalSubUnitAlternateName'>
-       <tr>
-        <th align='left' nowrap='1'>Alternate Name: </th>
-        <td><xsl:value-of select='.'/></td>
-       </tr>
-      </xsl:for-each>
-      <xsl:variable name="country"
-                  select="document(concat('cdr:', CountryName/@cdr:ref))"/>
-      <tr>
-       <th align='left'>Country: </th>
-       <td>
-        <xsl:value-of 
-             select="concat($country/Country/CountryFullName, ' (',
-                            CountryName/@cdr:ref, ')')"/>
+       <th align='left' width='40%' nowrap='1'>
+       <xsl:text>Full Name:</xsl:text>
+       </th>
+       <td width='60%'>
+       <xsl:value-of     select="PoliticalSubUnitFullName"/>
        </td>
-      </tr>
-      <xsl:for-each select='DateLastModified'>
+       </tr>
+      <xsl:for-each      select="PoliticalSubUnitShortName">
        <tr>
-        <th align='left' nowrap='1'>Date Last Modified: </th>
-        <td><xsl:value-of select='.'/></td>
+        <th align='left' width='40%' nowrap='1'>
+        <xsl:if          test= "not(preceding-sibling::
+                                PoliticalSubUnitShortName)">   
+       <xsl:text>Short Name:</xsl:text> 
+       </xsl:if>
+       </th>
+        
+      <td>
+      <xsl:value-of  select="."/>
+      </td>
+      </tr>
+      </xsl:for-each>
+      <xsl:for-each select="PoliticalSubUnitAlternateName">
+       <tr>
+        <th align='left' width='40%' nowrap='1'>
+         <xsl:if         test= "not(preceding-sibling::
+                                PoliticalSubUnitAlternateName)">   
+        
+         <xsl:text>Alternate Name:</xsl:text> 
+         </xsl:if>
+         </th>
+        
+        <td>
+        <xsl:value-of    select="."/>
+        </td>
+        </tr>
+       </xsl:for-each>
+      <tr>
+      <th align='left' width='40%'>
+      <xsl:text>Country:</xsl:text> 
+      </th>
+       <td>
+       <xsl:value-of      select="Country/CountryFullName"/>
+       <xsl:text>&#xa0;&#xa0;(</xsl:text>
+       <xsl:value-of      select="concat('CDR', number(substring-after(
+                                  Country/@cdr:ref,'CDR')))"/>
+       <xsl:text>) </xsl:text>
+       </td>
+       </tr>
+       <xsl:for-each       select="DateLastModified">
+       <tr>
+        <th align='left' nowrap='1'>
+        <xsl:text>Date Last Modified:</xsl:text> 
+        </th>
+        <td>
+        <xsl:value-of  select="."/>
+       </td>
        </tr>
       </xsl:for-each>
      </table>
