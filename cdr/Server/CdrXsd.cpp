@@ -1,7 +1,11 @@
 /*
- * $Id: CdrXsd.cpp,v 1.33 2002-10-17 17:36:11 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.34 2002-11-21 00:44:14 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2002/10/17 17:36:11  bkline
+ * Added readyForReview attribute to CdrDocCtl; added check for simpleContent
+ * without any attribute declarations.
+ *
  * Revision 1.32  2002/09/02 14:06:46  bkline
  * Plugged memory leak in Schema constructor.
  *
@@ -123,12 +127,14 @@
 #include <climits>
 #include <iostream>
 #include <ctime>
+#include <sstream>
 
 // Project headers.
 #include "CdrXsd.h"
 #include "CdrRegEx.h"
 #include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
+#include "CdrFilter.h"
 
 // Local functions.
 static void validateElement(
@@ -1218,6 +1224,97 @@ void cdr::xsd::ComplexType::resolveGroupRefs(const Schema& schema)
  *  @param  errors              vector of strings to be populated by this
  *                              function
  */
+static void processCustomRules(
+        cdr::dom::Element&         docElem,
+        cdr::xsd::Schema&          schema,
+        cdr::StringList&           errors,
+        cdr::db::Connection&       conn)
+{
+    std::wostringstream os;
+    os << docElem;
+    cdr::String docStr = os.str();
+    cdr::String filter = 
+        L"<xsl:transform     xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'"
+        L"                   xmlns:cdr = 'cips.nci.nih.gov/cdr'"
+        L"                     version = '1.0'>"
+        L" <xsl:template         match = '/'>"
+        L"  <Errors>"
+        L"   <xsl:apply-templates/>"
+        L"  </Errors>"
+        L" </xsl:template>"
+        L" <xsl:template         match = 'node()'>"
+        L"  <xsl:apply-templates/>"
+        L" </xsl:template>"
+        L" <xsl:template         match = 'PostalAddress'>"
+        L"  <xsl:if               test = '@AddressType = &quot;US&quot;"
+        L"                                and not(State and PostalCode_ZIP)'>"
+        L"   <xsl:call-template   name = 'packError'>"
+        L"    <xsl:with-param     name = 'msg'"
+        L"                      select = 'concat(&quot;U.S. postal &quot;,"
+        L"                               &quot;address must have &quot;,"
+        L"                               &quot;state and ZIP code.&quot;)'/>"
+        L"   </xsl:call-template>"
+        L"  </xsl:if>"
+        L" </xsl:template>"
+        L" <xsl:template          name = 'packError'>"
+        L"  <xsl:param            name = 'msg'/>"
+        L"  <Err>"
+        L"   <xsl:call-template   name = 'getPath'>"
+        L"    <xsl:with-param     name = 'nodePart'"
+        L"                      select = '.'/>"
+        L"   </xsl:call-template>"
+        L"   <xsl:value-of      select = 'concat(&quot;: &quot;, $msg)'/>"
+        L"  </Err>"
+        L" </xsl:template>"
+        L" <xsl:template          name = 'getPath'>"
+        L"  <xsl:param            name = 'childPart'/>"
+        L"  <xsl:param            name = 'nodePart'/>"
+        L"  <xsl:variable         name = 'parent'"
+        L"                      select = '$nodePart/parent::node()'/>"
+        L"  <xsl:variable         name = 'myName'"
+        L"                      select = 'name($nodePart)'/>"
+        L"  <xsl:choose>"
+        L"   <xsl:when           test = 'name($parent)'>"
+        L"    <xsl:variable      name = 'myPos'"
+        L"                     select = 'count($nodePart/"
+        L"                               preceding-sibling::*) + 1'/>"
+        L"    <xsl:call-template name = 'getPath'>"
+        L"     <xsl:with-param   name = 'childPart'"
+        L"                     select = 'concat(&quot;/&quot;, $myName,"
+        L"                                      &quot;[&quot;, $myPos,"
+        L"                                      &quot;]&quot;,"
+        L"                                      $childPart)'/>"
+        L"     <xsl:with-param   name = 'nodePart'"
+        L"                     select = '$parent'/>"
+        L"    </xsl:call-template>"
+        L"   </xsl:when>"
+        L"   <xsl:otherwise>"
+        L"    <xsl:value-of    select = 'concat(&quot;/&quot;,"
+        L"                               name($nodePart),"
+        L"                               $childPart)'/>"
+        L"   </xsl:otherwise>"
+        L"  </xsl:choose>"
+        L" </xsl:template>"
+        L"</xsl:transform>";
+    cdr::String filtered = cdr::filterDocument(docStr, filter, conn);
+    cdr::dom::Parser parser;
+    parser.parse(filtered);
+    cdr::dom::Element respElem = parser.getDocument().getDocumentElement();
+    if (respElem == 0)
+        throw cdr::Exception(L"Can't parse custom validation output");
+    cdr::dom::Node n = respElem.getFirstChild();
+    while (n != 0) {
+        if (n.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String elemName = n.getNodeName();
+            if (elemName == L"Err") {
+                cdr::String errString = cdr::dom::getTextContent(n);
+                errors.push_back(errString);
+            }
+        }
+        n = n.getNextSibling();
+    }
+}
+
 void cdr::xsd::validateDocAgainstSchema(
         cdr::dom::Element&         docElem,
         cdr::dom::Element&         schemaElem,
@@ -1239,6 +1336,8 @@ void cdr::xsd::validateDocAgainstSchema(
     }
     const cdr::xsd::Type& elementType = *schemaElement.getType(schema);
     validateElement(docElem, elementType, schema, errors);
+    if (conn)
+        processCustomRules(docElem, schema, errors, *conn);
 }
 
 /**
