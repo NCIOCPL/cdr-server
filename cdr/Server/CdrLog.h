@@ -1,11 +1,14 @@
 /*
- * $Id: CdrLog.h,v 1.1 2000-06-15 22:32:49 ameyer Exp $
+ * $Id: CdrLog.h,v 1.2 2000-10-05 15:21:40 ameyer Exp $
  *
  * Write log strings to log database or file.
  *
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/06/15 22:32:49  ameyer
+ * Initial revision
+ *
  */
 
 #ifndef CDR_LOG_
@@ -108,6 +111,19 @@ namespace cdr {
             int LogId;
 
     };
+
+    /**
+     * Write to an OS file, either passing the name or using
+     * a default name.
+     *
+     *  @param MsgSrc   Identify source of message - module or
+     *                  whatever - as cdr::String.
+     *  @param Msg      Message to write, as cdr::String.
+     *  @param Fname    Name of file, or defaulted
+     */
+    extern void WriteFile (const cdr::String MsgSrc, const cdr::String Msg,
+                           const std::string Fname = OSLogFile);
+
   }
 }
 
