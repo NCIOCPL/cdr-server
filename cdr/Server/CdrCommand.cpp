@@ -1,9 +1,13 @@
 /*
- * $Id: CdrCommand.cpp,v 1.35 2002-11-14 13:23:58 bkline Exp $
+ * $Id: CdrCommand.cpp,v 1.36 2003-01-28 23:46:26 ameyer Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2002/11/14 13:23:58  bkline
+ * Changed CdrFilter command to use filter sets.  Added CdrDelFilterSet
+ * command.
+ *
  * Revision 1.34  2002/11/12 11:44:37  bkline
  * Added filter set support.
  *
@@ -141,6 +145,10 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
         CommandMap(L"CdrAddAction",          cdr::addAction),
         CommandMap(L"CdrRepAction",          cdr::repAction),
         CommandMap(L"CdrDelAction",          cdr::delAction),
+        CommandMap(L"CdrAddSysValue",        cdr::sysValue),
+        CommandMap(L"CdrRepSysValue",        cdr::sysValue),
+        CommandMap(L"CdrDelSysValue",        cdr::sysValue),
+        CommandMap(L"CdrGetSysValue",        cdr::sysValue),
         CommandMap(L"CdrCanDo",              cdr::getCanDo),
         CommandMap(L"CdrAddDoc",             cdr::addDoc),
         CommandMap(L"CdrRepDoc",             cdr::repDoc),
