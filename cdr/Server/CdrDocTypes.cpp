@@ -1,9 +1,14 @@
 /*
- * $Id: CdrDocTypes.cpp,v 1.11 2002-08-27 17:14:16 bkline Exp $
+ * $Id: CdrDocTypes.cpp,v 1.12 2002-08-27 17:51:00 bkline Exp $
  *
  * Support routines for CDR document types.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2002/08/27 17:14:16  bkline
+ * Fixed bug in code to get list of elements which can contain a certain
+ * attribute; used this to fix code to get list of linking elements for
+ * a document type.
+ *
  * Revision 1.10  2002/05/15 23:40:15  bkline
  * Added attribute to skip generation of the DTD for GetDocType command.
  *
@@ -214,7 +219,8 @@ cdr::String cdr::getDocType(Session&          session,
     }
     std::auto_ptr<cdr::xsd::Schema> schemaPtr(schema);
     cdr::StringList linkingElements;
-    schema->elemsWithAttr(L"cdr:ref", linkingElements);
+    if (schema)
+        schema->elemsWithAttr(L"cdr:ref", linkingElements);
     std::wostringstream resp;
     resp << L"<CdrGetDocTypeResp Type='"
          << docTypeString
