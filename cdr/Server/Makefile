@@ -1,10 +1,14 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.9 2000-04-26 01:27:03 bkline Exp $
+# $Id: Makefile,v 1.10 2000-05-02 19:26:38 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.9  2000/04/26 01:27:03  bkline
+# Added rules for building programmer documentation.  Added CdrSearch
+# and CdrValidateDoc modules.
+#
 # Revision 1.8  2000/04/22 09:26:36  bkline
 # Added rules for user and group commands.
 #
@@ -39,8 +43,9 @@
 
 CDR    =/cdr
 XML4C  =/usr/xml4c
+REGEX  =/usr/regex
 CDRINC =$(CDR)/include
-INC    =-I$(XML4C)/include -I$(CDRINC)
+INC    =-I$(XML4C)/include -I$(CDRINC) -I$(REGEX)/include
 CFLAGS =$(INC) -GX -MT -GR -Zi
 LFLAGS =/LIBPATH:/usr/xml4c/lib /LIBPATH:$(CDR)/lib /DEBUG
 CC     =cl
@@ -62,7 +67,11 @@ HDRS   =$(CDRINC)/CdrString.h \
         $(CDRINC)/CdrSession.h \
         $(CDRINC)/CdrParserInput.h \
         $(CDRINC)/CdrInt.h \
-        $(CDRINC)/CdrSearch.h
+        $(CDRINC)/CdrSearch.h \
+        $(CDRINC)/CdrRegEx.h \
+        $(CDRINC)/CdrBlob.h \
+        $(CDRINC)/CdrGetDoc.h \
+        $(CDRINC)/CdrValidateDoc.h
 LIBOBJS=CdrString.obj \
         CdrXsd.obj \
         CdrDom.obj \
@@ -70,7 +79,8 @@ LIBOBJS=CdrString.obj \
         CdrDbStatement.obj \
         CdrDbResultSet.obj \
         CdrSession.obj \
-        CdrParserInput.obj
+        CdrParserInput.obj \
+        CdrRegEx.obj
 OBJS   =CdrServer.obj \
         CdrCommand.obj \
         CdrLogon.obj \
@@ -88,8 +98,9 @@ OBJS   =CdrServer.obj \
         CdrListUsrs.obj \
         CdrValidateDoc.obj \
         CdrSearch.obj \
-        CdrSearch_tab.obj
-LIBS   =cdr.lib xerces-c_1.lib wsock32.lib odbc32.lib
+        CdrSearch_tab.obj \
+        CdrGetDoc.obj
+LIBS   =cdr.lib xerces-c_1.lib wsock32.lib odbc32.lib user32.lib
 
 #--------------------------------------------------------------------------
 # Rule for building CDR server.
@@ -151,6 +162,9 @@ CdrSearch.obj: CdrSearch.cpp $(HDRS) $(CDRINC)/CdrSearch.h
 CdrValidateDoc.obj: CdrValidateDoc.cpp $(HDRS)
 	$(CC) $(CFLAGS) -c CdrValidateDoc.cpp
 
+CdrGetDoc.obj: CdrGetDoc.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrGetDoc.cpp
+
 BISON_SIMPLE=/etc/bison.cdrtest
 CdrSearch_tab.obj: CdrSearch_tab.c $(HDRS)
 	$(CC) $(CFLAGS) -c -TP CdrSearch_tab.c
@@ -187,6 +201,13 @@ CdrSession.obj: CdrSession.cpp $(HDRS)
 
 CdrParserInput.obj: CdrParserInput.cpp $(HDRS)
 	$(CC) $(CFLAGS) -c CdrParserInput.cpp
+
+CdrRegEx.obj: CdrRegEx.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrRegEx.cpp
+
+tCdrRegEx.exe: tCdrRegEx.cpp $(HDRS) $(CDRLIB)
+	$(CC) $(CFLAGS) -c tCdrRegEx.cpp
+	$(LN) $(LFLAGS) /out:tCdrRegEx.exe tCdrRegEx.obj $(LIBS)
 
 tCdrString.exe: tCdrString.cpp $(CDRLIB)
 	$(CC) $(CFLAGS) tCdrString.cpp $(CDRLIB)
