@@ -1,7 +1,12 @@
 /*
- * $Id: CdrXsd.cpp,v 1.34 2002-11-21 00:44:14 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.35 2002-11-22 14:07:25 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2002/11/21 00:44:14  bkline
+ * Placeholder version of custom routines installed for testing and
+ * demonstration.  This version, which hard-codes a single custom rule,
+ * will be replaced by a much more generalized, Schematron-like mechanism.
+ *
  * Revision 1.33  2002/10/17 17:36:11  bkline
  * Added readyForReview attribute to CdrDocCtl; added check for simpleContent
  * without any attribute declarations.
@@ -1247,7 +1252,7 @@ static void processCustomRules(
         L" </xsl:template>"
         L" <xsl:template         match = 'PostalAddress'>"
         L"  <xsl:if               test = '@AddressType = &quot;US&quot;"
-        L"                                and not(State and PostalCode_ZIP)'>"
+        L"               and not(PoliticalSubUnit_State and PostalCode_ZIP)'>"
         L"   <xsl:call-template   name = 'packError'>"
         L"    <xsl:with-param     name = 'msg'"
         L"                      select = 'concat(&quot;U.S. postal &quot;,"
@@ -1336,8 +1341,10 @@ void cdr::xsd::validateDocAgainstSchema(
     }
     const cdr::xsd::Type& elementType = *schemaElement.getType(schema);
     validateElement(docElem, elementType, schema, errors);
+#if 0
     if (conn)
         processCustomRules(docElem, schema, errors, *conn);
+#endif
 }
 
 /**
