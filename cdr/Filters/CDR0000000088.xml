@@ -6,43 +6,74 @@
 <ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
+<!-- 
+===================================================================
+Filter to create a Terminology Content QC Report
+=================================================================== -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
 
-<!-- ===================================================================
-      Filter to display terminology QC Report
-     ================================================================== -->
+ <xsl:output                    method = "html"/>
 
-<xsl:transform   xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                   version = "1.0"
-                 xmlns:cdr = "cips.nci.nih.gov/cdr">
-
- <xsl:import    href = "cdr:name:Module: InLine Markup Formatter"/>
+ <xsl:include   href = "cdr:name:Module: InLine Markup Formatter"/>
  <xsl:include   href = "cdr:name:Module: Table Formatter"/>
  <xsl:include   href = "cdr:name:Module: STYLE Default"/> 
 
- <xsl:output  method = "html"/>
+ <!-- Defining standard HTML Attribute Sets -->
+ <xsl:attribute-set               name = "table">
+  <xsl:attribute                  name = "border">0</xsl:attribute>
+  <xsl:attribute                  name = "width">100%</xsl:attribute>
+  <xsl:attribute                  name = "cellspacing">0</xsl:attribute>
+  <xsl:attribute                  name = "cellpadding">0</xsl:attribute>
+ </xsl:attribute-set>
 
- <xsl:template match = "/">
-  <!--Filter written by C.Burg   10/18/2001 -->
-  <!-- Made Tabular - 6/26/2003 - Nanci -->
-  <!-- Added line after CDRID - 8/7/2003 - Nanci -->
+ <xsl:attribute-set               name = "cell1of2">
+  <xsl:attribute                  name = "width">35%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
 
+ <xsl:attribute-set               name = "cell2of2">
+  <xsl:attribute                  name = "width">65%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
+
+ <xsl:attribute-set               name = "mcell1of2">
+  <xsl:attribute                  name = "width">30%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
+
+ <xsl:attribute-set               name = "mcell2of2">
+  <xsl:attribute                  name = "width">70%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
+
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
+ <!--
+ ======================================================================
+ Main Template
+ Filter written by C.Burg   10/18/2001
+ Made Tabular - 6/26/2003 - Nanci 
+ Added line after CDRID - 8/7/2003 - Nanci
+ ====================================================================== -->
+ <xsl:template                   match = "/">
   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
   <HTML>
    <HEAD>
-    <xsl:variable                 name = "cdrmydoc" 
+    <xsl:variable                 name = "cdrdocs" 
                                 select = "document('cdrx:/*/CdrCtl')"/>
     <TITLE>
-     <xsl:value-of              select = "document('cdrutil:/docid')"/>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
      <xsl:text>: </xsl:text>
-     <xsl:value-of              select = "substring-before($cdrmydoc/
-                                          CdrDocCtl/DocTitle,';')"/> 
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/> 
     </TITLE>
     <STYLE type='text/css'>
      <xsl:call-template           name = "defaultStyle"/>  
-
-     h2 { font style: bold font size: 14pt}
-     h3 { font style: bold font size: 13pt}
-     h4 { font style: bold font size: 12pt}
     </STYLE>
    </HEAD>
    <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
@@ -51,469 +82,662 @@
  </xsl:template>
 
 
- <xsl:template match="Term">
-  <body>
-   <!-- ================================================================
-                  Display Report heading and subheading
-        =============================================================== -->
-  <b><font size='4'><center>Terminology<br />QC Report
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Terminology QC Report
+ =================================================================== -->
+ <xsl:template                   match = "Term">
+  <BODY>
 
-     </center></font></b>
+  <!-- 
+  ==================================================================
+  Display Report heading and subheading 
+  ================================================================== -->
+  <b>
+   <font size='4'>
+    <center>
+     <xsl:text>Terminology</xsl:text>
+     <br/>
+     <xsl:text>QC Report</xsl:text>
+    </center>
+   </font>
+   <font size='3'>
+    <center>
+     <xsl:value-of              select = "document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M% 25p')"/>
+    </center>
+   </font>
+  </b>
+  <p/>
 
- <b><font size='3'><center><xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/></center></font></b><br /><br />
+  <!-- 
+  ====================================================================
+  Display CDR ID
+  ==================================================================== -->
+  <b>
+   <font size='4'>
+    <xsl:value-of               select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+   </font>
+  </b>
+  <p/>
 
-  <p>
-   <font size='4'><b><xsl:apply-templates select="DocId"/></b></font>
-  </p>
-
- <!-- ===================================================================
-                Display preferred name of term 
-      ================================================================= -->
-  <table width = "90%" cellspacing = "0" cellpadding = "0">
+  <!-- 
+  ===================================================================
+  Display preferred name of term 
+  =================================================================== -->
+   <table       xsl:use-attribute-sets = "table">
     <tr>
-      <td width = "40%"><b><font size="4">Preferred Name</font></b></td>
-      <td><xsl:apply-templates select="PreferredName"/></td>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>
+       <font size="4">Preferred Name</font>
+      </b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "PreferredName"/>
+     </td>
     </tr>
   </table>
   <p/>
 
-<!-- ====================================================================
-        If other names, display them, including type,review status 
-     =================================================================== -->
-  <b><font size='4'>Other Names</font></b>
+  <!-- 
+  ====================================================================
+  If other names, display them, including type,review status 
+  ==================================================================== -->
+  <b>
+   <font size='4'>Other Names</font>
+  </b>
 
-  <xsl:for-each select="OtherName">
-    <table width = "90%" cellspacing = "0" cellpadding = "0">
-      <tr>
-        <td width = "40%" align = "left" valign = "top">
-          <b><u>Term</u></b>
-        </td>
-        <td><xsl:value-of select="OtherTermName"/></td>
-      </tr>
-      <tr>
-        <td><b>Type</b></td>
-        <td><xsl:value-of   select = "OtherNameType"/></td>
-      </tr>
+  <xsl:apply-templates          select = "OtherName"/>
+  <p/>
 
-      <xsl:if test="not(SourceInformation)">
-        <tr>
-          <td><b>Source Information</b></td>
-        </tr>
-      </xsl:if>
+  <!-- 
+  ======================================================================
+  Display definitions
+  ====================================================================== -->
+  <xsl:choose>
+   <xsl:when                      test = "Definition">
+    <b>
+     <font size='4'>Definition</font>
+    </b>
+    <br />
+
+    <table      xsl:use-attribute-sets = "table">
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <b>Text</b>
+      </td>
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <table cellspacing = "0" cellpadding = "0">
+        <xsl:for-each           select = "Definition/DefinitionText">
+         <tr>
+          <td><xsl:value-of     select = "."/>
+          </td>
+         </tr>
+        </xsl:for-each>
+       </table> 
+      </td>
+     </tr>
+     <tr>
+      <td width = '40%' valign = "top">
+       <b>Type</b>
+      </td>
+      <td>
+       <table cellspacing = "0" cellpadding = "0">
+        <xsl:for-each           select = "Definition/DefinitionType">
+         <tr>
+          <td>
+           <xsl:value-of        select = "."/>
+          </td>
+         </tr>
+        </xsl:for-each>
+       </table> 
+      </td>
+     </tr>
+     <tr>
+      <td width = '40%' valign = "top">
+       <b>Source(Name,ID)</b>
+      </td>
+      <td>
+       <table cellspacing = "0" cellpadding = "0">
+        <xsl:for-each           select = "Definition/DefinitionSource">
+         <tr>
+          <td>
+           <xsl:value-of        select = "."/>
+          </td>
+         </tr>
+        </xsl:for-each>
+       </table> 
+      </td>
+     </tr>
+     <tr>
+      <td width = '40%' valign = "top">
+       <b>Comment</b>
+      </td>
+      <td>
+       <xsl:value-of            select = "Definition/Comment"/>
+      </td>
+     </tr>
     </table>
-
-    <xsl:if test="SourceInformation">
-
-      <table width = '90%' cellspacing = "0" cellpadding = "0">
-        <tr>
-          <td colspan = "2"><b>Source Information</b></td>
-          <td/>
-        </tr>
-        <tr>
-          <td width = "5%"> </td>
-          <td width = '35%'><b>Reference Source</b></td>
-          <td><xsl:value-of select = "SourceInformation/ReferenceSource"/></td>
-        </tr>
-        <tr>
-          <td> </td>
-          <td><b>Vocabulary Source</b></td>
-          <td>
-            <xsl:value-of select = "SourceInformation/ReferenceSource
-                                    /VocbularySource"/>
-          </td>
-        </tr>
-        <tr>
-          <td> </td>
-          <td><b>Vocabulary Source Term Type</b>
-          </td>
-          <td>
-            <xsl:value-of select = "SourceInformation/ReferenceSource/
-                                    VocbularySource/SourceTermType"/>
-          </td>
-        </tr>
-        <tr>
-          <td> </td>
-          <td><b>Vocabulary Source Term ID</b>
-          </td>
-          <td>
-            <xsl:value-of select = "SourceInformation/ReferenceSource/
-                                    VocbularySource/SourceTermId"/>
-          </td>  
-        </tr>
-     </table>
-   </xsl:if>   
-
-    <table width = '90%' cellspacing = "0" cellpadding = "0">
-      <tr>
-        <td width = '40%'><b>Review Status</b></td>
-        <td><xsl:value-of  select = "ReviewStatus"/></td>
-      </tr>
-      <tr>
-        <td width = '40%' valign = "top"><b>Comment</b></td>
-        <td><xsl:value-of  select = "Comment"/></td>
-      </tr>
-    </table>
+   </xsl:when>
+   <xsl:otherwise> 
+    <b>
+     <font size='4'>Definition</font>
+    </b>
     <p/>
-  </xsl:for-each>
-
-<!-- ======================================================================
-                         Display definitions
-     ==================================================================== -->
-<xsl:if test="not(Definition)">
- <b><font size='4'>Definition</font></b>
- <p/>
-</xsl:if>
-
- <xsl:if test="Definition">
-<b><font size='4'>Definition</font></b><br />
-
-    <table width = '90%' cellspacing = "0" cellpadding = "0">
-      <tr>
-        <td width = '40%' valign = "top"><b>Text</b></td>
-        <td>
-          <table cellspacing = "0" cellpadding = "0">
-            <xsl:for-each  select = "Definition/DefinitionText">
-              <tr>
-                <td><xsl:value-of select = "."/></td>
-              </tr>
-            </xsl:for-each>
-          </table> 
-        </td>
-      </tr>
-      <tr>
-        <td width = '40%' valign = "top"><b>Type</b></td>
-        <td>
-          <table cellspacing = "0" cellpadding = "0">
-            <xsl:for-each  select = "Definition/DefinitionType">
-              <tr>
-                <td><xsl:value-of select = "."/></td>
-              </tr>
-            </xsl:for-each>
-          </table> 
-        </td>
-      </tr>
-      <tr>
-        <td width = '40%' valign = "top"><b>Source(Name,ID)</b></td>
-        <td>
-          <table cellspacing = "0" cellpadding = "0">
-            <xsl:for-each  select = "Definition/DefinitionSource">
-              <tr>
-                <td><xsl:value-of select = "."/></td>
-              </tr>
-            </xsl:for-each>
-          </table> 
-        </td>
-      </tr>
-      <tr>
-        <td width = '40%' valign = "top"><b>Comment</b></td>
-        <td>
-         <td><xsl:value-of select = "Definition/Comment"/></td>
-        </td>
-      </tr>
-    </table>
-</xsl:if> 
-
-<!-- ==================================================================
-                       Display term type 
- ======================================================================= -->
-  <xsl:if test="TermType">
-    <b><font size='4'>Term Type</font></b>
- 
-    <table width = '90%' cellspacing = "0" cellpadding = "0">
-      <tr>
-        <td width = '40%' valign = "top"><b>Name</b></td>
-        <td>
-          <table cellspacing = "0" cellpadding = "0">
-            <xsl:for-each  select = "TermType/TermTypeName">
-              <tr>
-                <td><xsl:value-of select = "."/></td>
-              </tr>
-            </xsl:for-each>
-          </table> 
-        </td>
-      </tr>
-    </table>
-
-  </xsl:if>
-  <br />
- 
- 
-<!-- =================================================================
-                   Display semantic type 
-    =================================================================== -->
-  <xsl:if test="SemanticType">
-    <table width = '90%' cellspacing = "0" cellpadding = "0">
-      <tr>
-        <td width = '40%'><b>Semantic Type</b></td>
-        <td>
-          <table>
-            <xsl:for-each select = "SemanticType">
-              <tr>
-                <td><xsl:value-of select="."/></td>
-              </tr>
-            </xsl:for-each>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </xsl:if>
-
-<!-- ===================================================================
-               Display Parent term,ID, PDQ Key,and type 
-     =================================================================== -->
-<p/>
-<b><font size='4'>Term Relationship</font></b>
- <xsl:for-each  select="TermRelationship/ParentTerm">
-  <table width = '90%' cellspacing = "0" cellpadding = "0">
-    <tr>
-      <td width = '40%'><b>Parent Term</b></td>
-      <td width = '60%'><xsl:value-of  select = "PreferredName"/></td>
-    </tr>
-    <tr>
-      <td><b>Term ID</b></td>
-      <td><xsl:value-of select="@cdr:ref"/></td>
-    </tr>
-    <tr>
-      <td><b>Parent PDQ Key</b></td>
-      <td><xsl:value-of select="PdqKey"/></td>
-    </tr>
-    <tr>
-      <td><b>Parent Type</b></td>
-      <td><xsl:value-of select="ParentType"/></td>
-    </tr>
-    <tr>
-      <td valign = "top"><b>Comment</b></td>
-      <td>
-       <xsl:if          test = "Comment">
-        <xsl:value-of select="Comment"/>
-       </xsl:if>
-      </td>
-    </tr>
-  </table>
-
-   <!-- xsl:choose>
-    <xsl:when test="not(Comment)">
-      <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-      <b><font size='3'>Comment</font></b>
-      <p/>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-      <b><font size='3'>Comment</font></b>
-      <xsl:value-of select="Comment"/>
-      <br /><br />
-    </xsl:otherwise> 
-   </xsl:choose -->
-
-  </xsl:for-each>
-
-  <br />
-
-  <!-- xsl:if test="not(TermRelationship/RelatedTerm)">
-    <xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text>
-    <b><font size='3'>Related Term</font></b>
-    <br />
-  </xsl:if -->
-
-  
-<!-- ===================================================================
-            Display related terms, ID, PDQ Key, and type 
-     ==================================================================== -->
- <xsl:choose>
-  <xsl:when test="TermRelationship/RelatedTerm">
-    <xsl:for-each select="TermRelationship/RelatedTerm">
-      <table width = '90%' cellspacing = "0" cellpadding = "0">
-        <tr>
-         <td width = '40%'><b>Related Term</b></td>
-          <td width = '60%'><xsl:value-of select="PreferredName"/></td>
-        </tr>
-      </table>
-
-      <table width = '90%' cellspacing = "0" cellpadding = "0">    
-        <tr>
-          <td width = "5%"></td>
-          <td width = "35%"><b>Term ID</b></td>
-          <td width = "60%"><xsl:value-of select="@cdr:ref"/></td>
-        </tr>
-        <tr>
-          <td></td>
-          <td><b><font size='3'>Related PDQ Key</font></b></td>
-          <td><xsl:value-of select="PdqKey"/></td>
-        </tr>
-        <xsl:if  test = "RelationshipType">
-          <tr>
-          <td></td>
-            <td><b>Relationship Type</b></td>
-            <td><xsl:value-of select="RelationshipType"/></td>
-          </tr>
-        </xsl:if>
-          <tr>
-          <td></td>
-            <td valign = "top"><b>CommentType</b></td>
-            <td><xsl:value-of select="Comment"/></td>
-          </tr>
-      </table>
-
-      <p/>
-
-    </xsl:for-each>
-
-  </xsl:when>
-  <xsl:otherwise>
-      <table width = '90%' cellspacing = "0" cellpadding = "0">
-        <tr>
-          <td width = '40%' align = "left"><b>Related Term</b></td>
-          <td width = "60%"> </td>
-        </tr>
-      </table>
-     </xsl:otherwise>
+   </xsl:otherwise>
   </xsl:choose>
+ 
+  <!-- 
+  =================================================================
+  Display TermType, SemanticType, and TermRelationship 
+  ================================================================= -->
+  <xsl:apply-templates          select = "TermType"/>
+  <xsl:apply-templates          select = "SemanticType"/>
+  <xsl:apply-templates          select = "TermRelationship"/>
 
-  <p/>
+  <!-- 
+  ===================================================================
+  Display term status and comment if available 
+  =================================================================== -->
+  <b>
+   <font size='4'>Term Status</font>
+  </b>
 
-<!-- ===================================================================
-                  Display term status and comment if available 
-     ==================================================================== -->
-  <b><font size='4'>Term Status</font></b>
-
-  <table width = '90%' cellspacing = "0" cellpadding = "0">
-    <tr>
-      <td width = '40%'><b>Status</b></td>
-      <td>
-        <table>
-          <xsl:for-each select="TermStatus">
-            <tr>
-              <td><xsl:value-of select="."/></td>
-            </tr>
-          </xsl:for-each>
-        </table>
-      </td>
-    </tr>
-    <tr>
-      <td width = '40%' valign = "top"><b>Comment</b></td>
-      <td>
-        <table>
-          <xsl:for-each select="Comment">
-            <tr>
-              <td><xsl:value-of select="."/></td>
-            </tr>
-          </xsl:for-each>
-        </table>
-      </td>
-    </tr>
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Status</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "TermStatus"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Comment</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Comment"/>
+    </td>
+   </tr>
   </table>
-  <!-- xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-  <b><font size='3'>Comment</font></b><br />
-
-  <xsl:for-each select="Comment">
-    <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-    <xsl:value-of select="."/>
-  </xsl:for-each -->
-
   <p/>
 
- <!-- =================================================================
-                       Display Menu Information
-      ================================================================= -->
-  <hr/>
-  <b><font size='4'>Menu Information</font></b>
-  <ol>
-  <xsl:for-each select="MenuInformation/MenuItem"> 
-    <li><!-- xsl:value-of select="position()"/>. -->
-    <b><font size='3'>Menu Item</font></b>
-    <br />
-    <table width = '90%' cellspacing = "0" cellpadding = "0">
-      <tr>
-        <td width = '35%'><b>Menu Type</b></td>
-        <td><xsl:value-of select="MenuType"/></td>
-      </tr>
-    </table>
+  <xsl:apply-templates          select = "MenuInformation"/>
 
-    <xsl:for-each select="MenuParent">
-      <table width = '90%' cellspacing = "0" cellpadding = "0">
-        <tr>
-          <td width = '35%'><b>MenuParent</b></td>
-          <td> </td>
-        </tr>
-        <tr>
-          <td><b>Display Name</b></td>
-          <td><xsl:value-of select="DisplayName"/></td>
-        </tr>
-      </table>
-    </xsl:for-each>
+  <!-- 
+  ===================================================================
+  Display Record Information
+  ================================================================ -->
+  <b>
+   <font size='4'>Record Information</font>
+  </b>
 
-    <table width = '90%' cellspacing = "0" cellpadding = "0">
-      <tr>
-        <td width = '35%'><b>Sort Order</b></td>
-        <td width = '65%'><xsl:value-of select="@SortOrder"/></td>
-      </tr>
-      <tr>
-        <td><b>MenuStatus</b>
-        </td>
-        <td><xsl:value-of select="MenuStatus"/></td>
-      </tr>
-      <tr>
-        <td><b>Entered By</b></td>
-        <td><xsl:value-of select="EnteredBy"/></td>
-      </tr>
-      <tr>
-        <td><b>EntryDate</b></td>
-        <td><xsl:value-of select="EntryDate"/></td>
-      </tr>
-      <tr>
-        <td valign = "top"><b>Comment</b></td>
-        <td><xsl:value-of select="Comment"/></td>
-      </tr>
-    </table>
-</li>
-    <!-- xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-    <b><font size='3'>Comment</font></b>
-    <br />
-    <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-    <xsl:value-of select="Comment"/-->
-  </xsl:for-each>
-   </ol>
-   <p/>
-  
-<!-- ===================================================================
-                         Display Record Information
-      ================================================================ -->
-  <hr/>
-  <b><font size='4'>Record Information</font></b>
+  <xsl:variable                   name = "cdrmydoc" 
+                                select = "document('cdrx:/*/CdrCtl')"/>
 
-  <xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
-
-  <table width = '90%' cellspacing = "0" cellpadding = "0">
-    <tr>
-      <td width = '40%'><b>Date Created</b></td>
-      <td>
-        <xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/Date"/>
-      </td>
-    </tr>
-    <tr>
-      <td><b>User</b></td>
-      <td><xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/User"/></td>
-    </tr>
-    <tr>
-      <td><b>Date Modified</b></td>
-      <td><xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/Date"/></td>
-    </tr>
-    <tr>
-      <td><b>User</b></td>
-      <td><xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/User"/></td>
-    </tr>
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Date Created</b>
+    </td>
+    <td>
+     <xsl:value-of              select = "$cdrmydoc/CdrDocCtl/Create/Date"/>
+    </td>
+   </tr>
+   <tr>
+    <td>
+     <b>User</b>
+    </td>
+    <td>
+     <xsl:value-of              select = "$cdrmydoc/CdrDocCtl/Create/User"/>
+    </td>
+   </tr>
+   <tr>
+    <td>
+     <b>Date Modified</b>
+    </td>
+    <td>
+     <xsl:value-of              select = "$cdrmydoc/CdrDocCtl/Modify/Date"/>
+    </td>
+   </tr>
+   <tr>
+    <td>
+     <b>User</b>
+    </td>
+    <td>
+     <xsl:value-of              select = "$cdrmydoc/CdrDocCtl/Modify/User"/>
+    </td>
+   </tr>
   </table>
 
  
-<!-- Comment below required exactly as given for Concept/Term Review Report--> 
+  <!-- 
+  Comment below required exactly as given for Concept/Term Review Report
+  ====================================================================== --> 
+  <xsl:comment>@@TERMTREE@@</xsl:comment>
 
-   <xsl:comment>@@TERMTREE@@</xsl:comment>
+  </BODY>
+ </xsl:template>
 
 
+ <!-- 
+ ===================================================================
+ Template to display the Other Name elements
+ =================================================================== -->
+ <xsl:template                   match = "OtherName">
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>
+      <u>Term</u>
+     </b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "OtherTermName"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Type</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "OtherNameType"/>
+    </td>
+   </tr>
 
-  </body>
+   <xsl:if                        test = "not(SourceInformation)">
+    <tr>
+     <td>
+      <b>No Source Information</b>
+     </td>
+    </tr>
+   </xsl:if>
+  </table>
 
-   </xsl:template>
-  </xsl:transform>]]>
+  <xsl:if test="SourceInformation">
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td colspan = "2">
+      <b>Source Information</b>
+     </td>
+     <td/>
+    </tr>
+    <tr>
+     <td width = "5%"> </td>
+     <td width = '30%'>
+      <b>Reference Source</b>
+     </td>
+     <td>
+      <xsl:value-of             select = "SourceInformation/
+                                          ReferenceSource"/>
+     </td>
+    </tr>
+    <tr>
+     <td> </td>
+     <td>
+      <b>Vocabulary Source</b>
+     </td>
+     <td>
+      <xsl:value-of             select = "SourceInformation/
+                                          ReferenceSource/
+                                          VocbularySource"/>
+     </td>
+    </tr>
+    <tr>
+     <td> </td>
+     <td>
+      <b>Vocabulary Source Term Type</b>
+     </td>
+     <td>
+      <xsl:value-of             select = "SourceInformation/
+                                          ReferenceSource/
+                                          VocbularySource/
+                                          SourceTermType"/>
+     </td>
+    </tr>
+    <tr>
+     <td> </td>
+     <td>
+      <b>Vocabulary Source Term ID</b>
+     </td>
+     <td>
+      <xsl:value-of             select = "SourceInformation/
+                                          ReferenceSource/
+                                          VocbularySource/
+                                          SourceTermId"/>
+     </td>  
+    </tr>
+   </table>
+  </xsl:if>   
+
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Review Status</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of  select = "ReviewStatus"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Comment</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of  select = "Comment"/>
+    </td>
+   </tr>
+  </table>
+  <p/>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Template to Display TermType 
+ =================================================================== -->
+ <xsl:template                   match = "TermType">
+  <b>
+   <font size='4'>Term Type</font>
+  </b>
+ 
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Name</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <table cellspacing = "0" cellpadding = "0">
+      <xsl:for-each             select = "TermTypeName">
+       <tr>
+        <td>
+         <xsl:value-of          select = "."/>
+        </td>
+       </tr>
+      </xsl:for-each>
+     </table> 
+    </td>
+   </tr>
+  </table>
+  <br />
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Template to Display SemanticType 
+ =================================================================== -->
+ <xsl:template                   match = "SemanticType">
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Semantic Type</b>
+    </td>
+    <td>
+     <table cellspacing = "0" cellpadding = "0">
+      <xsl:for-each             select = "Term/PreferredName">
+       <tr>
+        <td><xsl:value-of       select = "."/>
+        </td>
+       </tr>
+      </xsl:for-each>
+     </table>
+    </td>
+   </tr>
+  </table>
+  <p/>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Template to Display TermRelationship
+ =================================================================== -->
+ <xsl:template                   match = "TermRelationship">
+  <b>
+   <font size='4'>Term Relationship</font>
+  </b>
+  <xsl:apply-templates          select = "ParentTerm"/>
+  <xsl:apply-templates          select = "RelatedTerm"/>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Template to Display ParentTerm
+ =================================================================== -->
+ <xsl:template                   match = "ParentTerm">
+  <table        xsl:use-attribute-sets = "table">
+  <xsl:for-each                 select = "TermId/Term">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>
+      <u>Parent Term</u>
+     </b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "PreferredName"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Term ID</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after(@cdr:ref, 'CDR')))"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Parent PDQ Key</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "PdqKey"/>
+    </td>
+   </tr>
+   </xsl:for-each>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Parent Type</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "ParentType"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Comment</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:if                      test = "Comment">
+      <xsl:value-of             select = "Comment"/>
+     </xsl:if>
+    </td>
+   </tr>
+  </table>
+  <p/>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Template to Display RelatedTerm
+ =================================================================== -->
+ <xsl:template                   match = "RelatedTerm">
+  <xsl:for-each                 select = "TermId/Term">
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>
+       <u>Related Term</u>
+      </b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "PreferredName"/>
+     </td>
+    </tr>
+   </table>
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Term ID</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "concat('CDR', 
+                                           number(
+                                           substring-after(@cdr:ref, 'CDR')))"/>
+     </td>
+    </tr>
+    <tr>
+     <td>
+      <b>Related PDQ Key</b>
+     </td>
+     <td>
+      <xsl:value-of             select = "PdqKey"/>
+     </td>
+    </tr>
+    <xsl:if                       test = "../../RelationshipType">
+     <tr>
+      <td>
+       <b>Relationship Type</b>
+      </td>
+      <td>
+       <xsl:value-of            select = "../../RelationshipType"/>
+      </td>
+     </tr>
+    </xsl:if>
+    <tr>
+     <td valign = "top">
+      <b>Comment Type</b>
+     </td>
+     <td>
+      <xsl:value-of             select = "Comment"/>
+     </td>
+    </tr>
+   </table>
+   <p/>
+  </xsl:for-each>
+  <p/>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Template to Display Menu Information
+ =================================================================== -->
+ <xsl:template                   match = "MenuInformation">
+  <hr/>
+  <b>
+   <font size='4'>Menu Information</font>
+  </b>
+
+  <ol>
+   <xsl:apply-templates         select = "MenuItem"/>
+  </ol>
+  <p/>
+  <hr/>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Template to Display Menu Items
+ =================================================================== -->
+ <xsl:template                   match = "MenuItem">
+  <li>
+   <b>
+    <u>Menu Item</u>
+   </b>
+   <br />
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td        xsl:use-attribute-sets = "mcell1of2">
+      <b>Menu Type</b>
+     </td>
+     <td        xsl:use-attribute-sets = "mcell2of2">
+      <xsl:value-of             select = "MenuType"/>
+     </td>
+    </tr>
+   </table>
+
+   <table       xsl:use-attribute-sets = "table">
+    <xsl:apply-templates        select = "MenuParent"/>
+   </table>
+
+   <table       xsl:use-attribute-sets = "table">
+     <tr>
+      <td       xsl:use-attribute-sets = "mcell1of2">
+       <b>Display Name</b>
+      </td>
+      <td       xsl:use-attribute-sets = "mcell2of2">
+       <xsl:value-of            select = "DisplayName"/>
+      </td>
+     </tr>
+      <tr>
+       <td>
+        <b>Sort Order</b>
+       </td>
+       <td>
+        <xsl:value-of           select = "@SortOrder"/>
+       </td>
+      </tr>
+      <tr>
+       <td>
+        <b>MenuStatus</b>
+       </td>
+       <td>
+        <xsl:value-of           select = "MenuStatus"/>
+       </td>
+      </tr>
+      <tr>
+       <td>
+        <b>Entered By</b>
+       </td>
+       <td>
+        <xsl:value-of           select = "EnteredBy"/>
+       </td>
+      </tr>
+      <tr>
+       <td>
+        <b>EntryDate</b>
+       </td>
+       <td>
+        <xsl:value-of           select = "EntryDate"/>
+       </td>
+      </tr>
+      <tr>
+       <td valign = "top">
+        <b>Comment</b>
+       </td>
+       <td>
+        <xsl:value-of           select = "Comment"/>
+       </td>
+      </tr>
+    </table>
+    <br/>
+  </li>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Template to Display Menu Parents
+ =================================================================== -->
+ <xsl:template                  match = "MenuParent">
+  <tr>
+   <td         xsl:use-attribute-sets = "mcell1of2">
+    <b>MenuParent</b>
+   </td>
+   <td         xsl:use-attribute-sets = "mcell2of2">
+    <xsl:value-of              select = "Term/PreferredName"/>
+   </td>
+  </tr>
+ </xsl:template>
+</xsl:transform>
+]]>
 </CdrDocXml>
 </CdrDoc>
