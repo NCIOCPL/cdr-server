@@ -76,62 +76,8 @@
       Display Creation Date,User, and Modification Date and User
      ================================================================== -->
    
-<br />
-     <!-- <xsl:template        match="CdrDocCtl">
-              <br />
-              <b><font size='4'>Record Information</font></b>
-              <br /><br />
-              <table cellpadding='0' cellspacing ='0'  width='90%'>
-              <tr>
-              <th align='left' width='40%'>   
-              <b>
-              <font size='3'>Created By
-              </font>
-              </b>
-              </th>
-               <td width='60%'>
-              <xsl:value-of               select="Create/User"/>
-              </td>
-              </tr>
-              <tr>
-              <th align='left' width='40%'>   
-              <b>
-              <font size='3'>Date
-              </font>
-              </b>
-              </th>
-              <td width='60%'>
-              <xsl:value-of               select="substring-before 
-                                                 (Create/Date,'T')"/>
-             </td>
-             </tr>
-              <tr>
-              <th align='left' width='40%'>   
-               <b>
-              <font size='3'>Updated By
-              </font>
-              </b>
-              </th>
-              <td width='60%'>
-              <xsl:value-of               select="Modify/User"/><br />
-              </td>
-              </tr>
-               <tr>
-              <th align='left' width='40%'>   
-              <b>
-              <font size='3'>Date
-              </font>
-              </b>
-              </th>
-              <td width='60%'>
-              <xsl:value-of               select="substring-before
-                                                  (Modify/Date,'T')"/>
-              </td>
-              </tr>
-              </table>
-              <br /><br />
-              </xsl:template>-->
-
+  <br />
+  <br />  
 <b><font size='4'>Record Information</font></b><br /><br />
 <xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
 <b><xsl:text>Date Created</xsl:text></b><xsl:text>....................</xsl:text>
@@ -142,7 +88,7 @@
 <xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/Date"/><br />
 <b><xsl:text>User</xsl:text></b><xsl:text>....................................</xsl:text>
 <xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/User"/>
-
+<br />
 </BODY>
 </xsl:template>
 
@@ -817,8 +763,10 @@
    <xsl:text>...............................................</xsl:text>
     <xsl:for-each   select ="Person/PersonLocations/
                            OtherPracticeLocation[@cdr:id=$OrgFrag]/
-                           SpecificPostalAddress/Street">      
-  <xsl:value-of select="."/><br />
+                           SpecificPostalAddress/Street"> 
+     
+  <xsl:value-of select="."/>
+  <br />
 <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
 &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
 &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
@@ -848,7 +796,8 @@
   <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
 <b><font size='3'>Country</font></b>
 <xsl:text>..................................</xsl:text>
-<xsl:value-of select="Country/CountryFullName"/><br />
+<xsl:value-of select="Country/CountryFullName"/>
+   
         
  <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
  <b><font size='3'>Zip/Postal Code</font></b>
@@ -998,6 +947,16 @@
 <xsl:text>..................................</xsl:text>
  <i>
 <xsl:value-of select="Country/CountryFullName"/>
+  
+   <xsl:if       test="@AddressType='Non-US'">
+   <xsl:text>&#xa0;&#xa0;</xsl:text>
+   <b>
+  <xsl:text>(</xsl:text>
+  <xsl:value-of select="@AddressType"/>
+  <xsl:text>)</xsl:text>
+  </b>
+  </xsl:if>
+  
  </i>
 <br />
         
@@ -1523,7 +1482,9 @@ OrganizationLocation/Organization
 
 <xsl:template match="Patient/EnteredBy | Patient/EntryDate | TermPronunciation | GlossaryTerm | PatientDisclaimer | CdrDocCtl/DocValStatus |
   CdrDocCtl/DocComment | CdrDocCtl/ReadyForReview | CdrDocCtl/DocTitle |
-  CdrDocCtl/Modify | CdrDocCtl/DocValDate"/>
+  CdrDocCtl/Modify | CdrDocCtl/DocValDate | CdrDocCtl/Create/Date |
+  CdrDocCtl/Create/User"/>
+  
 
 
  <!-- 
