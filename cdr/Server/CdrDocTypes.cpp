@@ -1,9 +1,13 @@
 /*
- * $Id: CdrDocTypes.cpp,v 1.4 2001-04-13 12:23:14 bkline Exp $
+ * $Id: CdrDocTypes.cpp,v 1.5 2001-05-16 15:45:07 bkline Exp $
  *
  * Support routines for CDR document types.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2001/04/13 12:23:14  bkline
+ * Fixed authorization check for GET DOCTYPE and MODIFY DOCTYPE, which
+ * are document-type specific.
+ *
  * Revision 1.3  2001/02/28 02:36:18  bkline
  * Fixed a bug which was preventing comments from being saved.
  *
@@ -14,11 +18,15 @@
  * Initial revision
  */
 
+// Eliminate annoying warnings about truncated debugging information.
+#pragma warning(disable : 4786)
+
 #include "CdrDom.h"
 #include "CdrCommand.h"
 #include "CdrException.h"
 #include "CdrDbResultSet.h"
 #include "CdrDbStatement.h"
+#include "CdrXsd.h"
 
 /**
  * Provides a list of document types currently defined for the CDR.
@@ -61,6 +69,45 @@ cdr::String cdr::listDocTypes(Session&          session,
 }
 
 /**
+ * Provides a list of schema documents currently stored in the CDR.
+ *
+ *  @param      session     contains information about the current user.
+ *  @param      node        contains the XML for the command.
+ *  @param      conn        reference to the connection object for the
+ *                          CDR database.
+ *  @return                 String object containing the XML for the
+ *                          command response.
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::listSchemaDocs(Session&          session,
+                                const dom::Node&  node,
+                                db::Connection&   conn)
+{
+    // Submit the query to the database
+    cdr::db::Statement s = conn.createStatement();
+    cdr::db::ResultSet r = s.executeQuery("SELECT d.title"
+                                          "  FROM document d"
+                                          "  JOIN doc_type t"
+                                          "    ON t.id   = d.doc_type"
+                                          " WHERE t.name = 'schema'");
+    
+    // Pull in the names from the result set.
+    cdr::String response;
+    while (r.next()) {
+        String name = r.getString(1);
+        if (name.length() < 1)
+            continue;
+        if (response.size() == 0)
+            response = L"<CdrListSchemaDocsResp>";
+        response += L"<DocTitle>" + name + L"</DocTitle>";
+    }
+    if (response.size() == 0)
+        return L"<CdrListSchemaDocsResp/>";
+    else
+        return response + L"</CdrListSchemaDocsResp>";
+}
+
+/**
  * Load the row from the doc_type table for the requested document type.
  * Send back the schema and other related document type information.
  *
@@ -80,6 +127,7 @@ cdr::String cdr::getDocType(Session&          session,
     const cdr::dom::Element& cmdElement = 
         static_cast<const cdr::dom::Element&>(node);
     cdr::String docTypeString = cmdElement.getAttribute(L"Type");
+    cdr::String getEnumValues = cmdElement.getAttribute(L"GetEnumValues");
     if (docTypeString.empty())
         throw cdr::Exception(L"Type attribute missing from CdrGetDocType "
                              L"command element");
@@ -90,30 +138,41 @@ cdr::String cdr::getDocType(Session&          session,
                 L"GET DOCTYPE action not authorized for this user/doctype");
 
     // Load the document type information.
-    std::string query = "SELECT f.name,        "
-                        "       t.dtd,         "
-                        "       t.xml_schema,  "
-                        "       t.comment,     "
-                        "       t.created,     "
-                        "       t.versioning,  "
-                        "       t.schema_date  "
-                        "  FROM doc_type t,    "
-                        "       format f       "
-                        " WHERE t.name   = ?   "
-                        "   AND t.format = f.id";
+    std::string query = "          SELECT f.name,             "
+                        "                 t.comment,          "
+                        "                 t.created,          "
+                        "                 t.versioning,       "
+                        "                 t.schema_date,      "
+                        "                 d.xml,              "
+                        "                 d.title             "
+                        "            FROM doc_type t          "
+                        "            JOIN format f            "
+                        "              ON t.format = f.id     "
+                        " LEFT OUTER JOIN document d          "
+                        "              ON t.xml_schema = d.id "
+                        "           WHERE t.name = ?          ";
     cdr::db::PreparedStatement ps = conn.prepareStatement(query);
     ps.setString(1, docTypeString);
     cdr::db::ResultSet rs = ps.executeQuery();
     if (!rs.next())
         throw cdr::Exception(L"Unknown document type", docTypeString);
     cdr::String format     = rs.getString(1);
-    cdr::String dtd        = rs.getString(2);
-    cdr::String schema     = rs.getString(3);
-    cdr::String comment    = rs.getString(4);
-    cdr::String created    = rs.getString(5);
-    cdr::String versioning = rs.getString(6);
-    cdr::String schemaMod  = rs.getString(7);
+    cdr::String comment    = rs.getString(2);
+    cdr::String created    = rs.getString(3);
+    cdr::String versioning = rs.getString(4);
+    cdr::String schemaMod  = rs.getString(5);
+    cdr::String schemaStr  = rs.getString(6);
+    cdr::String schemaName = rs.getString(7);
+    ps.close();
 
+    cdr::xsd::Schema* schema = 0;
+    if (!schemaStr.empty()) {
+        cdr::dom::Parser parser;
+        parser.parse(schemaStr);
+        cdr::dom::Node schemaElem = parser.getDocument().getDocumentElement();
+        schema = new cdr::xsd::Schema(schemaElem, &conn);
+    }
+    std::auto_ptr<cdr::xsd::Schema> schemaPtr(schema);
     std::wostringstream resp;
     resp << L"<CdrGetDocTypeResp Type='"
          << docTypeString
@@ -126,10 +185,25 @@ cdr::String cdr::getDocType(Session&          session,
          << L"' SchemaMod='"
          << schemaMod
          << L"'><DocDtd><![CDATA["
-         << dtd
-         << L"]]></DocDtd><DocSchema><![CDATA["
-         << schema
-         << L"]]></DocSchema>";
+         << (schema ? schema->makeDtd(schemaName) : L"")
+         << L"]]></DocDtd><DocSchema>"
+         << schemaName
+         << L"</DocSchema>";
+    if (schema && getEnumValues == L"Y") {
+        cdr::xsd::Element& topElem = schema->getTopElement();
+        cdr::xsd::ValidValueSets validValueSets;
+        schema->getValidValueSets(validValueSets);
+        cdr::xsd::ValidValueSets::const_iterator i = validValueSets.begin();
+        while (i != validValueSets.end()) {
+            const cdr::StringSet* validValues = i->second;
+            resp << L"<EnumSet Node='" << i->first << L"'>";
+            cdr::StringSet::const_iterator j = validValues->begin();
+            while (j != validValues->end())
+                resp << L"<ValidValue>" << *j++ << L"</ValidValue>";
+            resp << L"</EnumSet>";
+            ++i;
+        }
+    }
     if (!comment.isNull())
         resp << L"<Comment>" << comment << L"</Comment>";
     resp << L"</CdrGetDocTypeResp>";
@@ -174,29 +248,19 @@ cdr::String cdr::addDocType(Session&          session,
                              versioningString);
 
     // Extract the schema.
-    cdr::String schema;
+    cdr::String schema(true);
     cdr::String comment(true);  // default to NULL
     cdr::dom::Node child = node.getFirstChild();
     while (child != 0) {
         if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String name = child.getNodeName();
-            if (name == L"DocSchema") {
-                cdr::dom::Node n = child.getFirstChild();
-                while (n != 0) {
-                    if (n.getNodeType() == cdr::dom::Node::CDATA_SECTION_NODE) {
-                        schema = n.getNodeValue();
-                        break;
-                    }
-                    n = n.getNextSibling();
-                }
-            }
+            if (name == L"DocSchema")
+                schema = cdr::dom::getTextContent(child);
             else if (name == L"Comment")
                 comment = cdr::dom::getTextContent(child);
         }
         child = child.getNextSibling();
     }
-    if (schema.empty())
-        throw cdr::Exception(L"DocSchema element missing from command");
 
     // Look up the format's primary key.
     std::string q1 = "SELECT id FROM format WHERE name = ?";
@@ -220,14 +284,30 @@ cdr::String cdr::addDocType(Session&          session,
         throw cdr::Exception(L"Document type already exists",
                              docTypeString);
     
+    // Look up the schema document's primary key.
+    if (schema.empty())
+        throw cdr::Exception(L"DocSchema element missing from command");
+    std::string q3 = "SELECT d.id                "
+                     "  FROM document d          "
+                     "  JOIN doc_type t          "
+                     "    ON t.id    = d.doc_type"
+                     " WHERE t.name  = 'schema'  "
+                     "   AND d.title = ?         ";
+    cdr::db::PreparedStatement ps3 = conn.prepareStatement(q3);
+    ps3.setString(1, schema);
+    cdr::db::ResultSet rs3 = ps3.executeQuery();
+    if (!rs3.next())
+        throw cdr::Exception(L"Schema document not found", schema);
+    int schemaId = rs3.getInt(1);
+    ps3.close();
+
     // Create the new document type.
-    std::string q3 = "INSERT INTO doc_type"
+    std::string q4 = "INSERT INTO doc_type"
                      "(                   "
                      "    name,           "
                      "    format,         "
                      "    created,        "
                      "    versioning,     "
-                     "    dtd,            "
                      "    xml_schema,     "
                      "    schema_date,    "
                      "    comment         "
@@ -238,18 +318,17 @@ cdr::String cdr::addDocType(Session&          session,
                      "    ?,              "
                      "    GETDATE(),      "
                      "    ?,              "
-                     "    '',             "
                      "    ?,              "
                      "    GETDATE(),      "
                      "    ?               "
                      ")                   ";
-    cdr::db::PreparedStatement ps3 = conn.prepareStatement(q3);
-    ps3.setString(1, docTypeString);
-    ps3.setInt   (2, formatId);
-    ps3.setString(3, versioningString);
-    ps3.setString(4, schema);
-    ps3.setString(5, comment);
-    if (ps3.executeUpdate() != 1)
+    cdr::db::PreparedStatement ps4 = conn.prepareStatement(q4);
+    ps4.setString(1, docTypeString);
+    ps4.setInt   (2, formatId);
+    ps4.setString(3, versioningString);
+    ps4.setInt   (4, schemaId);
+    ps4.setString(5, comment);
+    if (ps4.executeUpdate() != 1)
         throw cdr::Exception(L"Failure inserting new document type",
                              docTypeString);
                      
@@ -301,16 +380,8 @@ cdr::String cdr::modDocType(Session&          session,
     while (child != 0) {
         if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String name = child.getNodeName();
-            if (name == L"DocSchema") {
-                cdr::dom::Node n = child.getFirstChild();
-                while (n != 0) {
-                    if (n.getNodeType() == cdr::dom::Node::CDATA_SECTION_NODE) {
-                        schema = n.getNodeValue();
-                        break;
-                    }
-                    n = n.getNextSibling();
-                }
-            }
+            if (name == L"DocSchema")
+                schema = cdr::dom::getTextContent(child);
             else if (name == L"Comment")
                 comment = cdr::dom::getTextContent(child);
         }
@@ -337,21 +408,36 @@ cdr::String cdr::modDocType(Session&          session,
         throw cdr::Exception(L"Unrecognized document type", docTypeString);
     int docTypeId = rs2.getInt(1);
 
+    // Look up the schema document's primary key.
+    std::string q3 = "SELECT d.id                "
+                     "  FROM document d          "
+                     "  JOIN doc_type t          "
+                     "    ON t.id    = d.doc_type"
+                     " WHERE t.name  = 'schema'  "
+                     "   AND d.title = ?         ";
+    cdr::db::PreparedStatement ps3 = conn.prepareStatement(q3);
+    ps3.setString(1, schema);
+    cdr::db::ResultSet rs3 = ps3.executeQuery();
+    if (!rs3.next())
+        throw cdr::Exception(L"Schema document not found", schema);
+    int schemaId = rs3.getInt(1);
+    ps3.close();
+
     // Create the new document type.
-    std::string q3 = "UPDATE doc_type                "
+    std::string q4 = "UPDATE doc_type                "
                      "   SET format      = ?,        "
                      "       versioning  = ?,        "
                      "       xml_schema  = ?,        "
                      "       schema_date = GETDATE(),"
                      "       comment     = ?         "
                      " WHERE id          = ?         ";
-    cdr::db::PreparedStatement ps3 = conn.prepareStatement(q3);
-    ps3.setInt   (1, formatId);
-    ps3.setString(2, versioningString);
-    ps3.setString(3, schema);
-    ps3.setString(4, comment);
-    ps3.setInt   (5, docTypeId);
-    if (ps3.executeUpdate() != 1)
+    cdr::db::PreparedStatement ps4 = conn.prepareStatement(q4);
+    ps4.setInt   (1, formatId);
+    ps4.setString(2, versioningString);
+    ps4.setInt   (3, schemaId);
+    ps4.setString(4, comment);
+    ps4.setInt   (5, docTypeId);
+    if (ps4.executeUpdate() != 1)
         throw cdr::Exception(L"Failure modifying document type",
                              docTypeString);
                      
