@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.6 2000-05-04 12:45:25 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.7 2000-05-09 20:15:34 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/05/04 12:45:25  bkline
+ * Changed getString() to what() for cdr::Exceptions.
+ *
  * Revision 1.5  2000/05/03 15:24:34  bkline
  * Added timestamp for command batch response.
  *
@@ -313,7 +316,7 @@ cdr::String processCommand(cdr::Session& session,
                  * Only way you can get in the door without a valid session
                  * is with a logon command.
                  */
-                if (cdrCommand != cdr::logon && session.name.size() < 1)
+                if (cdrCommand != cdr::logon && !session.isOpen())
                     return cdr::String(rspTag + L"failure'>\n  <"
                                               + cmdName
                                               + L"Resp>\n"
@@ -325,7 +328,7 @@ cdr::String processCommand(cdr::Session& session,
                                               + L"Resp>\n </CdrResponse>\n");
 
                 // Optimistic assumption.
-                session.lastStatus = L"success";
+                session.setStatus(L"success");
                 conn.setAutoCommit(true);
                 cmdResponse = cdrCommand(session, specificCmd, conn);
             }
@@ -342,7 +345,7 @@ cdr::String processCommand(cdr::Session& session,
                                           + cmdName
                                           + L"Resp>\n </CdrResponse>\n");
             }
-            cdr::String response = rspTag + session.lastStatus
+            cdr::String response = rspTag + session.getStatus()
                                           + L"'>\n"
                                           + cmdResponse 
                                           + L" </CdrResponse>\n";
