@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.33 2001-07-28 11:58:38 bkline Exp $
+ * $Id: tables.sql,v 1.34 2001-08-07 21:09:59 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2001/07/28 11:58:38  bkline
+ * Added node_loc column to query_term table.
+ *
  * Revision 1.32  2001/07/26 23:09:07  ameyer
  * Updated description of xml_schema column to show change from schema
  * in place to schema referenced in the document table/view.
@@ -354,6 +357,10 @@ CREATE TABLE active_status
  *               of the document
  *active_status  'A' indicates an active document.  'D' = deleted.  Other
  *               values could be added in the future.
+ * last_frag_id  if a document can contain elements with cdr:id attributes,
+ *               we auto generate them in the form '_1', '_2', etc. for all
+ *               elements which don't already have these attributes.  This
+ *               stores the last used fragment id.  Next one used is this + 1.
  */
 CREATE TABLE all_docs
            (id INTEGER IDENTITY PRIMARY KEY,
@@ -364,7 +371,8 @@ CREATE TABLE all_docs
          title VARCHAR(255) NOT NULL,
            xml NTEXT NOT NULL,
        comment VARCHAR(255) NULL,
- active_status CHAR NOT NULL REFERENCES active_status DEFAULT 'A')
+ active_status CHAR NOT NULL REFERENCES active_status DEFAULT 'A',
+  last_frag_id INTEGER DEFAULT 0)
 
 CREATE VIEW document AS SELECT * FROM all_docs WHERE active_status != 'D'
 
