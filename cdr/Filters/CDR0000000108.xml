@@ -721,8 +721,7 @@
  ===================================================================
  Upcoding the Parent Names for the address block.
  =================================================================== -->
- <xsl:template                    name = "upcode-parentname">
-  <xsl:param                      name = "ParentID"/>
+ <xsl:template                    name = "upcode-parentname">  
   <xsl:param                      name = "ParentDoc"/> 
   <!-- VVVV -->
   <OrganizationName>
@@ -743,9 +742,7 @@
                                                           $nextParentID,
                                                           '/last'))"/>
 
-   <xsl:call-template             name = "upcode-parentname">
-    <xsl:with-param               name = "ParentID"
-                                select = "$nextParentID"/>
+   <xsl:call-template             name = "upcode-parentname">    
     <xsl:with-param               name = "ParentDoc"
                                 select = "$nextParentDoc"/>
    </xsl:call-template>
@@ -834,6 +831,9 @@
                                 select = "document(concat('cdr:', 
                                                           $personId,
                                                           '/last'))"/>
+  <xsl:variable                   name = "specificContact"
+                                select = "ProtocolSpecificContact"/>
+                                                         
   <LeadOrgPersonnel                 id = "{@cdr:id}">
   <!-- If the person status is "Inactive" include the status as an attribute 
        for the person element (information needed for vendor output -->
@@ -851,7 +851,12 @@
                                            PrivatePractice/
                                            PrivatePracticeLocation
                                           [@cdr:id = $fragId]">
-     <xsl:call-template           name = "getPrivatePracticeLocation"/>
+     <xsl:call-template           name = "getPrivatePracticeLocation"> 
+      <xsl:with-param             name = "specificPhone"
+                                select = "NonExistentNode"/>
+      <xsl:with-param             name = "specificContact"
+                                select = "$specificContact"/>
+     </xsl:call-template>    
     </xsl:for-each>
 
     <xsl:for-each               select = "$person/Person/PersonLocations/
@@ -862,6 +867,8 @@
                                 select = "SpecificPhone"/>
       <xsl:with-param             name = "errorPersonId"
                                 select = "$personId"/>
+      <xsl:with-param             name = "specificContact"
+                                select = "$specificContact"/>
      </xsl:call-template>
     </xsl:for-each>
    </Person>
@@ -1019,8 +1026,10 @@
                                           [@cdr:id = $SPFrag]">
     <xsl:call-template            name = "getPrivatePracticeLocation">
      <xsl:with-param              name = "specificPhone"
-                                select = "$specificPhone"/>
-    </xsl:call-template>
+                                select = "$specificPhone"/> 
+     <xsl:with-param              name = "specificContact"
+                                select = "NonExistentNode"/>     
+    </xsl:call-template>    
    </xsl:for-each>
 
    <xsl:for-each                select = "$SPInfo/Person/PersonLocations/
@@ -1031,6 +1040,8 @@
                                 select = "$specificPhone"/>
      <xsl:with-param              name = "errorPersonId"
                                 select = "$SPID"/>
+     <xsl:with-param              name = "specificContact"
+                                select = "NonExistentNode"/>      
     </xsl:call-template>
    </xsl:for-each>
 
@@ -1074,7 +1085,9 @@
     <xsl:call-template            name = "getPrivatePracticeLocation">
      <xsl:with-param              name = "specificPhone"
                                 select = "SpecificPhone"/>
-    </xsl:call-template>
+     <xsl:with-param              name = "specificContact"
+                                select = "NonExistentNode"/>    
+    </xsl:call-template>   
    </xsl:for-each>
 
    <xsl:for-each                select = "$SPInfo/Person/PersonLocations/
@@ -1085,6 +1098,8 @@
                                 select = "SpecificPhone"/>
      <xsl:with-param              name = "errorPersonId"
                                 select = "$PPID"/>
+     <xsl:with-param              name = "specificContact"
+                                select = "NonExistentNode"/>   
     </xsl:call-template>
    </xsl:for-each>
 
@@ -1098,19 +1113,17 @@
  =================================================================== -->
  <xsl:template                    name = "getPrivatePracticeLocation">
   <xsl:param                      name = "specificPhone"/>
-
-   
-  <xsl:apply-templates          select = "PostalAddress"
-                                  mode = "copy"/>
+  <xsl:param                      name = "specificContact"/> 
 
   <xsl:apply-templates          select = "PostalAddress"/>
 
   <!-- Phone element gets special treatment. -->
   <xsl:choose>
+   <xsl:when                      test = "$specificContact/Phone">
+    <xsl:apply-templates        select = "$specificContact/Phone"/>
+   </xsl:when>
    <xsl:when                      test = "$specificPhone">
-    <Phone>
-     <xsl:value-of              select = "$specificPhone"/>
-    </Phone>
+    <xsl:apply-templates        select = "$specificPhone"/>
    </xsl:when>
    <xsl:otherwise>
     <xsl:apply-templates        select = "Phone"
@@ -1118,10 +1131,42 @@
    </xsl:otherwise>
   </xsl:choose>
 
-  <xsl:apply-templates          select = "TollFreePhone"/>
-  <xsl:apply-templates          select = "Fax"/>
-  <xsl:apply-templates          select = "Email"/>
-  <xsl:apply-templates          select = "WebSite"/>
+  <xsl:choose>
+   <xsl:when                      test = "$specificContact/TollFreePhone">
+    <xsl:apply-templates        select = "$specificContact/TollFreePhone"/>
+   </xsl:when>   
+   <xsl:otherwise>
+    <xsl:apply-templates        select = "TollFreePhone"/>
+   </xsl:otherwise>
+  </xsl:choose>
+
+  <xsl:choose>
+   <xsl:when                      test = "$specificContact/Fax">
+    <xsl:apply-templates        select = "$specificContact/Fax"/>
+   </xsl:when>   
+   <xsl:otherwise>
+    <xsl:apply-templates        select = "Fax"/>
+   </xsl:otherwise>
+  </xsl:choose>
+
+  <xsl:choose>
+   <xsl:when                      test = "$specificContact/Email">
+    <xsl:apply-templates        select = "$specificContact/Email"/>
+   </xsl:when>   
+   <xsl:otherwise>
+    <xsl:apply-templates        select = "Email"/>
+   </xsl:otherwise>
+  </xsl:choose>
+
+  <xsl:choose>
+   <xsl:when                      test = "$specificContact/WebSite">
+    <xsl:apply-templates        select = "$specificContact/WebSite"/>
+   </xsl:when>   
+   <xsl:otherwise>
+    <xsl:apply-templates        select = "WebSite"/>
+   </xsl:otherwise>
+  </xsl:choose>  
+ 
  </xsl:template>
         
  <!--
@@ -1132,6 +1177,7 @@
  <xsl:template                    name = "getOtherPracticeLocation">
   <xsl:param                      name = "specificPhone"/>
   <xsl:param                      name = "errorPersonId"/>
+  <xsl:param                      name = "specificContact"/>                              
   <xsl:variable                   name = "fragRef"
                                 select = "OrganizationLocation/@cdr:ref"/>
   <!-- Stop processing if document link cannot be resolved -->
@@ -1231,9 +1277,7 @@
      </xsl:message> 
     </xsl:if>
 
-    <xsl:call-template            name = "upcode-parentname">
-     <xsl:with-param              name = "ParentID"
-                                select = "$ParentID"/>
+    <xsl:call-template            name = "upcode-parentname">   
      <xsl:with-param              name = "ParentDoc"
                                 select = "$ParentDoc"/>
     </xsl:call-template>
@@ -1242,6 +1286,9 @@
 
   <!-- Include the Organization Address Block -->
   <xsl:choose>
+   <xsl:when                      test = "$specificContact/PostalAddress">
+    <xsl:apply-templates        select = "$specificContact/PostalAddress"/>
+   </xsl:when>
    <xsl:when                      test = "SpecificPostalAddress">
     <xsl:apply-templates        select = "SpecificPostalAddress"/>
    </xsl:when>
@@ -1251,6 +1298,9 @@
   </xsl:choose>
 
   <xsl:choose>
+   <xsl:when                      test = "$specificContact/Phone">
+    <xsl:apply-templates        select = "$specificContact/Phone"/>
+   </xsl:when>
    <xsl:when                      test = "$specificPhone">
     <Phone>
      <xsl:value-of              select = "$specificPhone"/>
@@ -1266,6 +1316,9 @@
   </xsl:choose>
 
   <xsl:choose>
+   <xsl:when                      test = "$specificContact/TollFreePhone">
+    <xsl:apply-templates        select = "$specificContact/TollFreePhone"/>
+   </xsl:when>
    <xsl:when                      test = "SpecificTollFreePhone">
     <xsl:apply-templates        select = "SpecificTollFreePhone"/>
    </xsl:when>
@@ -1275,6 +1328,9 @@
   </xsl:choose>
 
   <xsl:choose>
+   <xsl:when                      test = "$specificContact/SpecificFax">
+    <xsl:apply-templates        select = "$specificContact/SpecificFax"/>
+   </xsl:when>
    <xsl:when                      test = "SpecificFax">
     <xsl:apply-templates        select = "SpecificFax"/>
    </xsl:when>
@@ -1287,7 +1343,7 @@
   =================================================================
   WebSite and E-mail are only displayed if available in the Person
   record.  These elements are not to be retrieved from Organization
-  ================================================================= -->
+  ================================================================= 
   <xsl:if                         test = "SpecificEmail">
    <xsl:apply-templates         select = "SpecificEmail"/>
   </xsl:if>
@@ -1295,6 +1351,31 @@
   <xsl:if                         test = "SpecificWebSite">
    <xsl:apply-templates         select = "SpecificWebSite"/>
   </xsl:if>
+  -->
+
+  <!-- 
+  =================================================================
+  New logic done by Peter for Email and WebSite. "if" condition on
+  the top is unnecessary because apply-templates will not produce 
+  anything if the node does not exist.
+  ================================================================= -->
+  <xsl:choose>
+   <xsl:when                      test = "$specificContact/Email">
+    <xsl:apply-templates        select = "$specificContact/Email"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:apply-templates        select = "SpecificEmail"/>
+   </xsl:otherwise>
+  </xsl:choose>
+
+  <xsl:choose>
+   <xsl:when                      test = "$specificContact/WebSite">
+    <xsl:apply-templates        select = "$specificContact/WebSite"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:apply-templates        select = "SpecificWebSite"/>
+   </xsl:otherwise>
+  </xsl:choose>
 
  </xsl:template>
 
