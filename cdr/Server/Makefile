@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.31 2001-02-28 02:34:54 bkline Exp $
+# $Id: Makefile,v 1.32 2001-02-28 03:19:15 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.31  2001/02/28 02:34:54  bkline
+# Added rule for building test client.
+#
 # Revision 1.30  2001/01/17 21:46:52  bkline
 # Removed CdrGetSchema.obj.
 #
@@ -138,6 +141,7 @@ HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrGetDoc.h \
         $(CDRINC)/CdrInt.h \
         $(CDRINC)/CdrLink.h \
+        $(CDRINC)/CdrLinkProcs.h \
         $(CDRINC)/CdrLog.h \
         $(CDRINC)/CdrParserInput.h \
         $(CDRINC)/CdrRegEx.h \
@@ -178,6 +182,7 @@ OBJS   =CdrCommand.obj \
         CdrDoc.obj \
         CdrValidateDoc.obj \
         CdrLink.obj \
+        CdrLinkProcs.obj \
         CdrSearch.obj \
         CdrSearch_tab.obj \
         CdrGetDoc.obj \
