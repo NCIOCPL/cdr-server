@@ -1,4 +1,6 @@
-To build the CDR server, run nmake with no explicit target.
+To build the CDR server, run nmake with no explicit target (but
+see the notes below about building debugging versus non-debugging
+versions of the server).
 To install, run nmake with the target install.
 If the components that the makefile expects to find are not on the D:
 drive, add DRV=x: to the invocation of nmake, with x being the drive
@@ -74,6 +76,46 @@ Here's how to build Sablotron for debugging:
  8. nmake SABLOT=d:/path/to/debug/version/of/Sablotron
 
 ============================================================================
+
+I have modified the Makefile for the CDR server to split the debugging
+and production builds.  Now by default "nmake" builds a binary which
+will work on any of the three servers (BACH, FRANCK, or MAHLER), but
+without debugging symbols.  To build a debug version of CdrServer.exe,
+use "nmake DBG=1".  I have split Cdr.lib into Cdr.lib and Cdrd.lib, but
+I don't have separate directories for the object modules, so you need to
+make sure that you do a "make clean" between builds if you're switching
+back and forth between debug and production in the same directory.  The
+simpler and safer approach is to use separate directories for different
+builds.  More frequently now I just create a new temporary directory
+from cvs when I want to build the server.
+
+When all the third-party packages are in sync between the three machines
+you can just copy the production binary for CdrServer.exe directly from
+MAHLER.  This even works most of the time when the third-party packages
+are not all in sync, but not all of the time.  The approach which always
+works is to use Alan's DRV variable to point the makefile at the machine
+for which the target is being built.  So for example, if I want to build
+a new server for BACH, and I'm not sure the third-party packages are all
+compatible between BACH and MAHLER, I do the following:
+
+ 1. Open a connection to MAHLER (telnet or Terminal Server).
+ 2. Map a drive to \\BACH\d$ (for example B:).
+ 3. Change to B:\tmp.
+ 4. Check out the server code (cvs co server).
+ 5. Change to the server directory.
+ 6. Invoke "nmake DRV=B:".
+ 7. Open a connection to BACH.
+ 8. Stop the CDR service.
+ 9. Copy the new CdrServer.exe to d:\cdr\bin.
+10. Restart the CDR service.
+11. Clean up the temporary build directory.
+
+The extra steps toward the end are necessary because of course the "NET
+START" and "NET STOP" commands in the _install target rule wouldn't work
+on BACH if invoked on MAHLER.
+
+============================================================================
+
 The dependencies for the server are listed below:
 
   * icu (Unicode support package needed by xml4c, below)
