@@ -6,424 +6,249 @@
 <ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
-<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                               version = "1.0"
-                             xmlns:cdr = "cips.nci.nih.gov/cdr"
-               exclude-result-prefixes = "cdr">
+<xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             version = "1.0"
+                           xmlns:cdr = "cips.nci.nih.gov/cdr"
+             exclude-result-prefixes = "cdr">
   
 <!-- ======================================================================
       Display a Summary Reference, SummaryFragmentRef or LOEFragmentRef or 
       ProtocolRef
-     ===================================================================== -->
-  <xsl:template                  match = "SummaryRef | ProtocolRef |
-                                          SummaryFragmentRef | 
-                                          LOEFragmentRef">
-    <u><xsl:value-of            select = "."/></u>
-  </xsl:template>
+     ====================================================================== -->
+    <xsl:template              match = "SummaryRef | ProtocolRef |
+                                        SummaryFragmentRef | 
+                                        LOEFragmentRef">
+     <u><xsl:value-of         select = "."/></u>
+    </xsl:template>
 
 <!-- ======================================================================
                        Link to glossaryTermRefs 
-     ===================================================================== -->
-  <xsl:template                  match = "GlossaryTermRef |
-                                          LOERef">
-    <a>
-      <xsl:attribute              name = "href">
-        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
-                                                 'DocId=', @cdr:href,
-                                                 '&amp;Filter=name:Glossary',
-                                                 '+Term+Display+for+Patient',
-                                                 '+Summaries')"/>
+     ====================================================================== -->
+    <xsl:template              match = "GlossaryTermRef | LOERef">
+     <a>
+      <xsl:attribute            name = "href">
+       <xsl:value-of          select = "concat('/cgi-bin/cdr/Filter.py?',
+                                               'DocId=', @cdr:href,
+                                               '&amp;Filter=name:Glossary',
+                                               '+Term+Display+for+Patient',
+                                               '+Summaries')"/>
       </xsl:attribute>
-      <xsl:value-of             select = "."/>
-    </a>
-  </xsl:template>
+      <xsl:value-of           select = "."/>
+     </a>
+    </xsl:template>
 
-<!-- ======================================================================
-                       Display an ordered list 
-     ===================================================================== -->
-  <xsl:template                   name = "OrderedList">
-    <xsl:param                    name = "markup"/>
-     
-    <xsl:variable                 name = "compact"
-                                select = "@Compact"/> 
-    <xsl:variable                 name = "style"
-                                select = "@Style"/> 
-                                
-    <!-- Handle ListTitle first. -->
-    <xsl:for-each               select = "Insertion/ListTitle |
-                                          Deletion/ListTitle |
-                                          ListTitle">
-      <xsl:choose>
-        <xsl:when                 test = "name(..) = 'Deletion'">
-          <xsl:if                 test = "$markup = 'Redline'">
-            <strike>             
-            <xsl:apply-templates 
-                                select = "."/>                                        
-            </strike>
-          </xsl:if>
-        </xsl:when>
-        <xsl:when                 test = "name(..) = 'Insertion'">
-          <xsl:if                 test = "$markup = 'Redline'">
-            <font color="#FF0000">
-            <xsl:apply-templates 
-                                select = "."/>  
-            </font>
-          </xsl:if>
-          <xsl:if                 test = "$markup = 'BoldUnderline'">
-            <u><b>
-            <xsl:apply-templates 
-                                select = "."/>
-            </b></u>
-          </xsl:if>
-        </xsl:when> 
-        <xsl:otherwise>                                           
-          <xsl:apply-templates  select = "."/> 
-        </xsl:otherwise> 
-      </xsl:choose> 
-    </xsl:for-each> 
-
-    <!-- Handle ListItem now. -->
-    <ol>
-    <xsl:for-each               select = "Insertion/ListItem |
-                                          Deletion/ListItem |
-                                          ListItem"> 
-      <xsl:choose>
-        <xsl:when                 test = "name(..) = 'Deletion'">
-          <xsl:if                 test = "$markup = 'Redline'">
-            <strike>             
-            <xsl:call-template    name = "OrderedListItem">  
-              <xsl:with-param     name = "style"
-                                select = "$style"/>
-            </xsl:call-template>           
-            </strike>
-          </xsl:if>
-        </xsl:when>
-        <xsl:when                 test = "name(..) = 'Insertion'">
-          <xsl:if                 test = "$markup = 'Redline'">
-            <font color="#FF0000">
-            <xsl:call-template    name = "OrderedListItem">  
-              <xsl:with-param     name = "style"
-                                select = "$style"/>
-            </xsl:call-template> 
-            </font>
-          </xsl:if>
-          <xsl:if                 test = "$markup = 'BoldUnderline'">
-            <u><b>
-            <xsl:call-template    name = "OrderedListItem">  
-              <xsl:with-param     name = "style"
-                                select = "$style"/>
-            </xsl:call-template>
-            </b></u>
-          </xsl:if>
-        </xsl:when> 
-        <xsl:otherwise>                                           
-          <xsl:call-template    name = "OrderedListItem">  
-            <xsl:with-param     name = "style"
-                              select = "$style"/>
-          </xsl:call-template>
-        </xsl:otherwise> 
-      </xsl:choose> 
-
-      <!-- Take care of extra attribute compact. -->
-      <xsl:if                     test = "position() != last() and
-                                          $compact = 'No'">
-        <br />        
-      </xsl:if>
-   
-    </xsl:for-each>
-    </ol>
-  </xsl:template>
-    
-<!-- ======================================================================
+<!-- =====================================================================
                 Display Itemized Lists for KeyPoints
-     ===================================================================== -->    
-  <xsl:template                  match = "KeyPointsList[@Style='bullet'] |
-                                          KeyPointsList[@Style='dash']">
-    <ul>
-    <xsl:for-each               select = "ListItem">
+     ===================================================================== -->
+   <xsl:template              match = "KeyPointsList[@Style='bullet'] |
+                                       KeyPointsList[@Style='dash']">
+     <ul>
+     <xsl:for-each            select = "ListItem">
       <li>
       <xsl:choose>
-        <xsl:when                 test = "../@Style='bullet'">
-          <xsl:attribute          name = "type">
-            <xsl:text>disc</xsl:text>
-          </xsl:attribute>
-        </xsl:when>
-        <xsl:when                 test = "../@Style='dash'">
-          <xsl:attribute          name = "type">
-            <xsl:text>square</xsl:text>
-          </xsl:attribute>
-        </xsl:when>
+       <xsl:when                test = "../@Style='bullet'">
+        <xsl:attribute          name = "type">
+         <xsl:text>disc</xsl:text>
+        </xsl:attribute>
+       </xsl:when>
+       <xsl:when                test = "../@Style='dash'">
+        <xsl:attribute          name = "type">
+         <xsl:text>square</xsl:text>
+        </xsl:attribute>
+       </xsl:when>
       </xsl:choose>                               
       <xsl:apply-templates/>
-     </li>
-    </xsl:for-each>
-    </ul>
-  </xsl:template>
+      </li>
+     </xsl:for-each>
+     </ul>
+    </xsl:template>
                        
 <!-- =====================================================================
                 Display an itemized list
-     ==================================================================== -->               
-  <xsl:template                   name = "ItemizedList">
-    <xsl:param                    name = "markup"/>
-
-    <xsl:variable                 name = "compact"
-                                select = "@Compact"/>
-    <xsl:variable                 name = "style"
-                                select = "@Style"/> 
-     
-    <!-- Handle ListTitle first. -->
-    <xsl:for-each               select = "Insertion/ListTitle |
-                                          Deletion/ListTitle |
-                                          ListTitle">
-      <xsl:choose>
-        <xsl:when                 test = "name(..) = 'Deletion'">
-          <xsl:if                 test = "$markup = 'Redline'">
-            <strike>             
-            <xsl:apply-templates 
-                                select = "."/>                                        
-            </strike>
-          </xsl:if>
-        </xsl:when>
-        <xsl:when                 test = "name(..) = 'Insertion'">
-          <xsl:if                 test = "$markup = 'Redline'">
-            <font color="#FF0000">
-            <xsl:apply-templates 
-                                select = "."/>  
-            </font>
-          </xsl:if>
-          <xsl:if                 test = "$markup = 'BoldUnderline'">
-            <u><b>
-            <xsl:apply-templates 
-                                select = "."/>
-            </b></u>
-          </xsl:if>
-        </xsl:when> 
-        <xsl:otherwise>                                           
-          <xsl:apply-templates  select = "."/> 
-        </xsl:otherwise> 
-      </xsl:choose> 
-    </xsl:for-each> 
-
-    <!-- Handle ListItem now. -->
-    <ul>
-    <xsl:for-each               select = "Insertion/ListItem |
-                                          Deletion/ListItem |
-                                          ListItem"> 
-                                      
-      <xsl:choose>
-        <xsl:when                 test = "name(..) = 'Deletion'">
-          <xsl:if                 test = "$markup = 'Redline'">
-            <strike>             
-            <xsl:call-template    name = "ItemizedListItem">  
-              <xsl:with-param     name = "style"
-                                select = "$style"/>
-            </xsl:call-template>           
-            </strike>
-          </xsl:if>
-        </xsl:when>
-        <xsl:when                 test = "name(..) = 'Insertion'">
-          <xsl:if                 test = "$markup = 'Redline'">            
-            <font color="#FF0000">
-            <xsl:call-template    name = "ItemizedListItem">  
-              <xsl:with-param     name = "style"
-                                select = "$style"/>
-            </xsl:call-template> 
-            </font>
-          </xsl:if>
-          <xsl:if                 test = "$markup = 'BoldUnderline'">
-            <u><b>
-            <xsl:call-template    name = "ItemizedListItem">  
-              <xsl:with-param     name = "style"
-                                select = "$style"/>
-            </xsl:call-template>
-            </b></u>
-          </xsl:if>
-        </xsl:when> 
-        <xsl:otherwise>                                
-          <xsl:call-template    name = "ItemizedListItem">  
-            <xsl:with-param     name = "style"
-                              select = "$style"/>
-          </xsl:call-template>
-        </xsl:otherwise> 
-      </xsl:choose> 
-      
+     ===================================================================== -->
+   <xsl:template              match = "ItemizedList">   
+  
+     <xsl:apply-templates     select = "ListTitle"/>
+ 
+     <!-- Handle ListItem now. -->
+     <ul>
+     <xsl:for-each            select = "ListItem"> 
+      <xsl:call-template        name = "ItemizedListItem"/>
+    
       <!-- Take care of extra attributes. -->
-      <xsl:if                     test = "position() != last()">      
-        <xsl:choose>
-          <xsl:when               test = "$compact = 'No'">
-            <br />
-            <br />
-          </xsl:when>
-          <xsl:when               test = "not($style = 'dash')">
-            <br />
-          </xsl:when>
-        </xsl:choose>
+      <xsl:if                   test = "position() != last()">      
+       <xsl:choose>
+        <xsl:when               test = "@compact = 'No'">
+         <br />
+         <br />
+        </xsl:when>
+        <xsl:when               test = "not(@Style = 'dash')">
+         <br />
+        </xsl:when>
+       </xsl:choose>
       </xsl:if>
 
-    </xsl:for-each>    
-    </ul>  
-  </xsl:template>          
+     </xsl:for-each>    
+     </ul>  
+    </xsl:template>  
  
-<!-- ======================================================================
-                     Display a Subscript 
-     ===================================================================== -->   
-  <xsl:template match="Subscript">
-   <sub><xsl:apply-templates/></sub>
-  </xsl:template>
+<!-- =====================================================================
+                       Display an ordered list 
+     ===================================================================== -->
+    <xsl:template              match = "OrderedList">     
+   
+     <xsl:apply-templates     select = "ListTitle"/>     
 
-<!-- ======================================================================
+     <!-- Handle ListItem now. -->
+     <ol>
+     <xsl:for-each            select = "ListItem">
+      <xsl:call-template        name = "OrderedListItem"/> 
+     
+      <!-- Take care of extra attribute compact. -->
+      <xsl:if                   test = "position() != last() and
+                                        @Compact = 'No'">
+       <br />        
+      </xsl:if>   
+     </xsl:for-each>
+     </ol>
+    </xsl:template>        
+ 
+<!-- =====================================================================
+                     Display a Subscript 
+     ===================================================================== -->
+    <xsl:template              match = "Subscript">
+     <sub><xsl:apply-templates/></sub>
+    </xsl:template>
+
+<!-- =====================================================================
                      Display a Superscript 
      ===================================================================== -->
-  <xsl:template match="Superscript">
-   <sup><xsl:apply-templates/></sup>
-  </xsl:template>
+    <xsl:template              match = "Superscript">
+     <sup><xsl:apply-templates/></sup>
+    </xsl:template>
 
-<!-- ======================================================================
+<!-- =====================================================================
                      Display Strong 
      ===================================================================== -->
-  <xsl:template match="Strong">
-   <b><xsl:apply-templates/></b>
-  </xsl:template>
+    <xsl:template              match = "Strong">
+     <b><xsl:apply-templates/></b>
+    </xsl:template>
 
-<!-- ======================================================================
+<!-- =====================================================================
        Display Emphasis, ScientificName, ForeignWord, GeneName
      ===================================================================== -->
-  <xsl:template                  match = "Emphasis | ScientificName |
-                                          ForeignWord | GeneName">
-   <i>
-   <xsl:apply-templates/>
-   </i>
-  </xsl:template>
+    <xsl:template              match = "Emphasis | ScientificName |
+                                        ForeignWord | GeneName">
+     <i><xsl:apply-templates/></i>
+    </xsl:template>
 
-<!-- ======================================================================
+<!-- =====================================================================
                          Display a note        
      ===================================================================== -->
-  <xsl:template                  match = "Note">
-   <i>
-    <xsl:text>&#xa0;[</xsl:text>
-    <xsl:choose>
-     <xsl:when                    test = "//SummaryLanguage ='Spanish'"> 
-      <xsl:text>Nota: </xsl:text>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:text>Note: </xsl:text>
-     </xsl:otherwise>
-    </xsl:choose>
-     <xsl:value-of              select = "."/>
-    <xsl:text>]</xsl:text>
-   </i>
-  </xsl:template>
+    <xsl:template              match = "Note">
+     <i>
+     <xsl:text>&#xa0;[</xsl:text>
+     <xsl:choose>
+      <xsl:when                 test = "//SummaryLanguage ='Spanish'"> 
+       <xsl:text>Nota: </xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>Note: </xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+     <xsl:value-of            select = "."/>
+     <xsl:text>]</xsl:text>
+     </i>
+    </xsl:template>
 
 <!-- ======================================================================
         Template handling ListTitle
-     ===================================================================== -->  
-  <xsl:template                  match = "ListTitle">    
-   <br/>
-   <b><i>
-   <xsl:apply-templates /> 
-   </i></b>      
-  </xsl:template>
+     ====================================================================== -->
+    <xsl:template              match = "ListTitle">    
+     <br/>
+     <b><i>
+     <xsl:apply-templates /> 
+     </i></b>      
+    </xsl:template>
 
-<!-- ======================================================================
+<!-- =====================================================================
         Template handling ListItem in OrderedList
      ===================================================================== -->  
-  <xsl:template                   name = "OrderedListItem">
-   <xsl:param                     name = "style"/> 
-
-   <li>      
+    <xsl:template               name = "OrderedListItem">
+   
+     <li>      
       <!-- No attribute for Arabic; it is the default. -->
       <xsl:choose>
-        <xsl:when                 test = "$style = 'UAlpha'">
-          <xsl:attribute          name = "type">
-            <xsl:text>A</xsl:text>
-          </xsl:attribute>
-        </xsl:when>
-        <xsl:when                 test = "$style = 'LAlpha'">
-          <xsl:attribute          name = "type">
-            <xsl:text>a</xsl:text>
-          </xsl:attribute>
-        </xsl:when>
-        <xsl:when                 test = "$style = 'URoman'">
-          <xsl:attribute          name = "type">
-            <xsl:text>I</xsl:text>
-          </xsl:attribute>
-        </xsl:when>
-        <xsl:when                 test = "$style = 'LRoman'">
-          <xsl:attribute          name = "type">
-            <xsl:text>i</xsl:text>
-          </xsl:attribute>
-        </xsl:when>
+       <xsl:when                test = "../@Style = 'UAlpha'">
+        <xsl:attribute          name = "type">
+         <xsl:text>A</xsl:text>
+        </xsl:attribute>
+       </xsl:when>
+       <xsl:when                test = ".../@Style = 'LAlpha'">
+        <xsl:attribute          name = "type">
+         <xsl:text>a</xsl:text>
+        </xsl:attribute>
+       </xsl:when>
+       <xsl:when                test = "../@Style = 'URoman'">
+        <xsl:attribute          name = "type">
+         <xsl:text>I</xsl:text>
+        </xsl:attribute>
+       </xsl:when>
+       <xsl:when                test = "../@Style = 'LRoman'">
+        <xsl:attribute          name = "type">
+         <xsl:text>i</xsl:text>
+        </xsl:attribute>
+       </xsl:when>
       </xsl:choose>
       <xsl:apply-templates />
-    </li>
-    <br />
-  </xsl:template>
+     </li>
+     <br />
+    </xsl:template>
 
-<!-- ======================================================================
+<!-- =====================================================================
         Template handling ListItem in ItemizedList
      ===================================================================== -->  
-  <xsl:template                   name = "ItemizedListItem">
-                                 
-    <xsl:param                    name = "style"/> 
-        
-    <li> 
+    <xsl:template               name = "ItemizedListItem">
+    
+     <li> 
+     <xsl:attribute             name = "type">
       <xsl:choose>
-        <xsl:when                 test = "$style = 'bullet'">
-          <xsl:attribute          name = "type">
-            <xsl:text>disc</xsl:text>
-          </xsl:attribute>
-        </xsl:when>
-        <xsl:when                 test = "$style = 'dash'">
-          <xsl:attribute          name = "type">
-            <xsl:text>square</xsl:text>
-          </xsl:attribute>
-        </xsl:when>
-        <xsl:when                 test = "$style = 'simple'">
-          <xsl:attribute          name = "class">
-            <xsl:text>lnone</xsl:text>
-          </xsl:attribute>
-        </xsl:when>       
-        <xsl:when                 test = "not($style)">
-          <xsl:attribute          name = "class">
-            <xsl:text>lnone</xsl:text>
-          </xsl:attribute>
-        </xsl:when>
-      </xsl:choose>                               
-      <xsl:apply-templates />
-    </li>
-  </xsl:template>
+       <xsl:when                test = "../@Style = 'bullet'">        
+        <xsl:text>disc</xsl:text>    
+       </xsl:when>
+       <xsl:when                test = "../@Style = 'dash'">
+        <xsl:text>square</xsl:text>      
+       </xsl:when>
+       <xsl:when                test = "../@Style = 'simple'">
+        <xsl:text>lnone</xsl:text>     
+       </xsl:when> 
+      </xsl:choose> 
+     </xsl:attribute>
+     <xsl:apply-templates />
+     </li>
+    </xsl:template>
 
-<!--=====================================================================
-         Display Content Summary Title with Deletion and Insertion
-    ==================================================================== -->
-  <xsl:template                  match = "SummaryTitle"
-                                  mode = "ContentTitle">
-    <h2>
-    <xsl:apply-templates />
-    </h2>
-  </xsl:template> 
-
-<!--=====================================================================
+<!-- =====================================================================
          Display TOC Summary Title with Deletion and Insertion
-    ==================================================================== -->
-  <xsl:template                  match = "SummaryTitle"
-                                  mode = "TOC">
-    <h2>
-    <xsl:apply-templates />
-    </h2>
-  </xsl:template> 
+     ===================================================================== -->
+    <xsl:template              match = "SummaryTitle"
+                                mode = "TOC">
+     <h2>
+     <xsl:apply-templates />
+     </h2>
+    </xsl:template> 
 
-<!-- ===================================================================
+<!-- =====================================================================
            Display summary titles in TOC.
-     =================================================================== -->
+     ===================================================================== -->
     <xsl:template              match = "Title" 
                                 mode = "TOC">
      <xsl:apply-templates/>
     </xsl:template>
 
-<!-- ===================================================================
+<!-- =====================================================================
            Display SummarySection in TOC.
-     =================================================================== -->
+     ===================================================================== -->
     <xsl:template               name = "TocSummarySection">
      <xsl:param                 name = "level"/> 
 
@@ -446,12 +271,12 @@
 
     </xsl:template>
 
-<!-- ===================================================================
+<!-- =====================================================================
         Display a summary section title depending on how many 
         SummarySection in its ancestors. We may have to use
         a mode here to avoid unintended usage in documents that
         are not summaries, but with Title.
-     =================================================================== -->
+     ===================================================================== -->
     <xsl:template              match = "Title">
      <xsl:variable              name = "ancestors"
                               select = "ancestor::SummarySection"/>
@@ -476,27 +301,27 @@
 
     </xsl:template>
 
-<!-- ============================================================
+<!-- =====================================================================
        Display Paragraphs 
-     ============================================================== -->
+     ===================================================================== -->
     <xsl:template              match = "Para">
      <p>
      <xsl:apply-templates/>
      </p>
     </xsl:template>
 
-<!--=====================================================================
+<!-- =====================================================================
       Display tables in old format
-    ==================================================================== -->
-   <xsl:template               match = "TT">
-    <pre>
-    <xsl:apply-templates/>
-    </pre>
-   </xsl:template>
+     ===================================================================== -->
+    <xsl:template              match = "TT">
+     <pre>
+     <xsl:apply-templates/>
+     </pre>
+    </xsl:template>
 
 <!-- =====================================================================
        Create a link to another document or website 
-     ================================================================== -->
+     ===================================================================== -->
     <xsl:template              match = "ExternalRef">
      <xsl:variable              name = "nlink" 
                               select = "@cdr:xref"/>
@@ -505,65 +330,9 @@
      </a>
     </xsl:template>
 
-          
-<!-- ======================================================================
-       Display CitationLink
-     ===================================================================== -->
-    <xsl:template              match = "CitationLink">
-     <xsl:variable              name = "nextRef" 
-                              select = "position()+1"/>
-     <xsl:variable              name = "firstRef" 
-                              select = "position()-1"/>
-     <xsl:variable              name = "ref" 
-                              select = "."/>
-      
-     <xsl:if                    test = "name(../node()[$firstRef])
-                                        != 'CitationLink'">
-      <xsl:value-of           select = "'['"/>
-     </xsl:if>
-                    
-     <xsl:choose>
-      <xsl:when                 test = "@InsertionOrDeletion
-                                       = 'Deletion'">
-       <strike>
-        <xsl:value-of         select = "@refidx"/>
-       </strike>
-      </xsl:when> 
-      <xsl:when                 test = "@InsertionOrDeletion
-                                        = 'Insertion'">
-       <xsl:choose>
-        <xsl:when               test = "@RevisionLevel='proposed'">
-         <font color="FUCHSIA">
-          <xsl:value-of       select = "@refidx"/>
-         </font>
-        </xsl:when>
-        <xsl:otherwise>
-         <font color="RED">
-          <xsl:value-of       select = "@refidx"/>
-         </font>
-        </xsl:otherwise>
-       </xsl:choose>
-      </xsl:when> 
-      <xsl:otherwise>
-        <xsl:value-of         select = "@refidx"/>
-      </xsl:otherwise> 
-     </xsl:choose>  	    
-	    	
-     <xsl:if                    test = "name(../node()[$nextRef])
-                                        = 'CitationLink'">
-      <xsl:value-of           select = "','"/>
-     </xsl:if>            
-          
-     <xsl:if                    test = "name(../node()[$nextRef])
-                                        != 'CitationLink'">
-      <xsl:value-of           select = "']'"/>
-     </xsl:if>   
-      
-    </xsl:template>
-
-<!-- ===================================================================
+<!-- =====================================================================
        Display references 
-     ================================================================== -->
+     ===================================================================== -->
     <xsl:template              match = "ReferenceList">
      <xsl:if                    test = "Reference">
       <xsl:choose>
