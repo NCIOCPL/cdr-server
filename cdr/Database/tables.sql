@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.93 2004-01-14 13:11:01 bkline Exp $
+ * $Id: tables.sql,v 1.94 2004-01-14 13:13:30 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.93  2004/01/14 13:11:01  bkline
+ * Added id column to ctgov_download_stats table.
+ *
  * Revision 1.92  2004/01/13 21:45:39  bkline
  * Added `updated' column to ctgov_download_stats table.
  *
@@ -1884,4 +1887,6 @@ total_trials INTEGER  NOT NULL,
   duplicates INTEGER  NOT NULL,
 out_of_scope INTEGER  NOT NULL,
       closed INTEGER  NOT NULL)
+GO
+CREATE INDEX ctgov_download_stats_dt ON ctgov_download_stats (dt)
 GO
