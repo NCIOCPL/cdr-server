@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.58 2002-07-03 12:16:38 bkline Exp $
+ * $Id: tables.sql,v 1.59 2002-07-03 13:06:43 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.58  2002/07/03 12:16:38  bkline
+ * Added new views for reports.
+ *
  * Revision 1.57  2002/06/11 15:54:44  bkline
  * Added missing 'GO'.
  *
@@ -1368,37 +1371,38 @@ GO
 /*
  * Used by the document version history report.
  */
-CREATE VIEW doc_info AS
-            SELECT d.id        doc_id,
-                   d.title     doc_title,
-                   t.name      doc_type,
-                   u1.fullname created_by,
-                   a1.dt       created_date,
-                   u2.fullname mod_by,
-                   a2.dt       mod_date
-              FROM document d
-              JOIN doc_type t
-                ON t.id = d.doc_type
-              JOIN audit_trail a1
-                ON a1.document = d.id
-              JOIN usr u1
-                ON u1.id = a1.usr
-              JOIN audit_trail a2
-                ON a2.document = d.id
-              JOIN usr u2
-                ON u2.id = a2.usr
-               AND a1.dt = (SELECT MIN(audit_trail.dt)
-                              FROM audit_trail
-                              JOIN action
-                                ON action.id = audit_trail.action
-                             WHERE audit_trail.document = d.id
-                               AND action.name = 'ADD DOCUMENT')
-               AND a2.dt = (SELECT MAX(audit_trail.dt)
-                              FROM audit_trail
-                              JOIN action
-                                ON action.id = audit_trail.action
-                             WHERE audit_trail.document = d.id
-                               AND action.name = 'MODIFY DOCUMENT')
+CREATE VIEW doc_info 
+AS
+    SELECT d.id        doc_id,
+           d.title     doc_title,
+           t.name      doc_type,
+           u1.fullname created_by,
+           a1.dt       created_date,
+           u2.fullname mod_by,
+           a2.dt       mod_date
+      FROM document d
+      JOIN doc_type t
+        ON t.id = d.doc_type
+      JOIN audit_trail a1
+        ON a1.document = d.id
+      JOIN usr u1
+        ON u1.id = a1.usr
+      JOIN audit_trail a2
+        ON a2.document = d.id
+      JOIN usr u2
+        ON u2.id = a2.usr
+       AND a1.dt = (SELECT MIN(audit_trail.dt)
+                      FROM audit_trail
+                      JOIN action
+                        ON action.id = audit_trail.action
+                     WHERE audit_trail.document = d.id
+                       AND action.name = 'ADD DOCUMENT')
+       AND a2.dt = (SELECT MAX(audit_trail.dt)
+                      FROM audit_trail
+                      JOIN action
+                        ON action.id = audit_trail.action
+                     WHERE audit_trail.document = d.id
+                       AND action.name = 'MODIFY DOCUMENT')
 
 /*
  * Used by New Documents with Publication Status report.
@@ -1444,3 +1448,15 @@ LEFT OUTER JOIN doc_version v
 LEFT OUTER JOIN usr vu
              ON vu.id = v.usr
 
+/*
+ * Used for finding publishing jobs for licensees and Cancer.gov.
+ */
+CREATE VIEW primary_pub_job
+AS
+    SELECT pub_proc.*
+      FROM pub_proc
+      JOIN document
+        ON document.id = pub_proc.pub_system
+     WHERE document.title = 'Primary'
+       AND pub_proc.status = 'Success'
+       AND pub_proc.completed IS NOT NULL
