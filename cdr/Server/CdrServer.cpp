@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.28 2002-06-16 03:02:43 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.29 2002-07-11 18:56:19 ameyer Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2002/06/16 03:02:43  bkline
+ * Sidestep 'helpful' attacks from NIH network administration.
+ *
  * Revision 1.27  2002/03/09 04:21:35  bkline
  * Added some #ifdef _DEBUG fences.
  *
@@ -132,7 +135,7 @@ static void __cdecl     dispatcher(void*);
 static void             realDispatcher(void* arg);
 static void __cdecl     sessionSweep(void*);
 static int              handleNextClient(int sock);
-static void             logTopLevelFailure(const cdr::String what, 
+static void             logTopLevelFailure(const cdr::String what,
                                            unsigned long code);
 static bool             timeToShutdown = false;
 static cdr::log::Log    log;
@@ -147,7 +150,7 @@ main(int ac, char **av)
     int                 sock;
     struct sockaddr_in  addr;
     short               port = CDR_PORT;
-    
+
     if (ac > 1) {
         port = atoi(av[1]);
         SET_HEAP_DEBUGGING(true);
@@ -155,7 +158,7 @@ main(int ac, char **av)
 
     // In case of catastrophe, don't hang up on console
     if (!getenv ("NOCATCHCRASH"))
-        set_exception_catcher ("CdrServer.crash");
+        set_exception_catcher ("d:/cdr/log/CdrServer.crash");
 
     if (WSAStartup(0x0101, &wsadata) != 0) {
         int err = WSAGetLastError();
@@ -213,7 +216,7 @@ main(int ac, char **av)
 }
 
 /**
- * Meat of main processing loop, broken out to make stack cleanup 
+ * Meat of main processing loop, broken out to make stack cleanup
  * easier to track during heapdebuggin.
  */
 int handleNextClient(int sock)
@@ -554,11 +557,11 @@ cdr::String processCommand(cdr::Session& session,
                 wchar_t tBuf[40];
                 swprintf(tBuf, L"DOM Exception Code %d: ", de->code);
                 elapsedTime = getElapsedTime(start);
-                cdr::String result = 
+                cdr::String result =
                        cdr::String(rspTag + L"failure' Elapsed='"
                                           + elapsedTime
                                           + L"'><"
-                                          + cmdName 
+                                          + cmdName
                                           + L"Resp><Errors><Err>"
                                           + cdr::String(tBuf)
                                           + cdr::String(de->msg)
@@ -579,7 +582,7 @@ cdr::String processCommand(cdr::Session& session,
                 return cdr::String(rspTag + L"failure' Elapsed='"
                                           + elapsedTime
                                           + L"'><"
-                                          + cmdName 
+                                          + cmdName
                                           + L"Resp><Errors>"
                                           + L"<Err>SAX Parse Exception: "
                                           + spe.getMessage()
@@ -595,7 +598,7 @@ cdr::String processCommand(cdr::Session& session,
                 return cdr::String(rspTag + L"failure' Elapsed='"
                                           + elapsedTime
                                           + L"'><"
-                                          + cmdName 
+                                          + cmdName
                                           + L"Resp><Errors><Err>SAX Exception: "
                                           + se.getMessage()
                                           + L"</Err></Errors></"
@@ -609,7 +612,7 @@ cdr::String processCommand(cdr::Session& session,
                 return cdr::String(rspTag + L"failure' Elapsed='"
                                           + elapsedTime
                                           + L"'><"
-                                          + cmdName 
+                                          + cmdName
                                           + L"Resp><Errors><Err>Unexpected "
                                             L"exception caught."
                                             L"</Err></Errors></"
