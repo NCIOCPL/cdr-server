@@ -16,7 +16,6 @@
                    xmlns:cdr="cips.nci.nih.gov/cdr">
     
   <xsl:output method="xml" omit-xml-declaration="no"/>
- 
 <!-- =================================================================
        Copy control information and generate current date
      ================================================================= -->
@@ -30,7 +29,7 @@
                         Copy name information
      ==================================================================== -->
 
- <PersonNameInformation>
+     <PersonNameInformation>
  <xsl:apply-templates select="PersonNameInformation/GivenName" mode="copy"/>
  <xsl:apply-templates select="PersonNameInformation/SurName" mode="copy"/>
  <xsl:if test="PersonNameInformation/ProfessionalSuffix">
@@ -180,7 +179,8 @@
     <PoliticalSubUnitRef><xsl:value-of select="$StateID"/></PoliticalSubUnitRef>
     
      <xsl:apply-templates     select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitShortName" mode="copy"/>
-  <xsl:apply-templates select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName" mode="copy"/>
+  <!--<PoliticalSubUnitFullName><xsl:value-of select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName"/></PoliticalSubUnitFullName> -->
+   <xsl:apply-templates select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName" mode="copy"/>
 
      </xsl:if>
      </xsl:for-each>
@@ -246,32 +246,30 @@
    </OrganizationAddressNames>
    </xsl:if>
 
- <xsl:if 
-test="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/@IncludeParentName">
-        <OrganizationAddressNames>
-        <xsl:variable   name="ParentID" select="$OrgInfo/Organization/OrganizationParent/ParentOrganization/@cdr:ref"/>
-        <xsl:variable   name="ParentDoc" 
-                        select="document(concat('cdr:',$ParentID,'/last'))"/>
-      
-        <OrganizationName>
-          <xsl:value-of select="$OrgInfo/Organization/OrganizationNameInformation/OfficialName/Name"/>
-        </OrganizationName> 
 
-        <xsl:call-template   name="upcode-parentname">
-          <xsl:with-param    name="ParentID"
-                             select="$ParentID"/>
-          <xsl:with-param    name="ParentDoc"
-                             select="$ParentDoc"/>
-        </xsl:call-template>
-        </OrganizationAddressNames>
-        </xsl:if>
+     <xsl:if test="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/@IncludeParentName">
+      <OrganizationAddressNames>
+      <xsl:variable name="ParentID" select="$OrgInfo/Organization/OrganizationParent/ParentOrganization/@cdr:ref"/>
+<xsl:variable name="ParentDoc" select="document(concat('cdr:',$ParentID,'/last'))"/>
       
-        <xsl:if test="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/@IncludeParentName">
-    <xsl:apply-templates select="$OrgInfo/Organization/OrganizationParent" mode="copy"/>
+  <OrganizationName><xsl:value-of select="$OrgInfo/Organization/OrganizationNameInformation/OfficialName/Name"/>
+      </OrganizationName>
+     
+      <xsl:call-template name="upcode-parentname">
+      <xsl:with-param     name="ParentID"
+                          select="$ParentID"/>
+      <xsl:with-param      name="ParentDoc"
+                          select="$ParentDoc"/>
+      </xsl:call-template>
+     
+    </OrganizationAddressNames>
       </xsl:if>
+    <xsl:if test="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/@IncludeParentName">
+    <xsl:apply-templates select="$OrgInfo/Organization/OrganizationParent" mode="copy"/>
+    </xsl:if>
 
    <xsl:if test="not(../SpecificPostalAddress)">
-  <!-- <xsl:variable name="orgid" select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/@cdr:id"/>-->
+   <xsl:variable name="orgid" select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/@cdr:id"/>
   
    <SpecificPostalAddress>
    <xsl:for-each select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/PostalAddress">
@@ -308,8 +306,8 @@ test="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/@IncludeP
   
    <xsl:if test="not(../SpecificPhone)">
     <xsl:apply-templates select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/Phone" mode="copy"/>
-
-<!--<xsl:if test="not(../SpecificTollFreePhone)">
+<!-- New requirement for Person Filter- add TollFreePhone of Org if it exists
+<xsl:if test="not(../SpecificTollFreePhone)">
     <xsl:apply-templates select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/TollFreePhone" mode="copy"/>
 </xsl:if>-->
     <xsl:apply-templates select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/TollFreePhone" mode="copy"/>
@@ -319,7 +317,6 @@ test="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/@IncludeP
     <xsl:if test="not(../SpecificEmail)">
     <xsl:apply-templates select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/Email" mode="copy"/>
     </xsl:if>
-<!--<xsl:apply-templates select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/WebSite" mode="copy"/>-->
     </xsl:if>
     <xsl:if test="../SpecificPostalAddress">
     <SpecificPostalAddress>
