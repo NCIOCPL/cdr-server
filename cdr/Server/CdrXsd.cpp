@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.12 2001-05-03 18:46:10 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.13 2001-05-16 15:49:35 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2001/05/03 18:46:10  bkline
+ * Moved in code from ParseSchema.cpp; generating DTD in this module now.
+ *
  * Revision 1.11  2001/01/17 21:48:09  bkline
  * Implemented general model for groups, sequences, and choices; also
  * implemented inclusion of modular schema documents.
@@ -56,6 +59,7 @@
 #include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
 
+// Local functions.
 static void validateElement(
         cdr::dom::Element&              docElement,
         const cdr::xsd::Type&           type,
@@ -1819,8 +1823,16 @@ void verifyElementSequence(
     // Keep a local copy for verifying the individual child elements.
     cdr::dom::Node childNode = firstChild;
 
-    // Recursively look for a match; leftover elements mean no match.
-    if (!matchSchemaNode(firstChild, content) || firstChild != 0) {
+    // Recursively look for a match.
+    bool match = matchSchemaNode(firstChild, content);
+
+    // Move past any leftover nodes which aren't elements.
+    while (firstChild != 0 && firstChild.getNodeType() !=
+            cdr::dom::Node::ELEMENT_NODE)
+        firstChild = firstChild.getNextSibling();
+ 
+    // Report mismatch; leftover elements mean no match.
+    if (!match || firstChild != 0) {
 
         // Can't find a match for this sequence of child elements.
         if (childNode == 0) {
@@ -1838,6 +1850,10 @@ void verifyElementSequence(
                             + L" element ("
                             + getElementListString(childNode)
                             + L")";
+            if (firstChild != 0)
+                err += L"; stopped at element " + childNode.getNodeName();
+            else
+                err += L"; more elements required by content model";
             errors.push_back(err);
         }
     }
@@ -6732,7 +6748,7 @@ void cdr::xsd::Schema::declareDtdChildElements(cdr::StringSet& declaredElems,
     }
 
     // Sanity check.
-    if (dynamic_cast<const SimpleContent*>(n))
+    if (!dynamic_cast<const SimpleContent*>(n))
         throw cdr::Exception(L"Internal error",
                              L"Content must be element, group, choice, "
                              L"sequence, or simpleContent");
@@ -6749,4 +6765,42 @@ bool areNMTokens(const cdr::StringSet& vals)
         if (!cdr::xsd::isNMToken(*i++))
             return false;
     return true;
+}
+
+/**
+ * Extracts lists of valid values for elements and attributes found in this
+ * schema.
+ */
+void cdr::xsd::Schema::getValidValueSets(ValidValueSets& sets) const
+{
+    for (ElemTypeMap::const_iterator i = elements.begin();
+            i != elements.end(); ++i) {
+        cdr::String elemName = i->first;
+        cdr::String typeName = i->second;
+        const Type* type     = lookupType(typeName);
+        const cdr::xsd::SimpleType* simpleType =
+            dynamic_cast<const cdr::xsd::SimpleType*>(type);
+        const cdr::xsd::ComplexType* complexType =
+            dynamic_cast<const cdr::xsd::ComplexType*>(type);
+        if (simpleType) {
+            const cdr::StringSet& enumSet = simpleType->getEnumSet();
+            if (!enumSet.empty())
+                sets[elemName] = &enumSet;
+        }
+        else if (complexType) {
+            for (AttrEnum e = complexType->getAttributes(); 
+                    e != complexType->getAttrEnd(); ++e) {
+                cdr::String attrName         = e->first;
+                Attribute*  attr             = e->second;
+                const Type*       attrType   = attr->getType(*this);
+                const SimpleType* simpleType = 
+                    dynamic_cast<const SimpleType*>(attrType);
+                if (simpleType) {
+                    const cdr::StringSet& enumSet = simpleType->getEnumSet();
+                    if (!enumSet.empty())
+                        sets[elemName + L"@" + attrName] = &enumSet;
+                }
+            }
+        }
+    }
 }
