@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.16 2002-06-07 13:52:09 bkline Exp $
+ * $Id: CdrVersion.cpp,v 1.17 2002-06-26 02:22:33 ameyer Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2002/06/07 13:52:09  bkline
+ * Added support for last publishable linked document retrieval.
+ *
  * Revision 1.15  2002/05/03 20:35:46  bkline
  * New CdrListVersions command added.
  *
@@ -176,7 +179,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
   {
     if (!allowVersion(docId, conn))
       throw cdr::Exception("Version control  not allowed for document type");
-    
+
     throw cdr::Exception(L"Document not checked out");
   }
 
@@ -238,7 +241,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
   }
 
   // Track unlock actions.
-  // XXX Note that it is not sufficient to use the `abandon' parameter 
+  // XXX Note that it is not sufficient to use the `abandon' parameter
   //     to determine whether the checkout of the document has been
   //     abandoned.  This unfortunately-named variable has been over-
   //     loaded to indicate whether a new version should be created
@@ -979,6 +982,81 @@ cdr::String cdr::listVersions(Session& session,
     response << L"</Version>";
   }
   response << L"</ListVersionsResp>";
+
+  return response.str();
+}
+
+// See CdrCommand.h
+cdr::String cdr::lastVersions(Session& session,
+                              const dom::Node& commandNode,
+                              db::Connection& dbConnection)
+{
+  int docId   = -1;     // Doc identifier
+  int lastAny = -1;     // Version num of last version, -1 if none
+  int lastPub = -1;     // Version num of last publishable version or -1
+                        //  may be same as last version
+
+  // Parse input XML command
+  for (dom::Node child = commandNode.getFirstChild();
+       child != NULL;
+       child = child.getNextSibling())
+  {
+    if (child.getNodeType() == dom::Node::ELEMENT_NODE)
+    {
+      String name = child.getNodeName();
+      if (name == L"DocId")
+      {
+        String str = dom::getTextContent(child);
+        docId      = str.extractDocId();
+      }
+    }
+  }
+
+  if (docId <= 0)
+    throw Exception(L"Invalid or missing document ID");
+
+  // Prepare response
+  wostringstream response;
+  response << L"<LastVersionsResp>\n";
+
+  // Find last version of this document, publishable or not
+  db::PreparedStatement anyPs = dbConnection.prepareStatement(
+     "SELECT max(num) FROM doc_version WHERE id = ?");
+  anyPs.setInt(1, docId);
+  db::ResultSet anyRs = anyPs.executeQuery();
+  if (anyRs.next()) {
+    lastAny = anyRs.getInt(1);
+    if (lastAny == 0)
+        lastAny = -1;
+  }
+
+  response << L" <LastVersionNum>"
+           << String::toString (lastAny)
+           << L"</LastVersionNum>\n";
+
+  // Find last publishable version, if any
+  db::PreparedStatement pubPs = dbConnection.prepareStatement(
+     "SELECT max(num) FROM doc_version WHERE id = ? AND publishable = 'Y'");
+  pubPs.setInt(1, docId);
+  db::ResultSet pubRs = pubPs.executeQuery();
+  if (pubRs.next()) {
+    lastPub = pubRs.getInt(1);
+    if (lastPub == 0)
+        lastPub = -1;
+  }
+
+  response << L" <LastPubVersionNum>"
+           << String::toString (lastPub)
+           << L"</LastPubVersionNum>\n";
+
+  // Is the last version the same as the current working document
+  String chg = isChanged(docId, dbConnection) ? L"Y" : L"N";
+  response << L" <IsChanged>"
+           << chg
+           << L"</IsChanged>\n";
+
+  // Return response
+  response << L"<LastVersionsResp>\n";
 
   return response.str();
 }
