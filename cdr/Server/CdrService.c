@@ -202,8 +202,9 @@ VOID ServiceStop()
 {
     DBGLOG("TOP OF SERVICESTOP", service_log);
 
+    DBGLOG("SERVER PROCESS CREATION FAILURE", service_log);
     _spawnl(_P_NOWAIT, SHUTDOWN, SHUTDOWN, service_account, 
-            service_password);
+            service_password, 0);
     if (!ReportStatusToSCMgr(SERVICE_STOP_PENDING, 
                              NO_ERROR, 
                              CLEANUP_SECONDS * 1000)) {
