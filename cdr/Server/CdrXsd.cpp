@@ -1,7 +1,11 @@
 /*
- * $Id: CdrXsd.cpp,v 1.19 2001-10-17 13:49:40 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.20 2001-10-29 15:45:26 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2001/10/17 13:49:40  bkline
+ * Modified logic of matchSequence to let it skip over non-required schema
+ * nodes.
+ *
  * Revision 1.18  2001/10/16 19:39:02  bkline
  * Fixed return value logic for matchSchemaNode() function.
  *
@@ -1168,6 +1172,8 @@ void cdr::xsd::validateDocAgainstSchema(
 {
     // Parse the schema
     cdr::xsd::Schema schema(schemaElem, conn);
+    cdr::log::WriteFile(L"validateDocAgainstSchema", L"Testing log fix",
+            "d:/cdr/log/testing.log");
 
     // Use the schema to validate the XML portion of the document
     cdr::xsd::Element schemaElement = schema.getTopElement();
@@ -1905,7 +1911,7 @@ void verifyElementSequence(
         firstChild = firstChild.getNextSibling();
  
     // Report mismatch; leftover elements mean no match.
-    if (!match || firstChild != 0) {
+    if (isRequired(content) && (!match || firstChild != 0)) {
 
         // Can't find a match for this sequence of child elements.
         if (childNode == 0) {
