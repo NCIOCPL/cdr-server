@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.7 2001-04-05 23:10:02 mruben Exp $
+ * $Id: CdrFilter.cpp,v 1.8 2001-05-04 17:00:49 mruben Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2001/04/05 23:10:02  mruben
+ * added specifying filter by name
+ *
  * Revision 1.6  2001/03/19 17:17:43  mruben
  * added support for xsl:message
  *
@@ -477,6 +480,15 @@ cdr::String cdr::filter(cdr::Session& session,
   bool autocommitted = connection.getAutoCommit();
   connection.setAutoCommit(false);
 
+  // check if we're to do output
+  bool output = true;
+  cdr::dom::NamedNodeMap cmdattr = commandNode.getAttributes();
+  cdr::dom::Node attr = cmdattr.getNamedItem("Output");
+
+  cdr::String foo;
+  
+  if (attr != NULL && cdr::String(attr.getNodeValue()) == L"N")
+    output = false;
 
   // we need to get the document first so we'll have it's type if needed
   // to determine the filter name
@@ -525,9 +537,6 @@ cdr::String cdr::filter(cdr::Session& session,
     }
   }
 
-  // we're done with the database, so we can let others at it
-  connection.setAutoCommit(autocommitted);
-  
   string doc(document.toUtf8());
   string result(doc);
   for (std::vector<cdr::String>::iterator i = filters.begin();
@@ -541,7 +550,10 @@ cdr::String cdr::filter(cdr::Session& session,
     doc = result;
   }
 
-  result = "<Document><![CDATA[" + result + "]]></Document>\n";
+  // we're done with the database, so we can let others at it
+  connection.setAutoCommit(autocommitted);
+
+  result = output ? "<Document><![CDATA[" + result + "]]></Document>\n" : "";
   if (filter_messages.length() != 0)
     result += "<Messages>" + filter_messages + "</Messages>\n";
   
