@@ -1,9 +1,13 @@
 /*
- * $Id: CdrValidateDoc.h,v 1.6 2001-12-19 15:47:48 ameyer Exp $
+ * $Id: CdrValidateDoc.h,v 1.7 2004-04-27 15:41:21 ameyer Exp $
  *
  * Support routines for CDR document validation.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2001/12/19 15:47:48  ameyer
+ * Added enumeration value for validation controls to allow update
+ * of link tables without returning validation information.
+ *
  * Revision 1.5  2001/06/20 00:56:10  ameyer
  * Changed comments on execValidateDoc() to reflect changes.
  *
@@ -78,12 +82,6 @@ namespace cdr {
      *                          "Links" are the available validation methods;
      *                          additions to this list should be documented
      *                          here.
-     *  @param  validationTypes A string containing a list of types of
-     *                          validation to perform.  Initially, supported
-     *                          substring commands are:
-     *                            L""       = All validation - the default.
-     *                            L"Schema" = Schema validation
-     *                            L"Links"  = Link validation
      *                          Additional types may be added later.
      *                          The parameter string is searched for the above
      *                          substrings, so any separators or other
