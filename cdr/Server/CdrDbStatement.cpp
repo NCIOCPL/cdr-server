@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbStatement.cpp,v 1.8 2000-12-28 13:26:28 bkline Exp $
+ * $Id: CdrDbStatement.cpp,v 1.9 2001-04-08 22:45:34 bkline Exp $
  *
  * Implementation for ODBC HSTMT wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2000/12/28 13:26:28  bkline
+ * Made ref count for Statement dynamic.
+ *
  * Revision 1.7  2000/05/21 00:48:59  bkline
  * Added executeUpdate() method.
  *
@@ -140,4 +143,22 @@ cdr::String cdr::db::Statement::getErrorMessage(SQLRETURN rc)
 {
     return cdr::db::Connection::getErrorMessage(rc, conn.henv, conn.hdbc,
                                                 hstmt);
+}
+
+/**
+ * Moves to the statement object's next result set, if available.
+ */
+bool cdr::db::Statement::getMoreResults()
+{
+    SQLRETURN rc;
+    rc = SQLMoreResults(hstmt);
+    return rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO;
+}
+
+/**
+ * Returns the current result as a ResultSet object.
+ */
+cdr::db::ResultSet cdr::db::Statement::getResultSet()
+{
+    return cdr::db::ResultSet(*this);
 }
