@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.13 2000-12-28 13:30:36 bkline Exp $
+ * $Id: CdrCommand.h,v 1.14 2001-01-17 21:51:28 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2000/12/28 13:30:36  bkline
+ * Added getSchema function.
+ *
  * Revision 1.12  2000/10/23 14:54:45  mruben
  * added commands for version control
  *
@@ -553,7 +556,7 @@ namespace cdr {
 
     /**
      * Load the row from the doc_type table for the requested document type.
-     * Send back the schema (and if requested) the DTD for the document type.
+     * Send back the schema and other related document type information.
      *
      *  @param      session     contains information about the current user.
      *  @param      node        contains the XML for the command.
@@ -563,7 +566,52 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String getSchema  (Session&          session,
+    extern String getDocType (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
+
+    /**
+     * Adds a new document type to the system.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String addDocType (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
+
+    /**
+     * Modifies an existing document type in the CDR.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String modDocType (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
+
+    /**
+     * Removes a document type from the CDR system.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String delDocType (Session&          session,
                               const dom::Node&  node,
                               db::Connection&   conn);
 
