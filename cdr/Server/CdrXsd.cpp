@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.35 2002-11-22 14:07:25 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.36 2002-11-25 21:17:32 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2002/11/22 14:07:25  bkline
+ * Fixed bug in custom validation code.  Blocked new code.
+ *
  * Revision 1.34  2002/11/21 00:44:14  bkline
  * Placeholder version of custom routines installed for testing and
  * demonstration.  This version, which hard-codes a single custom rule,
@@ -326,9 +329,198 @@ void cdr::xsd::Schema::parseSchema(const cdr::dom::Node& schemaElement,
                 registerGroup(new cdr::xsd::Group(*this, childNode));
             else if (nodeName == cdr::xsd::INCLUDE)
                 includeSchema(childNode, conn);
+            else if (nodeName == cdr::xsd::ANNOTATION)
+                extractRuleSets(childNode);
         }
         childNode = childNode.getNextSibling();
     }
+}
+
+/**
+ * Parse the annotation element, pulling out any rule sets found.
+ */
+void cdr::xsd::Schema::extractRuleSets(const cdr::dom::Node& n)
+{
+    cdr::dom::Node childNode = n.getFirstChild();
+    while (childNode != 0) {
+        int nodeType = childNode.getNodeType();
+        if (nodeType == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String nodeName = childNode.getNodeName();
+            if (nodeName == cdr::xsd::APP_INFO) {
+                cdr::dom::Node grandChild = childNode.getFirstChild();
+                while (grandChild != 0) {
+                    int nodeType = grandChild.getNodeType();
+                    if (nodeType == cdr::dom::Node::ELEMENT_NODE) {
+                        cdr::String nodeName = grandChild.getNodeName();
+                        if (nodeName == L"pattern") {
+                            cdr::dom::Element& e = 
+                                static_cast<cdr::dom::Element&>(grandChild);
+                            cdr::String name = e.getAttribute(L"name");
+                            RuleSet* ruleSet = getRuleSet(name);
+                            if (ruleSet)
+                                ruleSet->addRules(e);
+                            else
+                                ruleSets[name] = (RuleSet(e, name));
+                        }
+                    }
+                    grandChild = grandChild.getNextSibling();
+                }
+            }
+        }
+        childNode = childNode.getNextSibling();
+    }
+}
+
+/**
+ * Look up a rule set by name.
+ */
+cdr::xsd::RuleSet* cdr::xsd::Schema::getRuleSet(const cdr::String& name)
+{
+    std::map<String, RuleSet>::iterator i = ruleSets.find(name);
+    if (i == ruleSets.end())
+        return NULL;
+    return &ruleSets[name];
+}
+
+/**
+ * Creates a custom rule set from its XML element node.
+ */
+cdr::xsd::RuleSet::RuleSet(const cdr::dom::Element& e, const cdr::String& n)
+{
+    name = n;
+    addRules(e);
+}
+
+/**
+ * Extracts the rules from a pattern element.
+ */
+void cdr::xsd::RuleSet::addRules(const cdr::dom::Element& e)
+{
+    cdr::dom::Node child = e.getFirstChild();
+    while (child != 0) {
+        cdr::String nodeName = child.getNodeName();
+        if (nodeName == L"rule") {
+            cdr::dom::Element& e = static_cast<cdr::dom::Element&>(child);
+            rules.push_back(Rule(e));
+        }
+        child = child.getNextSibling();
+    }
+}
+
+/**
+ * Method to get the XSLT transformation script for validating a CDR document
+ * against the assertions in the set's rules.
+ */
+cdr::String cdr::xsd::RuleSet::getXslt() const
+{
+    if (xslt.empty()) {
+        std::wostringstream os;
+        os << L"<xsl:transform "
+              L"xmlns:xsl='http://www.w3.org/1999/XSL/Transform' "
+              L"xmlns:cdr='cips.nci.nih.gov/cdr' version='1.0'>\n\n";
+        os << L" <xsl:template match='/'>\n"
+              L"  <Errors>\n"
+              L"   <xsl:apply-templates/>\n"
+              L"  </Errors>\n"
+              L" </xsl:template>\n\n";
+        os << L" <xsl:template match='node()'>\n"
+              L"  <xsl:apply-templates/>\n"
+              L" </xsl:template>\n\n";
+        for (size_t i = 0; i < rules.size(); ++i) {
+            const Rule& rule = rules[i];
+            os << L" <xsl:template match='"
+               << cdr::entConvert(rules[i].getContext(), true)
+               << L"'>\n";
+			std::vector<Assertion> assertions = rule.getAssertions();
+            for (size_t j = 0; j < assertions.size(); ++j) {
+                Assertion& assertion = assertions[j];
+                os << L"  <xsl:if test='not("
+                   << cdr::entConvert(assertion.getTest(), true)
+                   << L")'>\n"
+                   << L"   <xsl:call-template name='packError'>\n"
+                   << L"    <xsl:with-param name='msg' select='\""
+                   << cdr::entConvert(assertion.getMessage(), true)
+                   << L"\"'/>\n"
+                   << L"   </xsl:call-template>\n"
+                   << L"  </xsl:if>\n";
+            }
+            os << L" </xsl:template>\n\n";
+        }
+        os << L" <xsl:template name='packError'>\n"
+           << L"  <xsl:param name='msg'/>\n"
+           << L"  <Err>\n"
+           << L"   <xsl:call-template name='getPath'>\n"
+           << L"    <xsl:with-param name='nodePart' select='.'/>\n"
+           << L"   </xsl:call-template>\n"
+           << L"   <xsl:value-of select='concat(&quot;: &quot;, $msg)'/>\n"
+           << L"  </Err>\n"
+           << L" </xsl:template>\n\n"
+           << L" <xsl:template name='getPath'>\n"
+           << L"  <xsl:param name='childPart'/>\n"
+           << L"  <xsl:param name='nodePart'/>\n"
+           << L"  <xsl:variable name='parent'\n"
+           << L"                select='$nodePart/parent::node()'/>\n"
+           << L"  <xsl:variable name='myName'\n"
+           << L"                select='name($nodePart)'/>\n"
+           << L"  <xsl:choose>\n"
+           << L"   <xsl:when test='name($parent)'>\n"
+           << L"    <xsl:variable name='myPos'\n"
+           << L"         select='count($nodePart/preceding-sibling::*)+1'/>\n"
+           << L"    <xsl:call-template name='getPath'>\n"
+           << L"     <xsl:with-param name='childPart'\n"
+           << L"         select='concat(&quot;/&quot;, $myName,\n"
+           << L"                        &quot;[&quot;, $myPos,\n"
+           << L"                        &quot;]&quot;,\n"
+           << L"                        $childPart)'/>\n"
+           << L"     <xsl:with-param name='nodePart' select='$parent'/>\n"
+           << L"    </xsl:call-template>\n"
+           << L"   </xsl:when>\n"
+           << L"   <xsl:otherwise>\n"
+           << L"    <xsl:value-of select='concat(&quot;/&quot;,\n"
+           << L"                                 name($nodePart),\n"
+           << L"                                 $childPart)'/>\n"
+           << L"   </xsl:otherwise>\n"
+           << L"  </xsl:choose>\n"
+           << L" </xsl:template>\n\n"
+           << L"</xsl:transform>\n";
+        xslt = os.str();
+    }
+    return xslt;
+}
+
+/**
+ * Creates a custom rule object from its XML element node.
+ */
+cdr::xsd::Rule::Rule(const cdr::dom::Element& e)
+{
+    context = e.getAttribute(L"context");
+    if (context.empty())
+        throw cdr::Exception(L"missing required context attribute in a "
+                             L"custom rule");
+    cdr::dom::Node child = e.getFirstChild();
+    while (child != 0) {
+        cdr::String name = child.getNodeName();
+        if (name == L"assert") {
+            cdr::dom::Element& e = static_cast<cdr::dom::Element&>(child);
+            assertions.push_back(Assertion(e));
+        }
+        child = child.getNextSibling();
+    }
+}
+
+/**
+ * Creates a custom validation assertion from its XML element node.
+ */
+cdr::xsd::Assertion::Assertion(const cdr::dom::Element& e)
+{
+    test = e.getAttribute(L"test");
+    if (test.empty())
+        throw cdr::Exception(L"Missing required test attribute for "
+                             L"custom rule assertion");
+    message = cdr::dom::getTextContent(e);
+    if (message.empty())
+        throw cdr::Exception(L"Missing required error message for "
+                             L"cust rule assertion");
 }
 
 /**
@@ -1238,85 +1430,30 @@ static void processCustomRules(
     std::wostringstream os;
     os << docElem;
     cdr::String docStr = os.str();
-    cdr::String filter = 
-        L"<xsl:transform     xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'"
-        L"                   xmlns:cdr = 'cips.nci.nih.gov/cdr'"
-        L"                     version = '1.0'>"
-        L" <xsl:template         match = '/'>"
-        L"  <Errors>"
-        L"   <xsl:apply-templates/>"
-        L"  </Errors>"
-        L" </xsl:template>"
-        L" <xsl:template         match = 'node()'>"
-        L"  <xsl:apply-templates/>"
-        L" </xsl:template>"
-        L" <xsl:template         match = 'PostalAddress'>"
-        L"  <xsl:if               test = '@AddressType = &quot;US&quot;"
-        L"               and not(PoliticalSubUnit_State and PostalCode_ZIP)'>"
-        L"   <xsl:call-template   name = 'packError'>"
-        L"    <xsl:with-param     name = 'msg'"
-        L"                      select = 'concat(&quot;U.S. postal &quot;,"
-        L"                               &quot;address must have &quot;,"
-        L"                               &quot;state and ZIP code.&quot;)'/>"
-        L"   </xsl:call-template>"
-        L"  </xsl:if>"
-        L" </xsl:template>"
-        L" <xsl:template          name = 'packError'>"
-        L"  <xsl:param            name = 'msg'/>"
-        L"  <Err>"
-        L"   <xsl:call-template   name = 'getPath'>"
-        L"    <xsl:with-param     name = 'nodePart'"
-        L"                      select = '.'/>"
-        L"   </xsl:call-template>"
-        L"   <xsl:value-of      select = 'concat(&quot;: &quot;, $msg)'/>"
-        L"  </Err>"
-        L" </xsl:template>"
-        L" <xsl:template          name = 'getPath'>"
-        L"  <xsl:param            name = 'childPart'/>"
-        L"  <xsl:param            name = 'nodePart'/>"
-        L"  <xsl:variable         name = 'parent'"
-        L"                      select = '$nodePart/parent::node()'/>"
-        L"  <xsl:variable         name = 'myName'"
-        L"                      select = 'name($nodePart)'/>"
-        L"  <xsl:choose>"
-        L"   <xsl:when           test = 'name($parent)'>"
-        L"    <xsl:variable      name = 'myPos'"
-        L"                     select = 'count($nodePart/"
-        L"                               preceding-sibling::*) + 1'/>"
-        L"    <xsl:call-template name = 'getPath'>"
-        L"     <xsl:with-param   name = 'childPart'"
-        L"                     select = 'concat(&quot;/&quot;, $myName,"
-        L"                                      &quot;[&quot;, $myPos,"
-        L"                                      &quot;]&quot;,"
-        L"                                      $childPart)'/>"
-        L"     <xsl:with-param   name = 'nodePart'"
-        L"                     select = '$parent'/>"
-        L"    </xsl:call-template>"
-        L"   </xsl:when>"
-        L"   <xsl:otherwise>"
-        L"    <xsl:value-of    select = 'concat(&quot;/&quot;,"
-        L"                               name($nodePart),"
-        L"                               $childPart)'/>"
-        L"   </xsl:otherwise>"
-        L"  </xsl:choose>"
-        L" </xsl:template>"
-        L"</xsl:transform>";
-    cdr::String filtered = cdr::filterDocument(docStr, filter, conn);
-    cdr::dom::Parser parser;
-    parser.parse(filtered);
-    cdr::dom::Element respElem = parser.getDocument().getDocumentElement();
-    if (respElem == 0)
-        throw cdr::Exception(L"Can't parse custom validation output");
-    cdr::dom::Node n = respElem.getFirstChild();
-    while (n != 0) {
-        if (n.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
-            cdr::String elemName = n.getNodeName();
-            if (elemName == L"Err") {
-                cdr::String errString = cdr::dom::getTextContent(n);
-                errors.push_back(errString);
+    const std::map<cdr::String, cdr::xsd::RuleSet>& ruleSets =
+        schema.getRuleSets();
+    std::map<cdr::String, cdr::xsd::RuleSet>::const_iterator i =
+        ruleSets.begin();
+    while (i != ruleSets.end()) {
+        cdr::String filter = i->second.getXslt();
+        cdr::String result = cdr::filterDocument(docStr, filter, conn);
+        cdr::dom::Parser parser;
+        parser.parse(result);
+        cdr::dom::Element respElem = parser.getDocument().getDocumentElement();
+        if (respElem == 0)
+            throw cdr::Exception(L"Can't parse custom validation output");
+        cdr::dom::Node n = respElem.getFirstChild();
+        while (n != 0) {
+            if (n.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+                cdr::String elemName = n.getNodeName();
+                if (elemName == L"Err") {
+                    cdr::String errString = cdr::dom::getTextContent(n);
+                    errors.push_back(errString);
+                }
             }
+            n = n.getNextSibling();
         }
-        n = n.getNextSibling();
+        ++i;
     }
 }
 
@@ -1341,10 +1478,8 @@ void cdr::xsd::validateDocAgainstSchema(
     }
     const cdr::xsd::Type& elementType = *schemaElement.getType(schema);
     validateElement(docElem, elementType, schema, errors);
-#if 0
     if (conn)
         processCustomRules(docElem, schema, errors, *conn);
-#endif
 }
 
 /**

@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.h,v 1.16 2002-09-02 14:06:48 bkline Exp $
+ * $Id: CdrXsd.h,v 1.17 2002-11-25 21:17:33 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2002/09/02 14:06:48  bkline
+ * Plugged memory leak in Schema constructor.
+ *
  * Revision 1.15  2002/08/27 17:14:18  bkline
  * Fixed bug in code to get list of elements which can contain a certain
  * attribute; used this to fix code to get list of linking elements for
@@ -223,6 +226,26 @@ namespace cdr {
          *          XML Schema Part 1: Structures</A>
          */
         const wchar_t* const SIMPLE_CONTENT= L"simpleContent";
+
+        /**
+         * Tag for Schema element which serves as the parent wrapper
+         * for documentation and appInfo child elements.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         */
+        const wchar_t* const ANNOTATION = L"annotation";
+
+        /**
+         * Tag for Schema element which provides application-specific
+         * processing information.  In the CDR, this element is used
+         * to specify Schematron-like constraints which cannot be
+         * represented by version 1.0 of XML Schema.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         */
+        const wchar_t* const APP_INFO = L"appInfo";
 
         /**
          * Tag for Schema element adding a constraing on the minimum length of
@@ -691,6 +714,136 @@ namespace cdr {
                          const cdr::StringSet*>         ValidValueSets;
 
         /**
+         * Custom validation rule assertion.
+         */
+        class Assertion {
+
+        public:
+
+            /**
+             * Creates a validation rule assertion from its XML element.
+             */
+            Assertion(const cdr::dom::Element& e);
+
+            /**
+             * Accessor method for retrieving the XPath test which
+             * must be satisfied in order for the document to be
+             * considered valid.
+             *
+             *  @return         XPath condition which is asserted.
+             */
+            cdr::String getTest() const { return test; }
+
+            /**
+             * Accessor method for retrieving the error message which
+             * will be returned if the assertion fails.
+             *
+             *  @return         error message string.
+             */
+            cdr::String getMessage() const { return message; }
+
+        private:
+
+            cdr::String test;
+            cdr::String message;
+        };
+
+        /**
+         * Custom validation rule.
+         */
+        class Rule {
+
+        public:
+
+            /**
+             * Creates a rule from its XML element node.
+             *
+             *  @param  e       reference to XML element node for a
+             *                  custom validation rule.
+             */
+            Rule(const cdr::dom::Element& e);
+
+            /**
+             * Accessor method for obtaining a copy of the 
+             * string for the context in which a rule is to be
+             * applied.  The context is specified as an XSLT
+             * exression, typically the name of an element.
+             *
+             *  @return         reference to string for rule's test.
+             */
+            cdr::String getContext() const { return context; }
+
+            /**
+             * Accessor method for obtaining a copy of the assertions
+             * used for this rule.
+             *
+             *  @return         copy of the vector of the rule's assertions.
+             */
+            std::vector<Assertion> getAssertions() const { return assertions; }
+
+        private:
+
+            cdr::String             context;
+            std::vector<Assertion>  assertions;
+        };
+
+        /**
+         * A set of custom rules to be applied to a document.  Only
+         * one rule in the set will be applied to any given element
+         * node in the document, using the XSLT algorithms for finding
+         * the closest match between the XSLT expression for the rule's
+         * context and the context in which the element is found in the
+         * document.
+         */
+        class RuleSet {
+
+        public:
+
+            /**
+             * Creates a custom rule set from its XML element node.
+             *
+             *  @param  e       reference to XML element node for
+             *                  a set of custom rules.
+             *  @param  n       reference to name of set.
+             */
+            RuleSet(const cdr::dom::Element& e, const cdr::String& n);
+
+            RuleSet() {}
+
+            /**
+             * Accessor method for obtaining the name of the rule set
+             * (which may be empty).
+             */
+            cdr::String getName() const { return name; }
+
+            /**
+             * Accessor method for obtaining the vector of rules used
+             * for this set.
+             */
+            std::vector<Rule> getRules() const { return rules; }
+
+            /**
+             * Method to get the XSLT transformation script for
+             * validating a document against the assertions in the
+             * set's rules.
+             */
+            cdr::String getXslt() const;
+
+            /**
+             * Merges additional rules into a rule set, so we can 
+             * have parts of the same set defined in separate schema
+             * files, which get included for a given document type.
+             */
+            void addRules(const cdr::dom::Element& e);
+
+        private:
+
+            cdr::String         name;
+            std::vector<Rule>   rules;
+            mutable cdr::String xslt;
+        };
+
+        /**
          * Common base class for <code>Key</code> and <code>KeyRef</code>
          * classes.
          */
@@ -942,6 +1095,19 @@ namespace cdr {
             void                elemsWithAttr(const cdr::String& attrName,
                                               cdr::StringList& elemList) const;
 
+            /**
+             * Accessor method to retrieve the collections of custom
+             * validation rules used for this schema.
+             */
+            const std::map<String, RuleSet>& getRuleSets() const { 
+                return ruleSets; 
+            }
+
+            /**
+             * Look up a rule set by name.
+             */
+            RuleSet* getRuleSet(const cdr::String& name);
+
         private:
 
             /**
@@ -1133,6 +1299,16 @@ namespace cdr {
              * when the filesystem is being used.
              */
             static const std::string   schemaDir;
+
+            /**
+             * Vector of rule sets used for custom validation.
+             */
+            std::map<String, RuleSet>  ruleSets;
+
+            /**
+             * Parse the annotation element, looking for rule sets.
+             */
+            void extractRuleSets(const cdr::dom::Node& node);
         };
 
         /**
