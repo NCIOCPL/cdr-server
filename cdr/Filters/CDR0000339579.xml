@@ -8,12 +8,13 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 
  <!-- ===============================================================
- Delete a term from an InScopeProtocol document as a result of
- a global terminology change request.
+ Delete a term from an InScopeProtocol document or a CTGovProtocol
+ document as a result of a global terminology change request.
 
- The term can be in one of (as of this writing) exactly 6 particular fields.
- If the list of eligible fields changes, this filter must be modified
- accordingly.
+ The term can be in one of (as of this writing) exactly 6 particular fields,
+ in either of the two document types.  If the list of eligible fields 
+ changes, or the two document types are allowed to get out of sync, then
+ this filter must be modified accordingly.
 
  It is legal to request the deletion of a term that is not, in fact, in
  the document.  This can happen legitimately if the caller requested 
@@ -69,7 +70,9 @@
  <xsl:template            match = "Eligibility/Diagnosis |
                                    Eligibility/ExclusionCriteria |
                                    ProtocolDetail/Gene |
-                                   ProtocolDetail/Condition">
+                                   ProtocolDetail/Condition |
+                                   PDQIndexing/Gene |
+                                   PDQIndexing/Condition">
   <xsl:if                  test = "name()!=$deleteElement or
                                    @cdr:ref!=$deleteTermID">
    <xsl:copy-of          select = "."/>
@@ -82,7 +85,8 @@
  If deleting an InterventionType, we have to delete the parent too.
  Else copy it to output.
  ================================================================ -->
- <xsl:template            match = "ProtocolDetail/StudyCategory/Intervention">
+ <xsl:template            match = "ProtocolDetail/StudyCategory/Intervention |
+                                   PDQIndexing/StudyCategory/Intervention">
   <xsl:choose>
    <xsl:when               test = "$deleteElement='InterventionType' and
                             InterventionType[@cdr:ref=$deleteTermID] and
@@ -106,6 +110,8 @@
         deleted by previous template.
  ================================================================ -->
  <xsl:template            match = "ProtocolDetail/StudyCategory/
+                                   Intervention/InterventionNameLink |
+                                   PDQIndexing/StudyCategory/
                                    Intervention/InterventionNameLink">
   <xsl:choose>
    <!-- Deleting sibling InterventionType, don't copy this NameLink -->
@@ -114,7 +120,7 @@
    <!-- Deleting this specific NameLink - but must match passed Type -->
    <xsl:when               test = "$deleteElement='InterventionNameLink' and
                                                   @cdr:ref=$deleteTermID and
-                 ../../../StudyCategory/StudyCategoryName=$studyCategory and
+                    ../../StudyCategory/StudyCategoryName=$studyCategory and
                     ../InterventionType/@cdr:ref=$interventionType"/>
 
    <!-- Else it's copied to output -->
