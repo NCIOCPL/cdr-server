@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.7 2001-06-20 00:57:19 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.8 2001-06-22 00:30:23 ameyer Exp $
  *
  */
 
@@ -25,6 +25,13 @@ namespace cdr {
 /**@#+*/
 
     /** @pkg cdr */
+
+    /**
+     * The default revision markup filter level.  All documents
+     * are filtered to only include approved and publishable
+     * revsions for default validation.
+     */
+    const int DEFAULT_REVISION_LEVEL = 3;
 
     /**
      * Class for manipulating CDR documents - adding, replacing and deleting.
@@ -92,15 +99,12 @@ namespace cdr {
              * document through filtering to remove revision markup as
              * per our default revision markup rules.
              *
-             *  @param errorStr         Reference to string to receive
-             *                            any filter warning or error
-             *                            messages.
              *  @param revisionLevel    Integer 1..3 where
              *                            1=All proposed revisions included
              *                            2=All accepted revisions included
              *                            3=Only accepted and publishable
              *                              revisions included
-             *                          Default = 3.
+             *                          Default = DEFAULT_REVISION_LEVEL.
              *                          These are Well Known Numbers.
              *  @param getIfUnfiltered  True=Return unfiltered Xml if
              *                            revision filtering fails for any
@@ -110,9 +114,9 @@ namespace cdr {
              *                          Default = false;
              *  @return                 Filtered (or raw) XML, or L"".
              */
-            cdr::String getRevisionFilteredXml (cdr::String &errorStr,
-                                                int revisionLevel=3,
-                                                bool getIfUnfiltered=false);
+            cdr::String getRevisionFilteredXml (
+                    int revisionLevel=DEFAULT_REVISION_LEVEL,
+                    bool getIfUnfiltered=false);
 
             /**
              * Mark a document as malformed.
@@ -136,8 +140,12 @@ namespace cdr {
             // Get errors as an STL list of strings
             cdr::StringList getErrList() {return errList;}
 
-            // Get errors packed as a single string
-            cdr::String getErrString() {return cdr::packErrors(errList); }
+            // Get errors packed as a single string - only if there are any
+            cdr::String getErrString() {
+                if (errList.size() > 0)
+                    return cdr::packErrors(errList);
+                return L"";
+            }
 
 
         private:
@@ -151,6 +159,7 @@ namespace cdr {
             cdr::String ActiveStatus;   // Y/N
             cdr::String TextDocType;    // Form used in document tag
             cdr::String Title;          // External title
+            cdr::String titleFilter;    // Filter id for constructin Title
             cdr::String Xml;            // Actual document as XML, not CDATA
             cdr::String revisedXml;     // After any filtering of insertion
                                         //  and deletion markup
@@ -199,6 +208,13 @@ namespace cdr {
                                             const cdr::String& nodeName,
                                             const cdr::dom::Node& node,
                                             const StringSet& paths);
+
+            /**
+             * Generate a title for a document using an XSLT filter, if
+             * one is available.  Otherwise use an existing title (probably
+             * supplied by a user).  Or create an error title.
+             */
+            void cdr::CdrDoc::createTitle();
     };
 }
 
