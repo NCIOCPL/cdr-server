@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.89 2003-12-06 15:54:43 bkline Exp $
+ * $Id: tables.sql,v 1.90 2004-01-12 21:19:20 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.89  2003/12/06 15:54:43  bkline
+ * Added identity column as new primary key for external_map.
+ *
  * Revision 1.88  2003/11/10 13:42:58  bkline
  * Added ctgov_import_job and ctgov_import_event tables.
  *
@@ -1792,6 +1795,7 @@ GO
  *     verified  date/time document was last verified at NLM
  *      changed  date/time document was last changed at NLM
  *       cdr_id  document ID in CDR (if imported)
+ *      dropped  flag indicating that NLM is no longer exporting this trial
  *      comment  user comments, if any
  */
 CREATE TABLE ctgov_import
@@ -1804,6 +1808,7 @@ CREATE TABLE ctgov_import
     verified DATETIME          NULL,
      changed DATETIME          NULL,
       cdr_id INTEGER           NULL REFERENCES all_docs,
+     dropped CHAR          NOT NULL DEFAULT 'N',
      comment NTEXT             NULL)
 GO
 CREATE INDEX ctgov_import_title ON ctgov_import(title)
