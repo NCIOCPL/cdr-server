@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCache.cpp,v 1.5 2004-07-02 02:13:46 ameyer Exp $
+ * $Id: CdrCache.cpp,v 1.6 2004-07-02 03:21:21 ameyer Exp $
  *
  * Specialized cacheing for performance optimization, where useful.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2004/07/02 02:13:46  ameyer
+ * Fixed bug on cache start underflow.
+ *
  * Revision 1.4  2004/07/02 01:26:36  ameyer
  * New concepts for starting and stopping cacheing using request counter.
  * New concept for timing out stale cache.
@@ -359,17 +362,17 @@ cdr::cache::Term * cdr::cache::Term::getTerm(
                                             depth + 1, parentIdStr);
 
                       // If we haven't already seen this one, process it
-                      if (!pTerm->parentPtrs.count(pParentTerm)) {
+                      if (!pTerm->parentPtrs.count(pParentTerm->id)) {
 
-                        // Install it in the parent term set for this Term
-                        pTerm->parentPtrs.insert(pParentTerm);
+                        // Install it in the parent term map for this Term
+                        pTerm->parentPtrs[pParentTerm->id] = pParentTerm;
 
                         // Install all of its parents in the set for this Term
-                        PARENT_SET::iterator parIter =
+                        PARENT_MAP::iterator parIter =
                                   pParentTerm->parentPtrs.begin();
                         while (parIter != pParentTerm->parentPtrs.end()) {
-                          if (!pTerm->parentPtrs.count(*parIter))
-                            pTerm->parentPtrs.insert(*parIter);
+                          if (!pTerm->parentPtrs.count(parIter->first))
+                            pTerm->parentPtrs[parIter->first]=parIter->second;
                           ++parIter;
                         }
                       }
@@ -418,15 +421,16 @@ std::string cdr::cache::Term::getFamilyXml() {
         familyXml = makeTermStart();
 
         // Get name of each parent
-        PARENT_SET::iterator parIter = parentPtrs.begin();
+        PARENT_MAP::iterator parIter = parentPtrs.begin();
         while (parIter != parentPtrs.end()) {
             // Only include terms for which the type was ok and name stored
-            if ((*parIter)->typeOK) {
+            Term *pParent = parIter->second;
+            if (pParent->typeOK) {
                 familyXml += " <Term";
-                if ((*parIter)->pdqKey.size() > 0)
-                    familyXml += (*parIter)->pdqKey;
-                familyXml += (*parIter)->cdrRef +
-                             "><PreferredName>" + (*parIter)->getName() +
+                if (pParent->pdqKey.size() > 0)
+                    familyXml += pParent->pdqKey;
+                familyXml += pParent->cdrRef +
+                             "><PreferredName>" + pParent->getName() +
                              "</PreferredName></Term>\n";
             }
             ++parIter;

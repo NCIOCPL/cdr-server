@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCache.h,v 1.3 2004-07-02 01:27:23 ameyer Exp $
+ * $Id: CdrCache.h,v 1.4 2004-07-02 03:17:37 ameyer Exp $
  *
  * Header for cacheing used to speed operations.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/07/02 01:27:23  ameyer
+ * New internal routine and constants.  New comments.
+ *
  * Revision 1.2  2004/05/26 01:14:30  ameyer
  * New handling of PdqKey and cdr:ref attributes.
  *
@@ -37,7 +40,7 @@ namespace cdr {
     // Set of pointers to Terms for a term's parents.
     // As a simple set, each parent occurs only once even if inserted more
     //   than once.
-    typedef std::set<Term*> PARENT_SET;
+    typedef std::map<int, Term*> PARENT_MAP;
 
     /**
      * All information pertaining to a Term document and its
@@ -163,7 +166,7 @@ namespace cdr {
             std::string nameXml;    // Preferred name as XML string
             std::string familyXml;  // Full denormalization, see above.
             std::string pdqKey;     // PdqKey for this Term, if there is one
-            PARENT_SET  parentPtrs; // Hierarchical parents of this term
+            PARENT_MAP  parentPtrs; // Hierarchical parents of this term
 
             // Functions
 
