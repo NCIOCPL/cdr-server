@@ -1,9 +1,13 @@
 /*
- * $Id: CdrFilter.cpp,v 1.19 2002-03-07 02:03:21 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.20 2002-03-07 12:58:52 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2002/03/07 02:03:21  bkline
+ * Delayed throwing an exception until we are no longer in a Sablotron
+ * callback function (which was causing a memory leak).
+ *
  * Revision 1.18  2002/02/19 22:44:59  bkline
  * Added support for version attribute on Document element.
  *
@@ -375,6 +379,7 @@ namespace
         if (fields != NULL)
           while (*fields != NULL)
             td->errMsg << cdr::String(*(fields++)) << L"\n";
+        break;
       }
 
       case MH_LEVEL_WARN:
