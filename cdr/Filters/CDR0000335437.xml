@@ -1,0 +1,88 @@
+<CdrDoc Type='Filter' Id='CDR0000335437'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Denormalization Filter: Summary Citation Wrapper Add</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             version = "1.0"
+                           xmlns:cdr = "cips.nci.nih.gov/cdr">
+ <xsl:output                  method = "xml" 
+                omit-xml-declaration = "no"/>
+
+ <!-- 
+ ===================================================================
+ Top-level rule.
+ =================================================================== -->
+ <xsl:template match                 = "/">
+  <xsl:apply-templates/>
+ </xsl:template>
+
+ <!-- 
+ ===================================================================
+ Copy all attributes.
+ =================================================================== -->
+ <xsl:template                 match = "@*">
+  <xsl:copy/>
+ </xsl:template>
+
+ <!-- 
+ ===================================================================
+ Copy all nodes recursively, with special handling for Citation
+ nodes.
+ ==================================================================== -->
+ <xsl:template                 match = "node()">
+  <xsl:copy>
+   <xsl:apply-templates       select = "@*"/>
+   <xsl:for-each              select = "node()">
+    <xsl:variable               name = "pos"
+                              select = "position()"/>
+    <xsl:choose>
+     <xsl:when                  test = "name() != 'Citation'">
+      <xsl:apply-templates    select = "."/>
+     </xsl:when>
+     <xsl:when                  test = "$pos = 1 or 
+                                        name(../node()[$pos - 1])
+                                               != 'Citation'">
+      <xsl:call-template        name = "wrapCitations"/>
+     </xsl:when>
+    </xsl:choose>
+   </xsl:for-each>
+  </xsl:copy> 
+ </xsl:template>
+
+ <!-- 
+ ================================================================
+ Add a wrapper to CitationLink nodes.
+ ================================================================ -->
+ <xsl:template                  name = "wrapCitations">
+  <CitationWrapper>
+   <xsl:call-template           name = "copyCitations">
+    <xsl:with-param             name = "pos"
+                              select = "position()"/>
+   </xsl:call-template>
+  </CitationWrapper>
+ </xsl:template>
+
+ <!-- 
+ ================================================================
+ Recursively pick up all adjacent citation links.
+ ================================================================ -->
+ <xsl:template                  name = "copyCitations">
+  <xsl:param                    name = "pos"/>
+  <xsl:if                       test = "name() = 'Citation'">
+   <xsl:copy-of               select = "."/>
+   <xsl:for-each              select = "../node()[$pos + 1]">
+    <xsl:call-template          name = "copyCitations">
+     <xsl:with-param            name = "pos"
+                              select = "$pos + 1"/>
+    </xsl:call-template>
+   </xsl:for-each>
+  </xsl:if>
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
