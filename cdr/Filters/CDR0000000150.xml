@@ -429,6 +429,14 @@
    <xsl:attribute             name = "ref">
     <xsl:value-of           select = "Person/@ref"/>
    </xsl:attribute>
+
+   <!-- If the status attribute exists the person's status is inactive
+        and a special note has to be displayed to this effect.         -->
+   <xsl:if                    test = "Person/@status">
+    <xsl:attribute             name = "status">
+     <xsl:text>Inactive - Contact information may not be current</xsl:text>
+    </xsl:attribute>
+   </xsl:if>
    <xsl:apply-templates     select = "Person/PersonNameInformation"/>
 
 
@@ -574,17 +582,12 @@
 
   <!-- Added code to pick up private practice sites.  RMK 2002-09-06. -->
   <xsl:for-each                 select = "PrivatePracticeSite">
-   <xsl:variable                  name = "status"
-                                select = "PrivatePracticeSiteStatus"/>
    <xsl:variable                  name = "name"
                                 select = "PrivatePracticePerson/
                                           PersonNameInformation"/>
    <ProtocolSite                   ref = "{@ref}"
                               sitetype = "Person">
-    <xsl:apply-templates        select = "PrivatePracticePerson">
-     <xsl:with-param              name = "status"
-                                select = "$status"/>
-    </xsl:apply-templates>
+    <xsl:apply-templates        select = "PrivatePracticePerson"/>
    </ProtocolSite>
   </xsl:for-each>
    
@@ -596,26 +599,34 @@
  contact for a participating organization.
  ==================================================================== -->
  <xsl:template               match = "SpecificPerson|PrivatePracticePerson">
-  <xsl:param                  name = "status"/>
   <ProtPerson>
-   <xsl:if                    test = "$status">
-    <xsl:attribute            name = "status">
-     <xsl:value-of          select = "$status"/>
-    </xsl:attribute>
-   </xsl:if>
    <xsl:attribute             name = "ref">
     <xsl:value-of           select = "@ref"/>
    </xsl:attribute>
+
+   <!-- If the status attribute exists the person's status is inactive
+        and a special note has to be displayed to this effect.         -->
+   <xsl:if                    test = "@status">
+    <xsl:attribute            name = "status">
+     <xsl:text>Inactive - Contact information may not be current</xsl:text>
+    </xsl:attribute>
+   </xsl:if>
    <xsl:apply-templates     select = "PersonNameInformation"/>
    <PersonRole>
     <xsl:value-of           select = "Role"/>
    </PersonRole>
    <Contact>
+   <!-- This had been entered by Bob but although the DTD allows for a
+        status attribute for the Contact element it is not clear where 
+        this is coming from.  
+        The status attribute for the SpecificPerson template is identifying
+        instead if a person is active (default) or inactive (when set) 
+        Eliminating the attribute from the contact element.  VE, 10/08/02
     <xsl:if                   test = "$status">
      <xsl:attribute           name = "Status">
       <xsl:value-of         select = "$status"/>
      </xsl:attribute>
-    </xsl:if>
+    </xsl:if> -->
 
     <!-- XXX The original filter didn't have this element here at all. -->
     <ContactDetail>
@@ -806,7 +817,7 @@
 
  <!--
  ====================================================================
- Remove any comments from the output
+ Include the ProtocolSpecialCategory element in the output
  ==================================================================== -->
  <xsl:template               match = "ProtocolSpecialCategory">
    <xsl:element               name = "{name()}">
