@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.18 2002-02-19 22:44:59 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.19 2002-03-07 02:03:21 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2002/02/19 22:44:59  bkline
+ * Added support for version attribute on Document element.
+ *
  * Revision 1.17  2002/02/01 22:08:01  bkline
  * Fixed whitespace in XSLT error messages.
  *
@@ -334,12 +337,19 @@ namespace
   struct ThreadData
   {
       ThreadData(cdr::db::Connection& c, cdr::String id)
-        : connection(c), DocId(id)
+        : connection(c), DocId(id), fatalError(false)
         {}
       string filter_messages;
       vector<UriInfo> uri_list;
       cdr::db::Connection& connection;
       cdr::String DocId;
+
+      // These two are added to avoid the exception Mike was throwing in
+      // the message handler for fatal errors.  The exception was causing
+      // a memory leak, because the invocation of the callback is not
+      // wrapped in a try block inside Sablotron.
+      bool fatalError;
+      wostringstream errMsg;
   };
 
   /***************************************************************************/
@@ -359,13 +369,12 @@ namespace
       case MH_LEVEL_CRITICAL:
       case MH_LEVEL_ERROR:
       {
-        wostringstream msg;
-        msg << L"XSLT error: code: " << code << L"\n";
+        ThreadData* td = static_cast<ThreadData*>(thread_data);
+        td->fatalError = true;
+        td->errMsg << L"XSLT error: code: " << code << L"\n";
         if (fields != NULL)
           while (*fields != NULL)
-            msg << cdr::String(*(fields++)) << L"\n";
-
-        throw cdr::Exception(msg.str());
+            td->errMsg << cdr::String(*(fields++)) << L"\n";
       }
 
       case MH_LEVEL_WARN:
@@ -389,7 +398,6 @@ namespace
                 += "<message>" + msg + "</message>\n";
             }
           }
-
         }
         break;
 
@@ -670,11 +678,13 @@ namespace
           throw cdr::Exception(L"cannot register Sablotron scheme handler");
 
         char** pparms = p.g_parms();
-        if ((rc = SablotRunProcessor(proc, "arg:/_stylesheet",
-                                     "arg:/_xmlinput", "arg:/_output",
-                                     pparms, arguments)))
+        rc = SablotRunProcessor(proc, "arg:/_stylesheet",
+                                "arg:/_xmlinput", "arg:/_output",
+                                pparms, arguments);
+        if (thread_data->fatalError)
+          throw cdr::Exception(thread_data->errMsg.str());
+        if (rc)
           throw cdr::Exception(L"XSLT error");
-
         if ((rc = SablotGetResultArg(proc, "arg:/_output", &r)))
           throw cdr::Exception(L"Cannot get XSLT result");
       }
