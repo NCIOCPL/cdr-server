@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<!-- $Id: CdrCommonBase.xml,v 1.15 2004-11-03 18:39:46 bkline Exp $ 
+<!-- $Id: CdrCommonBase.xml,v 1.16 2004-11-10 04:30:59 ameyer Exp $ 
 
      $Log: not supported by cvs2svn $
+     Revision 1.15  2004/11/03 18:39:46  bkline
+     Added new MediaLink element (request #1385).
+
      Revision 1.14  2004/03/25 13:20:48  bkline
      Fixed typos (valid value types for update mode and mailer type had
      been reversed).
@@ -329,6 +332,10 @@
                      type            = 'DocumentationFragmentLink'/>
       <element       name            = 'DocumentationFragmentRef'
                      type            = 'DocumentationFragmentRef'/>
+      <element       name            = 'MediaLink'
+                     type            = 'MediaLink'/>
+      <element       name            = 'MediaRef'
+                     type            = 'MediaRef'/>
     </choice>
   </group>
 
@@ -355,6 +362,8 @@
                      type            = 'QandASet'/>
       <element       name            = 'Contact'
                      type            = 'Contact'/>
+      <element       name            = 'MediaLink'
+                     type            = 'MediaLink'/>
     </choice>
   </group>
 
@@ -1309,17 +1318,46 @@
   </complexType>
 
   <complexType       name            = 'MediaLink'>
- 
-   <simpleContent>
-
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'
+    <sequence>
+      <element       name            = 'Caption'
+                     type            = 'GeneralText'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+    <attribute       name            = 'cdr:ref'
+                     type            = 'DocId'/>
+    <attribute       name            = 'AlternativeText'
+                     type            = 'NotEmptyString'
                      minOccurs       = '0'/>
-      </extension>
-
-    </simpleContent>
+    <attribute       name            = 'Inline'
+                     type            = 'YesNo'
+                     minOccurs       = '0'/>
+    <attribute       name            = 'UseCaption'
+                     type            = 'YesNo'
+                     minOccurs       = '0'/>
+    <attribute       name            = 'size'
+                     type            = 'MediaSize'
+                     minOccurs       = '0'/>
+    <attribute       name            = 'thumb'
+                     type            = 'YesNo'
+                     minOccurs       = '0'/>
+    <attribute       name            = 'MinWidth'
+                     type            = 'integer'
+                     minOccurs       = '0'/>
   </complexType>
+
+  <simpleType        name            = 'MediaSize'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'full'/>
+      <enumeration   value           = 'half'/>
+      <enumeration   value           = 'third'/>
+      <enumeration   value           = 'quarter'/>
+      <enumeration   value           = 'fifth'/>
+      <enumeration   value           = 'sixth'/>
+      <enumeration   value           = 'as-is'/>
+    </restriction>
+  </simpleType>
+
 
   <complexType       name            = 'DocumentationFragmentLink'>
  
@@ -1334,7 +1372,12 @@
     </simpleContent>
   </complexType>
 
-   <complexType       name           = 'DocumentationRef'>
+  <complexType       name            = 'MediaRef'>
+    <attribute       name            = 'cdr:href'
+                     type            = 'NotEmptyString'/>
+  </complexType>
+
+  <complexType       name           = 'DocumentationRef'>
  
    <simpleContent>
 
