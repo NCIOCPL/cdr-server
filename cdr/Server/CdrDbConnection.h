@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbConnection.h,v 1.8 2000-05-21 00:53:35 bkline Exp $
+ * $Id: CdrDbConnection.h,v 1.9 2000-06-23 15:30:21 bkline Exp $
  *
  * Interface for CDR wrapper for an ODBC database connection.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2000/05/21 00:53:35  bkline
+ * Replaced public constructor with DriverManager::getConnection().
+ *
  * Revision 1.7  2000/05/03 18:49:50  bkline
  * More ccdoc comments.
  *
@@ -45,6 +48,21 @@ namespace cdr {
 /**@#+*/
 
         /** @pkg cdr.db */
+
+        /**
+         * Default url for connection.
+         */
+        static const wchar_t * const url = L"odbc:cdr";
+
+        /**
+         * Default user ID for connection.
+         */
+        static const wchar_t * const uid = L"cdr";
+
+        /**
+         * Default password for connection.
+         */
+        static const wchar_t * const pwd = L"***REMOVED***";
 
         // Forward references.
         class ResultSet;
