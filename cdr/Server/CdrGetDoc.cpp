@@ -1,10 +1,14 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.14 2001-11-06 21:42:10 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.15 2002-01-22 18:59:00 ameyer Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2001/11/06 21:42:10  bkline
+ * Plugged in denormalization code.  Blocked it for Filter documents to
+ * avoid a Sablotron bug.
+ *
  * Revision 1.13  2001/09/20 20:13:31  mruben
  * added code for accessing versions -- needs testing
  *
@@ -64,6 +68,10 @@ static cdr::String makeDocXml(const cdr::String& xml);
 static cdr::String makeDocBlob(const cdr::Blob& blob);
 static cdr::String readOnlyWrap(const cdr::String text, const cdr::String tag);
 static cdr::String denormalizeLinks(const cdr::String&, cdr::db::Connection&);
+static cdr::String getCommonCtlString(int docId,
+                                      cdr::db::Connection& conn,
+                                      int elements);
+
 
 /**
  * Builds the XML string for a <CdrDoc> element for a document extracted from
@@ -243,7 +251,7 @@ cdr::String cdr::getDocString(
     return cdr::getDocString(docIdString, conn, usecdata, denormalize);
 
   cdr::CdrVerDoc v;
-  
+
   if (!getVersion(docIdString.extractDocId(), conn, version, &v))
     throw cdr::Exception(L"getDocString: Unable to find document "
                              + docIdString
@@ -312,8 +320,6 @@ cdr::String cdr::getDocCtlString(
         cdr::db::Connection&  conn,
         int elements)
 {
-    // For now we ignore the select and get everything
-    // Go get the document information.
     int docId = docIdString.extractDocId();
     std::string query = "          SELECT d.val_status,"
                         "                 d.val_date,"
@@ -333,7 +339,7 @@ cdr::String cdr::getDocCtlString(
     select.close();
 
     // Build the CdrDoc string.
-    cdr::String cdrDoc = cdr::String(L"<CdrDocCtl><DocValStatus>")
+    cdr::String cdrDoc = cdr::String(L"<DocValStatus>")
                        + valStatus
                        + L"</DocValStatus>";
     if (!valDate.isNull() && valDate.length() > 0) {
@@ -344,9 +350,10 @@ cdr::String cdr::getDocCtlString(
     cdrDoc += cdr::String(L"<DocTitle>") + title + L"</DocTitle>";
     if (!comment.isNull() && comment.length() > 0)
         cdrDoc += cdr::String(L"<DocComment>") + comment + L"</DocComment>";
-    cdrDoc += L"</CdrDocCtl>\n";
 
-    return cdrDoc;
+    return L"<CdrDocCtl>" + cdrDoc
+         + getCommonCtlString(docId, conn, elements)
+         + L"</CdrDocCtl>\n";
 }
 
 /**
@@ -361,7 +368,7 @@ cdr::String cdr::getDocCtlString(
 {
   if (version == 0)
     return cdr::getDocCtlString(docIdString, conn, elements);
-  
+
   // For now we ignore the select and get everything
   // Go get the document information.
   int docId = docIdString.extractDocId();
@@ -385,7 +392,7 @@ cdr::String cdr::getDocCtlString(
   select.close();
 
   // Build the CdrDoc string.
-  cdr::String cdrDoc = cdr::String(L"<CdrDocCtl><DocValStatus>")
+  cdr::String cdrDoc = cdr::String(L"<DocValStatus>")
     + valStatus
     + L"</DocValStatus>";
   if (!valDate.isNull() && valDate.length() > 0) {
@@ -396,13 +403,80 @@ cdr::String cdr::getDocCtlString(
   cdrDoc += cdr::String(L"<DocTitle>") + title + L"</DocTitle>";
   if (!comment.isNull() && comment.length() > 0)
     cdrDoc += cdr::String(L"<DocComment>") + comment + L"</DocComment>";
-  cdrDoc += L"</CdrDocCtl>\n";
+
+  return L"<CdrDocCtl>" + cdrDoc
+       + getCommonCtlString(docId, conn, elements)
+       + L"</CdrDocCtl>\n";
+}
+
+/**
+ * Builds the common CdrDocCtl elements
+ */
+static cdr::String getCommonCtlString(int docId,
+                                      cdr::db::Connection& conn,
+                                      int elements)
+{
+  cdr::String cdrDoc;
+  
+  if (elements & cdr::DocCtlComponents::DocCreate)
+  {
+    std::string query = "SELECT a.dt,"
+                        "       u.name"
+                        "  FROM audit_trail a"
+                        "  JOIN usr u"
+                        "    ON a.usr = u.id"
+                        "  JOIN action ac"
+                        "    ON a.action = ac.id"
+                        " WHERE a.document = ?"
+                        "   AND ac.name = 'ADD DOCUMENT'";
+    cdr::db::PreparedStatement select = conn.prepareStatement(query);
+    select.setInt(1, docId);
+    cdr::db::ResultSet rs = select.executeQuery();
+    if (rs.next())
+    {
+      cdr::String date = rs.getString(1);
+      if (date.length() > 10)
+        date[10] = L'T';
+      cdr::String user = rs.getString(2);
+      cdrDoc += L"<Create><Date>" + date + L"</Date><User>"
+              + user + L"</User></Create>";
+    }
+    select.close();
+  }
+
+  if (elements & cdr::DocCtlComponents::DocMod)
+  {
+    std::string query = "SELECT a.dt,"
+                        "       u.name"
+                        "  FROM audit_trail a"
+                        "  JOIN usr u"
+                        "    ON a.usr = u.id"
+                        "  JOIN action ac"
+                        "    ON a.action = ac.id"
+                        " WHERE a.document = ?"
+                        "   AND ac.name = 'MODIFY DOCUMENT'";
+    cdr::db::PreparedStatement select = conn.prepareStatement(query);
+    select.setInt(1, docId);
+    cdr::db::ResultSet rs = select.executeQuery();
+    if (rs.next())
+    {
+      cdr::String date = rs.getString(1);
+      if (date.length() > 10)
+        date[10] = L'T';
+      cdr::String user = rs.getString(2);
+      cdrDoc += L"<Modify><Date>" + date + L"</Date><User>"
+              + user + L"</User></Modify>";
+    }
+    select.close();
+  }
 
   return cdrDoc;
 }
 
 /**
  * Apply denormalization filter to the XML.
+ * If denormalization fails (e.g., the document is malformed), just
+ * return it as is.
  *
  *  @param  xml     reference to string representation of xml for document.
  *  @param  conn    reference to CDR database connection object.
@@ -413,10 +487,19 @@ cdr::String denormalizeLinks(const cdr::String& xml, cdr::db::Connection& conn)
     // Empty parameter list.
     cdr::FilterParmVector pv;
 
-    // Ignore warnings; exceptions will handle errors.
+    // Ignore warnings and other messages
     cdr::String dummyErrStr;
-    return cdr::filterDocumentByScriptTitle(xml, 
+    cdr::String denormXml;
+    try {
+        denormXml = cdr::filterDocumentByScriptTitle(xml,
                 L"Fast Denormalization Filter", conn, &dummyErrStr, &pv);
+    }
+    catch (cdr::Exception e) {
+        // Can't do it, just return what we had
+        denormXml = xml;
+    }
+
+    return denormXml;
 }
 
 cdr::String getDocTypeName(const cdr::String& docId, cdr::db::Connection& conn)
