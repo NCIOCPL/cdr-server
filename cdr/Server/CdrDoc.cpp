@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.20 2001-09-25 15:00:57 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.21 2001-10-18 17:07:35 ameyer Exp $
  *
  */
 
@@ -64,6 +64,7 @@ cdr::CdrDoc::CdrDoc (
     revisedXml (L""),
     revFilterFailed (false),
     revFilterLevel (0),
+    NeedsReview (false),
     titleFilterId (0),
     Title (L"")
 {
@@ -143,8 +144,11 @@ cdr::CdrDoc::CdrDoc (
                         //   client modifiable elements are examined
                         //   and retained.
                         if (ctlTag == L"DocTitle")
-                            // XXXX - THIS WILL CHANGE
-                            // PLAN IS TO GET TITLE VIA XSLT SCRIPT
+                            // Title from retrieved doc is captured here
+                            //   but will almost certainly be overridden
+                            //   by createTitle XSLT script
+                            // This title is only kept if no XSLT script
+                            //   exists for this doc type
                             Title = cdr::dom::getTextContent (ctlNode);
 
                         else if (ctlTag == L"DocComment")
@@ -156,6 +160,11 @@ cdr::CdrDoc::CdrDoc (
                                 throw cdr::Exception(
                                    L"CdrDoc: Unrecognized DocActiveStatus '" +
                                    ActiveStatus + L"' - expecting 'A' or 'I'");
+                        }
+                        else if (ctlTag == L"DocNeedsReview") {
+                            NeedsReview = cdr::ynCheck (
+                                   cdr::dom::getTextContent (ctlNode),
+                                   false, L"DocNeedsReview");
                         }
 
                         // Everything else is ignored
@@ -232,6 +241,8 @@ cdr::CdrDoc::CdrDoc (
                         "              ON t.id = d.doc_type"
                         " LEFT OUTER JOIN doc_blob b"
                         "              ON b.id = d.id"
+                        " LEFT OUTER JOIN ready_for_review r"
+                        "              ON r.doc_id = d.id"
                         "           WHERE d.id = ?";
     cdr::db::PreparedStatement select = docDbConn.prepareStatement(query);
     select.setInt(1, docId);
@@ -252,6 +263,7 @@ cdr::CdrDoc::CdrDoc (
     cdr::Int tfi   = rs.getInt (10);
     cdr::Int sdi   = rs.getInt (11);
     BlobData       = rs.getBytes (12);
+    cdr::Int rvRdy = rs.getInt (13);
 
     // There may not be schema or filter ids, default is 0
     if (tfi.isNull())
@@ -262,6 +274,12 @@ cdr::CdrDoc::CdrDoc (
         schemaDocId = 0;
     else
         schemaDocId = sdi;
+
+    // Default for ready_for_review table is false (document not so marked)
+    if (rvRdy.isNull())
+        NeedsReview = false;
+    else
+        NeedsReview = true;
 
     // We haven't filtered this for insertion, deletion markup
     revisedXml = L"";
@@ -363,6 +381,44 @@ void cdr::CdrDoc::Store ()
         insBlob.setBytes(2, BlobData);
         insBlob.executeUpdate();
     }
+
+    // Update ready_for_review table as required
+    // This table will probably be very small, and in memory all
+    //   the time.  I don't bother trying to figure out if an
+    //   update is required because the cost of trying is low
+    //   and the always-do-it technique is robust.
+    if (NeedsReview) {
+        static const char *const revQuery =
+            "INSERT INTO ready_for_review (doc_id) VALUES (?)";
+        cdr::db::PreparedStatement revReady =
+            docDbConn.prepareStatement (revQuery);
+        revReady.setInt (1, Id);
+        try {
+            revReady.executeUpdate();
+        }
+        catch (...) {
+            // Ignore failure, it means that the doc is already
+            //   marked ready for review
+            ;
+        }
+    }
+    else {
+        // Insure that if it was ready for review, it's not now
+        static const char *const revQuery =
+            "DELETE FROM ready_for_review WHERE doc_id = ?";
+        cdr::db::PreparedStatement revReady =
+            docDbConn.prepareStatement (revQuery);
+        revReady.setInt (1, Id);
+        try {
+            revReady.executeUpdate();
+        }
+        catch (...) {
+            // Ignore failure
+            ;
+        }
+    }
+
+
 
 } // Store
 
