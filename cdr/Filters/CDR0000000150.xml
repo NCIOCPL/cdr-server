@@ -303,16 +303,30 @@
  <!--
  ====================================================================
  Assemble the Protocol admin info.
- XXX NOTE: This logic discards the relationship between the individual
-           lead organizations for the protocol and the protocol sites
-           associated with each of the lead organizations!
+ NOTE: This logic discards the relationship between the individual
+       lead organizations for the protocol and the protocol sites
+       associated with each of the lead organizations!
  ==================================================================== -->
  <xsl:template               match = "ProtocolAdminInfo">
   <ProtocolAdminInfo>
    <xsl:apply-templates     select = "CurrentProtocolStatus"
                               mode = "copy"/>
    <xsl:apply-templates     select = "ProtocolLeadOrg"/>
-   <xsl:apply-templates     select = "ProtocolLeadOrg/ProtocolSites"/>
+
+ <!-- Only display the ProtocolSites for Active/Approved protocols -->
+   <xsl:if                    test = "ProtocolLeadOrg/ProtocolSites">
+    <xsl:if                   test = "(/InScopeProtocol/ProtocolAdminInfo/
+                                      CurrentProtocolStatus = 
+                                      'Active')
+                                      or
+                                      (/InScopeProtocol/ProtocolAdminInfo/
+                                      CurrentProtocolStatus = 
+                                      'Approved-not yet active')">
+     <ProtocolSites>
+      <xsl:apply-templates  select = "ProtocolLeadOrg/ProtocolSites"/>
+     </ProtocolSites>
+    </xsl:if>
+   </xsl:if>
   </ProtocolAdminInfo>
  </xsl:template>
 
@@ -390,9 +404,17 @@
                                       GenerationSuffix"
                               mode = "copy"/>
     <ProfessionalSuffix>
-     <xsl:value-of          select = "Person/PersonNameInformation/
-                                      ProfessionalSuffix/
-                                      StandardProfessionalSuffix"/>
+     <xsl:for-each          select = "Person/PersonNameInformation/
+                                        ProfessionalSuffix/
+                                        StandardProfessionalSuffix |
+                                      Person/PersonNameInformation/
+                                        ProfessionalSuffix/
+                                        CustomProfessionalSuffix">
+       <xsl:value-of        select = "."/>
+       <xsl:if                test = "position() != last()">
+         <xsl:text>, </xsl:text>
+       </xsl:if>
+     </xsl:for-each>
     </ProfessionalSuffix>
     <xsl:apply-templates    select = "Person/PersonNameInformation/
                                       NameFormat"
@@ -517,9 +539,6 @@
  is Active.
  ==================================================================== -->
  <xsl:template               match = "ProtocolSites">
-  <xsl:if                     test = "/InScopeProtocol/ProtocolAdminInfo/
-                                      CurrentProtocolStatus = 'Active'">
-   <ProtocolSites>
     <xsl:for-each           select = "OrgSite">
      <ProtocolSite>
       <SiteName>
@@ -532,8 +551,6 @@
        <xsl:value-of        select = "OfficialName/Name"/>
       </SiteName>
 
-      <!-- Original filter added a 'ref' attribute to this element, but
-           such an attribute isn't specified in the DTD. -->
       <!-- ProtPerson -->
        <xsl:apply-templates select = "OrgSiteContact/SpecificPerson|
                                      OrgSiteContact/GenericPerson"/>
@@ -541,8 +558,6 @@
 
      </ProtocolSite>
     </xsl:for-each>
-   </ProtocolSites>
-  </xsl:if>
  </xsl:template>
 
  <!--
@@ -675,8 +690,15 @@
     <xsl:apply-templates    select = "GenerationSuffix"
                               mode = "copy"/>
     <ProfessionalSuffix>
-     <xsl:value-of          select = "ProfessionalSuffix/
-                                      StandardProfessionalSuffix"/>
+     <xsl:for-each          select = "ProfessionalSuffix/
+                                        StandardProfessionalSuffix |
+                                      ProfessionalSuffix/
+                                        CustomProfessionalSuffix">
+       <xsl:value-of        select = "."/>
+       <xsl:if                test = "position() != last()">
+         <xsl:text>, </xsl:text>
+       </xsl:if>
+     </xsl:for-each>
     </ProfessionalSuffix>
     <xsl:apply-templates    select = "NameFormat"
                               mode = "copy"/>
