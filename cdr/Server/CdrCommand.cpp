@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.cpp,v 1.37 2003-02-10 14:04:20 bkline Exp $
+ * $Id: CdrCommand.cpp,v 1.38 2004-05-14 02:07:11 ameyer Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.37  2003/02/10 14:04:20  bkline
+ * Added new command CdrMailerCleanup.
+ *
  * Revision 1.36  2003/01/28 23:46:26  ameyer
  * Added 4 XML transactions, all mapping to sysValue() command.
  *
@@ -199,6 +202,7 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
         CommandMap(L"CdrMergeProt",          cdr::mergeProt),
         CommandMap(L"CdrMailerCleanup",      cdr::mailerCleanup),
         CommandMap(L"CdrPublish",            cdr::publish),
+        CommandMap(L"CdrCacheing",           cdr::cacheInit),
         CommandMap(L"CdrShutdown",           cdr::shutdown)
     };
     for (size_t i = 0; i < sizeof map / sizeof *map; ++i) {
