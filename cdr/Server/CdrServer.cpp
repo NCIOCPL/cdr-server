@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.24 2002-02-27 23:33:09 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.25 2002-03-06 20:33:28 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2002/02/27 23:33:09  bkline
+ * Added test of buffer allocation for new client message.
+ *
  * Revision 1.23  2002/02/01 20:48:21  bkline
  * Added more logging for top-level failures.
  *
@@ -184,7 +187,6 @@ main(int ac, char **av)
 #endif
 
     while (!timeToShutdown) {
-        SHOW_HEAP_USED("Top of main processing loop");
         int rc = handleNextClient(sock);
         if (rc != EXIT_SUCCESS)
             return rc;
@@ -671,7 +673,7 @@ void __cdecl sessionSweep(void* arg) {
             }
             Sleep(5000);
         }
-        catch (cdr::Exception e) {
+        catch (cdr::Exception& e) {
             log.Write("sessionSweep", e.what());
         }
         catch (...) {
