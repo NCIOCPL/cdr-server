@@ -1,9 +1,13 @@
 /*
- * $Id: CdrCommand.h,v 1.2 2000-04-15 12:05:34 bkline Exp $
+ * $Id: CdrCommand.h,v 1.3 2000-04-16 19:11:36 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/15 12:05:34  bkline
+ * Changed DbConnection* to DbConnection&.  Removed redundant namespace
+ * qualifiers.
+ *
  * Revision 1.1  2000/04/14 15:58:04  bkline
  * Initial revision
  *
@@ -18,7 +22,7 @@
 #include "CdrDbConnection.h"
 
 namespace cdr {
-    typedef String (*Command)(Session&, dom::Node&, db::Connection&);
+    typedef String (*Command)(Session&, const dom::Node&, db::Connection&);
     extern Command lookupCommand(const String&);
     extern String logon      (Session&, const dom::Node&, db::Connection&);
     extern String logoff     (Session&, const dom::Node&, db::Connection&);
