@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.5 2000-09-25 14:01:45 mruben Exp $
+ * $Id: CdrGetDoc.cpp,v 1.6 2000-10-24 23:08:40 ameyer Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/09/25 14:01:45  mruben
+ * added getDocCtlString to get information from document table
+ *
  * Revision 1.4  2000/05/23 18:22:50  mruben
  * implemented primitive form of CdrGetDoc
  *
@@ -26,11 +29,15 @@
 #include "CdrDbResultSet.h"
 #include "CdrDbPreparedStatement.h"
 #include "CdrGetDoc.h"
+#include "CdrVersion.h"
 #include "CdrBlob.h"
 
 // Local functions.
 static cdr::String encodeBlob(const cdr::Blob& blob);
 static cdr::String fixString(const cdr::String& s);
+static cdr::String makeDocXml(const cdr::String& xml);
+static cdr::String makeDocBlob(const cdr::Blob& blob);
+static cdr::String readOnlyWrap(const cdr::String text, const cdr::String tag);
 
 /**
  * Builds the XML string for a <CdrDoc> element for a document extracted from
@@ -80,34 +87,151 @@ cdr::String cdr::getDocString(
                        + docType
                        + L"' Id='"
                        + canonicalIdString
-                       + L"'><CdrDocCtl><DocValStatus>"
-                       + valStatus
-                       + L"</DocValStatus>";
+                       + L"'>\n<CdrDocCtl>\n";
+
+    cdrDoc += readOnlyWrap (valStatus, L"DocValStatus");
     if (!valDate.isNull() && valDate.length() > 0) {
         if (valDate.length() > 10)
             valDate[10] = L'T';
-        cdrDoc += cdr::String(L"<DocValDate>") + valDate + L"</DocValDate>";
+        cdrDoc += readOnlyWrap (valDate, L"DocValDate");
     }
-    cdrDoc += cdr::String(L"<DocTitle>") + title + L"</DocTitle>";
+    cdrDoc += tagWrap (title, L"DocTitle");
     if (!comment.isNull() && comment.length() > 0)
-        cdrDoc += cdr::String(L"<DocComment>") + comment + L"</DocComment>";
-    cdrDoc += L"</CdrDocCtl>";
+        cdrDoc += tagWrap (comment, L"DocComment");
+    cdrDoc += L"</CdrDocCtl>\n";
 
     // Plug in the body of the document.
-    cdrDoc += L"<CdrDocXml><![CDATA["
-           +  xml
-           +  L"]]></CdrDocXml>";
+    cdrDoc += makeDocXml (xml);
 
     // If there's a blob, add it, too.
     if (!blob.isNull())
-        cdrDoc += cdr::String(L"<CdrDocBlob encoding='base64'>")
-               +  encodeBlob(blob)
-               +  L"</CdrDocBlob>";
+        cdrDoc += makeDocBlob (blob);
 
-    // Return the string to the caller.
-    cdrDoc += L"</CdrDoc>";
+    // Terminate and return the string to the caller.
+    cdrDoc += L"</CdrDoc>\n";
     return cdrDoc;
 }
+
+/**
+ * Builds the XML string for a <CdrDoc> element for a document extracted
+ * from Version Control.
+ *
+ * Overloaded from the one without version info.
+ */
+
+cdr::String cdr::getDocString(
+        const cdr::String&    docIdString,
+        cdr::db::Connection&  conn,
+        struct cdr::CdrVerDoc *docVer
+) {
+    // Extract doc id from string
+    int docId = docIdString.extractDocId();
+
+    // Human readable form of version number
+    cdr::String versionStr = cdr::String::toString (docVer->num);
+
+    // Get human readable document type
+    std::string typQry = "SELECT name FROM doc_type WHERE id = ?";
+    cdr::db::PreparedStatement typSel = conn.prepareStatement(typQry);
+    typSel.setInt(1, docVer->doc_type);
+    cdr::db::ResultSet typRs = typSel.executeQuery();
+    if (!typRs.next())
+        throw cdr::Exception(L"getDocString: Unable to find doc type "
+                             + cdr::String::toString (docVer->doc_type)
+                             + L" for document "
+                             + docIdString
+                             + L", version: "
+                             + versionStr);
+    cdr::String typName = typRs.getString (1);
+
+    // Get human readable user identifier
+    std::string usrQry = "SELECT name FROM usr WHERE id = ?";
+    cdr::db::PreparedStatement usrSel = conn.prepareStatement(usrQry);
+    usrSel.setInt(1, docVer->usr);
+    cdr::db::ResultSet usrRs = usrSel.executeQuery();
+    if (!usrRs.next())
+        throw cdr::Exception(L"getDocString: Unable to find user id "
+                             + cdr::String::toString (docVer->usr)
+                             + L" for document "
+                             + docIdString
+                             + L", version: "
+                             + versionStr);
+    cdr::String usrName = usrRs.getString (1);
+
+    // Create a string to return
+    cdr::String cdrDoc = L"<CdrDoc Type='"
+                       + docIdString
+                       + L"'>\n<CdrDocCtl>\n";
+
+    // Individual elements of control info
+    // These are not all the same as in the document table
+    cdrDoc += readOnlyWrap (docVer->title, L"DocTitle")
+           +  readOnlyWrap (versionStr, L"DocVersion")
+           +  readOnlyWrap (docVer->updated_dt, L"DocModified")
+           +  readOnlyWrap (usrName, L"DocModifier");
+
+    // Comment is optional
+    if (docVer->comment.size() > 0)
+        cdrDoc += readOnlyWrap (docVer->comment, L"DocComment");
+
+    // That's all we've got from the doc control
+    // Add an end tag for it and fetch xml and blob
+    cdrDoc += L"</DocCtl>\n" + makeDocXml (docVer->xml);
+    if (!docVer->data.isNull())
+        cdrDoc += makeDocBlob (docVer->data);
+
+    // Terminate and return the string to the caller.
+    cdrDoc += L"</CdrDoc>\n";
+    return cdrDoc;
+}
+
+
+/**
+ * Wrap a tag around an element, giving it a readonly attribute.
+ * We also append a newline just for nicer formatting.
+ *
+ * @param   text    Reference to string to appear as element text.
+ * @param   tag     Reference to tag string.
+ *
+ * @return          XMLified text
+ */
+
+static cdr::String readOnlyWrap (
+    cdr::String text,
+    cdr::String tag
+) {
+    return (cdr::tagWrap (text, tag, L"readonly=\"yes\"") + L"\n");
+}
+
+
+/**
+ * Build a document body as a CDATA section
+ *
+ *  @param  xml     Reference to xml string
+ *  @return         CdrDocXml element containing CDATA section
+ */
+
+static cdr::String makeDocXml (
+    const cdr::String& xml
+) {
+    return (L"<CdrDocXml><![CDATA[" + xml +  L"]]>\n</CdrDocXml>\n");
+}
+
+
+/**
+ * Build a blob element in base64.
+ *
+ *  @param  blob    Reference to xml string
+ *  @return         CdrDocBlob element encoded in base64
+ */
+
+static cdr::String makeDocBlob (
+    const cdr::Blob& blob
+) {
+    return (L"<CdrDocBlob encoding='base64'>"
+            +  encodeBlob(blob) +  L"\n</CdrDocBlob>\n");
+}
+
 
 /**
  * Builds the XML string for a <CdrDocCtl> element for a document
@@ -153,7 +277,7 @@ cdr::String cdr::getDocCtlString(
     cdrDoc += cdr::String(L"<DocTitle>") + title + L"</DocTitle>";
     if (!comment.isNull() && comment.length() > 0)
         cdrDoc += cdr::String(L"<DocComment>") + comment + L"</DocComment>";
-    cdrDoc += L"</CdrDocCtl>";
+    cdrDoc += L"</CdrDocCtl>\n";
 
     return cdrDoc;
 }
@@ -215,6 +339,7 @@ cdr::String encodeBlob(const cdr::Blob& blob)
     }
 }
 
+
 cdr::String fixString(const cdr::String& s)
 {
     cdr::String fs = s;
@@ -240,20 +365,31 @@ cdr::String fixString(const cdr::String& s)
 
 /**
  * Processes CdrGetDoc command
- *
- * This is currently simply a passthrough to getDocString.  More work is needed
- * to implement full functionality
- *
  */
+
 cdr::String cdr::getDoc(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
                         cdr::db::Connection& dbConnection)
 {
-  cdr::String id;
-  cdr::String version = L"0";
-  cdr::String lock = "N";
-  cdr::String user = "";
-  
+  enum {
+      current,                      // Current version
+      numbered,                     // Specific numbered version
+      last,                         // Last checked in version
+      before,                       // Last version in before specified date
+      label                         // Version with specified label
+  } versionType = current;
+
+  int         id;                   // String form of doc id
+  cdr::String idStr;                // String form of doc id
+  cdr::String lock = "N";           // Default value of <lock> element
+  cdr::String user = "";            // Check with Bob on what this is XXXX
+  cdr::String version = L"0";       // Default value of <Version> element
+  cdr::String versionDate = L"";    // Look for version checked in before this
+  cdr::String versionLabel = L"";   // Label affixed to version
+  int         versionNum = 0;       // Version number, 0 = current, -1 = last
+  struct cdr::CdrVerDoc docVer;     // Filled in by version control
+
+
   // extract command arguments
   for (cdr::dom::Node child = commandNode.getFirstChild();
        child != NULL;
@@ -262,22 +398,55 @@ cdr::String cdr::getDoc(cdr::Session& session,
     if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE)
     {
       cdr::String name = child.getNodeName();
-      if (name == L"DocId")
-        id = cdr::dom::getTextContent(child);
+      if (name == L"DocId") {
+        idStr = cdr::dom::getTextContent(child);
+        id    = idStr.extractDocId();
+      }
       else
       if (name == L"DocVersion")
       {
+        // Optional request for version
         version = cdr::dom::getTextContent(child);
-        if (version != L"0" && version != L"Current" && version != L"")
-          throw cdr::Exception(L"CdrGetDoc for noncurrent not yet supported");
+
+        // Legal version values are:
+        //    "Current"
+        //    "LastVersion"
+        //    "Before YYYY-MM-DD"
+        //    "Label ..."
+        //    0..N version number
+
+        // Parse the type and get associated values
+        if (version == L"Current" || version.size() == 0)
+            ; // Defaults okay
+        else if (version == L"LastVersion") {
+            versionType = last;
+            versionNum  = cdr::getVersionNumber (id, dbConnection);
+        }
+        else if (version.substr (0, 7) == L"Before ") {
+            versionType = before;
+            versionDate = version.substr (7, 99);
+        }
+        else if (version.substr (0, 6) == L"Label ") {
+            versionType  = label;
+            versionLabel = version.substr (6, 99);
+        }
+        else if (iswdigit(version.c_str()[0])) {
+            versionNum  = version.getInt();
+            versionType = numbered;
+        }
+        else
+            throw cdr::Exception (L"Unrecognized DocVersion value = '"
+                                  + version
+                                  + L"'");
       }
-      else
+
       if (name == L"Lock")
       {
         lock = cdr::dom::getTextContent(child);
-        if (lock != L"N")
-          throw cdr::Exception(L"CdrGetDoc locking not yet supported: lock=/"
-                               + lock + L"/");
+        if (lock == L"y")
+            lock = L"Y";
+        else if (lock == L"n")
+            lock = L"N";
       }
       else
       if (name == L"UserId")
@@ -288,12 +457,114 @@ cdr::String cdr::getDoc(cdr::Session& session,
         throw cdr::Exception(L"CdrGetDoc length not yet supported");
     }
   }
-  return L"<CdrGetDocResp>\n<DocId>" + id
-       + L"</DocId>\n<DocVersion>" + version
-       + L"</DocVersion>\n<Lock>" + lock
-       + L"</Lock><UserName>" + user
-       + L"</Username>\n"
-       + getDocString(id, dbConnection)
-       + L"</CdrGetDocResp>\n";
-}
 
+  // If lock requested, try to check out doc
+  if (lock == L"Y") {
+
+      int userId = session.getUserId();
+
+      // User can only lock a document if authorized to modify it
+      // First find document type so we can check user's authorization
+      std::string qry = "SELECT t.name "
+                        "FROM   document d "
+                        "JOIN   doc_type t "
+                        "ON     d.doc_type = t.id "
+                        "WHERE  d.id = ?";
+      cdr::db::PreparedStatement stmt = dbConnection.prepareStatement (qry);
+      stmt.setInt (1, idStr.extractDocId());
+      cdr::db::ResultSet rs = stmt.executeQuery ();
+      if (!rs.next())
+          throw cdr::Exception (L"Document " + cdr::String::toString(idStr) +
+                                L" not found");
+      cdr::String typeName = rs.getString (1);
+
+      if (!session.canDo (dbConnection, "MODIFY DOCUMENT", typeName))
+          throw cdr::Exception (L"User not authorized to checkout documents "
+                                L"of type '" + typeName + L"'");
+
+      // See if the document has been checked out already to someone else
+      int         outUser;  // User id of person who has the doc now
+      cdr::String outDate;  //
+      if (isCheckedOut (id, dbConnection, &outUser)) {
+
+          // If user is the same, he can re-acquire the document
+          // If different, he's got to get the other user to check it in first
+          if (outUser != userId) {
+
+              // Find out who it was and inform this user
+              std::string uQry = "SELECT name FROM usr WHERE id = ?";
+              cdr::db::PreparedStatement uStmt =
+                     dbConnection.prepareStatement (uQry);
+              uStmt.setInt (1, outUser);
+              cdr::db::ResultSet uRs = uStmt.executeQuery ();
+              if (uRs.next())
+                  throw cdr::Exception (L"Document "
+                            + idStr
+                            + L" already checked out to user "
+                            + uRs.getString (1));
+              else
+                  throw cdr::Exception (L"Document "
+                            + idStr
+                            + L" checked out to unknown user "
+                            + cdr::String::toString (outUser)
+                            + L" (Internal Error)");
+          }
+      }
+
+      else
+          // Check it out and get version number
+          version = cdr::String::toString (cdr::checkOut (id,
+                      dbConnection, userId, L"", false));
+  }
+
+  cdr::String docStr = L"<CdrGetDocResp>\n" + readOnlyWrap (idStr, L"DocId");
+
+  // What comes next depends on requested version
+  if (versionType == current)
+      // Get it from the document table
+      docStr += getDocString (idStr, dbConnection);
+
+  else {
+      switch (versionType) {
+          case numbered:
+              // Fill in struct using number
+              if (!cdr::getVersion (id, dbConnection, versionNum, &docVer))
+                throw cdr::Exception(L"getDocString: Unable to find version "
+                                     + cdr::String::toString (versionNum)
+                                     + L" of document "
+                                     + idStr);
+              break;
+
+          case label:
+              // Fill in struct using label
+              if (!cdr::getLabelVersion (id, dbConnection, versionLabel,
+                                         &docVer))
+                throw cdr::Exception(L"getDocString: Unable to find version '"
+                                     + versionLabel
+                                     + L"' of document "
+                                     + idStr);
+              break;
+
+          case before:
+              // Fill in struct using date
+              if (!cdr::getVersion (id, dbConnection, versionDate, &docVer))
+                throw cdr::Exception(L"getDocString: Unable to find version "
+                                     L"dated before "
+                                     + versionLabel
+                                     + L" of document "
+                                     + idStr);
+              break;
+
+          case last:
+              // XXXX ASK MIKE HOW TO GET THIS
+              throw cdr::Exception (
+                      L"Request for last version not yet implemented");
+      }
+
+      // We've retrieved the version, format it into XML
+      docStr += cdr::getDocString (idStr, dbConnection, &docVer);
+  }
+
+  // Add xml termination for all
+  return (docStr + L"</CdrGetDocResp>\n");
+}
