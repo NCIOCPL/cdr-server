@@ -1042,8 +1042,9 @@
    <xsl:apply-templates   select = "PostalAddress"
                             mode = "copy"/>
 
+   <xsl:apply-templates  select = "PostalAddress"/>
+
    <!-- Phone element gets special treatment. -->
-   <!-- Do phone first, because that's what Volker's original does. -->
    <xsl:choose>
     <xsl:when               test = "$specificPhone">
      <Phone>
@@ -1056,7 +1057,6 @@
     </xsl:otherwise>
    </xsl:choose>
 
-   <xsl:apply-templates  select = "PostalAddress"/>
    <xsl:apply-templates  select = "TollFreePhone"/>
    <xsl:apply-templates  select = "Fax"/>
    <xsl:apply-templates  select = "Email"/>
@@ -1092,10 +1092,21 @@
     <xsl:attribute          name = "id">
       <xsl:value-of       select = "OrganizationLocation/@cdr:ref"/>
     </xsl:attribute>
+    <xsl:attribute          name = "sitetype">
+      <xsl:text>Organization</xsl:text>
+    </xsl:attribute>
     <xsl:value-of       select = "$orgName/Name"/>
    </OrganizationLocation>
 
-   <!-- Do phone first, because that's what Volker's original does. -->
+   <xsl:choose>
+    <xsl:when               test = "SpecificPostalAddress">
+     <xsl:apply-templates select = "SpecificPostalAddress"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates select = "$orgLoc/PostalAddress"/>
+    </xsl:otherwise>
+   </xsl:choose>
+
    <xsl:choose>
     <xsl:when               test = "$specificPhone">
      <Phone>
@@ -1117,15 +1128,6 @@
     </xsl:when>
     <xsl:otherwise>
      <xsl:apply-templates select = "$orgLoc/TollFreePhone"/>
-    </xsl:otherwise>
-   </xsl:choose>
-
-   <xsl:choose>
-    <xsl:when               test = "SpecificPostalAddress">
-     <xsl:apply-templates select = "SpecificPostalAddress"/>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:apply-templates select = "$orgLoc/PostalAddress"/>
     </xsl:otherwise>
    </xsl:choose>
 
