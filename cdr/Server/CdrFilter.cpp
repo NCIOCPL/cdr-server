@@ -1,9 +1,13 @@
 /*
- * $Id: CdrFilter.cpp,v 1.44 2004-03-31 03:05:53 ameyer Exp $
+ * $Id: CdrFilter.cpp,v 1.45 2004-04-30 01:35:03 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.44  2004/03/31 03:05:53  ameyer
+ * Took toUtf8() out from inside function call parentheses.
+ * Bob has seen an MSVC bug in the past that makes this safer.
+ *
  * Revision 1.43  2004/03/12 00:30:30  bkline
  * Replaced calls to obsolete Sablotron APIs.
  *
@@ -170,6 +174,7 @@
 #include "CdrGetDoc.h"
 #include "CdrString.h"
 #include "CdrVersion.h"
+#include "CdrTiming.h"
 
 using std::pair;
 using std::string;
@@ -203,6 +208,10 @@ static void getFilterSetXml (cdr::db::Connection&, cdr::String, cdr::String,
 static std::string filterVector (cdr::String, cdr::db::Connection&,
                                  vector<cdr::String>&, std::string*,
                                  cdr::FilterParmVector*, cdr::String);
+
+// Map of filter strings to ids
+// Used only if filter profiling is specified by environment variable
+static std::map<std::string, int> *S_pFltrIdMap = 0;
 
 namespace
 {
@@ -783,11 +792,18 @@ namespace
       const char* s  = script.c_str();
       const char* d  = document.c_str();
       char*       r  = NULL;
+      DWORD       startTime;
 
       try {
           // Prepare the control structures for Sablotron processing.
           SablotSituation situation = NULL;
           SablotHandle    processor = NULL;
+
+          // If we're profiling filter performance, get
+          //   the current millisecond time before filtering
+          if (S_pFltrIdMap)
+              startTime = GetTickCount();
+
           try {
               SablotCreateSituation(&situation);
               SablotCreateProcessorForSituation(situation, &processor);
@@ -835,7 +851,6 @@ namespace
               SablotDestroySituation(situation);
               throw;
           }
-
           // Clean up and save the output.
           if ((rc = SablotDestroyProcessor(processor)) != 0)
               throw cdr::Exception(L"Cannot destroy XSLT processor");
@@ -844,6 +859,44 @@ namespace
 
           result = r;
           SablotFree(r);
+
+          // If profiling filter performance
+          if (S_pFltrIdMap) {
+              // Get time taken to filter
+              DWORD endTime = GetTickCount();
+
+              // Which filter are we using
+              int fltrId = (*S_pFltrIdMap)[s];
+
+              // Adjust for infrequent (every 47 days) timer wraparound
+              DWORD amount;
+              if (endTime < startTime)
+                  // Adjust for clock tick wraparound every 47 days.
+                  amount = ((DWORD) 0xFFFFFFFFFFFFFFFF - startTime) + endTime;
+              else
+                  amount = (endTime - startTime);
+
+              // Store it in the database
+              try {
+                  cdr::db::Connection dbConn =
+                      cdr::db::DriverManager::getConnection (cdr::db::url,
+                                                             cdr::db::uid,
+                                                             cdr::db::pwd);
+                  std::string insQry =
+                      "INSERT INTO filter_profile (id, millis, dt) "
+                      "     VALUES (?, ?, GETDATE())";
+                  cdr::db::PreparedStatement pstmt =
+                      dbConn.prepareStatement(insQry);
+                  pstmt.setInt(1, fltrId);
+                  pstmt.setInt(2, (int) amount);
+                  cdr::db::ResultSet rs = pstmt.executeQuery();
+              }
+              catch (cdr::Exception &e) {
+                  cdr::log::WriteFile (L"CdrFilter profiling: db failure: ",
+                                       e.what());
+              }
+          }
+
           return rc;
       }
       catch (...) {
@@ -851,7 +904,6 @@ namespace
           throw;
       }
   }
-
 }
 
 // Version that accepts filter document id
@@ -2092,4 +2144,45 @@ string lookupExternalValue(const string& parms,
     std::ostringstream os;
     os << "<DocId>" << idString.toUtf8() << "</DocId>";
     return os.str();
+}
+
+//  Map filter strings to ids
+void cdr::buildFilterString2IdMap() {
+
+    // To enable filter profiling, a programmer must set an
+    //   environment variable and restart the server.
+    // If the variable is not set, no filter name to ID map
+    //   is constructed and no profiling takes place.
+    if (!getenv("CDR_FILTER_PROFILING"))
+        return;
+
+    // Build map of filter names to IDs on the heap
+    std::map<std::string, int> *pMap = new std::map<std::string, int>;
+
+    // Don't bother to try/catch.  Just let exceptions go up the stack
+    cdr::db::Connection dbConn =
+        cdr::db::DriverManager::getConnection (cdr::db::url,
+                                               cdr::db::uid,
+                                               cdr::db::pwd);
+
+    // Get all docs of type Filter
+    cdr::db::Statement stmt = dbConn.createStatement();
+    cdr::db::ResultSet rs = stmt.executeQuery (
+        "SELECT d.id, d.xml "
+        "  FROM document d, doc_type t "
+        " WHERE d.doc_type = t.id "
+        "   AND t.name = 'Filter'");
+
+    // Put each in map
+    while (rs.next()) {
+        int id = rs.getInt(1);
+        cdr::String xml = rs.getString(2);
+
+        // Insert as utf-8, the format used in processStrings
+        std::string utf = xml.toUtf8();
+        (*pMap)[utf] = id;
+    }
+
+    // Store this in static memory
+    S_pFltrIdMap = pMap;
 }
