@@ -359,18 +359,21 @@
                               mode = "copy"/>
    <xsl:apply-templates     select = "ProtocolLeadOrg"/>
 
- <!-- Only display the ProtocolSites for Active Protocols -->
-   <xsl:if                    test = "ProtocolLeadOrg/ProtocolSites">
-    <xsl:if                   test = "(/InScopeProtocol/ProtocolAdminInfo/
+ <!-- Only display the ProtocolSites for Active Protocols           -->
+   <xsl:if                    test = "(/InScopeProtocol/ProtocolAdminInfo/
                                       CurrentProtocolStatus = 
                                       'Active')">
- <!-- Only display the ProtocolSites information of Active Sites-->
-     <xsl:if                  test = "(ProtocolLeadOrg/ProtocolSites/
-                                      OrgSite[OrgSiteStatus = 'Active'])">
-      <ProtocolSites>
-       <xsl:apply-templates  select = "ProtocolLeadOrg/ProtocolSites"/>
-      </ProtocolSites>
-     </xsl:if>
+
+ <!-- Only create the ProtocolSites element if Active Sites exist and only
+      if its parent is active as well                               -->
+    <xsl:if                   test = "(ProtocolLeadOrg[LeadOrgProtocolStatuses/
+                                                       CurrentOrgStatus/
+                                                       StatusName = 'Active']/
+                                       ProtocolSites/
+                                       OrgSite[OrgSiteStatus = 'Active'])">
+     <ProtocolSites>
+      <xsl:apply-templates  select = "ProtocolLeadOrg/ProtocolSites"/>
+     </ProtocolSites>
     </xsl:if>
    </xsl:if>
   </ProtocolAdminInfo>
@@ -559,6 +562,7 @@
   </CountryName>
  </xsl:template>
 
+
  <!--
  ====================================================================
  Put together the information for one participating organization.
@@ -566,6 +570,12 @@
  is Active.
  ==================================================================== -->
  <xsl:template                   match = "ProtocolSites">
+
+ <!-- Do not display this ProtocolSite if its parent is not active as well -->
+ <xsl:if                          test = "(../LeadOrgProtocolStatuses/
+                                           CurrentOrgStatus
+                                           [StatusName = 'Active'])">
+
   <xsl:for-each                 select = "OrgSite">
    <xsl:if                        test = "OrgSiteStatus = 'Active'">
     <ProtocolSite                  ref = "{@ref}"
@@ -593,7 +603,7 @@
     <xsl:apply-templates        select = "PrivatePracticePerson"/>
    </ProtocolSite>
   </xsl:for-each>
-   
+  </xsl:if>
  </xsl:template>
 
  <!--
