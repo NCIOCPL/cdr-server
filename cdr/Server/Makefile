@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.4 2000-04-15 14:13:39 bkline Exp $
+# $Id: Makefile,v 1.5 2000-04-16 21:39:04 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.4  2000/04/15 14:13:39  bkline
+# Added support for DB classes.  Added implementation of CdrLogon command.
+#
 # Revision 1.3  2000/04/13 17:09:37  bkline
 # Added rule for building server.
 #
@@ -21,37 +24,49 @@
 #--------------------------------------------------------------------------
 # Makefile variables
 #--------------------------------------------------------------------------
-XML4C =\usr\xml4c
-CDRINC=\cdr\include
-INC   =-I$(XML4C)\include -I$(CDRINC)
-CFLAGS=$(INC) -GX -MD -GR -Zi
-CC    =cl
-CDRLIB=\cdr\lib\cdr.lib
-CDRSVR=\cdr\bin\CdrServer.exe
-HDRS  =$(CDRINC)\CdrString.h \
-       $(CDRINC)\CdrXsd.h \
-       $(CDRINC)\CdrException.h \
-       $(CDRINC)\CdrDom.h \
-       $(CDRINC)\CdrCommand.h \
-       $(CDRINC)\CdrDbConnection.h \
-       $(CDRINC)\CdrDbStatement.h \
-       $(CDRINC)\CdrDbResultSet.h \
-       $(CDRINC)\CdrCommand.h \
-       $(CDRINC)\CdrSession.h
-OBJS  =CdrString.obj \
-       CdrXsd.obj \
-       CdrDom.obj \
-       CdrLogon.obj \
-       CdrDbConnection.obj \
-       CdrDbStatement.obj \
-       CdrDbResultSet.obj
+
+CDR    =/cdr
+XML4C  =/usr/xml4c
+CDRINC =$(CDR)/include
+INC    =-I$(XML4C)/include -I$(CDRINC)
+CFLAGS =$(INC) -GX -MD -GR -Zi
+LFLAGS =/LIBPATH:/usr/xml4c/lib /LIBPATH:$(CDR)/lib /DEBUG
+CC     =cl
+LN     =link
+CDRLIB =$(CDR)/lib/cdr.lib
+CDRBIN =$(CDR)/bin
+CDRSVR =$(CDRBIN)/CdrServer.exe
+HDRS   =$(CDRINC)/CdrString.h \
+        $(CDRINC)/CdrXsd.h \
+        $(CDRINC)/CdrException.h \
+        $(CDRINC)/CdrDom.h \
+        $(CDRINC)/CdrCommand.h \
+        $(CDRINC)/CdrDbConnection.h \
+        $(CDRINC)/CdrDbStatement.h \
+        $(CDRINC)/CdrDbResultSet.h \
+        $(CDRINC)/CdrCommand.h \
+        $(CDRINC)/CdrSession.h
+LIBOBJS=CdrString.obj \
+        CdrXsd.obj \
+        CdrDom.obj \
+        CdrDbConnection.obj \
+        CdrDbStatement.obj \
+        CdrDbResultSet.obj \
+        CdrSession.obj
+OBJS   =CdrServer.obj \
+        CdrCommand.obj \
+        CdrLogon.obj \
+        CdrLogoff.obj
+LIBS   =cdr.lib xerces-c_1.lib wsock32.lib odbc32.lib
 
 #--------------------------------------------------------------------------
 # Rule for building CDR server.
 #--------------------------------------------------------------------------
-$(CDRSVR): CdrServer.obj CdrCommand.obj CdrLogon.obj $(CDRLIB)
-	$(CC) $(CFLAGS) -Fe$(CDRSVR) CdrServer.obj CdrCommand.obj CdrLogon.obj \
-    $(CDRLIB) $(XML4C)\lib\xerces-c_1.lib wsock32.lib odbc32.lib
+
+$(CDRSVR): $(OBJS) $(CDRLIB)
+	$(LN) $(LFLAGS) /out:$(CDRSVR) $(OBJS) $(LIBS)
+
+#$(CC) $(CFLAGS) -Fe$(CDRSVR) $(OBJS) $(LIBS)
 
 CdrServer.obj: CdrServer.cpp $(HDRS)
 	$(CC) $(CFLAGS) -c CdrServer.cpp
@@ -62,13 +77,16 @@ CdrCommand.obj: CdrCommand.cpp $(HDRS)
 CdrLogon.obj: CdrLogon.cpp $(HDRS)
 	$(CC) $(CFLAGS) -c CdrLogon.cpp
 
+CdrLogoff.obj: CdrLogoff.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrLogoff.cpp
+
 #--------------------------------------------------------------------------
 # Rule for building CDR library.
 #--------------------------------------------------------------------------
-$(CDRLIB): $(OBJS)
-	lib /OUT:$(CDRLIB) $(OBJS)
+$(CDRLIB): $(LIBOBJS)
+	lib /OUT:$(CDRLIB) $(LIBOBJS)
 
-CdrString.obj: CdrString.cpp $(CDRINC)\CdrString.h
+CdrString.obj: CdrString.cpp $(CDRINC)/CdrString.h
 	$(CC) $(CFLAGS) -c CdrString.cpp
 
 CdrXsd.obj: CdrXsd.cpp $(HDRS)
@@ -85,6 +103,9 @@ CdrDbStatement.obj: CdrDbStatement.cpp $(HDRS)
 
 CdrDbResultSet.obj: CdrDbResultSet.cpp $(HDRS)
 	$(CC) $(CFLAGS) -c CdrDbResultSet.cpp
+
+CdrSession.obj: CdrSession.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrSession.cpp
 
 tCdrString.exe: tCdrString.cpp $(CDRLIB)
 	$(CC) $(CFLAGS) tCdrString.cpp $(CDRLIB)
