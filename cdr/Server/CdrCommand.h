@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.6 2000-05-03 18:15:55 bkline Exp $
+ * $Id: CdrCommand.h,v 1.7 2000-05-03 18:49:14 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/05/03 18:15:55  bkline
+ * More ccdoc comments.
+ *
  * Revision 1.5  2000/04/22 18:57:38  bkline
  * Added ccdoc comment markers for namespaces and @pkg directives.
  *
@@ -62,7 +65,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String logon      (Session&, const dom::Node&, db::Connection&);
+    extern String logon      (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Closes the current session.
@@ -75,7 +80,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String logoff     (Session&, const dom::Node&, db::Connection&);
+    extern String logoff     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Reports which of the specified actions are authorized for the current
@@ -89,7 +96,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String checkAuth  (Session&, const dom::Node&, db::Connection&);
+    extern String checkAuth  (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Creates a new CDR authorization group.
@@ -102,7 +111,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String addGrp     (Session&, const dom::Node&, db::Connection&);
+    extern String addGrp     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Retrieves the permissions and members for the specified CDR group.
@@ -115,7 +126,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String getGrp     (Session&, const dom::Node&, db::Connection&);
+    extern String getGrp     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Replaces the settings for the specified group.
@@ -128,7 +141,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String modGrp     (Session&, const dom::Node&, db::Connection&);
+    extern String modGrp     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Removes the specified group from the CDR.  Any depended actions or user
@@ -142,7 +157,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String delGrp     (Session&, const dom::Node&, db::Connection&);
+    extern String delGrp     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Retrieves a list of the CDR group names.
@@ -155,7 +172,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String listGrps   (Session&, const dom::Node&, db::Connection&);
+    extern String listGrps   (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Creates a new user account in the CDR, optionally adding the user
@@ -169,7 +188,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String addUsr     (Session&, const dom::Node&, db::Connection&);
+    extern String addUsr     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Retrieves the information associated with the specified user account.
@@ -182,7 +203,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String getUsr     (Session&, const dom::Node&, db::Connection&);
+    extern String getUsr     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Updates the information associated with the specified user account.
@@ -195,7 +218,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String modUsr     (Session&, const dom::Node&, db::Connection&);
+    extern String modUsr     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Removes the specified user account from the CDR.  Request will be
@@ -209,7 +234,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String delUsr     (Session&, const dom::Node&, db::Connection&);
+    extern String delUsr     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Retrieves a list of the user account names currently in the CDR.
@@ -222,7 +249,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String listUsrs   (Session&, const dom::Node&, db::Connection&);
+    extern String listUsrs   (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Adds a new document to the CDR.
@@ -235,7 +264,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String addDoc     (Session&, const dom::Node&, db::Connection&);
+    extern String addDoc     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Updates an existing CDR document.
@@ -248,7 +279,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String repDoc     (Session&, const dom::Node&, db::Connection&);
+    extern String repDoc     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Marks a CDR document as deleted (does not actually destroy the data or
@@ -262,7 +295,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String delDoc     (Session&, const dom::Node&, db::Connection&);
+    extern String delDoc     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Examines the specified document to determine whether it meets the
@@ -277,7 +312,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String validateDoc(Session&, const dom::Node&, db::Connection&);
+    extern String validateDoc(Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Retrieves a list of document IDs for documents which match the
@@ -291,7 +328,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String search     (Session&, const dom::Node&, db::Connection&);
+    extern String search     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Retrieves a &lt;CdrDoc&gt; element for the specified CDR document.
@@ -304,7 +343,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String getDoc     (Session&, const dom::Node&, db::Connection&);
+    extern String getDoc     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Marks the specified document as checked out by the current user.
@@ -317,7 +358,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String checkOut   (Session&, const dom::Node&, db::Connection&);
+    extern String checkOut   (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Releases the check-out status for the specified document.
@@ -330,7 +373,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String checkIn    (Session&, const dom::Node&, db::Connection&);
+    extern String checkIn    (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Produces a canned CDR report.
@@ -343,7 +388,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String report     (Session&, const dom::Node&, db::Connection&);
+    extern String report     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Transforms a CDR document using a filter.  The filter can be embedded
@@ -359,7 +406,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String filter     (Session&, const dom::Node&, db::Connection&);
+    extern String filter     (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Reports the links which exist in the CDR to and from the specified
@@ -373,7 +422,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String getLinks   (Session&, const dom::Node&, db::Connection&);
+    extern String getLinks   (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
 }
 
