@@ -1,11 +1,14 @@
 
 /*
- * $Id: CdrDelUsr.cpp,v 1.3 2000-05-03 15:25:41 bkline Exp $
+ * $Id: CdrDelUsr.cpp,v 1.4 2002-10-06 23:38:12 bkline Exp $
  *
  * Deletes a user (and any of the user's group memberships) from the CDR.  
  * Fails if any actions have been performed by the user.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/05/03 15:25:41  bkline
+ * Fixed database statement creation.
+ *
  * Revision 1.2  2000/04/23 01:19:58  bkline
  * Added function-level comment header.
  *
@@ -30,7 +33,7 @@ cdr::String cdr::delUsr(cdr::Session& session,
         throw cdr::Exception(
                 L"DELETE USER action not authorized for this user");
 
-    // Extract the group name from the command.
+    // Extract the user name from the command.
     cdr::String usrName;
     cdr::dom::Node child = commandNode.getFirstChild();
     while (child != 0) {
@@ -54,18 +57,10 @@ cdr::String cdr::delUsr(cdr::Session& session,
     int usrId = usrRs.getInt(1);
     usrQuery.close();
 
-    // Drop group memberships.
-    conn.setAutoCommit(false);
-    query = "DELETE grp_usr WHERE usr = ?";
-    cdr::db::PreparedStatement dropGrps = conn.prepareStatement(query);
-    dropGrps.setInt(1, usrId);
-    dropGrps.executeQuery();
-
-    // Finish the job.
-    query = "DELETE usr WHERE id = ?";
-    cdr::db::PreparedStatement dropUsr = conn.prepareStatement(query);
-    dropUsr.setInt(1, usrId);
-    dropUsr.executeQuery();
-    conn.commit();
+    // Mark the user as inactive.
+    query = "UPDATE usr SET expired = GETDATE() WHERE id = ?";
+    cdr::db::PreparedStatement expire = conn.prepareStatement(query);
+    expire.setInt(1, usrId);
+    expire.executeQuery();
     return L"  <CdrDelUsrResp/>\n";
 }
