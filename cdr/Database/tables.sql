@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.19 2000-12-08 03:45:28 ameyer Exp $
+ * $Id: tables.sql,v 1.20 2001-01-02 23:30:23 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2000/12/08 03:45:28  ameyer
+ * Added active_status to document table, with new index and two new views.
+ *
  * Revision 1.18  2000/11/30 23:21:39  ameyer
  * Added schema_date to doc_type table.
  *
@@ -664,7 +667,7 @@ CREATE TABLE link_prop_type (
 CREATE TABLE link_prop (
       link_id INTEGER NOT NULL REFERENCES link_type,
      property INTEGER NOT NULL REFERENCES link_prop_type,
-        value VARCHAR(64),
+        value VARCHAR(1024),
   PRIMARY KEY (link_id, property)
 )
 
