@@ -18,9 +18,12 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.7 2001-11-09 22:23:56 bkline Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.8 2002-03-25 20:19:18 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2001/11/09 22:23:56  bkline
+ * Fixed some bugs.
+ *
  * Revision 1.6  2001/11/08 23:00:04  bkline
  * Tightened up the mutex handling.
  *
@@ -321,11 +324,11 @@ static std::string parseTag (const char **stringpp)
     // Initialize table of legal tag characters
     // This list doesn't include Unicode chars, we'll keep it simple and sane
     if (s_first_time) {
-        for (i='A'; i<'Z'; i++)
+        for (i='A'; i<='Z'; i++)
             s_nmchars[i] = true;
-        for (i='a'; i<'z'; i++)
+        for (i='a'; i<='z'; i++)
             s_nmchars[i] = true;
-        for (i='0'; i<'9'; i++)
+        for (i='0'; i<='9'; i++)
             s_nmchars[i] = true;
         s_nmchars['.'] = true;
         s_nmchars['-'] = true;
