@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.27 2002-03-19 00:38:05 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.28 2002-04-10 14:32:39 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2002/03/19 00:38:05  bkline
+ * Modified isRequired to look deeper.
+ *
  * Revision 1.26  2002/02/14 18:56:05  bkline
  * Added missing log comment.
  *
@@ -1286,7 +1289,7 @@ bool validateAttributes(
     for (int i = 0; i < nAttrs; ++i) {
         cdr::dom::Node  attr = attrs.item(i);
         cdr::String     name = attr.getNodeName();
-        if (name == L"readonly" || !type.hasAttribute(name)) {
+        if (name != L"readonly" && !type.hasAttribute(name)) {
             cdr::String err = cdr::String(L"Unexpected attribute ")
                             + name
                             + L"='"
