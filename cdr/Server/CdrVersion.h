@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.h,v 1.7 2002-06-07 13:52:41 bkline Exp $
+ * $Id: CdrVersion.h,v 1.8 2004-11-05 05:59:01 ameyer Exp $
  *
  * Internal support functions for CDR verison control
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2002/06/07 13:52:41  bkline
+ * Added support for last publishable linked document retrieval.
+ *
  * Revision 1.6  2001/06/05 20:48:25  mruben
  * changed to maintain publishable flag on version
  *
@@ -91,7 +94,7 @@ namespace cdr {
 
     struct CdrVerDoc
     {
-        CdrVerDoc() : document(0), num(0), usr(0), doc_type(0) {}
+        CdrVerDoc() : document(0),num(0),usr(0),blob_id(true),doc_type(0) {}
 
         int                 document;
         int                 num;
@@ -104,6 +107,7 @@ namespace cdr {
         int                 doc_type;
         cdr::String         title;
         cdr::String         xml;
+        cdr::Int            blob_id;
         cdr::Blob           data;
         cdr::String         comment;
         cdr::String         publishable;
@@ -241,6 +245,18 @@ namespace cdr {
      */
   bool allowVersion(int                     docId,
                     cdr::db::Connection&    conn);
+
+    /**
+     * Instantiate the data blob in a CdrVerDoc if and only if the
+     * blob_id is not null.
+     *
+     *
+     *  @param conn         Database connection.
+     *  @param verdoc       Pointer to structure containing blob_id.
+     *  @return             Void, but verdoc will contain data if need
+     *  @throw              cdr::Exception if blob_id but no blob.
+     */
+    void getVerBlob(cdr::db::Connection& conn, CdrVerDoc* verdoc);
 }
 
 #endif
