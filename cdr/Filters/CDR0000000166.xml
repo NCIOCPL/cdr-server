@@ -14,6 +14,8 @@
 
   <!--Filter written by C.Burg - 4/29/2002 -->
   <!-- Modified  7/5/2002 to include Inline Markup -->
+  <!-- Modified  7/22/2002 to include sort for Diagnosis,InterventionName -->
+   
    <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
     <HTML>
     <xsl:variable name="cdrdocs" select="document('cdrx:/*/CdrCtl')"/>
@@ -295,13 +297,25 @@
 <xsl:for-each select="StudyCategory">
 <b><xsl:text>Information Category Type</xsl:text></b><xsl:text>..................</xsl:text><xsl:value-of select="StudyCategoryType"/><br />
 <b><xsl:text>Information Category Name</xsl:text></b><xsl:text>................</xsl:text><xsl:value-of select="StudyCategoryName"/><br />
-<b><xsl:text>Study Focus</xsl:text></b><xsl:text>............................................</xsl:text><xsl:value-of select="StudyFocus"/><br />
+<b><xsl:text>Study Focus</xsl:text></b><xsl:text>............................................</xsl:text>
+<xsl:if test="StudyFocus">
+<xsl:for-each select="StudyFocus">
+<xsl:value-of select="."/><br /><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+</xsl:for-each>
+</xsl:if>
+<br />
 
 <xsl:for-each select="Intervention">
 <b><xsl:text>InterventionType </xsl:text></b><xsl:text>...................................</xsl:text>
 <xsl:value-of select="InterventionType"/><br />
 <b><xsl:text>Intervention Name</xsl:text></b><br /> 
 <xsl:for-each select="InterventionNameLink">
+<xsl:sort select="."/>
 <xsl:text>&#xa0;&#xa0;</xsl:text>
 <xsl:value-of select="."/>
 <br />
@@ -314,6 +328,7 @@
 <b><xsl:text>Condition</xsl:text></b>
 <br />
 <xsl:for-each select="Condition">
+<xsl:sort select="."/>
 <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
 <xsl:value-of select="."/><br />
 </xsl:for-each>
@@ -358,6 +373,7 @@
 <b><font size='3'>&#xa0;Diagnosis</font></b><br />
 
 <xsl:for-each select="Diagnosis/SpecificDiagnosis">
+<xsl:sort select="."/>
 <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
 <xsl:value-of select="."/><br />
 </xsl:for-each>
@@ -366,11 +382,31 @@
 
 
 <xsl:for-each select="ExclusionCriteria">
+<xsl:sort select="."/>
 <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
 <xsl:value-of select="."/><br />
 </xsl:for-each>
 <br />
 </xsl:template>
+ 
+<!-- ===============================================================
+              Display Published Results
+     ================================================================ -->
+  
+          <xsl:template match="PublishedResults">
+          <b><font size='4'>Published Results</font></b><br /><br />
+          <xsl:value-of select="Citation/CitationText"/><br />
+          </xsl:template>
+
+<!-- ===============================================================
+              Display DateLastModified
+     ================================================================ -->
+  
+          <xsl:template match="DateLastModified">
+           <br />
+          <b><font size='4'>Date Last Modified</font></b><br /><br />
+          <xsl:value-of select="."/><br />
+          </xsl:template>
 
 
 <!-- =========================================================
