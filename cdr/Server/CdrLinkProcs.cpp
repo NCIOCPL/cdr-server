@@ -18,9 +18,13 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.11 2002-05-07 19:31:29 ameyer Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.12 2002-05-08 20:34:26 pzhang Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2002/05/07 19:31:29  ameyer
+ * Fixed bug in parenthesis handling in parseRule.
+ * Added Peter's code to support "AND" and "OR" in addition to "&&" and "||".
+ *
  * Revision 1.10  2002/04/09 22:36:36  bkline
  * Fixed reversed-logic error in test for conformance to a custom rule.
  *
@@ -819,4 +823,169 @@ void cdr::link::LinkChkNode::makeWhere (
 
         sql += ")";
     }
+}
+
+/**
+ * Generate sub-queries for a complete parse tree.
+ *
+ * There are problems with SQL server executing a query containing
+ *      3 query_term tables joined, although joining 2 tables seems
+ *      fine. We hence drop that idea and generate this specific version 
+ *      of subqueries from the parse tree. 
+ *
+ * @param  query      Ptr to string containing the query to be returned.
+ *
+ * @param  cdrId      A table alias followed by a column name for CDR Id.
+ *
+ * @throws            CdrException if syntax or other error.
+ */
+ 
+void cdr::link::LinkChkNode::makeSubQueries (
+    std::string& query,
+    std::string& cdrid
+) {  
+    // If we're at a leaf node (cdr::link::LinkChkRelation), generate SQL
+    if (this->getNodeType() == typeRel) { 
+
+        cdr::link::LinkChkRelation *node =
+                static_cast<cdr::link::LinkChkRelation*> (this);
+
+        // Begin with the subquery
+        query += " EXISTS (SELECT qt.doc_id FROM query_term qt "
+                 " WHERE " + cdrid + " = qt.doc_id AND ";              
+
+        // Append tag to search for in query_term table
+        query += "qt.path ='";
+        query += node->getTag();
+
+        // Connector for value
+        query += "' AND ";
+
+        // Value
+        query += "qt.value";
+        if (node->getRelator() == cdr::link::relEqual)
+            query += "=";
+        else if (node->getRelator() == cdr::link::relNotEqual)
+            query += "<>";
+        query += "'";
+        query += node->getValue();
+        query += "'";
+
+        query += ")";
+    }
+
+    // Else it's an intermediate node. Recursive descent.
+    else {
+
+        // Parenthesize this node.
+        query += "(";
+
+        cdr::link::LinkChkPair *node  =
+                    static_cast<cdr::link::LinkChkPair*> (this);
+        cdr::link::LinkChkNode *lNode = node->getLNode();
+        cdr::link::LinkChkNode *rNode = node->getRNode();
+
+        // There's always a left node
+        lNode->makeSubQueries (query, cdrid);
+
+        // Not always a right node
+        if (rNode) {
+            // Output the appropriate boolean operator between nodes
+            if (node->getConnector() == cdr::link::boolAnd) 
+                query += " AND ";
+            else if (node->getConnector() == cdr::link::boolOr) 
+                query += " OR ";
+            else
+                throw cdr::Exception (L"Invalid connector, can't happen");
+            rNode->makeSubQueries (query, cdrid);
+        }
+
+        query += ")";
+    }
+}
+
+/**
+ * Return the CdrSearchLinksResp element that represent target links 
+ * made from a particular element type in a given source document type. 
+ * It contains only the documents satisfying the link_properties. It 
+ * is designed for task: picklists with server-side filtering, and 
+ * hence it emphasizes on speed by not using other funtions in cdr::link.
+ * This is assumed to be a replacement of findTargetDocTypes.  
+ *
+ *  @param      conn         Reference to the connection object for the
+ *                            CDR database.
+ *  @param      srcElem      Reference to a string containing the source
+ *                            element name.
+ *  @param      srcDocType   Reference to a string containing the source
+ *                            document type.
+ *  @param      titlePattern Reference to a string containing the target
+ *                            document title pattern.
+ *  @param      maxRows      Maximum number of (id, title) pairs returned.
+ *
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::link::getSearchLinksRespWithProp (
+        cdr::db::Connection&      conn,
+        int                       link_id,
+        std::vector<int>&         prop_ids,
+        std::vector<cdr::String>& prop_values,        
+        const cdr::String&        titlePattern,
+        int                       maxRows)
+{   
+    std::string qry = "SELECT DISTINCT ";
+    if (maxRows > 0) {
+        char buf[40];
+        sprintf(buf, "TOP %d ", maxRows);
+        qry += buf;
+    }
+    qry += "       d.id, d.title" 
+           "  FROM document d, link_target lt"  
+           " WHERE d.doc_type = lt.target_doc_type"           
+           "   AND d.title LIKE ?"
+           "   AND lt.source_link_type = ?"
+           "   AND (";
+
+    std::string placeHolder = "";
+    for (size_t i = 0; i < prop_values.size(); ++i) {
+        cdr::link::LinkChkTargContains *ruleTree = 
+            findOrMakeRuleTree (prop_values[i]);        
+        cdr::link::LinkChkPair         *treeTop  = 
+            ruleTree->getTreeTop();
+        std::string query;
+        std::string cdrid = "d.id";
+        treeTop->makeSubQueries (query, cdrid);        
+        qry += placeHolder + query ;        
+        placeHolder = ") AND (";
+    }
+    qry += ")";
+    qry += " ORDER BY d.title";    
+   
+    // Submit the query to the DBMS.
+    cdr::db::PreparedStatement stmt = conn.prepareStatement(qry); 
+    stmt.setString(1, titlePattern);   
+    stmt.setInt(2, link_id);   
+    cdr::db::ResultSet rs = stmt.executeQuery();
+
+    // Construct the response.
+    cdr::String response = L"<CdrSearchLinksResp>";
+    int rows = 0;
+    while (rs.next()) {       
+        int         id      = rs.getInt(1);
+        cdr::String title   = rs.getString(2);
+
+        if (rows++ == 0)
+            response += L"<QueryResults>";
+        wchar_t tmp[1000];
+        swprintf(tmp, L"<QueryResult><DocId>CDR%010ld</DocId>"
+                      L"<DocTitle>%.500s</DocTitle>"
+                      L"</QueryResult>", 
+                 id, title.c_str());
+        response += tmp;
+    }
+    if (rows > 0)
+        response += L"</QueryResults></CdrSearchLinksResp>";
+    else
+        response += L"<QueryResults/></CdrSearchLinksResp>";
+
+    return response;
 }
