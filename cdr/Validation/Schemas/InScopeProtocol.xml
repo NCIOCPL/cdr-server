@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: InScopeProtocol.xml,v 1.11 2001-08-31 16:04:51 ArkD Exp $
+      $Id: InScopeProtocol.xml,v 1.12 2001-10-10 16:32:09 ArkD Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.11  2001/08/31 16:04:51  ArkD
+      Element MailAbstractTo moved to ProtocolLeadOrg, type changed to IDREF.
+      Attribute cdr:id added to LeadOrgPersonnel.
+      CurrentProtocolStatus added to the ProtocolAdminInfo.
+      OrgStatuses complex element containing Current and Previous org Statuses added to ProtocolLeadOrg.
+
       Revision 1.10  2001/08/23 13:52:41  ArkD
       *** empty log message ***
 
@@ -128,6 +134,9 @@
                      minOccurs       = '0'/>
       <element       name            = 'ProtocolAdminInfo'
                      type            = 'ProtocolAdminInfo'/>
+      <element       name            = 'ProtocolProcessingDetails'
+                     type            = 'ProtocolProcessingDetails'
+                     minOccurs       = '0'/>
     </sequence>
     <attribute       name            = 'xmlns:cdr'
                      type            = 'anyURI'
@@ -141,9 +150,11 @@
     <sequence>
       <element       name            = 'NIHGrantContract'
                      type            = 'NIHGrantContract'
+                     maxOccurs       = 'unbounded'
                      minOccurs       = '0'/>
       <element       name            = 'OtherGrantContractInfo'
                      type            = 'OtherGrantContractInfo'
+                     maxOccurs       = 'unbounded'
                      minOccurs       = '0'/>
     </sequence>
   </complexType>
@@ -185,7 +196,7 @@
       <element       name            = 'SourceName'
                      type            = 'SourceName'/>
       <element       name            = 'DateReceived'
-                     type            = 'dateTime'/>
+                     type            = 'date'/>
     </sequence>
   </complexType>
 
@@ -195,6 +206,7 @@
                      type            = 'ReviewApprovalType'/>
       <element       name            = 'ReimbursementApprovalType'
                      type            = 'ReimbursementApprovalType'
+                     maxOccurs       = 'unbounded'
                      minOccurs       = '0'/>
       <element       name            = 'Comment'
                      type            = 'string'
@@ -218,7 +230,8 @@
       <element       name            = 'SpecialCategory'
                      type            = 'SpecialCategory'/>
       <element       name            = 'Comment'
-                     type            = 'string'/>
+                     type            = 'string'
+                     minOccurs       = '0'/>
     </sequence>
   </complexType>
 
@@ -314,9 +327,6 @@
                      type            = 'Site'
                      maxOccurs       = 'unbounded'/>
     </sequence>
-    <attribute       name            = 'CoopMember'
-                     type            = 'CoopMember'
-                     minOccurs       = '0'/>
   </complexType>
 
   <complexType       name            = 'Site'>
@@ -328,6 +338,9 @@
       <element       name            = 'SiteContact'
                      type            = 'ContactInformation'/>
     </sequence>
+    <attribute       name            = 'CoopMember'
+                     type            = 'CoopMember'
+                     minOccurs       = '0'/>
   </complexType>
 
   <complexType       name            = 'ContactInformation'>
@@ -360,6 +373,18 @@
                      type            = 'string'/>
       <element       name            = 'GenericPersonContact'
                      type            = 'ContactDetail'
+                     minOccurs       = '0'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'ProtocolProcessingDetails'>
+    <sequence>
+      <element       name            = 'ProcessingStatus'
+                     type            = 'ProcessingStatus'/>
+      <element       name            = 'ProcessingDate'
+                     type            = 'date'/>
+      <element       name            = 'Comment'
+                     type            = 'string'
                      minOccurs       = '0'/>
     </sequence>
   </complexType>
@@ -467,6 +492,15 @@
     <restriction     base            = 'string'>
       <enumeration   value           = 'Main'/>
       <enumeration   value           = 'Affiliate'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'ProcessingStatus'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Under review by PDQ Editorial Board'/>
+      <enumeration   value           = 'Disapproved by PDQ Editorial Board'/>
+      <enumeration   value           = 'Duplicate'/>
+      <enumeration   value           = 'Pending'/>
     </restriction>
   </simpleType>
 
