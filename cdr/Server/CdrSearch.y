@@ -1,10 +1,13 @@
 %{
 /*
- * $Id: CdrSearch.y,v 1.3 2001-03-21 02:39:53 bkline Exp $
+ * $Id: CdrSearch.y,v 1.4 2001-09-19 18:46:44 bkline Exp $
  *
  * Parser for CDR Search module.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2001/03/21 02:39:53  bkline
+ * Added '/' to NameChar production.
+ *
  * Revision 1.2  2000/10/04 18:30:16  bkline
  * Added support for searching for a substring at the front of the element.
  *
@@ -42,7 +45,7 @@
                     'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' |
                     'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' |
                     'y' | 'z'
-       NameChar ::= Letter | Digit | '-' | '_' | '.' | ':' | '/'
+       NameChar ::= Letter | Digit | '-' | '_' | '.' | ':' | '/' | '@'
           Digit ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' |
                     '8' | '9'
    ComparisonOp ::= EqualityOp | InequalityOp | SubstringOp | StartsOp
@@ -231,7 +234,7 @@ int yylex(void* parm1, void* parm2)
                     break;
                 if (len == 0 && !isalpha(i))
                     break;
-                if (!isalpha(i) && !isdigit(i) && !wcschr(L"-_.:/", p[len]))
+                if (!isalpha(i) && !isdigit(i) && !wcschr(L"-_.:@/", p[len]))
                     break;
                 ++len;
             }
