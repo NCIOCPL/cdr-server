@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.cpp,v 1.7 2000-12-28 13:24:55 bkline Exp $
+ * $Id: CdrDbResultSet.cpp,v 1.8 2001-04-08 22:46:22 bkline Exp $
  *
  * Implementation for ODBC result fetching wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2000/12/28 13:24:55  bkline
+ * Made ref count for ResultSet dynamic.  Added debugging statements.
+ *
  * Revision 1.6  2000/05/04 12:48:13  bkline
  * Implemented reference counting.
  *
@@ -39,10 +42,28 @@ cdr::db::ResultSet::ResultSet(cdr::db::Statement& s)
     std::cout << "st.hstmt=" << st.hstmt << '\n';
 #endif
     SQLSMALLINT nCols;
-    SQLRETURN   rc = SQLNumResultCols(st.hstmt, &nCols);
-    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
-        throw cdr::Exception(L"Database failure creating result set",
-                             st.getErrorMessage(rc));
+    SQLINTEGER  nRows;
+    SQLRETURN   rc;
+
+    // Move to the first result set (if any).
+    do {
+        rc = SQLNumResultCols(st.hstmt, &nCols);
+        if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+            throw cdr::Exception(L"Failure determining result columns",
+                                 st.getErrorMessage(rc));
+        if (nCols < 1) {
+            rc = SQLMoreResults(st.hstmt);
+            if (rc != SQL_SUCCESS && 
+                rc != SQL_SUCCESS_WITH_INFO && 
+                rc != SQL_NO_DATA) 
+            {
+                throw cdr::Exception(L"Failure moving to result set",
+                                     st.getErrorMessage(rc));
+            }
+        }
+    } while (nCols < 1 && rc != SQL_NO_DATA);
+
+    // Extract the column information (if any).
     for (SQLSMALLINT i = 1; i <= nCols; ++i) {
         Column* c= new Column;
         char name[1024];
