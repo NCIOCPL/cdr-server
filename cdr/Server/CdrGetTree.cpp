@@ -1,26 +1,17 @@
 /*
- * $Id: CdrGetTree.cpp,v 1.1 2001-04-07 21:17:46 bkline Exp $
+ * $Id: CdrGetTree.cpp,v 1.2 2001-04-08 22:44:31 bkline Exp $
  *
  * Retrieves tree context information for terminology term.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2001/04/07 21:17:46  bkline
+ * Initial revision
  */
 
 #include "CdrCommand.h"
 #include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
-#include <list>
 #include <iostream>
-
-// Local types.
-typedef std::list<int> IdList;
-
-// Local functions.
-static cdr::String getTermInfo(int, bool, bool, cdr::db::Connection&, IdList&);
-static cdr::String getParents(int, cdr::db::Connection&, IdList&);
-static cdr::String getChildren(int, cdr::db::Connection&, IdList&);
-static cdr::String getDocTitle(int, cdr::db::Connection&, IdList&);
-static bool        haveDoc(int, const IdList&);
 
 cdr::String cdr::getTree(cdr::Session& session, 
                          const cdr::dom::Node& commandNode,
@@ -46,100 +37,40 @@ cdr::String cdr::getTree(cdr::Session& session,
     if (docId == 0)
         throw cdr::Exception(L"Missing document id");
 
-    // Build the tree information.
-    IdList idList;
-    idList.push_back(docId);
-    cdr::String termInfo = getTermInfo(docId, true, true, conn, idList);
-    return L"<CdrGetTreeResp>" + termInfo + L"</CdrGetTreeResp>";
-}
+    // Construct a response.
+    std::wostringstream resp;
+    resp << L"<CdrGetTreeResp>\n";
 
-cdr::String getDocTitle(int docId, cdr::db::Connection& conn)
-{
-    std::string query = "SELECT title FROM document WHERE id = ?";
-    cdr::db::PreparedStatement stmt = conn.prepareStatement(query);
+    // Invoke the stored procedure to collect the tree information.
+    std::string proc = "{call cdr_get_term_tree(?)}";
+    cdr::db::PreparedStatement stmt = conn.prepareStatement(proc);
     stmt.setInt(1, docId);
-    cdr::String title = "*** DOCUMENT CANNOT BE FOUND ***";
-    cdr::db::ResultSet rs = stmt.executeQuery();
-    if (rs.next())
-        title = rs.getString(1);
-    return title;
-}
+    cdr::db::ResultSet rs1 = stmt.executeQuery();
 
-cdr::String getTermInfo(int docId, bool wantParents, bool wantKids,
-                        cdr::db::Connection& conn, IdList& idList)
-{
-    cdr::String title    = getDocTitle(docId, conn);
-    cdr::String parents  = wantParents ? getParents(docId, conn, idList) : L"";
-    cdr::String children = wantKids ? getChildren(docId, conn, idList) : L"";
-    return L"<Term><DocId>" + cdr::stringDocId(docId)
-                            + L"</DocId><TermName>" + title
-                            + L"</TermName>" + parents + children
-                            + L"</Term>";
-}
+    // Extract the child/parent pairs.
+    resp << L"<Pairs>\n";
+    while (rs1.next()) {
+        int child  = rs1.getInt(1);
+        int parent = rs1.getInt(2);
+        resp << L"<Pair><Child>" << child << L"</Child>"
+             << L"<Parent>" << parent << L"</Parent></Pair>\n";
+    }
+    resp << L"</Pairs>\n";
 
-cdr::String getParents(int docId, cdr::db::Connection& conn, IdList& idList)
-{
-    std::string query = "SELECT value"
-                        "  FROM query_term"
-                        " WHERE doc_id = ?"
-                        "   AND path = '/Term/TermParent/@cdr:ref'";
-    cdr::db::PreparedStatement stmt = conn.prepareStatement(query);
-    stmt.setInt(1, docId);
-    cdr::db::ResultSet rs = stmt.executeQuery();
-    cdr::String result;
-    IdList localList;
-    while (rs.next()) {
-        int id = rs.getString(1).extractDocId();
-        if (!haveDoc(id, idList)) {
-            idList.push_back(id);
-            localList.push_back(id);
-        }
+    // Extract the Term names.
+    resp << L"<Terms>\n";
+    if (!stmt.getMoreResults())
+        throw cdr::Exception(L"Failure retrieving Term data");
+    cdr::db::ResultSet rs2 = stmt.getResultSet();
+    while (rs2.next()) {
+        int id            = rs2.getInt(1);
+        cdr::String title = rs2.getString(2);
+        resp << L"<Term><Id>" << id << L"</Id>"
+             << L"<Name>" << title << L"</Name></Term>\n";
     }
-    if (!localList.empty()) {
-        result = L"<Parents>";
-        for (IdList::const_iterator i = localList.begin();
-             i != localList.end();
-             ++i)
-            result += getTermInfo(*i, true, false, conn, idList);
-        result += L"</Parents>";
-    }
-    return result;
-}
-
-cdr::String getChildren(int docId, cdr::db::Connection& conn, IdList& idList)
-{
-    std::string query = "SELECT doc_id"
-                        "  FROM query_term"
-                        " WHERE value = ?"
-                        "   AND path = '/Term/TermParent/@cdr:ref'";
-    cdr::db::PreparedStatement stmt = conn.prepareStatement(query);
-    stmt.setString(1, cdr::stringDocId(docId));
-    cdr::db::ResultSet rs = stmt.executeQuery();
-    cdr::String result;
-    IdList localList;
-    while (rs.next()) {
-        int id = rs.getInt(1);
-        if (!haveDoc(id, idList)) {
-            idList.push_back(id);
-            localList.push_back(id);
-        }
-    }
-    if (!localList.empty()) {
-        result = L"<Children>";
-        for (IdList::const_iterator i = localList.begin();
-             i != localList.end();
-             ++i)
-            result += getTermInfo(*i, false, true, conn, idList);
-        result += L"</Children>";
-    }
-    return result;
-}
-
-bool haveDoc(int id, const IdList& idList)
-{
-    for (IdList::const_iterator i = idList.begin(); i != idList.end(); ++i) {
-        if (id == *i)
-            return true;
-    }
-    return false;
+    resp << L"</Terms>\n";
+    
+    // All done.
+    resp << L"</CdrGetTreeResp>\n";
+    return resp.str();
 }
