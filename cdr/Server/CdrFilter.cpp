@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.45 2004-04-30 01:35:03 ameyer Exp $
+ * $Id: CdrFilter.cpp,v 1.46 2004-05-14 02:20:54 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.45  2004/04/30 01:35:03  ameyer
+ * Added code, normally dormant, for timing filter execution by filter id.
+ *
  * Revision 1.44  2004/03/31 03:05:53  ameyer
  * Took toUtf8() out from inside function call parentheses.
  * Bob has seen an MSVC bug in the past that makes this safer.
@@ -155,6 +158,7 @@
 #pragma warning(disable : 4786)
 #endif
 
+#include <iostream> // Debug
 #include <cstdio>
 #include <sstream>
 #include <ctime>
@@ -175,6 +179,7 @@
 #include "CdrString.h"
 #include "CdrVersion.h"
 #include "CdrTiming.h"
+#include "CdrCache.h"
 
 using std::pair;
 using std::string;
@@ -681,6 +686,18 @@ namespace
       else if (function == "get-pv-num")
       {
         u.doc = getPubVerNumber(parms, thread_data->connection);
+      }
+      // AHM 2004-05-04: added function to denormalize a Term reference
+      else if (function == "denormalizeTerm")
+      {
+         try {
+            u.doc = cdr::cache::Term::denormalizeTermId(parms,
+                                              thread_data->connection);
+         }
+         catch (...) {
+             // Should already be logged
+             return SH_ERR_NOT_OK;
+         }
       }
       else if (function == "valid-zip")
       {
