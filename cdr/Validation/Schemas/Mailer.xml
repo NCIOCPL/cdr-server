@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!--
-     $Id: Mailer.xml,v 1.16 2003-08-21 19:31:46 bkline Exp $
+     $Id: Mailer.xml,v 1.17 2004-03-25 13:31:09 bkline Exp $
 
      Schema for mailer tracking documents.
 
      $Log: not supported by cvs2svn $
+     Revision 1.16  2003/08/21 19:31:46  bkline
+     Added optional ProtocolOrg element.
+
      Revision 1.15  2002/10/28 21:24:32  arkd
      Values added to the ChangesCategory:
      "Administrative changes"
@@ -110,12 +113,22 @@
 <!--=====================================================================-->
 <!--                       OTHER COMPLEX TYPES                           -->
 <!--=====================================================================-->
+  <complexType       name            = 'MailerType'>
+    <simpleContent>
+      <extension     base            = 'MailerTypeValue'>
+        <attribute   name            = 'Mode'
+                     type            = 'MailerTypeMode'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
   <complexType       name            = 'MailerResponse'>
     <sequence>
       <element       name            = 'Received'
                      type            = 'date'/>
       <element       name            = 'ChangesCategory'
-                     type            = 'ChangesCategory'/>
+                     type            = 'ChangesCategory'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'Comment'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
@@ -123,22 +136,26 @@
   </complexType>
 
   <complexType       name            = 'MailerAddress'>
-    <sequence>
-      <element       name            = 'Country'
+    <choice>
+      <sequence>
+        <element     name            = 'Country'
                      type            = 'CountryLink'/>
-      <element       name            = 'PostalCode'
+        <element     name            = 'PostalCode'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
-      <element       name            = 'AddressLine'
+        <element     name            = 'AddressLine'
                      type            = 'NotEmptyString'
                      maxOccurs       = 'unbounded'/>
-    </sequence>
+      </sequence>
+      <element       name            = 'Email'
+                     type            = 'Email'/>
+    </choice>
   </complexType>
 
 <!--=====================================================================-->
 <!--                           SIMPLE TYPES                              -->
 <!--=====================================================================-->
-  <simpleType        name            = 'MailerType'>
+  <simpleType        name            = 'MailerTypeValue'>
     <restriction     base            = 'NotEmptyString'>
       <enumeration   value           = 'Summary-PDQ Editorial Board'/>
       <enumeration   value           = 'Summary-PDQ Advisory Board'/>
@@ -171,6 +188,10 @@
       <enumeration   value           = 'Administrative changes'/>
       <enumeration   value           = 'Scientific changes'/>
       <enumeration   value           = 'Both Admin and Scientific changes'/>
+      <enumeration   value           = 'Administrative -- PC/PUP changes'/>
+      <enumeration   value           = 'Status changes'/>
+      <enumeration   value           = 'Participating site changes'/>
+      <enumeration   value           = 'Citation'/>
     </restriction>
   </simpleType>
 
