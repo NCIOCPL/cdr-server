@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.15 2000-09-12 22:49:11 ameyer Exp $
+ * $Id: tables.sql,v 1.16 2000-10-17 17:55:42 mruben Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2000/09/12 22:49:11  ameyer
+ * Added link_target table and revised some link related comments.
+ * Eliminated validation info from link_net table.
+ *
  * Revision 1.14  2000/06/09 00:01:09  ameyer
  * Added table debug_log.
  * Regularized some comment formatting for tables I defined.
@@ -288,6 +292,7 @@ CREATE TABLE document
  *          usr  identifies the user account to which the document has been
  *               checked out
  *        dt_in  date/time document was checked back in
+ *      version  version number checked in.  Null if abandoned
  *      comment  optional free-text notes about the checked-out status of the
  *               document, or the purpose for which the document was checked
  *               out
@@ -297,6 +302,7 @@ CREATE TABLE checkout
       dt_out DATETIME NOT NULL,
          usr INTEGER NOT NULL REFERENCES usr,
        dt_in DATETIME NULL,
+     version INTEGER NULL,
      comment VARCHAR(255) NULL,
  PRIMARY KEY (id, dt_out))
 
@@ -422,15 +428,52 @@ CREATE TABLE debug_log
  *          num  sequential number of the version of the document; numbering
  *               starts with 1
  *           dt  date/time the modifications were stored in the repository
- *         data  compressed version of the deltas between this version of the
- *               document and the previous version
- *      comment  optional free-form text description of the characteristics of 
- *               this version of the document
+ *     doc_type  foreign key reference into the doc_type table
+ *        title  required string containing title for document; Titles will
+ *               not be required to be unique
+ *          xml  for structured documents, this is the data for the document;
+ *               for unstructured documents this contains tagged textual
+ *               information associated with the document (for example, the
+ *               standard caption for an illustration)
+ *         data  binary image of the documents unstructured data
+ *      comment  optional free-text description of additional characteristics
+ *               of the document
+ */
+/* 
+ * Version control.  XXX - will we use version control for documents whose
+ * data is stored externally (e.g., graphics)?  Also, should we add a column
+ * for older versions which have been archived from the on-line portion of the
+ * system, providing location information for the version's data?
+ * Alan has suggested that we may only want to store version information for
+ * versions which have been "published" - assuming we can come up with a
+ * satisfactory definition for that term in this context.
+ *
+ *     document  identifies the document which this version represents
+ *          num  sequential number of the version of the document; numbering
+ *               starts with 1
+ *           dt  date/time the document was checked in
+ *          usr  identifies the user account that checked in the document
+ *   updated_dt  date/time the document last updated
+ *     doc_type  foreign key reference into the doc_type table
+ *        title  required string containing title for document; Titles will
+ *               not be required to be unique
+ *          xml  for structured documents, this is the data for the document;
+ *               for unstructured documents this contains tagged textual
+ *               information associated with the document (for example, the
+ *               standard caption for an illustration)
+ *         data  binary image of the documents unstructured data
+ *      comment  optional free-text description of additional characteristics
+ *               of the document
  */
 CREATE TABLE doc_version
-   (document INTEGER NOT NULL REFERENCES document,
+         (id INTEGER NOT NULL REFERENCES document,
          num INTEGER NOT NULL,
           dt DATETIME NOT NULL,
+  updated_dt DATETIME NOT NULL,
+         usr INTEGER NOT NULL REFERENCES usr,
+    doc_type INTEGER NOT NULL REFERENCES doc_type,
+       title VARCHAR(255) NOT NULL,
+         xml NTEXT NOT NULL,
         data IMAGE NULL,
      comment VARCHAR(255) NULL,
  PRIMARY KEY (document, num))
@@ -640,3 +683,4 @@ CREATE TABLE link_fragment (
 /*************************************************************
  *      End link related tables
  *************************************************************/
+
