@@ -2,6 +2,7 @@
 #include <iostream> // DEBUG
 
 #include <string>
+#include <vector>
 #include "CdrDbConnection.h"
 #include "CdrDbStatement.h"
 #include "CdrDbResultSet.h"
@@ -18,9 +19,12 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.12 2002-05-08 20:34:26 pzhang Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.13 2002-05-09 19:42:47 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2002/05/08 20:34:26  pzhang
+ * Added implementation of makeQueries and getSearchLinksRespWithProp.
+ *
  * Revision 1.11  2002/05/07 19:31:29  ameyer
  * Fixed bug in parenthesis handling in parseRule.
  * Added Peter's code to support "AND" and "OR" in addition to "&&" and "||".
@@ -59,7 +63,7 @@
  */
 
 // Prototypes
-static bool LinkTargetContainsCheck (cdr::db::Connection&,
+static bool linkTargetContainsCheck (cdr::db::Connection&,
                       cdr::link::CdrLink*, cdr::String&);
 static std::string parseTag (const char **);
 static cdr::link::LinkChkRelator parseRelator (const char **);
@@ -67,11 +71,20 @@ static std::string parseValue (const char **);
 static cdr::link::LinkChkBoolOp parseBoolOp (const char **);
 static cdr::link::LinkChkRelation *parseRelation (const char **);
 static cdr::link::LinkChkPair *parseRule (const char **);
+static void freePropVector (std::vector<struct PropList *> &);
 
 /*
  * Check for, resolve, and execute custom processing routines for a link.
  * See CdrLink.h for description.
  */
+
+// Information from the link property tables
+// Must gather it in memory so we can re-use the DBMS connection
+//   on each one
+struct PropList {
+    cdr::String name;       // Name of the property
+    cdr::String value;      // Value associated with it
+};
 
 int cdr::link::customLinkCheck (
     cdr::db::Connection& conn,
@@ -80,6 +93,8 @@ int cdr::link::customLinkCheck (
     std::string qry;        // For database SQL string
     int         errCount;   // Total errors for link
 
+    std::vector<struct PropList *> propVector;
+    std::vector<struct PropList *>::const_iterator i ;
 
     // Search the link properties table for all custom actions to
     //   take for the link type of the passed link
@@ -102,24 +117,66 @@ int cdr::link::customLinkCheck (
     errCount = 0;
 
     // If any custom properties found, process each one
-    while (prop_rs.next()) {
+    try {
+        while (prop_rs.next()) {
 
-        // Need custom validation code for each property
-        cdr::String prop_name  = prop_rs.getString (1);
-        cdr::String prop_value = prop_rs.getString (2);
+            // Need custom validation code for each property
+            struct PropList *pl = new struct PropList;
+            pl->name  = prop_rs.getString (1);
+            pl->value = prop_rs.getString (2);
+            propVector.push_back (pl);
+        }
 
-        // Each property must have a custom routine associated with it
-        // We add the calls here, as required
-        if (prop_name == L"LinkTargetContains")
-            errCount += LinkTargetContainsCheck (conn, link, prop_value)
-                     ? 0 : 1;
+        // Done with this statement
+        // Close it so lower level funcs can use connection
+        prop_sel.close();
 
-        else
-            throw cdr::Exception (L"Unknown link check custom routine: "
-                                  + prop_name);
+        if (!propVector.empty()) {
+            // Each property must have a custom routine associated with it
+            // We add the calls here, as required
+            i = propVector.begin();
+            while (i != propVector.end()) {
+
+                // All supported custom property checks are listed here
+                if ((*i)->name == L"LinkTargetContains")
+                  errCount += linkTargetContainsCheck (conn, link, (*i)->value)
+                             ? 0 : 1;
+                // Add any new properties to check here
+                // if ...
+
+                // Else property isn't known to this software
+                else
+                    throw cdr::Exception (
+                        L"Unknown link check custom routine: " + (*i)->name);
+                ++i;
+            }
+        }
     }
+    // Free objects in vector
+    catch (...) {
+        freePropVector (propVector);
+        throw;
+    }
+    freePropVector (propVector);
 
     return errCount;
+}
+
+/**
+ * Subroutine of customLinkCheck() to free allocated memory.
+ */
+
+static void freePropVector (
+    std::vector<struct PropList *> &propVector
+) {
+    if (!propVector.empty()) {
+        std::vector<struct PropList *>::const_iterator i = propVector.end();
+        do {
+            --i;
+            delete *i;
+        } while (i != propVector.begin());
+        delete *i;
+    }
 }
 
 
@@ -253,7 +310,7 @@ const static char *LinkTargMutex = "LinkTargetMutex";
  * @throws CdrException if any system failure occurs.
  */
 
-static bool LinkTargetContainsCheck (
+static bool linkTargetContainsCheck (
     cdr::db::Connection& dbConn,
     cdr::link::CdrLink*  link,
     cdr::String&         rule
@@ -707,7 +764,7 @@ bool getLinkTargetRestrictions (
     std::string&        tagColumn,
     std::string&        valColumn
 ) {
-    // Query to find a LinkTargetContains property in the link
+    // Query to find a linkTargetContains property in the link
     //   control tables, if there is one, given a specific document
     //   type and element name for the source of the link.
     std::string qry =
@@ -720,7 +777,7 @@ bool getLinkTargetRestrictions (
         "  lx.element = ? AND "
         "  lx.link_id = lp.link_id AND "
         "  lp.property_id = lpt.id AND "
-        "  lpt.name = 'LinkTargetContains'";
+        "  lpt.name = 'linkTargetContains'";
 
     // Execute it
     cdr::db::PreparedStatement stmt = conn.prepareStatement (qry);
@@ -830,8 +887,8 @@ void cdr::link::LinkChkNode::makeWhere (
  *
  * There are problems with SQL server executing a query containing
  *      3 query_term tables joined, although joining 2 tables seems
- *      fine. We hence drop that idea and generate this specific version 
- *      of subqueries from the parse tree. 
+ *      fine. We hence drop that idea and generate this specific version
+ *      of subqueries from the parse tree.
  *
  * @param  query      Ptr to string containing the query to be returned.
  *
@@ -839,20 +896,20 @@ void cdr::link::LinkChkNode::makeWhere (
  *
  * @throws            CdrException if syntax or other error.
  */
- 
+
 void cdr::link::LinkChkNode::makeSubQueries (
     std::string& query,
     std::string& cdrid
-) {  
+) {
     // If we're at a leaf node (cdr::link::LinkChkRelation), generate SQL
-    if (this->getNodeType() == typeRel) { 
+    if (this->getNodeType() == typeRel) {
 
         cdr::link::LinkChkRelation *node =
                 static_cast<cdr::link::LinkChkRelation*> (this);
 
         // Begin with the subquery
         query += " EXISTS (SELECT qt.doc_id FROM query_term qt "
-                 " WHERE " + cdrid + " = qt.doc_id AND ";              
+                 " WHERE " + cdrid + " = qt.doc_id AND ";
 
         // Append tag to search for in query_term table
         query += "qt.path ='";
@@ -891,9 +948,9 @@ void cdr::link::LinkChkNode::makeSubQueries (
         // Not always a right node
         if (rNode) {
             // Output the appropriate boolean operator between nodes
-            if (node->getConnector() == cdr::link::boolAnd) 
+            if (node->getConnector() == cdr::link::boolAnd)
                 query += " AND ";
-            else if (node->getConnector() == cdr::link::boolOr) 
+            else if (node->getConnector() == cdr::link::boolOr)
                 query += " OR ";
             else
                 throw cdr::Exception (L"Invalid connector, can't happen");
@@ -905,12 +962,12 @@ void cdr::link::LinkChkNode::makeSubQueries (
 }
 
 /**
- * Return the CdrSearchLinksResp element that represent target links 
- * made from a particular element type in a given source document type. 
- * It contains only the documents satisfying the link_properties. It 
- * is designed for task: picklists with server-side filtering, and 
+ * Return the CdrSearchLinksResp element that represent target links
+ * made from a particular element type in a given source document type.
+ * It contains only the documents satisfying the link_properties. It
+ * is designed for task: picklists with server-side filtering, and
  * hence it emphasizes on speed by not using other funtions in cdr::link.
- * This is assumed to be a replacement of findTargetDocTypes.  
+ * This is assumed to be a replacement of findTargetDocTypes.
  *
  *  @param      conn         Reference to the connection object for the
  *                            CDR database.
@@ -928,48 +985,48 @@ cdr::String cdr::link::getSearchLinksRespWithProp (
         cdr::db::Connection&      conn,
         int                       link_id,
         std::vector<int>&         prop_ids,
-        std::vector<cdr::String>& prop_values,        
+        std::vector<cdr::String>& prop_values,
         const cdr::String&        titlePattern,
         int                       maxRows)
-{   
+{
     std::string qry = "SELECT DISTINCT ";
     if (maxRows > 0) {
         char buf[40];
         sprintf(buf, "TOP %d ", maxRows);
         qry += buf;
     }
-    qry += "       d.id, d.title" 
-           "  FROM document d, link_target lt"  
-           " WHERE d.doc_type = lt.target_doc_type"           
+    qry += "       d.id, d.title"
+           "  FROM document d, link_target lt"
+           " WHERE d.doc_type = lt.target_doc_type"
            "   AND d.title LIKE ?"
            "   AND lt.source_link_type = ?"
            "   AND (";
 
     std::string placeHolder = "";
     for (size_t i = 0; i < prop_values.size(); ++i) {
-        cdr::link::LinkChkTargContains *ruleTree = 
-            findOrMakeRuleTree (prop_values[i]);        
-        cdr::link::LinkChkPair         *treeTop  = 
+        cdr::link::LinkChkTargContains *ruleTree =
+            findOrMakeRuleTree (prop_values[i]);
+        cdr::link::LinkChkPair         *treeTop  =
             ruleTree->getTreeTop();
         std::string query;
         std::string cdrid = "d.id";
-        treeTop->makeSubQueries (query, cdrid);        
-        qry += placeHolder + query ;        
+        treeTop->makeSubQueries (query, cdrid);
+        qry += placeHolder + query ;
         placeHolder = ") AND (";
     }
     qry += ")";
-    qry += " ORDER BY d.title";    
-   
+    qry += " ORDER BY d.title";
+
     // Submit the query to the DBMS.
-    cdr::db::PreparedStatement stmt = conn.prepareStatement(qry); 
-    stmt.setString(1, titlePattern);   
-    stmt.setInt(2, link_id);   
+    cdr::db::PreparedStatement stmt = conn.prepareStatement(qry);
+    stmt.setString(1, titlePattern);
+    stmt.setInt(2, link_id);
     cdr::db::ResultSet rs = stmt.executeQuery();
 
     // Construct the response.
     cdr::String response = L"<CdrSearchLinksResp>";
     int rows = 0;
-    while (rs.next()) {       
+    while (rs.next()) {
         int         id      = rs.getInt(1);
         cdr::String title   = rs.getString(2);
 
@@ -978,7 +1035,7 @@ cdr::String cdr::link::getSearchLinksRespWithProp (
         wchar_t tmp[1000];
         swprintf(tmp, L"<QueryResult><DocId>CDR%010ld</DocId>"
                       L"<DocTitle>%.500s</DocTitle>"
-                      L"</QueryResult>", 
+                      L"</QueryResult>",
                  id, title.c_str());
         response += tmp;
     }
@@ -989,3 +1046,4 @@ cdr::String cdr::link::getSearchLinksRespWithProp (
 
     return response;
 }
+
