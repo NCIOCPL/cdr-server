@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.18 2002-07-24 15:09:36 bkline Exp $
+ * $Id: CdrLink.cpp,v 1.19 2002-07-25 09:57:33 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2002/07/24 15:09:36  bkline
+ * Added performance enhancements to link and query_term table updates.
+ *
  * Revision 1.17  2002/05/08 20:31:24  pzhang
  * Added implementation of getSearchLinksResp.
  *
@@ -101,7 +104,7 @@
 #include "CdrDbResultSet.h"
 #include "CdrValidateDoc.h"
 #include "CdrLink.h"
-#define CDR_TIMINGS
+// #define CDR_TIMINGS // Uncomment line to activate timing code.
 #include "CdrTiming.h"
 
 // Object representing one row in the link_net table.

@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.40 2002-07-24 15:09:35 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.41 2002-07-25 09:57:32 bkline Exp $
  *
  */
 
@@ -33,7 +33,7 @@
 
 // XXXX For debugging
 #include <iostream>
-#define CDR_TIMINGS 1
+//#define CDR_TIMINGS 1 // Uncomment line to activate timing code.
 #include "CdrTiming.h"
 
 static cdr::String CdrPutDoc (cdr::Session&, const cdr::dom::Node&,
