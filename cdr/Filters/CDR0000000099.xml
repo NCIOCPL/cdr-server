@@ -208,7 +208,8 @@
 </xsl:if>
 <xsl:if test="contains(@cdr:ref,'CDR')">
  <xsl:variable name="OrgID" select="@cdr:ref"/>
- <xsl:variable name="OrgInfo" select="document(concat('cdrx:',$OrgID,'/last'))"/>
+<!-- <xsl:variable name="OrgInfo" select="document(concat('cdrx:',$OrgID,'/last'))"/>-->
+ <xsl:variable name="OrgInfo" select="document(concat('cdr:',$OrgID,'/last'))"/>
 <xsl:variable name="Stat" select="$OrgInfo/Organization/Status/CurrentStatus"/>
 <Status><xsl:value-of select="$Stat"/></Status>
 <xsl:if test="../@PreviousLocation">
@@ -225,7 +226,10 @@
 <xsl:if test="not(../SpecificPostalAddress)">
 <xsl:variable name="cipsC" select="$OrgInfo/Organization/OrganizationLocations/CIPSContact"/>
 <xsl:if test="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/@cdr:id=$cipsC">
-<SpecificPostalAddress><Street><xsl:value-of  select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/Street"/></Street>
+<SpecificPostalAddress>
+<xsl:for-each select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/Street">
+<Street><xsl:value-of  select="."/></Street>
+</xsl:for-each>
 <City><xsl:value-of  select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/City"/></City>
 <xsl:if test="CitySuffix">
 <CitySuffix><xsl:value-of select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/CitySuffix"/></CitySuffix>
@@ -233,7 +237,7 @@
 <xsl:if test="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/PoliticalSubUnit_State">
 <xsl:variable name="StateID" select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/PoliticalSubUnit_State/@cdr:ref"/>
 <xsl:variable name="StateInfo" select="document(concat('cdrx:',$StateID,'/lastp'))"/>
-<PoliticalSubUnitRef><xsl:value-of select="@cdr:ref"/></PoliticalSubUnitRef>
+<PoliticalSubUnitRef><xsl:value-of select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/PoliticalSubUnit_State/@cdr:ref"/>></PoliticalSubUnitRef>
 <PoliticalSubUnitShortName>
 <xsl:value-of     select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitShortName"/></PoliticalSubUnitShortName>
 <PoliticalSubUnitFullName><xsl:value-of select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName"/></PoliticalSubUnitFullName> 
@@ -318,7 +322,9 @@
    </xsl:if>
 
    <xsl:if test="../SpecificEmail">
+   <xsl:if test="not(../SpecificEmail/@Public='No')">
    <xsl:apply-templates select="../SpecificEmail" mode="copy"/>
+   </xsl:if>
    </xsl:if>
 
    <xsl:if test="../SpecificWebSite">
