@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.cpp,v 1.12 2000-10-04 18:24:20 bkline Exp $
+ * $Id: CdrCommand.cpp,v 1.13 2000-10-23 14:08:06 mruben Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2000/10/04 18:24:20  bkline
+ * Added CdrSearchLinks and CdrListDocTypes to command map.
+ *
  * Revision 1.11  2000/05/23 15:55:55  mruben
  * removed stub for CdrGetDoc
  *
@@ -75,8 +78,12 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
         CommandMap(L"CdrSearch",        cdr::search),
         CommandMap(L"CdrSearchLinks",   cdr::searchLinks),
         CommandMap(L"CdrGetDoc",        cdr::getDoc),
-        CommandMap(L"CdrCheckOut",      cdr::checkOut),
-        CommandMap(L"CdrCheckIn",       cdr::checkIn),
+        CommandMap(L"CdrCheckOut",      cdr::checkVerOut),
+        CommandMap(L"CdrCheckIn",       cdr::checkVerIn),
+        CommandMap(L"CdrCreateLabel",   cdr::createLabel),
+        CommandMap(L"CdrDeleteLabel",   cdr::deleteLabel),
+        CommandMap(L"CdrLabelDocument", cdr::labelDocument),
+        CommandMap(L"CdrUnlabelDocument", cdr::unlabelDocument),
         CommandMap(L"CdrReport",        cdr::report),
         CommandMap(L"CdrFilter",        cdr::filter),
         CommandMap(L"CdrGetLinks",      cdr::getLinks),
@@ -254,18 +261,18 @@ cdr::String cdr::getDoc(cdr::Session& session,
     return stub(L"GetDoc");
 }
 
-#endif
-cdr::String cdr::checkOut(cdr::Session& session,
+cdr::String cdr::checkVerOut(cdr::Session& session,
                           const cdr::dom::Node& commandNode,
                           cdr::db::Connection& dbConnection) {
     return stub(L"CheckOut");
 }
 
-cdr::String cdr::checkIn(cdr::Session& session,
-                         const cdr::dom::Node& commandNode,
-                         cdr::db::Connection& dbConnection) {
+cdr::String cdr::checkVerIn(cdr::Session& session,
+                            const cdr::dom::Node& commandNode,
+                            cdr::db::Connection& dbConnection) {
     return stub(L"CheckIn");
 }
+#endif
 
 cdr::String cdr::report(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
