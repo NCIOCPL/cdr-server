@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.h,v 1.4 2004-02-19 22:10:46 ameyer Exp $
+ * $Id: CdrFilter.h,v 1.5 2004-04-30 01:34:21 ameyer Exp $
  *
  * Internal support functions for CDR filter
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/02/19 22:10:46  ameyer
+ * Added filterDocumentByScriptSetName().  Filled out some more comments.
+ *
  * Revision 1.3  2002/01/08 18:19:12  mruben
  * Modified for reentrance.
  * Added support for nonstandard scheme cdrutil:
@@ -140,6 +143,18 @@ namespace cdr {
                                       const cdr::String&     version = "",
                                       cdr::FilterParmVector* parms = 0,
                                       cdr::String            doc_id = "");
+
+    /**
+     * Build a map of filter strings to IDs to use in timing filters
+     * by filter id.
+     *
+     * The map is only built if the environment variable CDR_FILTER_PROFILING
+     * is defined.  The actual code to build the map is in CdrFilter.cpp
+     * rather than CdrTiming.cpp because it is highly specific to filtering.
+     *
+     * @throws      Database exceptions from lower down.
+     */
+    extern void buildFilterString2IdMap();
 }
 
 #endif
