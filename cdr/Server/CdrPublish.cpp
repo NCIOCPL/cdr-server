@@ -1,10 +1,13 @@
 /*
- * $Id: CdrPublish.cpp,v 1.2 2002-04-04 20:00:22 bkline Exp $
+ * $Id: CdrPublish.cpp,v 1.3 2002-04-17 19:19:44 bkline Exp $
  *
  * Commands to create a new publishing job and retrieve status for an 
  * existing publishing job.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/04/04 20:00:22  bkline
+ * Added code to block queueing two jobs of the same type.
+ *
  * Revision 1.1  2002/04/04 01:04:41  bkline
  * Commands for CDR publishing system (CdrPublish and CdrPubStatus).
  *
@@ -280,7 +283,10 @@ cdr::dom::Element getControlDoc(
                         "     ON t.id = d.doc_type           "
                         "  WHERE d.title = ?                 "
                         "    AND t.name = 'PublishingSystem' "
-                        "    AND d.dt <= ?                   ";
+                        "    AND d.num = (SELECT MAX(num)    "
+                        "                   FROM doc_version "
+                        "                  WHERE id = d.id   "
+                        "                    AND dt <= ?)    ";
     cdr::db::PreparedStatement ps = conn.prepareStatement(query);
     ps.setString(1, pubSystemName);
     ps.setString(2, jobTime);
@@ -289,6 +295,8 @@ cdr::dom::Element getControlDoc(
         throw cdr::Exception(L"Unable to find control document", pubSystemName);
     *controlDocId   = rs.getInt(1);
     cdr::String xml = rs.getString(2);
+    if (rs.next())
+        throw cdr::Exception(L"Duplicate control documents", pubSystemName);
 
     // Extract the DOM tree for the document.
     cdr::dom::Parser parser;
