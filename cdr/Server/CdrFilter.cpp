@@ -1,9 +1,14 @@
 /*
- * $Id: CdrFilter.cpp,v 1.40 2003-11-18 16:29:54 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.41 2004-02-19 22:12:36 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.40  2003/11/18 16:29:54  bkline
+ * Added code to insert unmapped values into the external_map table
+ * so the External Map Failure report would be able to let the users
+ * know what still needs mapping.
+ *
  * Revision 1.39  2003/11/05 22:28:32  bkline
  * Added support for new extern-map function.
  *
@@ -181,6 +186,11 @@ static string getValidZip(const string&,
                           cdr::db::Connection&);
 static string lookupExternalValue(const string&,
                                   cdr::db::Connection&);
+static void getFilterSetXml (cdr::db::Connection&, cdr::String, cdr::String,
+                             vector<cdr::String>&  filters);
+static std::string filterVector (cdr::String, cdr::db::Connection&,
+                                 vector<cdr::String>&, std::string*,
+                                 cdr::FilterParmVector*, cdr::String);
 
 namespace
 {
@@ -936,6 +946,36 @@ cdr::String cdr::filterDocumentByScriptTitle (
                          parms, doc_id);
 }
 
+// Version that accepts name of filter set
+cdr::String filterDocumentByScriptSetName (
+    const cdr::String&     document,
+    const cdr::String&     setName,
+    cdr::db::Connection&   connection,
+    cdr::String*           messages,
+    const cdr::String&     version,
+    cdr::FilterParmVector* parms,
+    cdr::String            doc_id
+) {
+std::cout << "Entering filterDocumentByScriptSetName"
+
+    // Resolve setName into vector of filter XML strings
+    vector<cdr::String> filters;
+    getFilterSetXml (connection, setName, version, filters);
+
+    // Messages need to be std::string
+    std::string msgs;
+
+    // Execute the filters
+    std::string result = filterVector (document, connection, filters,
+                                       &msgs, parms, doc_id);
+
+    // Convert messages
+    *messages = msgs;
+
+    // Convert and return filtered doc
+    return cdr::String (result);
+}
+
 // Primary version, using string
 cdr::String cdr::filterDocument(const cdr::String& document,
                            const cdr::String& filter,
@@ -1021,27 +1061,14 @@ cdr::String cdr::filter(cdr::Session& session,
         else
         if (name == L"FilterSet")
         {
+          // Extract name and version of filter set
           const cdr::dom::Element& e =
               static_cast<const cdr::dom::Element&>(child);
-          std::vector<int> filterSet;
           String setName = e.getAttribute("Name");
           String versionStr = e.getAttribute("Version");
-          getFiltersInSet(setName, filterSet, connection);
-          for (size_t i = 0; i < filterSet.size(); ++i)
-          {
-            int id = filterSet[i];
-            int ver = 0;
-            String idStr = stringDocId(id);
-            if (versionStr == L"last")
-              ver = getVersionNumber(id, connection);
-            else if (versionStr == L"lastp")
-              ver = getLatestPublishableVersion(id, connection);
-            else if (!versionStr.empty())
-              throw Exception(L"Invalid value for Version attribute",
-                              versionStr);
-            String doc = getDocument(idStr, ver, connection, CdrFilterType);
-            filters.push_back(doc);
-          }
+
+          // Get XML strings for each filter into the filterSet vector
+          getFilterSetXml (connection, setName, versionStr, filters);
         }
         else
         if (name == L"Parms")
@@ -1081,28 +1108,123 @@ cdr::String cdr::filter(cdr::Session& session,
     }
   }
 
-  string doc(document.toUtf8());
-  string result(doc);
-  ThreadData thread_data(connection, ui);
-  for (std::vector<cdr::String>::iterator i = filters.begin();
-       i != filters.end();
-       ++i)
-  {
-    if (processStrings(i->toUtf8(), doc, result, connection, &pvector,
-                       &thread_data))
-      throw cdr::Exception(L"error in XSLT processing");
+  // Create string to receive any messages
+  std::string messages;
 
-    doc = result;
-  }
+  // Process doc through all filters
+  std::string result = filterVector (document, connection, filters,
+                                     &messages, &pvector, ui);
 
+  // Package results into XML transacton response
   result = output ? "<Document><![CDATA[" + result + "]]></Document>\n" : "";
-  if (thread_data.filter_messages.length() != 0)
-    result += "<Messages>" + thread_data.filter_messages + "</Messages>\n";
+  if (messages.length() != 0)
+    result += "<Messages>" + messages + "</Messages>\n";
 
   return L"<CdrFilterResp>"
        + cdr::String(result)
        + L"</CdrFilterResp>\n";
 }
+
+/**
+ * Retrieve the XML text for each filter in a set of filters.
+ * Return them to the caller in a vector of strings
+ *
+ *  @param  connection  Reference to active db connection to CDR.
+ *  @param  setName     Name of the filter set.
+ *  @param  version     Version number or null, or symbolic "last" or "lastp".
+ *  @param  filters     Pointer to vector to receive filters.
+ *
+ *  @return             Void.
+ *  @throws             Exceptions from lower level db access.
+ */
+static void getFilterSetXml (
+    cdr::db::Connection&  connection,
+    cdr::String           setName,
+    cdr::String           version,
+    vector<cdr::String>&  filters
+) {
+    // Vector of doc ids for each filter in the set
+    std::vector<int> filterSet;
+
+    // Fill in filterSet
+    getFiltersInSet(setName, filterSet, connection);
+
+    // For each one, find the document string
+    for (size_t i = 0; i < filterSet.size(); ++i) {
+
+        int id = filterSet[i];
+        int ver = 0;
+        cdr::String idStr = cdr::stringDocId(id);
+
+        // Resolve version
+        if (version == L"last")
+          ver = cdr::getVersionNumber(id, connection);
+        else if (version == L"lastp")
+          ver = cdr::getLatestPublishableVersion(id, connection);
+        else if (!version.empty())
+          throw cdr::Exception(L"Invalid value for Version attribute",
+                               version);
+
+        // Fetch from the database
+        cdr::String doc = getDocument (idStr, ver, connection, CdrFilterType);
+
+        // Add it to caller's vector of filter document strings
+        filters.push_back(doc);
+    }
+}
+
+/**
+ * Filter a document through a set of filters.
+ *
+ *  @param  document    cdr::String document to be filtered
+ *  @param  filterSet   Vector of filters as XML strings.
+ *  @param  connection  Reference to active database connection to CDR.
+ *  @param  messages    cdr::String*.  If not null, nonerror messages
+ *                      from the filter are placed (as XML) in this string
+ *  @param  parms       Pointer to vector of pairs of param name + value
+ *                       All params are passed to all filters.
+ *  @param  doc_id      CDR identifier of document
+ *
+ *  @return             Filtered document, in utf-8.
+ *
+ *  @throws             Database or filter exceptions from lower down.
+ */
+static std::string filterVector (
+    cdr::String           document,
+    cdr::db::Connection&  connection,
+    vector<cdr::String>&  filterSet,
+    std::string           *messages,
+    cdr::FilterParmVector *parms,
+    cdr::String           doc_id
+) {
+    // Convert input doc to utf8 for filtering
+    std::string doc(document.toUtf8());
+    std::string result(doc);
+
+    // Create struct for Sablotron callbacks
+    ThreadData threadData (connection, doc_id);
+
+    // Apply each filter in the vector
+    for (std::vector<cdr::String>::iterator i = filterSet.begin();
+         i != filterSet.end(); ++i) {
+
+        // Execute one filter
+        if (processStrings (i->toUtf8(), doc, result, connection, parms,
+                            &threadData))
+            throw cdr::Exception (L"error in XSLT processing");
+
+        // Output becomes input of next filter
+        doc = result;
+    }
+
+    // Make messages available if requested
+    if (messages != NULL)
+        *messages = threadData.filter_messages;
+
+    // Return last output as utf8 std::string
+    return doc;
+}
+
 
 /**
  * Open a socket on the specified port to the specified host.
