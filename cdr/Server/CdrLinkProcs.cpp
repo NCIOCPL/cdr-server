@@ -19,9 +19,13 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.15 2003-04-15 22:30:34 ameyer Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.16 2004-02-10 22:15:39 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2003/04/15 22:30:34  ameyer
+ * Modified parseTag to accept attribute paths, e.g., /A/B/@cdr:ref
+ * Modified skipSpace to also skip CrLf characters.
+ *
  * Revision 1.14  2002/05/09 21:39:29  ameyer
  * Fixed bug in the new code.
  *
@@ -485,14 +489,12 @@ static cdr::link::LinkChkRelator parseRelator (const char **stringpp)
  * @throws              CdrException if no quote delimited string found.
  */
 
-static std::string parseValue (const char **stringpp)
-{
+static std::string parseValue (const char **stringpp) {
     const int MAXVAL=256;       // Max size of a value is less
     char buf[MAXVAL],           // Create string here
          *bp,                   // Ptr into buf
          *endbp;                // Ptr after end of buf
     const char *p = *stringpp;  // Ptr chars in stringpp
-
 
     // Must be a leading quote
     if (*p++ != '"')
@@ -599,6 +601,8 @@ static cdr::link::LinkChkRelation *parseRelation (const char **stringpp)
     std::string    tag;         // Tag in format used in query_term table
     std::string    value;       // Value to compare against linked doc
     cdr::link::LinkChkRelator relator; // Relationship
+    bool           chkValue = true;    // True=Look at element value
+                                       // False=Just look at element existence
 
     // Skip initial whitespace
     skipSpace (stringpp);
@@ -608,11 +612,18 @@ static cdr::link::LinkChkRelation *parseRelation (const char **stringpp)
     skipSpace (stringpp);
     relator = parseRelator (stringpp);
     skipSpace (stringpp);
-    value   = parseValue (stringpp);
+
+    // Value may be string, or '*', indicating specific value doesn't matter
+    if (**stringpp == '*') {
+        chkValue = false;
+        ++*stringpp;
+    }
+    else
+        value = parseValue (stringpp);
     skipSpace (stringpp);
 
     // If we got this far without throwing an exception, we have all we need
-    return new cdr::link::LinkChkRelation (tag, relator, value);
+    return new cdr::link::LinkChkRelation (tag, relator, value, chkValue);
 }
 
 
@@ -631,7 +642,6 @@ static cdr::link::LinkChkPair *parseRule (const char **rulepp)
     cdr::link::LinkChkNode   *leftNode     = 0;
     cdr::link::LinkChkNode   *rightNode    = 0;
     cdr::link::LinkChkBoolOp boolConnector = cdr::link::boolOr;
-
 
     // Recursive descent parser
     do {
@@ -700,13 +710,17 @@ bool cdr::link::LinkChkRelation::evalRelation (
     std::string qry = "SELECT TOP 1 doc_id "
                       "  FROM query_term "
                       " WHERE doc_id = ? "
-                      "   AND path = ?"
-                      "   AND value = ?";
+                      "   AND path = ?";
+
+    // If checking for a specific value, retrieve it too
+    if (chkValue)
+        qry += " AND value = ?";
 
     cdr::db::PreparedStatement stmt = dbConn.prepareStatement (qry);
     stmt.setInt (1, docId);
     stmt.setString (2, tag);
-    stmt.setString (3, value);
+    if (chkValue)
+        stmt.setString (3, value);
     cdr::db::ResultSet rs = stmt.executeQuery();
 
     // Are we looking for equality or inequality?
@@ -768,7 +782,7 @@ bool cdr::link::LinkChkPair::evalRule (
  * Get SQL WHERE clause for a particular link source, given the
  * document type and source element for the link.
  */
-
+/*
 bool getLinkTargetRestrictions (
     cdr::db::Connection conn,
     int                 docType,
@@ -810,6 +824,7 @@ bool getLinkTargetRestrictions (
 
     return true;
 }
+*/
 
 /*
  * Generate SQL for a complete parse tree - to be evaluated separately.
@@ -826,7 +841,7 @@ bool getLinkTargetRestrictions (
  *          Use a fixed sequence of aliases, e.g., L1, L2, L3 ...
  *          Return a count of aliases used.
  */
-
+/*
 void cdr::link::LinkChkNode::makeWhere (
     std::string& sql,
     std::string& tagColumn,
@@ -894,6 +909,7 @@ void cdr::link::LinkChkNode::makeWhere (
         sql += ")";
     }
 }
+*/
 
 /**
  * Generate sub-queries for a complete parse tree.
@@ -920,26 +936,36 @@ void cdr::link::LinkChkNode::makeSubQueries (
         cdr::link::LinkChkRelation *node =
                 static_cast<cdr::link::LinkChkRelation*> (this);
 
-        // Begin with the subquery
+        // If node tests for not equal or not exists, we need
+        //   be sure the value does not exist in selected docs
+        if (node->getRelator() == cdr::link::relNotEqual)
+            query += " NOT";
+
+        // Subquery for doc ids
         query += " EXISTS (SELECT qt.doc_id FROM query_term qt "
                  " WHERE " + cdrid + " = qt.doc_id AND ";
 
         // Append tag to search for in query_term table
         query += "qt.path ='";
         query += node->getTag();
-
-        // Connector for value
-        query += "' AND ";
-
-        // Value
-        query += "qt.value";
-        if (node->getRelator() == cdr::link::relEqual)
-            query += "=";
-        else if (node->getRelator() == cdr::link::relNotEqual)
-            query += "<>";
         query += "'";
-        query += node->getValue();
-        query += "'";
+
+        // If just checking for existence or non-existence of an element,
+        //   we're done, else we need to check the value
+        if (node->getChkValue()) {
+            // Connector for value
+            query += "' AND ";
+
+            // Value
+            query += "qt.value";
+            if (node->getRelator() == cdr::link::relEqual)
+                query += "=";
+            else if (node->getRelator() == cdr::link::relNotEqual)
+                query += "<>";
+            query += "'";
+            query += node->getValue();
+            query += "'";
+        }
 
         query += ")";
     }
