@@ -1,9 +1,14 @@
 /*
- * $Id: CdrServer.cpp,v 1.2 2000-04-15 14:12:07 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.3 2000-04-16 21:55:48 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/15 14:12:07  bkline
+ * Added conditional Sleep() for 0-byte recv.  Replaced cdr::DbConnection*
+ * with cdr::db::Connection&.  Catch added for exception thrown by
+ * command implementation.
+ *
  * Revision 1.1  2000/04/13 17:08:44  bkline
  * Initial revision
  *
@@ -205,8 +210,12 @@ void processCommands(int fd, const std::string& buf)
         while (n != 0) {
             if (n.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
                 elementName = n.getNodeName();
-                if (elementName == L"SessionId")
-                    session.id = n.getNodeValue();
+                if (elementName == L"SessionId") {
+                    cdr::String sessionId = cdr::dom::getTextContent(n);
+                    std::wcerr << L"sessionId=" << sessionId << L"\n";
+                    session.lookupSession(sessionId, conn);
+                    session.setLastActivity(conn);
+                }
                 else if (elementName == L"CdrCommand")
                     response += processCommand(session, n, conn);
             }
@@ -252,9 +261,9 @@ cdr::String processCommand(cdr::Session& session,
     cdr::String cmdId = cmdElement.getAttribute(L"CmdId");
     cdr::String rspTag;
     if (cmdId.size() > 0)
-        rspTag = L" <CdrResponse CmdId='" + cmdId + L"'>\n";
+        rspTag = L" <CdrResponse CmdId='" + cmdId + L"' Status='";
     else
-        rspTag = L" <CdrResponse>\n";
+        rspTag = L" <CdrResponse Status='";
     cdr::dom::Node specificCmd = cmdNode.getFirstChild();
     while (specificCmd != 0) {
         int type = specificCmd.getNodeType();
@@ -262,32 +271,52 @@ cdr::String processCommand(cdr::Session& session,
             cdr::String cmdName = specificCmd.getNodeName();
             cdr::Command cdrCommand = cdr::lookupCommand(cmdName);
             if (!cdrCommand)
-                return cdr::String(rspTag + L"  <Errors>\n   "
+                return cdr::String(rspTag + L"failure'>\n  <Errors>\n   "
                                           + L"<Error>Unknown command: "
                                           + cmdName
                                           + L"</Error>\n  </Errors>\n"
                                           + L" </CdrResponse>\n");
             cdr::String cmdResponse;
             try {
+                /*
+                 * Only way you can get in the door without a valid session
+                 * is with a logon command.
+                 */
+                if (cdrCommand != cdr::logon && session.name.size() < 1)
+                    return cdr::String(rspTag + L"failure'>\n  <"
+                                              + cmdName
+                                              + L"Resp>\n"
+                                              + L"   <Errors>\n    <Error>"
+                                              + L"Missing session ID"
+                                              + L"</Error>\n   </Errors>\n"
+                                              + L"  </"
+                                              + cmdName
+                                              + L"Resp>\n </CdrResponse>\n");
+
+                // Optimistic assumption.
+                session.lastStatus = L"success";
                 cmdResponse = cdrCommand(session, specificCmd, conn);
             }
             catch (cdr::Exception e) {
-                return cdr::String(rspTag + L"  <"
+                return cdr::String(rspTag + L"failure'>\n  <"
                                           + cmdName
                                           + L"Resp>\n"
-                                          + L"   <Errors>\n   <Error>"
+                                          + L"   <Errors>\n    <Error>"
                                           + e.getString()
                                           + L"</Error>\n   </Errors>\n"
                                           + L"  </"
                                           + cmdName
                                           + L"Resp>\n </CdrResponse>\n");
             }
-            cdr::String response = rspTag + cmdResponse + L" </CdrResponse>\n";
+            cdr::String response = rspTag + session.lastStatus
+                                          + L"'>\n"
+                                          + cmdResponse 
+                                          + L" </CdrResponse>\n";
             return response;
         }
         specificCmd = specificCmd.getNextSibling();
     }
-    return cdr::String(rspTag + L"  <Errors>\n   "
+    return cdr::String(rspTag + L"failure'>\n  <Errors>\n   "
                               + L"<Error>Missing specific command element"
                               + L"</Error\n  </Errors>\n"
                               + L" </CdrResponse>\n");
