@@ -5,13 +5,7 @@
 <DocTitle readonly="yes">Module: PersonLocations Denormalization</DocTitle>
 <DocComment>Restored after refresh of CDR database on Mahler</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
-<!--
-     PersonLocations Denormalization
-     Creator:  Volker Englisch
-     Created:  04/30/2003
--->
-
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
                                version = "1.0">
@@ -19,7 +13,6 @@
  <xsl:output                    method = "xml" 
                   omit-xml-declaration = "no"
                               encoding = "UTF-8"/>
-
 
  <!--
  ===================================================================
@@ -90,6 +83,29 @@
  </xsl:template>
 
 
+ <!-- 
+ ===================================================================
+ Denormalize the Parent Organization Information
+ =================================================================== -->
+ <xsl:template                   match = "ParentOrganizationXX">
+   <xsl:variable                  name = "orgID"
+                                select = "@cdr:ref"/>
+   <xsl:variable                  name = "org"
+                                select = "document(concat('cdr:', $orgID, 
+                                                          '/last'))"/>
+  <xsl:call-template              name = "getParentOrgRecurse">
+      <xsl:with-param             name = "orgID"
+                                select = "@cdr:ref"/>
+      <xsl:with-param             name = "level"
+                                select = "'1'"/>
+  </xsl:call-template>
+  <xsl:copy-of                select = "$org/Organization"/>
+  <xsl:apply-templates        select = "$org/Organization/
+                                          OrganizationParent/
+                                          ParentOrganization"/>
+ </xsl:template>
+
+
 
  <!--
  ===================================================================
@@ -156,13 +172,13 @@
  ===================================================================
  Template to detect circular reference in Parent/Child relationship
  =================================================================== -->
- <xsl:template                    name = 'getParentOrgRecurse'>
-  <xsl:param                      name = 'orgID'/>
-  <xsl:param                      name = 'level'/>
-  <xsl:param                      name = 'parentIds'/>
+ <xsl:template                    name = "getParentOrgRecurse">
+  <xsl:param                      name = "orgPID"/>
+  <xsl:param                      name = "level"/>
+  <xsl:param                      name = "parentIds"/>
 
-  <xsl:variable                   name = "org"
-                                select = "document(concat('cdr:', $orgID, 
+  <xsl:variable                   name = "orgParent"
+                                select = "document(concat('cdrx:', $orgPID, 
                                                           '/last'))"/>
   <!-- 
   Do nothing or display the parent IDs and terminate if more then 
@@ -170,12 +186,12 @@
   =================================================================== -->
   <xsl:choose>
    <xsl:when                      test = "$level &lt; 10">
-    <xsl:for-each               select = "$org/Organization/
+    <xsl:for-each               select = "$orgParent/Organization/
                                           OrganizationParent/
                                           ParentOrganization">
 
      <xsl:call-template           name = "getParentOrgRecurse">
-      <xsl:with-param             name = "orgID"
+      <xsl:with-param             name = "orgPID"
                                 select = "@cdr:ref"/>
       <xsl:with-param             name = "parentIds"
                                 select = "concat($parentIds, ' ', 'CDR', 
@@ -184,6 +200,9 @@
                                 select = "$level + 1"/>
      </xsl:call-template>
     </xsl:for-each>
+    <!-- xsl:apply-templates        select = "$orgParent/Organization/
+                                          OrganizationParent/
+                                          ParentOrganization"/ -->
    </xsl:when>
    <xsl:otherwise>
     <xsl:message terminate = "yes">
@@ -223,9 +242,9 @@
     ============================================================= -->
     <xsl:for-each               select = "$org/Organization/
                                           OrganizationParent/
-                                          ParentOrganization">
+                                          ParentOrganization[1]">
      <xsl:call-template           name = "getParentOrgRecurse">
-      <xsl:with-param             name = "orgID"
+      <xsl:with-param             name = "orgPID"
                                 select = "@cdr:ref"/>
       <xsl:with-param             name = "level"
                                 select = "'1'"/>
