@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.18 2001-10-16 19:39:02 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.19 2001-10-17 13:49:40 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2001/10/16 19:39:02  bkline
+ * Fixed return value logic for matchSchemaNode() function.
+ *
  * Revision 1.17  2001/09/19 18:45:17  bkline
  * Added support for ID/IDREF, as well as methods to check for the presence
  * of an attribute.
@@ -185,6 +188,8 @@ static bool matchChoice(
 static bool matchSequence(
         cdr::dom::Node& nextChild, 
         const cdr::xsd::Sequence* schemaSequence);
+static bool isRequired(
+        const cdr::xsd::Node* schemaNode);
 static bool matchElement(
         cdr::dom::Node& nextChild, 
         const cdr::xsd::Element* schemaElement);
@@ -1975,9 +1980,8 @@ void verifyElementSequence(
  *                          forward if a match is successful.
  *  @param  node            schema node against which the document's elements
  *                          are matched.
- *  @return                 <code>true</code> if a match is found and the
- *                          <code>nextChild</code> has been moved forward past
- *                          the matching document elements; otherwise
+ *  @return                 <code>true</code> if a match is found and data
+ *                          document position has been moved forward; otherwise
  *                          <code>false</code>.
  */
 bool matchSchemaNode(
@@ -2028,7 +2032,7 @@ bool matchSchemaNode(
     // Update the caller's picture of where we are in the document.
     nextChild = docNode;
 
-    // Tell the caller whether we found any matches.
+    // Tell the caller that we found a match.
     return docOccs > 0;
 }
 
@@ -2118,6 +2122,37 @@ bool matchElement(
 }
 
 /**
+ * Determines whether this schema node requires at least one occurrence
+ * in the document in order for the sequence in which it occurs to be
+ * valid.
+ *
+ *  @param  node            reference to current schema node.
+ *  @return                 <code>true</code> if at least one occurrence
+ *                          is required for this node.
+ */
+bool isRequired(const cdr::xsd::Node* schemaNode)
+{
+    // Is this schema node for a named group?
+    const cdr::xsd::Group* g = dynamic_cast<const cdr::xsd::Group*>(schemaNode);
+    if (g)
+        return isRequired(g->getContent());
+
+    // Must be one of the count-constrained schema nodes.
+    const cdr::xsd::CountConstrained* ccNode =
+        dynamic_cast<const cdr::xsd::CountConstrained*>(schemaNode);
+
+    // Sanity check.
+    if (!ccNode)
+        throw cdr::Exception(L"Internal error in isRequired()",
+                             L"Schema node must represent an element, "
+                             L"sequence, choice, or named group");
+
+    // See if we are supposed to have at least one of these in the document.
+    return ccNode->getMinOccs() > 0;
+    
+}
+
+/**
  * Determines whether the elements at the current document position match the
  * sequence expected at this position in the schema content model tree.
  *
@@ -2140,9 +2175,15 @@ bool matchSequence(
 
     // Check each node in the schema sequence for a match.
     cdr::xsd::NodeEnum nodeEnum = schemaSequence->getNodes();
-    while (nodeEnum != schemaSequence->getListEnd())
-        if (!matchSchemaNode(docNode, *nodeEnum++))
-            return false;
+    while (nodeEnum != schemaSequence->getListEnd()) {
+
+        // No match is OK if the schema doesn't require one of these.
+        if (!matchSchemaNode(docNode, *nodeEnum)) {
+            if (isRequired(*nodeEnum))
+                return false;
+        }
+        ++nodeEnum;
+    }
 
     // Update the caller's picture of where we are in the document.
     nextChild = docNode;
