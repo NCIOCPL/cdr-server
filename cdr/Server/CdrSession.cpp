@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSession.cpp,v 1.8 2002-06-18 20:44:46 ameyer Exp $
+ * $Id: CdrSession.cpp,v 1.9 2002-06-18 22:16:03 ameyer Exp $
  *
  * Session control information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2002/06/18 20:44:46  ameyer
+ * Oops, return from CanDo should be "<CdrCanDoResp>...".
+ *
  * Revision 1.7  2002/06/18 20:34:08  ameyer
  * Added CdrCanDo command.
  *
@@ -156,6 +159,7 @@ cdr::String cdr::getCanDo (cdr::Session& session,
             else if (name == L"DocType")
                 cmdDocType = cdr::dom::getTextContent (child);
         }
+        child = child.getNextSibling();
     }
 
     // Doc type is optional, but there has to be an action to check
