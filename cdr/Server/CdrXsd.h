@@ -1,7 +1,12 @@
 /*
- * $Id: CdrXsd.h,v 1.15 2002-08-27 17:14:18 bkline Exp $
+ * $Id: CdrXsd.h,v 1.16 2002-09-02 14:06:48 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2002/08/27 17:14:18  bkline
+ * Fixed bug in code to get list of elements which can contain a certain
+ * attribute; used this to fix code to get list of linking elements for
+ * a document type.
+ *
  * Revision 1.14  2001/09/19 18:44:13  bkline
  * Added ID/IDREF support, as well as methods for checking for the
  * presence of an attribute.
@@ -818,7 +823,7 @@ namespace cdr {
             /**
              * Releases resources allocated for a schema validation object.
              */
-            ~Schema();
+            ~Schema() { cleanup(); }
 
             /**
              * Find a <code>Type</code> object from its name, using the
@@ -990,6 +995,15 @@ namespace cdr {
              * List of all keyrefs found in the schema.
              */
             KeyRefList          keyRefList;
+
+            /**
+             * Releases resources allocated for this Schema object.
+             * Split out here so it can be invoked directly by the
+             * constructor when an exception is thrown.  Relies
+             * on registerObject() to remember what needs to be
+             * deleted.
+             */
+            void cleanup();
 
             /**
              * Registers the built-in Schema types supported by this

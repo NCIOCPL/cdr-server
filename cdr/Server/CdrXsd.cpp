@@ -1,7 +1,12 @@
 /*
- * $Id: CdrXsd.cpp,v 1.31 2002-08-27 17:14:17 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.32 2002-09-02 14:06:46 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2002/08/27 17:14:17  bkline
+ * Fixed bug in code to get list of elements which can contain a certain
+ * attribute; used this to fix code to get list of linking elements for
+ * a document type.
+ *
  * Revision 1.30  2002/04/17 22:26:25  bkline
  * Added missing check to verify that elements with simple types had no
  * child elements.
@@ -263,12 +268,18 @@ const std::string cdr::xsd::Schema::schemaDir = setSchemaDir();
 cdr::xsd::Schema::Schema(const cdr::dom::Node& schemaElement,
                          cdr::db::Connection* conn)
 {
-    topElement = 0;
-    seedBuiltinTypes();
-    parseSchema(schemaElement, conn);
-    resolveGroupRefs();
-    resolveKeys();
-    resolveKeyRefs();
+    try {
+        topElement = 0;
+        seedBuiltinTypes();
+        parseSchema(schemaElement, conn);
+        resolveGroupRefs();
+        resolveKeys();
+        resolveKeyRefs();
+    }
+    catch (...) {
+        cleanup();
+        throw;
+    }
 }
 
 /**
@@ -551,7 +562,7 @@ void cdr::xsd::Schema::resolveKeyOrKeyRef(KeyOrKeyRef* k,
 /**
  * Cleans up dynamically allocated objects used by the schema.
  */
-cdr::xsd::Schema::~Schema()
+void cdr::xsd::Schema::cleanup()
 {
     while (!nodeList.empty()) {
         delete nodeList.back();
