@@ -1,7 +1,12 @@
 /*
- * $Id: CdrXsd.h,v 1.5 2000-04-26 01:38:13 bkline Exp $
+ * $Id: CdrXsd.h,v 1.6 2000-05-03 15:43:36 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/04/26 01:38:13  bkline
+ * Added more lookup support for determining an arbitrary element's type
+ * and for determining which elements are allowed in a MIXED content
+ * element.
+ *
  * Revision 1.4  2000/04/22 18:57:38  bkline
  * Added ccdoc comment markers for namespaces and @pkg directives.
  *
@@ -157,7 +162,7 @@ namespace cdr {
         class Attribute : public Node {
         public:
             Attribute(const cdr::dom::Node&);
-            bool            isOptional() const { return optional; }
+            bool                isOptional() const { return optional; }
         private:
             bool            optional;
         };
@@ -233,10 +238,13 @@ namespace cdr {
             int             getAttrCount() const { return attrList.size(); }
             bool            hasElement(const cdr::String& name) const
                 { return elemNames.find(name) != elemNames.end(); }
+            bool            hasAttribute(const cdr::String& name) const
+                { return attrNames.find(name) != attrNames.end(); }
         private:
             ElementList     elemList;
             AttributeList   attrList;
             cdr::StringSet  elemNames;
+            cdr::StringSet  attrNames;
             ContentType     contentType;
         };
     }
