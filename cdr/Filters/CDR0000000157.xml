@@ -3,12 +3,12 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Vendor Filter: Summary</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.37: New Summary Denormalization (Bug 767)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml  version = "1.0"?>
-<xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                         xmlns:cdr = "cips.nci.nih.gov/cdr"
-                           version = "1.0">
+<CdrDocXml><![CDATA[<?xml     version = "1.0"?>
+<xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                            xmlns:cdr = "cips.nci.nih.gov/cdr"
+                              version = "1.0">
 
  <xsl:output                   method = "xml" 
                  omit-xml-declaration = "no"
@@ -117,6 +117,7 @@
    <xsl:choose>
     <xsl:when                    test = "SummaryMetaData/
                                          SummaryAudience = 'Patients'">
+     <xsl:call-template          name = "ContactUs"/>
      <xsl:call-template          name = "ToLearnMore"/>
 
      <xsl:choose>
@@ -132,6 +133,7 @@
     </xsl:when>
     <!-- HP Summaries -->
     <xsl:otherwise>
+     <xsl:call-template          name = "ContactUs"/>
      <xsl:choose>
       <xsl:when                test   = "SummaryMetaData/SummaryType =
                                       'Complementary and alternative medicine'">
@@ -343,12 +345,13 @@
  MiscellaneousDocumentText Template
  ================================================================== -->  
  <xsl:template                  match = "MiscellaneousDocumentText"
-                                 mode = "ToLearnMore">
-  <xsl:param                     name = "toLearnMore"/>
+                                 mode = "MiscText">
+ <!--                            mode = "ToLearnMore"> -->
+  <xsl:param                     name = "miscText"/>
 
   <xsl:apply-templates         select = "Section">
    <xsl:with-param               name = "miscDocId" 
-                               select = "$toLearnMore"/>
+                               select = "$miscText"/>
   </xsl:apply-templates>
  </xsl:template>
 
@@ -1215,6 +1218,57 @@
  ========================================================================= -->
  <!-- 
  =========================================================================
+ Template to add the "Contact Us" misc. document to the Supportive Care
+ summaries.  This gets added to the patient and HP version.
+ ========================================================================= -->
+ <xsl:template                   name = "ContactUs">
+  <xsl:if                        test = "SummaryMetaData/
+                                         SummaryType = 'Supportive care'">
+   <xsl:choose>
+    <xsl:when                    test = "SummaryMetaData/
+                                         SummaryLanguage = 'English'">
+    <!-- xsl:variable            name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000345525',
+                                                         '/lastp'))"/ -->
+     <xsl:variable               name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000353162',
+                                                         '/lastp'))"/>
+
+     <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText"
+                                 mode = "MiscText">
+      <xsl:with-param            name = "miscText"
+                               select = "'_ContactUs'"/>
+     </xsl:apply-templates>
+    </xsl:when>
+    <!-- English, Patient, Contact Us Section End-->
+        
+    <!-- Spanish, Patient, Contact Us Section -->
+    <xsl:otherwise>
+         
+    <!-- xsl:variable            name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000345529',
+                                                         '/lastp'))"/ -->
+     <xsl:variable               name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000353206',
+                                                         '/lastp'))"/>
+
+     <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText"
+                                 mode = "MiscText">
+      <xsl:with-param            name = "miscText"
+                               select = "'_ContactUs'"/>
+     </xsl:apply-templates>
+
+    </xsl:otherwise>
+   <!-- Spanish To Learn More Section End-->
+   </xsl:choose>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ =========================================================================
  Template to add the "More Information" misc. document to the summaries.
  Need to add the document in its appropriate language (English/Spanish).
  ========================================================================= -->
@@ -1264,8 +1318,8 @@
 
     <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText"
-                                 mode = "ToLearnMore">
-     <xsl:with-param             name = "toLearnMore"
+                                 mode = "MiscText">
+     <xsl:with-param             name = "miscText"
                                select = "'_ToLearnMore'"/>
     </xsl:apply-templates>
    </xsl:when>
@@ -1280,8 +1334,8 @@
 
     <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText"
-                                 mode = "ToLearnMore">
-     <xsl:with-param             name = "toLearnMore"
+                                 mode = "MiscText">
+     <xsl:with-param             name = "miscText"
                                select = "'_ToLearnMore'"/>
     </xsl:apply-templates>
 
