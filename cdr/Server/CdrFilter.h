@@ -1,9 +1,13 @@
 /*
- * $Id: CdrFilter.h,v 1.3 2002-01-08 18:19:12 mruben Exp $
+ * $Id: CdrFilter.h,v 1.4 2004-02-19 22:10:46 ameyer Exp $
  *
  * Internal support functions for CDR filter
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/01/08 18:19:12  mruben
+ * Modified for reentrance.
+ * Added support for nonstandard scheme cdrutil:
+ *
  * Revision 1.2  2001/09/21 03:46:40  ameyer
  * Added filterDocumentByScriptId and fitlerDocumentByScriptTitle
  *
@@ -72,6 +76,7 @@ namespace cdr {
      *
      *  @return             cdr::String filtered document
      *
+     *  @throws             Database or filter exceptions from lower down.
      */
     extern cdr::String filterDocumentByScriptId (
                                       const cdr::String&     document,
@@ -79,7 +84,7 @@ namespace cdr {
                                       cdr::db::Connection&   connection,
                                       cdr::String*           messages = 0,
                                       cdr::FilterParmVector* parms = 0,
-                                      cdr::String doc_id = "");
+                                      cdr::String            doc_id = "");
 
     /**
      * Filters a document accepting a document title for the filter instead
@@ -93,11 +98,12 @@ namespace cdr {
      *                      database.
      *  @param  messages    cdr::String*.  If not null, nonerror messages
      *                      from the filter are placed (as XML) in this string
-     *  @param  parms       vector of name-value pairs of parameters
+     *  @param  parms       Pointer to vector of name-value pairs of parameters
      *  @param  doc_id      CDR identifier of document
      *
      *  @return             cdr::String filtered document
      *
+     *  @throws             Database or filter exceptions from lower down.
      */
     extern cdr::String filterDocumentByScriptTitle (
                                       const cdr::String&     document,
@@ -105,8 +111,35 @@ namespace cdr {
                                       cdr::db::Connection&   connection,
                                       cdr::String*           messages = 0,
                                       cdr::FilterParmVector* parms = 0,
-                                      cdr::String doc_id = "");
+                                      cdr::String            doc_id = "");
 
+    /**
+     * Filters a document accepting the name of a filter set.
+     *
+     * Loads the scripts via the set name and calls lower level version.
+     *
+     *  @param  document    cdr::String document to be filtered
+     *  @param  setName     Name of filter set in document table
+     *  @param  version     Version number (string) or symbolic name, or empty
+     *  @param  connection  Reference to an active connection to the CDR
+     *                      database.
+     *  @param  messages    cdr::String*.  If not null, nonerror messages
+     *                      from the filter are placed (as XML) in this string
+     *  @param  parms       Pointer to vector of name-value pairs of parameters
+     *  @param  doc_id      CDR identifier of document
+     *
+     *  @return             cdr::String filtered document
+     *
+     *  @throws             Database or filter exceptions from lower down.
+     */
+    extern cdr::String filterDocumentByScriptSetName (
+                                      const cdr::String&     document,
+                                      const cdr::String&     setName,
+                                      cdr::db::Connection&   connection,
+                                      cdr::String*           messages = 0,
+                                      const cdr::String&     version = "",
+                                      cdr::FilterParmVector* parms = 0,
+                                      cdr::String            doc_id = "");
 }
 
 #endif
