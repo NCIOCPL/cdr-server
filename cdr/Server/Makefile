@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.54 2002-03-09 04:20:55 bkline Exp $
+# $Id: Makefile,v 1.55 2002-04-04 01:06:56 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.54  2002/03/09 04:20:55  bkline
+# Added -D_NDEBUG flag.
+#
 # Revision 1.53  2002/03/07 18:15:54  bkline
 # Update for new version of regex package.
 #
@@ -277,7 +280,8 @@ OBJS   =CdrCommand.obj \
         CdrShutdown.obj \
         CdrGetTree.obj \
         CdrMergeProt.obj \
-        CdrDOMtoString.obj
+        CdrDOMtoString.obj \
+        CdrPublish.obj
 
 LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
         wsock32.lib odbc32.lib user32.lib 
