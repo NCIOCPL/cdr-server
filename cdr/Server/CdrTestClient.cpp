@@ -1,5 +1,5 @@
 /*
- * $Id: CdrTestClient.cpp,v 1.3 2000-08-24 20:08:21 ameyer Exp $
+ * $Id: CdrTestClient.cpp,v 1.4 2001-01-18 14:51:50 bkline Exp $
  *
  * Test client (C++ version) for sending commands to CDR server.
  *
@@ -16,6 +16,9 @@
  * The encoding for the XML must be UTF-8.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/08/24 20:08:21  ameyer
+ * Added NT structured exception handling for crashes.
+ *
  * Revision 1.2  2000/04/17 03:16:12  bkline
  * Allowed "-" to mean standard input on command line.
  *
@@ -146,7 +149,7 @@ main(int ac, char **av)
         }
         totalRead += bytesRead;
     }
-    std::cout << "Server response:\n" << response << '\n';
+    std::cout << "<!-- Server response: -->\n" << response << '\n';
     return EXIT_SUCCESS;
 }
 
