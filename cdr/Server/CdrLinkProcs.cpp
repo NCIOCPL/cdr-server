@@ -19,9 +19,12 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.14 2002-05-09 21:39:29 ameyer Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.15 2003-04-15 22:30:34 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2002/05/09 21:39:29  ameyer
+ * Fixed bug in the new code.
+ *
  * Revision 1.13  2002/05/09 19:42:47  ameyer
  * Revised customLinkCheck() to free up db connection before passing it
  * down to lower level custom routines.
@@ -363,7 +366,8 @@ cdr::link::LinkChkTargContains::LinkChkTargContains (cdr::String linkRule)
  */
 
 static void skipSpace (const char **stringpp) {
-    while (**stringpp == ' ' || **stringpp == '\t')
+    while (**stringpp == ' ' || **stringpp == '\t' ||
+           **stringpp == '\r' || **stringpp == '\n')
         ++*stringpp;
 }
 
@@ -398,6 +402,7 @@ static std::string parseTag (const char **stringpp)
     // Initialize table of legal tag characters
     // This list doesn't include Unicode chars, we'll keep it simple and sane
     if (s_first_time) {
+        // Legal chars in element ids
         for (i='A'; i<='Z'; i++)
             s_nmchars[i] = true;
         for (i='a'; i<='z'; i++)
@@ -407,7 +412,11 @@ static std::string parseTag (const char **stringpp)
         s_nmchars['.'] = true;
         s_nmchars['-'] = true;
         s_nmchars['_'] = true;
-        s_nmchars['/'] = true;  // Not a tag char, but legal separator
+        // Next two are for attribute values
+        s_nmchars['@'] = true;
+        s_nmchars[':'] = true;
+        // Not a tag char, but legal separator
+        s_nmchars['/'] = true;
 
         s_first_time = false;
     }
@@ -460,8 +469,9 @@ static cdr::link::LinkChkRelator parseRelator (const char **stringpp)
     }
 
     // No match where one was required
-    throw cdr::Exception (L"System Error: Link check expression "
-                          L"missing relational operator");
+    throw cdr::Exception (L"System Error: Link check expression '" +
+                          cdr::String (p) +
+                          L"' missing relational operator");
 }
 
 
@@ -649,7 +659,7 @@ static cdr::link::LinkChkPair *parseRule (const char **rulepp)
 
         skipSpace (rulepp);
 
-        // There might only have been one expression, or their might
+        // There might only have been one expression, or there might
         //   be more than one, connected by boolean operators
         // We are done this invocation of parseRule if:
         //   We reached the end of string, ending the entire parse, or
@@ -686,8 +696,8 @@ bool cdr::link::LinkChkRelation::evalRelation (
     cdr::db::Connection& dbConn,
     int                  docId
 ) {
-    // Check the query term table for this field + value + docId.
-    std::string qry = "SELECT doc_id "
+    // Check query terms for at least one of this field + value + docId.
+    std::string qry = "SELECT TOP 1 doc_id "
                       "  FROM query_term "
                       " WHERE doc_id = ? "
                       "   AND path = ?"
@@ -969,7 +979,7 @@ void cdr::link::LinkChkNode::makeSubQueries (
  * made from a particular element type in a given source document type.
  * It contains only the documents satisfying the link_properties. It
  * is designed for task: picklists with server-side filtering, and
- * hence it emphasizes on speed by not using other funtions in cdr::link.
+ * hence it emphasizes speed by not using other funtions in cdr::link.
  * This is assumed to be a replacement of findTargetDocTypes.
  *
  *  @param      conn         Reference to the connection object for the
