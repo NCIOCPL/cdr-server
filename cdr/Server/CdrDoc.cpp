@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.26 2002-02-07 14:38:06 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.27 2002-02-08 14:31:49 bkline Exp $
  *
  */
 
@@ -1338,6 +1338,8 @@ void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
 }
 
 // Routines to modify the document before saving or validating.
+// Make sure these get called in an order which meets any interdependencies 
+// between the preprocessing requirements.
 void cdr::CdrDoc::preProcess(bool validating)
 {
     updateProtocolStatus(validating);
@@ -1544,12 +1546,18 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
         newXml = cdr::filterDocumentByScriptTitle(Xml, 
                                                   L"Set Protocol Status", 
                                                   docDbConn, &errorStr, &pv);
+
+        // Save the transformation for later steps
+        Xml = newXml;
+
+        // If there is a stored parse tree for the document
+        //   make sure it is not re-used since document may have changed
+        parsed = false;
     }
     catch (cdr::Exception e) {
         errList.push_back(L"Failure setting protocol status: " + 
                           cdr::String(e.what()));
     }
-    Xml = newXml;
 }
 
 /**
