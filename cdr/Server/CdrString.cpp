@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.13 2001-03-02 13:59:26 bkline Exp $
+ * $Id: CdrString.cpp,v 1.14 2001-04-05 22:34:02 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2001/03/02 13:59:26  bkline
+ * Replaced body of cdr::entConvert() with more efficient implementation.
+ *
  * Revision 1.12  2001/03/01 23:28:38  ameyer
  * Fixed bug, not updating s_first_time.
  *
@@ -266,4 +269,23 @@ cdr::String cdr::toXmlDate(cdr::String date)
     date[10] = L'T';
 
   return date;
+}
+
+/**
+ * Determine if a string contains "Y" or "N" or "y" or "n".
+ */
+
+bool cdr::ynCheck (cdr::String ynString, bool defaultVal, cdr::String forceMsg)
+{
+    // Check
+    if (ynString == L"Y" || ynString == L"y")
+        return true;
+    if (ynString == L"N" || ynString == L"n")
+        return false;
+
+    // Expected values not found, throw exception or return default
+    if (forceMsg != L"")
+        throw cdr::Exception (L"Must specify 'Y' or 'N' in " + forceMsg);
+
+    return defaultVal;
 }
