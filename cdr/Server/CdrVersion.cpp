@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.19 2002-09-25 14:37:46 pzhang Exp $
+ * $Id: CdrVersion.cpp,v 1.20 2002-09-29 01:42:20 bkline Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2002/09/25 14:37:46  pzhang
+ * Added val_status = 'V' in lastVersions().
+ *
  * Revision 1.18  2002/09/25 13:55:18  pzhang
  * Added "val_status = 'V'" in getLatestPublishableVersion().
  *
@@ -1064,7 +1067,7 @@ cdr::String cdr::lastVersions(Session& session,
            << L"</IsChanged>\n";
 
   // Return response
-  response << L"<LastVersionsResp>\n";
+  response << L"</LastVersionsResp>\n";
 
   return response.str();
 }
