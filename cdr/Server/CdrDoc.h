@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.15 2002-07-24 15:09:35 bkline Exp $
+ * $Id: CdrDoc.h,v 1.16 2002-08-14 01:36:06 ameyer Exp $
  *
  */
 
@@ -56,6 +56,18 @@ namespace cdr {
      * document could reach it.
      */
     const int MAX_INDEX_ELEMENT_POS = 0x7FFFFFFF;
+
+    /**
+     * Indication of whether the document should be processed as
+     * a content document (one with user produced information in it)
+     * or a control document (one with control information, such
+     * as a schema or stylesheet produced by programmers.)
+     */
+    typedef enum ContentOrControl {
+        not_set,        // Haven't figured it out yet
+        content,        // Doc contains user produced content
+        control         // Doc contains programmer produced control data
+    } ContentOrControl;
 
     // Object to represent one row in the query_term table.
     struct QueryTerm {
@@ -213,8 +225,8 @@ namespace cdr {
             void updateProtocolStatus(bool validating);
 
             /**
-             * Eliminate elements supplied by the template which the user 
-             * has decided not to use.  See the XSL/T script itself for 
+             * Eliminate elements supplied by the template which the user
+             * has decided not to use.  See the XSL/T script itself for
              * documentation of the logic.
              *
              *  @param  validating      whether the user has requested
@@ -222,6 +234,20 @@ namespace cdr {
              *                          command.
              */
             void stripXmetalPis(bool validating);
+
+            /**
+             * Is this a control type document?
+             *
+             *  @return                 True=yes.
+             */
+            bool isControlType();
+
+            /**
+             * Is this a content type document, reverse of isControlType.
+             *
+             *  @return                 True=yes.
+             */
+            bool isContentType();
 
             // Accessors
             int getId()                    {return Id;}
@@ -278,12 +304,13 @@ namespace cdr {
             int  lastFragmentId;        // Last used generated cdr:id number
             cdr::StringList errList;    // Errors from validation, parsing,
                                         //   filtering, or wherever.
+            ContentOrControl conType;   // Treat as content or control info
 
             // Connection to the database
             cdr::db::Connection& docDbConn;
 
             /**
-             * Recursively finds all nodes in the tree which need to be 
+             * Recursively finds all nodes in the tree which need to be
              * represented in the query_term table.
              *
              *  @param  parentPath  Reference to string representing path for
