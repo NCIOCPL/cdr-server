@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbConnection.h,v 1.6 2000-05-03 15:37:54 bkline Exp $
+ * $Id: CdrDbConnection.h,v 1.7 2000-05-03 18:49:50 bkline Exp $
  *
  * Interface for CDR wrapper for an ODBC database connection.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/05/03 15:37:54  bkline
+ * Fixed creation of db statements.
+ *
  * Revision 1.5  2000/04/22 18:57:38  bkline
  * Added ccdoc comment markers for namespaces and @pkg directives.
  *
@@ -61,21 +64,38 @@ namespace cdr {
         public:
 
             /**
-             * These will be made private, with a new Driver friend class,
-             * which will handle connection pooling in its connect() method.
+             * Default constructor.  A future version will be made private, 
+             * with a new Driver friend class, which will handle connection 
+             * pooling in its connect() method (in keeping with JDBC
+             * interfaces).
              */
             Connection();
+
+            /**
+             * Closes the database connection, releasing all resources
+             * allocated by the connection.
+             */
             ~Connection();
 
             /**
              * Creates an object which can handle a parameterized SQL
              * query.
+             *
+             *  @param  query       reference to a string object containing
+             *                      the SQL query to be prepared.  Note that
+             *                      the query string uses 8-bit ASCII
+             *                      characters, but string parameters are
+             *                      Unicode, encoded as UCS-16.
+             *  @return             newly constructed
+             *                      <code>PreparedStatement</code> object.
              */
-            PreparedStatement prepareStatement(const std::string&);
+            PreparedStatement prepareStatement(const std::string& query);
 
             /**
              * Creates an object which can handle an unparamaterized
              * SQL query.
+             *
+             *  @return             new <code>Statement</code> object.
              */
             Statement createStatement();
 
@@ -85,31 +105,98 @@ namespace cdr {
              * is started with auto-commit turned on, effectively making 
              * each query into a self-contained transaction, committed
              * if successful.
+             *
+             *  @param  setting     <code>true</code> if subsequent queries
+             *                      are to be treated as separate
+             *                      self-contained transactions;
+             *                      <code>false</code> to open a
+             *                      multi-statement transaction.
+             */
+            void setAutoCommit(bool setting);
+
+            /**
+             * Returns <code>false</code> if the statements issued for the
+             * connection are enclosed in a single transaction until the next
+             * <code>commit()</code> or <code>rollback</code> transaction.
+             *
+             *  @return             current <code>autoCommit</code> setting.
              */
             bool getAutoCommit() const { return autoCommit; }
-            void setAutoCommit(bool);
+
+            /**
+             * Causes the outstanding SQL statements for the current
+             * transaction to be committed to the database.
+             */
             void commit();
+
+            /**
+             * Causes the outstanding SQL statements for the current
+             * transaction to be discarded.
+             */
             void rollback();
 
             /**
              * Extracts the current @@IDENTITY value from SQL Server for
              * the current connection.
+             *
+             *  @return             current <code>@@IDENTITY</code value.
              */
             int getLastIdent();
 
             /**
              * Returns a string representing the CDR DBMS's idea of the
              * current time.
+             *
+             *  @return             date/time string in ISO format.
              */
             cdr::String getDateTimeString();
 
         private:
+
+            /**
+             * Creates a string which holds the concatenated ODBC error
+             * messages from the ODBC driver and from the database.
+             *
+             *  @param  rc          return code from last ODBC call.
+             *  @param  henv        ODBC environment handle.
+             *  @param  hdbc        ODBC database connection handle.
+             *  @param  hstmt       ODBC statement handle.
+             *  @return             error information string.
+             */
             static cdr::String getErrorMessage(SQLRETURN, HENV, HDBC, HSTMT);
+
+            /**
+             * ODBC database connection handle.
+             */
             HDBC hdbc;
+
+            /**
+             * ODBC environment handle.
+             */
             static HENV henv;
+
+            /**
+             * Flag remembering whether a multi-statement transaction is open.
+             */
             bool autoCommit;
-            Connection(const Connection&);              // Block this
-            Connection& operator=(const Connection&);   // And this
+
+            /**
+             * Blocked copy constructor.
+             *
+             *  @param  c           reference to <code>Connection</code>
+             *                      object.
+             */
+            Connection(const Connection&);
+
+            /**
+             * Blocked assignment operator.
+             *
+             *  @param  c           reference to <code>Connection</code>
+             *                      object.
+             *  @return             reference to modified
+             *                      <code>Connection</code> object.
+             */
+            Connection& operator=(const Connection&);
         };
     }
 }
