@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.23 2002-02-01 20:48:21 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.24 2002-02-27 23:33:09 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2002/02/01 20:48:21  bkline
+ * Added more logging for top-level failures.
+ *
  * Revision 1.22  2002/01/28 23:10:36  bkline
  * Added handler for unexpected exception when processing a single command.
  *
@@ -311,6 +314,12 @@ int readRequest(int fd, std::string& request, const cdr::String& when) {
 
     // Allocate a working buffer.
     char *buf = new char[length + 1];
+    if (!buf) {
+        char tmp[256];
+        sprintf(tmp, "Failure allocating %lu bytes", length);
+        sendErrorResponse(fd, tmp, when);
+        return 0;
+    }
     memset(buf, 0, length + 1);
 
     // Keep reading until we have all the bytes.
