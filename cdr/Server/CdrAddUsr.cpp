@@ -1,9 +1,12 @@
 /*
- * $Id: CdrAddUsr.cpp,v 1.4 2000-05-09 21:06:56 bkline Exp $
+ * $Id: CdrAddUsr.cpp,v 1.5 2001-04-11 14:38:18 bkline Exp $
  *
  * Adds new user to CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/05/09 21:06:56  bkline
+ * Fixed typo in SQL statement (removed superfluous comma).
+ *
  * Revision 1.3  2000/05/03 15:25:41  bkline
  * Fixed database statement creation.
  *
@@ -55,8 +58,6 @@ cdr::String cdr::addUsr(cdr::Session& session,
                 comment = cdr::dom::getTextContent(child);
             else if (name == L"GrpName")
                 grpList.push_back(cdr::dom::getTextContent(child));
-            else if (name == L"Comment")
-                comment = cdr::dom::getTextContent(child);
         }
         child = child.getNextSibling();
     }
