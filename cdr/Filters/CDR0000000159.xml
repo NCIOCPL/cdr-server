@@ -74,10 +74,34 @@
        <xsl:apply-templates        select="." mode="copy"/>
        <xsl:apply-templates        select="PdqKey" mode="copy"/>
        </xsl:for-each>
+        <GlossaryTerms>
+        <xsl:for-each               select="//GlossaryTermRef">
+        <GlossaryTerm>
+       <GlossaryTermRef>
+       <xsl:value-of               select="."/>
+       </GlossaryTermRef>
+       
+       <xsl:variable name="defID"  select="@cdr:href"/>
+      
+      <xsl:variable name="defInfo" select="document(concat('cdr:',$defID,'/last'))"/>
+       <TermName>
+       <xsl:value-of               select="$defInfo/GlossaryTerm/
+                                            TermName"/> 
+       </TermName>
+       <TermDefinition>     
+       <xsl:value-of               select="$defInfo/GlossaryTerm/
+                                            TermDefinition"/>
+       </TermDefinition>
+       </GlossaryTerm>
+       </xsl:for-each>
+       </GlossaryTerms>
        </xsl:if>
        </xsl:copy>  
        </xsl:template>
 
+    
+
+       
 <!-- ================================================================
      Template rule used to do XML to XML transformations which
      copies any attribute node, or node that is child of of something
