@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.41 2001-10-19 14:19:56 bkline Exp $
+ * $Id: tables.sql,v 1.42 2001-10-22 11:54:33 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.41  2001/10/19 14:19:56  bkline
+ * Added 'external' column to pub_proc table.
+ *
  * Revision 1.40  2001/10/11 17:32:28  bkline
  * Added ready_for_review table.  Replaced pub_event and published_doc
  * tables with views.
@@ -964,6 +967,7 @@ CREATE TABLE pub_proc
    completed DATETIME         NULL,
       status VARCHAR(32)  NOT NULL,
     messages NTEXT            NULL,
+       email VARCHAR(255)     NULL,
     external CHAR(1)          NULL DEFAULT 'N')
 
 /*
