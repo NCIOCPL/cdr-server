@@ -23,7 +23,8 @@
 
  <!-- *
  ==============================================================
- Template Published Results section
+ Template to denormalize Protocol Published Results section and
+ Summary Reference Section
  ============================================================== -->
  <xsl:template                  match = "Citation | CitationLink">
   <Citation>
@@ -54,6 +55,119 @@
                                          $citInfo/Citation/PubmedArticle"/>
 
   </Citation>
+ </xsl:template>
+
+
+ <!-- *
+ ==============================================================
+ Template to denormalize ProtocolLink elements for Summary
+ Reference section
+ ============================================================== -->
+ <xsl:template                  match = "ProtocolLink">
+  <ProtocolLink>
+   <xsl:for-each               select = "@*">
+    <xsl:attribute               name = "{name()}">
+     <xsl:value-of             select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+
+   <xsl:variable                 name = "protRef"
+                               select = "@cdr:ref"/>
+   <xsl:variable                 name = "protInfo" 
+                               select = "document(concat('cdr:', $protRef,
+                                                            '/lastp'))"/>
+   <!-- 
+   This new attribute is introduced in order to sort by publication
+   year across different citation types
+   ================================================================ -->
+   <xsl:attribute                name = "pubyear">
+    <xsl:value-of              select = "$protInfo/xxx/Citation/PDQCitation/
+                                         PublicationDetails/
+                                         PublicationYear      |
+                                         $protInfo/xxx/Citation/PubmedArticle//
+                                         PubDate/Year"/>
+   </xsl:attribute>
+
+   <xsl:apply-templates        select = "$protInfo/InScopeProtocol/
+                                           ProtocolTitle
+                                             [@Type = 'Professional'] |
+                                         $protInfo/InScopeProtocol/
+                                           ProtocolIDs                | 
+                                         $protInfo/InScopeProtocol/
+                                           ProtocolAdminInfo/
+                                           ProtocolLeadOrg            |
+                                         $protInfo/InScopeProtocol/
+                                           ProtocolDetail/
+                                           StudyType                  |
+                                         $protInfo/InScopeProtocol/
+                                           ProtocolAdminInfo/
+                                           CurrentProtocolStatus"/>
+
+  </ProtocolLink>
+ </xsl:template>
+
+
+ <!--
+ ================================================================
+ Template to denormalize Person and Organization for Protocol
+ Citation
+ ================================================================ -->
+ <xsl:template                  match = "ProtocolLeadOrg">
+  <ProtocolLeadOrg>
+   <xsl:apply-templates/>
+  </ProtocolLeadOrg>
+ </xsl:template>
+
+
+ <!-- *
+ ================================================================
+ Template to denormalize the Protocol Person elements for Summary
+ Reference section
+ ================================================================ -->
+ <xsl:template                  match = "Person">
+  <Person>
+   <xsl:for-each               select = "@*">
+    <xsl:attribute               name = "{name()}">
+     <xsl:value-of             select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+
+   <xsl:variable                 name = "personRef"
+                               select = "@cdr:ref"/>
+   <xsl:variable                 name = "personInfo" 
+                               select = "document(concat('cdr:', $personRef,
+                                                            '/last'))"/>
+
+   <xsl:apply-templates        select = "$personInfo/Person/
+                                           PersonNameInformation"/>
+
+  </Person>
+ </xsl:template>
+
+
+ <!-- *
+ ==============================================================
+ Template to denormalize the Protocol Org elements for Summary
+ Reference section
+ ============================================================== -->
+ <xsl:template                  match = "LeadOrganizationID">
+  <Organization>
+   <xsl:for-each               select = "@*">
+    <xsl:attribute               name = "{name()}">
+     <xsl:value-of             select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+
+   <xsl:variable                 name = "orgRef"
+                               select = "@cdr:ref"/>
+   <xsl:variable                 name = "orgInfo" 
+                               select = "document(concat('cdr:', $orgRef,
+                                                            '/last'))"/>
+
+   <xsl:apply-templates        select = "$orgInfo/Organization/
+                                           OrganizationNameInformation"/>
+
+  </Organization>
  </xsl:template>
 
 
