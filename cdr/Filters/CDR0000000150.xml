@@ -20,7 +20,7 @@
   <xsl:include href = "cdr:name:Module: Citation Formatting"/>
   <xsl:include href = "cdr:name:Module: Vendor Phone Templates"/>
   <xsl:include href = "cdr:name:Module: Vendor Address Templates"/>
-  <xsl:include href = "cdr:name:Module: Vendor Cleanup Templates"/>
+  <!-- xsl:include href = "cdr:name:Module: Vendor Cleanup Templates"/ -->
 
   
   <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
@@ -217,6 +217,10 @@
                               mode = "copy"/>
    <xsl:apply-templates     select = "ProjectedAccrual"
                               mode = "copy"/>
+
+ <!-- Commented out only for testing the diff
+  Put back in production when testing completed, VE, 6/16/03
+
    <xsl:apply-templates     select = "EndPoints"
                               mode = "copy"/>
    <xsl:apply-templates     select = "Stratification"
@@ -226,7 +230,7 @@
    <xsl:apply-templates     select = "DoseSchedule"
                               mode = "copy"/>
    <xsl:apply-templates     select = "DosageForm"
-                              mode = "copy"/>
+                              mode = "copy"/ -->
    <xsl:apply-templates     select = "ProfessionalDisclaimer"
                               mode = "copy"/>
   </xsl:element>
@@ -507,24 +511,26 @@
                                       'Active')">
 
  <!-- Only create the ProtocolSites element if Active Sites exist and only
-      if its parent is active as well or if the PrivateProtocolSite is 
-      active
+      if its parents LeadOrgProtocolStatus is active as well or if the 
+      PrivateProtocolSite is active
       Note:  This IF only controls the ProtocolSites element tag.  The 
              sites to be picked up will be identified within the 
              ProtocolSites template.
       ==================================================================== -->
     <xsl:if                   test = "(ProtocolLeadOrg
-                                            [LeadOrganizationID/
-                                             Organization/Status/
-                                             CurrentStatus = 'Active']/
-                                       ProtocolSites/OrgSiteID/
-                                             Organization/Status
-                                             [CurrentStatus = 'Active'])    |
-                                      (ProtocolLeadOrg[LeadOrgProtocolStatuses/
-                                                       CurrentOrgStatus/
-                                                       StatusName = 'Active']/
-                                       ProtocolSites/
-                                       PrivatePracticeSite
+                                            [LeadOrgProtocolStatuses/
+                                             CurrentOrgStatus/
+                                             StatusName = 'Active']/
+                                         ProtocolSites/
+                                         OrgSiteID/
+                                         Organization/
+                                         Status[CurrentStatus = 'Active'])    |
+                                      (ProtocolLeadOrg
+                                            [LeadOrgProtocolStatuses/
+                                             CurrentOrgStatus/
+                                             StatusName = 'Active']/
+                                         ProtocolSites/
+                                         PrivatePracticeSiteID
                                        [PrivatePracticeSiteStatus = 'Active'])">
      <ProtocolSites>
       <xsl:apply-templates  select = "ProtocolLeadOrg/ProtocolSites"/>
@@ -568,11 +574,7 @@
    <!-- 
    LeadOrgPersonnel with Public=No attribute is not to be published
    ================================================================ -->
-<!-- xsl:if                    test = "not(LeadOrgPersonnel/@Public = 'No')" -->
-     <LeadOrgPersonnel>
-      <xsl:apply-templates    select = "LeadOrgPersonnel[not(@Public)]"/>
-     </LeadOrgPersonnel>
-   <!-- /xsl:if -->
+      <xsl:apply-templates   select = "LeadOrgPersonnel[not(@Public)]"/>
 
   </xsl:element>
  </xsl:template>
@@ -591,7 +593,14 @@
   <xsl:if                     test = "not(PersonRole='Update person') or
                                          (PersonRole='Update person'
                                           and count(PersonRole) &gt; 1)">
-   <xsl:apply-templates     select = "Person"/>
+   <LeadOrgPersonnel>
+    <xsl:if                    test = "@cdr:id = ../MailAbstractTo">
+     <xsl:attribute            name = "MailAbstractTo">
+      <xsl:value-of          select = "'Y'"/>
+     </xsl:attribute>
+    </xsl:if>
+    <xsl:apply-templates     select = "Person"/>
+   </LeadOrgPersonnel>
   </xsl:if>
  </xsl:template>
 
@@ -599,7 +608,8 @@
  ====================================================================
  ==================================================================== -->
  <xsl:template               match = "Person | 
-                                      SpecificPerson">
+                                      SpecificPerson |
+                                      PrivatePracticePerson">
   <xsl:variable               name = "myScope"
                             select = "name()"/>
 
@@ -659,6 +669,13 @@
        <xsl:apply-templates select = "."
                               mode = "copy"/>
       </xsl:if>
+     </xsl:for-each>
+    </xsl:when>
+    <xsl:when                 test = "$myScope = 'PrivatePracticePerson'">
+     <xsl:for-each          select = "../Role">
+      <PersonRole>
+       <xsl:value-of        select = "."/>
+      </PersonRole>
      </xsl:for-each>
     </xsl:when>
     <xsl:otherwise>
@@ -945,11 +962,19 @@
    </xsl:for-each>
 
   <!-- Added code to pick up private practice sites.  RMK 2002-09-06.      -->
-  <xsl:for-each                 select = "PrivatePracticeSite">
+  <xsl:for-each                 select = "PrivatePracticeSiteID">
    <!-- Only display active PrivatePracticeSite                            -->
    <xsl:if                        test = "PrivatePracticeSiteStatus = 'Active'">
-    <ProtocolSite                  ref = "{@ref}"
-                              sitetype = "Person">
+    <ProtocolSite>
+     <xsl:attribute               name = "ref">
+      <xsl:value-of             select = "substring-before(
+                                            concat(PrivatePracticePerson/Person/
+                                                   @cdr:ref, '#'),'#')"/>
+     </xsl:attribute>
+     <xsl:attribute               name = "sitetype">
+      <xsl:value-of             select = "'Person'"/>
+     </xsl:attribute>
+
      <xsl:apply-templates       select = "PrivatePracticePerson"/>
     </ProtocolSite>
    </xsl:if>
