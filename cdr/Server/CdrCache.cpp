@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCache.cpp,v 1.1 2004-05-14 02:04:34 ameyer Exp $
+ * $Id: CdrCache.cpp,v 1.2 2004-05-25 22:39:18 ameyer Exp $
  *
  * Specialized cacheing for performance optimization, where useful.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/05/14 02:04:34  ameyer
+ * CdrCache serverside cacheing to speed publishing.
+ *
  */
 
 #include <iostream> // For debug
@@ -115,6 +118,11 @@ cdr::cache::Term * cdr::cache::Term::getTerm(
     const int            depth,
     const cdr::String    &docIdStr
 ) {
+    // Some string constants
+    static const std::string s_SPACE = " ";
+    static const std::string s_EQUOT = "=\"";
+    static const std::string s_QUOTE = "\"";
+
     // Check for possible infinite recursion
     if (depth > MAX_HIERARCHY)
         cdr::cache::fatal (L"Exceeded maximum getTerm depth, id=" + docIdStr);
@@ -154,13 +162,13 @@ cdr::cache::Term * cdr::cache::Term::getTerm(
         // Look for elements we need
         // SAX would be more efficient, but we aren't using it
         //   anywhere else and don't have our own wrappers for it
-        cdr::dom::Parser   parser;
-        cdr::dom::Node     node;
-        cdr::dom::Node     childNode;
-        cdr::dom::Node     gChildNode;
-        cdr::String        nodeName;
-        cdr::String        parentIdStr;
-        cdr::cache::Term   *pParentTerm;
+        cdr::dom::Parser parser;
+        cdr::dom::Node   node;
+        cdr::dom::Node   childNode;
+        cdr::dom::Node   gChildNode;
+        cdr::String      nodeName;
+        cdr::String      parentIdStr;
+        cdr::cache::Term *pParentTerm;
 
         // Parse term doc and get first element
         parser.parse (docVer.xml);
@@ -227,16 +235,39 @@ cdr::cache::Term * cdr::cache::Term::getTerm(
                       pParentTerm = cdr::cache::Term::getTerm (conn, pMap,
                                                     depth + 1, parentIdStr);
 
-                      // Install it in the parent term set for this Term
-                      pTerm->parentPtrs.insert(pParentTerm);
+                      // If we haven't already seen this one, process it
+                      if (!pTerm->parentPtrs.count(pParentTerm)) {
 
-                      // Install all of its parents in the set for this Term
-                      // Duplicates are silently ignored
-                      PARENT_SET::iterator parIter =
-                                pParentTerm->parentPtrs.begin();
-                      while (parIter != pParentTerm->parentPtrs.end()) {
-                        pTerm->parentPtrs.insert(*parIter);
-                        ++parIter;
+                        // Get all the attributes associated with parent and
+                        //   save them too
+                        // But we may have seen the term in another parent
+                        //   tree, so check before building attributes
+                        if (pParentTerm->attrXml.size() == 0) {
+                          cdr::dom::NamedNodeMap attrs =
+                                       gChildNode.getAttributes();
+                          int nAttrs = attrs.getLength();
+                          for (int i=0; i<nAttrs; i++) {
+                              cdr::dom::Node attr = attrs.item(i);
+                              cdr::String attrName = attr.getNodeName();
+                              cdr::String attrVal  = attr.getNodeValue();
+                              pParentTerm->attrXml += s_SPACE
+                                  + attrName.toUtf8() + s_EQUOT
+                                  + attrVal.toUtf8() + s_QUOTE;
+                          }
+                        }
+std::cout << pParentTerm->name << pParentTerm->attrXml << "\n";
+
+                        // Install it in the parent term set for this Term
+                        pTerm->parentPtrs.insert(pParentTerm);
+
+                        // Install all of its parents in the set for this Term
+                        PARENT_SET::iterator parIter =
+                                  pParentTerm->parentPtrs.begin();
+                        while (parIter != pParentTerm->parentPtrs.end()) {
+                          if (!pTerm->parentPtrs.count(*parIter))
+                            pTerm->parentPtrs.insert(*parIter);
+                          ++parIter;
+                        }
                       }
                     }
 
@@ -270,7 +301,7 @@ std::string cdr::cache::Term::getNameXml() {
 
     if (nameXml != "")
         nameXml = "<Term>\n"
-                  " <Name>" + name + "</Name>\n"
+                  " <PreferredName>" + name + "</PreferredName>\n"
                   "</Term>\n";
 
     return nameXml;
@@ -280,20 +311,22 @@ std::string cdr::cache::Term::getNameXml() {
 std::string cdr::cache::Term::getFamilyXml() {
 
     if (familyXml == "") {
-        familyXml = "<Term>\n"
-                    " <Name>" + name + "</Name>\n";
+        familyXml = "<Term xmlns:cdr = 'cips.nci.nih.gov/cdr'>\n"
+                    " <PreferredName>" + name + "</PreferredName>\n";
 
         // Get name of each parent
         PARENT_SET::iterator parIter = parentPtrs.begin();
         while (parIter != parentPtrs.end()) {
             // Only include terms for which the type was ok and name stored
             if ((*parIter)->typeOK)
-                familyXml += " <Term><Name>" + (*parIter)->getName() +
-                             "</Name></Term>\n";
+                familyXml += " <Term" + (*parIter)->getAttrs() +
+                             "><PreferredName>" + (*parIter)->getName() +
+                             "</PreferredName></Term>\n";
             ++parIter;
         }
 
         familyXml += "</Term>\n";
+std::cout << "familyXml = " << familyXml << "\n";
     }
 
     return familyXml;
