@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<!-- $Id: CdrCommonSchema.xml,v 1.24 2001-07-18 21:59:07 bkline Exp $ 
+<!-- $Id: CdrCommonSchema.xml,v 1.25 2001-08-20 20:39:37 ArkD Exp $ 
 
      $Log: not supported by cvs2svn $
+     Revision 1.24  2001/07/18 21:59:07  bkline
+     Fixed minOccurs='*' (changed to '0').
+
      Revision 1.23  2001/07/18 18:48:39  ArkD
      Simple type 'Yes' added.
 
@@ -114,22 +117,42 @@
 
   <group             name            = 'OtherPhraseElements'>
     <choice>
-      <element       name            = 'LOEReference'
-                     type            = 'CdrHref'/>
-      <element       name            = 'CitationReference'
-                     type            = 'CdrHref'/>
-      <element       name            = 'SummaryReference'
-                     type            = 'CdrHref'/>
-      <element       name            = 'ProtocolReference'
-                     type            = 'CdrHref'/>
+      <element       name            = 'LOERef'
+                     type            = 'SummaryRef'/>
+      <element       name            = 'LOEFragmentRef'
+                     type            = 'SummaryFragmentRef'/>
+      <element       name            = 'LOELink'
+                     type            = 'SummaryLink'/>
+      <element       name            = 'LOEFragmentLink'
+                     type            = 'SummaryFragmentLink'/>
+      <element       name            = 'CitationLink'
+                     type            = 'CitationLink'/>
+      <element       name            = 'CitationRef'
+                     type            = 'CitationRef'/>
+      <element       name            = 'CitationFragmentLink'
+                     type            = 'CitationFragmentLink'/>
+      <element       name            = 'CitationFragmentRef'
+                     type            = 'CitationFragmentRef'/>
+      <element       name            = 'SummaryRef'
+                     type            = 'SummaryRef'/>
+      <element       name            = 'SummaryFragmentRef'
+                     type            = 'SummaryFragmentRef'/>
+      <element       name            = 'SummaryLink'
+                     type            = 'SummaryLink'/>
+      <element       name            = 'SummaryFragmentLink'
+                     type            = 'SummaryFragmentLink'/>
+      <element       name            = 'ProtocolRef'
+                     type            = 'ProtocolRef'/>
       <element       name            = 'DrugName'
                      type            = 'PhraseLevel'/>
       <element       name            = 'InterventionName'
                      type            = 'PhraseLevel'/>
-      <element       name            = 'GlossaryTerm'
-                     type            = 'CdrHref'/>
-      <element       name            = 'ExternalLink'
-                     type            = 'ExternalLink'/>
+      <element       name            = 'GlossaryTermRef'
+                     type            = 'GlossaryRef'/>
+      <element       name            = 'GlossaryTermLink'
+                     type            = 'GlossaryLink'/>
+      <element       name            = 'ExternalRef'
+                     type            = 'ExternalRef'/>
       <element       name            = 'Quote'
                      type            = 'Quote'/>
       <element       name            = 'Note'
@@ -199,7 +222,7 @@
       <group         ref             = 'PhraseElements'/>
       <group         ref             = 'CommonTextElements'/>
     </choice>
-    <attribute       name            = 'CdrCallingId'
+    <attribute       name            = 'cdr:id'
                      type            = 'string'
                      minOccurs       = '0'/>
   </complexType>
@@ -243,7 +266,7 @@
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
     </sequence>
-    <attribute       name            = 'CdrCallingId'
+    <attribute       name            = 'cdr:id'
                      type            = 'string'
                      minOccurs       = '0'/>
   </complexType>
@@ -276,33 +299,33 @@
       <element       name            = 'Email'
                      type            = 'Email'
                      minOccurs       = '0'/>
-      <element       name            = 'URI'
-                     type            = 'string'
+      <element       name            = 'WebSite'
+                     type            = 'ExternalRef'
                      minOccurs       = '0'/>
     </sequence>
-    <attribute       name            = 'CdrCallingId'
+    <attribute       name            = 'cdr:id'
                      type            = 'string'
                      minOccurs       = '0'/>
   </complexType>
 
   <complexType       name            = 'Email'>
-    <sequence>
-      <element       name            = 'EmailString'
-                     type            = 'string'/>
-    </sequence>
-    <attribute       name            = 'Public'
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'Public'
                      type            = 'No'
                      minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
   <complexType       name            = 'Phone'>
-    <sequence>
-      <element       name            = 'PhoneString'
-                     type            = 'string'/>
-    </sequence>
-    <attribute       name            = 'Public'
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'Public'
                      type            = 'No'
                      minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
   <complexType       name            = 'PostalAddress'>
@@ -310,14 +333,14 @@
       <element       name            = 'Street'
                      type            = 'string'
                      minOccurs       = '0'
-                     maxOccurs       = '3'/>
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'City'
                      type            = 'string'/>
       <element       name            = 'CitySuffix'
                      type            = 'string'
                      minOccurs       = '0'/>
       <element       name            = 'PoliticalUnit_State'
-                     type            = 'GeographicEntityLink'
+                     type            = 'GeographicEntityFragmentLink'
                      minOccurs       = '0'/>
       <element       name            = 'Country'
                      type            = 'GeographicEntityLink'
@@ -361,7 +384,7 @@
     <attribute       name            = 'Style'
                      type            = 'ItemizedListStyle'
                      minOccurs       = '0'/>
-    <attribute       name            = 'CdrCallingId'
+    <attribute       name            = 'cdr:id'
                      type            = 'string'
                      minOccurs       = '0'/>
     <attribute       name            = 'Compact'
@@ -380,7 +403,7 @@
     <attribute       name            = 'Style'
                      type            = 'OrderedListStyle'
                      minOccurs       = '0'/>
-    <attribute       name            = 'CdrCallingId'
+    <attribute       name            = 'cdr:id'
                      type            = 'string'
                      minOccurs       = '0'/>
   </complexType>
@@ -391,8 +414,8 @@
         <attribute   name            = 'cdr:ref'
                      type            = 'DocId'
                      minOccurs       = '0'/>
-        <attribute   name            = 'ExternalLink'
-                     type            = 'anyURI'
+        <attribute   name            = 'ExternalRef'
+                     type            = 'ExternalRef'
                      minOccurs       = '0'/>
       </extension>
     </simpleContent>
@@ -421,10 +444,10 @@
     </simpleContent>
   </complexType>
 
-  <complexType       name            = 'ExternalLink'>
+  <complexType       name            = 'ExternalRef'>
     <simpleContent>
       <extension     base            = 'string'>
-        <attribute   name            = 'href'
+        <attribute   name            = 'cdr:xref'
                      type            = 'anyURI'/>
       </extension>
     </simpleContent>
@@ -440,11 +463,71 @@
     </simpleContent>
   </complexType>
 
+  <complexType       name            = 'ProtocolFragmentLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
+                     type            = 'DocIdWithFragment'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'ProtocolRef'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:href'
+                     type            = 'DocId'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'ProtocolFragmentRef'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:href'
+                     type            = 'DocIdWithFragment'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
   <complexType       name            = 'SummaryLink'>
     <simpleContent>
       <extension     base            = 'string'>
         <attribute   name            = 'cdr:ref'
                      type            = 'DocId'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'SummaryFragmentLink'>
+        <attribute   name            = 'cdr:ref'
+      <extension     base            = 'string'>
+        <attribute   name            = 'PdqKey'
+                     type            = 'DocIdWithFragment'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'SummaryRef'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:href'
+                     type            = 'DocId'
+                     minOccurs       = '0'/>
+  </complexType>
+
+</schema>
+
+  <complexType       name            = 'SummaryFragmentRef'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:href'
+                     type            = 'DocIdWithFragment'
                      minOccurs       = '0'/>
       </extension>
     </simpleContent>
@@ -460,6 +543,36 @@
     </simpleContent>
   </complexType>
 
+  <complexType       name            = 'OrganizationFragmentLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
+                     type            = 'DocIdWithFragment'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'OrganizationRef'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:href'
+                     type            = 'DocId'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'OrganizationFragmentRef'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:href'
+                     type            = 'DocIdWithFragment'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
   <complexType       name            = 'PersonLink'>
     <simpleContent>
       <extension     base            = 'string'>
@@ -470,10 +583,50 @@
     </simpleContent>
   </complexType>
 
+  <complexType       name            = 'PersonFragmentLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
+                     type            = 'DocIdWithFragment'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'PersonRef'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:href'
+                     type            = 'DocId'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'PersonFragmentRef'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:href'
+                     type            = 'DocIdWithFragment'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
   <complexType       name            = 'TerminologyLink'>
     <simpleContent>
       <extension     base            = 'string'>
         <attribute   name            = 'cdr:ref'
+                     type            = 'DocId'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'TerminologyRef'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:href'
                      type            = 'DocId'
                      minOccurs       = '0'/>
       </extension>
@@ -490,11 +643,91 @@
     </simpleContent>
   </complexType>
 
+  <complexType       name            = 'GeographicEntityFragmentLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
+                     type            = 'DocIdWithFragment'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
   <complexType       name            = 'CitationLink'>
     <simpleContent>
       <extension     base            = 'string'>
         <attribute   name            = 'cdr:ref'
                      type            = 'DocId'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'CitationFragmentLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
+                     type            = 'DocIdWithFragment'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'CitationRef'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:href'
+                     type            = 'DocId'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'CitationFragmentRef'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:href'
+                     type            = 'DocIdWithFragment'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'MiscellaneousLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
+                     type            = 'DocId'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'MiscellaneousFragmentLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
+                     type            = 'DocIdWithFragment'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'MiscellaneousRef'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:href'
+                     type            = 'DocId'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'MiscellaneousFragmentRef'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:href'
+                     type            = 'DocIdWithFragment'
                      minOccurs       = '0'/>
       </extension>
     </simpleContent>
@@ -511,6 +744,19 @@
   </complexType>
 
   <complexType       name            = 'GlossaryLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
+                     type            = 'DocId'
+                     minOccurs       = '0'/>
+        <attribute   name            = 'PdqKey'
+                     type            = 'integer'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'GlossaryRef'>
     <simpleContent>
       <extension     base            = 'string'>
         <attribute   name            = 'cdr:href'
@@ -537,7 +783,7 @@
                      maxOccurs       = 'unbounded'/>
       </choice>
     </sequence>
-    <attribute       name            = 'CdrCallingId'
+    <attribute       name            = 'cdr:id'
                      type            = 'string'
                      minOccurs       = '0'/>
   </complexType>
@@ -559,9 +805,6 @@
                      type            = 'string'/>
       <element       name            = 'ActionDate'
                      type            = 'date'/>
-      <element       name            = 'PersonAssigned'
-                     type            = 'string'
-                     minOccurs       = '0'/>
       <element       name            = 'Comment'
                      type            = 'string'
                      minOccurs       = '0'/>
@@ -593,7 +836,7 @@
     <attribute       name            = 'TabStyle'
                      type            = 'NMTOKEN'
                      minOccurs       = '0'/>
-    <attribute       name            = 'CdrCallingId'
+    <attribute       name            = 'cdr:id'
                      type            = 'string'
                      minOccurs       = '0'/>
   </complexType>
@@ -861,6 +1104,12 @@
   <simpleType        name            = 'DocId'>
     <restriction     base            = 'string'>
       <pattern       value           = 'CDR[0-9]{10}'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'DocIdWithFragment'>
+    <restriction     base            = 'string'>
+      <pattern       value           = 'CDR[0-9]{10}#[A-Za-z_]\S*'/>
     </restriction>
   </simpleType>
 
