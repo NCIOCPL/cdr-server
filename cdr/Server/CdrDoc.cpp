@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.39 2002-07-15 20:08:21 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.40 2002-07-24 15:09:35 bkline Exp $
  *
  */
 
@@ -33,6 +33,8 @@
 
 // XXXX For debugging
 #include <iostream>
+#define CDR_TIMINGS 1
+#include "CdrTiming.h"
 
 static cdr::String CdrPutDoc (cdr::Session&, const cdr::dom::Node&,
                               cdr::db::Connection&, bool);
@@ -40,12 +42,12 @@ static cdr::String CdrPutDoc (cdr::Session&, const cdr::dom::Node&,
 static void auditDoc (cdr::db::Connection&, int, int, cdr::String,
                       cdr::String, cdr::String);
 
-static void addSingleQueryTerm (cdr::db::Connection&, int, cdr::String&,
-                                cdr::String&, wchar_t *);
-
 static void delQueryTerms (cdr::db::Connection&, int);
 
 static cdr::String createFragIdTransform (cdr::db::Connection&, int);
+
+static void rememberQueryTerm(int, cdr::String&, cdr::String&, wchar_t*,
+                              cdr::QueryTermSet&);
 
 // String constants used as substitute titles
 #define MALFORMED_DOC_TITLE L"!Malformed document - no title can be generated"
@@ -498,6 +500,9 @@ static cdr::String CdrPutDoc (
     cdr::db::Connection& dbConn,
     bool newrec
 ) {
+    MAKE_TIMER(putDocTimer);
+    MAKE_TIMER(incrementalTimer);
+
     bool cmdCheckIn,            // True=Check in doc, else doc still locked
          cmdVersion,            // True=Create new version in version control
          cmdPublishVersion,     // True=New version ctl version is publishable
@@ -619,6 +624,11 @@ static cdr::String CdrPutDoc (
 
         child = child.getNextSibling ();
     }
+    if (!cmdValidate) {
+        cmdSchemaVal = false;
+        cmdLinkVal   = false;
+    }
+    SHOW_ELAPSED("command parsed", incrementalTimer);
 
     // Construct a doc object containing all the data
     // The constructor may look for additonal elements in the DocCtl
@@ -626,6 +636,7 @@ static cdr::String CdrPutDoc (
     if (docNode == 0)
         throw cdr::Exception(L"CdrPutDoc: No 'CdrDoc' element in transaction");
     cdr::CdrDoc doc (dbConn, docNode);
+    SHOW_ELAPSED("CdrDoc constructed", incrementalTimer);
 
     // Check user authorizations
     cdr::String action = newrec ? L"ADD DOCUMENT" : L"MODIFY DOCUMENT";
@@ -679,6 +690,7 @@ static cdr::String CdrPutDoc (
             throw cdr::Exception(L"User not authorized to create the first "
                                  L"publishable version for this document");
     }
+    SHOW_ELAPSED("permissions checked", incrementalTimer);
 
     // Does document id attribute match expected action type?
     if (doc.getId() && newrec)
@@ -690,6 +702,7 @@ static cdr::String CdrPutDoc (
 
     // Run all the custom pre-processing routines.
     doc.preProcess(cmdValidate);
+    SHOW_ELAPSED("preprocessing completed", incrementalTimer);
 
     // Start transaction - everything is serialized from here on
     // If any called function throws an exception, CdrServer
@@ -711,6 +724,7 @@ static cdr::String CdrPutDoc (
         if (cmdVersion || !cmdCheckIn)
             cdr::checkOut (session, doc.getId(), dbConn,
                            L"Temp checkout by addDoc", false);
+        SHOW_ELAPSED("new doc stored", incrementalTimer);
     }
 
     else {
@@ -755,6 +769,7 @@ static cdr::String CdrPutDoc (
             throw cdr::Exception (L"User " + session.getUserName()
                     + L" has not checked out this document.  "
                     L"Storing document not allowed");
+        SHOW_ELAPSED("finished checking lock status", incrementalTimer);
     }
 
     // Perform validation if requested
@@ -770,6 +785,7 @@ static cdr::String CdrPutDoc (
         // Will set valid_status and valid_date in the doc object
         // Will overwrite whatever is there
         cdr::execValidateDoc (doc,cdr::UpdateUnconditionally,validationTypes);
+        SHOW_ELAPSED("validation completed", incrementalTimer);
     }
 
     if (cmdSetLinks && !cmdLinkVal) {
@@ -779,19 +795,23 @@ static cdr::String CdrPutDoc (
         // Call to parseAvailable is done first to check if the document
         //   was already parsed, or if not, parse it.  It also
         //   handles revision filtering before the parse.
-        if (cmdSetLinks && doc.parseAvailable())
+        if (doc.parseAvailable())
             cdr::link::CdrSetLinks (doc.getDocumentElement(), dbConn,
                                     doc.getId(), doc.getTextDocType(),
                                     cdr::UpdateLinkTablesOnly,
                                     doc.getErrList());
+        SHOW_ELAPSED("setting links", incrementalTimer);
     }
 
     // If we haven't already done so, store it
-    if (!newrec)
+    if (!newrec) {
         doc.Store ();
+        SHOW_ELAPSED("document replaced", incrementalTimer);
+    }
 
     // Add support for queries.
     doc.updateQueryTerms();
+    SHOW_ELAPSED("back from updateQueryTerms", incrementalTimer);
 
     // A <Comment> may have been specified to store in the document table,
     //   and a <Reason> to store in the version table.
@@ -805,6 +825,7 @@ static cdr::String CdrPutDoc (
     //   date-time, as taken from the audit trail.
     auditDoc (dbConn, doc.getId(), session.getUserId(), action,
               L"CdrPutDoc", cmdReason);
+    SHOW_ELAPSED("action audited", incrementalTimer);
 
     // Checkin must be performed either to checkin or version the doc.
     // If versioning without long term checkin, then an immediate
@@ -827,11 +848,13 @@ static cdr::String CdrPutDoc (
         if (!cmdCheckIn)
             cdr::checkOut (session, doc.getId(), dbConn,
                            L"Continue editing after versioning");
+        SHOW_ELAPSED("versioning/checkin done", incrementalTimer);
     }
 
     // If we got here okay commit all updates
     dbConn.commit();
     dbConn.setAutoCommit (true);
+    SHOW_ELAPSED("changes committed", incrementalTimer);
 
     // Return string with errors, etc.
     cdr::String rtag = newrec ? L"Add" : L"Rep";
@@ -842,6 +865,8 @@ static cdr::String CdrPutDoc (
         resp += cdr::getDocString(doc.getTextId(), dbConn, true, true) + L"\n";
 
     resp += L"  </Cdr" + rtag + L"DocResp>\n";
+    SHOW_ELAPSED("command response ready", incrementalTimer);
+    SHOW_ELAPSED("total elapsed time for CdrPutDoc", putDocTimer);
     return resp;
 
 } // CdrPutDoc
@@ -1304,12 +1329,14 @@ cdr::String cdr::reIndexDoc (
     return (L"<CdrReindexResp/>");
 }
 
-
 /**
  * Replaces the rows in the query_term table for the current document.
  */
 void cdr::CdrDoc::updateQueryTerms()
 {
+    MAKE_TIMER(queryTermsTimer);
+    QueryTermSet oldTerms, newTerms;
+
     // Sanity check.
     if (Id == 0 || DocType == 0)
         return;
@@ -1330,11 +1357,26 @@ void cdr::CdrDoc::updateQueryTerms()
             paths.insert(path);
         }
     }
+    SHOW_ELAPSED("getting query_term defs", queryTermsTimer);
 
-    // Delete old query terms
-    delQueryTerms (docDbConn, Id);
+    // Gather existing query term rows.
+    cdr::db::PreparedStatement oqtStmt = docDbConn.prepareStatement(
+            "SELECT path, value, int_val, node_loc"
+            "  FROM query_term                    "
+            " WHERE doc_id = ?                    ");
+    oqtStmt.setInt(1, Id);
+    cdr::db::ResultSet oqtResultSet = oqtStmt.executeQuery();
+    while (oqtResultSet.next()) {
+        cdr::String path = oqtResultSet.getString(1);
+        cdr::String value = oqtResultSet.getString(2);
+        cdr::Int    int_val = oqtResultSet.getInt(3);
+        cdr::String node_loc = oqtResultSet.getString(4);
+        QueryTerm qt(Id, path, value, int_val, node_loc);
+        oldTerms.insert(qt);
+    }
+    SHOW_ELAPSED("gathered old query terms", queryTermsTimer);
 
-    // Add rows for query terms.
+    // Find out which rows need to be in the query_term table now.
     if (!paths.empty()) {
 
         // Find or create a parse of the document
@@ -1352,94 +1394,70 @@ void cdr::CdrDoc::updateQueryTerms()
             wchar_t ordPosPath[MAX_INDEX_ELEMENT_DEPTH * INDEX_POS_WIDTH + 1];
             ordPosPath[0] = (wchar_t) '\0';
 
-            // Add query terms for the entire document tree
+            // Find query terms for the entire document tree
             // Indexing of ordinal position paths will begin at the level
             //   below the document node.  Since we start at the document
             //   node, we pass a depth of -1 here.
-            // XXXX - BUG - XXXX
-            //   THIS USED TO WORK BUT NOW THROWS AN UNEXPECTED
-            //   EXCEPTION ON node.getNodeName()
-            //   SOMETHING MAY BE WRONG IN parseAvailable()
-            //   OR SOME RELATED FUNCTION
-            addQueryTerms(cdr::String(L""), node.getNodeName(), node, paths,
-                          ordPosPath, -1);
-        }
-    }
-}
-
-// See CdrDoc.h for interface documentation
-
-void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
-                                const cdr::String& nodeName,
-                                const cdr::dom::Node& node,
-                                const StringSet& paths,
-                                wchar_t *ordPosPathp,
-                                int depth)
-{
-    // Create full paths to check in the path lookup table
-    cdr::String fullPath = parentPath + L"/" + nodeName;
-    cdr::String wildPath = cdr::String (L"//") + nodeName;
-
-    // Is either possible description of our current node in the table?
-    if (paths.find(fullPath) != paths.end() ||
-        paths.find(wildPath) != paths.end()) {
-
-        // Add the absolute path to the content to the query table
-        cdr::String value = cdr::dom::getTextContent(node);
-        addSingleQueryTerm (docDbConn, Id, fullPath, value, ordPosPathp);
-    }
-
-    // Attributes of the node might also be indexed.
-    // Check each of them
-    cdr::dom::NamedNodeMap nMap = node.getAttributes();
-    unsigned int len = nMap.getLength();
-    for (unsigned int i=0; i<len; i++) {
-
-        // Do we have an attribute?
-        cdr::dom::Node aNode = nMap.item (i);
-        if (aNode.getNodeType() == cdr::dom::Node::ATTRIBUTE_NODE) {
-
-            // Search for it, and it's wild counterpart
-            cdr::String name = aNode.getNodeName();
-            cdr::String fullAttrPath = fullPath + L"/@" + name;
-            cdr::String wildAttrPath = cdr::String (L"//@") + name;
-
-            if (paths.find(fullAttrPath) != paths.end() ||
-                paths.find(wildAttrPath) != paths.end()) {
-                    cdr::String value = aNode.getNodeValue();
-                    addSingleQueryTerm (docDbConn, Id, fullAttrPath, value,
-                                        ordPosPathp);
-            }
+            collectQueryTerms(cdr::String(L""), node.getNodeName(), node,
+                              paths, ordPosPath, -1, newTerms);
+            SHOW_ELAPSED("finished gathering new query terms", queryTermsTimer);
         }
     }
 
-    // Recursively add terms for sub-elements.
-    cdr::dom::Node child = node.getFirstChild();
+    // Determine which rows need to be deleted, which need to be added.
+    QueryTermSet wantedTerms, unwantedTerms;
+    QueryTermSet::const_iterator i;
+    QueryTermSet* termsToInsert = &wantedTerms;
+    for (i = newTerms.begin(); i != newTerms.end(); ++i)
+        if (oldTerms.find(*i) == oldTerms.end())
+            wantedTerms.insert(*i);
+    for (i = oldTerms.begin(); i != oldTerms.end(); ++i)
+        if (newTerms.find(*i) == newTerms.end())
+            unwantedTerms.insert(*i);
 
-    // Sub-elements are numbered in the ordinal position path beginning at 0
-    int ordPos = 0;
-
-    // They are at a level one deeper than the passed level
-    ++depth;
-    if (depth >= MAX_INDEX_ELEMENT_DEPTH)
-        throw cdr::Exception (
-                L"CdrDoc: Indexing element beyond max allowed depth");
-
-    while (child != 0) {
-
-        // If child is an element
-        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
-
-            // Construct the ordinal position path
-            swprintf (ordPosPathp + (depth * INDEX_POS_WIDTH), L"%0*X",
-                      INDEX_POS_WIDTH, ordPos);
-            addQueryTerms (fullPath, child.getNodeName(), child, paths,
-                           ordPosPathp, depth);
-            ++ordPos;
-        }
-
-        child = child.getNextSibling();
+    // Sometimes it's just faster to wipe out the rows and start fresh.
+    if (unwantedTerms.size() > 1000 && 
+        unwantedTerms.size() > newTerms.size() / 2) {
+        delQueryTerms(docDbConn, Id);
+        termsToInsert = &newTerms;
+        SHOW_ELAPSED("finished wholesale term deletion", queryTermsTimer);
     }
+    else {
+
+        // Wipe out the unwanted rows one by one.
+        cdr::db::PreparedStatement delStmt = docDbConn.prepareStatement(
+                " DELETE FROM query_term   "
+                "       WHERE doc_id   = ? "
+                "         AND path     = ? "
+                "         AND value    = ? "
+                "         AND node_loc = ? ");
+        for (i = unwantedTerms.begin(); i != unwantedTerms.end(); ++i) {
+            delStmt.setInt   (1, i->doc_id);
+            delStmt.setString(2, i->path);
+            delStmt.setString(3, i->value);
+            delStmt.setString(4, i->node_loc);
+            delStmt.executeUpdate();
+        }
+        SHOW_ELAPSED("finished selective term deletion", queryTermsTimer);
+    }
+
+    // Insert new rows.
+    cdr::db::PreparedStatement insStmt = docDbConn.prepareStatement(
+            " INSERT INTO query_term                               "
+            "             (doc_id, path, value, int_val, node_loc) "
+            "      VALUES (?, ?, ?, ?, ?)                          ");
+    for (i = termsToInsert->begin(); i != termsToInsert->end(); ++i) {
+        insStmt.setInt   (1, i->doc_id);
+        insStmt.setString(2, i->path);
+        insStmt.setString(3, i->value);
+        insStmt.setInt   (4, i->int_val);
+        insStmt.setString(5, i->node_loc);
+        insStmt.executeUpdate();
+    }
+    SHOW_ELAPSED((cdr::String("finished inserting ") +
+                  cdr::String::toString(termsToInsert->size()) +
+                  cdr::String(" new terms")).toUtf8().c_str(), 
+                  queryTermsTimer);
 }
 
 // Routines to modify the document before saving or validating.
@@ -1840,56 +1858,6 @@ static cdr::String createFragIdTransform (cdr::db::Connection& conn,
 }
 
 /**
- * Add a single query term + value to the database.
- *
- *  @param conn         Connection string
- *  @param doc_id       Document id
- *  @param path         Absolute XPath path (element and attr ids) to this
- *                      value.
- *  @param value        Value associated with the key.
- */
-
-static void addSingleQueryTerm (cdr::db::Connection& conn, int doc_id,
-                                cdr::String& path, cdr::String& value,
-                                wchar_t *ordPosPathp)
-{
-    // If the value has any numerics in it, index them as numerics
-    const wchar_t *p = value.c_str();
-    int           intVal = 0;
-    bool          null = true;
-
-    while (*p) {
-        if (iswdigit(*p)) {
-            cdr::String temp (p);
-            intVal = temp.getInt();
-            null   = false;
-            break;
-        }
-        ++p;
-    }
-
-    // Add the absolute path to this term to the query table
-    const char* insert = "INSERT INTO query_term"
-                         "  (doc_id, path, node_loc, value, int_val)"
-                         "VALUES(?,?,?,?,?)";
-    cdr::db::PreparedStatement stmt = conn.prepareStatement(insert);
-    stmt.setInt(1, doc_id);
-    stmt.setString(2, path);
-    stmt.setString(3, ordPosPathp);
-    stmt.setString(4, value);
-
-    // Actual integer value or null if no numerics in value
-    if (null) {
-        cdr::Int nullInt (null);
-        stmt.setInt(5, nullInt);
-    }
-    else
-        stmt.setInt(5, intVal);
-
-    stmt.executeQuery();
-}
-
-/**
  * Delete all query terms from the database.
  *
  * Called before updating them, or when a doc is deleted.
@@ -1904,4 +1872,114 @@ static void delQueryTerms (cdr::db::Connection& conn, int doc_id)
     char delQuery[80];
     sprintf(delQuery, "DELETE query_term WHERE doc_id = %d", doc_id);
     delStmt.executeUpdate(delQuery);
+}
+
+/**
+ * Save one query term in the set of query terms for the document.
+ *
+ *  @param docId        document ID.
+ *  @param path         Absolute XPath path (element and attr ids) to this
+ *                      value.
+ *  @param value        Value associated with the key.
+ *  @param ordPosPathp  hex encoding of the node's position in the document.
+ *  @param qtSet        set of query terms to which to add this term.
+ */
+void rememberQueryTerm(
+        int docId,
+        cdr::String& path, 
+        cdr::String& value,
+        wchar_t *ordPosPathp,
+        cdr::QueryTermSet& qtSet
+) {
+    // If the value has any numerics in it, index them as numerics
+    const wchar_t *p = value.c_str();
+    cdr::Int intVal(true);
+
+    while (*p) {
+        if (iswdigit(*p)) {
+            cdr::String temp (p);
+            intVal = cdr::Int(temp.getInt());
+            break;
+        }
+        ++p;
+    }
+
+    cdr::QueryTerm qt(docId, path, value, intVal, ordPosPathp);
+    qtSet.insert(qt);
+}
+
+// Recursively collect all the query terms present in the document.
+void cdr::CdrDoc::collectQueryTerms(
+        const cdr::String& parentPath,
+        const cdr::String& nodeName,
+        const cdr::dom::Node& node,
+        const cdr::StringSet& paths,
+        wchar_t *ordPosPathp,
+        int depth,
+        QueryTermSet& qtSet)
+{
+    // Create full paths to check in the path lookup table
+    cdr::String fullPath = parentPath + L"/" + nodeName;
+    cdr::String wildPath = cdr::String (L"//") + nodeName;
+
+    // Is either possible description of our current node in the table?
+    if (paths.find(fullPath) != paths.end() ||
+        paths.find(wildPath) != paths.end()) {
+
+        // Add the absolute path to the content to the query table
+        cdr::String value = cdr::dom::getTextContent(node);
+        rememberQueryTerm(Id, fullPath, value, ordPosPathp, qtSet);
+    }
+
+    // Attributes of the node might also be indexed.
+    // Check each of them
+    cdr::dom::NamedNodeMap nMap = node.getAttributes();
+    unsigned int len = nMap.getLength();
+    for (unsigned int i=0; i<len; i++) {
+
+        // Do we have an attribute?
+        cdr::dom::Node aNode = nMap.item (i);
+        if (aNode.getNodeType() == cdr::dom::Node::ATTRIBUTE_NODE) {
+
+            // Search for it, and its wild counterpart
+            cdr::String name = aNode.getNodeName();
+            cdr::String fullAttrPath = fullPath + L"/@" + name;
+            cdr::String wildAttrPath = cdr::String (L"//@") + name;
+
+            if (paths.find(fullAttrPath) != paths.end() ||
+                paths.find(wildAttrPath) != paths.end()) {
+                    cdr::String value = aNode.getNodeValue();
+                    rememberQueryTerm(Id, fullAttrPath, value,
+                                      ordPosPathp, qtSet);
+            }
+        }
+    }
+
+    // Recursively add terms for sub-elements.
+    cdr::dom::Node child = node.getFirstChild();
+
+    // Sub-elements are numbered in the ordinal position path beginning at 0
+    int ordPos = 0;
+
+    // They are at a level one deeper than the passed level
+    ++depth;
+    if (depth >= cdr::MAX_INDEX_ELEMENT_DEPTH)
+        throw cdr::Exception (
+                L"CdrDoc: Indexing element beyond max allowed depth");
+
+    while (child != 0) {
+
+        // If child is an element
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+
+            // Construct the ordinal position path
+            swprintf (ordPosPathp + (depth * cdr::INDEX_POS_WIDTH), L"%0*X",
+                      cdr::INDEX_POS_WIDTH, ordPos);
+            collectQueryTerms (fullPath, child.getNodeName(), child, 
+                               paths, ordPosPathp, depth, qtSet);
+            ++ordPos;
+        }
+
+        child = child.getNextSibling();
+    }
 }

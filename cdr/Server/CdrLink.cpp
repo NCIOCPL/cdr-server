@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.17 2002-05-08 20:31:24 pzhang Exp $
+ * $Id: CdrLink.cpp,v 1.18 2002-07-24 15:09:36 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2002/05/08 20:31:24  pzhang
+ * Added implementation of getSearchLinksResp.
+ *
  * Revision 1.16  2002/04/17 19:19:07  bkline
  * Eliminated duplicate space in error message.
  *
@@ -98,6 +101,44 @@
 #include "CdrDbResultSet.h"
 #include "CdrValidateDoc.h"
 #include "CdrLink.h"
+#define CDR_TIMINGS
+#include "CdrTiming.h"
+
+// Object representing one row in the link_net table.
+struct LinkNetRow {
+    int         link_type;
+    int         source_doc;
+    cdr::String source_elem;
+    cdr::Int    target_doc;
+    cdr::String target_frag;
+    cdr::String url;
+    LinkNetRow(int t, int sd, const cdr::String& se, const cdr::Int& td,
+               const cdr::String& tf, const cdr::String& u) 
+        : link_type(t), source_doc(sd), source_elem(se), target_doc(td),
+          target_frag(tf), url(u) {}
+    bool operator==(const LinkNetRow& r) const {
+        return link_type   == r.link_type   &&
+               source_doc  == r.source_doc  &&
+               source_elem == r.source_elem &&
+               target_doc  == r.target_doc  &&
+               target_frag == r.target_frag &&
+               url         == r.url;
+    }
+    bool operator<(const LinkNetRow& r) const {
+        if (source_doc  < r.source_doc)  return true;
+        if (source_doc  > r.source_doc)  return false;
+        if (link_type   < r.link_type)   return true;
+        if (link_type   > r.link_type)   return false;
+        if (source_elem < r.source_elem) return true;
+        if (source_elem > r.source_elem) return false;
+        if (target_doc  < r.target_doc)  return true;
+        if (target_doc  > r.target_doc)  return false;
+        if (target_frag < r.target_frag) return true;
+        if (target_frag > r.target_frag) return false;
+        return url < r.url;
+    }
+};
+typedef std::set<LinkNetRow> LinkNetRowSet;
 
 // Prototypes for internal functions
 static int linkTree (cdr::db::Connection&, const cdr::dom::Node&,
@@ -126,7 +167,6 @@ static std::string S_delLinkQuery[] = {
     "DELETE FROM link_properties WHERE link_id = ?",
     ""
 };
-
 
 /**
  * Constructor for a CdrLink object
@@ -663,6 +703,7 @@ int cdr::link::CdrSetLinks (
     int docType,                    // Internal id of docType
         err_count;                  // Number of errors found
 
+    MAKE_TIMER(setLinksTimer);
 
     // Get internal form of doctype
     std::string qry = "SELECT id FROM doc_type WHERE name = ?";
@@ -673,10 +714,12 @@ int cdr::link::CdrSetLinks (
     if (!rs.next())
         throw cdr::Exception (L"CdrSetLinks: Unknown doctype");
     docType = rs.getInt (1);
+    SHOW_ELAPSED("doctype retrieved", setLinksTimer);
 
     // Build list of links found in this doc
     linkTree (dbConn, xmlNode, ui, docType, docTypeStr,
               lnkList, uniqSet, fragSet, errList);
+    SHOW_ELAPSED("back from linkTree", setLinksTimer);
 
     // Unless we're not validating
     if (validRule != cdr::UpdateLinkTablesOnly) {
@@ -690,12 +733,14 @@ int cdr::link::CdrSetLinks (
                 errList.push_back (i->dumpString (dbConn));
             ++i;
         }
+        SHOW_ELAPSED("links validated", setLinksTimer);
 
         // Check for missing fragments
         // This is not part of validateLink because the errors are not
         //   found in a link, but rather in the absence of a fragment
         err_count += checkMissedFrags (dbConn, ui, validRule,
                                        fragSet, errList);
+        SHOW_ELAPSED("missing fragments checked", setLinksTimer);
     }
 
     // Update the link net if required
@@ -712,6 +757,7 @@ int cdr::link::CdrSetLinks (
         updateFragList (dbConn, ui, fragSet);
 
         dbConn.setAutoCommit (oldCommitted);
+        SHOW_ELAPSED("back from setAutoCommit()", setLinksTimer);
     }
 
     // XXXX
@@ -727,6 +773,7 @@ int cdr::link::CdrSetLinks (
     //      text to be deleted when copying from its input to its output.
     // XXXX
 
+    SHOW_ELAPSED("leaving CdrSetLinks", setLinksTimer);
     return err_count;
 
 } // CdrSetLinks()
@@ -1410,7 +1457,6 @@ static int linkTree (
 
 } // linkTree()
 
-
 /**
  * Update the link_net table in the database.
  *
@@ -1427,54 +1473,106 @@ void cdr::link::updateLinkNet (
     int                  docId,
     cdr::link::LnkList&  lnkList
 ) {
-    std::string qry;                    // SQL query for database access
+    MAKE_TIMER(linkTimer);
 
-
-    // This is a brute force version
-    // We may be able to optimize this if required by deleting only those
-    //   entries which are no longer accurate and adding only those which
-    //   are new.
-    // That might provide a significant performance improvement for edited
-    //   records with large numbers of links.
-
-    // Delete all existing records linking out from the current document
-    qry = "DELETE FROM link_net WHERE source_doc = ?";
-    cdr::db::PreparedStatement stmt = conn.prepareStatement (qry);
-    stmt.setInt (1, docId);
-    cdr::db::ResultSet rs = stmt.executeQuery();
-
-    // Add the new ones, one at a time
-    cdr::link::LnkList::iterator i = lnkList.begin();
-    int err_count = 0;
-    while (i != lnkList.end()) {
-
-        // If this is a link to be saved (e.g., not a duplicate)
-        if (i->getSaveLink()) {
-            qry = "INSERT INTO link_net (link_type, source_doc, source_elem, "
-                  "  target_doc, target_frag, url) "
-                  "VALUES (?, ?, ?, ?, ?, ?)";
-
-            cdr::db::PreparedStatement stmt = conn.prepareStatement (qry);
-            stmt.setInt    (1, i->getType());
-            stmt.setInt    (2, i->getSrcId());
-            stmt.setString (3, i->getSrcField());
-            stmt.setInt    (4, i->getTrgId());
-            if (i->getTrgFrag().size() == 0)
-                stmt.setString (5, cdr::String (true));
-            else
-                stmt.setString (5, i->getTrgFrag());
-            stmt.setString (6, i->getRef());
-            cdr::db::ResultSet rs = stmt.executeQuery();
-        }
-
-        // If it's a link for which any content is just denormalized data
-        //   we could get rid of the data here
-        // See XXXX comment above regarding this issue.
-        // if (i->getStyle() == cdr::link::ref) {;}
-
-        // Next link
-        ++i;
+    // Build a set of the rows which should be in the table.
+    LinkNetRowSet newRows, oldRows, wantedRows, unwantedRows;
+    cdr::link::LnkList::iterator linkIter;
+    for (linkIter = lnkList.begin(); linkIter != lnkList.end(); ++linkIter) {
+        cdr::String targetFrag(true);
+        if (linkIter->getTrgFrag().size() > 0)
+            targetFrag = linkIter->getTrgFrag();
+        LinkNetRow row(linkIter->getType(),
+                       linkIter->getSrcId(),
+                       linkIter->getSrcField(),
+                       linkIter->getTrgId(),
+                       targetFrag,
+                       linkIter->getRef());
+        newRows.insert(row);
     }
+
+    // Build a set of the rows which are in the table now.
+    cdr::db::PreparedStatement getLinksStmt = conn.prepareStatement(
+            "SELECT link_type, source_elem, target_doc, target_frag, url"
+            "  FROM link_net                                            "
+            " WHERE source_doc = ?                                      ");
+    getLinksStmt.setInt(1, docId);
+    cdr::db::ResultSet getLinksResults = getLinksStmt.executeQuery();
+    while (getLinksResults.next()) {
+        int         type     = getLinksResults.getInt   (1);
+        cdr::String elem     = getLinksResults.getString(2);
+        cdr::Int    targDoc  = getLinksResults.getInt   (3);
+        cdr::String targFrag = getLinksResults.getString(4);
+        cdr::String url      = getLinksResults.getString(5);
+        LinkNetRow row(type, docId, elem, targDoc, targFrag, url);
+        oldRows.insert(row);
+    }
+
+    // Build sets for the deltas (rows to be inserted, deleted).
+    LinkNetRowSet::const_iterator rsi;
+    for (rsi = newRows.begin(); rsi != newRows.end(); ++rsi)
+        if (oldRows.find(*rsi) == oldRows.end())
+            wantedRows.insert(*rsi);
+    for (rsi = oldRows.begin(); rsi != oldRows.end(); ++rsi)
+        if (newRows.find(*rsi) == newRows.end())
+            unwantedRows.insert(*rsi);
+    SHOW_ELAPSED("built delta link sets", linkTimer);
+
+    // If delta too large, just start from scratch.
+    LinkNetRowSet* rowsToInsert = NULL;
+    if (unwantedRows.size() > 500 &&
+        unwantedRows.size() > newRows.size() / 2) {
+
+        const char* query = "DELETE FROM link_net WHERE source_doc = ?";
+        cdr::db::PreparedStatement delStmt = conn.prepareStatement(query);
+        delStmt.setInt(1, docId);
+        delStmt.executeUpdate();
+        rowsToInsert = &newRows;
+    }
+    else {
+        // Otherwise, delete just the rows which are no longer needed.
+        cdr::db::PreparedStatement delStmt = conn.prepareStatement(
+                "DELETE FROM link_net       "
+                "      WHERE source_doc  = ?"
+                "        AND link_type   = ?"
+                "        AND source_elem = ?"
+                "        AND target_doc  = ?"
+                "        AND target_frag = ?"
+                "        AND url         = ?");
+        for (rsi = unwantedRows.begin(); rsi != unwantedRows.end(); ++rsi) {
+            delStmt.setInt   (1, docId);
+            delStmt.setInt   (2, rsi->link_type);
+            delStmt.setString(3, rsi->source_elem);
+            delStmt.setInt   (4, rsi->target_doc);
+            delStmt.setString(5, rsi->target_frag);
+            delStmt.setString(6, rsi->url);
+            delStmt.executeUpdate();
+        }
+        rowsToInsert = &wantedRows;
+    }
+    SHOW_ELAPSED("deleted unwanted link rows", linkTimer);
+
+    // Insert the (new) links.
+    cdr::db::PreparedStatement insStmt = conn.prepareStatement(
+            "INSERT INTO link_net      "
+            "            (source_doc,  "
+            "             link_type,   "
+            "             source_elem, "
+            "             target_doc,  "
+            "             target_frag, "
+            "             url)         "
+            "     VALUES (?,?,?,?,?,?) ");
+    for (rsi = rowsToInsert->begin(); rsi != rowsToInsert->end(); ++rsi) {
+        insStmt.setInt   (1, docId);
+        insStmt.setInt   (2, rsi->link_type);
+        insStmt.setString(3, rsi->source_elem);
+        insStmt.setInt   (4, rsi->target_doc);
+        insStmt.setString(5, rsi->target_frag);
+        insStmt.setString(6, rsi->url);
+        insStmt.executeUpdate();
+    }
+    SHOW_ELAPSED("inserted new link rows", linkTimer);
+ 
 } // updateLinkNet()
 
 
@@ -1612,27 +1710,67 @@ static void updateFragList (
     int                  docId,
     cdr::StringSet&      fragSet
 ) {
-    std::string qry;                    // SQL query for database access
+    MAKE_TIMER(fragTimer);
 
-
-    // Another brute force version, probably justified in this case
-    //   because the average number of fragment ids for a record
-    //   is expected to be quite small.
-    qry = "DELETE FROM link_fragment WHERE doc_id = ?";
-    cdr::db::PreparedStatement stmt = conn.prepareStatement (qry);
-    stmt.setInt (1, docId);
-    cdr::db::ResultSet rs = stmt.executeQuery();
-
-    // Add each one
-    cdr::StringSet::const_iterator i = fragSet.begin();
-    while (i != fragSet.end()) {
-        qry = "INSERT INTO link_fragment (doc_id, fragment) VALUES (?, ?)";
-        cdr::db::PreparedStatement stmt = conn.prepareStatement (qry);
-        stmt.setInt    (1, docId);
-        stmt.setString (2, *i);
-        cdr::db::ResultSet rs = stmt.executeQuery();
-        ++i;
+    // Build a set of the rows that are current in the table for this document.
+    cdr::db::PreparedStatement fragSelStmt = conn.prepareStatement(
+            " SELECT fragment FROM link_fragment WHERE doc_id = ?");
+    fragSelStmt.setInt(1, docId);
+    cdr::StringSet oldFrags;
+    cdr::db::ResultSet fragSelResults = fragSelStmt.executeQuery();
+    while (fragSelResults.next()) {
+        cdr::String frag = fragSelResults.getString(1);
+        oldFrags.insert(frag);
     }
+
+    // Build sets for the rows that need to be inserted or deleted.
+    cdr::StringSet::const_iterator i;
+    cdr::StringSet wantedRows, unwantedRows;
+    for (i = fragSet.begin(); i != fragSet.end(); ++i)
+        if (oldFrags.find(*i) == oldFrags.end())
+            wantedRows.insert(*i);
+    for (i = oldFrags.begin(); i != oldFrags.end(); ++i)
+        if (fragSet.find(*i) == fragSet.end())
+            unwantedRows.insert(*i);
+    SHOW_ELAPSED("link_fragment delta sets built", fragTimer);
+
+    // If selective deletion would be too expensive, start from scratch.
+    cdr::StringSet* rowsToInsert = NULL;
+    if (unwantedRows.size() > 500 &&
+        unwantedRows.size() > fragSet.size() / 2) {
+
+        const char* query = "DELETE FROM link_fragment WHERE doc_id = ?";
+        cdr::db::PreparedStatement delStmt = conn.prepareStatement(query);
+        delStmt.setInt(1, docId);
+        delStmt.executeUpdate();
+        rowsToInsert = &fragSet;
+    }
+    else {
+        // Otherwise, just remove the rows we no long need.
+        const char* query = " DELETE FROM link_fragment "
+                            "       WHERE doc_id = ?    "
+                            "         AND fragment = ?  ";
+        cdr::db::PreparedStatement delStmt = conn.prepareStatement(query);
+        for (i = unwantedRows.begin(); i != unwantedRows.end(); ++i) {
+            delStmt.setInt(1, docId);
+            delStmt.setString(2, *i);
+            delStmt.executeUpdate();
+        }
+        rowsToInsert = &wantedRows;
+    }
+    SHOW_ELAPSED("link_fragment rows deleted", fragTimer);
+
+    // Insert the rows we need.
+    cdr::db::PreparedStatement insStmt = conn.prepareStatement(
+            "INSERT INTO link_fragment(doc_id, fragment) "
+            "     VALUES (?, ?)                          ");
+    for (i = rowsToInsert->begin(); i != rowsToInsert->end(); ++i) {
+        insStmt.setInt(1, docId);
+        insStmt.setString(2, *i);
+        insStmt.executeUpdate();
+    }
+    SHOW_ELAPSED("link_fragment rows inserted", fragTimer);
+
 } // updateFragList()
 
 

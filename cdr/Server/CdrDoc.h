@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.14 2002-04-12 01:50:06 bkline Exp $
+ * $Id: CdrDoc.h,v 1.15 2002-07-24 15:09:35 bkline Exp $
  *
  */
 
@@ -56,6 +56,35 @@ namespace cdr {
      * document could reach it.
      */
     const int MAX_INDEX_ELEMENT_POS = 0x7FFFFFFF;
+
+    // Object to represent one row in the query_term table.
+    struct QueryTerm {
+        int         doc_id;
+        cdr::String path;
+        cdr::String value;
+        cdr::Int    int_val;
+        cdr::String node_loc;
+        QueryTerm(int id, const cdr::String& p, const cdr::String& v,
+                  const cdr::Int& iv, const cdr::String& nl) :
+            doc_id(id), path(p), value(v), int_val(iv), node_loc(nl) {}
+        bool operator==(const QueryTerm& qt) const {
+            return doc_id   == qt.doc_id &&
+                   path     == qt.path &&
+                   value    == qt.value &&
+                   node_loc == qt.node_loc;
+        }
+        bool operator<(const QueryTerm& qt) const {
+            if (doc_id < qt.doc_id) return true;
+            if (doc_id > qt.doc_id) return false;
+            if (path   < qt.path)   return true;
+            if (path   > qt.path)   return false;
+            if (value  < qt.value)  return true;
+            if (value  > qt.value)  return false;
+            return node_loc < qt.node_loc;
+        }
+    };
+
+    typedef std::set<QueryTerm> QueryTermSet;
 
     /**
      * Class for manipulating CDR documents - adding, replacing and deleting.
@@ -254,28 +283,35 @@ namespace cdr {
             cdr::db::Connection& docDbConn;
 
             /**
-             * Adds a row to the query_term table for the current node if
-             * appropriate and recursively does the same for all sub-elements.
+             * Recursively finds all nodes in the tree which need to be 
+             * represented in the query_term table.
              *
-             *  @param  path        Reference to string representing path for
-             *                      current node; e.g., "/Person/PersonStatus".
+             *  @param  parentPath  Reference to string representing path for
+             *                      the parent node; e.g., "/Person/Status".
+             *                      Will be an empty string for the top-level
+             *                      invocation.
+             *  @param  nodeName    Name of the current element; will be the
+             *                      name of the document's top-level element
+             *                      when initially invoked.
              *  @param  node        Reference to current node of document's
              *                      DOM tree.
              *  @param  paths       Reference to set of paths to be indexed.
-             *  @param  nodeName    Name of the element to be indexed.
              *  @param  ordPosPathp Pointer to a hex character representation
              *                      of the ordinal position of each element
              *                      in the DOM tree down to and including the
              *                      element to be indexed.
              *  @param  depth       Number of signficant levels in the
              *                      ordPosPathp.
+             *  @param  qtSet       query term set collection to be populated
+             *                      recursively by this method.
              */
-            void addQueryTerms(const cdr::String& path,
-                               const cdr::String& nodeName,
-                               const cdr::dom::Node& node,
-                               const StringSet& paths,
-                               wchar_t *ordPosPathp,
-                               int   depth);
+            void collectQueryTerms(const cdr::String& path,
+                                   const cdr::String& nodeName,
+                                   const cdr::dom::Node& node,
+                                   const StringSet& paths,
+                                   wchar_t *ordPosPathp,
+                                   int   depth,
+                                   QueryTermSet& qtSet);
 
 
             /**

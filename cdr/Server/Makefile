@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.59 2002-07-22 14:26:06 bkline Exp $
+# $Id: Makefile,v 1.60 2002-07-24 15:09:36 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.59  2002/07/22 14:26:06  bkline
+# Added commented-out line for debugging Sablotron.
+#
 # Revision 1.58  2002/06/12 21:27:14  bkline
 # Changed wwwtest to wwwroot.
 #
@@ -252,6 +255,7 @@ HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrValidateDoc.h \
         $(CDRINC)/CdrVersion.h \
         $(CDRINC)/CdrXsd.h \
+        $(CDRINC)/CdrTiming.h \
         $(CDRINC)/HeapDebug.h \
         $(CDRINC)/catchexp.h
 LIBOBJS=CdrString.obj \
