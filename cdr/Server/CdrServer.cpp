@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.35 2003-01-14 19:41:11 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.36 2003-05-23 01:24:42 ameyer Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2003/01/14 19:41:11  bkline
+ * Made command logging the default (with environment override).
+ *
  * Revision 1.34  2002/09/13 21:53:04  bkline
  * Testing readonly cvs account.
  *
@@ -178,7 +181,7 @@ main(int ac, char **av)
     // Find out whether we should suppress command logging.
     if (getenv("SUPPRESS_CDR_COMMAND_LOGGING"))
         logCommands = false;
-    
+
     // In case of catastrophe, don't hang up on console
     if (!getenv ("NOCATCHCRASH"))
         set_exception_catcher ("d:/cdr/log/CdrServer.crash");
@@ -360,7 +363,7 @@ size_t readBytes(int fd, size_t requested, char* buf)
                 Sleep(500);
                 canSleep = false;
             }
-            else 
+            else
                 return totalRead;
         }
         else
@@ -391,7 +394,7 @@ int readRequest(int fd, std::string& request, const cdr::String& when) {
     // Avoid bogus requests from attackers (the only attacks we have had
     // so far are from NIH network administration software).
     if (length > MAX_REQUEST_LENGTH || length == 0) {
-        cdr::log::pThreadLog->Write (L"readRequest", 
+        cdr::log::pThreadLog->Write (L"readRequest",
                 L"refusing " +
                 cdr::String::toString(length) +
                 L"-byte request");
@@ -408,7 +411,7 @@ int readRequest(int fd, std::string& request, const cdr::String& when) {
     if (totalRead < nFirstBytes)
         return 0;
     if (!strstr(firstBytes, "<CdrCommandSet")) {
-        cdr::log::pThreadLog->Write (L"readRequest", 
+        cdr::log::pThreadLog->Write (L"readRequest",
                 L"refusing bogus request string: " + cdr::String(firstBytes));
         return 0;
     }
@@ -511,6 +514,8 @@ void processCommands(int fd, const std::string& buf,
         sendErrorResponse(fd, cdr::String(ex.getMessage()), when);
     }
     catch (...) {
+        std::string badCmd = "**** Unexpected exception on cmd ***:\n" + buf;
+        logCommand (conn, badCmd);
         if (!conn.getAutoCommit())
             conn.rollback();
         sendErrorResponse(fd, L"Unexpected exception caught", when);
