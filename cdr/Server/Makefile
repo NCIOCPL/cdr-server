@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.6 2000-04-17 21:26:23 bkline Exp $
+# $Id: Makefile,v 1.7 2000-04-21 13:52:24 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.6  2000/04/17 21:26:23  bkline
+# Added CdrCheckAuth command.
+#
 # Revision 1.5  2000/04/16 21:39:04  bkline
 # Extensive cleanup.  Added CdrLogoff command.
 #
@@ -48,19 +51,24 @@ HDRS   =$(CDRINC)/CdrString.h \
         $(CDRINC)/CdrDbStatement.h \
         $(CDRINC)/CdrDbResultSet.h \
         $(CDRINC)/CdrCommand.h \
-        $(CDRINC)/CdrSession.h
+        $(CDRINC)/CdrSession.h \
+        $(CDRINC)/CdrParserInput.h \
+        $(CDRINC)/CdrInt.h
 LIBOBJS=CdrString.obj \
         CdrXsd.obj \
         CdrDom.obj \
         CdrDbConnection.obj \
         CdrDbStatement.obj \
         CdrDbResultSet.obj \
-        CdrSession.obj
+        CdrSession.obj \
+        CdrParserInput.obj
 OBJS   =CdrServer.obj \
         CdrCommand.obj \
         CdrLogon.obj \
         CdrLogoff.obj \
-        CdrCheckAuth.obj
+        CdrCheckAuth.obj \
+        CdrSearch.obj \
+        CdrSearch_tab.obj
 LIBS   =cdr.lib xerces-c_1.lib wsock32.lib odbc32.lib
 
 #--------------------------------------------------------------------------
@@ -86,6 +94,16 @@ CdrLogoff.obj: CdrLogoff.cpp $(HDRS)
 
 CdrCheckAuth.obj: CdrCheckAuth.cpp $(HDRS)
 	$(CC) $(CFLAGS) -c CdrCheckAuth.cpp
+
+CdrSearch.obj: CdrSearch.cpp $(HDRS) $(CDRINC)/CdrSearch.h
+	$(CC) $(CFLAGS) -c CdrSearch.cpp
+
+BISON_SIMPLE=/etc/bison.cdrtest
+CdrSearch_tab.obj: CdrSearch_tab.c $(HDRS)
+	$(CC) $(CFLAGS) -c -TP CdrSearch_tab.c
+
+CdrSearch_tab.c: CdrSearch.y $(HDRS) $(CDRINC)/CdrSearch.h
+	bison -p CdrSearch CdrSearch.y
 
 #--------------------------------------------------------------------------
 # Rule for building CDR library.
@@ -114,8 +132,11 @@ CdrDbResultSet.obj: CdrDbResultSet.cpp $(HDRS)
 CdrSession.obj: CdrSession.cpp $(HDRS)
 	$(CC) $(CFLAGS) -c CdrSession.cpp
 
+CdrParserInput.obj: CdrParserInput.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrParserInput.cpp
+
 tCdrString.exe: tCdrString.cpp $(CDRLIB)
 	$(CC) $(CFLAGS) tCdrString.cpp $(CDRLIB)
 
 clean:
-	rm -f *.obj *~
+	rm -f *.obj *~ CdrSearch_tab.c
