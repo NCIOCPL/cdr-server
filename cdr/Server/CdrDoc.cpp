@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.32 2002-03-26 23:13:51 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.33 2002-03-28 22:19:03 ameyer Exp $
  *
  */
 
@@ -502,9 +502,12 @@ static cdr::String CdrPutDoc (
          cmdVersion,            // True=Create new version in version control
          cmdPublishVersion,     // True=New version ctl version is publishable
          cmdValidate,           // True=Perform validation, else just store
+         cmdSchemaVal,          // True=Validate schema
+         cmdLinkVal,            // True=Validate links
          cmdSetLinks,           // True=Update link tables
          cmdEcho;               // True=Client want modified doc echoed back
     cdr::String cmdReason;      // Reason to associate with new version
+    cdr::String validationTypes;// Schema, Links or both, empty=both
     cdr::dom::Node child,       // Child node in command
                    docNode;     // Node containing CdrDoc
     cdr::dom::NamedNodeMap attrMap; // Map of attributes in DocCtl subelement
@@ -514,9 +517,12 @@ static cdr::String CdrPutDoc (
     cmdVersion        = false;
     cmdPublishVersion = false;
     cmdValidate       = true;
+    cmdSchemaVal      = true;
+    cmdLinkVal        = true;
     cmdCheckIn        = false;
     cmdEcho           = false;
     cmdSetLinks       = true;
+    validationTypes   = L"";
 
     // Default reason is NULL created by cdr::String contructor
     cmdReason   = L"";
@@ -550,9 +556,41 @@ static cdr::String CdrPutDoc (
             }
 
 
-            else if (name == L"Validate")
+            else if (name == L"Validate") {
                 cmdValidate = cdr::ynCheck (cdr::dom::getTextContent (child),
                                            false, L"Validate");
+
+                // If user said Y(es), validate
+                if (cmdValidate) {
+
+                    // User may request specific types
+                    attrMap = child.getAttributes();
+                    if ((attr = attrMap.getNamedItem ("ValidationTypes"))
+                             != NULL) {
+
+                        // Default is do all validation, but user has requested
+                        //   specific types.  Turn off defaults
+                        cmdSchemaVal = false;
+                        cmdLinkVal   = false;
+
+                        // Turn back on the specifically requested ones
+                        validationTypes = attr.getNodeValue();
+                        if (validationTypes.find (L"Schema") !=
+                                validationTypes.npos)
+                            cmdSchemaVal = true;
+                        if (validationTypes.find (L"Links") !=
+                                validationTypes.npos)
+                            cmdLinkVal = true;
+
+                        // Sanity check
+                        if (!cmdSchemaVal && !cmdLinkVal)
+                            throw cdr::Exception (
+                                    L"No known validation types were "
+                                    L" requested in ValidationTypes='" +
+                                    validationTypes + L"'");
+                    }
+                }
+            }
 
             else if (name == L"SetLinks")
                 // Update of link tables might be turned off to speed up
@@ -676,22 +714,21 @@ static cdr::String CdrPutDoc (
 
     // Perform validation if requested
     if (cmdValidate) {
-        // If !cmdSetLinks, don't do any link validation / link_net update
-        cdr::String validationTypes;
-        if (!cmdSetLinks)
-            // Only do schema validation
-            validationTypes = "Schema";
-        else
-            // Do the default = all validation
-            validationTypes = "";
+        if (cmdLinkVal && !cmdSetLinks)
+            // If not setting links, can't do any link validation because
+            //   it automatically does a link_net update
+            throw cdr::Exception (
+                    L"Validation of links without SetLinks is currently "
+                    L"unsupported.  Sorry.");
 
         // Perform validation
-        // Set valid_status and valid_date in the doc object
+        // Will set valid_status and valid_date in the doc object
         // Will overwrite whatever is there
         cdr::execValidateDoc (doc,cdr::UpdateUnconditionally,validationTypes);
     }
-    else
-        // Update of link tables is part of unconditional validation
+
+    if (cmdSetLinks && !cmdLinkVal) {
+        // Update of link tables is part of unconditional link validation
         // But if not done there, we have to do it here unless it was
         //   specifically suppressed with the SetLinks command.
         // Call to parseAvailable is done first to check if the document
@@ -702,6 +739,7 @@ static cdr::String CdrPutDoc (
                                     doc.getId(), doc.getTextDocType(),
                                     cdr::UpdateLinkTablesOnly,
                                     doc.getErrList());
+    }
 
     // If we haven't already done so, store it
     if (!newrec)
