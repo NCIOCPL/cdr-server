@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.15 2002-02-19 15:44:18 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.16 2002-04-17 19:19:07 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2002/02/19 15:44:18  ameyer
+ * Closing statements after use.
+ *
  * Revision 1.14  2002/02/15 06:46:13  ameyer
  * Bug fix in routines to update link types.
  *
@@ -327,7 +330,7 @@ int cdr::link::CdrLink::validateLink (
         // Wrong target type is a link error
         else if (!match_target_doc_type)
             this->addLinkErr (L"Link from " + srcDocTypeStr + L"." + srcField +
-                              L" to document type " + trgDocTypeStr +
+                              L" to document type" + trgDocTypeStr +
                               L" is illegal");
 
         // Execute any custom link procedures (in CdrLinkProcs.cpp)
