@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.34 2002-04-12 01:50:06 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.35 2002-05-28 17:49:14 ameyer Exp $
  *
  */
 
@@ -1036,10 +1036,12 @@ cdr::String cdr::CdrDoc::getRevisionFilteredXml (
                              + L" requested for document");
 
     // Need to filter revision markup if:
-    //   Filtering never attempted (revisedXmlLevel == 0)
-    //   Filtering done but at level other than what we want
     //   Filter attempt has not already failed (!revFilterFailed)
-    if (revisionLevel != revFilterLevel && !revFilterFailed) {
+    //   Filtering never attempted (revFilterLevel == 0)
+    //   Filtering done but at level other than what we want (revisionLevel...)
+    //   Any previous revision filtering discarded (...size() == 0)
+    if (!revFilterFailed &&
+        ((revisionLevel != revFilterLevel) || revisedXml.size() == 0)) {
 
         // Attempt to filter at the requested level
         cdr::FilterParmVector pv;        // Parameters passed to it
