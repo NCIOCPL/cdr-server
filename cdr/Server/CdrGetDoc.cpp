@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.28 2002-08-09 11:46:50 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.29 2002-09-16 22:06:15 pzhang Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2002/08/09 11:46:50  bkline
+ * Added entConvert() for retrieval of specific doc versions.
+ *
  * Revision 1.27  2002/07/12 18:09:26  bkline
  * Fixed FirstPub tags.
  *
@@ -521,28 +524,19 @@ static cdr::String getCommonCtlString(int docId,
 
   if (elements & cdr::DocCtlComponents::DocFirstPub)
   {
-    std::string query = "SELECT p.completed,                         "
-                        "       u.name                               "
-                        "  FROM pub_proc p                           "
-                        "  JOIN usr u                                "
-                        "    ON u.id = p.usr                         "
-                        " WHERE p.id = (SELECT MIN(id)               "
-                        "                 FROM primary_pub_job ppj   "
-                        "                 JOIN pub_proc_doc ppd      "
-                        "                   ON ppd.pub_proc = ppj.id "
-                        "                  AND ppd.doc_id = ?        "
-                        "                  AND (ppd.failure IS NULL  "
-                        "                   OR  ppd.failure <> 'Y')) ";
+    std::string query = "SELECT d.first_pub                          "                      
+                        "  FROM document d                           "                      
+                        " WHERE NOT d.first_pub IS NULL                  "
+                        "   AND d.first_pub_knowable = 'Y'           "
+                        "   AND d.id = ?                             ";                       
 
     cdr::db::PreparedStatement select = conn.prepareStatement(query);
     select.setInt(1, docId);
     cdr::db::ResultSet rs = select.executeQuery();
     if (rs.next())
     {
-      cdr::String date = cdr::toXmlDate(rs.getString(1));
-      cdr::String user = rs.getString(2);
-      cdrDoc += L"<FirstPub><Date>" + date + L"</Date><User>"
-              + user + L"</User></FirstPub>";
+      cdr::String date = cdr::toXmlDate(rs.getString(1));     
+      cdrDoc += L"<FirstPub><Date>" + date + L"</Date></FirstPub>";
     }
     select.close();
   }
