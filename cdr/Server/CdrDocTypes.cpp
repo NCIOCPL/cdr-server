@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDocTypes.cpp,v 1.12 2002-08-27 17:51:00 bkline Exp $
+ * $Id: CdrDocTypes.cpp,v 1.13 2005-03-04 02:45:28 ameyer Exp $
  *
  * Support routines for CDR document types.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2002/08/27 17:51:00  bkline
+ * Fixed bug that was extracting linking elements for non-XML doc types.
+ *
  * Revision 1.11  2002/08/27 17:14:16  bkline
  * Fixed bug in code to get list of elements which can contain a certain
  * attribute; used this to fix code to get list of linking elements for
@@ -75,7 +78,7 @@ cdr::String cdr::listDocTypes(Session&          session,
                                           "     FROM doc_type     "
                                           "    WHERE active = 'Y' "
                                           " ORDER BY name         ");
-    
+
     // Pull in the names from the result set.
     cdr::String response;
     while (r.next()) {
@@ -114,7 +117,7 @@ cdr::String cdr::listSchemaDocs(Session&          session,
                                           "  JOIN doc_type t"
                                           "    ON t.id   = d.doc_type"
                                           " WHERE t.name = 'schema'");
-    
+
     // Pull in the names from the result set.
     cdr::String response;
     while (r.next()) {
@@ -170,7 +173,7 @@ cdr::String cdr::getDocType(Session&          session,
                             db::Connection&   conn)
 {
     // Find out which document type we are supposed to retrieve.
-    const cdr::dom::Element& cmdElement = 
+    const cdr::dom::Element& cmdElement =
         static_cast<const cdr::dom::Element&>(node);
     cdr::String docTypeString = cmdElement.getAttribute(L"Type");
     cdr::String getEnumValues = cmdElement.getAttribute(L"GetEnumValues");
@@ -210,9 +213,13 @@ cdr::String cdr::getDocType(Session&          session,
     int         id         = rs.getInt(8);
     ps.close();
 
+    // Create a parser and, if necessary, a schema
+    // Parser is created here to stay in scope until the schema that uses
+    //   its dependent DOM tree is out of scope - even though it may turn
+    //   out that we don't need to parse at all.
+    cdr::dom::Parser parser;
     cdr::xsd::Schema* schema = 0;
     if (!schemaStr.empty()) {
-        cdr::dom::Parser parser;
         parser.parse(schemaStr);
         cdr::dom::Node schemaElem = parser.getDocument().getDocumentElement();
         schema = new cdr::xsd::Schema(schemaElem, &conn);
@@ -289,7 +296,7 @@ cdr::String cdr::addDocType(Session&          session,
                 L"ADD DOCTYPE action not authorized for this user");
 
     // Extract the attributes from the command element.
-    const cdr::dom::Element& cmdElement = 
+    const cdr::dom::Element& cmdElement =
         static_cast<const cdr::dom::Element&>(node);
     cdr::String docTypeString    = cmdElement.getAttribute(L"Type");
     cdr::String docFormatString  = cmdElement.getAttribute(L"Format");
@@ -341,7 +348,7 @@ cdr::String cdr::addDocType(Session&          session,
     if (nTypes != 0)
         throw cdr::Exception(L"Document type already exists",
                              docTypeString);
-    
+
     // Look up the schema document's primary key.
     if (schema.empty())
         throw cdr::Exception(L"DocSchema element missing from command");
@@ -389,7 +396,7 @@ cdr::String cdr::addDocType(Session&          session,
     if (ps4.executeUpdate() != 1)
         throw cdr::Exception(L"Failure inserting new document type",
                              docTypeString);
-                     
+
     // Report success.
     return L"<CdrAddDocTypeResp/>";
 }
@@ -410,7 +417,7 @@ cdr::String cdr::modDocType(Session&          session,
                             db::Connection&   conn)
 {
     // Extract the attributes from the command element.
-    const cdr::dom::Element& cmdElement = 
+    const cdr::dom::Element& cmdElement =
         static_cast<const cdr::dom::Element&>(node);
     cdr::String docTypeString    = cmdElement.getAttribute(L"Type");
     cdr::String docFormatString  = cmdElement.getAttribute(L"Format");
@@ -498,7 +505,7 @@ cdr::String cdr::modDocType(Session&          session,
     if (ps4.executeUpdate() != 1)
         throw cdr::Exception(L"Failure modifying document type",
                              docTypeString);
-                     
+
     // Report success.
     return L"<CdrModDocTypeResp/>";
 }
@@ -524,7 +531,7 @@ cdr::String cdr::delDocType(Session&          session,
                 L"DELETE DOCTYPE action not authorized for this user");
 
     // Find out which document type we are supposed to remove.
-    const cdr::dom::Element& cmdElement = 
+    const cdr::dom::Element& cmdElement =
         static_cast<const cdr::dom::Element&>(node);
     cdr::String docTypeString = cmdElement.getAttribute(L"Type");
     if (docTypeString.empty())
@@ -552,7 +559,7 @@ cdr::String cdr::delDocType(Session&          session,
     if (nDocs != 0)
         throw cdr::Exception(L"Cannot delete document type for which "
                              L"documents exist", docTypeString);
-    
+
     // Wipe out any other related rows for this document type.
     std::string q3 = "DELETE grp_action  WHERE doc_type        = ?";
     std::string q4 = "DELETE link_xml    WHERE doc_type        = ?";
