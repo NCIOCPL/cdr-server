@@ -19,9 +19,14 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.16 2004-02-10 22:15:39 ameyer Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.17 2004-03-06 17:09:01 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2004/02/10 22:15:39  ameyer
+ * Added capability to check for the existence or non-existence of an
+ * element in a link target.  Required changes to the validation and
+ * picklist generation code.
+ *
  * Revision 1.15  2003/04/15 22:30:34  ameyer
  * Modified parseTag to accept attribute paths, e.g., /A/B/@cdr:ref
  * Modified skipSpace to also skip CrLf characters.
@@ -954,7 +959,7 @@ void cdr::link::LinkChkNode::makeSubQueries (
         //   we're done, else we need to check the value
         if (node->getChkValue()) {
             // Connector for value
-            query += "' AND ";
+            query += " AND ";
 
             // Value
             query += "qt.value";
