@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.35 2001-08-22 22:02:56 bkline Exp $
+ * $Id: tables.sql,v 1.36 2001-09-05 17:53:16 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2001/08/22 22:02:56  bkline
+ * Added issue-tracking tables; removed approved column from all_docs.
+ *
  * Revision 1.34  2001/08/07 21:09:59  ameyer
  * Added last_frag_id to all_docs.
  *
@@ -907,3 +910,91 @@ CREATE TABLE issue
     resolved DATETIME        NULL,
  resolved_by VARCHAR(30)     NULL REFERENCES issue_user,
        notes TEXT            NULL)
+
+/*
+ * Table for recording publication events.
+ *
+ *           id  primary key for the publishing event.
+ *   pub_system  name of the system requesting the publishing event 
+*                (e.g. UDB).
+ *   pub_subset  name of the publishing subset used for the event.
+ *          usr  ID of user requesting the publication event.
+ *      started  date/time the event commenced.
+ *    completed  date/time the publication event was finished.
+ */
+CREATE TABLE pub_event
+         (id INTEGER IDENTITY PRIMARY KEY,
+  pub_system VARCHAR(255) NOT NULL,
+  pub_subset VARCHAR(255) NOT NULL,
+         usr INTEGER      NOT NULL REFERENCES usr,
+     started DATETIME     NOT NULL,
+   completed DATETIME         NULL)
+
+/*
+ * Table used to record publication of a specific document.
+ *
+ *    pub_event  foreign key into pub_event table.
+ *       doc_id  identification of document which was published.
+ *  doc_version  part of foreign key into doc_version table.
+ */
+CREATE TABLE published_doc
+  (pub_event INTEGER      NOT NULL REFERENCES pub_event,
+      doc_id INTEGER      NOT NULL,
+ doc_version INTEGER      NOT NULL,
+  CONSTRAINT pubdoc_fk_doc_ver     FOREIGN KEY(doc_id, doc_version) 
+                                   REFERENCES doc_version)
+
+/*
+ * Table used to track processing of publication events.
+ *
+ *           id  primary key for the publication event processing.
+ *   pub_system  name of the system requesting the publishing event e.g. (UDB).
+ *   pub_subset  name of the publishing subset used for the event.
+ *          usr  ID of user requesting the publication event.
+ *   output_dir  output directory (without .username.datetime.status).
+ *      started  date/time processing commenced.
+ *    completed  date/time processing was finished.
+ *       status  one of "in process," waiting user approval," "fail," or 
+ *               "succeed."
+ *     messages  messages generated during processing.
+ */
+CREATE TABLE pub_proc
+         (id INTEGER IDENTITY PRIMARY KEY,
+  pub_system VARCHAR(255) NOT NULL,
+  pub_subset VARCHAR(255) NOT NULL,
+         usr INTEGER      NOT NULL REFERENCES usr,
+  output_dir VARCHAR(255) NOT NULL,
+     started DATETIME     NOT NULL,
+   completed DATETIME         NULL,
+      status VARCHAR(32)  NOT NULL,
+    messages NTEXT)
+
+/*
+ * Table used to record parameters used for processing a publication event.
+ *
+ *           id  used with pub_proc to form the primary key.
+ *     pub_proc  foreign key into the pub_proc table.
+ *    parm_name  name of the parameter.
+ *   parm_value  value of the parameter.
+ */
+CREATE TABLE pub_proc_parm
+         (id INTEGER      NOT NULL,
+    pub_proc INTEGER      NOT NULL REFERENCES pub_proc,
+   parm_name VARCHAR(32)  NOT NULL,
+  parm_value NVARCHAR(255)    NULL,
+  CONSTRAINT pub_proc_parm_pk      PRIMARY KEY(pub_proc, id))
+
+/*
+ * Table used to record processing of a document for a publication event.
+ *
+ *     pub_proc  foreign key into the pub_proc table.
+ *       doc_id  identification of document being processed.
+ *  doc_version  part of foreign key into doc_version table.
+ */
+CREATE TABLE pub_proc_doc
+   (pub_proc INTEGER      NOT NULL  REFERENCES pub_proc,
+      doc_id INTEGER      NOT NULL,
+ doc_version INTEGER      NOT NULL,
+  CONSTRAINT pub_proc_doc_fk        PRIMARY KEY(pub_proc, doc_id, doc_version),
+  CONSTRAINT pub_proc_doc_fk_docver FOREIGN KEY(doc_id, doc_version) 
+                                    REFERENCES doc_version)
