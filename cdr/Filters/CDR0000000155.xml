@@ -46,7 +46,7 @@
   <xsl:template match="InScopeProtocol | ScientificProtocolInfo">
     <BODY>
 
- <!-- ====================================================================
+  <!-- ====================================================================
        Display Report heading and subheading
       ==================================================================== -->
   
@@ -330,36 +330,6 @@
  <p><xsl:apply-templates/></p>
  </xsl:template>-->
 
- 
-
-    
-
-<!-- =====================================================================
-        Display the Paragraphs
-     ======================================================================--> 
-
- <xsl:template match="Outline/Para">
- <p><xsl:apply-templates/></p>
- </xsl:template>
-
-
-<!--===============================================
-       Display Paragraphs
-     =============================================== -->
-
-
-<xsl:template match="Para">
-<p><xsl:apply-templates/></p>
-</xsl:template>
-
-<!-- ==============================================================
-                     Display tables 
-     ============================================================== -->
-
-<xsl:template match="Para/TT">
-<pre><xsl:apply-templates/></pre>
-</xsl:template>
-
 <!--===============================================================
     Display Protocol Professional or Patient Title
     ================================================================ -->
@@ -606,19 +576,6 @@
 <br />
 </xsl:template>
 
-<!-- =========================================================
-                       Link to glossaryTermRefs 
-     =========================================================
-<xsl:template match="GlossaryTermRef">
- <a>
- <xsl:attribute name="href">
- <xsl:value-of select="concat('/cgi-bin/cdr/Filter.py?DocId=',@cdr:href,'&amp;Filter=name:Glossary+Term+Display+for+Patient+Summaries')"/>
- </xsl:attribute>
-<xsl:value-of select="."/>
-</a>
-</xsl:template>-->
-
-
  <!-- =====================================================================
             Display Lead Organizations and Participating Orgs Information
       ===================================================================== -->
@@ -672,9 +629,35 @@
 <br />
 </xsl:if>
 
-<b><font size='3'>Lead Organization Personnel</font></b><br /><br />
+<!--<b><font size='3'>Lead Organization Personnel</font></b><br /><br />
 
- 
+ <xsl:for-each select="LeadOrgPersonnel/Person">
+ <b><font size='3'>Person</font></b>
+ <xsl:text>.............................................</xsl:text>
+<xsl:value-of select="Person/PersonNameInformation/SurName"/>,
+<xsl:value-of select="Person/PersonNameInformation/GivenName"/><br />
+ <b><font size='3'>Role</font></b> <xsl:text>..................................................</xsl:text>
+<xsl:for-each select="../PersonRole">
+<xsl:value-of select="."/><br /><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;</xsl:text>
+</xsl:for-each>
+<br />
+<b><font size='3'>Organization</font></b> 
+<xsl:text>..................................</xsl:text>
+ <xsl:variable name="orgref" select="Person/@cdr:ref"/>
+ <xsl:variable name="OrgFrag" select="substring-after($orgref,'#')"/>
+ <xsl:if test="Person/PersonLocations/OtherPracticeLocaton/@cdr:id=$OrgFrag">
+ <xsl:apply-templates select="Person/PersonLocations/OtherPracticeLocaton/
+                       OrganizationLocations/OrganizationLocation/Location/
+                       Street"/>
+ </xsl:if>
+                          
+
+ </xsl:for-each>-->
 
 <xsl:for-each select="LeadOrgPersonnel">
 
@@ -916,37 +899,6 @@
           <b><font size='4'>Date Last Modified</font></b><br /><br />
           <xsl:value-of select="."/><br />
           </xsl:template>
-
-
-   <!--=====================================================================
-         Display an ordered list 
-    ==================================================================== -->
-  <xsl:template                  match = "OrderedList">
-    <xsl:variable                 name = "redline">
-      <xsl:text>Redline</xsl:text>
-    </xsl:variable>
-    <xsl:call-template            name = "OrderedList">
-      <xsl:with-param             name = "markup"        
-                                select = "$redline"/>
-    </xsl:call-template>
-  </xsl:template>
-
-<!--=====================================================================
-                Display an Itemized List
-    ==================================================================== -->
-  <xsl:template                  match = "ItemizedList">
-    <xsl:variable                 name = "redline">
-      <xsl:text>Redline</xsl:text>
-    </xsl:variable>
-    <xsl:call-template            name = "ItemizedList">
-      <xsl:with-param             name = "markup"        
-                                select = "$redline"/>
-    </xsl:call-template>
-  </xsl:template>
-
-  
-
-
 
 <!-- ====================================================================
        Do not display EnteredBy or EntryDate
