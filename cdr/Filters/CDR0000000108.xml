@@ -360,23 +360,32 @@
    <xsl:for-each               select = "RelatedProtocols | RelatedWebsites">
     <xsl:choose>
      <xsl:when                   test = "name() = 'RelatedProtocols'">
-      <xsl:element               name = "RelatedProtocols">
-       <xsl:attribute            name = "ref">
-        <xsl:value-of          select = "@cdr:ref"/>
-       </xsl:attribute>
-       <xsl:apply-templates/>
-      </xsl:element>
+      <xsl:variable              name = "relProtRef"
+                               select = "@cdr:ref"/>
+      <xsl:variable              name = "prot_uri"
+                               select = "concat('cdrx:', $relProtRef,
+                                                '/lastp')"/>
+      <xsl:variable              name = "protocolDoc"
+                               select = "document($prot_uri)"/>
+
+      <!--  Do not display the RelatedProtocols element if that protocol
+            is not marked as publishable                                -->
+      <xsl:if                    test = "$protocolDoc/InScopeProtocol">
+       <xsl:element              name = "RelatedProtocols">
+        <xsl:attribute           name = "ref">
+         <xsl:value-of         select = "@cdr:ref"/>
+        </xsl:attribute>
+        <xsl:apply-templates/>
+       </xsl:element>
+      </xsl:if>
+
+      <!-- Do display the RelatedProtocolsForQC element even if that protocol
+           is not marked as publishable but indicate this as an error 
+           message                                                      -->
       <RelatedProtocolsForQC>
        <xsl:attribute            name = "ref">
         <xsl:value-of          select = "@cdr:ref"/>
        </xsl:attribute>
-       <xsl:variable             name = "relProtRef"
-                               select = "@cdr:ref"/>
-       <xsl:variable             name = "prot_uri"
-                               select = "concat('cdrx:', $relProtRef,
-                                                '/lastp')"/>
-       <xsl:variable             name = "protocolDoc"
-                               select = "document($prot_uri)"/>
 
   <!-- Don't stop processing if the link cannot be resolved. 
        Note:  The message is never displayed with the terminate=No attribute -->
