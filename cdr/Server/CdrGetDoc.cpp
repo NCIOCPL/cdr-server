@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.24 2002-06-28 20:41:10 ameyer Exp $
+ * $Id: CdrGetDoc.cpp,v 1.25 2002-07-01 21:00:02 bkline Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2002/06/28 20:41:10  ameyer
+ * Fixed bug in call to denormalization in getDocString().
+ *
  * Revision 1.23  2002/06/20 20:17:33  bkline
  * Put entConvert back because the bug is in DLL.
  *
@@ -98,7 +101,8 @@ static cdr::String fixString(const cdr::String& s);
 static cdr::String makeDocXml(const cdr::String& xml);
 static cdr::String makeDocBlob(const cdr::Blob& blob);
 static cdr::String readOnlyWrap(const cdr::String text, const cdr::String tag);
-static cdr::String denormalizeLinks(const cdr::String&, cdr::db::Connection&);
+static cdr::String denormalizeLinks(const cdr::String&, cdr::db::Connection&,
+                                    const cdr::String&);
 static cdr::String getCommonCtlString(int docId,
                                       cdr::db::Connection& conn,
                                       int elements);
@@ -172,7 +176,7 @@ cdr::String cdr::getDocString(
 
     // Denormalize the links if requested.
     if (denormalize)
-        xml = denormalizeLinks(xml, conn);
+        xml = denormalizeLinks(xml, conn, docType);
 
     // Plug in the body of the document.
     cdrDoc += usecdata ? makeDocXml (xml) : xml;
@@ -259,7 +263,7 @@ cdr::String cdr::getDocString(
     // Denormalize the links if requested.
     cdr::String xml = docVer->xml;
     if (denormalize)
-        xml = denormalizeLinks(xml, conn);
+        xml = denormalizeLinks(xml, conn, typName);
 
     // That's all we've got from the doc control
     // Add an end tag for it and fetch xml and blob
@@ -515,10 +519,19 @@ static cdr::String getCommonCtlString(int docId,
  *
  *  @param  xml     reference to string representation of xml for document.
  *  @param  conn    reference to CDR database connection object.
+ *  @param  docType name of the document's type.
  *  @return         denormalized xml string.
  */
-cdr::String denormalizeLinks(const cdr::String& xml, cdr::db::Connection& conn)
+cdr::String denormalizeLinks(const cdr::String& xml, 
+                             cdr::db::Connection& conn,
+                             const cdr::String& docType)
 {
+    // Watch out for some document types which shouldn't be denormalized.
+    if (docType == L"Filter"
+    ||  docType == L"css"
+    ||  docType == L"Schema")
+        return xml;
+
     // Empty parameter list.
     cdr::FilterParmVector pv;
 
