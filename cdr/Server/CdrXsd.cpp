@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.29 2002-04-12 01:49:31 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.30 2002-04-17 22:26:25 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2002/04/12 01:49:31  bkline
+ * Removed unnecessary log testing call.
+ *
  * Revision 1.28  2002/04/10 14:32:39  bkline
  * Fixed bug in recognition of readonly attribute.
  *
@@ -1318,6 +1321,7 @@ void validateElement(
     simpleType  = dynamic_cast<const cdr::xsd::SimpleType*>(&type);
     complexType = dynamic_cast<const cdr::xsd::ComplexType*>(&type);
     if (simpleType) {
+        verifyNoElements(docElement, errors);
         validateSimpleType(docElement.getNodeName(),
                            L"",
                            cdr::dom::getTextContent(docElement),
