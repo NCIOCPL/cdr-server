@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.9 2002-06-07 13:53:18 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.10 2002-07-26 23:59:33 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2002/06/07 13:53:18  bkline
+ * Added missing fragment id for participating org personnel.
+ *
  * Revision 1.8  2002/03/14 13:32:22  bkline
  * Modified the dated action report to avoid conflicting database locks.
  *
@@ -493,10 +496,17 @@ namespace
     if (i == parm.end())
       throw cdr::Exception(L"Must specify Document ID");
     cdr::String docId = i->second;
+    cdr::String privatePracticeOnly = L"no";
+    i = parm.find(L"PrivatePracticeOnly");
+    if (i != parm.end())
+        privatePracticeOnly = i->second;
+    std::wcout << L"privatePracticeOnly=" << privatePracticeOnly << L"\n";
     cdr::String filterName = L"Person Locations Picklist";
     cdr::FilterParmVector parms;
     parms.push_back(std::pair<cdr::String, cdr::String>(L"docId", docId));
     parms.push_back(std::pair<cdr::String, cdr::String>(L"repName", getName()));
+    parms.push_back(std::pair<cdr::String, cdr::String>(L"privatePracticeOnly",
+                                                        privatePracticeOnly));
     cdr::String report = applyNamedFilter(filterName, docId, &parms,
                                           dbConnection);
     size_t startTag = report.find(L"<ReportName");
