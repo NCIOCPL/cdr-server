@@ -43,7 +43,20 @@
     </xsl:attribute>
    </xsl:if>
 
-   <xsl:apply-templates      select = "node()"/>
+  <!--
+  For a Home or PrivatePracticeLocation we'll have to check if a 
+  SpecificPhone exists and use this instead of the phone provided
+  with the Home or PrivatePracticeLocation itself.
+  =============================================================== -->
+  <xsl:choose>
+   <xsl:when                    test = "../../../../../SpecificPhone">
+     <xsl:value-of            select = "../../../../../SpecificPhone"/>
+   </xsl:when>  
+   <xsl:otherwise>
+     <xsl:apply-templates     select = "node()"/>
+   </xsl:otherwise>
+  </xsl:choose>
+
   </xsl:element>
  </xsl:template>     
 
@@ -251,6 +264,7 @@
     <xsl:element               name = "Fax">
      <xsl:value-of           select = "SpecificFax"/>
     </xsl:element>
+    <xsl:apply-templates   select = "Fax | SpecificFax"/>
    </xsl:when>
    <xsl:when                   test = "OrganizationLocation/
                                        Organization/OrganizationLocations/
