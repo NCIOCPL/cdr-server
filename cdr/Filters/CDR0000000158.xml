@@ -11,14 +11,14 @@
                            xmlns:cdr = "cips.nci.nih.gov/cdr"
              exclude-result-prefixes = "cdr">
 
- <xsl:import                    href = "cdr:name:InLine Markup Formatter"/>
- <xsl:include                   href = "cdr:name:Table Formatter"/>
-     
  <xsl:output                  method = "html"
                               indent = "no"/>
- <xsl:param                   name="DisplayGlossaryTermList"/>
- <xsl:param                   name="ShowStandardWording"/>
 
+ <xsl:include   href = "cdr:name:InLine Markup Formatter"/>
+ <xsl:include   href = "cdr:name:Table Formatter"/>
+ <xsl:include   href = "cdr:name:Module: STYLE Default"/>  
+ <xsl:include   href = "cdr:name:Module: Checkbox Formatter"/>  
+     
 
  <xsl:template                 match = "/">
   <HTML>
@@ -31,6 +31,9 @@
               ================================================-->
    <!-- Modified 7/14/2003  C.Burg  -->
                 
+    <!-- STYLE type='text/css'>
+     <xsl:call-template           name = "defaultStyle"/ -->  
+
          <STYLE>
           <!--  H2,H3,H4 {color: Navy}-->
             <!-- H2,H4 {font-size: medium} -->
@@ -84,6 +87,7 @@
        </ul>
       </xsl:if>
       <hr/>
+
       <xsl:apply-templates/>
             
      </BODY>
@@ -137,9 +141,20 @@
        Display a Deletion 
      ================================================================== -->
     <xsl:template              match = "Deletion">
-     <strike>
-     <xsl:apply-templates/>
-     </strike>
+     <xsl:choose>
+      <xsl:when                 test = "@RevisionLevel = 'proposed'">
+       <strike>
+        <font color="FUCHSIA">
+         <xsl:apply-templates/>
+        </font>
+       </strike>
+      </xsl:when>
+      <xsl:otherwise>
+       <strike>
+        <xsl:apply-templates/>
+       </strike>
+      </xsl:otherwise>
+     </xsl:choose>
     </xsl:template>
  
 <!-- ================================================================
@@ -165,112 +180,49 @@
      </xsl:if>
     </xsl:template>
 
-   <!-- ================================================================
-
-            Display a Table of Glossary Terms
-       ============================================================= -->
-
-       <xsl:template               match="StandardWording">
-           <xsl:if                     test="$ShowStandardWording ='Y'">
-       <font color="#009900">
-       <xsl:apply-templates/>
-       </font>
-       </xsl:if>
-       </xsl:template>
-        
-
-  <!-- ================================================================
-
-            Display a Table of Glossary Terms
-       ============================================================= -->
-
-      <xsl:template               match="GlossaryTerms">
-     <!-- <xsl:variable               name="DisplayGlossaryTermList" 
-                                        select="'Y'"/>-->
-      <xsl:if                     test="$DisplayGlossaryTermList='Y'">
-   <!--   <xsl:if                     test="position()=1">-->
-        <hr />
-        <b>
-        <h1>
-       <xsl:text>
-            Table of Glossary Terms
-       </xsl:text>
-        </h1>
-        </b>
-         <br /><br />
-     <!--   </xsl:if>-->
-        
-      <table border='1'> 
-           <tr>
-           <th>
-           <b>
-           <xsl:text>Term Text</xsl:text>
-           </b>
-            </th>
-
-           <th>
-           <b>
-           <xsl:text>Term Name</xsl:text>
-           </b>
-            </th>
-            <th>
-           <b>
-           <xsl:text>Definition Text</xsl:text>
-           </b>
-           </th>
-           </tr>
-           
-      <xsl:for-each               select="GlossaryTerm">
-          <tr>
-          <td>
-          <xsl:value-of           select="GlossaryTermRef"/>
-          </td>
-          <td>
-          <xsl:value-of           select="TermName"/>
-          </td>
-           <td>
-          <xsl:value-of           select="DefinitionText"/>
-           </td>
-           </tr>
-          </xsl:for-each>
-          </table>
-          </xsl:if>
-           
-          </xsl:template>
 
   <!-- ==============================================================
                  Display SummarySection Title
        ============================================================== -->
-
      <xsl:template                match="SectionTitle">
      <h2><xsl:value-of           select="."/></h2>
      </xsl:template>
 
 
-   <!-- ==============================================================
-                   Display a comment 
-        ============================================================== -->
+ <!-- 
+ ==============================================================
+ Display a Glossary Link
+ ============================================================== -->
+ <xsl:template                match = "GlossaryTermRef | LOERef">
+  <xsl:if                     test  = "/Summary/SummaryMetaData/
+                                        SummaryAudience = 'Patients'">
+   <xsl:apply-templates      select = "."  
+                               mode = "PE"/>
+  </xsl:if>
+ </xsl:template>
 
-             <xsl:template         match="Comment">
-             <xsl:apply-templates  select="." mode="RS"/>
-             </xsl:template>
 
-   
-      <!-- ==============================================================
-                     Display a Glossary Link
-       ============================================================== -->
 
-         <xsl:template             match = "GlossaryTermRef | LOERef">
+ <!-- 
+ ================================================================
+ Display Comments 
+ ================================================================ -->
+ <!-- xsl:template                  match = "Comment">
+  <xsl:apply-templates         select = "." 
+                                 mode = "RS"/>  
+ </xsl:template -->  
 
-         <xsl:if                   test  = "/Summary/SummaryMetaData/
-                                            SummaryAudience='Patients'">
-                 
-                                       
-         <xsl:apply-templates      select = "."  mode = "PE"/>
-         </xsl:if>
-         </xsl:template>
-     
-            
+
+ <!-- 
+ ================================================================
+ Display a Note
+ ================================================================ -->
+ <xsl:template                  match = "Note">
+  <xsl:apply-templates         select = "." 
+                                 mode = "RS"/>
+ </xsl:template>  
+
+      
 
 </xsl:transform>]]>
 </CdrDocXml>
