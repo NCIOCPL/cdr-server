@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.16 2002-04-17 19:19:07 bkline Exp $
+ * $Id: CdrLink.cpp,v 1.17 2002-05-08 20:31:24 pzhang Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2002/04/17 19:19:07  bkline
+ * Eliminated duplicate space in error message.
+ *
  * Revision 1.15  2002/02/19 15:44:18  ameyer
  * Closing statements after use.
  *
@@ -1693,6 +1696,110 @@ static bool findDocType (
     return true;
 
 } // findDocType()
+
+cdr::String cdr::link::getSearchLinksResp (
+        cdr::db::Connection&    conn,
+        const cdr::String&      srcElem,
+        const cdr::String&      srcDocType,
+        const cdr::String&      titlePattern,
+        int                     maxRows)
+{
+    // Get link_id first. We will get one most of the time.
+    int link_id = 0;
+    std::string qry = "SELECT lx.link_id"
+                      "  FROM link_xml lx,"  
+                      "       doc_type dt"
+                      " WHERE lx.doc_type = dt.id"                      
+                      "   AND lx.element = ?"
+                      "   AND dt.name = ?"; 
+    cdr::db::PreparedStatement stmt = conn.prepareStatement(qry);
+    stmt.setString(1, srcElem);
+    stmt.setString(2, srcDocType);    
+    cdr::db::ResultSet rs = stmt.executeQuery();
+    while (rs.next()) {
+        link_id = rs.getInt(1);      
+    }
+    if (link_id == 0) 
+        throw cdr::Exception(L"No links permitted from this element");
+                         
+    // Get link_property ids and values if exist.    
+    qry = "SELECT lp.property_id, lp.value, lpt.name"
+                      "  FROM link_properties lp,"
+                      "       link_prop_type lpt"                      
+                      " WHERE lpt.id = lp.property_id"
+                      "   AND lp.link_id = ?"; 
+    std::vector<int>         prop_ids;
+    std::vector<cdr::String> prop_values;   
+    cdr::db::PreparedStatement stmt2 = conn.prepareStatement(qry);
+    stmt2.setInt(1, link_id);     
+    cdr::db::ResultSet rs2 = stmt2.executeQuery();
+    while (rs2.next()) {
+        int         prop_id    = rs2.getInt(1);
+        cdr::String prop_value = rs2.getString(2);
+        cdr::String prop_name  = rs2.getString(3);
+       
+        // We can only handle one property type at the moment.        
+        if (prop_name != L"LinkTargetContains")
+            throw cdr::Exception (L"Not supporting link property type: "
+                                  + prop_name); 
+        
+        // We can only handle property ids with values.  
+        if (prop_value == L"") 
+            throw cdr::Exception (L"Not supporting null property value");   
+        
+        prop_ids.push_back(prop_id); 
+        prop_values.push_back(prop_value);            
+    }
+
+    // There is at least one link property for this link.
+    if (prop_ids.size() > 0)         
+        return getSearchLinksRespWithProp(conn, link_id, prop_ids, 
+                                          prop_values, titlePattern, 
+                                          maxRows); 
+     
+    // There is no link property for this link.    
+    qry = "SELECT ";
+    if (maxRows > 0) {
+        char buf[40];
+        sprintf(buf, "TOP %d ", maxRows);
+        qry += buf;
+    }
+    qry += "          d.id, d.title"
+           "  FROM    document d, link_target lt"
+           " WHERE    d.doc_type = lt.target_doc_type"           
+           "   AND    d.title LIKE ?"
+           "   AND    lt.source_link_type = ?"
+           " ORDER BY d.title";   
+
+    // Submit the query to the DBMS.
+    cdr::db::PreparedStatement stmt3 = conn.prepareStatement(qry); 
+    stmt3.setString(1, titlePattern);   
+    stmt3.setInt(2, link_id);   
+    cdr::db::ResultSet rs3 = stmt3.executeQuery();
+
+    // Construct the response.
+    cdr::String response = L"<CdrSearchLinksResp>";
+    int rows = 0;
+    while (rs3.next()) {       
+        int         id      = rs3.getInt(1);
+        cdr::String title   = rs3.getString(2);
+
+        if (rows++ == 0)
+            response += L"<QueryResults>";
+        wchar_t tmp[1000];
+        swprintf(tmp, L"<QueryResult><DocId>CDR%010ld</DocId>"
+                      L"<DocTitle>%.500s</DocTitle>"
+                      L"</QueryResult>", 
+                 id, title.c_str());
+        response += tmp;
+    }
+    if (rows > 0)
+        response += L"</QueryResults></CdrSearchLinksResp>";
+    else
+        response += L"<QueryResults/></CdrSearchLinksResp>";
+    return response;
+
+} // getSearchLinksResp()
 
 /**
  * Finds the denormalized text for a CDR link if the link can be pasted
