@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.24 2002-07-12 20:29:24 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.25 2002-07-15 18:55:08 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2002/07/12 20:29:24  bkline
+ * Added DocTitle direct access.
+ *
  * Revision 1.23  2002/06/07 13:52:10  bkline
  * Added support for last publishable linked document retrieval.
  *
@@ -710,9 +713,11 @@ namespace
           throw cdr::Exception(L"cannot register Sablotron scheme handler");
 
         char** pparms = p.g_parms();
+        // XXX casts of last two arguments will be needed for sab 0.95.
         rc = SablotRunProcessor(proc, "arg:/_stylesheet",
                                 "arg:/_xmlinput", "arg:/_output",
-                                (const char**)pparms, (const char**)arguments);
+                                /*(const char**)*/pparms, 
+                                /*(const char**)*/arguments);
         if (thread_data->fatalError)
           throw cdr::Exception(thread_data->errMsg.str());
         if (rc)
