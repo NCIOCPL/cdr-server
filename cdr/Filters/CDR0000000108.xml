@@ -70,17 +70,22 @@
                                   mode   = "copy"/>
 
        <ProfessionalDisclaimer>
-        XXXXX Replace with Professional Disclaimer when available XXXXXXXXXXX
-        <xsl:variable               name = "ProfDisclaimer" 
-                                  select = "document
-                                           (concat
-                                           ('cdrx:', 'CDR0000000000', 
-                                                            '/lastp'))"/>
+                <xsl:variable              name = "miscDoc1" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'Protocol Health ',
+                                                   'Professional Abstract ',
+                                                   'Disclaimer;Protocol ',
+                                                   'health professional ',
+                                                   'abstract disclaimer'))"/>
+    <!-- select = "document(concat('cdrx:','CDR0000000313','/lastp')) -->
 
-        <xsl:apply-templates      select = "$ProfDisclaimer/
-                                            MiscellaneousDocument/
-                                            MiscellaneousDocumentText"/>
-        XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                <xsl:apply-templates     select = "$miscDoc1/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_ProtHPDisclaimer'"/>
+                </xsl:apply-templates>
        </ProfessionalDisclaimer>       
 <optional>
        <EndPoints>       
@@ -134,14 +139,22 @@
         <xsl:apply-templates      select = "$pa_p/EntryDate" 
                                   mode   = "copy"/>
        <PatientDisclaimer>
-        <xsl:variable               name = "PatDisclaimer" 
-                                  select = "document
-                                           (concat
-                                           ('cdrx:','CDR0000000313',
-                                                           '/lastp'))"/>
-        <xsl:apply-templates      select = "$PatDisclaimer/
-                                            MiscellaneousDocument/
-                                            MiscellaneousDocumentText"/>
+                <xsl:variable              name = "miscDoc2" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'Protocol patient abstract ',
+                                                   'disclaimer;Protocol ',
+                                                   'patient abstract ',
+                                                   'disclaimer'))"/>
+    <!-- select = "document(concat('cdrx:','CDR0000000313','/lastp')) -->
+
+                <xsl:apply-templates     select = "$miscDoc2/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_ProtPatientDisclaimer'"/>
+                </xsl:apply-templates>
+
        </PatientDisclaimer>       
 
       </Patient>
@@ -346,8 +359,7 @@
        Template for extracting Glossary Term definitions for
        Rationale, Purpose, and TreatmentIntervention elements
        ============================================================== -->
-  <xsl:template            match = "ProjectedAccrual |
-                                    Rationale        | 
+  <xsl:template            match = "Rationale        | 
                                     Purpose          | 
                                     TreatmentIntervention">
     <xsl:apply-templates  select = "Para"/>
@@ -356,8 +368,7 @@
 
 
   <!-- ==============================================================
-       Template for extracting Glossary Term definitions for
-       Rationale, Purpose, and TreatmentIntervention elements
+       Template for extracting Outline and ProjectedAccrual elements
        ============================================================== -->
   <xsl:template            match = "Outline          |
                                     ProjectedAccrual">
@@ -365,13 +376,17 @@
   </xsl:template>
 
 
-  <!-- ==============================================================
-       Template for extracting MiscDocText including xref attribute 
-       ============================================================== -->
-  <xsl:template            match = "MiscellaneousDocumentText">
-    <xsl:apply-templates  select = "Para"/>
-    <xsl:apply-templates  select = "ExternalRef"/>
-  </xsl:template>
+<!-- ==================================================================
+     MiscellaneousDocumentText Template
+     ================================================================== -->  <xsl:template                    match = "MiscellaneousDocumentText">
+    <xsl:param                    name = "miscDocId"/>
+
+    <xsl:apply-templates  select = "Para"
+                            mode = "miscDoc">
+     <xsl:with-param      name = "miscDocId" select = "$miscDocId"/>
+    </xsl:apply-templates>
+</xsl:template>
+
 
 
   <!-- ==============================================================
@@ -502,10 +517,21 @@
                           select = "$DiagInfo/Term/TermRelationship/
                                     ParentTerm/TermId/@cdr:ref"/>
 
-        <DiagnosisParent     ref = "{$ParentID}">
+         <!-- Upcode the parent terms
+              Pass the term ID to extract the parent
+              ==================================================== -->
+                  <xsl:call-template   name = "upcodeDiagnosis">
+                   <xsl:with-param     name = "diagnosisID"
+                                     select = "$DiagID"/>
+                   <xsl:with-param     name = "diagnosisDoc"
+                                     select = "$DiagInfo"/>
+                  </xsl:call-template>
+
+
+        <!-- DiagnosisParent     ref = "{$ParentID}">
           <xsl:value-of   select = "$DiagInfo/Term/TermRelationship/
                                     ParentTerm/TermId"/>
-        </DiagnosisParent>
+        </DiagnosisParent -->
       </Diagnosis>
     </xsl:for-each>
 
@@ -566,26 +592,26 @@
                   </DocError>
                 </xsl:when>
                 <xsl:otherwise>
-                    <xsl:variable   name = "IntervenInfo" 
-                                  select = "document(concat 
-                                           ('cdrx:',$IntervenID, '/lastp'))"/>
-                  <InterventionType  ref = "{$IntervenID}">
-                  <xsl:value-of   select = "$IntervenInfo/Term/PreferredName"/>
+
+                    <xsl:variable      name = "IntervenInfo" 
+                                     select = "document(concat 
+                                               ('cdrx:',$IntervenID, 
+                                                '/lastp'))"/>
+                  <InterventionType     ref = "{$IntervenID}">
+                   <xsl:value-of     select = "$IntervenInfo/Term/
+                                               PreferredName"/>
                   </InterventionType>
-      <!-- xsl:apply-templates select = "$IntervenInfo/Term" mode = "copy"/-->
-                  <xsl:if           test = "contains($IntervenInfo/Term/
-                                            TermRelationship/ParentTerm/
-                                            TermId/@cdr:ref,'CDR')">
-                    <xsl:variable   name = "ParentID" 
-                                  select = "$IntervenInfo/Term/
-                                            TermRelationship/ParentTerm/
-                                            TermId/@cdr:ref"/>
-                    <InterventionTypeParent ref = "{$ParentID}">
-                    <xsl:value-of select = "$IntervenInfo/Term/
-                                            TermRelationship/ParentTerm/
-                                            TermId"/>
-                    </InterventionTypeParent>
-                  </xsl:if>
+
+         <!-- Upcode the parent terms
+              Pass the term ID to extract the parent
+              ==================================================== -->
+                  <xsl:call-template   name = "upcodeTerm">
+                   <xsl:with-param     name = "termID"
+                                     select = "$IntervenID"/>
+                   <xsl:with-param     name = "termDoc"
+                                     select = "$IntervenInfo"/>
+                  </xsl:call-template>
+
                 </xsl:otherwise>
               </xsl:choose>
             </xsl:if>
@@ -609,10 +635,45 @@
           </StudyCategory>
         </xsl:for-each>
 
-        <xsl:apply-templates      select = "Condition" 
-                                  mode   = "copy"/>
-        <xsl:apply-templates      select = "Gene" 
-                                  mode   = "copy"/>
+
+
+
+    <!-- Resolving the Condition to include   
+         ConditionParent                                          
+         ======================================================== -->
+    <xsl:for-each         select = "Condition">
+      <xsl:variable       name   = "CondID" 
+                          select = "@cdr:ref"/>
+      <xsl:variable       name   = "CondInfo" 
+                          select = "document
+                                    (concat('cdrx:',$CondID, '/lastp'))"/>
+
+      <StudyCondition>
+        <SpecificCondition   ref = "{$CondID}">
+          <xsl:value-of   select = "$CondInfo/Term/PreferredName"/>
+        </SpecificCondition>
+        <xsl:variable       name = "ParentID" 
+                          select = "$CondInfo/Term/TermRelationship/
+                                    ParentTerm/TermId/@cdr:ref"/>
+
+         <!-- Upcode the parent terms
+              Pass the term ID to extract the parent
+              ==================================================== -->
+                  <xsl:call-template   name = "upcodeCondition">
+                   <xsl:with-param     name = "conditionID"
+                                     select = "$CondID"/>
+                   <xsl:with-param     name = "conditionDoc"
+                                     select = "$CondInfo"/>
+                  </xsl:call-template>
+
+      </StudyCondition>
+    </xsl:for-each>
+
+
+
+        <!-- xsl:apply-templates      select = "Condition" 
+                                  mode   = "copy"/ -->
+        <xsl:apply-templates      select = "Gene"/>
         <xsl:apply-templates      select = "EnteredBy" 
                                   mode   = "copy"/>
         <xsl:apply-templates      select = "EntryDate" 
@@ -623,6 +684,162 @@
 
 
 
+  <!--
+  ===================================================================
+  Upcoding the InterventionTypeParent terms.
+  =================================================================== -->
+  <xsl:template                     name = "upcodeTerm">
+   <xsl:param                       name = "termID"/>
+   <xsl:param                       name = "termDoc"/>
+
+   <xsl:if                          test = "$termDoc/Term/
+                                            TermRelationship/ParentTerm">
+    <InterventionTypeParent>
+     <xsl:attribute                 name = "ref">
+      <xsl:value-of               select = "$termDoc/Term/TermRelationship
+                                            ParentTerm/TermId/@cdr:ref"/>
+     </xsl:attribute>
+
+     <xsl:value-of                select = "$termDoc/Term/TermRelationship
+                                            ParentTerm/TermId"/>
+    </InterventionTypeParent>
+
+
+  <!-- Once the parent term has been printed select the term to be
+       searched for the next level parent and call template again
+       =========================================================== -->
+    <xsl:variable                   name = "nextTermID"
+                                  select = "$termDoc/Term/TermRelationship
+                                             ParentTerm/TermId/@cdr:ref"/>
+    <xsl:variable                   name = "nextTermDoc" 
+                                  select = "document(concat
+                                          ('cdrx:',$nextTermID, '/lastp'))"/>
+
+    <xsl:call-template              name = "upcodeTerm">
+
+     <xsl:with-param                name = "termID"
+                                  select = "$nextTermID"/>
+     <xsl:with-param                name = "termDoc"
+                                  select = "$nextTermDoc"/>
+    </xsl:call-template>
+   </xsl:if>
+  </xsl:template>
+
+
+
+  <!--
+  ===================================================================
+  Upcoding the Diagnosis terms.
+  =================================================================== -->
+  <xsl:template                     name = "upcodeDiagnosis">
+   <xsl:param                       name = "diagnosisID"/>
+   <xsl:param                       name = "diagnosisDoc"/>
+
+   <xsl:if                          test = "$diagnosisDoc/Term/
+                                            TermRelationship/ParentTerm">
+    <DiagnosisParent>
+     <xsl:attribute                 name = "ref">
+      <xsl:value-of               select = "$diagnosisDoc/Term/TermRelationship
+                                            ParentTerm/TermId/@cdr:ref"/>
+     </xsl:attribute>
+
+     <xsl:value-of                select = "$diagnosisDoc/Term/TermRelationship
+                                            ParentTerm/TermId"/>
+    </DiagnosisParent>
+
+
+  <!-- Once the parent term has been printed select the term to be
+       searched for the next level parent and call template again
+       =========================================================== -->
+    <xsl:variable                   name = "nextTermID"
+                                  select = "$diagnosisDoc/Term/TermRelationship
+                                             ParentTerm/TermId/@cdr:ref"/>
+    <xsl:variable                   name = "nextTermDoc" 
+                                  select = "document(concat
+                                          ('cdrx:',$nextTermID, '/lastp'))"/>
+
+    <xsl:call-template              name = "upcodeDiagnosis">
+
+     <xsl:with-param                name = "diagnosisID"
+                                  select = "$nextTermID"/>
+     <xsl:with-param                name = "diagnosisDoc"
+                                  select = "$nextTermDoc"/>
+    </xsl:call-template>
+   </xsl:if>
+  </xsl:template>
+
+
+
+
+  <!--
+  ===================================================================
+  Upcoding the Condition terms.
+  =================================================================== -->
+  <xsl:template                     name = "upcodeCondition">
+   <xsl:param                       name = "conditionID"/>
+   <xsl:param                       name = "conditionDoc"/>
+
+   <xsl:if                          test = "$conditionDoc/Term/
+                                            TermRelationship/ParentTerm">
+    <ConditionParent>
+     <xsl:attribute                 name = "ref">
+      <xsl:value-of               select = "$conditionDoc/Term/TermRelationship
+                                            ParentTerm/TermId/@cdr:ref"/>
+     </xsl:attribute>
+
+     <xsl:value-of                select = "$conditionDoc/Term/TermRelationship
+                                            ParentTerm/TermId"/>
+    </ConditionParent>
+
+
+  <!-- Once the parent term has been printed select the term to be
+       searched for the next level parent and call template again
+       =========================================================== -->
+    <xsl:variable                   name = "nextTermID"
+                                  select = "$conditionDoc/Term/TermRelationship
+                                             ParentTerm/TermId/@cdr:ref"/>
+    <xsl:variable                   name = "nextTermDoc" 
+                                  select = "document(concat
+                                          ('cdrx:',$nextTermID, '/lastp'))"/>
+
+    <xsl:call-template              name = "upcodeCondition">
+
+     <xsl:with-param                name = "conditionID"
+                                  select = "$nextTermID"/>
+     <xsl:with-param                name = "conditionDoc"
+                                  select = "$nextTermDoc"/>
+    </xsl:call-template>
+   </xsl:if>
+  </xsl:template>
+
+
+  <!--
+  ==========================================================================
+  Template for handling the participating organizations.
+  ==========================================================================
+  -->
+  <xsl:template            match = "Gene">
+   <Gene>
+    <SpecificGene>
+    <xsl:attribute          name = "ref">
+     <xsl:value-of        select = "./@cdr:ref"/>
+    </xsl:attribute>
+
+
+     <xsl:variable          name = "GeneID" 
+                          select = "@cdr:ref"/>
+     <xsl:variable          name = "GeneInfo" 
+                          select = "document
+                                   (concat
+                                    ('cdrx:',$GeneID, '/lastp'))"/>
+    <xsl:value-of         select = "$GeneInfo/Term/PreferredName"/>
+
+
+   <!-- xsl:apply-templates   select = "OrgSite"/-->
+    </SpecificGene>
+   </Gene>
+  </xsl:template>
+  
 
 
 
@@ -636,7 +853,7 @@
                           select = "LeadOrganizationID/@cdr:ref"/>
    <xsl:variable            name = "org"
                           select = "document(concat
-                                    ('cdrx:', $orgID, '/last'))"/>
+                                    ('cdr:', $orgID, '/last'))"/>
    <ProtocolLeadOrg          ref = "{$orgID}">
     <xsl:apply-templates  select = "$org/Organization/
                                     OrganizationNameInformation/OfficialName"
@@ -721,7 +938,7 @@
                           select = "OrgSiteID/@cdr:ref"/>
    <xsl:variable            name = "org"
                           select = "document(concat
-                                    ('cdrx:', $orgId, '/last'))"/>
+                                    ('cdr:', $orgId, '/last'))"/>
    <OrgSite                  ref = "{$orgId}">
 
 <!-- Remove for Production: Start ============================= -->
@@ -834,7 +1051,7 @@
                           select = "OrganizationLocation/@cdr:ref"/>
    <xsl:variable            name = "orgDoc"
                           select = "document(concat
-                                    ('cdrx:', $fragRef, '/last'))"/>
+                                    ('cdr:', $fragRef, '/last'))"/>
    <xsl:variable            name = "fragId"
                           select = "substring-after($fragRef, '#')"/>
    <xsl:variable            name = "orgLoc"
@@ -989,6 +1206,24 @@
       <xsl:apply-templates/>
     </Para>
   </xsl:template>
+
+
+<!-- ============================================================= 
+     Create the Para template including the renamed attribute for 
+     the paragraph IDs.
+     ============================================================= -->
+  <xsl:template              match = "Para"
+                             mode  = "miscDoc">
+   <xsl:param                name  = "miscDocId"/>
+    <Para>
+      <xsl:attribute          name = "id">
+       <xsl:value-of        select = "$miscDocId"/>
+       <xsl:value-of        select = "./@cdr:id"/>
+      </xsl:attribute>
+      <xsl:apply-templates/>
+    </Para>
+  </xsl:template>
+    
 
 
 <!-- ============================================================= 
