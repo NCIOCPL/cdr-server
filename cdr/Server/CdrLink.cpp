@@ -23,9 +23,15 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.12 2002-01-31 16:40:06 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.13 2002-02-12 21:29:10 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2002/01/31 16:40:06  ameyer
+ * Reorganized order of events so that the check for a link target's existence
+ * is performed in the CdrLink constructor.  This is needed so that we can
+ * avoid referential integrity failures when updating the link_net with an
+ * unvalidated document.
+ *
  * Revision 1.11  2002/01/24 15:18:07  ameyer
  * Improved error messages.
  * Changed fragment field to store null instead of "" in database.
@@ -1367,7 +1373,7 @@ static int linkTree (
 
                 // If it was already there, declare an error
                 if (!ins_stat.second)
-                    errList.push_back (L"cdr:ref \"" + frag +
+                    errList.push_back (L"cdr:id \"" + frag +
                                        L"\" used more than once");
             }
 
