@@ -123,6 +123,7 @@
   <p/>
 
   <!--
+  ===============================================================
   Display Name Information
   =============================================================== -->
   <b>
@@ -132,6 +133,7 @@
   <xsl:apply-templates          select = "OrganizationNameInformation"/>
 
   <!--
+  ===============================================================
   Display Parent Information
   =============================================================== -->
   <xsl:if                         test = "OrganizationParent">
@@ -173,7 +175,7 @@
    </tr>
   </table>
 
-  <xsl:if test = "OrganizationType">
+  <xsl:if                         test = "OrganizationType">
    <table       xsl:use-attribute-sets = "table">
     <tr>
      <td        xsl:use-attribute-sets = "cell1of2">
@@ -217,20 +219,40 @@
     </tr>
    </table>
   </xsl:if>
+
+  <xsl:if                         test = "PreferredProtocolOrganization">
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Preferred Protocol Organization</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <table    xsl:use-attribute-sets = "table">
+       <xsl:for-each            select = "PreferredProtocolOrganization">
+        <tr>
+         <td>
+          <xsl:value-of         select = "substring-before(
+                                           concat(., ';'), ';')"/>
+          <xsl:text> (CDR</xsl:text>
+          <xsl:value-of         select = "number(
+                                           substring-after(@cdr:ref, 'CDR'))"/>
+          <xsl:text>)</xsl:text>
+         </td>
+        </tr>
+       </xsl:for-each>
+      </table>
+     </td>
+    </tr>
+   </table>
+  </xsl:if>
+
   <p/>
+
+  <!--
+  ====================================================================
+  Display Locations and Affiliations information
+  ==================================================================== -->
   <xsl:apply-templates          select = "OrganizationLocations"/>
-
-<!-- This does nothing -->
-<!--
-    <xsl:if                       test = "@IncludeParentName">
-      <xsl:for-each             select = "Location/OrganizationAddressNames/
-                                          OrganizationName">
-        <xsl:value-of           select = "."/>
-      <br />
-      </xsl:for-each>
-    </xsl:if>
--->
-
   <xsl:apply-templates          select = "OrganizationAffiliations"/>
 
   <hr/>
@@ -276,11 +298,7 @@
   </table>
   <p/>
 
-  <b><font size='4'>Dated Action</font></b>
-  <br />
   <xsl:apply-templates          select = "DatedAction"/>
-  <br />
-
    
   <!-- 
   =================================================================
@@ -414,6 +432,9 @@
  <xsl:template                   match = "OrganizationDetails">
   <xsl:apply-templates          select = "CIPSContactPerson"/>
   <xsl:apply-templates          select="OrganizationAdministrativeInformation"/>
+  <xsl:apply-templates          select = "PreferredProtocolContactMode"/>
+  <xsl:apply-templates          select = "Comment"
+                                  mode = "orgDetails"/>
  </xsl:template>
 
 
@@ -436,6 +457,12 @@
          <xsl:value-of          select = "GivenName"/>
          <xsl:text> </xsl:text>
          <xsl:value-of          select = "SurName"/>
+         <xsl:text> (CDR</xsl:text>
+         <xsl:value-of          select = "number(
+                                          substring-after(../@cdr:ref, 
+                                                                 'CDR'))"/>
+         <xsl:text>)</xsl:text>
+
         </td>
        </tr>
       </xsl:for-each>
@@ -462,7 +489,7 @@
    </tr>
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Include</b>
+     <b>Directory Include</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:choose>
@@ -483,6 +510,16 @@
      <xsl:value-of              select = "Date"/>
     </td>
    </tr>
+   <xsl:if                        test = "PreferredDirectoryContactMode">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Preferred Directory Contact</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "PreferredDirectoryContactMode"/>
+     </td>
+    </tr>
+   </xsl:if>
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Comment</b>
@@ -492,6 +529,45 @@
     </td>
    </tr>
   </table>
+ </xsl:template>
+
+
+ <!--
+ =======================================================================
+ Template for Organization Locations Information
+ ======================================================================= -->
+ <xsl:template                   match = "PreferredProtocolContactMode">
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Preferred Protocol Contact</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "."/>
+    </td>
+   </tr>
+  </table>
+ </xsl:template>
+
+
+ <!--
+ =======================================================================
+ Template for Organization Locations Information
+ ======================================================================= -->
+ <xsl:template                   match = "Comment"
+                                  mode = "orgDetails">
+  <p/>
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Details Comment</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "."/>
+    </td>
+   </tr>
+  </table>
+  <p/>
  </xsl:template>
 
 
@@ -521,6 +597,11 @@
    </b>
   </xsl:if>
   <br />
+  <xsl:for-each                 select = "OrganizationName">
+    <xsl:value-of               select = "."/>
+    <br/>
+  </xsl:for-each>
+
   <xsl:for-each                 select = "PostalAddress">
    <xsl:choose>
    <xsl:when                      test = "@Public">
@@ -800,6 +881,45 @@
 
  <!--
  ========================================================================
+ Template for Dated Action
+ ======================================================================== -->
+ <xsl:template                   match = "DatedAction">
+  <b>
+   <font size='4'>Dated Action</font>
+  </b>
+
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Description</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "ActionDescription"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Date</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "ActionDate"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Comment</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Comment"/>
+    </td>
+   </tr>
+  </table>
+  <p/>
+ </xsl:template>
+
+
+ <!--
+ ========================================================================
  Named Template to display the Address
  ======================================================================== -->
  <xsl:template                    name = "listAddress">
@@ -1019,7 +1139,7 @@
     </xsl:if>
    <br/>
   </table>
-  <p/>
+  <!-- p/ -->
  </xsl:template>
 
 
