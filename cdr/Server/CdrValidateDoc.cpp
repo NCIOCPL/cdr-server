@@ -1,10 +1,13 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.14 2001-09-25 14:22:57 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.15 2002-02-26 22:39:39 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2001/09/25 14:22:57  ameyer
+ * Updated call to validateDocAgainstSchema for new parameter.
+ *
  * Revision 1.13  2001/06/20 00:54:51  ameyer
  * Changed handling of error lists in order to incorporate error info
  * from other stages of processing into one returned list to client,
@@ -229,6 +232,10 @@ cdr::String cdr::execValidateDoc (
     bool              parseOK = false;
     cdr::String       docTypeString = docObj.getTextDocType();
 
+    // Document status: 'V'alid, 'I'nvalid, or 'M'alformed
+    // Invalid until found otherwise
+    const wchar_t* status = L"I";
+
     // Will append to the error list from the document object
     cdr::StringList& errList = docObj.getErrList();
 
@@ -256,12 +263,19 @@ cdr::String cdr::execValidateDoc (
                                     docTypeString, validRule, errList);
     }
 
-    else
+    else {
         // Add this to the error messages.  Parse error msg already there
         errList.push_back (L"Document malformed.  Validation not performed");
 
-    // Note the outcome of the validation.
-    const wchar_t* status = errList.size() > 0 ? L"I" : L"V";
+        // Set status in databse to malformed
+        status = L"M";
+    }
+
+    // If not malformed, note the outcome of the validation.
+    if (status != L"M")
+        status = errList.size() > 0 ? L"I" : L"V";
+
+    // Update database status
     if (validRule == cdr::UpdateUnconditionally ||
             (validRule == cdr::UpdateIfValid && errList.size() == 0))
         setDocStatus (docObj.getConn(), docObj.getId(), status);
@@ -309,7 +323,15 @@ void cdr::validateDocAgainstSchema(
 
     // Check the document against its schema.
     cdr::dom::Parser parser;
-    parser.parse(schemaString);
+    try {
+        parser.parse(schemaString);
+    }
+    catch (const cdr::dom::XMLException& e) {
+        throw cdr::Exception (
+                L"validateDocAgainstSchema: Error parsing " + docTypeName +
+                L" schema: " + e.getMessage());
+    }
+
     cdr::xsd::validateDocAgainstSchema(docElem,
                                   parser.getDocument().getDocumentElement(),
                                   errors, &conn);
