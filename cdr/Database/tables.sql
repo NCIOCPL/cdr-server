@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.71 2002-11-01 05:10:52 ameyer Exp $
+ * $Id: tables.sql,v 1.72 2002-11-11 16:09:08 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.71  2002/11/01 05:10:52  ameyer
+ * Made remailer_ids.recipient nullable.  Not used in directories.
+ *
  * Revision 1.70  2002/09/12 20:03:39  bkline
  * Added first_pub and first_pub_knowable columns to all_docs table.
  *
@@ -1631,3 +1634,36 @@ CREATE TABLE command_log
   CONSTRAINT command_log_pk PRIMARY KEY(thread, received))
 CREATE INDEX command_log_time ON command_log(received)
 GO
+
+/*
+ * Named collection of CDR XSL/T filters and nested filter sets.
+ *
+ *      command  full XML string (UTF-8 encoded) for the CdrCommandSet.
+ *           id  automatically generated primary key.
+ *         name  used by scripts to invoke the set of filters.
+ *  description  brief description of the set, used to describe the
+ *               filter set's use in a user interface (for example,
+ *               in a popup help tip).
+ *        notes  more extensive optional notes on the use of this
+ *               filter set.
+ */
+CREATE TABLE filter_set
+         (id INTEGER IDENTITY PRIMARY KEY,
+        name VARCHAR(80),
+ description NVARCHAR(256),
+       notes NTEXT)
+
+/*
+ * Member of a filter set.
+ *
+ *   filter_set  identifies which set this is a member of.
+ *     position  identifies how to sequence this member within the set.
+ *       filter  identifies a filter which is a member of the set.
+ *       subset  identifies a nested filter set.
+ */
+CREATE TABLE filter_set_member
+ (filter_set INTEGER NOT NULL REFERENCES filter_set,
+    position INTEGER NOT NULL,
+      filter INTEGER     NULL REFERENCES all_docs,
+      subset INTEGER     NULL REFERENCES filter_set,
+  CONSTRAINT filter_set_member_pk PRIMARY KEY(filter_set, position))
