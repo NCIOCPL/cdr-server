@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.11 2000-06-09 00:46:36 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.12 2000-06-09 04:00:09 ameyer Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2000/06/09 00:46:36  bkline
+ * Replaced hardwired database logon strings with named constants.
+ *
  * Revision 1.10  2000/06/02 20:56:01  bkline
  * Fixed typo in progress message reporting clearing of inactive sessions.
  *
@@ -66,7 +69,7 @@ static void             sendResponse(int, const cdr::String&);
 static void             processCommands(int, const std::string&,
                                         cdr::db::Connection&,
                                         const cdr::String&);
-static cdr::String      processCommand(cdr::Session&, 
+static cdr::String      processCommand(cdr::Session&,
                                        const cdr::dom::Node&,
                                        cdr::db::Connection&,
                                        const cdr::String&);
@@ -142,13 +145,19 @@ main(int ac, char **av)
  * of handling multiple command sets for the connection.
  */
 DWORD __stdcall dispatcher(LPVOID arg) {
-    cdr::db::Connection conn = 
+    cdr::db::Connection conn =
         cdr::db::DriverManager::getConnection(cdr::db::url,
                                               cdr::db::uid,
                                               cdr::db::pwd);
     cdr::String now = conn.getDateTimeString();
     now[10] = L'T';
     std::wcerr << L"NOW=" << now << L"\n";
+
+    // Create thread specific log pointer
+    // Done early in thread creation so anything in the thread can
+    //   log whatever it wants to.
+    cdr::log::pThreadLog = new cdr::log::Log;
+
     int fd = (int)arg;
     std::string request;
     int nBytes;
@@ -157,6 +166,10 @@ DWORD __stdcall dispatcher(LPVOID arg) {
         //std::cout << "received request with " << nBytes << " bytes...\n";
         processCommands(fd, request, conn, now);
     }
+
+    // Thread is about to go, done with thread specific log
+    delete cdr::log::pThreadLog;
+
     return EXIT_SUCCESS;
 }
 
@@ -174,7 +187,7 @@ int readRequest(int fd, std::string& request, const cdr::String& when) {
     size_t totalRead = 0;
     bool canSleep = true;
     while (totalRead < sizeof lengthBytes) {
-        int n = recv(fd, lengthBytes + totalRead, 
+        int n = recv(fd, lengthBytes + totalRead,
                      sizeof lengthBytes - totalRead, 0);
         //std::cerr << "Return from recv: " << n << std::endl;
         if (n < 0)
@@ -297,7 +310,7 @@ void processCommands(int fd, const std::string& buf,
  * which prevents processing of any of the commands in the command
  * buffer.
  */
-void sendErrorResponse(int fd, const cdr::String& errMsg, 
+void sendErrorResponse(int fd, const cdr::String& errMsg,
                        const cdr::String& when)
 {
     cdr::String response = L"<CdrResponseSet Time='"
@@ -312,7 +325,7 @@ void sendErrorResponse(int fd, const cdr::String& errMsg,
  * Finds the command handler responsible for the current command and
  * invokes it.
  */
-cdr::String processCommand(cdr::Session& session, 
+cdr::String processCommand(cdr::Session& session,
                            const cdr::dom::Node& cmdNode,
                            cdr::db::Connection& conn,
                            const cdr::String& when)
@@ -331,6 +344,11 @@ cdr::String processCommand(cdr::Session& session,
         if (type == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String cmdName = specificCmd.getNodeName();
             std::wcerr << L"Received command: " << cmdName << L"\n";
+
+            // Log command contents
+            cdr::log::pThreadLog->Write (
+                    L"Command to be processed",
+                    cdr::dom::getTextContent (specificCmd));
 
             cdr::Command cdrCommand = cdr::lookupCommand(cmdName);
             if (!cdrCommand)
@@ -364,6 +382,8 @@ cdr::String processCommand(cdr::Session& session,
             catch (cdr::Exception e) {
                 if (!conn.getAutoCommit())
                     conn.rollback();
+
+                // Exception text already logged in exception constructor
                 return cdr::String(rspTag + L"failure'>\n  <"
                                           + cmdName
                                           + L"Resp>\n"
@@ -376,7 +396,7 @@ cdr::String processCommand(cdr::Session& session,
             }
             cdr::String response = rspTag + session.getStatus()
                                           + L"'>\n"
-                                          + cmdResponse 
+                                          + cmdResponse
                                           + L" </CdrResponse>\n";
             if (cmdName == L"CdrShutdown")
                 timeToShutdown = true;
@@ -416,7 +436,7 @@ DWORD __stdcall sessionSweep(LPVOID arg) {
     int counter = 0;
     while (!timeToShutdown) {
         if (counter++ % 60 == 0) {
-            cdr::db::Connection conn = 
+            cdr::db::Connection conn =
                 cdr::db::DriverManager::getConnection(
                         cdr::db::url,
                         cdr::db::uid,
@@ -426,7 +446,7 @@ DWORD __stdcall sessionSweep(LPVOID arg) {
             if (rows > 0) {
                 cdr::String now = conn.getDateTimeString();
                 now[10] = L'T';
-                std::wcerr << L"*** CLEARED " << rows 
+                std::wcerr << L"*** CLEARED " << rows
                     << L" INACTIVE SESSIONS AT " << now << L"\n";
             }
         }
