@@ -22,26 +22,27 @@
  values:
  1. leadOrgID:    This is the value of the parent organization for which a
                   participant will be added.
-                  If the parent does not exist the no changes to the document
-                  are performed.
+                  If the parent does not exist then no changes to the document
+                  will be performed.
                   This ID has to match against LeadOrganizationID[@cdr:ref]. 
  2. newOrgSiteID: This is the value of the new participant to be added to the 
-                  existing protocol sites (if exist) or added as a new protocol 
-                  site for the lead organization.
+                  existing ProtocolSites fragment (if exist) or added as the
+                  first participating site for the lead organization.
                   If the participant organization already exists under the 
                   specified parent organization the filter returns with an 
                   error.
  3. newPersonID:  This is the value of the person to be added as the specific
                   contact person under the new participant.  The value is 
-                  entered as is.
+                  entered as is (i.e. including fragment ID if specified).
 
- The theee optional values are passed in as:
+ The three optional values are passed in as:
  4. coop:         This is the value that - if exists - specifies an optional 
                   attribute named CoopMember for the OrgSite element.
                   Valid entries are Main or Affiliate.
-                  E.g. <OrgSite CoopMember="Main">
+                  This would result in the output
+                    <OrgSite CoopMember="Main">
  5. setRole:      This is the value that - if exists - overwrites the default
-                  Role of Principal Investigator for the SpecificPerson.
+                  Role of Principal investigator for the SpecificPerson.
  6. setSpecificPhone:  This is the value that - if exists - specifies the 
                   default SpecificPhone element.
 
@@ -64,18 +65,6 @@
  <xsl:param                      name = "coop"/>
  <xsl:param                      name = "setRole"/>
  <xsl:param                      name = "setSpecificPhone"/>
- <!-- xsl:variable               name = "leadOrgID"          
-                               select = "'CDR0000037698'"/>
- <xsl:variable                   name = "newOrgSiteID"
-                               select = "'CDR0000034647'"/>
- <xsl:variable                   name = "newPersonID"
-                               select = "'CDR7777777777'"/>
- <xsl:variable                   name = "coop"
-                               select = "'Main'"/>
- <xsl:variable                   name = "setRole"
-                               select = "'Kasper'"/>
- <xsl:variable                   name = "setSpecificPhone"
-                               select = "'1-800-EAT-MEAT'" -->
  <!--
  ===================================================================
  Template to detect if the Lead org has already participants.
@@ -222,16 +211,16 @@
           </Role>
          </xsl:when>
          <xsl:otherwise>
-          <Role>Principal Investigator</Role>
+          <Role>Principal investigator</Role>
          </xsl:otherwise>
         </xsl:choose>
 
+        <xsl:if                   test = "$setSpecificPhone">
+         <SpecificPhone>
+          <xsl:value-of         select = "$setSpecificPhone"/>
+         </SpecificPhone>
+        </xsl:if>
        </SpecificPerson>
-       <xsl:if                    test = "$setSpecificPhone">
-        <SpecificPhone>
-         <xsl:value-of          select = "$setSpecificPhone"/>
-        </SpecificPhone>
-       </xsl:if>
       </OrgSiteContact>
      </OrgSite>
     </xsl:when>
