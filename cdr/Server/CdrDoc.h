@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.16 2002-08-14 01:36:06 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.17 2003-01-10 00:59:29 ameyer Exp $
  *
  */
 
@@ -257,6 +257,7 @@ namespace cdr {
             cdr::String getValStatus()     {return ValStatus;}
             cdr::String getValDate()       {return ValDate;}
             cdr::String getActiveStatus()  {return ActiveStatus;}
+            cdr::String getDbActiveStatus(){return dbActiveStatus;}
             cdr::String getTextDocType()   {return TextDocType;}
             cdr::String getTitle()         {return Title;}
             cdr::String getXml()           {return Xml;}
@@ -284,7 +285,8 @@ namespace cdr {
             cdr::String ValStatus;      // V(alid) I(nvalid)
                                         //   U(nvalidated) M(alformed)
             cdr::String ValDate;        // Datetime
-            cdr::String ActiveStatus;   // Y/N
+            cdr::String ActiveStatus;   // 'A', 'I', 'D' - may change
+            cdr::String dbActiveStatus; // ActiveStatus in database, before chg
             cdr::String TextDocType;    // Form used in document tag
             cdr::String Title;          // External title
             cdr::String Xml;            // Actual document as XML, not CDATA
