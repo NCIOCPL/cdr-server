@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.8 2000-05-09 21:09:40 bkline Exp $
+ * $Id: CdrCommand.h,v 1.9 2000-05-10 20:29:50 mruben Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2000/05/09 21:09:40  bkline
+ * More ccdoc comments.
+ *
  * Revision 1.7  2000/05/03 18:49:14  bkline
  * Added parameter names (for ccdoc).
  *
@@ -445,6 +448,14 @@ namespace cdr {
                               const dom::Node&  node,
                               db::Connection&   conn);
 
+    /**
+     * Converts a DOM node to its String representation
+     *
+     *  @param      node        contains the XML to be converted.
+     *  @return                 String object containing the XML
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String DOMtoString(const dom::Node&);
 }
 
 #endif
