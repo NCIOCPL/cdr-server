@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSearch.cpp,v 1.4 2001-03-02 13:59:57 bkline Exp $
+ * $Id: CdrSearch.cpp,v 1.5 2001-03-21 02:40:21 bkline Exp $
  *
  * Queries the CDR to create subset list of documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2001/03/02 13:59:57  bkline
+ * Added DocType element to results.
+ *
  * Revision 1.3  2000/10/04 18:28:26  bkline
  * Fixed comment typo; added support for MaxDocs attribute; implemented
  * command to search for link target candidates.
@@ -237,8 +240,9 @@ cdr::String cdr::QueryNode::getSql() const
     case ASSERTION:
         switch (lValueType) {
         case ATTR:
-            return cdr::String(L"attr.name = ")        + markString(lValueName)
-                                                       + L" AND attr.val"
+            return cdr::String(L"attr.path = ")        + markString(L"/" 
+                                                       + lValueName)
+                                                       + L" AND attr.value"
                                                        + getOpString() 
                                                        + markString(rValue);
         case DOC_ID:
@@ -299,10 +303,10 @@ cdr::String cdr::Query::getSql(int maxDocs)
     sql += "document.id, document.title, doc_type.name FROM document";
     if (tree) {
         checkTablesJoined(tree);
-        cdr::String where = L" WHERE ";
+        cdr::String where = L" WHERE document.active_status != 'D' AND ";
         if (hasAttrTest) {
-            sql += L", attr";
-            where += L"document.id = attr.id AND ";
+            sql += L", query_term attr";
+            where += L"document.id = attr.doc_id AND ";
         }
         if (hasCreatorTest) {
             sql += L", usr AS creator";
