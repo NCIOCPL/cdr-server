@@ -154,6 +154,51 @@
  =================================================================== --> 
  <!-- 
  ===================================================================
+ Template to detect circular reference in Parent/Child relationship
+ =================================================================== -->
+ <xsl:template                    name = 'getParentOrgRecurse'>
+  <xsl:param                      name = 'orgID'/>
+  <xsl:param                      name = 'level'/>
+  <xsl:param                      name = 'parentIds'/>
+
+  <xsl:variable                   name = "org"
+                                select = "document(concat('cdr:', $orgID, 
+                                                          '/last'))"/>
+  <!-- 
+  Do nothing or display the parent IDs and terminate if more then 
+  10 ancestors were detected
+  =================================================================== -->
+  <xsl:choose>
+   <xsl:when                      test = "$level &lt; 10">
+    <xsl:for-each               select = "$org/Organization/
+                                          OrganizationParent/
+                                          ParentOrganization">
+
+     <xsl:call-template           name = "getParentOrgRecurse">
+      <xsl:with-param             name = "orgID"
+                                select = "@cdr:ref"/>
+      <xsl:with-param             name = "parentIds"
+                                select = "concat($parentIds, ' ', 'CDR', 
+                                          number(substring(@cdr:ref, 4)))"/>
+      <xsl:with-param             name = "level"
+                                select = "$level + 1"/>
+     </xsl:call-template>
+    </xsl:for-each>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:message terminate = "yes">
+     <xsl:text>ERROR: Too many parent levels (></xsl:text>
+     <xsl:value-of              select = "$level"/>
+     <xsl:text>). </xsl:text>
+     <xsl:value-of              select = "$parentIds"/>
+    </xsl:message>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
  Extract the information for one lead organization.
  =================================================================== -->
  <xsl:template                    name = "getOrganization">
@@ -172,9 +217,32 @@
 
     <xsl:copy-of                select = "$org/Organization/
                                           OrganizationNameInformation"/>
+
+    <!-- 
+    Check to ensure we're not creating an infinite loop here
+    ============================================================= -->
+    <xsl:for-each               select = "$org/Organization/
+                                          OrganizationParent/
+                                          ParentOrganization">
+     <xsl:call-template           name = "getParentOrgRecurse">
+      <xsl:with-param             name = "orgID"
+                                select = "@cdr:ref"/>
+      <xsl:with-param             name = "level"
+                                select = "'1'"/>
+      <xsl:with-param             name = "parentIds"
+                                select = "concat('CDR', 
+                                          number(substring(@cdr:ref, 4)))"/>
+     </xsl:call-template>
+    </xsl:for-each>
+
+    <!-- 
+    If we are still in business no infinite loop has been detected.
+    Continue to display the parent/child tree
+    =============================================================== -->
     <xsl:apply-templates        select = "$org/Organization/
                                           OrganizationParent/
                                           ParentOrganization"/>
+
     <!--  
     All we need for the ParentOrganization, CCOP, etc. is the parent 
     name and the information if there exists a grandparent.  
