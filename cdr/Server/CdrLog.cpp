@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLog.cpp,v 1.4 2002-02-28 01:02:53 bkline Exp $
+ * $Id: CdrLog.cpp,v 1.5 2002-03-04 20:51:18 bkline Exp $
  *
  * Implementation of writing info to the log table in the database.
  * If that can't be done, takes an alternative action to write to file.
@@ -7,6 +7,9 @@
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/02/28 01:02:53  bkline
+ * Added code to close mutex handle.
+ *
  * Revision 1.3  2001/10/29 15:44:12  bkline
  * Replaced fopen/fwprintf/fclose with wofstream I/O.
  *
@@ -221,7 +224,15 @@ void cdr::log::WriteFile (
     // Set datetime
     time_t ltime;
     time (&ltime);
-    wchar_t *wct = _wctime (&ltime);
+    /*
+     * Can't use this, because of a bug in Microsoft's multi-threaded
+     * runtime library.
+     *
+     * wchar_t *wct = _wctime (&ltime);
+     */
+    const char* ascTime = asctime(&ltime);
+    cdr::String timeStr(ascTime);
+
 
     // Try to log the message whether or not we got exclusive access
     // When writing to a file, we don't truncate the data - don't
@@ -230,13 +241,13 @@ void cdr::log::WriteFile (
     if (os) {
 
         // Datetime, source, message
-        os << L"---" << wct 
+        os << L"---" << timeStr.c_str() 
            << L">>>" << MsgSrc.c_str() 
            << L":\n" << Msg.c_str() << std::endl;
     }
     else {
         // Last resort is stderr
-        std::wcerr << L"---" << wct 
+        std::wcerr << L"---" << timeStr.c_str() 
                    << L">>>" << MsgSrc.c_str() 
                    << L":\n" << Msg.c_str() << std::endl;
     }
