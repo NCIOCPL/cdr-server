@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSession.cpp,v 1.9 2002-06-18 22:16:03 ameyer Exp $
+ * $Id: CdrSession.cpp,v 1.10 2002-08-23 02:03:43 ameyer Exp $
  *
  * Session control information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2002/06/18 22:16:03  ameyer
+ * Bug fix in new getCanDo().
+ *
  * Revision 1.8  2002/06/18 20:44:46  ameyer
  * Oops, return from CanDo should be "<CdrCanDoResp>...".
  *
@@ -100,6 +103,10 @@ bool cdr::Session::canDo(db::Connection& conn,
                          const cdr::String& action,
                          int docId) const
 {
+    // In case the action string includes newlines, etc.
+    // This can happen if it was stored in an XML doc via XMetal
+    cdr::String normAction = cdr::normalizeWhiteSpace (action);
+
     std::string query = "SELECT COUNT(*)"
                         "  FROM grp_usr    gu,"
                         "       grp_action ga,"
@@ -113,7 +120,7 @@ bool cdr::Session::canDo(db::Connection& conn,
                         "   AND d.id        = ?";
     cdr::db::PreparedStatement ps = conn.prepareStatement(query);
     ps.setInt(1, uid);
-    ps.setString(2, action);
+    ps.setString(2, normAction);
     ps.setInt(3, docId);
     cdr::db::ResultSet rs = ps.executeQuery();
     if (!rs.next())
@@ -146,7 +153,6 @@ cdr::String cdr::getCanDo (cdr::Session& session,
     cdr::String cmdAction=L"",  // Action to be checked from command element
                 cmdDocType=L"", // DocType to be checked
                 result;         // Y=Action is allowed, N=not
-
 
     // Parse command
     child = node.getFirstChild();
