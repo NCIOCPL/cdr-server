@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.11 2000-10-04 18:21:06 bkline Exp $
+ * $Id: CdrCommand.h,v 1.12 2000-10-23 14:54:45 mruben Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2000/10/04 18:21:06  bkline
+ * Added searchLinks and listDocTypes.
+ *
  * Revision 1.10  2000/05/21 00:53:13  bkline
  * Added shutdown command.
  *
@@ -402,9 +405,9 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String checkOut   (Session&          session,
-                              const dom::Node&  node,
-                              db::Connection&   conn);
+    extern String checkVerOut   (Session&          session,
+                                 const dom::Node&  node,
+                                 db::Connection&   conn);
 
     /**
      * Releases the check-out status for the specified document.
@@ -417,9 +420,69 @@ namespace cdr {
      *                          command response.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String checkIn    (Session&          session,
-                              const dom::Node&  node,
-                              db::Connection&   conn);
+    extern String checkVerIn    (Session&          session,
+                                 const dom::Node&  node,
+                                 db::Connection&   conn);
+
+    /**
+     * Creates a new version label
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String createLabel   (Session&          session,
+                                 const dom::Node&  node,
+                                 db::Connection&   conn);
+
+    /**
+     * Deletes a version label
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String deleteLabel   (Session&          session,
+                                 const dom::Node&  node,
+                                 db::Connection&   conn);
+
+    /**
+     * Labels a document/version
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String labelDocument (Session&          session,
+                                 const dom::Node&  node,
+                                 db::Connection&   conn);
+
+    /**
+     * Removes a label from a document/version
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String unlabelDocument (Session&          session,
+                                 const dom::Node&  node,
+                                 db::Connection&   conn);
 
     /**
      * Produces a canned CDR report.
