@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: InScopeProtocol.xml,v 1.10 2001-08-23 13:52:41 ArkD Exp $
+      $Id: InScopeProtocol.xml,v 1.11 2001-08-31 16:04:51 ArkD Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.10  2001/08/23 13:52:41  ArkD
+      *** empty log message ***
+
       Revision 1.9  2001/08/22 17:09:56  ArkD
       ProtocolSpecificContact moved up.
       SpecificPhone made optional.
@@ -127,7 +130,8 @@
                      type            = 'ProtocolAdminInfo'/>
     </sequence>
     <attribute       name            = 'xmlns:cdr'
-                     type            = 'anyURI'/>
+                     type            = 'anyURI'
+                     minOccurs       = '0'/>
   </complexType>
 
 <!--=====================================================================-->
@@ -220,6 +224,9 @@
 
   <complexType       name            = 'ProtocolAdminInfo'>
     <sequence>
+      <element       name            = 'CurrentProtocolStatus'
+                     type            = 'string'/>
+      <!--Calculated based on the status of the protocol at the various lead orgs-->
       <element       name            = 'ProtocolLeadOrg'
                      type            = 'ProtocolLeadOrg'
                      maxOccurs       = 'unbounded'/>
@@ -236,20 +243,51 @@
                      type            = 'OrganizationLink'/>
       <element       name            = 'LeadOrgRole'
                      type            = 'PrimarySecondary'/>
-      <element       name            = 'LeadOrgProtocolStatus'
-                     type            = 'ProtocolStatusName'/>
       <element       name            = 'LeadOrgProtocolID'
                      type            = 'string'
                      maxOccurs       = 'unbounded'/>
+      <element       name            = 'OrgStatuses'
+                     type            = 'OrgStatuses'/>
       <element       name            = 'LeadOrgPersonnel'
                      type            = 'LeadOrgPersonnel'
                      maxOccurs       = 'unbounded'/>
       <element       name            = 'ProtocolSites'
                      type            = 'ProtocolSites'
                      minOccurs       = '0'/>
+      <element       name            = 'MailAbstractTo'
+                     type            = 'IDREF'
+                     minOccurs       = '0'/>
+      <!--If LeadOrgRole=Primary MailAbstractTo should be required-->
     </sequence>
     <attribute       name            = 'Group'
                      type            = 'YesNo'/>
+  </complexType>
+
+  <complexType       name            = 'OrgStatuses'>
+    <sequence>
+      <element       name            = 'CurrentOrgStatus'
+                     type            = 'OrgStatus'/>
+      <element       name            = 'PreviousOrgStatus'
+                     type            = 'OrgStatus'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'OrgStatus'>
+    <sequence>
+      <element       name            = 'StatusName'
+                     type            = 'ProtocolStatusName'/>
+      <element       name            = 'StatusDate'
+                     type            = 'date'/>
+      <element       name            = 'Comment'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+      <element       name            = 'EnteredBy'
+                     type            = 'string'/>
+      <element       name            = 'EntryDate'
+                     type            = 'date'/>
+    </sequence>
   </complexType>
 
   <complexType       name            = 'LeadOrgPersonnel'>
@@ -266,9 +304,8 @@
     <attribute       name            = 'Public'
                      type            = 'No'
                      minOccurs       = '0'/>
-    <attribute       name            = 'MailAbstractTo'
-                     type            = 'No'
-                     minOccurs       = '0'/>
+    <attribute       name            = 'cdr:id'
+                     type            = 'string'/>
   </complexType>
 
   <complexType       name            = 'ProtocolSites'>
