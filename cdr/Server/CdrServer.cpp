@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.4 2000-04-22 09:33:56 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.5 2000-05-03 15:24:34 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/04/22 09:33:56  bkline
+ * Added transaction support, calling rollback() in exception handlers.
+ *
  * Revision 1.3  2000/04/16 21:55:48  bkline
  * Fixed code for getting sessionId.  Added calls to lookupSession() and
  * setLastActivity().  Added code to set Status attribute in <CdrResponse>
@@ -39,13 +42,17 @@ const int   CDR_QUEUE_SIZE = 10;
 
 // Local functions.
 static void             cleanup() { WSACleanup(); }
-static int              readRequest(int, std::string&);
+static int              readRequest(int, std::string&, const cdr::String&);
 static void             sendResponse(int, const cdr::String&);
-static void             processCommands(int, const std::string&);
+static void             processCommands(int, const std::string&,
+                                        cdr::db::Connection&,
+                                        const cdr::String&);
 static cdr::String      processCommand(cdr::Session&, 
                                        const cdr::dom::Node&,
-                                       cdr::db::Connection&);
-static void             sendErrorResponse(int, const cdr::String&);
+                                       cdr::db::Connection&,
+                                       const cdr::String&);
+static void             sendErrorResponse(int, const cdr::String&,
+                                          const cdr::String&);
 static DWORD __stdcall  dispatcher(LPVOID);
 
 /**
@@ -106,13 +113,17 @@ main(int ac, char **av)
  * of handling multiple command sets for the connection.
  */
 DWORD __stdcall dispatcher(LPVOID arg) {
+    cdr::db::Connection conn;
+    cdr::String now = conn.getDateTimeString();
+    now[10] = L'T';
+    std::wcerr << L"NOW=" << now << L"\n";
     int fd = (int)arg;
     std::string request;
     int nBytes;
     int response = 0;
-    while ((nBytes = readRequest(fd, request)) > 0) {
+    while ((nBytes = readRequest(fd, request, now)) > 0) {
         std::cout << "received request with " << nBytes << " bytes...\n";
-        processCommands(fd, request);
+        processCommands(fd, request, conn, now);
     }
     return EXIT_SUCCESS;
 }
@@ -123,7 +134,7 @@ DWORD __stdcall dispatcher(LPVOID arg) {
  * prefix must be sent in network byte order (most significant bytes
  * first).
  */
-int readRequest(int fd, std::string& request) {
+int readRequest(int fd, std::string& request, const cdr::String& when) {
 
     // Determine the length of the command buffer.
     unsigned long length;
@@ -161,7 +172,7 @@ int readRequest(int fd, std::string& request) {
         size_t bytesLeft = length - totalRead;
         int nRead = recv(fd, buf + totalRead, bytesLeft, 0);
         if (nRead < 0) {
-            sendErrorResponse(fd, "Failure reading command buffer");
+            sendErrorResponse(fd, "Failure reading command buffer", when);
             return 0;
         }
         if (nRead == 0) {
@@ -170,7 +181,7 @@ int readRequest(int fd, std::string& request) {
                 canSleep = false;
             }
             else  {
-                sendErrorResponse(fd, "Failure reading command buffer");
+                sendErrorResponse(fd, "Failure reading command buffer", when);
                 return 0;
             }
         }
@@ -188,29 +199,30 @@ int readRequest(int fd, std::string& request) {
  * processed.  Wraps all the responses in a buffer, which is returned
  * to the client.
  */
-void processCommands(int fd, const std::string& buf)
+void processCommands(int fd, const std::string& buf,
+                     cdr::db::Connection& conn,
+                     const cdr::String& when)
 {
-    cdr::db::Connection conn;
     try {
         cdr::dom::Parser parser;
         parser.parse(buf);
         cdr::dom::Document document = parser.getDocument();
         if (document == 0) {
-            sendErrorResponse(fd, "Failure parsing command buffer");
+            sendErrorResponse(fd, "Failure parsing command buffer", when);
             return;
         }
         cdr::dom::Element docElement = document.getDocumentElement();
         if (docElement == 0) {
-            sendErrorResponse(fd, "Failure parsing command buffer");
+            sendErrorResponse(fd, "Failure parsing command buffer", when);
             return;
         }
         cdr::String elementName = docElement.getNodeName();
         if (elementName != L"CdrCommandSet") {
-            sendErrorResponse(fd, "Top element must be CdrCommandSet");
+            sendErrorResponse(fd, "Top element must be CdrCommandSet", when);
             return;
         }
         cdr::Session session;
-        cdr::String response = L"<CdrResponseSet>\n";
+        cdr::String response = L"<CdrResponseSet Time='" + when + L"'>\n";
         cdr::dom::Node n = docElement.getFirstChild();
         while (n != 0) {
             if (n.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
@@ -222,7 +234,7 @@ void processCommands(int fd, const std::string& buf)
                     session.setLastActivity(conn);
                 }
                 else if (elementName == L"CdrCommand")
-                    response += processCommand(session, n, conn);
+                    response += processCommand(session, n, conn, when);
             }
             n = n.getNextSibling();
         }
@@ -232,17 +244,17 @@ void processCommands(int fd, const std::string& buf)
     catch (const cdr::Exception& cdrEx) {
         if (!conn.getAutoCommit())
             conn.rollback();
-        sendErrorResponse(fd, cdrEx.getString());
+        sendErrorResponse(fd, cdrEx.getString(), when);
     }
     catch (const cdr::dom::DOMException& ex) {
         if (!conn.getAutoCommit())
             conn.rollback();
-        sendErrorResponse(fd, cdr::String(ex.getMessage()));
+        sendErrorResponse(fd, cdr::String(ex.getMessage()), when);
     }
     catch (...) {
         if (!conn.getAutoCommit())
             conn.rollback();
-        sendErrorResponse(fd, L"Unexpected exception caught");
+        sendErrorResponse(fd, L"Unexpected exception caught", when);
     }
 }
 
@@ -251,11 +263,14 @@ void processCommands(int fd, const std::string& buf)
  * which prevents processing of any of the commands in the command
  * buffer.
  */
-void sendErrorResponse(int fd, const cdr::String& errMsg)
+void sendErrorResponse(int fd, const cdr::String& errMsg, 
+                       const cdr::String& when)
 {
-    cdr::String response = L"<CdrResponseSet>\n <Errors>\n  <Error>"
+    cdr::String response = L"<CdrResponseSet Time='"
+                         + when
+                         + L"'>\n <Errors>\n  <Err>"
                          + errMsg
-                         + L"</Error>\n </Errors>\n</CdrResponseSet>\n";
+                         + L"</Err>\n </Errors>\n</CdrResponseSet>\n";
     sendResponse(fd, response);
 }
 
@@ -265,7 +280,8 @@ void sendErrorResponse(int fd, const cdr::String& errMsg)
  */
 cdr::String processCommand(cdr::Session& session, 
                            const cdr::dom::Node& cmdNode,
-                           cdr::db::Connection& conn)
+                           cdr::db::Connection& conn,
+                           const cdr::String& when)
 {
     const cdr::dom::Element& cmdElement = static_cast<const cdr::dom::Element&>
         (cmdNode);
@@ -280,13 +296,13 @@ cdr::String processCommand(cdr::Session& session,
         int type = specificCmd.getNodeType();
         if (type == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String cmdName = specificCmd.getNodeName();
-            //std::wcerr << L"Received command: " << cmdName << L"\n";
+            std::wcerr << L"Received command: " << cmdName << L"\n";
             cdr::Command cdrCommand = cdr::lookupCommand(cmdName);
             if (!cdrCommand)
                 return cdr::String(rspTag + L"failure'>\n  <Errors>\n   "
-                                          + L"<Error>Unknown command: "
+                                          + L"<Err>Unknown command: "
                                           + cmdName
-                                          + L"</Error>\n  </Errors>\n"
+                                          + L"</Err>\n  </Errors>\n"
                                           + L" </CdrResponse>\n");
             cdr::String cmdResponse;
             try {
@@ -298,9 +314,9 @@ cdr::String processCommand(cdr::Session& session,
                     return cdr::String(rspTag + L"failure'>\n  <"
                                               + cmdName
                                               + L"Resp>\n"
-                                              + L"   <Errors>\n    <Error>"
+                                              + L"   <Errors>\n    <Err>"
                                               + L"Missing session ID"
-                                              + L"</Error>\n   </Errors>\n"
+                                              + L"</Err>\n   </Errors>\n"
                                               + L"  </"
                                               + cmdName
                                               + L"Resp>\n </CdrResponse>\n");
@@ -316,9 +332,9 @@ cdr::String processCommand(cdr::Session& session,
                 return cdr::String(rspTag + L"failure'>\n  <"
                                           + cmdName
                                           + L"Resp>\n"
-                                          + L"   <Errors>\n    <Error>"
+                                          + L"   <Errors>\n    <Err>"
                                           + e.getString()
-                                          + L"</Error>\n   </Errors>\n"
+                                          + L"</Err>\n   </Errors>\n"
                                           + L"  </"
                                           + cmdName
                                           + L"Resp>\n </CdrResponse>\n");
@@ -332,7 +348,7 @@ cdr::String processCommand(cdr::Session& session,
         specificCmd = specificCmd.getNextSibling();
     }
     return cdr::String(rspTag + L"failure'>\n  <Errors>\n   "
-                              + L"<Error>Missing specific command element"
+                              + L"<Err>Missing specific command element"
                               + L"</Error\n  </Errors>\n"
                               + L" </CdrResponse>\n");
 }
