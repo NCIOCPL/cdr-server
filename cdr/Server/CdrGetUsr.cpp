@@ -1,10 +1,13 @@
 
 /*
- * $Id: CdrGetUsr.cpp,v 1.4 2000-12-28 13:27:17 bkline Exp $
+ * $Id: CdrGetUsr.cpp,v 1.5 2001-04-13 12:25:57 bkline Exp $
  *
  * Retrieves information about requested user.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/12/28 13:27:17  bkline
+ * Fixed typo in closing tag for CdrGetUsrResp.
+ *
  * Revision 1.3  2000/05/03 15:25:41  bkline
  * Fixed database statement creation.
  *
@@ -74,7 +77,7 @@ cdr::String cdr::getUsr(cdr::Session& session,
     cdr::String response = cdr::String(L"  <CdrGetUsrResp>\n"
                                        L"   <UserName>")
                                      + uName
-                                     + L"</UsrName>\n"
+                                     + L"</UserName>\n"
                                      + L"   <Password>"
                                      + password
                                      + L"</Password>\n";
