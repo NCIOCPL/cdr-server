@@ -1,0 +1,412 @@
+<?xml                version = "1.0"
+                    encoding = "UTF-8"?>
+
+ <!-- 
+    ============================================================
+    $Id: PublishingSystem.xml,v 1.1 2002-03-26 20:24:32 bkline Exp $
+    This schema is used to create publishing/extraction
+    control specifications for the individual CDR Publishing
+    Systems.
+    $Log: not supported by cvs2svn $
+    ============================================================ -->
+
+<schema                xmlns = "http://www.w3.org/2001/XMLSchema" 
+                   xmlns:cdr = "cips.nci.nih.gov/cdr">
+ 
+ <include     schemaLocation = "CdrCommonSchema.xml"/>
+
+ <element               name = "PublishingSystem" 
+                        type = "PublishingSystem"/>
+
+ <!-- 
+    ============================================================
+    Each publishing system has a required name and description,
+    with one or more publishing system subsets.  Each publication
+    job is invoked using exactly one of the available subsets.
+    ============================================================ -->
+
+ <complexType           name = "PublishingSystem">
+  <sequence>
+   <element             name = "SystemName" 
+                        type = "string"/>
+   <element             name = "SystemDescription" 
+                        type = "string"/>
+   <element             name = "SystemSubset" 
+                        type = "SystemSubset"
+                   maxOccurs = "unbounded" />
+  </sequence>
+  <attribute            name = "xmlns:cdr"
+                        type = "anyURI"
+                   minOccurs = "0"/>
+ </complexType>
+    
+ <!-- 
+    ============================================================
+    Each publishing system subset has a required name and 
+    description.  
+
+    The subset can optionally have a set of named parameters 
+    which can be used to control the processing of a particular 
+    publication event.  Typically, the parameters are passed
+    to the server by the program submitting the job request,
+    but the parameters are listed in this control document as
+    well, in order to:
+        1. allow the control document to supply defaults;
+        2. allow user programs to populate dialogs interfaces
+           at runtime with controls for specifying parameter
+           values without knowing in advance the names of
+           parameters expected for different publishing 
+           system subsets; and
+        3. enable the CDR server to verify that parameters
+           submitted for a given publication job are expected
+           for the type of job requested.
+
+    If an optional SubsetActionName is submitted, the server
+    will verify that the user whose session has submitted the
+    request for the publication job has the requisite permissions
+    to make this request.  Otherwise, no check is made for
+    permission to invoke the publication event.
+
+    A subset will either be associated with an external script,
+    using the ProcessScript element (in which case all processing
+    of the publication job will be handled by the script named
+    by the element's value), or will have one or more sets of
+    selection and filter specifications, in which case the 
+    decisions about how to select documents and how to process
+    them will have been provided in this control document.
+
+    Finally, a subset can have a number of named options.  In
+    contrast to subset parameters, which as described above are
+    specified as part of the request for a specific job, subset
+    options are fixed in the publication control document for
+    all jobs associated with the subset.
+    ============================================================ -->
+
+ <complexType           name = "SystemSubset">
+  <sequence>
+   <element             name = "SubsetName" 
+                        type = "string"/>
+   <element             name = "SubsetDescription"
+                        type = "string"/>
+   <element             name = "SubsetParameters"
+                        type = "SubsetParameters"
+                   minOccurs = "0"/>
+   <element             name = "SubsetActionName" 
+                        type = "string"
+                   minOccurs = "0"/>
+   <choice>
+    <element            name = "ProcessScript"
+                        type = "string"/>
+    <element            name = "SubsetSpecifications"
+                        type = "SubsetSpecifications"
+                   maxOccurs = "unbounded"/>
+   </choice>
+   <element             name = "SubsetOptions"
+                        type = "SubsetOptions"
+                   minOccurs = "0"/>
+  </sequence>
+ </complexType>
+
+ <!-- 
+    ============================================================
+    A set of one or more named parameter values to be applied
+    to a particular invocation of the CDR Publishing System
+    Subset.  
+    ============================================================ -->
+
+ <complexType           name = "SubsetParameters">
+  <sequence>
+    <element            name = "SubsetParameter" 
+                        type = "SubsetParameter"
+                   maxOccurs = "unbounded"/>
+  </sequence>
+ </complexType>
+
+ <!-- 
+    ============================================================
+    A named parameter value to be applied to a particular 
+    invocation of a CDR publishing job.  If a string for an SQL
+    query, an XQL query, or a SubsetFilterParm/ParmValue contains
+    the string of the form ?parm-name?, where parm-name matches 
+    the name of one of the subset parameters passed to a publishing
+    job (or set to the default value specified here when not passed
+    in by the job request), then that string is replaced by the
+    corresponding parameter value.
+
+    A ParmValue element containing the string "$CurDate" is 
+    replaced at runtime by the string corresponding to the 
+    current date and time (local to the CDR Server) in the
+    standard ISO format YYYY-MM-DDThh:mm:ss; for example:
+    2002-09-01T14:26:01.  Other value strings may be reserved
+    in future versions of the Publishing Module for similar
+    special meanings.  In order to specify a value which
+    begins with the dollar sign, prefix the dollar sign with
+    a backslash character, which will guarantee that the value
+    will be passed in unaltered and without any special
+    interpretation.
+    ============================================================ -->
+
+ <complexType           name = "SubsetParameter">
+  <sequence>
+   <element             name = "ParmName" 
+                        type = "string"/>
+   <element             name = "ParmValue" 
+                        type = "string"/>
+  </sequence>
+ </complexType>
+
+ <!-- 
+    ============================================================
+    A CDR Publishing System Subset can have multiple occurences
+    of the SubsetSpecification element.  This allows a single
+    publishing job to process more than one set of documents,
+    with a different series of XSL/T filters (or the same series,
+    but with different parameters passed to the filters) applied
+    to each of the sets of documents.
+    ============================================================ -->
+
+ <complexType           name = "SubsetSpecifications">
+  <sequence>
+   <element             name = "SubsetSpecification" 
+                        type = "SubsetSpecification"
+                   maxOccurs = "unbounded"/>
+  </sequence>
+ </complexType>
+  
+ <!-- 
+    ============================================================
+    A SubsetSpecification provides a mechanism for selecting a
+    set of documents (with a user-specified list, SQL queries,
+    XQL queries, or any combination of these) and applying a
+    series of XSL/T filters to each of the documents in the set.
+    ============================================================ -->
+
+ <complexType           name = "SubsetSpecification">
+  <sequence>
+   <element             name = "SubsetSelection"
+                        type = "SubsetSelection"/>
+   <element             name = "SubsetFilters"
+                        type = "SubsetFilters"
+                   maxOccurs = "unbounded"/>
+  </sequence>
+ </complexType>
+
+ <!-- 
+    ============================================================
+    A SubsetSelection allows for two general approaches to 
+    identifying documents to be published.  If the optional
+    UserSelect element is present, publishing requests can
+    include a list of IDs in order to "hand select" one or
+    more documents.  The other approach, which is the more
+    commonly used of the two, uses queries stored as part
+    of the publishing control document.
+
+    Each SubsetSelection produces a possibly empty set of 
+    unique document identifiers.  If two queries in a 
+    SubsetSelection both find the same document, or a query
+    finds a document also identified by a user-supplied list,
+    the set only contains the document ID once.  Furthermore,
+    no document is selected more than once for a given pub-
+    lishing job, so if a document appeared in the set for one
+    SubsetSpecification processed for the job, it will be 
+    dropped from the sets produced by any subsequent 
+    SubsetSpecifications.  Finally, a user-supplied list is 
+    "selected" before XQL or SQL queries are run.  As an
+    illustration of this principle, consider the following
+    contrived example:
+
+    A job is invoked for a publishing system subset which 
+    has three SubsetSpecification elements.  The first
+    SubsetSpecification contains XQL query Q1 and filter F1.
+    The second SubsetSpecification has no queries, allows
+    the user to list documents of type InScopeProtocol, and
+    specifies filter F2.  The third SubsetSpecification also 
+    has no queries, allows the user to list documents of type 
+    OutOfScopeProtocol, and specifies filter F3.  The job
+    request lists two documents, an InScopeProtocol and an
+    OutOfScopeProtocol.  Query Q1 selects three documents,
+    including the two appearing on the user-supplied list.
+    Filter F2 will be applied to the user-listed InScopeProtocol
+    document, filter F3 will be applied to the user-listed
+    OutOfScopeProtocol document, and filter F1 will be applied
+    to the remaining document.
+
+    SQL queries must return a column with the name 'id'
+    representing the CDR document ID.  Optionally, a second
+    column named 'version' may be returned specifying the 
+    version of the document to be published.  When the query
+    returns the document version, the publishing module 
+    verifies that the version specified exists and is marked
+    publishable.  Otherwise, the publishing module selects
+    the latest publishable version.
+
+    Within the string for a SubsetXQL or SubsetSQL element,
+    any occurrence of ?name? which matches the name of a 
+    subset parameter will be substituted with the corresponding
+    value of that parameter for the current invocation of
+    the publication job.
+    ============================================================ -->
+
+ <complexType           name = "SubsetSelection">
+  <sequence>
+   <element             name = "UserSelect"
+                        type = "UserSelect"
+                   minOccurs = "0"/>
+   <choice         minOccurs = "0"
+                   maxOccurs = "unbounded">
+    <element            name = "SubsetXQL"
+                        type = "string"/>
+    <element            name = "SubsetSQL"
+                        type = "string"/>
+   </choice>
+  </sequence>
+ </complexType>
+  
+ <!-- 
+    ============================================================
+    The presence of the UserSelect element indicates that the
+    job invocation is allowed to supply a list of hand-picked
+    documents, selected by some means outside the publishing
+    system.  If one or more of the optional child element
+    UserSelectDoctype are present, then only documents of
+    the types named can appear on the user-supplied list.
+    Otherwise, there are no restrictions on the types of the
+    documents which can be explicitly listed.
+    ============================================================ -->
+
+ <complexType           name = "UserSelect">
+  <sequence>
+   <element             name = "UserSelectDoctype"
+                        type = "string"
+                   minOccurs = "0"
+                   maxOccurs = "unbounded"/>
+  </sequence>
+ </complexType>
+
+ <!-- 
+    ============================================================
+    List of XSL/T filters to be applied to a set of documents,
+    in the order given in this element, together with a possibly 
+    empty set of parameters to be fed to each of the filters.
+    ============================================================ -->
+
+ <complexType           name = "SubsetFilters">
+  <sequence>
+   <element             name = "SubsetFilter" 
+                        type = "SubsetFilter"
+                   maxOccurs = "unbounded"/>
+   <element             name = "SubsetFilterParm"
+                        type = "SubsetFilterParm"
+                   minOccurs = "0"
+                   maxOccurs = "unbounded"/>
+  </sequence>
+ </complexType>
+
+ <!-- 
+    ============================================================
+    Identification of an XSL/T filter, either by document ID or
+    by filter name.
+    ============================================================ -->
+
+ <complexType           name = "SubsetFilter">
+  <sequence>
+   <choice>
+    <element            name = "SubsetFilterName"
+                        type = "string"/>
+    <element            name = "SubsetFilterId"
+                        type = "DocId"/>
+   </choice>
+  </sequence>
+ </complexType>
+
+ <!-- 
+    ============================================================
+    Named parameter to be passed to an XSL/T filter.  Within the
+    string for a ParmValue element any occurrences of ?name?
+    whose name matches that of a subset parameter will be 
+    replaced by the value for that parameter.
+    ============================================================ -->
+
+ <complexType           name = "SubsetFilterParm">
+  <sequence>
+   <element             name = "ParmName"
+                        type = "string"/>
+   <element             name = "ParmValue"
+                        type = "string"/>
+  </sequence>
+ </complexType>
+
+ <!-- 
+    ============================================================
+    List of one or more named options associated with a CDR
+    Publishing System Subset.
+    ============================================================ -->
+
+ <complexType           name = "SubsetOptions">
+  <sequence>
+   <element             name = "SubsetOption"
+                        type = "SubsetOption"
+                   maxOccurs = "unbounded"/>
+  </sequence>
+ </complexType>
+
+ <!-- 
+    ============================================================
+    Named option applied to publishing jobs run against a 
+    specific CDR Publishing System Subset.  Cannot be overridden
+    in the job invocation.  The standard CDR Publishing System
+    supports the following options:
+
+        Name                  Value   Meaning
+        __________________    _____   __________________________
+
+        SaveInPublishTable    Yes     Record items published in 
+                                      the CDR Publishing tables.
+                              No      Do not record jobs of this
+                                      type.
+        PublishIfWarnings     Yes     Publish even if there are 
+                                      warnings.
+                              No      Do not publish if there are 
+                                      warnings.
+                              Ask     Hold the job for user
+                                      confirmation before proceeding
+                                      with processing if warnings 
+                                      are generated.
+        AbortOnError          No      If there is an error, do not 
+                                      publish the document being 
+                                      filtered and treat as warning.
+                              Yes     Abort publishing on error.
+                              <num>   Treat as Yes, but do not abort 
+                                      until <num> errors have been 
+                                      encountered.
+        Destination           <name>  Name of directory to contain 
+                                      published data.
+        DestinationType       File    Output single file containing all 
+                                      XML concatenated together, using
+                                      the filename given by the option
+                                      DestinationFileName.
+                              Doc     Output one file/document, using 
+                                      the name <documentid>.xml.
+                              DocType One file per document type, using
+                                      the name <doctype>.xml where 
+                                      <doctype> is the name of the 
+                                      document type.
+        DestinationFileName   <name>  Filename to use when the value of 
+                                      the DestinationType option is File.
+
+    Other named options can be specified with semantics known 
+    to the software which publishes jobs for the subset.  These
+    would typically be used by subsets associated with an
+    external script.
+    ============================================================ -->
+
+ <complexType           name = "SubsetOption">
+  <sequence>
+   <element             name = "OptionName"
+                        type = "string"/>
+   <element             name = "OptionValue"
+                        type = "string"/>
+  </sequence>
+ </complexType>
+
+</schema>
