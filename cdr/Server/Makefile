@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.5 2000-04-16 21:39:04 bkline Exp $
+# $Id: Makefile,v 1.6 2000-04-17 21:26:23 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.5  2000/04/16 21:39:04  bkline
+# Extensive cleanup.  Added CdrLogoff command.
+#
 # Revision 1.4  2000/04/15 14:13:39  bkline
 # Added support for DB classes.  Added implementation of CdrLogon command.
 #
@@ -56,7 +59,8 @@ LIBOBJS=CdrString.obj \
 OBJS   =CdrServer.obj \
         CdrCommand.obj \
         CdrLogon.obj \
-        CdrLogoff.obj
+        CdrLogoff.obj \
+        CdrCheckAuth.obj
 LIBS   =cdr.lib xerces-c_1.lib wsock32.lib odbc32.lib
 
 #--------------------------------------------------------------------------
@@ -79,6 +83,9 @@ CdrLogon.obj: CdrLogon.cpp $(HDRS)
 
 CdrLogoff.obj: CdrLogoff.cpp $(HDRS)
 	$(CC) $(CFLAGS) -c CdrLogoff.cpp
+
+CdrCheckAuth.obj: CdrCheckAuth.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrCheckAuth.cpp
 
 #--------------------------------------------------------------------------
 # Rule for building CDR library.
