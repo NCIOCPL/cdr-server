@@ -1,0 +1,762 @@
+<CdrDoc Type='Filter' Id='CDR0000393554'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Person Protocol Review - Person Info</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<!-- 
+================================================================
+Filter to create a Person Content QC Report 
+================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+ <xsl:output                    method = "html"/>
+
+ <!-- Defining standard HTML Attribute Sets -->
+ <xsl:attribute-set               name = "table">
+  <xsl:attribute                  name = "border">0</xsl:attribute>
+  <xsl:attribute                  name = "width">100%</xsl:attribute>
+  <xsl:attribute                  name = "cellspacing">0</xsl:attribute>
+  <xsl:attribute                  name = "cellpadding">0</xsl:attribute>
+ </xsl:attribute-set>
+
+ <xsl:attribute-set               name = "cell1of2">
+  <xsl:attribute                  name = "width">35%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
+
+ <xsl:attribute-set               name = "cell2of2">
+  <xsl:attribute                  name = "width">65%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
+
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
+ <!-- 
+ ===============================================================
+ Main Template
+ Filter written by C.Burg - 4/26/2002
+ =============================================================== -->
+ <xsl:template                   match = "/">
+  <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+  <HTML>
+   <HEAD>
+    <xsl:variable                 name = "cdrdocs" 
+                                select = "document('cdrx:/*/CdrCtl')"/>
+
+    <TITLE>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+     <xsl:text>: </xsl:text>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/> 
+    </TITLE>
+    <STYLE type='text/css'>
+     .status_closed {background-color: #CCCCCC;}
+     .status_err    {color: red;}
+    </STYLE>
+   </HEAD>
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
+   <xsl:apply-templates         select = "Person"/>
+  </HTML>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Person QC Report
+ =================================================================== -->
+ <xsl:template                   match = "Person">
+  <BODY>
+
+  <!-- 
+  ==================================================================
+  Display Report heading and subheading 
+  ================================================================== -->
+   <b>
+    <font size='4'>
+     <center>
+      <xsl:text>Person Protocol Review</xsl:text>
+      <br/>
+      <xsl:text>Report</xsl:text>
+     </center>
+    </font>
+    <font size='3'>
+     <center>
+      <xsl:value-of             select = "document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M% 25p')"/>
+     </center>
+    </font>
+   </b>
+   <p/>
+
+   <!-- 
+   ====================================================================
+   Display Name Header, and PersonNameInformation
+   ==================================================================== -->
+   <b>
+    <font size='4'>
+    <xsl:value-of               select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+    </font>
+   </b>
+   <p/>
+
+   <xsl:apply-templates         select = "PersonNameInformation"/>
+   <p/>
+
+   <!-- 
+   ======================================================================
+   Display Location Information section
+   ====================================================================== -->
+   <b>
+    <font size='4'>Location Information</font>
+   </b>
+   <p/>
+   <xsl:apply-templates         select = "PersonLocations"/>
+   <p/>
+  </BODY>
+ </xsl:template>
+
+
+ <!--
+ =================================================================
+ Template for PersonNameInformation
+ ================================================================= -->
+ <xsl:template                   match = "PersonNameInformation">
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>
+      <font size='4'>Name</font>
+     </b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <b>
+      <xsl:if                     test = "Prefix">
+       <xsl:apply-templates     select = "Prefix"/>
+       <xsl:text> </xsl:text>
+      </xsl:if>
+      <xsl:apply-templates      select = "GivenName"/>
+      <xsl:text> </xsl:text>
+      <xsl:apply-templates      select = "MiddleInitial"/>
+      <xsl:text> </xsl:text>
+ 
+      <!-- check for Professional suffix and display -->
+      <xsl:choose>
+       <xsl:when                  test = "ProfessionalSuffix">
+        <xsl:apply-templates    select = "SurName"/>
+        <xsl:text>,</xsl:text>
+        <xsl:apply-templates    select = "GenerationSuffix"/>
+        <xsl:text> </xsl:text>
+        <xsl:for-each           select = "ProfessionalSuffix">
+         <xsl:value-of          select = "."/>
+         <xsl:if                  test = "position() !=last()">
+          <xsl:text>, </xsl:text>
+         </xsl:if>
+        </xsl:for-each>
+       </xsl:when>
+       <xsl:otherwise>
+       <!-- Display surname if no Suffix is present -->
+        <xsl:apply-templates    select = "SurName"/>
+       </xsl:otherwise>
+      </xsl:choose>
+      <br/>
+     </b>
+    </td>
+   </tr>
+  </table>
+ </xsl:template>
+
+
+ <!-- 
+ ============================================================
+ Display Professional information 
+ ============================================================ -->
+ <xsl:template                   match = "ProfessionalInformation |
+                                          PDQBoardMembershipDetails |
+                                          PhysicianDetails |
+                                          PDQEditorialBoard |
+                                          PDQAdvisoryBoard  |
+                                          PDQVoluntaryProtocolReviewBoard |
+                                          PhysicianMembershipInformation"/>
+
+ <!-- 
+ =====================================================================
+ Template to display Administrative Information
+ ===================================================================== -->
+ <xsl:template                  match = "AdministrativeInformation">
+  <table       xsl:use-attribute-sets = "table">
+   <tr>
+    <td        xsl:use-attribute-sets = "cell1of2">
+     <b><u>Directory</u></b>
+    </td>
+    <td        xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of             select = "Directory/Include"/>
+    </td>
+   </tr>  
+   <tr>
+    <td        xsl:use-attribute-sets = "cell1of2">
+     <b>Entered By</b>
+    </td>
+    <td        xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of             select = "Directory/EnteredBy"/>
+    </td>
+   </tr>  
+   <tr>
+    <td        xsl:use-attribute-sets = "cell1of2">
+     <b>Entry Date</b>
+    </td>
+    <td        xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of             select = "Directory/Date"/>
+    </td>
+   </tr>  
+   <tr>
+    <td        xsl:use-attribute-sets = "cell1of2">
+     <b>Comment</b>
+    </td>
+    <td        xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of             select = "Directory/Comment"/>
+    </td>
+   </tr>
+  </table>
+  <p/>
+ </xsl:template> 
+
+
+ <!-- 
+ =====================================================================
+ Template to display the Person Locations
+ ===================================================================== -->
+ <xsl:template                  match = "PersonLocations">
+
+  <xsl:apply-templates         select = "Home"/>
+  <xsl:apply-templates         select = "PrivatePracticeLocation"/>
+  <xsl:apply-templates         select = "OtherPracticeLocation"/>
+
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ Display Person Location Information for Private Practice and 
+ Home Location
+ ===================================================================== -->
+ <xsl:template                   match = "Home                     | 
+                                          PrivatePracticeLocation"> 
+  <b>
+   <xsl:choose>
+    <xsl:when                     test = "name() = 'Home'">
+     <xsl:text>Home</xsl:text>
+     <xsl:text> [</xsl:text>
+     <xsl:value-of              select = "@cdr:id"/>
+     <xsl:text>]</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>Private Practice</xsl:text>
+     <xsl:text> [</xsl:text>
+     <xsl:value-of              select = "@cdr:id"/>
+     <xsl:text>]</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </b>
+
+  <xsl:if                          test = "../CIPSContact = @cdr:id">
+   <b><font size="3"> - CIPS Contact</font></b>
+  </xsl:if>
+  <xsl:if                          test = "@PreviousLocation = 'Yes'">
+   <b>
+    <font size="3"> - Previous Location</font>
+   </b>
+  </xsl:if>
+  <br/>
+
+  <xsl:for-each                  select = "PostalAddress">
+   <xsl:choose>
+   <xsl:when                       test = "@Public">
+    <table cellpadding="0" cellspacing="0">
+     <tr>
+      <td>
+   <xsl:choose>
+    <xsl:when                      test = "@native">
+     <i>
+      <xsl:call-template              name = "listAddress"/>
+     </i>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:call-template              name = "listAddress"/>
+    </xsl:otherwise>
+   </xsl:choose>
+      </td><td valign="center"><font size="10">&#125;</font></td>
+      <td valign="center"><b><xsl:text> (Public = No)</xsl:text></b></td>
+     </tr>
+    </table>
+   </xsl:when>
+   <xsl:otherwise>
+   <xsl:choose>
+    <xsl:when                      test = "@native">
+     <i>
+      <xsl:call-template              name = "listAddress"/>
+     </i>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:call-template              name = "listAddress"/>
+    </xsl:otherwise>
+   </xsl:choose>
+   </xsl:otherwise>
+   </xsl:choose>
+   <xsl:call-template              name = "listPhone"/>
+  </xsl:for-each>
+  <b>Protocols at this Location</b>
+  <!-- table        xsl:use-attribute-sets = "table" -->
+   <xsl:text>@@</xsl:text>
+     <xsl:text>FRAGMENTID[</xsl:text>
+     <xsl:value-of              select = "@cdr:id"/>
+     <xsl:text>]</xsl:text>
+   <xsl:text>@@</xsl:text>
+  <!-- /table -->
+  <p />
+  <hr width="25%"/>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ Display Person Location Information for Other Practice Location 
+ ===================================================================== -->
+ <xsl:template                 match = "OtherPracticeLocation">
+  <b>
+   <font size='3'>Other Practice Location</font>
+   <xsl:text> [</xsl:text>
+   <xsl:value-of              select = "@cdr:id"/>
+   <xsl:text>]</xsl:text>
+  </b>
+ 
+  <xsl:if                       test = "../CIPSContact = @cdr:id">
+   <b>
+    <font size="3"> - CIPS Contact</font>
+   </b>
+  </xsl:if>
+  <xsl:if                       test = "@PreviousLocation = 'Yes'">
+   <b>
+    <font size="3"> - Previous Location</font>
+   </b>
+  </xsl:if>
+  <br/>
+
+  <!-- Display the Person Title if available -->
+  <xsl:if                     test = "PersonTitle">
+   <xsl:value-of            select = "PersonTitle"/>
+   <br/>
+  </xsl:if>
+
+  <xsl:for-each             select = "OrganizationLocation/OrganizationName">
+   <xsl:value-of            select = "."/>
+   <br />
+  </xsl:for-each>
+
+  <xsl:for-each               select = "OrganizationLocation/
+                                        PostalAddress">
+   <xsl:choose>
+   <xsl:when                       test = "@Public">
+    <table cellpadding="0" cellspacing="0">
+     <tr>
+      <td>
+   <xsl:choose>
+    <xsl:when                      test = "@native">
+     <i>
+      <xsl:call-template              name = "listAddress"/>
+     </i>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:call-template              name = "listAddress"/>
+    </xsl:otherwise>
+   </xsl:choose>
+      </td><td valign="center"><font size="10">&#125;</font></td>
+      <td valign="center"><b><xsl:text> (Public = No)</xsl:text></b></td>
+     </tr>
+    </table>
+   </xsl:when>
+   <xsl:otherwise>
+   <xsl:choose>
+    <xsl:when                      test = "@native">
+     <i>
+      <xsl:call-template              name = "listAddress"/>
+     </i>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:call-template              name = "listAddress"/>
+    </xsl:otherwise>
+   </xsl:choose>
+   </xsl:otherwise>
+   </xsl:choose>
+   <xsl:call-template           name = "listPhone"/>
+  </xsl:for-each>
+
+  <xsl:if                       test = "ComplexAffiliation">
+   <b>
+    <font size='3'>Complex Affiliation</font>
+   </b>
+   <xsl:apply-templates       select = "ComplexAffiliation"/>
+  </xsl:if>
+
+  <b>Protocols at this Location</b>
+  <table>
+   <xsl:text>@@</xsl:text>
+     <xsl:text>FRAGMENTID[</xsl:text>
+     <xsl:value-of              select = "@cdr:id"/>
+     <xsl:text>]</xsl:text>
+   <xsl:text>@@</xsl:text>
+  </table>
+  <p/>
+  <hr width="25%"/>
+ </xsl:template>
+
+
+ <!--
+ ========================================================================
+ Template to display the Dated Action
+ ======================================================================== -->
+ <xsl:template                 match = "DatedAction">
+  <b>
+   <font size='4'>Dated Action(s)</font>
+  </b>
+  <br />
+
+  <table      xsl:use-attribute-sets = "table">
+   <tr>
+    <td       xsl:use-attribute-sets = "cell1of2">
+     <b>Action Description</b>
+    </td>
+    <td       xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of            select = "ActionDescription"/>
+    </td>
+   </tr>
+   <tr>
+    <td       xsl:use-attribute-sets = "cell1of2">
+     <b>Action Date</b>
+    </td>
+    <td       xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of            select = "ActionDate"/>
+    </td>
+   </tr>
+   <tr>
+    <td       xsl:use-attribute-sets = "cell1of2">
+     <b>Comment</b>
+    </td>
+    <td       xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of            select = "Comment"/>
+    </td>
+   </tr>
+  </table>
+  <p/>
+ </xsl:template>
+
+
+ <!--
+ ========================================================================
+ Template to display the Complex Affiliation
+ ======================================================================== -->
+ <xsl:template                 match = "ComplexAffiliation">
+  <br/>
+  <table      xsl:use-attribute-sets = "table">
+   <tr>
+    <td       xsl:use-attribute-sets = "cell1of2">
+     <b>Organization</b>
+    </td>
+    <td       xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of            select = "OrganizationName"/>
+    </td>
+   </tr>
+   <tr>
+    <td       xsl:use-attribute-sets = "cell1of2">
+     <b>Role</b>
+    </td>
+    <td       xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of            select = "RoleAtAffiliatedOrganization"/>
+    </td>
+   </tr>
+  </table>
+ </xsl:template>
+
+
+ <!--
+ ========================================================================
+ Named Template to display the Address
+ ======================================================================== -->
+ <xsl:template                  name = "listAddress">
+  <xsl:for-each               select = "Street">
+   <xsl:value-of              select = "."/>
+   <br/>
+  </xsl:for-each>
+  <xsl:choose>
+   <xsl:when                    test = "PostalCodePosition = 'before City'">
+    <xsl:value-of             select = "PostalCode_ZIP"/>
+    <xsl:text> </xsl:text>
+    <xsl:value-of             select = "City"/>
+    <xsl:if                     test = "CitySuffix">
+     <xsl:text> </xsl:text>
+     <xsl:value-of            select = "CitySuffix"/>
+    </xsl:if>
+   </xsl:when>
+   <xsl:when                    test = "PostalCodePosition = 'after City'">
+    <xsl:value-of             select = "City"/>
+    <xsl:if                     test = "CitySuffix">
+     <xsl:text> </xsl:text>
+     <xsl:value-of            select = "CitySuffix"/>
+    </xsl:if>
+    <xsl:text> </xsl:text>
+    <xsl:value-of             select = "PostalCode_ZIP"/>
+   </xsl:when>
+   <!-- 
+   This section is for US addresses
+   =================================================================== -->
+   <xsl:when                    test = "PostalCodePosition = 
+                                         'after PoliticalSubUnit_State'">
+    <xsl:value-of             select = "City"/>
+    <xsl:if                     test = "CitySuffix">
+     <xsl:text> </xsl:text>
+     <xsl:value-of            select = "CitySuffix"/>
+    </xsl:if>
+    <xsl:text>, </xsl:text>
+    <xsl:value-of             select = "PoliticalSubUnitShortName"/>
+    <xsl:text> </xsl:text>
+    <xsl:value-of             select = "PostalCode_ZIP"/>
+   </xsl:when>
+  </xsl:choose>
+  <br/>
+  <xsl:value-of               select = "CountryName"/>
+  <br/>
+ </xsl:template>
+
+
+ <!--
+ ========================================================================
+ Named Template to display the Phone, Fax, WebSite, Role information
+ ======================================================================== -->
+ <xsl:template                  name = "listPhone">
+  <!--
+  Display the Phone, Fax, Email, etc. in a table format
+  ========================================================== -->
+  <table      xsl:use-attribute-sets = "table">
+   <tr> 
+    <td       xsl:use-attribute-sets = "cell1of2">
+     <xsl:choose>
+      <xsl:when                 test = "../Phone/@native">
+       <i><xsl:text>Phone</xsl:text></i>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>Phone</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </td>
+    <td       xsl:use-attribute-sets = "cell2of2">
+     <xsl:choose>
+      <xsl:when                 test = "../Phone/@native">
+       <i>
+        <xsl:value-of         select = "../Phone"/>
+        <xsl:if                test = "../Phone/@Public">
+         <b>
+          <xsl:text> (Public = No)</xsl:text>
+         </b>
+        </xsl:if>
+       </i>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of          select = "../Phone"/>
+       <xsl:if                  test = "../Phone/@Public">
+        <b>
+         <xsl:text> (Public = No)</xsl:text>
+        </b>
+       </xsl:if>
+      </xsl:otherwise>
+     </xsl:choose>
+    </td>
+   </tr>
+   <tr>
+    <td>
+     <xsl:choose>
+      <xsl:when                 test = "../TollFreePhone/@native">
+       <i><xsl:text>TollFreePhone</xsl:text></i>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>TollFreePhone</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </td>
+    <td       xsl:use-attribute-sets = "cell2of2">
+     <xsl:choose>
+      <xsl:when                 test = "../TollFreePhone/@native">
+       <i>
+        <xsl:value-of         select = "../TollFreePhone"/>
+       </i>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of         select = "../TollFreePhone"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </td>
+   </tr>
+   <tr>
+    <td       xsl:use-attribute-sets = "cell1of2">
+     <xsl:choose>
+      <xsl:when                 test = "../Fax/@native">
+       <i>
+        <xsl:text>Fax</xsl:text>
+       </i>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>Fax</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>      
+    </td>
+    <td       xsl:use-attribute-sets = "cell2of2">
+     <xsl:choose>
+      <xsl:when                 test = "../Fax/@native">
+       <i>
+        <xsl:value-of            select = "../Fax"/>
+       </i>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of            select = "../Fax"/>
+      </xsl:otherwise>
+     </xsl:choose>      
+    </td>
+   </tr>
+    <tr>
+     <td       xsl:use-attribute-sets = "cell1of2">Email</td>
+     <xsl:choose>
+      <xsl:when                 test = "../Email">
+       <td    xsl:use-attribute-sets = "cell2of2">
+        <xsl:call-template      name = "listEmail">
+         <xsl:with-param        name = "email"
+                              select = "../Email"/>
+        </xsl:call-template>
+        <xsl:if                 test = "../Email/@Public">
+         <b>
+         <xsl:text> (Public = No)</xsl:text>
+         </b>
+        </xsl:if>
+       </td>
+      </xsl:when>
+     </xsl:choose>
+    </tr>
+    <tr>
+     <td      xsl:use-attribute-sets = "cell1of2">
+      <xsl:choose>
+       <xsl:when                test = "../WebSite/@native">
+        <i>
+         <xsl:text>Website</xsl:text>
+        </i>
+       </xsl:when>
+       <xsl:otherwise>
+         <xsl:text>Website</xsl:text>
+       </xsl:otherwise>
+      </xsl:choose>
+     </td>
+     <xsl:choose>
+      <xsl:when                 test = "../WebSite">
+       <td    xsl:use-attribute-sets = "cell2of2">
+        <xsl:choose>
+         <xsl:when              test = "../WebSite/@native">
+          <i>
+           <xsl:call-template      name = "listWebSite">
+            <xsl:with-param        name = "webSite"
+                              select = "../WebSite/@xref"/>
+           </xsl:call-template>
+           <br/>
+           <xsl:value-of         select = "../WebSite"/>
+          </i>
+         </xsl:when>
+         <xsl:otherwise>
+           <xsl:call-template      name = "listWebSite">
+            <xsl:with-param        name = "webSite"
+                              select = "../WebSite/@xref"/>
+           </xsl:call-template>
+           <br/>
+           <xsl:value-of         select = "../WebSite"/>
+         </xsl:otherwise>
+        </xsl:choose>
+       </td>
+      </xsl:when>
+     </xsl:choose>
+    </tr>
+    <xsl:if                        test = "../../PersonRole">
+     <tr>
+      <td        xsl:use-attribute-sets = "cell1of2">
+       <xsl:text>Person Role</xsl:text>
+      </td>
+      <td        xsl:use-attribute-sets = "cell2of2">
+       <table    xsl:use-attribute-sets = "table">
+        <xsl:for-each            select = "../../PersonRole">
+         <tr>
+          <td    xsl:use-attribute-sets = "cell1of2">
+           <xsl:value-of         select = "."/>
+          </td>
+         </tr>
+        </xsl:for-each>
+       </table>
+      </td>
+     </tr>
+    </xsl:if>
+   <br/>
+  </table>
+  <p/>
+ </xsl:template>
+
+
+ <!--
+ ========================================================================
+ Named Template to display the Email information
+ ======================================================================== -->
+ <xsl:template                 name = "listEmail">
+  <xsl:param                   name = "email"/>
+
+  <xsl:element         name = "a">
+   <xsl:attribute      name = "href">
+    <xsl:text>mailto:</xsl:text>
+    <xsl:value-of    select = "$email"/>
+   </xsl:attribute>
+    <xsl:value-of    select = "$email"/>
+  </xsl:element>
+
+ </xsl:template>
+
+
+ <!--
+ ========================================================================
+ Named Template to display the Website information
+ ======================================================================== -->
+ <xsl:template                 name = "listWebSite">
+  <xsl:param                   name = "webSite"/>
+
+  <xsl:element         name = "a">
+   <xsl:attribute      name = "href">
+    <xsl:choose>
+     <xsl:when         test = "contains($webSite, 'http://')">
+      <xsl:value-of  select = "$webSite"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>http://</xsl:text>
+      <xsl:value-of  select = "substring-after($webSite, 'http://')"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:attribute>
+   <xsl:attribute      name = "target">
+    <xsl:text>new</xsl:text>
+   </xsl:attribute>
+
+   <xsl:value-of    select = "$webSite"/>
+  </xsl:element>
+
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
