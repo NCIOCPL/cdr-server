@@ -61,7 +61,9 @@
     available until Phase II of CDR when code will need to be added to
     include those data elements
     ======================================================================== -->
-<xsl:if                       test="not(ProfessionalInformation='')">
+     <xsl:apply-templates      select = "ProfessionalInformation"/>
+
+<!-- xsl:if                       test="not(ProfessionalInformation='')">
 <ProfessionalInformation>
 <xsl:if                       test="ProfessionalInformation/PhysicianDetails/
                                     AdministrativeInformation/Directory/
@@ -99,7 +101,7 @@
  <xsl:apply-templates        select="ProfessionalInformation/
                                      PhysicianDetails/
                                      PhysicianSpecialtyInformation"
-                                     mode="copy"/>
+                                     mode="copy"/ -->
                                                                                  
                                     
                                    
@@ -108,7 +110,7 @@
        Copy Physician Membership Information, Member of Cooperative
        Group, Member of Medical Society
      ================================================================= -->
-  <PhysicianMembershipInformation>   
+  <!-- PhysicianMembershipInformation>   
       <xsl:for-each           select="ProfessionalInformation/PhysicianDetails
                                       /PhysicianMembershipInformation/
                                       MemberOfCooperativeGroup/
@@ -119,13 +121,13 @@
       </xsl:attribute>
       <xsl:value-of           select="Organization/OrganizationName"/>
   </MemberOfCooperativeGroup>
-  </xsl:for-each>
+  </xsl:for-each -->
 
 <!-- ==================================================================
                   Copy MemberOfMedicalSociety
      ================================================================== -->
       
-          <xsl:apply-templates        select="ProfessionalInformation/
+          <!-- xsl:apply-templates        select="ProfessionalInformation/
                                               PhysicianDetails
                                               /PhysicianMembershipInformation/
                                               MemberOfMedicalSociety" 
@@ -135,7 +137,7 @@
         </xsl:if>
         </xsl:if>
         </ProfessionalInformation>
-        </xsl:if>
+        </xsl:if -->
 
   <!-- 
   =====================================================================
@@ -256,6 +258,80 @@
 </xsl:template>
 
 
+ <!-- 
+ =======================================================================
+ Template for ProfessionalInformation
+ ======================================================================= -->
+ <xsl:template                 match = "ProfessionalInformation">
+  <ProfessionalInformation>
+   <xsl:if                      test = "PhysicianDetails/
+                                        AdministrativeInformation/
+                                        Directory/Include = 'Include'">
+    <xsl:if                     test = "../Status/CurrentStatus = 'Active'">
+     <xsl:for-each            select = "PDQBoardMembershipDetails/
+                                        PDQEditorialBoard/Organization/
+                                        OrganizationName[1]">
+      <xsl:variable             name = "Ref"    
+                              select = "../@cdr:ref"/>
+      <PDQBoardMembership        ref = "{$Ref}">
+       <xsl:value-of          select = "."/>
+      </PDQBoardMembership>
+     </xsl:for-each>
+     <xsl:for-each            select = "PDQBoardMembershipDetails/
+                                        PDQAdvisoryBoard/Organization/
+                                        OrganizationName[1]">
+      <xsl:variable             name = "Ref"    
+                              select = "../@cdr:ref"/>
+      <PDQBoardMembership        ref = "{$Ref}">
+       <xsl:value-of          select = "."/>
+      </PDQBoardMembership>
+     </xsl:for-each>
+     <xsl:for-each            select = "PDQBoardMembershipDetails/
+                                        PDQVoluntaryProtocolReviewBoard/
+                                        Organization/
+                                        OrganizationName[1]">
+      <xsl:variable             name = "Ref"    
+                              select = "../@cdr:ref"/>
+      <PDQBoardMembership        ref = "{$Ref}">
+       <xsl:value-of          select = "."/>
+      </PDQBoardMembership>
+     </xsl:for-each>
+
+     <PhysicianDetails>
+      <xsl:apply-templates    select = "PhysicianDetails/
+                                        PhysicianSpecialtyInformation"
+                                mode = "copy"/>
+                               
+    <!-- =========================================================== 
+       Copy Physician Membership Information, Member of Cooperative
+       Group, Member of Medical Society
+     ================================================================= -->
+      <PhysicianMembershipInformation>   
+       <xsl:for-each          select = "PhysicianDetails/
+                                        PhysicianMembershipInformation/
+                                        MemberOfCooperativeGroup/
+                                        CooperativeGroup">
+        <MemberOfCooperativeGroup>
+         <xsl:attribute         name = "ref">
+          <xsl:value-of       select = "Organization/@cdr:ref"/>
+         </xsl:attribute>
+         <xsl:value-of        select = "Organization/OrganizationName"/>
+        </MemberOfCooperativeGroup>
+       </xsl:for-each>
+
+<!-- ==================================================================
+                  Copy MemberOfMedicalSociety
+     ================================================================== -->
+       <xsl:apply-templates   select = "PhysicianDetails/
+                                        PhysicianMembershipInformation/
+                                        MemberOfMedicalSociety" 
+                                mode = "copy"/>
+      </PhysicianMembershipInformation>
+     </PhysicianDetails>  
+    </xsl:if>
+   </xsl:if>
+  </ProfessionalInformation>
+ </xsl:template>
 
 </xsl:transform>
 ]]>
