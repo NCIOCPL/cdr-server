@@ -1,0 +1,84 @@
+%{
+#include <iostream>
+#include <string>
+
+#if 0
+static std::string trim(const char* s) {
+    if (!s) return "";
+    const char* p = s;
+    while (*p && strchr(" \t\r\n", *p))
+        ++p;
+    size_t len = strlen(p);
+    while (len > 0 && strchr(" \t\r\n", p[len - 1]))
+        --len;
+    return std::string(p, len);
+}
+#endif
+static int level = 0, showlevels = 999999;
+static bool in_text = false, first = true, just_opened = false;
+%}
+
+%%
+
+(\<[^/!][^>]*\>)|(\<!\[CDATA\[) { bool emptyTag = false;
+                 if (level < showlevels) {
+                    if (!first) std::cout << '\n';
+                    else std::cerr << "showlevels is " << showlevels << '\n';
+//std::cout << "***FOUND open tag: " << yytext << " LEVEL=" << level << '\n';
+                    for (int i = 0; i < level; ++i) std::cout << ' ';
+                    emptyTag = false;
+                    size_t len = strlen(yytext);
+                    if (yytext[len - 2] == '/')
+                        emptyTag = true;
+                    std::cout << yytext;
+                    in_text = false;
+                    just_opened = !emptyTag;
+                }
+                first = false;
+                if (!emptyTag)
+                    ++level;
+                //std::cerr << "level " << level << ": " << yytext << '\n';
+              }
+(\<\/[^>\n]*\>)|(\]\]\>) { if (level-- <= showlevels) {
+                    if (!in_text && !just_opened) {
+                        std::cout << '\n';
+                        for (int i = 0; i < level; ++i)
+                            std::cout << ' ';
+                    }
+//std::cout << "***FOUND close tag: " << yytext << " LEVEL=" << level << '\n';
+                    std::cout << yytext;
+                    just_opened = in_text = false;
+                }
+                //std::cerr << "level " << level << ": " << yytext << '\n';
+              }
+\n            ;
+[^<\]]*       { if (level <= showlevels && level) {
+                    const char* p = yytext;
+                    if (in_text) std::cout << ' '; 
+                    else while (*p && strchr(" \t\r\n", *p)) ++p;
+                    if (*p) {    
+                        std::cout << p;
+                        in_text = true;
+                        just_opened = false;
+                    }
+                }
+              }
+          
+%%
+
+main(int ac, char **av)
+{
+    if (ac > 1) showlevels = atoi(av[1]);
+    //std::cerr << "using showlevels of " << showlevels << '\n';
+    yylex();
+    std::cout << '\n';
+    return 0;
+}
+
+int yywrap() { return 1; }
+int yyerror(const char *msg)
+{
+    std::cerr << "error: " << (msg ? msg : "unknown") << '\n';
+    return 1;
+}
+
