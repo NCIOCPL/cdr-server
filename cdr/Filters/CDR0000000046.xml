@@ -257,7 +257,7 @@
 
          <xsl:value-of      select = "$RefInfo/Citation/
                                       PDQCitation/PublicationDetails/
-                                      OtherPublicationInformation"/><xsl:text/>
+                                      OtherPublicationInformation"/>
 
          <xsl:if            test = "$RefInfo/Citation/
                                     PDQCitation/
@@ -271,22 +271,15 @@
        </xsl:when>
       </xsl:choose>
      </xsl:for-each>
-     <xsl:choose>
-      <xsl:when           test = "PublicationDetails/
-                                  OtherPublicationInformation/ExternalRef">
-       <xsl:copy-of     select = "PublicationDetails/
-                                  OtherPublicationInformation"/><xsl:text/>
-       <xsl:text>.</xsl:text>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:if            test = "PublicationDetails/
-                                  OtherPublicationInformation">
-        <xsl:value-of   select = "PublicationDetails/
-                                  OtherPublicationInformation"/><xsl:text/>
-        <xsl:text>.</xsl:text>
-       </xsl:if>
-      </xsl:otherwise>
-     </xsl:choose>
+
+     <xsl:if                 test = "PublicationDetails/
+                                     OtherPublicationInformation">
+      <xsl:apply-templates select = "PublicationDetails/
+                                     OtherPublicationInformation"
+                             mode = "xref"/>
+      <xsl:text>.</xsl:text>
+     </xsl:if>
+
     </xsl:for-each>
    </xsl:if>
 
@@ -407,7 +400,6 @@
                                   Article/Journal/
                                   JournalIssue/PubDate/MedlineDate"/>
       <xsl:text>.</xsl:text>
-<br />
      </xsl:if> 
      <xsl:for-each      select = "$CitInfo/Citation/
                                   PubmedArticle/MedlineCitation/
@@ -505,14 +497,24 @@
   </xsl:copy>
 </xsl:template>
 
-               
+   
+ <!-- =============================================================
+      Template to display Citation information while preserving the 
+      xref element
+      ============================================================= -->
+ <xsl:template                   match = "OtherPublicationInformation"
+                                  mode = "xref">
+  <xsl:apply-templates/>
+ </xsl:template>
+
+
 <!-- ===================================================================
      Template rule used to do XML to XML transformations which
      copies any attribute node, or node that is child of of something 
      ==================================================================== -->
- <xsl:template match="@*|node()">
+ <xsl:template                   match = "@*|node()">
   <xsl:copy>
-   <xsl:apply-templates select="@*"/>
+   <xsl:apply-templates         select = "@*"/>
    <xsl:apply-templates/>
   </xsl:copy> 
  </xsl:template>
@@ -529,7 +531,7 @@
 
       <!-- For performance concern, we avoid call-template overhead. -->
       <xsl:when                   test = "normalize-space() != ''">
-        <xsl:value-of    select = "."/>
+        <xsl:value-of           select = "."/>
       </xsl:when>
 
       <xsl:otherwise>
