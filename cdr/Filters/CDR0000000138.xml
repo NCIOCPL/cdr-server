@@ -15,41 +15,41 @@
                              xmlns:cdr = "cips.nci.nih.gov/cdr" 
                exclude-result-prefixes = "cdr">
     
-  <xsl:include href = "cdr:name:Module: Vendor Filter Templates"/>
-   
   <xsl:output                   method = "xml" 
                   omit-xml-declaration = "no" 
                                 indent = "yes"/>
 
-  <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
-  <xsl:param                      name = "DateFirstPub"
+ <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
+   
+ <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
+ <xsl:param                       name = "DateFirstPub"
                                 select = "''"/>
  
 <!-- =================================================================
                         Copy control information 
      ================================================================= -->
 
-   <xsl:template match="Person">
-
-       <xsl:text disable-output-escaping="yes">
+ <xsl:template                   match = "Person">
+  <xsl:text disable-output-escaping="yes">
        &lt;!DOCTYPE Person &gt;</xsl:text>
 
-   <xsl:element name='{name()}'>
-   <xsl:for-each select="DocId">
-   <xsl:attribute name="id">
-   <xsl:value-of select="."/>
-   </xsl:attribute>
+  <xsl:element                    name = '{name()}'>
+   <xsl:for-each                select = "DocId">
+    <xsl:attribute                name = "id">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
    </xsl:for-each>
-    <xsl:if test="PdqKey">
-    <xsl:attribute name="LegacyPDQID">
-    <xsl:value-of select="PdqKey"/>
-    </xsl:attribute>
-    </xsl:if>
-    <xsl:attribute name="Status">
-    <xsl:value-of select="Status/CurrentStatus"/>
-    </xsl:attribute>
 
- 
+   <xsl:if                        test = "PdqKey">
+    <xsl:attribute                name = "LegacyPDQID">
+     <xsl:value-of              select = "PdqKey"/>
+    </xsl:attribute>
+   </xsl:if>
+
+   <xsl:attribute                 name = "Status">
+    <xsl:value-of               select = "Status/CurrentStatus"/>
+   </xsl:attribute>
+
 
 <!-- ====================================================================
                         Copy name information
@@ -75,6 +75,7 @@
 </xsl:if>
 <xsl:apply-templates select="PersonNameInformation/NameFormat" mode="copy"/>
 </PersonNameInformation>
+
 <!-- ======================================================================
     Copy Professional Information  NOTE: Genetics Professional Details not
     available until Phase II of CDR when code will need to be added to
@@ -254,6 +255,7 @@
 <xsl:for-each select="OrganizationAddressNames/OrganizationName">
 <OrganizationName><xsl:apply-templates select="."/></OrganizationName>
 </xsl:for-each>
+
 <PostalAddress>
 <xsl:apply-templates select="SpecificPostalAddress/Street" mode="copy"/>
 <xsl:apply-templates select="SpecificPostalAddress/City" mode="copy"/>
