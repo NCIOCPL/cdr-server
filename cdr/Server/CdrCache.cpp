@@ -1,9 +1,15 @@
 /*
- * $Id: CdrCache.cpp,v 1.6 2004-07-02 03:21:21 ameyer Exp $
+ * $Id: CdrCache.cpp,v 1.7 2005-03-04 02:41:06 ameyer Exp $
  *
  * Specialized cacheing for performance optimization, where useful.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2004/07/02 03:21:21  ameyer
+ * Changed set to map to insure that ordering is always the same, by term ID.
+ * Before that I was just storing pointers to Term objects - which causes
+ * the parents of a term to come out in different orders each time - which
+ * would be a mess for publishing since docs would always appear to change.
+ *
  * Revision 1.5  2004/07/02 02:13:46  ameyer
  * Fixed bug on cache start underflow.
  *
@@ -349,8 +355,8 @@ cdr::cache::Term * cdr::cache::Term::getTerm(
 
                       // Found ID, check and save it
                       parentIdStr =
-                          (static_cast<cdr::dom::Element&>(gChildNode)).
-                                    getAttribute("cdr:ref");
+                          (cdr::dom::Element(gChildNode)).getAttribute(
+                                                             "cdr:ref");
                       if (parentIdStr.size() == 0)
                           cdr::cache::fatal (
                               L"No cdr:ref for parent of Term=" + docIdStr);
