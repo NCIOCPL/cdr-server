@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.25 2000-08-10 20:26:56 bkline Exp $
+# $Id: Makefile,v 1.26 2000-10-04 18:37:44 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.25  2000/08/10 20:26:56  bkline
+# Added commands to stop/start Cdr service as part of install target rule.
+#
 # Revision 1.24  2000/08/10 19:47:14  bkline
 # Added dependency for 'install' rule.
 #
@@ -52,7 +55,7 @@
 # Made CdrDocs part of the all target.
 #
 # Revision 1.10  2000/05/02 19:26:38  bkline
-# Added CdrRegEx, CdrBlob, CdrValidateDoc, and prelimintary CdrGetDoc.
+# Added CdrRegEx, CdrBlob, CdrValidateDoc, and preliminary CdrGetDoc.
 #
 # Revision 1.9  2000/04/26 01:27:03  bkline
 # Added rules for building programmer documentation.  Added CdrSearch
@@ -95,7 +98,7 @@ SABLOT =/usr/sablot
 REGEX  =/usr/regex
 CDRINC =$(CDR)/include
 INC    =-I$(XML4C)/include -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)/include
-CFLAGS =$(INC) -W3 -GX -MT -GR -Zi
+CFLAGS =$(INC) -W3 -GX -MT -GR -Zi -nologo
 LFLAGS =/LIBPATH:/usr/xml4c/lib /LIBPATH:$(SABLOT)/lib \
 	/LIBPATH:$(CDR)/lib /DEBUG
 CC     =cl
@@ -119,6 +122,7 @@ HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrException.h \
         $(CDRINC)/CdrGetDoc.h \
         $(CDRINC)/CdrInt.h \
+        $(CDRINC)/CdrLink.h \
         $(CDRINC)/CdrLog.h \
         $(CDRINC)/CdrParserInput.h \
         $(CDRINC)/CdrRegEx.h \
@@ -126,7 +130,8 @@ HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrSession.h \
         $(CDRINC)/CdrString.h \
         $(CDRINC)/CdrValidateDoc.h \
-        $(CDRINC)/CdrXsd.h
+        $(CDRINC)/CdrXsd.h \
+        $(CDRINC)/catchexp.h
 LIBOBJS=CdrString.obj \
         CdrXsd.obj \
         CdrDom.obj \
@@ -137,7 +142,8 @@ LIBOBJS=CdrString.obj \
         CdrLog.obj \
         CdrSession.obj \
         CdrParserInput.obj \
-        CdrRegEx.obj
+        CdrRegEx.obj \
+        catchexp.obj
 OBJS   =CdrCommand.obj \
         CdrLogon.obj \
         CdrLogoff.obj \
@@ -154,10 +160,13 @@ OBJS   =CdrCommand.obj \
         CdrListUsrs.obj \
         CdrDoc.obj \
         CdrValidateDoc.obj \
+        CdrLink.obj \
         CdrSearch.obj \
         CdrSearch_tab.obj \
         CdrGetDoc.obj \
         CdrFilter.obj \
+        CdrVersion.obj \
+        CdrDocTypes.obj \
         CdrShutdown.obj \
         CdrDOMtoString.obj
 
