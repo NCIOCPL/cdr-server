@@ -1,10 +1,13 @@
 /*
- * $Id: CdrLink.h,v 1.7 2002-05-08 20:30:26 pzhang Exp $
+ * $Id: CdrLink.h,v 1.8 2002-08-14 01:36:51 ameyer Exp $
  *
  * Header for Link Module software - to maintain the link_net
  * table describing the link relationships among CDR documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2002/05/08 20:30:26  pzhang
+ * Added getSearchLinksResp and getSearchLinksRespWithProp.
+ *
  * Revision 1.6  2002/01/31 16:28:21  ameyer
  * Added trgFound to indicate target of link found in database.
  *
@@ -50,6 +53,13 @@ namespace cdr {
      *   report 1000 errors.
      */
     const int MaxFragMissErrors = 5;
+
+    /**
+     * Max sizes of objects stored in the database.
+     * Larger would be rejected by DBMS.
+     */
+    const int MAX_FRAG_SIZE = 32;
+    const int MAX_URL_SIZE  = 256;
 
     /**
      * Possible linking styles
@@ -285,12 +295,12 @@ namespace cdr {
                                     std::vector<int>&    typeList);
 
     /**
-     * Return the CdrSearchLinksResp element that represent target links 
-     * made from a particular element type in a given source document type. 
-     * It contains only the documents satisfying the link_properties. It 
-     * is designed for task: picklists with server-side filtering, and 
+     * Return the CdrSearchLinksResp element that represent target links
+     * made from a particular element type in a given source document type.
+     * It contains only the documents satisfying the link_properties. It
+     * is designed for task: picklists with server-side filtering, and
      * hence it emphasizes on speed by not using other funtions in cdr::link.
-     * This is assumed to be a replacement of findTargetDocTypes.  
+     * This is assumed to be a replacement of findTargetDocTypes.
      *
      *  @param      conn         Reference to the connection object for the
      *                            CDR database.
@@ -313,14 +323,14 @@ namespace cdr {
     /**
      * This hanles the complex case for getSearchLinksResp with link
      * properties present. Wanted to split the code for clarity.
-     * The properties could have only ids without values, which has 
+     * The properties could have only ids without values, which has
      * not yet been implemented.
      *
      *  @param      conn         Reference to the connection object for the
      *                            CDR database.
      *  @param      link_id      Link type identifier.
      *  @param      prop_ids     Reference to a list of property ids.                            document type.
-     *  @param      prop_values  Reference to a list of property values.    
+     *  @param      prop_values  Reference to a list of property values.
      *  @param      titlePattern Reference to a string containing the target
      *                            document title pattern.
      *  @param      maxRows      Maximum number of (id, title) pairs returned.
@@ -331,7 +341,7 @@ namespace cdr {
                                     cdr::db::Connection&      conn,
                                     int                       link_id,
                                     std::vector<int>&         prop_ids,
-                                    std::vector<cdr::String>& prop_values,        
+                                    std::vector<cdr::String>& prop_values,
                                     const cdr::String&        titlePattern,
                                     int                       maxRows);
 
