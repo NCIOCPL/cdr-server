@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.h,v 1.10 2000-12-28 13:32:33 bkline Exp $
+ * $Id: CdrXsd.h,v 1.11 2001-01-17 21:53:37 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2000/12/28 13:32:33  bkline
+ * Added support for choice.
+ *
  * Revision 1.9  2000/10/05 21:23:55  bkline
  * Added validateDocAgainstSchema (lower level than the one tied to the
  * database and the server).
@@ -60,7 +63,24 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
          *          XML Schema Part 1: Structures</A>
          */
-        const wchar_t* const SCHEMA        = L"xsd:schema";
+        const wchar_t* const SCHEMA        = L"schema";
+
+        /**
+         * Tag for recursively included schema document.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         */
+        const wchar_t* const INCLUDE       = L"include";
+
+        /**
+         * Attribute name for location of recursively included schema 
+         * document.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         */
+        const wchar_t* const SCHEMA_LOC    = L"schemaLocation";
 
         /**
          * Tag for element-specification element in Schema document.
@@ -68,7 +88,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
          *          XML Schema Part 1: Structures</A>
          */
-        const wchar_t* const ELEMENT       = L"xsd:element";
+        const wchar_t* const ELEMENT       = L"element";
 
         /**
          * Tag for choice-specification element in Schema document.
@@ -76,7 +96,31 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
          *          XML Schema Part 1: Structures</A>
          */
-        const wchar_t* const CHOICE        = L"xsd:choice";
+        const wchar_t* const CHOICE        = L"choice";
+
+        /**
+         * Tag for sequence-specification element in Schema document.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         */
+        const wchar_t* const SEQUENCE      = L"sequence";
+
+        /**
+         * Tag for group-specification element in Schema document.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         */
+        const wchar_t* const GROUP         = L"group";
+
+        /**
+         * Attribute name for references to named groups in a Schema document.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         */
+        const wchar_t* const REF           = L"ref";
 
         /**
          * Tag for attribute-specification element in Schema document.
@@ -84,7 +128,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
          *          XML Schema Part 1: Structures</A>
          */
-        const wchar_t* const ATTRIBUTE     = L"xsd:attribute";
+        const wchar_t* const ATTRIBUTE     = L"attribute";
 
         /**
          * Tag for Schema element specifying a user-defined complex type.
@@ -92,7 +136,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
          *          XML Schema Part 1: Structures</A>
          */
-        const wchar_t* const COMPLEX_TYPE  = L"xsd:complexType";
+        const wchar_t* const COMPLEX_TYPE  = L"complexType";
 
         /**
          * Tag for Schema element specifying a user-defined simple type.
@@ -102,7 +146,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const SIMPLE_TYPE   = L"xsd:simpleType";
+        const wchar_t* const SIMPLE_TYPE   = L"simpleType";
         
         /**
          * Tag for Schema element adding a constraing on the minimum length of
@@ -113,7 +157,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const MIN_LENGTH    = L"xsd:minLength";
+        const wchar_t* const MIN_LENGTH    = L"minLength";
         
         /**
          * Tag for Schema element adding a constraing on the maximum length of
@@ -124,7 +168,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const MAX_LENGTH    = L"xsd:maxLength";
+        const wchar_t* const MAX_LENGTH    = L"maxLength";
         
         /**
          * Tag for Schema element adding a regular-expression pattern used
@@ -135,7 +179,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const PATTERN       = L"xsd:pattern";
+        const wchar_t* const PATTERN       = L"pattern";
         
         /**
          * Tag for Schema element adding a specific value to a set of
@@ -146,7 +190,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const ENUMERATION   = L"xsd:enumeration";
+        const wchar_t* const ENUMERATION   = L"enumeration";
         
         /**
          * Attribute name identifying base type for a derived user-defined
@@ -168,7 +212,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const STRING        = L"xsd:string";
+        const wchar_t* const STRING        = L"string";
         
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
@@ -179,7 +223,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const DATE          = L"xsd:date";
+        const wchar_t* const DATE          = L"date";
         
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
@@ -190,7 +234,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const TIME          = L"xsd:time";
+        const wchar_t* const TIME          = L"time";
         
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
@@ -201,7 +245,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const DECIMAL       = L"xsd:decimal";
+        const wchar_t* const DECIMAL       = L"decimal";
         
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
@@ -212,7 +256,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const INTEGER       = L"xsd:integer";
+        const wchar_t* const INTEGER       = L"integer";
         
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
@@ -223,7 +267,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const BINARY        = L"xsd:binary";
+        const wchar_t* const BINARY        = L"binary";
         
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
@@ -234,7 +278,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const URI           = L"xsd:uri";
+        const wchar_t* const URI           = L"uri";
         
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
@@ -245,8 +289,19 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const TIME_INSTANT  = L"xsd:timeInstant";
+        const wchar_t* const TIME_INSTANT  = L"timeInstant";
 
+        /**
+         * Value for <code>base</code> attribute, indicating derivation of a
+         * user-defined simple type from the built-in NMTOKEN type.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
+         *          XML Schema Part 2: Datatypes</A>
+         */
+        const wchar_t* const NMTOKEN       = L"NMTOKEN";
+        
         /**
          * Tag for the element used to specify the inclusive lower bound of
          * the range for valid values for elements and attributes of this
@@ -257,7 +312,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const MIN_INCLUSIVE = L"xsd:minInclusive";
+        const wchar_t* const MIN_INCLUSIVE = L"minInclusive";
 
         /**
          * Tag for the element used to specify the inclusive upper bound of
@@ -269,7 +324,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const MAX_INCLUSIVE = L"xsd:maxInclusive";
+        const wchar_t* const MAX_INCLUSIVE = L"maxInclusive";
 
         /**
          * Tag for the element used to specify the exact length in characters
@@ -280,7 +335,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const LENGTH        = L"xsd:length";
+        const wchar_t* const LENGTH        = L"length";
 
         /**
          * Tag for the element used to specify the allowable number of
@@ -292,7 +347,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const PRECISION     = L"xsd:precision";
+        const wchar_t* const PRECISION     = L"precision";
 
         /**
          * Tag for the element used to specify the allowable number of
@@ -304,7 +359,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const SCALE         = L"xsd:scale";
+        const wchar_t* const SCALE         = L"scale";
 
         /**
          * Tag for the element used to specify the encoding allowed (Hex or
@@ -315,7 +370,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const ENCODING      = L"xsd:encoding";
+        const wchar_t* const ENCODING      = L"encoding";
 
         /**
          * Name of the attribute which specifies the identifier associated
@@ -452,22 +507,19 @@ namespace cdr {
          * Forward declarations.
          */
         class Type;
-        class Elem;
-        class Attr;
-        class ElemChoice;
+        class Element;
+        class Attribute;
+        class Node;
+        class Group;
 
         /**
          * Aliases for container types.  Provided for convenience (and as a
          * workaround for MSVC++ bugs).
          */
-        typedef std::list<ElemChoice*>          ElemSeq;
-        typedef std::map<cdr::String, Elem*>    ElemSet;
-        typedef std::map<cdr::String, Attr*>    AttrSet;
-        typedef ElemSeq::const_iterator         ChoiceEnum;
-        typedef ElemSet::const_iterator         ElemEnum;
-        typedef AttrSet::const_iterator         AttrEnum;
-        typedef std::map<cdr::String, 
-                         cdr::String>           ElemTypeMap;
+        typedef std::list<Node*>                        NodeList;
+        typedef NodeList::const_iterator                NodeEnum;
+        typedef std::map<cdr::String, Attribute*>       AttrSet;
+        typedef AttrSet::const_iterator                 AttrEnum;
 
         /**
          * An object of type <code>Schema</code> represents the types
@@ -492,13 +544,23 @@ namespace cdr {
 
             /**
              * Find a <code>Type</code> object from its name, using the
-             * <code>ElemTypeMap</code> of names to types.
+             * <code>TypeMap</code> of names to types.
              *
              *  @param  name    name assigned to the type.
              *  @return         pointer to type object if found; otherwise
              *                  <code>NULL</code>.
              */
             const Type*         lookupType(const cdr::String& name) const;
+
+            /**
+             * Find a <code>Group</code> object from its name, using the
+             * <code>GroupMap</code> of names to types.
+             *
+             *  @param  name    name assigned to the group.
+             *  @return         pointer to group object if found; otherwise
+             *                  <code>NULL</code>.
+             */
+            Group*              lookupGroup(const cdr::String& name) const;
 
             /**
              * Finds the name of the type used to validate a particular
@@ -515,7 +577,7 @@ namespace cdr {
              *
              *  @return         reference to schema's top element.
              */
-            Elem&               getTopElement() const { return *topElement; }
+            Element&            getTopElement() const { return *topElement; }
 
             /**
              * Remembers the name of the type used for this element.
@@ -527,13 +589,32 @@ namespace cdr {
             void                registerElement(const cdr::String& eName,
                                                 const cdr::String& tName);
 
+            /**
+             * Remember an object which needs to be freed by the destructor.
+             *
+             *  @param  node    address of object which will need to be freed
+             *                  by the Schema destructor.
+             */
+            void                registerObject(Node* node);
+
         private:
 
             /**
              * Map of type names to the corresponding <code>Type</code>
              * objects.
              */
-            typedef std::map<cdr::String, const Type*> TypeMap;
+            typedef std::map<cdr::String, Type*> TypeMap;
+
+            /**
+             * Map of group names to the corresponding <code>Group</code>
+             * objects.
+             */
+            typedef std::map<cdr::String, Group*> GroupMap;
+
+            /**
+             * Map of element names to name of corresponding type.
+             */
+            typedef std::map<cdr::String, cdr::String> ElemTypeMap;
 
             /**
              * Registry of types used in the Schema, indexed by type name.
@@ -541,14 +622,24 @@ namespace cdr {
             TypeMap             types;
 
             /**
+             * Named groups defined by this schema.
+             */
+            GroupMap            groups;
+
+            /**
              * Map from element name to name of type used by the element.
              */
             ElemTypeMap         elements;
 
             /**
+             * List of all nodes which need to be freed by the destructor.
+             */
+            NodeList            nodeList;
+
+            /**
              * Element forming the top of the DOM tree for this schema.
              */
-            Elem*               topElement;
+            Element*            topElement;
 
             /**
              * Registers the built-in Schema types supported by this
@@ -560,28 +651,91 @@ namespace cdr {
              * Plugs a new type in to the type map, which indexes known types
              * by name.
              */
-            void                registerType(const cdr::xsd::Type*);
+            void                registerType(cdr::xsd::Type*);
+
+            /**
+             * Plugs a new group in to the group map, which indexes known
+             * groups by name.
+             */
+            void                registerGroup(cdr::xsd::Group*);
+
+            /**
+             * Loads an included schema document and recursively calls
+             * parseSchema.
+             */
+            void                includeSchema(const cdr::dom::Node&);
+
+            /**
+             * Extracts schema information from XML document.  Called
+             * recursively by constructor for included schema documents.
+             */
+            void                parseSchema(const cdr::dom::Node&);
+
+            /**
+             * Replace GroupRef pointers with pointers to the Group objects
+             * being referenced.
+             */
+            void                resolveGroupRefs();
         };
 
         /**
-         * Common base class for schema elements and attributes.
+         * Common base class for objects which make up a complex type.
+         * Nodes can be named (for example, groups, elements, or attributes)
+         * or unnamed (anonymous sequences and choices).
          */
         class Node {
 
         public:
+
             /**
              * Destructor is virtual so the correct derived class's destructor
              * will be invoked at cleanup time.
              */
             virtual ~Node() {}
+        };
+
+        /**
+         * Common base class for named components of a complex type (e.g.,
+         * groups, elements, or attributes).
+         */
+        class NamedNode : public Node {
+
+        public:
 
             /**
-             * Accessor method for <code>Node</code>'s name.
+             * Destructor is virtual so the correct derived class's destructor
+             * will be invoked at cleanup time.
+             */
+            virtual ~NamedNode() {}
+
+            /**
+             * Accessor method for <code>NamedNode</code>'s name.
              *
              *  @return         string containing name of this element or
              *                  attribute.
              */
             cdr::String     getName() const { return name; }
+
+        protected:
+
+            /**
+             * String containing the name of the element or attribute.
+             */
+            cdr::String     name;
+        };
+
+        /**
+         * Base class for attributes and elements.
+         */
+        class NamedAndTypedNode : public NamedNode {
+
+        public:
+
+            /**
+             * Destructor is virtual so the correct derived class's destructor
+             * will be invoked at cleanup time.
+             */
+            virtual ~NamedAndTypedNode() {}
 
             /**
              * Accessor method for <code>Node</code>'s type's name.
@@ -614,12 +768,7 @@ namespace cdr {
              * Construction is completed by the derived class.  Objects
              * of the base class cannot be created.
              */
-            Node() : type(0) {}
-
-            /**
-             * String containing the name of the element or attribute.
-             */
-            cdr::String     name;
+            NamedAndTypedNode() : type(0) {}
 
             /**
              * String containing the name of the type assigned to the element
@@ -633,7 +782,7 @@ namespace cdr {
              * Pointer to the <code>Type</code> object associated with this
              * element or attribute.  Used to cache the results of
              * <code>resolveType</code> so the lookup only has to be performed
-             * once for this <code>Node</code>.
+             * once for this <code>NamedAndTypedNode</code>.
              */
             const Type*     type;
 
@@ -653,69 +802,91 @@ namespace cdr {
         };
 
         /**
-         * Schema element.  Can be top-level element for the schema's
-         * document type, or a possible choice for one of the positions in the
-         * sequence of elements for a complex type.
+         * Base class for classes with minimum/maximum occurrence limits.
          */
-        class Elem : public Node {
+        class CountConstrained {
 
         public:
 
             /**
-             * Extracts the specification of the requirements for this element
-             * for its schema node.
-             *
-             *  @param  n           reference to DOM node holding validation
-             *                      requirements for this element.
-             */
-            Elem(const cdr::dom::Node& n);
-
-            /**
              * Accessor method for maximum number of occurrences allowed for
-             * this element.
+             * this node.
              *
              *  @return             integer representing maximum number of
-             *                      occurrences allowed for this element.
+             *                      occurrences allowed for this node.
              */
             int             getMaxOccs() const { return maxOccs; }
 
             /**
              * Accessor method for minimum number of occurrences required for
-             * this element.
+             * this node.
              *
              *  @return             integer representing minimum number of
-             *                      occurrences required for this element.
+             *                      occurrences required for this node.
              */
             int             getMinOccs() const { return minOccs; }
 
-        private:
+        protected:
 
             /**
-             * Maximum number of occurrences allowed for this element.
+             * Maximum number of occurrences allowed for this node.
              */
             int             maxOccs;
 
             /**
-             * Minimum number of occurrences required for this element.
+             * Minimum number of occurrences required for this node.
              */
             int             minOccs;
         };
 
         /**
+         * Schema element.  Can be top-level element for the schema's
+         * document type, or a possible choice for one of the positions in the
+         * sequence or choice of elements for a complex type.
+         */
+        class Element : public NamedAndTypedNode, public CountConstrained {
+
+        public:
+
+            /**
+             * Extracts the specification of the requirements for this element
+             * from its schema node.
+             *
+             *  @param  s           reference to schema object which uses 
+             *                      this choice or sequence.
+             *  @param  n           reference to DOM node holding validation
+             *                      requirements for this element.
+             */
+            Element(Schema& s, const cdr::dom::Node& n);
+
+            /**
+             * Clean up resources used by this object.
+             */
+            ~Element() {}
+        };
+
+        /**
          * Attribute attached to a schema element.
          */
-        class Attr : public Node {
+        class Attribute : public NamedAndTypedNode {
 
         public:
 
             /**
              * Extracts the specification of the requirements for this
-             * attribute for its schema node.
+             * attribute from its schema node.
              * 
+             *  @param  s           reference to schema object which uses 
+             *                      this choice or sequence.
              *  @param  n           reference to DOM node holding validation
              *                      requirements for this attribute.
              */
-            Attr(const cdr::dom::Node& n);
+            Attribute(Schema& s, const cdr::dom::Node& n);
+
+            /**
+             * Clean up resources used by this object.
+             */
+            ~Attribute() {}
 
             /**
              * Accessor method for reporting whether this attribute can be
@@ -735,126 +906,217 @@ namespace cdr {
         };
 
         /**
-         * Set of alternate elements, any one of which is acceptable in a
-         * given context.
+         * Base class for Choice and Sequence classes, whose implementation is
+         * identical but whose semantics differ.
          */
-        class ElemChoice {
+        class ChoiceOrSequence : public Node, public CountConstrained {
 
         public:
 
             /**
-             * Extracts the specification of the requirements for this choice
-             * for its schema node.
-             *
-             *  @param  s           reference to schema object which uses 
-             *                      this element choice.
-             *  @param  n           reference to DOM node holding validation
-             *                      requirements for this choice.
+             * Clean up resources used by this object.
              */
-            ElemChoice(Schema& s, const cdr::dom::Node& n);
+            ~ChoiceOrSequence() {}
 
             /**
-             * Creates a special-case "choice" which contains only a single
-             * element.
+             * Accessor method for the elements contained in this object.
              *
-             *  @param  e           address of only element available for
-             *                      this "choice."
+             *  @return     enumerator for walking through the set of nodes.
              */
-            ElemChoice(Elem* e);
-
-            /**
-             * Cleans up the list of elements.
-             */
-            ~ElemChoice();
-
-            /**
-             * Looks up an element by name in this set of element choices.
-             *
-             *  @param  name        reference to string containing element's
-             *                      name.
-             *  @return             pointer to Elem object, if found;
-             *                      otherwise <code>NULL</code>.
-             */
-            Elem*           find(const cdr::String& name) const;
-
-            /**
-             * Inserts a new element into the set of choices.
-             *
-             *  @param  name        reference to string containing element's
-             *                      name.
-             *  @param  elem        address of object representing element.
-             *  @exception          cdr::Exception if element already exists
-             *                      in this choice.
-             */
-            void            add(const cdr::String& n, Elem* e);
-
-            /**
-             * Accessor method for the number of <code>Elem</code>s defined
-             * for this choice.
-             *
-             *  @return     integer representing the size of the set
-             *              of <code>Elem</code> pointers.
-             */
-            size_t          getElemCount() const { return elemSet.size(); }
-
-            /**
-             * Accessor method for maximum number of occurrences allowed for
-             * this choice.
-             *
-             *  @return             integer representing maximum number of
-             *                      occurrences allowed for this choice.
-             */
-            int             getMaxOccs() const { return maxOccs; }
-
-            /**
-             * Accessor method for minimum number of occurrences required for
-             * this choice.
-             *
-             *  @return             integer representing minimum number of
-             *                      occurrences required for this choice.
-             */
-            int             getMinOccs() const { return minOccs; }
-
-            /**
-             * Accessor method for the elements contained in this choice.
-             *
-             *  @return     enumerator for walking through the set of element
-             *              choices.
-             */
-            ElemEnum        getElements() const { return elemSet.begin(); }
+            NodeEnum        getNodes() const { return nodeList.begin(); }
 
             /**
              * Accessor method for value which terminates an enumeration loop
              * through the elements available for this choice.
              *
              *  @return     enumerator indicating that the end of the list
-             *              of <code>Elem</code> pointers has been passed.
+             *              of <code>Node</code> pointers has been passed.
              */
-            ElemEnum        getElemEnd() const { return elemSet.end(); }
+            NodeEnum        getListEnd() const { return nodeList.end(); }
+
+            /**
+             * Replace GroupRef pointers with pointers to the Group objects
+             * being referenced.
+             */
+            void            resolveGroupRefs(const Schema&);
+
+            /**
+             * Report the number of nodes in the node list.
+             */
+            int             getNodeCount() const { return nodeList.size(); }
+
+        protected:
+
+            /**
+             * Extracts the specification of the requirements for this choice
+             * or sequence from its schema node.
+             *
+             *  @param  s           reference to schema object which uses 
+             *                      this choice or sequence.
+             *  @param  n           reference to DOM node holding validation
+             *                      requirements for this choice or sequence.
+             */
+            ChoiceOrSequence(Schema& s, const cdr::dom::Node& n);
 
         private:
 
             /**
-             * Set of available elements which can be selected for this
+             * Set of available nodes which can be selected for this
              * choice.
              */
-            ElemSet         elemSet;
+            NodeList        nodeList;
 
             /**
-             * Maximum number of occurrences allowed for this choice.
+             * Flag to prevent infinite recursion by resolveGroupRefs().
              */
-            int             maxOccs;
+            bool            groupRefsResolved;
+        };
+
+        /**
+         * Set of alternate nodes, any one of which is acceptable in a
+         * given context.
+         */
+        class Choice : public ChoiceOrSequence {
+
+        public:
 
             /**
-             * Minimum number of occurrences required for this choice.
+             * Extracts the specification of the requirements for this
+             * choice from its schema node.
+             *
+             *  @param  s           reference to schema object which uses 
+             *                      this choice.
+             *  @param  n           reference to DOM node holding validation
+             *                      requirements for this choice.
              */
-            int             minOccs;
+            Choice(Schema& s, const cdr::dom::Node& n) :
+                ChoiceOrSequence(s, n) {}
+
+            /**
+             * Clean up resources used by this object.
+             */
+            ~Choice() {}
+        };
+
+        /**
+         * List of objects which are expected to occur in a given order,
+         * if at all.
+         */
+        class Sequence : public ChoiceOrSequence {
+
+        public:
+
+            /**
+             * Extracts the specification of the requirements for this
+             * sequence from its schema node.
+             *
+             *  @param  s           reference to schema object which uses 
+             *                      this element sequence.
+             *  @param  n           reference to DOM node holding validation
+             *                      requirements for this sequence.
+             */
+            Sequence(Schema& s, const cdr::dom::Node& n) :
+                ChoiceOrSequence(s, n) {}
+
+            /**
+             * Clean up resources used by this object.
+             */
+            ~Sequence() {}
+        };
+
+        /**
+         * Named sequence or choice.
+         */
+        class Group : public NamedNode {
+
+        public:
+
+            /**
+             * Extracts the specification of the requirements for this
+             * group from its schema node.
+             *
+             *  @param  s           reference to schema object which uses 
+             *                      this group.
+             *  @param  n           reference to DOM node holding validation
+             *                      requirements for this group.
+             */
+            Group(Schema& s, const cdr::dom::Node& n);
+
+            /**
+             * Clean up resources used by this object.
+             */
+            ~Group() {}
+
+            /**
+             * Accessor method for Group's Sequence.
+             *
+             *  @return             address of Sequence comprising this
+             *                      named group, if appropriate; NULL if
+             *                      group contains a Choice instead of a
+             *                      Sequence.
+             */
+            const Sequence* getSequence() const;
+
+            /**
+             * Accessor method for Group's Choice.
+             *
+             *  @return             address of Choice comprising this
+             *                      named group, if appropriate; NULL if
+             *                      group contains a Sequence instead of a
+             *                      Choice.
+             */
+            const Choice*   getChoice() const;
+
+            /**
+             * Accessor method for getting sequence or choice when it isn't
+             * significant which of these is represented by the named group.
+             *
+             *  @return             address of choice or sequence object
+             *                      which this group represents.
+             */
+            const ChoiceOrSequence* getContent() const {return node; }
+
+            /**
+             * Replace GroupRef pointers with pointers to the Group objects
+             * being referenced.
+             */
+            void            resolveGroupRefs(const Schema&);
+
+        private:
+
+            /**
+             * Address of Sequence or Choice comprising this Group.
+             */
+            ChoiceOrSequence*       node;
+        };
+
+        /**
+         * Unresolved reference to a named group.
+         */
+        class GroupRef : public NamedNode {
+
+        public:
+
+            /**
+             * Extracts the reference to a named group from its schema node.
+             *
+             *  @param  s           reference to schema object which uses 
+             *                      this group.
+             *  @param  n           reference to DOM node holding this group
+             *                      reference.
+             */
+            GroupRef(Schema& s, const cdr::dom::Node& n);
+
+            /**
+             * Clean up resources used by this object.
+             */
+            ~GroupRef() {}
         };
 
         /**
          * Base class for schema types, both simple and comples.
          */
-        class Type {
+        class Type : public Node {
 
         public:
 
@@ -922,6 +1184,11 @@ namespace cdr {
             SimpleType(const cdr::String& n);
 
             /**
+             * Clean up resources used by this object.
+             */
+            ~SimpleType() {}
+
+            /**
              * Enumerated type representing the allowable encoding for a
              * binary simple type.
              */
@@ -944,7 +1211,7 @@ namespace cdr {
              * Token representing the ultimate base for a simple type.
              */
             enum BuiltinType { STRING, DATE, TIME, DECIMAL, INTEGER,
-                               URI, BINARY, TIME_INSTANT };
+                               URI, BINARY, TIME_INSTANT, NMTOKEN };
 
             /**
              * Accessor method for the name of the base type for this
@@ -1166,7 +1433,7 @@ namespace cdr {
             /**
              * Cleans up resources allocated for this type object.
              */
-            ~ComplexType();
+            ~ComplexType() {}
 
             /**
              * Enumerated type containing tokens representing the content
@@ -1184,14 +1451,12 @@ namespace cdr {
 
             /**
              * Accessor method for the elements contained in this complex
-             * type.  Each node in the sequence actually represents a choice
-             * of elements which can appear at the node's position in the
-             * sequence.  Most choices will have only one element in the set.
+             * type.
              *
-             *  @return     enumerator for the list containing the element
-             *              choices expected for this type.
+             *  @return     address of object for the sequence, choice, or
+             *              group which makes up the content for this type.
              */
-            ChoiceEnum      getElements() const { return elemSeq.begin(); }
+            const Node*     getContent() const { return content; }
 
             /**
              * Accessor method for the attributes contained in this complex
@@ -1204,34 +1469,15 @@ namespace cdr {
 
             /**
              * Accessor method for value which terminates an enumeration loop
-             * through the elements expected for this complex type.
-             *
-             *  @return     enumerator indicating that the end of the list
-             *              of <code>ElemChoice</code> pointers has been passed.
-             */
-            ChoiceEnum      getElemEnd() const { return elemSeq.end(); }
-
-            /**
-             * Accessor method for value which terminates an enumeration loop
              * through the attributes expected for this complex type.
              *
              *  @return     enumerator indicating that the end of the set
-             *              of <code>Attr</code> pointers has been passed.
+             *              of <code>Attribute</code> pointers has been passed.
              */
             AttrEnum        getAttrEnd() const { return attrSet.end(); }
 
             /**
-             * Accessor method for the number of <code>ElemChoice</code>s 
-             * defined for this complex type (not the number of element 
-             * instances).
-             *
-             *  @return     integer representing the size of the list
-             *              of <code>ElemChoice</code> pointers.
-             */
-            size_t          getElemCount() const { return elemSeq.size(); }
-
-            /**
-             * Accessor method for the number of <code>Attr</code>s
+             * Accessor method for the number of <code>Attribute</code>s
              * defined for this complex type (not the number of attribute
              * instances).
              *
@@ -1240,57 +1486,36 @@ namespace cdr {
              */
             size_t          getAttrCount() const { return attrSet.size(); }
 
-#if 0
             /**
              * Accessor method for determining whether an particular
-             * <code>Elem</code> is defined for this complex type.
+             * <code>Attribute</code> is defined for this complex type.
              *
              *  @param      string containing the name of the
-             *              <code>Elem</code>
-             *  @return     <code>true</code> if the specified element
-             *              has been defined for this complex type.
-             */
-            bool            hasElement(const cdr::String& name) const
-                { return elemNames.find(name) != elemNames.end(); }
-#endif
-            /**
-             * Accessor method for determining whether an particular
-             * <code>Attr</code> is defined for this complex type.
-             *
-             *  @param      string containing the name of the
-             *              <code>Attr</code>
+             *              <code>Attribute</code>
              *  @return     <code>true</code> if the specified attribute
              *              has been defined for this complex type.
              */
             bool            hasAttribute(const cdr::String& name) const
                 { return attrSet.find(name) != getAttrEnd(); }
 
+            /**
+             * Replace GroupRef pointers with pointers to the Group objects
+             * being referenced.
+             */
+            void            resolveGroupRefs(const Schema&);
+
         private:
 
             /**
-             * List of <code>ElemChoice</code>s defined for this type.
+             * Tree representing elements expected for this type.
              */
-            ElemSeq         elemSeq;
+            Node*           content;
 
             /**
-             * List of <code>Attr</code>s defined for this type.
+             * List of <code>Attribute</code>s defined for this type.
              */
             AttrSet         attrSet;
-#if 0
-            /**
-             * Hashed set of element names used for determining whether a
-             * particular element has been defined for this complex type
-             * without scanning the entire element list.
-             */
-            cdr::StringSet  elemNames;
 
-            /**
-             * Hashed set of attribute names used for determining whether a
-             * particular attribute has been defined for this complex type
-             * without scanning the entire attribute list.
-             */
-            cdr::StringSet  attrNames;
-#endif
             /**
              * Token identifying the content model for this complex type
              * (mixed, textOnly, etc.).
@@ -1313,6 +1538,23 @@ namespace cdr {
                 cdr::dom::Element&         docElem,
                 cdr::dom::Element&         schemaElem,
                 StringList&                errors);
+
+        /**
+         * Determine whether the string matches the NMTOKEN production of
+         * http://www.w3.org/TR/2000/REC-xml-20001006:
+         *      Nmtoken     ::=    (NameChar)+ 
+         *      NameChar    ::=     Letter | Digit | '.' | '-' | '_' | ':' |
+         *                          CombiningChar | Extender 
+         * This function is exported because it is needed elsewhere than in
+         * the validation module (specifically, the ParseSchema program uses
+         * it when converting an XML Schema to a DTD).
+         * 
+         *  @param  s                   reference to string value to be
+         *                              matched against NMTOKEN production.
+         *  @return                     <code>true</code> iff value matches
+         *                              NMTOKEN production.
+         */
+        bool isNMToken(const cdr::String& s);
     }
 }
 
