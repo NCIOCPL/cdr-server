@@ -1,10 +1,13 @@
 /*
- * $Id: CdrLink.h,v 1.3 2000-09-27 20:25:39 bkline Exp $
+ * $Id: CdrLink.h,v 1.4 2001-04-17 23:14:03 ameyer Exp $
  *
  * Header for Link Module software - to maintain the link_net
  * table describing the link relationships among CDR documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/09/27 20:25:39  bkline
+ * Fixed last argument to findTargetDocTypes().
+ *
  * Revision 1.2  2000/09/27 11:29:23  bkline
  * Added CdrDelLinks() and findTargetDocTypes().
  *
@@ -97,9 +100,10 @@ namespace cdr {
              * referred to by other documents.)
              *
              * @param  dbConn       Reference to database connection.
+             * @param  fragSet      Reference to set of frag ids in src doc
              * @return              Count of errors for this link so far.
              */
-            int validateLink (cdr::db::Connection&);
+            int validateLink (cdr::db::Connection&, cdr::StringSet &);
 
             /**
              * dumpXML
@@ -157,6 +161,7 @@ namespace cdr {
             int         getTrgId         (void) { return trgId; }
             cdr::String getTrgIdStr      (void) { return trgIdStr; }
             int         getTrgDocType    (void) { return trgDocType; }
+            cdr::String getTrgActiveStat (void) { return trgActiveStat; }
             cdr::String getTrgDocTypeStr (void) { return trgDocTypeStr; }
             cdr::String getRef           (void) { return ref; }
             cdr::String getTrgFrag       (void) { return trgFrag; }
@@ -179,6 +184,7 @@ namespace cdr {
             cdr::String trgIdStr;       // String format of target id
             int         trgDocType;     // Doc_type of target doc
             cdr::String trgDocTypeStr;  // String format
+            cdr::String trgActiveStat;  // 'A'=active, 'D'=deleted target doc
             cdr::String ref;            // Full reference as string
             cdr::String trgFrag;        // #Fragment part of ref, if any
             cdr::dom::Node& fldNode;    // Reference to DOM node in parsed xml
@@ -262,10 +268,23 @@ namespace cdr {
      *                          table (out parameter).
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern void findTargetDocTypes(cdr::db::Connection& conn,
-                                   const String&        srcElem,
-                                   const String&        srcDocType,
-                                   std::vector<int>&    typeList);
+    extern void findTargetDocTypes (cdr::db::Connection& conn,
+                                    const String&        srcElem,
+                                    const String&        srcDocType,
+                                    std::vector<int>&    typeList);
+
+    /**
+     * Check for and execute any custom link procedures.
+     * Checks a DBMS table to find out what procedures are required for
+     * this type of link and then invokes the appropriate code for them.
+     *
+     *  @param      conn        reference to the connection object for the
+     *                           CDR database.
+     *  @param      link        reference CdrLink object for link to check.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern int customLinkCheck (cdr::db::Connection& conn,
+                                 cdr::link::CdrLink* link);
   }
 }
 
