@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.19 2001-07-31 23:59:26 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.20 2001-09-25 15:00:57 ameyer Exp $
  *
  */
 
@@ -26,6 +26,7 @@
 #include "CdrDoc.h"
 #include "CdrLink.h"
 #include "CdrValidateDoc.h"
+#include "CdrXsd.h"
 
 // XXXX For debugging
 #include <iostream>
@@ -40,6 +41,8 @@ static void addSingleQueryTerm (cdr::db::Connection&, int, cdr::String&,
                                 cdr::String&, wchar_t *);
 
 static void delQueryTerms (cdr::db::Connection&, int);
+
+static cdr::String createFragIdTransform (cdr::db::Connection&, int);
 
 // Constructor for a CdrDoc
 // Extracts the various elements from the CdrDoc for database update
@@ -56,10 +59,12 @@ cdr::CdrDoc::CdrDoc (
     DocType (0),
     ActiveStatus (L"A"),
     Xml (L""),
+    schemaDocId (0),
+    lastFragmentId (0),
     revisedXml (L""),
     revFilterFailed (false),
     revFilterLevel (0),
-    titleFilter (L""),
+    titleFilterId (0),
     Title (L"")
 {
 
@@ -76,27 +81,42 @@ cdr::CdrDoc::CdrDoc (
         Id = TextId.extractDocId ();
 
         // Does the document exist?
-        std::string qry = "SELECT Id FROM document WHERE Id = ?";
+        // Find out and also get the last used auto generated fragment id
+        std::string qry = "SELECT Id, last_frag_id FROM document WHERE Id = ?";
         cdr::db::PreparedStatement select = dbConn.prepareStatement(qry);
         select.setInt(1, Id);
         cdr::db::ResultSet rs = select.executeQuery();
         if (!rs.next())
             throw cdr::Exception(L"CdrDoc: Unable to find document " + TextId);
+        lastFragmentId = rs.getInt (2);
     }
     else
         Id = 0;
 
     // Check DocType - must be one of recognized types
     // Get name of XSLT filter to generate title at the same time
-    std::string qry = "SELECT id, title_filter FROM doc_type WHERE name = ?";
+    // And get document id of the schema for this doc type
+    std::string qry = "SELECT id, title_filter, xml_schema "
+                      "  FROM doc_type WHERE name = ?";
     cdr::db::PreparedStatement select = dbConn.prepareStatement(qry);
     select.setString (1, TextDocType);
     cdr::db::ResultSet rs = select.executeQuery();
     if (!rs.next())
         throw cdr::Exception(L"CdrDoc: DocType '" + TextDocType +
                              L"' is invalid");
-    DocType     = rs.getInt(1);
-    titleFilter = rs.getString(2);
+    DocType       = rs.getInt(1);
+    cdr::Int tfi  = rs.getInt(2);
+    cdr::Int sdi  = rs.getInt(3);
+
+    // There may not be schema or filter ids, so we need to check
+    if (tfi.isNull())
+        titleFilterId = 0;
+    else
+        titleFilterId = tfi;
+    if (sdi.isNull())
+        schemaDocId = 0;
+    else
+        schemaDocId = sdi;
 
     // Default values for control elements in the document table
     // All others are defaulted to NULL by cdr::String constructor
@@ -178,7 +198,7 @@ cdr::CdrDoc::CdrDoc (
 
     // If a title should be system generated, replace whatever came
     //   in with the transaction
-    if (titleFilter.size() > 0)
+    if (titleFilterId > 0)
         createTitle();
 
 } // CdrDoc ()
@@ -201,9 +221,11 @@ cdr::CdrDoc::CdrDoc (
                         "                 d.active_status,"
                         "                 d.doc_type,"
                         "                 d.xml,"
+                        "                 d.last_frag_id,"
                         "                 d.comment,"
                         "                 t.name,"
                         "                 t.title_filter,"
+                        "                 t.xml_schema,"
                         "                 b.data"
                         "            FROM document d"
                         "            JOIN doc_type t"
@@ -218,17 +240,28 @@ cdr::CdrDoc::CdrDoc (
         throw cdr::Exception(L"CdrDoc: Unable to load document " + TextId);
 
     // Copy info into this object
-    ValStatus   = rs.getString (1);
-    ValDate     = rs.getString (2);
-    Title       = cdr::entConvert (rs.getString (3));
-    ActiveStatus= rs.getString (4);
-    DocType     = rs.getInt (5);
-    Xml         = rs.getString (6);
-    Comment     = cdr::entConvert (rs.getString (7));
-    TextDocType = rs.getString (8);
-    titleFilter = rs.getString (9);
-    BlobData    = rs.getBytes (10);
-    select.close();
+    ValStatus      = rs.getString (1);
+    ValDate        = rs.getString (2);
+    Title          = cdr::entConvert (rs.getString (3));
+    ActiveStatus   = rs.getString (4);
+    DocType        = rs.getInt (5);
+    Xml            = rs.getString (6);
+    lastFragmentId = rs.getInt (7);
+    Comment        = cdr::entConvert (rs.getString (8));
+    TextDocType    = rs.getString (9);
+    cdr::Int tfi   = rs.getInt (10);
+    cdr::Int sdi   = rs.getInt (11);
+    BlobData       = rs.getBytes (12);
+
+    // There may not be schema or filter ids, default is 0
+    if (tfi.isNull())
+        titleFilterId = 0;
+    else
+        titleFilterId = tfi;
+    if (sdi.isNull())
+        schemaDocId = 0;
+    else
+        schemaDocId = sdi;
 
     // We haven't filtered this for insertion, deletion markup
     revisedXml = L"";
@@ -252,6 +285,7 @@ cdr::CdrDoc::CdrDoc (
 void cdr::CdrDoc::Store ()
 {
     std::string sqlStmt;
+
 
     // New record
     if (!Id) {
@@ -277,7 +311,8 @@ void cdr::CdrDoc::Store ()
             "      doc_type = ?,"
             "      title = ?,"
             "      xml = ?,"
-            "      comment = ?"
+            "      comment = ?,"
+            "      last_frag_id = ?"
             "  WHERE"
             "      id = ?";
     }
@@ -293,8 +328,10 @@ void cdr::CdrDoc::Store ()
     docStmt.setString (7, Comment);
 
     // For existing records, fill in ID
-    if (Id)
-        docStmt.setInt    (8, Id);
+    if (Id) {
+        docStmt.setInt (8, lastFragmentId);
+        docStmt.setInt (9, Id);
+    }
 
     // Do it
     docStmt.executeUpdate ();
@@ -408,7 +445,6 @@ static cdr::String CdrPutDoc (
     cdr::dom::NamedNodeMap attrMap; // Map of attributes in DocCtl subelement
     cdr::dom::Node attr;        // Single attribute from map
 
-
     // Default values, may be replaced by elements in command
     cmdVersion        = false;
     cmdPublishVersion = false;
@@ -489,6 +525,12 @@ static cdr::String CdrPutDoc (
         throw cdr::Exception (L"CdrPutDoc: Attempt to replace doc "
                               L"without existing ID");
 
+    // Attempt to automatically generate fragment ids for fields
+    //   which can, but don't, have them
+    // This may replace the passed in XML with new XML that has
+    //   auto-generated cdr:id attributes in some fields
+    doc.genFragmentIds();
+
     // Start transaction - everything is serialized from here on
     // If any called function throws an exception, CdrServer
     //   will catch it and perform a rollback
@@ -499,8 +541,14 @@ static cdr::String CdrPutDoc (
         doc.Store ();
 
         // If we need to store a version, the user must check it out first
-        // But he can't have done that for a new record, so we do it now
-        if (cmdVersion)
+        //   but he can't have done that for a new record, so we do it now
+        // Note: Auto-check-out is also performed for new records for which
+        //   check-in has not been explicitly requested.  This supports
+        //   the case where a user is editing a new document, saves, and
+        //   and continues editing.
+        // To store a new record without checking it out, the client must
+        //   explicitly request check-in.
+        if (cmdVersion || !cmdCheckIn)
             cdr::checkOut (session, doc.getId(), dbConn,
                            L"Temp checkout by addDoc", false);
     }
@@ -549,7 +597,6 @@ static cdr::String CdrPutDoc (
                     L"Storing document not allowed");
     }
 
-    // If new record, store it so we can get the new ID
     // Perform validation if requested
     if (cmdValidate) {
         // Any other validation
@@ -709,7 +756,7 @@ cdr::String cdr::delDoc (
 
         // If it's checked out, we'll check it in
         // No version is created in version control
-        checkIn (session, docId, conn, L"I", &cmdReason, false, false);
+        checkIn (session, docId, conn, L"I", &cmdReason, true, false);
     }
 
     // Update the link net to delete links from this document
@@ -768,7 +815,11 @@ bool cdr::CdrDoc::parseAvailable ()
 
     // XXXX Invoke filter here to create revisedXml
     if (revisedXml.size() == 0) {
-        ;
+        // Must use a try block since filtering will throw an exception
+        //   for malformed XML - which is legal to store
+        // try {
+            ;
+        // }
     }
 
     // Parse whatever is available
@@ -797,7 +848,7 @@ bool cdr::CdrDoc::parseAvailable ()
         this->malFormed();
 
         // Save error message from parser
-        errList.push_back (L"Parsing XML: " + cdr::String (e.getMessage ()));
+        errList.push_back (L"Parsing XML: " + cdr::String (e.getMessage()));
         return false;
     }
     catch (...) {
@@ -845,14 +896,12 @@ return Xml;
 
         // Attempt to filter at the requested level
         cdr::FilterParmVector pv;        // Parameters passed to it
-        pv.push_back (
-                std::pair<cdr::String,cdr::String>
-                   (L"RevisionFilterLevel",
-                    cdr::String::toString (revisionLevel)));
+        pv.push_back (std::pair<cdr::String,cdr::String>
+            (L"RevisionFilterLevel", cdr::String::toString (revisionLevel)));
 
         try {
-            revisedXml = cdr::filterDocument (Xml, L"Revision Markup Filter",
-                                              docDbConn, &errorStr, &pv);
+            revisedXml = cdr::filterDocumentByScriptTitle (
+                Xml, L"Revision Markup Filter", docDbConn, &errorStr, &pv);
         }
         catch (cdr::Exception e) {
             // Don't try filtering this doc again
@@ -903,7 +952,8 @@ return Xml;
 void cdr::CdrDoc::createTitle()
 {
     // If a filter is available, use it
-    if (titleFilter.size() > 0) {
+    // This check should already have been done and th
+    if (titleFilterId > 0) {
 
         // If revision markup not yet filtered, filter it now.
         // This is needed because it might affect the title generation fields
@@ -914,8 +964,8 @@ void cdr::CdrDoc::createTitle()
         Title = L"";
         cdr::String filterMsgs = L"";
         try {
-            Title = cdr::filterDocument (Xml, titleFilter, docDbConn,
-                                         &filterMsgs);
+            Title = cdr::filterDocumentByScriptId (
+                    Xml, titleFilterId, docDbConn, &filterMsgs);
         }
         catch (cdr::Exception e) {
             // Add an error to the doc object
@@ -1163,6 +1213,9 @@ void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
 
     // They are at a level one deeper than the passed level
     ++depth;
+    if (depth >= MAX_INDEX_ELEMENT_DEPTH)
+        throw cdr::Exception (
+                L"CdrDoc: Indexing element beyond max allowed depth");
 
     while (child != 0) {
 
@@ -1179,6 +1232,207 @@ void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
 
         child = child.getNextSibling();
     }
+}
+
+// Generate unique fragment identifiers for all elements which can have a
+//   cdr:id attribute, but don't have one.
+
+void cdr::CdrDoc::genFragmentIds ()
+{
+    cdr::String xslt;       // XSLT transform for creating fragment ids
+    cdr::String newXml;     // Document XML after fragment id's are entered
+
+
+    // If we don't have an XSL transform for this document type yet,
+    //   create one.
+    // XXXX Current version always creates it.
+    //      Might optimize in future by caching them - which would
+    //      save the time needed to retrieve and parse the schema, as
+    //      well as to generate the script
+    xslt = createFragIdTransform (docDbConn, schemaDocId);
+
+    // If the script isn't null
+    if (xslt.size() > 0) {
+
+        // Execute it
+        cdr::String filterMsgs = L"";
+        try {
+            newXml = cdr::filterDocument (Xml, xslt, docDbConn,
+                                          &filterMsgs);
+        }
+        catch (cdr::Exception e) {
+            // Add an error to the doc object
+            errList.push_back (L"Generating fragment ids: " +
+                               cdr::String (e.what()));
+
+            // Serious error, revert to the unfiltered version
+            newXml = Xml;
+        }
+
+        // If any messages returned, make them available for later viewing
+        if (filterMsgs.size() > 0)
+            errList.push_back (
+                L"Generating fragment ids, filter produced these messages: " +
+                filterMsgs);
+
+        // Scan the new XML, replacing the arbitrary place holder
+        //   "@@DummyCdrId@@" with sequenced numbers
+        const wchar_t *srcp;                            // Source for copy
+        wchar_t *destp;                                 // Destination for copy
+        wchar_t *fixedXml = new wchar_t[newXml.size() + 1]; // Convert here
+        srcp  = newXml.c_str();
+        destp = fixedXml;
+        while (*srcp) {
+            if (*srcp != (wchar_t) '@')
+                *destp++ = *srcp++;
+            else {
+                // If the @ begins our dummy string
+                if (!wcsncmp (srcp, L"@@DummyCdrId@@", 14)) {
+
+                    // Insert auto generated fragment id
+                    swprintf (destp, L"_%d", ++lastFragmentId);
+
+                    // Advance pointer past real attr value
+                    while (*destp)
+                        ++destp;
+
+                    // Advance past dummy - a fixed size string
+                    srcp += 14;
+                }
+                else
+                    // '@' was part of the data
+                    *destp++ = *srcp++;
+            }
+        }
+
+        // Terminate the whole
+        *destp = (wchar_t) '\0';
+
+        // Replace the xml with the transformed version
+        Xml = (cdr::String) fixedXml;
+
+        // Release the temporary buffer
+        delete [] fixedXml;
+    }
+    // Final update of modified lastFragmentId is done when the
+    //   document is stored
+}
+
+/**
+ * Create an XSLT script for inserting fragment identifier attributes
+ * into a document.
+ *
+ */
+static cdr::String createFragIdTransform (cdr::db::Connection& conn,
+                                          int schemaDocId)
+{
+    // Output XSLT script includes these fixed portions
+    static cdr::String s_xslScriptFront =
+        L"<?xml version='1.0'?>\n"
+        L"<xsl:transform xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'\n"
+                       L"xmlns:cdr = 'cips.nci.nih.gov/cdr'\n"
+                         L"version = '1.0'>\n"
+        /*
+        <!-- Identity rule, copies everything to the output tree. -->\nL"
+        */
+        L"<xsl:template match = '@*|node()'>\n"
+        L" <xsl:copy>\n"
+        L"  <xsl:apply-templates select = '@*|node()'/>\n"
+        L" </xsl:copy>\n"
+        L"</xsl:template>\n"
+
+        /*
+        <!-- For a specific set of the elements in the documents, if any
+             has no cdr:id attribute, or has one with an empty value,
+             add the attribute with a placeholder value.  Pass everything
+             else through unscathed.
+          -->
+        */
+        L"<xsl:template match = '";
+
+    static cdr::String s_xslScriptBack =
+        L"'>\n"
+          L"<xsl:variable    name = 'cdrId'\n"
+                           L"select = 'string(@cdr:id)'/>\n"
+          L"<xsl:element     name = '{name()}'>\n"
+           L"<xsl:if         test = 'not($cdrId)'>\n"
+            L"<xsl:attribute name = 'cdr:id'>@@DummyCdrId@@</xsl:attribute>\n"
+           L"</xsl:if>\n"
+           L"<xsl:apply-templates select = '@*|node()'/>\n"
+          L"</xsl:element>\n"
+         L"</xsl:template>\n"
+         /*
+         <!-- Needed to prevent a cdr:id attribute which is present in the
+              document, but with an empty value (cdr:id='') from overwriting
+              the one we just generated.
+           -->
+         */
+         L"<xsl:template     match = '@cdr:id'>\n"
+          L"<xsl:if          test = 'string(.)'>\n"
+           L"<xsl:copy/>\n"
+          L"</xsl:if>\n"
+         L"</xsl:template>\n"
+        L"</xsl:transform>\n";
+
+
+    // If there is no schema document id, just return an empty string
+    if (schemaDocId == 0)
+        return L"";
+
+    // Retrieve the schema from the database
+    std::string query = "SELECT xml FROM document WHERE id = ?";
+    cdr::db::PreparedStatement select = conn.prepareStatement(query);
+    select.setInt(1, schemaDocId);
+    cdr::db::ResultSet rs = select.executeQuery();
+    if (!rs.next())
+        throw cdr::Exception(L"createFragIdTransform: Unable to load schema");
+    cdr::String schemaXml = rs.getString (1);
+    select.close();
+
+    // Parse the schema, preparatory to creating a schema object
+    cdr::dom::Parser parser;
+    cdr::dom::Element docElem;
+    try {
+        parser.parse (schemaXml);
+        docElem = parser.getDocument().getDocumentElement();
+    }
+    catch (const cdr::dom::XMLException& e) {
+        throw cdr::Exception(L"createFragIdTransform: Unable to parse schema:"
+                             + (cdr::String) e.getMessage());
+    }
+
+    // Create the object
+    cdr::xsd::Schema schema (docElem, &conn);
+
+    // Get a list of elements in the schema that can have a cdr:id attr
+    cdr::StringList elemList;
+    schema.elemsWithAttr (L"cdr:id", elemList);
+
+    // If there are any, create the script
+    cdr::String xslt = "";
+    if (elemList.size() > 0) {
+
+        // Beginning of the script
+        xslt += s_xslScriptFront;
+
+        // Add first field to the script
+        cdr::StringList::const_iterator i = elemList.begin();
+        xslt += *i++;
+
+        // Add the rest of the fields, with '|' separator
+        while (i != elemList.end()) {
+            xslt += L"|";
+            xslt += *i++;
+        }
+
+        // Rest of script
+        xslt += s_xslScriptBack;
+// DEBUG
+// cdr::log::WriteFile (L"createFragIdTransforms", xslt);
+    }
+
+    // Return script, may be empty string
+    return xslt;
 }
 
 /**
