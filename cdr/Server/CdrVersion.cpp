@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.24 2004-11-05 06:02:04 ameyer Exp $
+ * $Id: CdrVersion.cpp,v 1.25 2004-11-10 03:18:47 ameyer Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2004/11/05 06:02:04  ameyer
+ * Introduced numerous changes for new blob handling.
+ *
  * Revision 1.23  2003/11/05 01:43:12  ameyer
  * Fixed bug in isChanged().  Was looking at the date/time of the last
  * entry in the audit_trail to compare to date/time of last version.  But
@@ -87,6 +90,7 @@
 #pragma warning(disable : 4786)
 #endif
 
+#include <iostream> // DEBUG
 #include <cstdio>
 #include <memory>
 #include <sstream>
@@ -401,11 +405,11 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn, int num,
 {
   string query = "SELECT v.dt, v.updated_dt, v.usr, v.val_status, "
                         "v.val_date, v.doc_type, v.title, "
-                        "v.xml, b.blob_id, v.comment, v.publishable "
-                 "FROM doc_version d "
-                 "LEFT OUTER JOIN version_blob_usage "
-                 "  ON d.id = b.doc_id AND d.num = b.doc_version "
-                 "WHERE d.id = ? and d.num = ?";
+                        "v.xml, vb.blob_id, v.comment, v.publishable "
+                 "FROM doc_version v "
+                 "LEFT OUTER JOIN version_blob_usage vb "
+                 "  ON v.id = vb.doc_id AND v.num = vb.doc_version "
+                 "WHERE v.id = ? and v.num = ?";
   cdr::db::PreparedStatement select = conn.prepareStatement(query);
   select.setInt(1, docId);
   select.setInt(2, num);
@@ -443,14 +447,14 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn,
 {
   string query = "SELECT v.num, v.dt, v.updated_dt, v.usr, v.val_status, "
                         "v.val_date, v.doc_type, v.title, "
-                        "v.xml, b.blob_id, v.comment, v.publishable "
+                        "v.xml, vb.blob_id, v.comment, v.publishable "
                  "FROM doc_version v "
-                 "LEFT OUTER JOIN version_blob_usage b "
-                 "  ON v.id = b.doc_id "
-                 " AND v.num = b.doc_version "
-                 "WHERE document = ? "
-                 "  AND dt = (SELECT MAX(dt) FROM doc_version "
-                 "WHERE document = ? AND dt <= ?)";
+                 "LEFT OUTER JOIN version_blob_usage vb "
+                 "  ON v.id = vb.doc_id "
+                 " AND v.num = vb.doc_version "
+                 "WHERE id = ? "
+                 "  AND v.dt = (SELECT MAX(dt) FROM doc_version "
+                 "               WHERE id = ? AND dt <= ?)";
   cdr::db::PreparedStatement select = conn.prepareStatement(query);
   select.setInt(1, docId);
   select.setInt(2, docId);
