@@ -1,10 +1,13 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.16 2002-03-15 21:53:12 bkline Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.17 2002-03-15 21:56:50 bkline Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2002/03/15 21:53:12  bkline
+ * Added fix for val_status setting.
+ *
  * Revision 1.15  2002/02/26 22:39:39  ameyer
  * Now updating document.val_status with 'M' if document is malformed.
  * (previous comment about this was in error.)
