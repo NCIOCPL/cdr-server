@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSession.cpp,v 1.7 2002-06-18 20:34:08 ameyer Exp $
+ * $Id: CdrSession.cpp,v 1.8 2002-06-18 20:44:46 ameyer Exp $
  *
  * Session control information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2002/06/18 20:34:08  ameyer
+ * Added CdrCanDo command.
+ *
  * Revision 1.6  2000/10/30 17:41:00  mruben
  * added canDo for document number
  *
@@ -163,5 +166,5 @@ cdr::String cdr::getCanDo (cdr::Session& session,
     result = (session.canDo (conn, cmdAction, cmdDocType)) ? L"Y" : L"N";
 
     // Compose reply
-    return cdr::String(L"   <CanDo>" + result + L"</CanDo>");
+    return cdr::String(L"   <CdrCanDoResp>" + result + L"</CdrCanDoResp>");
 }
