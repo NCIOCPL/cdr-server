@@ -1,9 +1,12 @@
 /*
- * $Id: CdrLogoff.cpp,v 1.3 2000-05-09 20:14:56 bkline Exp $
+ * $Id: CdrLogoff.cpp,v 1.4 2000-05-09 21:08:19 bkline Exp $
  *
  * Closes a CDR session.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/05/09 20:14:56  bkline
+ * Replaced direct manipulation of Session fields with clear() method.
+ *
  * Revision 1.2  2000/05/03 15:25:41  bkline
  * Fixed database statement creation.
  *
@@ -23,7 +26,7 @@ cdr::String cdr::logoff(cdr::Session& session,
     // Pop the logoff date/time into the session table.
     std::string query = "UPDATE session SET ended = GETDATE() WHERE id = ?";
     cdr::db::PreparedStatement update = conn.prepareStatement(query);
-    update.setInt(1, session.id);
+    update.setInt(1, session.getId());
     update.executeQuery();
 
     
