@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.43 2002-08-01 17:41:27 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.44 2002-08-01 18:44:22 bkline Exp $
  *
  */
 
@@ -634,6 +634,14 @@ static cdr::String CdrPutDoc (
     }
     SHOW_ELAPSED("command parsed", incrementalTimer);
 
+    // Make sure validation has been invoked if a publishable version
+    // has been requested.  The DLL will enforce this, but we do it
+    // here as well, since the DLL is our primary, but not our only client.
+    if (cmdPublishVersion && (!cmdSchemaVal || !cmdLinkVal))
+        throw cdr::Exception(L"CdrPubDoc: creation of a published version "
+                             L"not allowed unless full document validation is "
+                             L"invoked.");
+
     // Construct a doc object containing all the data
     // The constructor may look for additonal elements in the DocCtl
     //   not parsed out by the above logic
@@ -794,6 +802,14 @@ static cdr::String CdrPutDoc (
         // Will set valid_status and valid_date in the doc object
         // Will overwrite whatever is there
         cdr::execValidateDoc (doc,cdr::UpdateUnconditionally,validationTypes);
+
+        // If the user was hoping for a publishable version, set him straight.
+        if (cmdPublishVersion && doc.getValStatus() != L"V") {
+            doc.getErrList().push_back(L"Non-publishable version will "
+                                       L"be created.");
+            cmdPublishVersion = false;
+            cmdVersion = true;
+        }
         SHOW_ELAPSED("validation completed", incrementalTimer);
     }
 
