@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Vendor Filter: GlossaryTerm</DocTitle>
-<DocComment>CVS-V1.16: Glossary Schema Changes (Bug 843)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.17: Remove Indent=Yes (Bug 1076)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
@@ -48,49 +48,52 @@ Filter to create Vendor XML for Glossary
    <xsl:apply-templates         select = "TermPronunciation" 
                                   mode = "copy"/>
    
-   <xsl:for-each                select ="TermDefinition">
-   <TermDefinition>
-   <xsl:apply-templates         select = "DefinitionText"
-                                           mode="copy"/>
-   <xsl:apply-templates         select = "Dictionary"
-                                 mode = "copy"/>
-   <xsl:apply-templates         select = "Audience"
+   <xsl:for-each                select = "TermDefinition">
+    <TermDefinition>
+     <xsl:apply-templates       select = "DefinitionText"/>
+     <xsl:apply-templates       select = "MediaLink"/>
+     <xsl:apply-templates       select = "Dictionary"
+                                  mode = "copy"/>
+     <xsl:apply-templates       select = "Audience"
                                   mode = "copy"/> 
     </TermDefinition>
-    </xsl:for-each>
+    <xsl:apply-templates        select = "MediaLink"/>
+   </xsl:for-each>
   
-  <xsl:apply-templates         select = "SpanishTermName"
-                                           mode="copy"/>
-    <xsl:for-each              select = "SpanishTermDefinition">
+   <xsl:apply-templates         select = "SpanishTermName"
+                                  mode = "copy"/>
+   <xsl:for-each                select = "SpanishTermDefinition">
    
-  <SpanishTermDefinition>
-   <xsl:apply-templates        select  = "DefinitionText"
-                                           mode="copy"/>        
-                                          
-   <xsl:apply-templates         select = "Dictionary"
-                                          mode = "copy"/>
-   <xsl:apply-templates         select = "Audience"
-                                          mode = "copy"/> 
-   </SpanishTermDefinition>
+    <SpanishTermDefinition>
+     <xsl:apply-templates      select  = "DefinitionText"
+                                  mode = "copy"/>        
+     <xsl:apply-templates       select = "MediaLink"/>
+     <xsl:apply-templates       select = "Dictionary"
+                                  mode = "copy"/>
+     <xsl:apply-templates       select = "Audience"
+                                  mode = "copy"/> 
+    </SpanishTermDefinition>
    </xsl:for-each>
 
-<!-- ===================================================================
-            Copy Date First Published and Date Last Modified
-     ================================================================== -->
+
+   <!-- 
+   ===================================================================
+   Copy Date First Published and Date Last Modified
+   =================================================================== -->
    <xsl:variable                  name = "CtrlBlk" 
                                 select = "document('cdr:/*/CdrCtl')"/>
    <xsl:choose>
     <xsl:when                     test = "$CtrlBlk/CdrDocCtl/FirstPub/Date">
-      <DateFirstPublished>
+     <DateFirstPublished>
       <xsl:value-of             select = "substring-before ($CtrlBlk/
                                             CdrDocCtl/FirstPub/Date,'T')"/>
-      </DateFirstPublished>
+     </DateFirstPublished>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:call-template          name = "getDateFirstPub">
-        <xsl:with-param           name = "date"
+     <xsl:call-template           name = "getDateFirstPub">
+      <xsl:with-param             name = "date"
                                 select = "$DateFirstPub"/>
-      </xsl:call-template>    
+     </xsl:call-template>    
     </xsl:otherwise>
    </xsl:choose>
    <xsl:apply-templates         select = "DateLastModified" 
@@ -104,14 +107,11 @@ Filter to create Vendor XML for Glossary
  The TermDefinition and SpanishTermDefinition can contain inline 
  markup and needs to be handled with a template
  ===================================================================== -->
-   <xsl:template                   match = "DefinitionText" mode="copy">
-   <xsl:element                    name = "{name()}">
+ <xsl:template                    match = "DefinitionText">
+  <xsl:element                     name = "{name()}">
    <xsl:apply-templates            mode = "copy"/>
-   </xsl:element>
-   </xsl:template>
-                                                                                 
- 
-
+  </xsl:element>
+ </xsl:template>
 </xsl:transform>]]>
 </CdrDocXml>
 </CdrDoc>

@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ===========================================================================
- $Id: CDR0000271370.xml,v 1.16 2004-11-10 18:16:40 venglisc Exp $
+ $Id: CDR0000271370.xml,v 1.17 2004-12-07 19:42:00 venglisc Exp $
 
  Filter including misc Vendor filter templates.
 
@@ -24,43 +24,7 @@
                   omit-xml-declaration = "no"
                               encoding = "UTF-8"/>
 
- <!-- 
- ======================================================================
- Generate DateFirstPublished element only if the passed-in value
- for parameter date is non-empty.
- ====================================================================== -->
- <xsl:template                    name = "getDateFirstPub">         
-  <xsl:param                      name = "date"/> 
-        
-  <xsl:if                         test = "$date">
-   <DateFirstPublished>
-    <xsl:value-of               select = "$date"/>
-   </DateFirstPublished>
-  </xsl:if>    
- </xsl:template>
-
-
- <!-- 
- ======================================================================
- Drop white space node between 2 consecutive CitationLink/ProtocolLink
- elements.
- ===================================================================== -->
- <xsl:template                    name = "stripSpaceNode"> 
-  <xsl:variable                   name = "prev"
-                                select = "preceding-sibling::*[position()=1]"/>
-  <xsl:variable                   name = "next"
-                                select = "following-sibling::*[position()=1]"/>
-           
-  <xsl:if                         test = "(name($prev) != 'CitationLink' 
-                                           and 
-                                           name($prev) != 'ProtocolLink') 
-                                          or 
-                                          (name($next) != 'CitationLink' 
-                                           and 
-                                           name($next) != 'ProtocolLink')"> 
-   <xsl:value-of                select = "."/>                           
-  </xsl:if>
- </xsl:template>
+ <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
 
 
  <!--
@@ -108,22 +72,129 @@
 
  </xsl:template>
 
- <!-- 
- ======================================================================
- Template rule used to do XML to XML transformations which
- copies any attribute node, or node that is child of of something 
- ====================================================================== -->
- <xsl:template                   match = "@*"
-                                  mode = "copy">
-  <xsl:copy/>
+
+ <!--
+ =========================================================================
+ Template for MediaLink element (used by Summary and GlossaryTerm)
+ ========================================================================= -->
+ <xsl:template                   match = "MediaLink">
+  <!-- 
+  Define language variable to select the caption
+  =============================================== -->     
+  <xsl:variable                   name = "docLanguage">
+   <xsl:choose>
+    <xsl:when                     test = "/Summary/
+                                          SummaryMetaData/
+                                          SummaryLanguage = 'Spanish'
+                                          or
+                                          name(..) = 'SpanishTermDefinition'">
+     <xsl:text>es</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>en</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
+  <!--
+  Create MediaLink Element and attributes
+  ======================================== -->
+  <xsl:element                    name = "MediaLink">
+   <xsl:attribute                 name = "ref">
+    <xsl:value-of               select = "MediaID/@cdr:ref"/>
+   </xsl:attribute>
+   <xsl:attribute                 name = "alt">
+    <xsl:value-of               select = "@AlternativeText"/>
+   </xsl:attribute>
+
+   <!-- Optional Attributes -->
+   <xsl:if                        test = "@cdr:id">
+    <xsl:attribute                name = "id">
+     <xsl:value-of              select = "@cdr:id"/>
+    </xsl:attribute>
+   </xsl:if>
+
+   <!--
+   The language attribute is being added based on the summary language
+   =================================================================== -->
+   <xsl:attribute                 name = "language">
+    <xsl:value-of               select = "$docLanguage"/>
+   </xsl:attribute>
+
+   <xsl:if                        test = "@Inline">
+    <xsl:attribute                name = "inline">
+     <xsl:value-of              select = "@Inline"/>
+    </xsl:attribute>
+   </xsl:if>
+
+   <!-- 
+   The MinWidth attribute in the Summary document trumps the 
+   MinWidthPixels element in the Media document
+   ========================================================= -->
+   <xsl:choose>
+    <xsl:when                     test = "@MinWidth">
+     <xsl:attribute               name = "MinWidth">
+      <xsl:value-of             select = "@MinWidth"/>
+     </xsl:attribute>
+    </xsl:when>
+    <xsl:when                     test = "PhysicalMedia/
+                                           ImageData/
+                                           ImageDimensions/MinWidthPixels">
+     <xsl:attribute               name = "MinWidth">
+      <xsl:value-of             select = "PhysicalMedia/
+                                           ImageData/
+                                           ImageDimensions/MinWidthPixels"/>
+     </xsl:attribute>
+    </xsl:when>
+   </xsl:choose>
+
+   <xsl:if                        test = "@size">
+    <xsl:attribute                name = "size">
+     <xsl:value-of              select = "@size"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:if                        test = "@thumb">
+    <xsl:attribute                name = "thumb">
+     <xsl:value-of              select = "@thumb"/>
+    </xsl:attribute>
+   </xsl:if>
+
+   <!-- 
+   The UseCaption attibute turns existing captions on or off
+   No UseCaption attribute defaults to UseCaption = 'Yes'
+   ========================================================= -->
+   <xsl:if                        test = "not(@UseCaption)
+                                          or 
+                                          @UseCaption = 'Yes'">
+    <xsl:choose>
+     <xsl:when                    test = "Caption">
+      <xsl:apply-templates      select = "Caption"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:apply-templates      select = "MediaID/Media/
+                                          MediaContent/
+                                          Captions/
+                                          MediaCaption
+                                            [@language=$docLanguage]"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:if>
+  </xsl:element>
  </xsl:template>
 
- <xsl:template                   match = "*"
-                                  mode = "copy">
-  <xsl:element                    name = "{name()}">
-   <xsl:apply-templates         select = "@*"
-                                  mode = "copy"/>
-   <xsl:apply-templates           mode = "copy"/> 
+
+ <!--
+ =========================================================================
+ Template for Caption and MediaCaption elements
+ ========================================================================= -->
+ <xsl:template                   match = "Caption|MediaCaption">
+  <xsl:element                    name = "Caption">
+   <xsl:if                        test = "@language">
+    <xsl:attribute                name = "language">
+     <xsl:value-of              select = "@language"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:apply-templates/>
   </xsl:element>
  </xsl:template>
 
@@ -136,7 +207,6 @@
   
  <xsl:template                   match = "Comment | PdqKey"
                                   mode = "copy"/>
-
 </xsl:transform>
 ]]>
 </CdrDocXml>
