@@ -6,298 +6,66 @@
 <ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
+ <!-- 
+ ===============================================================
+ Filter to Denormalize Organization Documents 
+ =============================================================== -->
+<xsl:transform                xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                                version = "1.0"
+                              xmlns:cdr = "cips.nci.nih.gov/cdr">
 
-<!-- =================================================================
-       Filter to Create DeNormalized Organization XML documents
-     ================================================================== -->
+ <xsl:output                     method = "xml" 
+                   omit-xml-declaration = "no"/>
 
-  <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                 version="1.0"
-                  xmlns:cdr="cips.nci.nih.gov/cdr">
-    <xsl:output method="xml" omit-xml-declaration="no"/>
-     <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
+ <xsl:include href = "cdr:name:Module: PersonLocations Denormalization"/>
 
+ <!-- 
+ =================================================================
+ Copy control information and generate current date
+ ================================================================= -->
+ <xsl:template                    match = "Organization">
+  <xsl:copy>
+   <xsl:apply-templates          select = "document('cdrutil:/docid')"/>
+   <xsl:apply-templates          select = "document('cdrx:/*/CdrCtl')"/>
 
-<!-- ====================================================================
-       Copy Document ID and Document Control Information
-     ==================================================================== -->
-      
-        <xsl:template match="Organization">
- <xsl:copy>
-<xsl:apply-templates select="document('cdrutil:/docid')" mode="copy"/>
-<xsl:apply-templates select="document('cdrx:/*/CdrCtl')" mode="copy"/>
-<xsl:apply-templates select="DatedAction" mode="copy"/>
+   <xsl:apply-templates/>
 
-<xsl:apply-templates select="OrganizationNameInformation" mode="copy"/>
-
-<!-- ====================================================================
-     Link to Organization Documents to copy Parent Organization Names
-    ==================================================================== -->
-
-<xsl:for-each select="OrganizationParent/ParentOrganization">
-  <xsl:if test="contains(@cdr:ref,'CDR')">
- <xsl:variable name="OrgID" select="@cdr:ref"/>
- <xsl:variable name="OrgInfo" select="document(concat('cdr:',$OrgID,'/last'))"/>
- <OrganizationParent><ParentOrganization><xsl:apply-templates select="$OrgInfo/Organization/OrganizationNameInformation/OfficialName/Name" mode="copy"/></ParentOrganization></OrganizationParent>
-</xsl:if>
-</xsl:for-each>
-
-<!-- ====================================================================
-       Use Link to copy Cips Contact person name from Person record
-     =================================================================== -->
-
-<OrganizationDetails>
-<xsl:for-each select="OrganizationDetails/CIPSContactPerson">
-  <xsl:if test="contains(@cdr:ref,'CDR')">
- <xsl:variable name="PerID" select="@cdr:ref"/>
- <xsl:variable name="PerInfo" select="document(concat('cdr:',$PerID,'/last'))"/>
- <CIPSContactPerson><xsl:apply-templates select="$PerInfo/Person/PersonNameInformation/GivenName" mode="copy"/>
-<xsl:apply-templates select="$PerInfo/Person/PersonNameInformation/SurName" mode="copy"/></CIPSContactPerson>
-</xsl:if>
-</xsl:for-each>
-
-<!-- ===================================================================
-          Copy Organization Administrative Information
-     ==================================================================== -->
-
-<xsl:apply-templates select="OrganizationDetails/OrganizationAdministrativeInformation" mode="copy"/></OrganizationDetails>
-
-<!-- =====================================================================
-       Copy the CIPS contact flag to the Location if it applies
-     ==================================================================== -->
-
-<OrganizationLocations><xsl:for-each select="OrganizationLocations/OrganizationLocation/Location">
-<xsl:variable name="lid" select="@cdr:id"/>
-   <OrganizationLocation>
-<xsl:if test="../@IncludeParentName">
-<xsl:attribute name="IncludeParentName">
-<xsl:value-of select="../@IncludeParentName"/>
-</xsl:attribute>
-</xsl:if>
-<xsl:if test="../@OrderParentNameFirst">
-<xsl:attribute name="OrderParentNameFirst">
-<xsl:value-of select="../@OrderParentNameFirst"/>
-</xsl:attribute>
-</xsl:if>
-<Location id="{$lid}">
-<xsl:variable name="CipsContact" select="../../CIPSContact"/>
-<xsl:if test="$CipsContact=@cdr:id">
-<xsl:apply-templates select="../../CIPSContact" mode="copy"/>
-</xsl:if>
-  <!-- Upcode to add Parent orgs to address block-->
-          <xsl:if test="../@IncludeParentName">
-          <xsl:if test="../../../OrganizationParent/ParentOrganization/@cdr:ref">
-          <OrganizationAddressNames>
-          <xsl:variable name="ParentID" select="../../../OrganizationParent/ParentOrganization/@cdr:ref"/>
-<xsl:variable name="ParentDoc" select="document(concat('cdr:',$ParentID,'/last'))"/>
-  
-<!--<xsl:if test="../@OrderParentNameFirst">
-        <OrganizationAddressNames>-->
-        <OrganizationName><xsl:apply-templates select="../../../OrganizationNameInformation/OfficialName/Name"/>
-      </OrganizationName>
-        <xsl:call-template name="upcode-parentname">
-        <xsl:with-param     name="ParentID"
-                          select="$ParentID"/>
-        <xsl:with-param      name="ParentDoc"
-                          select="$ParentDoc"/>
-       </xsl:call-template>
-      
-    <!--  <OrganizationName><xsl:apply-templates select="../../../OrganizationNameInformation/OfficialName/Name"/>
-      </OrganizationName>-->
-      </OrganizationAddressNames>
-      </xsl:if>
-      </xsl:if>
-      
-    <!-- <xsl:if test="not(../@OrderParentNameFirst)">
-      <OrganizationAddressNames>
-     <OrganizationName><xsl:apply-templates select="../../../OrganizationNameInformation/OfficialName/Name"/>
-      </OrganizationName>   
-     <xsl:call-template name="upcode-parentname">
-      <xsl:with-param     name="ParentID"
-                          select="$ParentID"/>
-      <xsl:with-param      name="ParentDoc"
-                          select="$ParentDoc"/>
-      </xsl:call-template>
-      </OrganizationAddressNames>
-      </xsl:if>
-      </xsl:if>
-     </xsl:if>-->
-<!-- =====================================================================
-         Copy the location info, street, city, city suffix, political 
-         subunit, country,zipcode, postal code position, phones, fax,
-         email, and website 
-    ===================================================================== -->
-
-<PostalAddress >
-<xsl:apply-templates select="PostalAddress/Street" mode="copy"/>
-<xsl:apply-templates select="PostalAddress/City" mode="copy"/>
-<xsl:apply-templates select="PostalAddress/CitySuffix" mode="copy"/>
-
-<xsl:for-each select="PostalAddress/PoliticalSubUnit_State"> 
-<xsl:if test="contains(@cdr:ref,'CDR')">
-     <xsl:variable name="StateID" select="@cdr:ref"/>
-     <xsl:variable name="StateInfo" select="document(concat('cdr:',$StateID,'/lastp'))"/>
-<PoliticalSubUnitRef><xsl:apply-templates select="$StateID"/></PoliticalSubUnitRef>
-     <xsl:apply-templates     select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitShortName" mode="copy"/>
- <xsl:apply-templates select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName" mode="copy"/> 
-</xsl:if>
-</xsl:for-each>
-<xsl:for-each select="PostalAddress/Country">
-<xsl:if test="contains(@cdr:ref,'CDR')">
-     <xsl:variable name="CtyID" select="@cdr:ref"/>
-     <xsl:variable name="CtyInfo" select="document(concat('cdr:',$CtyID,'/lastp'))"/>
-<CountryRef><xsl:apply-templates select="$CtyID"/></CountryRef>
-     <xsl:apply-templates select="$CtyInfo/Country/CountryShortName" mode="copy"/>
- <xsl:apply-templates select="$CtyInfo/Country/CountryFullName" mode="copy"/> 
-<xsl:apply-templates select="$CtyInfo/Country/PostalCodePosition" mode="copy"/> 
-</xsl:if>
-</xsl:for-each>
-<xsl:apply-templates select="PostalAddress/PostalCode_ZIP" mode="copy"/>
-</PostalAddress>
-<xsl:if test="Phone">
-<xsl:apply-templates select="Phone" mode="copy"/>
-</xsl:if>
-<xsl:if test="TollFreePhone">
-<xsl:apply-templates select="TollFreePhone" mode="copy"/>
-</xsl:if>
-<xsl:if test="Fax">
-<xsl:apply-templates select="Fax" mode="copy"/>
-</xsl:if>
-<xsl:if test="Email">
-<xsl:apply-templates select="Email" mode="copy"/>
-</xsl:if>
-
-<xsl:if test="WebSite">
-<WebSite>
-<xsl:attribute name="cdr:xref">
-<xsl:value-of select="WebSite/@cdr:xref"/>
-</xsl:attribute>
-</WebSite>
-</xsl:if>
-</Location></OrganizationLocation>
-</xsl:for-each>
-</OrganizationLocations>
-
-<!-- =====================================================================
-                     Copy the Organization affiliations
-     ===================================================================== -->
-
-<xsl:if test="OrganizationAffiliations">
-<OrganizationAffiliations>
-<xsl:apply-templates select="OrganizationAffiliations/MemberOfProfessionalOrganization" mode="copy"/>
-<MemberOfCooperativeGroups>
- <xsl:for-each select="OrganizationAffiliations/MemberOfCooperativeGroups/MainMemberOf/CooperativeGroup">
-<MainMemberOf>
- <xsl:if test="contains(@cdr:ref,'CDR')">
- <xsl:variable name="CoopGroupID" select="@cdr:ref"/>
- <xsl:variable name="CoopInfo" select="document(concat('cdr:',$CoopGroupID,'/last'))"/>
- <CooperativeGroup>
- <CoopMID><xsl:value-of select="@cdr:ref"/></CoopMID>
-<OfficialName><xsl:apply-templates select="$CoopInfo/Organization/OrganizationNameInformation/OfficialName/Name" mode="copy"/></OfficialName>
- <xsl:apply-templates select="$CoopInfo/Organization/OrganizationNameInformation/ShortName" mode="copy"/>
-</CooperativeGroup>
-</xsl:if>
-<xsl:apply-templates select="../ProtocolParticipation" mode="copy"/>
-</MainMemberOf>
-</xsl:for-each>
-<xsl:for-each select="OrganizationAffiliations/MemberOfCooperativeGroups/AffiliateMemberOf">
-<AffiliateMemberOf>
- <xsl:if test="contains(CooperativeGroup/@cdr:ref,'CDR')">
- <xsl:variable name="CoopGroupID" select="CooperativeGroup/@cdr:ref"/>
- <xsl:variable name="CoopInfo" select="document(concat('cdr:',$CoopGroupID,'/last'))"/>
-<CooperativeGroup>
-<CoopAID><xsl:apply-templates select="CooperativeGroup/@cdr:ref"/></CoopAID>
-<xsl:apply-templates select="$CoopInfo/Organization/OrganizationNameInformation/OfficialName/Name" mode="copy"/></CooperativeGroup>
-<xsl:if test="contains(MainMember/@cdr:ref,'CDR')">
- <xsl:variable name="CopGroupID" select="MainMember/@cdr:ref"/>
- <xsl:variable name="CopInfo" select="document(concat('cdr:',$CopGroupID,'/last'))"/> 
-<MainMember><xsl:apply-templates select="$CopInfo/Organization/OrganizationNameInformation/OfficialName/Name" mode="copy"/></MainMember>
-</xsl:if>
-<xsl:apply-templates select="ProtocolParticipation" mode="copy"/>
-</xsl:if>
-</AffiliateMemberOf>
-</xsl:for-each>
-
-</MemberOfCooperativeGroups>
-<xsl:for-each select="OrganizationAffiliations/MemberOfCCOP/CCOP">
-<xsl:if test="contains(@cdr:ref,'CDR')">
- <xsl:variable name="CCOPID" select="@cdr:ref"/>
- <xsl:variable name="CCOPInfo" select="document(concat('cdr:',$CCOPID,'/last'))"/>  
-<MemberOfCCOP ref='{$CCOPID}'><CCOP><xsl:apply-templates select="$CCOPInfo/Organization/OrganizationNameInformation/OfficialName/Name" mode="copy"/></CCOP></MemberOfCCOP>
-</xsl:if>
-</xsl:for-each>
-<xsl:for-each select="OrganizationAffiliations/ResearchBaseFor">
-<xsl:if test="contains(@cdr:ref,'CDR')">
- <xsl:variable name="RbaseId" select="@cdr:ref"/>
- <xsl:variable name="RbaseInfo" select="document(concat('cdr:',$RbaseId,'/last'))"/>
- <ResearchBaseFor><xsl:apply-templates select="$RbaseInfo/Organization/OrganizationNameInformation/OfficialName/Name" mode="copy"/></ResearchBaseFor>
-</xsl:if>
-</xsl:for-each>
-</OrganizationAffiliations>
-</xsl:if>
-
-<!-- ======================================================================
-      Copy status, organization type, and PdqKey
-     ===================================================================== -->
-
-   <xsl:apply-templates select="Status" mode="copy"/>
-
-   <xsl:apply-templates select="OrganizationType" mode="copy"/>
-   <xsl:if test="DateLastModified">
-   <xsl:apply-templates select="DateLastModified" mode="copy"/>
-   </xsl:if>
-   <xsl:apply-templates select="PdqKey" mode="copy"/>
-
-</xsl:copy>
-</xsl:template>
-
-<!-- ======================================================================
-    Template rule used to do XML to XML transformations which
-    copies any attribute node, or node that is child of of something 
-    ===================================================================== -->
-
-   <xsl:template match="@*|node()" mode="copy">
-     <xsl:copy>
-     <xsl:apply-templates select="@*" mode="copy"/>
-     <xsl:apply-templates mode="copy"/>
-     </xsl:copy> 
-   </xsl:template>
-
-  
-
-  
-<!-- template to upcode parentname -->
-
- <xsl:template name="upcode-parentname">
-   <xsl:param name="ParentID"/>
-   <xsl:param name="ParentDoc"/> 
-
-<OrganizationName>
-  <xsl:value-of select="$ParentDoc/Organization/
-                        OrganizationNameInformation/
-                        OfficialName/Name"/>
-</OrganizationName>
-
-   
-
-   <xsl:if      test="$ParentDoc/Organization/
-                      OrganizationParent/ParentOrganization/@cdr:ref">
-   <xsl:variable name="nextParentID" 
-                 select="$ParentDoc/Organization/
-                         OrganizationParent/ParentOrganization/@cdr:ref"/>
-   <xsl:variable name="nextParentDoc" select="document(concat
-                                            ('cdr:',$nextParentID,'/last'))"/>
-    <xsl:call-template   name="upcode-parentname">
-    <xsl:with-param      name="ParentID"
-                               select="$nextParentID"/>
-    <xsl:with-param      name="ParentDoc"
-                               select="$nextParentDoc"/>
-    </xsl:call-template>
-    </xsl:if>
-    </xsl:template>
+  </xsl:copy>
+ </xsl:template>
 
 
+ <!-- 
+ ==================================================================
+ Template to remove the OrganizationParent wrapper element which 
+ only contains ParentOrganization elements and Comment.
+ This allows the first ParentOrganization fragment to be called 
+ by the same template (named filter getParentName of the "Vendor
+ Address Templates" module) as the grandparent elements.
+ However, it may cause problems with the Comment element since it 
+ is now a direct child of the root element.  
+ This may need to be addressed at a later point.   VE, 06/03/2003
+ ================================================================== -->
+ <xsl:template                    match = "OrganizationParent">
+  <xsl:apply-templates/>
 
-</xsl:transform>]]>
+  <!-- OrganizationParent>
+   <xsl:apply-templates          select = "Comment"/>
+  </OrganizationParent -->
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Template rule used to do XML to XML transformations which
+ copies any attribute node, or node that is child of of something 
+ ================================================================== -->
+ <xsl:template                    match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates          select = "@*|node()"/>
+  </xsl:copy> 
+ </xsl:template>
+
+</xsl:transform>
+]]>
 </CdrDocXml>
 </CdrDoc>
