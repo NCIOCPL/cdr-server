@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.55 2002-06-04 18:50:31 ameyer Exp $
+ * $Id: tables.sql,v 1.56 2002-06-08 03:17:04 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.55  2002/06/04 18:50:31  ameyer
+ * Added remailer_ids to support remailing.
+ *
  * Revision 1.54  2002/06/03 12:54:10  bkline
  * Added index on document type to document table.
  *
@@ -1229,6 +1232,7 @@ CREATE TABLE remailer_ids
                                      REFERENCES all_docs,
   CONSTRAINT remailer_ids_recipient_fk FOREIGN KEY (recipient)
                                        REFERENCES all_docs)
+GO
 
 /*
  * View for completed publication events.
