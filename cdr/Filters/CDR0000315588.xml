@@ -79,6 +79,69 @@
  </xsl:template>
 
 
+ <!-- *
+ ====================================================================
+ Update the ProtocolSite elements containing the attribute 
+ SuppressContactInformation="Yes" to suppress Street, Phone, and Email 
+ elements.
+ Since the OrgSite and PrivatePracticeSite elements are already 
+ converted to a ProtocolSite element at this point this is taking 
+ care of both address types.
+ Two templates are needed:
+ a) Template to remove the SuppressContactInformation attribute itself
+ b) Template to remove the elements not to be displayed if attribute
+    exists.
+ ==================================================================== -->
+ <!-- a) Template to remove SuppressContactInformation attribute -->
+ <xsl:template                   match = "ProtocolSite
+                                            [@SuppressContactInformation]"
+                                  mode = "copy">
+  <xsl:copy>
+   <xsl:attribute                 name = "ref">
+    <xsl:value-of               select = "@ref"/>
+   </xsl:attribute>
+   <xsl:attribute                 name = "sitetype">
+    <xsl:value-of               select = "@sitetype"/>
+   </xsl:attribute>
+   <xsl:apply-templates           mode = "copy"/>
+  </xsl:copy>
+ </xsl:template>
+
+ <!-- b) Template to remove elements not to be displayed if (a) matches -->
+ <xsl:template                   match = "ProtocolSite
+                                            [@SuppressContactInformation]/
+                                            ProtPerson/
+                                            Contact/
+                                            ContactDetail/
+                                            PostalAddress/
+                                            Street             |
+                                          ProtocolSite
+                                            [@SuppressContactInformation]/
+                                            ProtPerson/
+                                            Contact/
+                                            ContactDetail/
+                                            Phone              |
+                                          ProtocolSite
+                                            [@SuppressContactInformation]/
+                                            ProtPerson/
+                                            Contact/
+                                            ContactDetail/
+                                            TollFreePhone      |
+                                          ProtocolSite
+                                            [@SuppressContactInformation]/
+                                            ProtPerson/
+                                            Contact/
+                                            ContactDetail/
+                                            WebSite            |
+                                          ProtocolSite
+                                            [@SuppressContactInformation]/
+                                            ProtPerson/
+                                            Contact/
+                                            ContactDetail/
+                                            Email"
+                                  mode = "copy"/>
+
+
  <!--
  ====================================================================
  Drop the cdr namespace in cdr:id with mode = "copy".
@@ -245,22 +308,27 @@
 
  <!-- 
  =====================================================================
- Suppress LeadOrgPersonnel which are not public.
+ Don't display LeadOrgPersonnel with Public="No" attribute.
  ===================================================================== -->
- <xsl:template               match = "ProtPerson[@Public = 'No']"/>
- <xsl:template               match = "ProtPerson[@Public = 'No']"
-                              mode = "copy"/>
+ <xsl:template               match = "LeadOrgPersonnel/
+                                      ProtPerson[@Public = 'No']"
+                              mode = "copy">
+ </xsl:template>
+
 
  <!-- 
  =====================================================================
- Don't keep LeadOrgPersonnel whose only role is 'Update person'.
+ Don't keep LeadOrgPersonnel whose only role is 'Update person'
+ and ensure that the Public="No" attribute does not exist.
+
  NOTE: We don't have business rules from the users for what to do
        if more than one PersonRole with values other than 'Update
        person' are present, so we just pass them all through, making
        the resulting output invalid (since the DTD only allows one
        occurrence here).
  ===================================================================== -->
- <xsl:template               match = "LeadOrgPersonnel/ProtPerson"
+ <xsl:template               match = "LeadOrgPersonnel/
+                                      ProtPerson[not(@Public)]"
                               mode = "copy">
   <xsl:if                     test = "(PersonRole != 'Update person') or
                                       (PersonRole = 'Update person' and
