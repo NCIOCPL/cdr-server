@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.4 2000-11-20 15:23:32 mruben Exp $
+ * $Id: CdrVersion.cpp,v 1.5 2000-12-07 22:53:08 ameyer Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/11/20 15:23:32  mruben
+ * fixed bug in SQL
+ *
  * Revision 1.3  2000/10/31 15:46:13  mruben
  * added tests for authorization
  *
@@ -37,10 +40,8 @@ using std::auto_ptr;
 using std::wostringstream;
 using std::wistringstream;
 
-namespace
+bool cdr::allowVersion(int docId, cdr::db::Connection& conn)
 {
-  bool allowVersion(int docId, cdr::db::Connection& conn)
-  {
     string query = "SELECT dt.versioning "
                    "FROM document d "
                    "JOIN doc_type dt "
@@ -53,11 +54,10 @@ namespace
       throw cdr::Exception(L"Error getting document type");
 
     return rs.getString(1) == L"Y";
-  }
 }
 
 int cdr::checkIn(cdr::Session& session, int docId,
-                 cdr::db::Connection& conn, 
+                 cdr::db::Connection& conn,
                  const cdr::String* comment, bool abandon, bool force)
 {
   // we need to serialize.  Save current autocommit state so if the
@@ -74,7 +74,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
 
   if (version > 0 && !abandon)
     abandon = !isChanged(docId, conn);
-    
+
   int checked_out_usr;
   cdr::String dt_out;
   if (isCheckedOut(docId, conn, &checked_out_usr, &dt_out))
@@ -145,7 +145,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
       throw cdr::Exception(L"User not authorized to modify document");
   }
 
-      
+
   // now add new version if not abandoned
   if (!abandon)
   {
@@ -193,7 +193,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
   conn.setAutoCommit(autocommitted);
   return abandon ? -1 : version;
 }
-  
+
 int cdr::checkOut(cdr::Session& session,
                   int docId, cdr::db::Connection& conn,
                   const cdr::String& comment, bool force)
@@ -204,14 +204,14 @@ int cdr::checkOut(cdr::Session& session,
   conn.setAutoCommit(false);
 
   int usr = session.getUserId();
-  
+
   if (!allowVersion(docId, conn))
     throw cdr::Exception("Version control  not allowed for document type");
 
   if (!session.canDo(conn, "MODIFY DOCUMENT", docId))
     throw cdr::Exception(L"User not authorized to modify document");
-  
-  // is the document checked out?    
+
+  // is the document checked out?
   string query = "SELECT dt_out, usr "
     "FROM checkout "
     "WHERE id = ? AND dt_in IS NULL";
@@ -276,7 +276,7 @@ int cdr::checkOut(cdr::Session& session,
   conn.setAutoCommit(autocommitted);
   return version;
 }
-  
+
 bool cdr::getVersion(int docId, cdr::db::Connection& conn, int num,
                      CdrVerDoc* verdoc)
 {
@@ -305,7 +305,7 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn, int num,
     verdoc->data = rs.getBytes(7);
     verdoc->comment = rs.getString(8);
   }
-    
+
   return true;
 }
 
@@ -341,7 +341,7 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn,
     verdoc->data = rs.getBytes(8);
     verdoc->comment = rs.getString(9);
   }
-    
+
   return true;
 }
 
@@ -379,7 +379,7 @@ bool cdr::getLabelVersion(int docId, cdr::db::Connection& conn,
     verdoc->data = rs.getBytes(8);
     verdoc->comment = rs.getString(9);
   }
-    
+
   return true;
 }
 
@@ -491,7 +491,7 @@ cdr::String cdr::checkVerOut(cdr::Session& session,
   }
   version = checkOut(session, ui_string.extractDocId(), dbConnection,
                     comment, force);
-  
+
   wostringstream ver_string;
   ver_string << L"<Version>" << version << L"</Version>";
 
@@ -548,7 +548,7 @@ cdr::String cdr::checkVerIn(cdr::Session& session,
   }
   version = checkIn(session, ui_string.extractDocId(), dbConnection,
                     comment.get(), abandon, force);
-  
+
   wostringstream ver_string;
   if (version >= 0)
     ver_string << L"<Version>" << version << L"</Version>";
@@ -605,7 +605,7 @@ cdr::String cdr::createLabel(cdr::Session& session,
   insert.setString(1, label_name);
   insert.setString(2, label_comment);
   insert.executeQuery();
-  
+
   return L"<CdrCreateLabelResp/>";
 }
 
@@ -646,25 +646,25 @@ cdr::String cdr::deleteLabel(cdr::Session& session,
   cdr::db::ResultSet rs = select.executeQuery();
   if (!rs.next())
     throw cdr::Exception(L"Label does not exist");
-  
+
   int label_id = rs.getInt(1);
 
   string delete_sql = "DELETE FROM doc_version_label "
-                      "WHERE label = ?"; 
+                      "WHERE label = ?";
   cdr::db::PreparedStatement del
         = dbConnection.prepareStatement(delete_sql);
   del.setInt(1, label_id);
   del.executeQuery();
 
   string delete2_sql = "DELETE FROM version_label "
-                      "WHERE id = ?"; 
+                      "WHERE id = ?";
   cdr::db::PreparedStatement del2
         = dbConnection.prepareStatement(delete2_sql);
   del2.setInt(1, label_id);
   del2.executeQuery();
 
   dbConnection.setAutoCommit(autocommitted);
-  
+
   return L"<CdrDeleteLabelResp/>";
 }
 
@@ -696,7 +696,7 @@ cdr::String cdr::labelDocument(cdr::Session& session,
         cdr::dom::Node n = child.getFirstChild();
         if (n == NULL || n.getNodeType() != cdr::dom::Node::TEXT_NODE)
           throw cdr::Exception(L"Invalid version number");
-        
+
         wistringstream vs(cdr::String(n.getNodeValue()));
         vs >> version;
         if (version <= 0)
@@ -732,7 +732,7 @@ cdr::String cdr::labelDocument(cdr::Session& session,
   insert.setInt(2, version);
   insert.setString(3, label_name);
   insert.executeQuery();
-  
+
   return L"<CdrLabelDocumentResp/>";
 }
 
@@ -782,7 +782,7 @@ cdr::String cdr::unlabelDocument(cdr::Session& session,
   del.setInt(1, document_id);
   del.setString(2, label_name);
   del.executeQuery();
-  
+
   return L"<CdrUnlabelDocumentResp/>";
 }
 
