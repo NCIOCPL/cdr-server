@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.25 2002-07-15 18:55:08 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.26 2002-09-04 18:58:17 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2002/07/15 18:55:08  bkline
+ * Backed out casts until next upgrade of Sablotron.
+ *
  * Revision 1.24  2002/07/12 20:29:24  bkline
  * Added DocTitle direct access.
  *
@@ -716,8 +719,8 @@ namespace
         // XXX casts of last two arguments will be needed for sab 0.95.
         rc = SablotRunProcessor(proc, "arg:/_stylesheet",
                                 "arg:/_xmlinput", "arg:/_output",
-                                /*(const char**)*/pparms, 
-                                /*(const char**)*/arguments);
+                                (const char**)pparms, 
+                                (const char**)arguments);
         if (thread_data->fatalError)
           throw cdr::Exception(thread_data->errMsg.str());
         if (rc)
