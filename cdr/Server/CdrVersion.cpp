@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.13 2002-04-20 05:04:44 bkline Exp $
+ * $Id: CdrVersion.cpp,v 1.14 2002-04-30 12:36:35 bkline Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2002/04/20 05:04:44  bkline
+ * Added code to log unlock actions in the audit_trail table.
+ *
  * Revision 1.12  2001/12/14 18:28:38  mruben
  * removed some testing for checkout when checking in
  *
@@ -229,7 +232,16 @@ int cdr::checkIn(cdr::Session& session, int docId,
   }
 
   // Track unlock actions.
-  else
+  // XXX Note that it is not sufficient to use the `abandon' parameter 
+  //     to determine whether the checkout of the document has been
+  //     abandoned.  This unfortunately-named variable has been over-
+  //     loaded to indicate whether a new version should be created
+  //     for the document ("!abandoned" means "create a new version").
+  //     The workaround here for this problem relies on the fact that
+  //     the XMetaL client always sets "force" to true whether or not
+  //     the user is unlocking a document checked out to herself.
+  //     Not a perfect solution, but it works for this client.
+  else if (force)
   {
     const char* const insert = " INSERT INTO audit_trail     "
                                " (                           "
