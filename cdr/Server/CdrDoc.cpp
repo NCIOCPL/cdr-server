@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.47 2002-08-23 01:14:34 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.48 2002-10-02 10:32:21 bkline Exp $
  *
  */
 
@@ -1747,9 +1747,10 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
     if (statusSet.find(L"Active") != statusSet.end())
         status = L"Active";
     else {
-        if (statusSet.size() > 1)
-            errList.push_back(L"Status mismatch between Lead Organizations.  "
-                              L"Status needs to be checked.");
+        // Disabled at Lakshmi's request 2002-09-30.
+        //if (statusSet.size() > 1)
+        //    errList.push_back(L"Status mismatch between Lead Organizations.  "
+        //                      L"Status needs to be checked.");
         if (statusSet.find(L"Withdrawn") != statusSet.end())
             status = L"Withdrawn";
         else if (statusSet.find(L"Temporarily closed") != statusSet.end())
