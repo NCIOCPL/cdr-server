@@ -1,9 +1,14 @@
 /*
- * $Id: tables.sql,v 1.22 2001-02-16 01:59:07 ameyer Exp $
+ * $Id: tables.sql,v 1.23 2001-02-20 15:44:24 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2001/02/16 01:59:07  ameyer
+ * Dropped link_prop_type table
+ * Changed property in link_prop to char string, and added comment
+ * This streamlines access without any violation of normalization rules.
+ *
  * Revision 1.21  2001/02/16 00:53:35  mruben
  * changes to save more in version control
  *
@@ -209,6 +214,8 @@ CREATE TABLE format
  *               of documents of this type; required even for "unstrucutred"
  *               document types.
  *  schema_date  Date/time when schema was last modified.
+ *          css  stylesheet for use by the client for editing documents of 
+ *               this type.
  *      comment  optional free-text description of additional characteristics
  *               of documents of this type.
  */
@@ -219,8 +226,9 @@ CREATE TABLE doc_type
      created DATETIME NOT NULL,
   versioning CHAR NOT NULL DEFAULT 'Y',
          dtd NTEXT NOT NULL,
-  xml_schema NTEXT NOT NULL DEFAULT GETDATE(),
- schema_date DATETIME NOT NULL,
+  xml_schema NTEXT NOT NULL,
+ schema_date DATETIME NOT NULL DEFAULT GETDATE(),
+         css NTEXT NOT NULL,
      comment VARCHAR(255) NULL)
 
 /* 
