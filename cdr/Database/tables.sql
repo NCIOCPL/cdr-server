@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.53 2002-05-14 16:55:01 ameyer Exp $
+ * $Id: tables.sql,v 1.54 2002-06-03 12:54:10 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.53  2002/05/14 16:55:01  ameyer
+ * Doubled column width from 32 to 64 chars in link_xml and link_net element
+ * names to accomodate possible long XML element names.
+ *
  * Revision 1.52  2002/04/10 13:39:40  bkline
  * Added failed_login_attempts view.
  *
@@ -469,6 +473,11 @@ CREATE TABLE all_docs
  active_status CHAR          NOT NULL DEFAULT 'A' REFERENCES active_status,
   last_frag_id INTEGER       NOT NULL DEFAULT 0)
 GO
+
+/*
+ * Selection by document type optimization.
+ */
+CREATE INDEX doc_doc_type_idx ON all_docs(doc_type, active_status)
 
 /*
  * Index needed to make title searches for documents more efficient.
