@@ -1,10 +1,15 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.13 2001-06-20 00:54:51 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.14 2001-09-25 14:22:57 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2001/06/20 00:54:51  ameyer
+ * Changed handling of error lists in order to incorporate error info
+ * from other stages of processing into one returned list to client,
+ * and to eliminate CdrValidateDocResp wrappers from inappropriate place.
+ *
  * Revision 1.12  2001/06/15 02:30:04  ameyer
  * Now using a common parse of the document instead of performing a new one.
  * Returning a proper error message if document is malformed.
@@ -307,7 +312,7 @@ void cdr::validateDocAgainstSchema(
     parser.parse(schemaString);
     cdr::xsd::validateDocAgainstSchema(docElem,
                                   parser.getDocument().getDocumentElement(),
-                                  errors);
+                                  errors, &conn);
 }
 
 /**
