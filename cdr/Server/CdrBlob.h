@@ -1,9 +1,12 @@
 /*
- * $Id: CdrBlob.h,v 1.2 2000-05-03 17:27:54 bkline Exp $
+ * $Id: CdrBlob.h,v 1.3 2001-06-06 12:39:45 bkline Exp $
  *
  * CDR wrapper for a string of bytes.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/05/03 17:27:54  bkline
+ * Fleshed out ccdoc comments.
+ *
  * Revision 1.1  2000/05/03 15:37:25  bkline
  * Initial revision
  */
@@ -11,6 +14,7 @@
 #ifndef CDR_BLOB_
 #define CDR_BLOB_
 
+#include "CdrString.h"
 #include <string>
 
 /**@#-*/
@@ -44,13 +48,21 @@ namespace cdr {
         Blob(bool null_ = false) : null(null_) {}
 
         /**
-         * Creates a new non-nul <code>Blob</code> object from an array 
+         * Creates a new non-null <code>Blob</code> object from an array 
          * of bytes.
          *
          *  @param  s           address of array of bytes.
          *  @param  n           number of bytes in array.
          */
         Blob(const unsigned char*s, size_t n) : BlobBase(s, n), null(false) {}
+
+        /**
+         * Creates a new non-null <code>Blob</code> object from a base-64-
+         * encoded string.
+         *
+         *  @param  s           reference to base-64 encoded string object.
+         */
+        Blob(const String&);
 
         /**
          * Copy constructor.
@@ -66,12 +78,47 @@ namespace cdr {
          */
         bool    isNull() const { return null; }
 
+        /**
+         * Returns a base-64 encoded string object for the blob.
+         *
+         *  @return             encoded String object.
+         */
+        String encode() const;
+
     private:
 
         /**
          * Flag remembering whether object is <code>NULL</code>.
          */
         bool    null;
+
+        /**
+         * Character used for filling out blob encoding.
+         */
+        static wchar_t getPadChar() { return L'='; }
+
+        /**
+         * Table used for encoding blobs.
+         */
+        static const wchar_t* getEncodingTable() {
+            return L"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                   L"abcdefghijklmnopqrstuvwxyz"
+                   L"0123456789+/";
+        }
+
+
+        /**
+         * Access method for initializing and using the decode table.
+         *
+         *  @return             decoding table.
+         */
+        static const wchar_t* getDecodingTable();
+        static size_t getDecodingTableSize() { return 128; }
+
+        /**
+         * Only the low six bits can be represented in an encoding character.
+         */
+        static wchar_t invalidBits() { return L'\xFFC0'; }
     };
 
 }
