@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.75 2002-12-19 17:15:27 pzhang Exp $
+ * $Id: tables.sql,v 1.76 2003-01-28 18:46:01 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.75  2002/12/19 17:15:27  pzhang
+ * Added doc_status in doc_info.
+ *
  * Revision 1.74  2002/11/14 20:18:08  pzhang
  * Made num in pub_proc_cg_work as required to support CG's
  * request for doc version.
@@ -1663,6 +1666,7 @@ CREATE TABLE filter_set
         name VARCHAR(80)      NOT NULL UNIQUE,
  description NVARCHAR(256)    NOT NULL,
        notes NTEXT                NULL)
+GO
 
 /*
  * Member of a filter set.
@@ -1678,3 +1682,29 @@ CREATE TABLE filter_set_member
       filter INTEGER     NULL REFERENCES all_docs,
       subset INTEGER     NULL REFERENCES filter_set,
   CONSTRAINT filter_set_member_pk PRIMARY KEY(filter_set, position))
+GO
+
+/*
+ * System wide control table, used for any arbitrary name value pairs
+ * that the system needs to access.
+ *
+ *         name  The name associated with this value.
+ *               By convention, applications should group related values by
+ *               using related names, (arbitrary example below):
+ *                  mailer/Person/maxmailers = ...
+ *                  mailer/Person/interval = ...
+ *                  mailer/Organization/maxmailers = ...
+ *        value  String to retrieve for this name.
+ *  last_change  Date-time when value last set.
+ *          usr  ID of user making the last change.
+ *      program  Optional name of program making the last change.
+ *        notes  Optional notes documenting this system value.
+ */
+CREATE TABLE sys_value
+       (name VARCHAR(2000) NOT NULL,
+       value VARCHAR(2000) NOT NULL,
+         usr INT NOT NULL REFERENCES usr,
+ last_change DATETIME NOT NULL,
+     program varchar(64) NULL,
+       notes NTEXT NULL)
+GO
