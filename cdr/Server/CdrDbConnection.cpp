@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbConnection.cpp,v 1.5 2000-05-21 00:48:59 bkline Exp $
+ * $Id: CdrDbConnection.cpp,v 1.6 2000-06-01 18:48:58 bkline Exp $
  *
  * Implementation for ODBC connection wrapper.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/05/21 00:48:59  bkline
+ * Replaced public constructor with ServerDriver::getConnection().
+ *
  * Revision 1.4  2000/05/03 15:25:41  bkline
  * Fixed database statement creation.
  *
@@ -84,8 +87,8 @@ cdr::db::Connection::Connection(const Connection& c) : hdbc(c.hdbc),
       master(const_cast<Connection*>(&c))
 {
     ++master->refCount;
-    std::cerr << "Connection copy constructor; refCount=" << master->refCount
-              << "\n";;
+    //std::cerr << "Connection copy constructor; refCount=" << master->refCount
+    //          << "\n";;
 }
 
 /**
@@ -110,8 +113,8 @@ cdr::db::Connection& cdr::db::Connection::operator=(const Connection& c)
  */
 cdr::db::Connection::~Connection()
 {
-    std::cerr << "Connection destructor; refCount=" << master->refCount <<
-        "\n";
+    //std::cerr << "Connection destructor; refCount=" << master->refCount <<
+    //    "\n";
     if (--master->refCount < 1 && !isClosed())
         close();
 }

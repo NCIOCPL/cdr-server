@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.8 2000-05-21 00:52:15 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.9 2000-06-01 18:49:57 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2000/05/21 00:52:15  bkline
+ * Added CdrShutdown command support and sweep for stale sessions.
+ *
  * Revision 1.7  2000/05/09 20:15:34  bkline
  * Replaced direct reading of Session fields with accessor methods.
  *
@@ -145,7 +148,7 @@ DWORD __stdcall dispatcher(LPVOID arg) {
     int nBytes;
     int response = 0;
     while ((nBytes = readRequest(fd, request, now)) > 0) {
-        std::cout << "received request with " << nBytes << " bytes...\n";
+        //std::cout << "received request with " << nBytes << " bytes...\n";
         processCommands(fd, request, conn, now);
     }
     return EXIT_SUCCESS;
@@ -167,6 +170,7 @@ int readRequest(int fd, std::string& request, const cdr::String& when) {
     while (totalRead < sizeof lengthBytes) {
         int n = recv(fd, lengthBytes + totalRead, 
                      sizeof lengthBytes - totalRead, 0);
+        //std::cerr << "Return from recv: " << n << std::endl;
         if (n < 0)
             return -1;
         if (n == 0) {
@@ -183,6 +187,7 @@ int readRequest(int fd, std::string& request, const cdr::String& when) {
     }
     memcpy(&length, lengthBytes, sizeof length);
     length = ntohl(length);
+    //std::cerr << "Client tells me he is sending " << length << " bytes.\n";
 
     // Allocate a working buffer.
     char *buf = new char[length + 1];
