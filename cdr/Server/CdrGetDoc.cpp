@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.18 2002-03-28 22:19:31 ameyer Exp $
+ * $Id: CdrGetDoc.cpp,v 1.19 2002-04-04 19:05:24 bkline Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2002/03/28 22:19:31  ameyer
+ * Removed unreferenced variable.
+ *
  * Revision 1.17  2002/03/06 21:56:42  bkline
  * Caught reference to cdr::Exception instead of object.
  *
@@ -242,7 +245,7 @@ cdr::String cdr::getDocString(
 
     // That's all we've got from the doc control
     // Add an end tag for it and fetch xml and blob
-    cdrDoc += L"</DocCtl>\n";
+    cdrDoc += L"</CdrDocCtl>\n";
     cdrDoc += usecdata ? makeDocXml (docVer->xml) : docVer->xml;
     if (!docVer->data.isNull())
         cdrDoc += makeDocBlob (docVer->data);
