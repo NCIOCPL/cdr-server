@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.8 2000-12-13 01:49:51 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.9 2001-02-27 18:31:16 ameyer Exp $
  *
  */
 
@@ -126,8 +126,6 @@ cdr::CdrDoc::CdrDoc (
                     if (ctlNode.getNodeType() ==
                                     cdr::dom::Node::CDATA_SECTION_NODE) {
 
-                        // Here's how Bob says to do it
-                        cdr::dom::Parser parser;
                         Xml = ctlNode.getNodeValue();
                         break;
                     }
