@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.16 2000-10-04 18:31:36 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.17 2001-05-21 20:31:58 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2000/10/04 18:31:36  bkline
+ * Added code to catch more exception types.
+ *
  * Revision 1.15  2000/08/24 20:07:33  ameyer
  * Added NT structured exception handling for crashes.
  *
@@ -485,7 +488,7 @@ cdr::String processCommand(cdr::Session& session,
     }
     return cdr::String(rspTag + L"failure'>\n  <Errors>\n   "
                               + L"<Err>Missing specific command element"
-                              + L"</Error\n  </Errors>\n"
+                              + L"</Err>\n  </Errors>\n"
                               + L" </CdrResponse>\n");
 }
 
