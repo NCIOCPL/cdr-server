@@ -2,22 +2,24 @@
 #include <iostream> // DEBUG
 
 /* XXXX TO DO XXXX
-    Optimize update?
-    Produce pure error messages instead of complex multi-element ones?
-    Add CdrGetLinks().
+    Optimize update by only processing changes?
+    Maybe.  Have to see if it's worthwhile.
    XXXX TO DO XXXX */
 
 /*
- * CdrDoc.cpp
+ * CdrLink.cpp
  *
  * Module for creating, maintaining, and searching the link network
  * stored in the link_net table.
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.3 2000-09-27 20:25:16 bkline Exp $
+ * $Id: CdrLink.cpp,v 1.4 2000-12-13 01:50:59 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/09/27 20:25:16  bkline
+ * Fixed last argument to findTargetDocTypes().
+ *
  * Revision 1.2  2000/09/27 11:28:44  bkline
  * Added CdrDelLinks() and findTargetDocTypes().
  *
@@ -53,6 +55,8 @@ static int checkMissedFrags (cdr::db::Connection&, int,
 
 static void updateFragList (cdr::db::Connection&, int, cdr::StringSet&);
 
+static bool findDocType (cdr::db::Connection&, int, int *, cdr::String *);
+
 
 /**
  * Constructor for a CdrLink object
@@ -81,6 +85,7 @@ cdr::link::CdrLink::CdrLink (
     trgIdStr      = L"";
     trgDocType    = 0;
     trgDocTypeStr = L"";
+    trgActiveStat = L"";
     trgFrag       = L"";
     hasData       = false;
     errCount      = 0;
@@ -156,16 +161,20 @@ int cdr::link::CdrLink::validateLink (
     // Few if any checks can be made without a target id
     if (trgId != 0) {
 
-        // Find out if target exists and get its type
-        qry = "SELECT doc_type FROM document WHERE id = ?";
+        // Find out if target exists and get its deletion status and type
+        qry = "SELECT doc_type, active_status FROM document WHERE id = ?";
         cdr::db::PreparedStatement doc_sel = dbConn.prepareStatement (qry);
         doc_sel.setInt (1, trgId);
         cdr::db::ResultSet doc_rs = doc_sel.executeQuery();
         if (!doc_rs.next()) {
             this->addLinkErr (L"Target document not found in CDR");
         }
-        else
-            trgDocType = doc_rs.getInt (1);
+        else {
+            trgDocType    = doc_rs.getInt (1);
+            trgActiveStat = doc_rs.getString (2);
+            if (trgActiveStat == L"D")
+                this->addLinkErr (L"Target link is to deleted document");
+        }
 
         // If we found the target, can check the fragment
         // If a fragment is specified, it must exist in the target doc
@@ -286,6 +295,71 @@ int cdr::link::CdrDelLinks (
 
     return errList.size();
 }
+
+
+/**
+ * getLinks
+ * Retrieve information from the link tables.
+ * Simple version only gets links to a document.
+ *
+ * See CdrLink.h
+ */
+
+cdr::String getLinks (
+    cdr::Session&         session,
+    const cdr::dom::Node& commandNode,
+    cdr::db::Connection&  dbConnection
+) {
+    int         docId;      // Doc id from transaction
+    cdr::String docIdStr,   // String form "CDR00..."
+                name;       // Element name
+
+
+    // Get document id from command
+    cdr::dom::Node node = commandNode.getFirstChild();
+    while (node != 0) {
+
+        if (node.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            if (name != L"DocId")
+                throw cdr::Exception (L"getLinks: Element '" + name
+                                    + L"' in CdrGetLinks request is "
+                                      L"currently unsupported");
+
+            docIdStr = cdr::dom::getTextContent (node);
+            docId    = docIdStr.extractDocId();
+        }
+
+        node = node.getNextSibling();
+    }
+
+    // In this simple getLinks we're just retrieving links that
+    //   point to the current document
+    // CdrDelLinks can already do that.
+    cdr::StringList errList;
+    int errCount = cdr::link::CdrDelLinks (dbConnection, docId,
+                                           cdr::ValidateOnly, errList);
+
+    // Pack it up the transaction and links
+    cdr::String resp  = L"<CdrGetLinksRes>\n"
+                        L"  <DocID>" + docIdStr + L"</DocID>\n"
+                        L"  <LnkList>\n"
+                        L"    <LnkCount>";
+                resp += errCount + L"</LnkCount>\n";
+
+    if (errCount) {
+        cdr::StringList::const_iterator i = errList.begin();
+        while (i != errList.end())
+            resp += L"    " + cdr::tagWrap (*i++, L"LnkItem");
+    }
+
+    // Terminate and return it
+    resp += L"  </LnkList>\n"
+            L"</CdrGetLinksRes>\n";
+
+    return resp;
+}
+
+
 /**
  * Dump link info in XML format
  * See CdrLink.h for documentation
@@ -501,8 +575,15 @@ int cdr::link::CdrSetLinks (
     if (validRule == cdr::UpdateUnconditionally ||
             (validRule == cdr::UpdateIfValid && err_count == 0)) {
 
+        // All together now
+        bool oldCommitted = dbConn.getAutoCommit();
+        dbConn.setAutoCommit (false);
+
+        // Update link net and fragment table
         cdr::link::updateLinkNet (dbConn, ui, lnkList);
         updateFragList (dbConn, ui, fragSet);
+
+        dbConn.setAutoCommit (oldCommitted);
     }
 
     // XXXX If we are deleting text from nodes, we might do part
@@ -882,6 +963,7 @@ static void updateFragList (
     }
 } // updateFragList()
 
+
 void cdr::link::findTargetDocTypes(
         cdr::db::Connection&    conn,
         const cdr::String&      srcElem,
@@ -903,4 +985,40 @@ void cdr::link::findTargetDocTypes(
     cdr::db::ResultSet rs = stmt.executeQuery();
     while (rs.next())
         typeList.push_back(rs.getInt(1));
+}
+
+
+/**
+ * findDocType
+ *
+ * Find the document type id and name corresponding to a document id.
+ *
+ *  @param  dbConn      Database connection.
+ *  @param  docId       Find doc type info for this document.
+ *  @param  typeIdp     Pointer to int to receive type id.
+ *  @param  typeStrp    Pointer to string receive type name.
+ *
+ *  @return true        Success, false=document or type not found.
+ */
+
+static bool findDocType (
+    cdr::db::Connection& dbConn,
+    int                  docId,
+    int                  *typeIdp,
+    cdr::String          *typeStrp
+) {
+    std::string qry = "SELECT t.id, t.name FROM doc_type t JOIN document d "
+                      "    ON t.id = d.doc_type "
+                      " WHERE d.id = ?";
+    cdr::db::PreparedStatement stmt = dbConn.prepareStatement (qry);
+    stmt.setInt (1, docId);
+    cdr::db::ResultSet rs = stmt.executeQuery();
+    if (!rs.next())
+        return false;
+
+    // Get info
+    *typeIdp  = rs.getInt (1);
+    *typeStrp = rs.getString (2);
+
+    return true;
 }
