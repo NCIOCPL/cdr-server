@@ -49,23 +49,27 @@ cdr:ref attributes with title of linked document.
   does not exist or its title is empty, just copy the node and its 
   contents.
   ======================================================================= -->
-      <xsl:apply-templates      select = "@*"/>
-  <xsl:template              xmlns:cdr = "cips.nci.nih.gov/cdr"
-                                 match = "*[@cdr:ref]">
-    <xsl:variable                 name = "cdrref">
+  <xsl:template                  match = "*[@cdr:ref]">
+    <xsl:variable                 name = "link"
+                                select = "@cdr:ref"/>
+    <xsl:variable                 name = "fragId"
+                                select = "substring-after($link, '#')"/>
+<!--
+    <xsl:variable                 name = "id">
       <xsl:choose>
-        <xsl:when                 test = "@cdr:ref">
-          <xsl:value-of         select = "@cdr:ref"/>
+        <xsl:when                 test = "contains($link, '#')">
+          <xsl:value-of         select = "substring-before($link, '#')"/>
         </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of         select = "$link"/>
+        </xsl:otherwise>
       </xsl:choose>
     </xsl:variable>
-    <xsl:variable                 name = "fragId"
-                                select = "substring-after($cdrref, '#')"/>
+-->
+    <xsl:variable                 name = "uri"
+                                select = "concat('cdrx:', $link, '/DocTitle')"/>
     <xsl:variable                 name = "cdrtmpvalue">
-      <xsl:value-of             select = "document(concat('cdrx:',
-                                                          $cdrref,
-                                                          '/CdrCtl'))                             
-                                          /CdrDocCtl/DocTitle"/>
+      <xsl:value-of             select = "document($uri)/CdrDocTitle"/>
     </xsl:variable>
     <xsl:variable                 name = "cdrvalue">
      <xsl:choose>
