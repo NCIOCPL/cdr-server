@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.1 2000-04-11 14:16:13 bkline Exp $
+ * $Id: CdrString.cpp,v 1.2 2000-04-11 17:49:54 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/11 14:16:13  bkline
+ * Initial revision
+ *
  */
 
 #include <sstream>
@@ -44,6 +47,46 @@ std::string cdr::String::toUtf8() const
         }
     }
     return utf8;
+}
+
+/**
+ * Converts string from UTF-8 to UTF-16 (common support for two 
+ * constructors).  Ignores values beyond U+FFFF.
+ */
+void cdr::String::utf8ToUtf16(const char* s)
+{
+    // Calculate storage requirement.
+    size_t i, len = 0;
+    for (i = 0; s[i]; ++i) {
+        if (((unsigned char)s[i] & 0x80) == 0)
+            ++len;
+        else if (((unsigned char)s[i] & 0x40) == 0x40)
+            ++len;
+    }
+
+    // Make room.
+    resize(len);
+    size_t j;
+
+    // Populate string.
+    for (i = j = 0; i < size(); ++i) {
+        unsigned char ch = (unsigned char)*s;
+        if (ch < 0x80) {
+            (*this)[j++] = (wchar_t)ch;
+            ++s;
+        }
+        else if ((ch & 0xE0) == 0xC0) {
+            (*this)[j++] = ((ch & 0x1F) << 6)
+                         | (((unsigned char)s[1]) & 0x3F);
+            s += 2;
+        }
+        else {
+            (*this)[j++] = ((ch & 0x0F) << 12)
+                         | ((((unsigned char)s[1]) & 0x3F) << 6)
+                         | (((unsigned char)s[2]) & 0x3F);
+            s += 3;
+        }
+    }
 }
 
 /**
