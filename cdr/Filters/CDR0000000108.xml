@@ -25,9 +25,11 @@
   <xsl:variable      name = "org_loc" 
      select="/Organization/OrganizationLocations/OrganizationLocation/Location"/>
 
-  <xsl:template match="InScopeProtocol">
+  <xsl:template              match  = "InScopeProtocol |
+                                       ScientificProtocolInfo">
     <xsl:copy>
-    <xsl:apply-templates select="document('cdrutil:/docid')" mode="copy"/>
+    <xsl:apply-templates     select = "document('cdrutil:/docid')" 
+                             mode   = "copy"/>
 
 <!-- ==================================================================
      Copy second tier fields without any reference links
@@ -77,8 +79,8 @@
                                                    'Professional Abstract ',
                                                    'Disclaimer;Protocol ',
                                                    'health professional ',
-                                                   'abstract disclaimer'))"/>
-    <!-- select = "document(concat('cdrx:','CDR0000000313','/lastp')) -->
+                                                   'abstract disclaimer', 
+                                                   '/lastp'))"/>
 
                 <xsl:apply-templates     select = "$miscDoc1/
                                                    MiscellaneousDocument/
@@ -141,12 +143,12 @@
        <PatientDisclaimer>
                 <xsl:variable              name = "miscDoc2" 
                                          select = "document
-                                                   (concat('cdr:name:',
+                                                   (concat('cdrx:name:',
                                                    'Protocol patient abstract ',
                                                    'disclaimer;Protocol ',
                                                    'patient abstract ',
-                                                   'disclaimer'))"/>
-    <!-- select = "document(concat('cdrx:','CDR0000000313','/lastp')) -->
+                                                   'disclaimer', 
+                                                   '/lastp'))"/>
 
                 <xsl:apply-templates     select = "$miscDoc2/
                                                    MiscellaneousDocument/
@@ -213,7 +215,7 @@
      <xsl:variable                   name = "CitInfo" 
                                    select = "document
                                             (concat
-                                            ('cdrx:',$PubCit, '/lastp'))"/>
+                                            ('cdr:',$PubCit, '/lastp'))"/>
 
      <xsl:if                         test = "$CitInfo/Citation/PDQCitation">
       <Citation                       ref = "{$PubCit}">
@@ -440,7 +442,7 @@
           <xsl:variable        name   = "GlossInfo" 
                                select = "document
                                          (concat
-                                         ('cdrx:',$GlossID, '/lastp'))"/>
+                                         ('cdr:',$GlossID, '/lastp'))"/>
           <GlossaryTerm>
           <xsl:apply-templates select = "$GlossInfo/GlossaryTerm/TermName" 
                                  mode = "copy"/>
@@ -507,7 +509,7 @@
                           select = "@cdr:ref"/>
       <xsl:variable       name   = "DiagInfo" 
                           select = "document
-                                    (concat('cdrx:',$DiagID, '/lastp'))"/>
+                                    (concat('cdr:',$DiagID, '/lastp'))"/>
 
       <Diagnosis>
         <SpecificDiagnosis   ref = "{$DiagID}">
@@ -543,7 +545,7 @@
                           select = "@cdr:ref"/>
       <xsl:variable       name   = "ExcludeInfo" 
                           select = "document
-                                    (concat('cdrx:',$ExcludeID, '/lastp'))"/>
+                                    (concat('cdr:',$ExcludeID, '/lastp'))"/>
 
       <ExclusionCriteria>
         <xsl:attribute    name   = "ref">
@@ -595,7 +597,7 @@
 
                     <xsl:variable      name = "IntervenInfo" 
                                      select = "document(concat 
-                                               ('cdrx:',$IntervenID, 
+                                               ('cdr:',$IntervenID, 
                                                 '/lastp'))"/>
                   <InterventionType     ref = "{$IntervenID}">
                    <xsl:value-of     select = "$IntervenInfo/Term/
@@ -622,11 +624,11 @@
                                    select = "@cdr:ref"/>
                <xsl:variable         name = "IntervenNameInfo" 
                                    select = "document(concat
-                                             ('cdrx:',$IntervenNameID, 
-                                                              '/lastp'))"/>
+                                             ('cdr:',$IntervenNameID, 
+                                              '/lastp'))"/>
                <InterventionNameLink  ref = "{$IntervenNameID}">
                <xsl:value-of       select = "$IntervenNameInfo/Term/
-                                            PreferredName"/>
+                                             PreferredName"/>
                </InterventionNameLink>
                </xsl:if>
               </xsl:for-each>
@@ -646,7 +648,7 @@
                           select = "@cdr:ref"/>
       <xsl:variable       name   = "CondInfo" 
                           select = "document
-                                    (concat('cdrx:',$CondID, '/lastp'))"/>
+                                    (concat('cdr:',$CondID, '/lastp'))"/>
 
       <StudyCondition>
         <SpecificCondition   ref = "{$CondID}">
@@ -692,6 +694,9 @@
    <xsl:param                       name = "termID"/>
    <xsl:param                       name = "termDoc"/>
 
+   <xsl:if                          test = "$termDoc/Term/
+                                            TermRelationship/ParentTerm">
+
   <!-- Once the parent term has been printed select the term to be
        searched for the next level parent and call template again
        =========================================================== -->
@@ -700,10 +705,7 @@
                                              ParentTerm/TermId/@cdr:ref"/>
     <xsl:variable                   name = "nextTermDoc" 
                                   select = "document(concat
-                                          ('cdrx:',$nextTermID, '/lastp'))"/>
-
-   <xsl:if                          test = "$termDoc/Term/
-                                            TermRelationship/ParentTerm">
+                                          ('cdr:',$nextTermID, '/lastp'))"/>
 
     <!-- The Parent Term is only printed if it is not of 
          TermTypeName = Header term | Obsolete term
@@ -743,6 +745,9 @@
    <xsl:param                       name = "diagnosisID"/>
    <xsl:param                       name = "diagnosisDoc"/>
 
+   <xsl:if                          test = "$diagnosisDoc/Term/
+                                            TermRelationship/ParentTerm">
+
   <!-- We need the Parent Term ID to be passed on for selecting the next
        Term in the hirarchy
        ================================================================= -->
@@ -751,10 +756,7 @@
                                              ParentTerm/TermId/@cdr:ref"/>
     <xsl:variable                   name = "nextTermDoc" 
                                   select = "document(concat
-                                          ('cdrx:',$nextTermID, '/lastp'))"/>
-
-   <xsl:if                          test = "$diagnosisDoc/Term/
-                                            TermRelationship/ParentTerm">
+                                          ('cdr:',$nextTermID, '/lastp'))"/>
 
     <!-- The Parent Term is only printed if it is not of 
          TermTypeName = Header term | Obsolete term
@@ -795,6 +797,9 @@
    <xsl:param                       name = "conditionID"/>
    <xsl:param                       name = "conditionDoc"/>
 
+   <xsl:if                          test = "$conditionDoc/Term/
+                                            TermRelationship/ParentTerm">
+
   <!-- Once the parent term has been printed select the term to be
        searched for the next level parent and call template again
        =========================================================== -->
@@ -803,10 +808,7 @@
                                              ParentTerm/TermId/@cdr:ref"/>
     <xsl:variable                   name = "nextTermDoc" 
                                   select = "document(concat
-                                          ('cdrx:',$nextTermID, '/lastp'))"/>
-
-   <xsl:if                          test = "$conditionDoc/Term/
-                                            TermRelationship/ParentTerm">
+                                          ('cdr:',$nextTermID, '/lastp'))"/>
 
     <!-- The Parent Term is only printed if it is not of 
          TermTypeName = Header term | Obsolete term
@@ -855,7 +857,7 @@
      <xsl:variable          name = "GeneInfo" 
                           select = "document
                                    (concat
-                                    ('cdrx:',$GeneID, '/lastp'))"/>
+                                    ('cdr:',$GeneID, '/lastp'))"/>
     <xsl:value-of         select = "$GeneInfo/Term/PreferredName"/>
 
 
@@ -918,7 +920,7 @@
                           select = "substring-after(Person/@cdr:ref, '#')"/>
    <xsl:variable            name = "person"
                           select = "document(concat
-                                    ('cdrx:', $personId,'/last'))"/>
+                                    ('cdr:', $personId,'/last'))"/>
    <LeadOrgPersonnel>
     <Person                  ref = "{$personId}#{$fragId}">
      <xsl:apply-templates select = "$person/Person/PersonNameInformation"
@@ -966,10 +968,10 @@
    <OrgSite                  ref = "{$orgId}">
 
 <!-- Remove for Production: Start ============================= -->
-    <Comment_VE>
+    <!-- Comment_VE>
              OrgSiteID Element included for Generic Person Testing only!  
              Remove when finished.  04/19/2002
-    </Comment_VE>
+    </Comment_VE -->
     <xsl:apply-templates  select = "OrgSiteID"
                             mode = "copy"/>
 <!-- Remove for Production: End =============================== -->
@@ -1004,7 +1006,7 @@
    <xsl:variable            name = "SPFrag"
                           select = "substring-after($SPID, '#')"/>
    <xsl:variable            name = "SPInfo" 
-                          select = "document(concat('cdrx:',$SPID, '/last'))"/>
+                          select = "document(concat('cdr:',$SPID, '/last'))"/>
    <SpecificPerson           ref = "{$SPID}">
     <xsl:apply-templates  select = "$SPInfo/Person/PersonNameInformation"
                             mode = "copy"/>
@@ -1039,10 +1041,13 @@
   =================================================================== -->
   <xsl:template             name = "getPrivatePracticeLocation">
    <xsl:param               name = "specificPhone"/>
+
+   
+   <SiteType>Person</SiteType>
    <xsl:apply-templates   select = "PostalAddress"
                             mode = "copy"/>
 
-   <xsl:apply-templates  select = "PostalAddress"/>
+   <xsl:apply-templates   select = "PostalAddress"/>
 
    <!-- Phone element gets special treatment. -->
    <xsl:choose>
@@ -1088,12 +1093,10 @@
                                     OrganizationNameInformation/
                                     OfficialName"/>
 
+   <SiteType>Organization</SiteType>
    <OrganizationLocation>
     <xsl:attribute          name = "id">
       <xsl:value-of       select = "OrganizationLocation/@cdr:ref"/>
-    </xsl:attribute>
-    <xsl:attribute          name = "sitetype">
-      <xsl:text>Organization</xsl:text>
     </xsl:attribute>
     <xsl:value-of       select = "$orgName/Name"/>
    </OrganizationLocation>
@@ -1167,7 +1170,7 @@
                           select = "PoliticalSubUnit_State/@cdr:ref"/>
    <xsl:variable            name = "country"
                           select = "document(concat
-                                    ('cdrx:', $countryId, '/lastp'))"/>
+                                    ('cdr:', $countryId, '/lastp'))"/>
 
    <xsl:apply-templates   select = "Street"
                             mode = "copy"/>
@@ -1182,7 +1185,7 @@
    <xsl:if                  test = "$stateId">
     <xsl:variable           name = "state"
                           select = "document(concat
-                                   ('cdrx:', $stateId, '/lastp'))"/>
+                                   ('cdr:', $stateId, '/lastp'))"/>
     <xsl:if                 test = "$state">
      <PoliticalSubUnit_State>
       <xsl:attribute        name = "ref">
