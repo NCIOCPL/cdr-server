@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.14 2001-04-05 22:34:02 ameyer Exp $
+ * $Id: CdrString.cpp,v 1.15 2001-05-16 20:39:01 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2001/04/05 22:34:02  ameyer
+ * Added ynCheck() utility.
+ *
  * Revision 1.13  2001/03/02 13:59:26  bkline
  * Replaced body of cdr::entConvert() with more efficient implementation.
  *
@@ -106,22 +109,21 @@ void cdr::String::utf8ToUtf16(const char* s)
 
     // Make room.
     resize(len);
-    size_t j;
 
     // Populate string.
-    for (i = j = 0; i < size(); ++i) {
+    for (i = 0; i < len; ++i) {
         unsigned char ch = (unsigned char)*s;
         if (ch < 0x80) {
-            (*this)[j++] = (wchar_t)ch;
+            (*this)[i] = (wchar_t)ch;
             ++s;
         }
         else if ((ch & 0xE0) == 0xC0) {
-            (*this)[j++] = ((ch & 0x1F) << 6)
+            (*this)[i] = ((ch & 0x1F) << 6)
                          | (((unsigned char)s[1]) & 0x3F);
             s += 2;
         }
         else {
-            (*this)[j++] = ((ch & 0x0F) << 12)
+            (*this)[i] = ((ch & 0x0F) << 12)
                          | ((((unsigned char)s[1]) & 0x3F) << 6)
                          | (((unsigned char)s[2]) & 0x3F);
             s += 3;
