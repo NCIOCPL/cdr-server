@@ -65,90 +65,25 @@
 <xsl:template match="Summary">
 
  <BODY>
-  <xsl:apply-templates select="SummaryTitle" mode="ContentTitle"/>  
+  <xsl:apply-templates select="SummaryTitle" mode="TOC"/>  
 
 <!-- ==================================================================
           Display a Contents List of Summary Section Titles 
           10/06/2002 - Modified code to remove 4th level titles (CB) 
            10/08/2002 - took breaks out at end of titles.
      =================================================================== -->
-<dl>
-<xsl:for-each select="SummarySection |Insertion/SummarySection | Deletion/SummarySection">
-<xsl:if test="Insertion/Title">
-<dt><font color="#FF0000"><xsl:value-of select="Insertion/Title"/></font></dt><br />
-</xsl:if>
-<xsl:if test="Deletion/Title">
-<dt><strike><xsl:value-of select="Deletion/Title"/></strike></dt><br />
-</xsl:if>
- <xsl:choose>
- <xsl:when test="name(..)='Insertion'">
-<dt><font color="#FF0000"><xsl:value-of select="Title"/></font></dt><br />
- </xsl:when>
- <xsl:when test="name(..)='Deletion'">
-<dt><strike><xsl:value-of select="Title"/></strike></dt>
- </xsl:when>
-  <xsl:otherwise>
- <xsl:apply-templates select="Title" mode="CL"/>
- </xsl:otherwise>
- </xsl:choose>
-<xsl:choose>
-<xsl:when test="descendant::SummarySection">
-<dl>
-<xsl:for-each select="SummarySection | Insertion/SummarySection | Deletion/SummarySection">
-<!--<xsl:if test="not(SummarySection/SummarySection/SummarySection/SummarySection or SummarySection/SummarySection/SummarySection/SummarySection/SummarySection)">-->
-<xsl:if test="count(ancestor::SummarySection) &lt; 4">
-<xsl:if test="Insertion/Title">
-<dt><font color="#FF0000"><xsl:value-of select="Insertion/Title"/></font></dt>
-</xsl:if>
-<xsl:if test="Deletion/Title">
-<dt><strike><xsl:value-of select="Deletion/Title"/></strike></dt>
-</xsl:if>
+  <dl>
+   <xsl:for-each              select = "SummarySection">
+    <xsl:call-template          name = "TocSummarySection">
+     <xsl:with-param            name = "level"
+                              select = "1"/>
+    </xsl:call-template>  
+   </xsl:for-each>
+  </dl>
 
-<xsl:choose>
-<xsl:when test="name(../..)='Insertion'">
-<dt><font color="#FF0000"><xsl:value-of select="Title"/></font></dt><br />
-</xsl:when>
-<xsl:when test="name(../..)='Deletion'">
-<dt><strike><xsl:value-of select="Title"/></strike></dt><br />
-</xsl:when>
-<xsl:otherwise>
-<dt><xsl:apply-templates select="Title" mode="CL"/></dt>
-</xsl:otherwise>
-</xsl:choose>
+  <xsl:apply-templates/>
 
-<dl>
-<xsl:for-each select="SummarySection | Insertion/SummarySection | Deletion/SummarySection">
-
-<xsl:if test="Insertion/Title">
-<dt><font color="#FF0000"><xsl:value-of select="Insertion/Title"/></font></dt>
-</xsl:if>
-<xsl:if test="Deletion/Title">
-<dt><strike><xsl:value-of select="Deletion/Title"/></strike></dt>
-</xsl:if>
-<xsl:choose>
-<xsl:when test="name(../../..)='Insertion'">
-<dt><font color="#FF0000"><xsl:value-of select="Title"/></font></dt>
-</xsl:when>
-<xsl:when test="name(../../..)='Deletion'">
-<dt><strike><xsl:value-of select="Title"/></strike></dt>
-</xsl:when>
-<xsl:otherwise>
- <xsl:apply-templates select="Title" mode="CL"/>
-</xsl:otherwise>
-</xsl:choose>
-</xsl:for-each>
-</dl>
-</xsl:if>
-</xsl:for-each>
-</dl>
-</xsl:when>
-<xsl:otherwise>
-</xsl:otherwise>
-</xsl:choose>
-</xsl:for-each>
-</dl>
-<xsl:apply-templates/>
-</BODY>
+ </BODY>
 </xsl:template>
 
 
@@ -398,15 +333,6 @@
    <xsl:template    match="Insertion/Table">
     <xsl:apply-templates select="." mode="R"/>
     </xsl:template>
-
-  <!-- ====================================================================
-           Display summary titles with insertion tags inside the title tag
-      =================================================================== -->
-
-   <xsl:template   match="Title" mode="CL">
-   <xsl:apply-templates/><br />
-   </xsl:template>
-  
 
 </xsl:transform>]]>
 </CdrDocXml>
