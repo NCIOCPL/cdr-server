@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.54 2002-06-03 12:54:10 bkline Exp $
+ * $Id: tables.sql,v 1.55 2002-06-04 18:50:31 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.54  2002/06/03 12:54:10  bkline
+ * Added index on document type to document table.
+ *
  * Revision 1.53  2002/05/14 16:55:01  ameyer
  * Doubled column width from 32 to 64 chars in link_xml and link_net element
  * names to accomodate possible long XML element names.
@@ -1199,6 +1202,33 @@ CREATE TABLE pub_proc_doc
   CONSTRAINT pub_proc_doc_fk_docver FOREIGN KEY(doc_id, doc_version) 
                                     REFERENCES doc_version)
 GO
+
+/*
+ * Collects information about documents to be remailed in a given job.
+ * Entries in this table normally exist only until the job is
+ * complete, after which they are deleted.  A system crash could
+ * leave useless entries in the table which serve no function and
+ * can be cleaned out if desired.
+ *
+ *          job  Publication job id, foreign key into the pub_proc table.
+ *          doc  Document to be mailed
+ *      tracker  Id of mailer tracking doc for original mailing for
+ *               which this is a remailer.
+ *               There may be more than one for one doc.
+ *    recipient  Id of person or org document for recipient of the
+ *               remailing.  There must be one per tracker.
+ */
+CREATE TABLE remailer_ids
+        (job INTEGER      NOT NULL REFERENCES pub_proc,
+         doc INTEGER      NOT NULL,
+     tracker INTEGER      NOT NULL,
+   recipient INTEGER      NOT NULL,
+  CONSTRAINT remailer_ids_doc_fk FOREIGN KEY (doc) 
+                                 REFERENCES all_docs,
+  CONSTRAINT remailer_ids_tracker_fk FOREIGN KEY (tracker)
+                                     REFERENCES all_docs,
+  CONSTRAINT remailer_ids_recipient_fk FOREIGN KEY (recipient)
+                                       REFERENCES all_docs)
 
 /*
  * View for completed publication events.
