@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.25 2001-12-19 15:45:04 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.26 2002-02-07 14:38:06 bkline Exp $
  *
  */
 
@@ -28,6 +28,8 @@
 #include "CdrLink.h"
 #include "CdrValidateDoc.h"
 #include "CdrXsd.h"
+
+#include <set>
 
 // XXXX For debugging
 #include <iostream>
@@ -599,11 +601,8 @@ static cdr::String CdrPutDoc (
         throw cdr::Exception (L"CdrPutDoc: Attempt to replace doc "
                               L"without existing ID");
 
-    // Attempt to automatically generate fragment ids for fields
-    //   which can, but don't, have them
-    // This may replace the passed in XML with new XML that has
-    //   auto-generated cdr:id attributes in some fields
-    doc.genFragmentIds();
+    // Run all the custom pre-processing routines.
+    doc.preProcess(cmdValidate);
 
     // Start transaction - everything is serialized from here on
     // If any called function throws an exception, CdrServer
@@ -1338,9 +1337,17 @@ void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
     }
 }
 
+// Routines to modify the document before saving or validating.
+void cdr::CdrDoc::preProcess(bool validating)
+{
+    updateProtocolStatus(validating);
+    genFragmentIds();
+}
+
 // Generate unique fragment identifiers for all elements which can have a
 //   cdr:id attribute, but don't have one.
-
+// This may replace the passed in XML with new XML that has
+//   auto-generated cdr:id attributes in some fields
 void cdr::CdrDoc::genFragmentIds ()
 {
     cdr::String xslt;       // XSLT transform for creating fragment ids
@@ -1420,6 +1427,129 @@ void cdr::CdrDoc::genFragmentIds ()
     }
     // Final update of modified lastFragmentId is done when the
     //   document is stored
+}
+
+// Helper function for updateProtocolStatus() below.
+static cdr::String getLeadOrgStatus(const cdr::dom::Node& node,
+                                    cdr::StringList& errList)
+{
+    // Find the LeadOrgProtocolStatuses element.
+    cdr::dom::Node child = node.getFirstChild();
+    cdr::String targetName = L"LeadOrgProtocolStatuses";
+    while (child != 0 && targetName != child.getNodeName())
+        child = child.getNextSibling();
+    if (child == 0) {
+        errList.push_back(L"updateProtocolStatus: missing " + targetName);
+        return L"";
+    }
+
+    // Find the CurrentOrgStatus element.
+    child = child.getFirstChild();
+    targetName = L"CurrentOrgStatus";
+    while (child != 0 && targetName != child.getNodeName())
+        child = child.getNextSibling();
+    if (child == 0) {
+        errList.push_back(L"updateProtocolStatus: missing " + targetName);
+        return L"";
+    }
+
+    // Find the ProtocolStatusName element.
+    child = child.getFirstChild();
+    targetName = L"StatusName";
+    while (child != 0 && targetName != child.getNodeName())
+        child = child.getNextSibling();
+    if (child == 0) {
+        errList.push_back(L"updateProtocolStatus: missing " + targetName);
+        return L"";
+    }
+
+    // Extract the text content.
+    return cdr::dom::getTextContent(child);
+}
+
+// Implements requirement in Protocol Requirements Document 1.5 Status
+// Setting.  Status is based on the status of the lead organization.
+void cdr::CdrDoc::updateProtocolStatus(bool validating)
+{
+    // Nothing to do if this isn't a protocol document or if not validating.
+    if (!validating || TextDocType != L"InScopeProtocol")
+        return;
+
+    // Get a parsed copy of the document so we can examine the org statuses.
+    cdr::dom::Parser  parser;
+    cdr::dom::Element docElement;
+    try {
+        parser.parse(Xml);
+        docElement = parser.getDocument().getDocumentElement();
+    }
+    catch (const cdr::dom::XMLException& e) {
+        // Validation will catch the fact that the document is malformed.
+        return;
+    }
+
+    // Find the statuses for the lead organizations.
+    std::set<cdr::String> statusSet;
+    cdr::dom::Node child = docElement.getFirstChild();
+    cdr::String targetName = L"ProtocolAdminInfo";
+    while (child != 0 && targetName != child.getNodeName()) {
+        //errList.push_back(L"child name is " +
+                //cdr::String(child.getNodeName()));
+        child = child.getNextSibling();
+    }
+    if (child == 0) {
+        errList.push_back(L"updateProtocolStatus: missing " + targetName);
+        return;
+    }
+    child = child.getFirstChild();
+    targetName = L"ProtocolLeadOrg";
+    while (child != 0) {
+        if (targetName == cdr::String(child.getNodeName())) {
+            cdr::String status = getLeadOrgStatus(child, errList);
+            if (!status.empty())
+                statusSet.insert(status);
+        }
+        child = child.getNextSibling();
+    }
+
+    // Decide which status the whole protocol should have.
+    cdr::String status;
+    if (statusSet.find(L"Active") != statusSet.end())
+        status = L"Active";
+    else {
+        if (statusSet.size() > 1)
+            errList.push_back(L"Status mismatch between Lead Organizations.  "
+                              L"Status needs to be checked.");
+        if (statusSet.find(L"Withdrawn") != statusSet.end())
+            status = L"Withdrawn";
+        else if (statusSet.find(L"Temporarily closed") != statusSet.end())
+            status = L"Temporarily Closed";
+        else if (statusSet.find(L"Completed") != statusSet.end())
+            status = L"Completed";
+        else if (statusSet.find(L"Closed") != statusSet.end())
+            status = L"Closed";
+        else if (statusSet.find(L"Approved-not yet active") != statusSet.end())
+            status = L"Approved-not yet active";
+        else {
+            errList.push_back(L"No valid lead organization status found");
+            status = L"No valid lead organization status found.";
+        }
+    }
+
+    // Set the status for the protocol.
+    cdr::FilterParmVector pv;        // Parameters passed to it
+    pv.push_back (std::pair<cdr::String,cdr::String>(L"newStatus", status));
+    cdr::String newXml;
+    cdr::String errorStr;
+    try {
+        newXml = cdr::filterDocumentByScriptTitle(Xml, 
+                                                  L"Set Protocol Status", 
+                                                  docDbConn, &errorStr, &pv);
+    }
+    catch (cdr::Exception e) {
+        errList.push_back(L"Failure setting protocol status: " + 
+                          cdr::String(e.what()));
+    }
+    Xml = newXml;
 }
 
 /**

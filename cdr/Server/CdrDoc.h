@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.11 2001-10-11 19:54:47 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.12 2002-02-07 14:38:06 bkline Exp $
  *
  */
 
@@ -148,6 +148,16 @@ namespace cdr {
             void malFormed();
 
             /**
+             * Walk through an array of pre-processing routines to modify the
+             * document.
+             *
+             *  @param  validating      whether the user has requested
+             *                          validation as part of the save
+             *                          command.
+             */
+            void preProcess(bool validating);
+
+            /**
              * Generate fragment identifiers for all elements for which
              * cdr:id is a legal attribute, but no cdr:id attribute exists.
              *
@@ -163,6 +173,15 @@ namespace cdr {
              * validate the document be sure the id he creates is unique.
              */
             void genFragmentIds ();
+
+            /**
+             * Update the status of a protocol.
+             *
+             *  @param  validating      whether the user has requested
+             *                          validation as part of the save
+             *                          command.
+             */
+            void updateProtocolStatus(bool validating);
 
             // Accessors
             int getId()                    {return Id;}
