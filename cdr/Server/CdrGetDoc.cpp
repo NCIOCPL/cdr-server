@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.13 2001-09-20 20:13:31 mruben Exp $
+ * $Id: CdrGetDoc.cpp,v 1.14 2001-11-06 21:42:10 bkline Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2001/09/20 20:13:31  mruben
+ * added code for accessing versions -- needs testing
+ *
  * Revision 1.12  2001/06/15 02:28:21  ameyer
  * Made request for version=0 fetch current document.
  * Made DocTitle read only.
@@ -53,12 +56,14 @@
 #include "CdrGetDoc.h"
 #include "CdrVersion.h"
 #include "CdrBlob.h"
+#include "CdrFilter.h"
 
 // Local functions.
 static cdr::String fixString(const cdr::String& s);
 static cdr::String makeDocXml(const cdr::String& xml);
 static cdr::String makeDocBlob(const cdr::Blob& blob);
 static cdr::String readOnlyWrap(const cdr::String text, const cdr::String tag);
+static cdr::String denormalizeLinks(const cdr::String&, cdr::db::Connection&);
 
 /**
  * Builds the XML string for a <CdrDoc> element for a document extracted from
@@ -69,7 +74,8 @@ static cdr::String readOnlyWrap(const cdr::String text, const cdr::String tag);
 cdr::String cdr::getDocString(
         const cdr::String&    docIdString,
         cdr::db::Connection&  conn,
-        bool usecdata)
+        bool                  usecdata,
+        bool                  denormalize)
 {
     // Go get the document information.
     int docId = docIdString.extractDocId();
@@ -125,6 +131,10 @@ cdr::String cdr::getDocString(
         cdrDoc += tagWrap (comment, L"DocComment");
     cdrDoc += L"</CdrDocCtl>\n";
 
+    // Denormalize the links if requested.
+    if (denormalize)
+        xml = denormalizeLinks(xml, conn);
+
     // Plug in the body of the document.
     cdrDoc += usecdata ? makeDocXml (xml) : xml;
 
@@ -148,7 +158,8 @@ cdr::String cdr::getDocString(
         const cdr::String&    docIdString,
         cdr::db::Connection&  conn,
         struct cdr::CdrVerDoc *docVer,
-        bool usecdata
+        bool usecdata,
+        bool denormalize
 ) {
     // Extract doc id from string
     int docId = docIdString.extractDocId();
@@ -204,6 +215,11 @@ cdr::String cdr::getDocString(
     if (docVer->comment.size() > 0)
         cdrDoc += readOnlyWrap (docVer->comment, L"DocComment");
 
+    // Denormalize the links if requested.
+    cdr::String xml = docVer->xml;
+    if (denormalize)
+        xml = denormalizeLinks(xml, conn);
+
     // That's all we've got from the doc control
     // Add an end tag for it and fetch xml and blob
     cdrDoc += L"</DocCtl>\n";
@@ -220,10 +236,11 @@ cdr::String cdr::getDocString(
         const cdr::String&    docIdString,
         cdr::db::Connection&  conn,
         int version,
-        bool usecdata
+        bool usecdata,
+        bool denormalize
 ) {
   if (version == 0)
-    return cdr::getDocString(docIdString, conn, usecdata);
+    return cdr::getDocString(docIdString, conn, usecdata, denormalize);
 
   cdr::CdrVerDoc v;
   
@@ -233,7 +250,7 @@ cdr::String cdr::getDocString(
                              + L", version: "
                              + cdr::String::toString(version));
 
-  return cdr::getDocString(docIdString, conn, &v, usecdata);
+  return cdr::getDocString(docIdString, conn, &v, usecdata, denormalize);
 }
 /**
  * Wrap a tag around an element, giving it a readonly attribute.
@@ -385,6 +402,41 @@ cdr::String cdr::getDocCtlString(
 }
 
 /**
+ * Apply denormalization filter to the XML.
+ *
+ *  @param  xml     reference to string representation of xml for document.
+ *  @param  conn    reference to CDR database connection object.
+ *  @return         denormalized xml string.
+ */
+cdr::String denormalizeLinks(const cdr::String& xml, cdr::db::Connection& conn)
+{
+    // Empty parameter list.
+    cdr::FilterParmVector pv;
+
+    // Ignore warnings; exceptions will handle errors.
+    cdr::String dummyErrStr;
+    return cdr::filterDocumentByScriptTitle(xml, 
+                L"Fast Denormalization Filter", conn, &dummyErrStr, &pv);
+}
+
+cdr::String getDocTypeName(const cdr::String& docId, cdr::db::Connection& conn)
+{
+    // Look in the database for the document type.
+    const static char* query =
+        " SELECT name "
+        "   FROM doc_type "
+        "   JOIN document "
+        "     ON document.doc_type = doc_type.id "
+        "  WHERE document.id = ?";
+    cdr::db::PreparedStatement stmt = conn.prepareStatement(query);
+    stmt.setInt(1, docId.extractDocId());
+    cdr::db::ResultSet rslt = stmt.executeQuery();
+    if (!rslt.next())
+        throw cdr::Exception(L"Cannot find document type for document", docId);
+    return rslt.getString(1);
+}
+
+/**
  * Processes CdrGetDoc command
  */
 
@@ -408,6 +460,7 @@ cdr::String cdr::getDoc(cdr::Session& session,
   cdr::String versionDate = L"";    // Look for version checked in before this
   cdr::String versionLabel = L"";   // Label affixed to version
   int         versionNum = 0;       // Version number, 0 = current, -1 = last
+  bool        denorm = true;        // Flag for link denormalization
   struct cdr::CdrVerDoc docVer;     // Filled in by version control
 
 
@@ -423,8 +476,7 @@ cdr::String cdr::getDoc(cdr::Session& session,
         idStr = cdr::dom::getTextContent(child);
         id    = idStr.extractDocId();
       }
-      else
-      if (name == L"DocVersion")
+      else if (name == L"DocVersion")
       {
         // Optional request for version
         version = cdr::dom::getTextContent(child);
@@ -464,7 +516,7 @@ cdr::String cdr::getDoc(cdr::Session& session,
                                   + L"'");
       }
 
-      if (name == L"Lock")
+      else if (name == L"Lock")
       {
         lock = cdr::dom::getTextContent(child);
         if (lock == L"y")
@@ -472,15 +524,21 @@ cdr::String cdr::getDoc(cdr::Session& session,
         else if (lock == L"n")
             lock = L"N";
       }
-      else
-      if (name == L"UserId")
+      else if (name == L"UserId")
         user = cdr::dom::getTextContent(child);
-      if (name == L"DocOffset")
+      else if (name == L"DenormalizeLinks")
+        denorm = cdr::ynCheck(cdr::dom::getTextContent(child), true,
+                              L"DenormalizeLinks");
+      else if (name == L"DocOffset")
         throw cdr::Exception(L"CdrGetDoc offset not yet supported");
-      if (name == L"DocMaxLength")
+      else if (name == L"DocMaxLength")
         throw cdr::Exception(L"CdrGetDoc length not yet supported");
     }
   }
+
+  // Workaround for a bug in Sablotron's XSL/T processor.
+  if (denorm && getDocTypeName(idStr, dbConnection) == L"Filter")
+      denorm = false;
 
   // If lock requested, try to check out doc
   if (lock == L"Y") {
@@ -546,7 +604,7 @@ cdr::String cdr::getDoc(cdr::Session& session,
   // What comes next depends on requested version
   if (versionType == current)
       // Get it from the document table
-      docStr += getDocString (idStr, dbConnection);
+      docStr += getDocString (idStr, dbConnection, true, denorm);
 
   else {
       switch (versionType) {
@@ -586,7 +644,7 @@ cdr::String cdr::getDoc(cdr::Session& session,
       }
 
       // We've retrieved the version, format it into XML
-      docStr += cdr::getDocString (idStr, dbConnection, &docVer);
+      docStr += cdr::getDocString (idStr, dbConnection, &docVer, true, denorm);
   }
 
   // Add xml termination for all
