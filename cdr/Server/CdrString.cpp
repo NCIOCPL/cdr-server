@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.22 2004-05-12 02:46:04 ameyer Exp $
+ * $Id: CdrString.cpp,v 1.23 2004-05-13 15:43:18 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2004/05/12 02:46:04  ameyer
+ * Added trimWhiteSpace().
+ *
  * Revision 1.21  2003/03/14 02:01:40  bkline
  * Fixed garbage returns from cdr::String::getInt().
  *
@@ -249,14 +252,16 @@ cdr::String cdr::trimWhiteSpace (
     const bool trailing
 ) {
     const wchar_t *srcp,            // Pointer to start of source string
-                  *endp;            // Pointer to end of source
+                  *osrcp,           // Original, prior to trim
+                  *endp,            // Pointer to end of source
+                  *oendp;           // Original, prior to trim
     wchar_t       *destp,           // Pointer into dest buffer
                   *bufp;            // Buffer for output
 
 
     // Point to start and end (last non-null char) of source string
-    srcp = inStr.c_str();
-    endp = srcp + wcslen(srcp) - 1;
+    srcp = osrcp = inStr.c_str();
+    endp = oendp = srcp + wcslen(srcp) - 1;
 
     // If we trim leading ws, point past initial whitespace
     if (leading) {
@@ -276,11 +281,16 @@ cdr::String cdr::trimWhiteSpace (
         }
     }
 
+    // If nothing changed, return the original string
+    if (srcp == osrcp && endp == oendp)
+        return inStr;
+
     // Output buffer, big enough for string + last char + null terminator
     // Add to destp before subtracting srcp, else could be negative size
     // Buffer will always be at least one char wide, even if passed
     //   inStr was empty
-    destp = bufp = new wchar_t[(size_t) ((endp + 2) - srcp)];
+    size_t len = (endp + 2) - srcp;
+    destp = bufp = new wchar_t[len];
 
     // Copy - could be more efficient with different cdr::String
     //   constructor, but no big deal
@@ -290,7 +300,7 @@ cdr::String cdr::trimWhiteSpace (
     *destp = (wchar_t) '\0';
 
     // Return copy of string
-    cdr::String outStr = (cdr::String) bufp;
+    cdr::String outStr(bufp, len-1);
     delete[] bufp;
     return outStr;
 }
