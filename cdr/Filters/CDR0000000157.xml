@@ -215,14 +215,25 @@
 
   <!-- Spanish Summaries, Patient -->
           <xsl:otherwise>
+          <xsl:variable         name = "englishID"  
+                              select = "TranslationOf/@cdr:ref"/>
+          <xsl:variable         name = "englishDoc"
+                              select = "document(concat('cdr:', 
+                                                         $englishID, 
+                                                        '/lastp'))"/>
+  <!-- Since no Spanish boards exist the information if a treatment summary
+       is a pediatric study or not has to be extracted from the English
+       version of the document -->
            <xsl:choose>
     <!-- Spanish Summaries, Patient, Treatment -->
-             <xsl:when                   test   = "SummaryMetaData/
+             <xsl:when                     test = "SummaryMetaData/
                                                    SummaryType='Treatment'">
               <xsl:choose>
       <!-- Spanish Summaries, Patient, Treatment, Pediatric -->
                <xsl:when                   test = "contains(
-                                                SummaryMetaData/PDQBoard/Board, 
+                                                $englishDoc/Summary/
+                                                SummaryMetaData/
+                                                PDQBoard/Board, 
                                                               'Pediatric')">
                 <xsl:variable              name = "miscDoc" 
                                          select = "document
