@@ -289,7 +289,7 @@
                                           Purpose         |
                                           EligibilityText | 
                                           TreatmentIntervention">
-  <xsl:apply-templates/>
+  <xsl:apply-templates            mode = "copy"/>
   <xsl:call-template              name = "glossaryDef"/>
  </xsl:template>
 
@@ -465,13 +465,7 @@
  Abstract section
  ============================================================== -->
  <xsl:template                    name = "glossaryDef">
-  <xsl:for-each                 select = "/InScopeProtocol/ProtocolAbstract
-                                          /Patient/Rationale
-                                          /Para/GlossaryTermRef | 
-                                          /ScientificProtocolInfo
-                                          /ProtocolAbstract
-                                          /Patient/Rationale
-                                          /Para/GlossaryTermRef" >
+  <xsl:for-each                 select = ".//GlossaryTermRef">
    <xsl:if                        test = "contains(@cdr:href,'CDR')">
     <xsl:variable                 name = "GlossID" 
                                 select = "@cdr:href"/>
@@ -1564,6 +1558,21 @@
  <!-- 
  ============================================================= 
  Create the Para template including the renamed attribute for 
+ the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+ ============================================================= -->
+ <xsl:template                   match = "Para"
+                                  mode = "copy">
+  <Para>
+   <xsl:attribute                 name = "id">
+    <xsl:value-of               select = "./@cdr:id"/>
+   </xsl:attribute>
+   <xsl:apply-templates/>
+  </Para>
+ </xsl:template>
+
+ <!-- 
+ ============================================================= 
+ Create the Para template including the renamed attribute for 
  the paragraph IDs.
  ============================================================= -->
  <xsl:template                   match = "Para"
@@ -1610,12 +1619,27 @@
  <!--
  =========================================================================
  ========================================================================= -->
- <xsl:template                   match = "DrugName         | Emphasis     | 
-                                          ForeignWord      | GeneName     | 
-                                          InterventionName | Note         |
+ <xsl:template                   match = "DrugName         | Emphasis       | 
+                                          ForeignWord      | GeneName       | 
+                                          InterventionName | Multimedia     |
+                                          Note             | ScientificName |
                                           Strong           |
-                                          Subscript        | Superscript  |
-                                          ScientificName">
+                                          Subscript        | Superscript">
+  <xsl:copy>
+    <xsl:apply-templates/>
+  </xsl:copy>
+ </xsl:template>
+
+ <!--
+ =========================================================================
+ ========================================================================= -->
+ <xsl:template                   match = "DrugName         | Emphasis       | 
+                                          ForeignWord      | GeneName       | 
+                                          InterventionName | Multimedia     |
+                                          Note             | ScientificName |
+                                          Strong           |
+                                          Subscript        | Superscript"
+                                  mode = "copy">
   <xsl:copy>
     <xsl:apply-templates/>
   </xsl:copy>
@@ -1659,17 +1683,33 @@
   </ItemizedList>
  </xsl:template>
 
- <xsl:template                   match = "ListItem">
-  <xsl:copy>
-   <xsl:apply-templates/>
-  </xsl:copy>
- </xsl:template>
-
-
  <!--
  =========================================================================
  ========================================================================= -->
- <xsl:template                   match = "Note">
+ <xsl:template                   match = "ItemizedList"
+                                  mode = "copy">
+  <ItemizedList>
+   <xsl:if                        test = "./@cdr:id">
+    <xsl:attribute                name = "id">
+     <xsl:value-of              select = "./@cdr:id"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:if                        test = "./@Compact">
+    <xsl:attribute                name = "Compact">
+     <xsl:value-of              select = "./@Compact"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:if                        test = "./@Style">
+    <xsl:attribute                name = "Style">
+     <xsl:value-of              select = "./@Style"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:apply-templates         select = "ListTitle"
+                                  mode = "copy"/>
+   <xsl:apply-templates         select = "ListItem"/>
+  </ItemizedList>
+ </xsl:template>
+ <xsl:template                   match = "ListItem">
   <xsl:copy>
    <xsl:apply-templates/>
   </xsl:copy>
@@ -1684,25 +1724,6 @@
    <xsl:apply-templates         select = "@*|node()"
                                   mode = "copy"/>
   </xsl:copy>
- </xsl:template>
-
-
- <!--
- =========================================================================
- ========================================================================= -->
- <xsl:template                   match = "OrderedList">
-  <OrderedList>
-   <xsl:attribute                 name = "id">
-    <xsl:value-of               select = "./@cdr:id"/>
-   </xsl:attribute>
-   <xsl:attribute                 name = "Style">
-    <xsl:value-of               select = "./@Style"/>
-   </xsl:attribute>
-   <xsl:apply-templates         select = "ListTitle"
-                                  mode = "copy"/>
-   <xsl:apply-templates         select = "ListItem"
-                                  mode = "copy"/>
-  </OrderedList>
  </xsl:template>
 
 
