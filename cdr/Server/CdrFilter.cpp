@@ -1,9 +1,15 @@
 /*
- * $Id: CdrFilter.cpp,v 1.41 2004-02-19 22:12:36 ameyer Exp $
+ * $Id: CdrFilter.cpp,v 1.42 2004-02-20 00:34:42 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.41  2004/02/19 22:12:36  ameyer
+ * Reorganized code in order to add new function filterDocumentByScriptSetName().
+ * Took some code out of existing functions in order to centralize filter
+ * set processing, whether being called from a C++ function or by the command
+ * processor to process an XML transaction.
+ *
  * Revision 1.40  2003/11/18 16:29:54  bkline
  * Added code to insert unmapped values into the external_map table
  * so the External Map Failure report would be able to let the users
@@ -947,7 +953,7 @@ cdr::String cdr::filterDocumentByScriptTitle (
 }
 
 // Version that accepts name of filter set
-cdr::String filterDocumentByScriptSetName (
+cdr::String cdr::filterDocumentByScriptSetName (
     const cdr::String&     document,
     const cdr::String&     setName,
     cdr::db::Connection&   connection,
@@ -956,8 +962,6 @@ cdr::String filterDocumentByScriptSetName (
     cdr::FilterParmVector* parms,
     cdr::String            doc_id
 ) {
-std::cout << "Entering filterDocumentByScriptSetName"
-
     // Resolve setName into vector of filter XML strings
     vector<cdr::String> filters;
     getFilterSetXml (connection, setName, version, filters);
