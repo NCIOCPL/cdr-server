@@ -1,10 +1,13 @@
 
 /*
- * $Id: CdrModUsr.cpp,v 1.3 2000-05-03 15:25:41 bkline Exp $
+ * $Id: CdrModUsr.cpp,v 1.4 2001-04-11 14:38:54 bkline Exp $
  *
  * Modifies the attributes and group assignments for an existing CDR user.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/05/03 15:25:41  bkline
+ * Fixed database statement creation.
+ *
  * Revision 1.2  2000/04/23 01:25:07  bkline
  * Added function-level comment header.
  *
@@ -33,7 +36,7 @@ cdr::String cdr::modUsr(cdr::Session& session,
     // Extract the data elements from the command node.
     cdr::StringList grpList;
     cdr::String uName, password, fullName(true), office(true), email(true),
-                phone(true), comment(true);
+                phone(true), comment(true), newName(true);
     cdr::dom::Node child = commandNode.getFirstChild();
     while (child != 0) {
         if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
@@ -54,8 +57,8 @@ cdr::String cdr::modUsr(cdr::Session& session,
                 comment = cdr::dom::getTextContent(child);
             else if (name == L"GrpName")
                 grpList.push_back(cdr::dom::getTextContent(child));
-            else if (name == L"Comment")
-                comment = cdr::dom::getTextContent(child);
+            else if (name == L"NewName")
+                newName = cdr::dom::getTextContent(child);
         }
         child = child.getNextSibling();
     }
@@ -74,6 +77,8 @@ cdr::String cdr::modUsr(cdr::Session& session,
     int usrId = usrRs.getInt(1);
 
     // Update the row for the user
+    if (newName.size() > 0)
+        uName = newName;
     conn.setAutoCommit(false);
     query = "UPDATE usr"
             "   SET name     = ?,"
