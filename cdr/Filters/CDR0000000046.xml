@@ -15,6 +15,7 @@
      ==================================================================== -->
 <!-- Written by Cheryl Burg 8-2-2001 -->
 <!-- Modified to make changes to reference formats 6/26-7/30/2002-->
+<!-- Modified to fix format problems with book references 9/20/2002 CB -->
 <!-- =====================================================================
      Select data elements to be copied and add tags when an incomplete
      node is copied 
@@ -140,7 +141,17 @@
 <xsl:for-each select="$RefInfo/Citation/PDQCitation/AuthorList/Author">
 <xsl:if test="not(CollectiveName)">
 <xsl:value-of select="LastName"/><xsl:text> </xsl:text>
-<xsl:value-of select="FirstName"/><xsl:text>, </xsl:text>
+<xsl:value-of select="FirstName"/>
+<xsl:if test="position()!=last()">
+<xsl:text>, </xsl:text>
+</xsl:if>
+<xsl:if test="position()=last() and $RefInfo/Citation/PDQCitation/AuthorList/@Complete='Yes'">
+<xsl:text>: </xsl:text>
+</xsl:if>
+<xsl:if test="position()=last() and $RefInfo/Citation/PDQCitation/AuthorList/@Complete='No'">
+<xsl:text>, </xsl:text>
+</xsl:if>
+
 </xsl:if>
 <xsl:if test="CollectiveName">
 <xsl:value-of select="CollectiveName"/>
@@ -152,7 +163,13 @@
 <xsl:text>et al.: </xsl:text>
 </xsl:if>
 <xsl:if test="$RefInfo/Citation/PDQCitation/AuthorList/@Complete='Yes'">
+<xsl:if test="$RefInfo/Citation/PDQCitation/AuthorList/@Editors='Yes'">
 <xsl:text> eds.: </xsl:text>
+</xsl:if>
+<xsl:if test="CollectiveName">
+<xsl:text>:  </xsl:text>
+</xsl:if>
+
 </xsl:if>
 </xsl:if>
 <xsl:if test="$RefInfo/Citation/PDQCitation/AuthorList/@Editors='Yes'">
