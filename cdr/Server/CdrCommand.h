@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.9 2000-05-10 20:29:50 mruben Exp $
+ * $Id: CdrCommand.h,v 1.10 2000-05-21 00:53:13 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2000/05/10 20:29:50  mruben
+ * added declaration for DOMtoString
+ *
  * Revision 1.8  2000/05/09 21:09:40  bkline
  * More ccdoc comments.
  *
@@ -456,6 +459,22 @@ namespace cdr {
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
     extern String DOMtoString(const dom::Node&);
+
+    /**
+     * Shuts down the CDR Server.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database error occurs or the user
+     *                          is not authorized to shut down the server.
+     */
+    extern String shutdown   (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 }
 
 #endif
