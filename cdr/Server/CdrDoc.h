@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.20 2004-02-20 00:36:10 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.21 2004-11-05 05:22:40 ameyer Exp $
  *
  */
 
@@ -138,7 +138,7 @@ namespace cdr {
              *
              *  @return void        Throws exception in the event of error
              */
-            void Store ();
+            void store ();
 
             /**
              * Replaces the rows in the query_term table for the current
@@ -269,19 +269,21 @@ namespace cdr {
             int getId()                    {return Id;}
             int getDocType()               {return DocType;}
             int getRevFilterLevel()        {return revFilterLevel;}
-            bool getNeedsReview()          {return NeedsReview;}
-            cdr::String getTextId()        {return TextId;}
-            cdr::String getValStatus()     {return ValStatus;}
-            cdr::String getValDate()       {return ValDate;}
-            cdr::String getActiveStatus()  {return ActiveStatus;}
+            int getBlobId()                {return blobId; }
+            bool getNeedsReview()          {return needsReview;}
+            cdr::String getTextId()        {return textId;}
+            cdr::String getValStatus()     {return valStatus;}
+            cdr::String getValDate()       {return valDate;}
+            cdr::String getActiveStatus()  {return activeStatus;}
             cdr::String getDbActiveStatus(){return dbActiveStatus;}
-            cdr::String getTextDocType()   {return TextDocType;}
-            cdr::String getTitle()         {return Title;}
+            cdr::String getTextDocType()   {return textDocType;}
+            cdr::String getTitle()         {return title;}
             cdr::String getXml()           {return Xml;}
-            cdr::String getComment()       {return Comment;}
+            cdr::String getComment()       {return comment;}
+            cdr::Blob   getBlobData()      {return blobData;}
             cdr::db::Connection& getConn() {return docDbConn;}
             cdr::dom::Element& getDocumentElement() {return docElem;}
-            void setValStatus(const cdr::String& vs) { ValStatus = vs; }
+            void setValStatus(const cdr::String& vs) { valStatus = vs; }
 
             // Get errors as an STL list of strings
             cdr::StringList& getErrList() {return errList;}
@@ -336,30 +338,32 @@ namespace cdr {
             // Values corresponding to document table data
             int Id;                     // Numeric form of document id
             int DocType;                // Internal key to document type
-            cdr::String TextId;         // With "CDR00..." prefix
-            cdr::String ValStatus;      // V(alid) I(nvalid)
+            cdr::String textId;         // With "CDR00..." prefix
+            cdr::String valStatus;      // V(alid) I(nvalid)
                                         //   U(nvalidated) M(alformed)
-            cdr::String ValDate;        // Datetime
-            cdr::String ActiveStatus;   // 'A', 'I', 'D' - may change
-            cdr::String dbActiveStatus; // ActiveStatus in database, before chg
-            cdr::String TextDocType;    // Form used in document tag
-            cdr::String Title;          // External title
+            cdr::String valDate;        // Datetime
+            cdr::String activeStatus;   // 'A', 'I', 'D' - may change
+            cdr::String dbActiveStatus; // activeStatus in database, before chg
+            cdr::String textDocType;    // Form used in document tag
+            cdr::String title;          // External title
             cdr::String Xml;            // Actual document as XML, not CDATA
             cdr::String revisedXml;     // After any filtering of insertion
-                                        //  and deletion markup
+                                        //   and deletion markup
             cdr::String schemaXml;      // Schema text for this doc
-            cdr::Blob   BlobData;       // Associated non-XML, if any
-            cdr::String Comment;        // Free text
+            cdr::Blob   blobData;       // Associated non-XML, if any
+                                        //   Only loaded if exists and needed
+            cdr::String comment;        // Free text
             cdr::dom::Element docElem;  // Top node of a parsed document
-            bool NeedsReview;           // True=User marked doc as needing it
+            bool needsReview;           // True=User marked doc as needing it
             bool parsed;                // True=parse was attempted
             bool malformed;             // True=parse failed
             bool revFilterFailed;       // True=Revision filtering failed
             int  revFilterLevel;        // Filtering done at this level
             int  requestedFilterLevel;  // Level requested in constructor
             int  schemaDocId;           // Doc id for the schema for this doc
-            int  titleFilterId;         // Filter id for constructing Title
+            int  titleFilterId;         // Filter id for constructing title
             int  lastFragmentId;        // Last used generated cdr:id number
+            int  blobId;                // ID of blob we just store, if any
             cdr::StringList errList;    // Errors from validation, parsing,
                                         //   filtering, or wherever.
             ContentOrControl conType;   // Treat as content or control info
