@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.41 2004-04-30 01:31:17 ameyer Exp $
+ * $Id: CdrServer.cpp,v 1.42 2005-03-04 02:57:23 ameyer Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.41  2004/04/30 01:31:17  ameyer
+ * Added call to cdr::buildFilterString2IdMap() to initialize filter profiling.
+ *
  * Revision 1.40  2004/03/31 03:29:22  ameyer
  * Revised exception handling.  Now rethrowing OS level structured
  * exceptions as CDR exceptions.
@@ -201,6 +204,7 @@ main(int ac, char **av)
     if (ac > 1) {
         port = atoi(av[1]);
         SET_HEAP_DEBUGGING(true);
+        std::cout << "heap debugging\n" << std::endl;
     }
 
     // Find out whether we should suppress command logging.
@@ -546,7 +550,16 @@ void processCommands(int fd, const std::string& buf,
     if (logCommands)
         logCommand(conn, buf);
     try {
-        cdr::dom::Parser parser;
+        // Create a parser for the entire command set.
+        // This does NOT use thread static memory to control all parse
+        //   trees.
+        // Do NOT use this technique lower down unless you really understand
+        //   the memory model of the Xerces parser, the cdr::dom::Parser,
+        //   your part of the application, and any parts of the application
+        //   above you that could conceivably be affected.
+        cdr::dom::Parser parser(false);
+
+        // Parse the buffer
         parser.parse(buf);
         cdr::dom::Document document = parser.getDocument();
         if (document == 0) {
@@ -575,8 +588,16 @@ void processCommands(int fd, const std::string& buf,
                     session.lookupSession(sessionId, conn);
                     session.setLastActivity(conn);
                 }
-                else if (elementName == L"CdrCommand")
+                else if (elementName == L"CdrCommand") {
+                    // Process one command
                     response += processCommand(session, n, conn, when);
+
+                    // Delete any/all DOM parsers and trees allocated for
+                    //   this thread during the processing of the command
+                    // Note that the parse tree for the command set is
+                    //   unaffected by this
+                    cdr::dom::Parser::deleteAllThreadParsers();
+                }
             }
             n = n.getNextSibling();
         }
@@ -651,6 +672,8 @@ cdr::String processCommand(cdr::Session& session,
                                 + session.getUserName();
 
             cdr::log::pThreadLog->Write (L"processCommand", cmdText);
+// DEBUG
+domLog("Processing ", cmdText);
 
             cdr::Command cdrCommand = cdr::lookupCommand(cmdName);
             if (!cdrCommand) {
@@ -663,6 +686,7 @@ cdr::String processCommand(cdr::Session& session,
                                           + L"</Err>\n  </Errors>\n"
                                           + L" </CdrResponse>\n");
             }
+
             cdr::String cmdResponse;
             try {
                 /*
