@@ -1,0 +1,693 @@
+<CdrDoc Type='Filter' Id='CDR0000305740'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Denormalization Filter (1/1): InScope Protocol - NEW</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<!-- To Do:
+     Need to sort out the problem with two matching OrganizationLocation
+       templates
+     Need to fix ContactDetailParent Template -->
+     
+<!--
+     Denormalization Filter: InScope Protocol
+     Creator:  Volker Englisch
+     Created:  04/01/2002
+     Modified: 10/29/2002
+     Modified: 2002-12-02
+-->
+
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                          xmlns:cdrscr = "cips.nci.nih.gov/cdr/script"
+                           xmlns:exslt = "http://www.exslt.org/functions"
+               exclude-result-prefixes = "cdrscr"
+            extension-element-prefixes = "exslt"
+                               version = "1.0">
+
+ <xsl:include href = "cdr:name:Module: PersonLocations Denormalization"/>
+
+ <xsl:output                    method = "xml" 
+                  omit-xml-declaration = "no"
+                              encoding = "UTF-8"/> 
+
+ <!--                                          
+ ==================================================================
+ Custom scripting for terminology upcoding support.
+ ================================================================== -->
+ <exslt:script       implements-prefix = "cdrscr"
+                              language = "ecmascript">
+
+    // Global collection of links we've already processed.
+    var seenThese = new Object();
+
+    // Construct a URI for a new base term.  Note that invoking this
+    // function has the intended side effect of initializing the
+    // set of parents we have already seen to an empty set.
+    function newUri(nodeSet) { 
+        var cdrId = nodeSet[0];
+        seenThese = new Object(); 
+        return "cdr:" + cdrId + "/lastp"; 
+    }
+
+    // Check to see if we have already picked up this parent term.
+    // If we haven't, say no but remember it so we can say yes next
+    // time.
+    function seenMe(nodeSet) {
+        var cdrId = nodeSet[0];
+        if (seenThese[cdrId])
+            return 1;
+        seenThese[cdrId] = 1;
+        return 0;
+    }
+
+  <xsl:fallback>
+   <xsl:text>ECMAScript extensions are not supported!</xsl:text>
+  </xsl:fallback>
+ </exslt:script>
+ 
+ <xsl:variable                    name = "pa_hp" 
+                                select = "/InScopeProtocol
+                                          /ProtocolAbstract/Professional |
+                                          /ScientificProtocolInfo
+                                          /ProtocolAbstract/Professional"/>
+ <xsl:variable                    name = "pa_p" 
+                                select = "/InScopeProtocol
+                                          /ProtocolAbstract/Patient |
+                                          /ScientificProtocolInfo
+                                          /ProtocolAbstract/Patient"/>
+ <xsl:variable                    name = "org_loc" 
+                                select = "/Organization/OrganizationLocations
+                                          /OrganizationLocation/Location"/>
+ <xsl:variable                    name = "hpDisc"
+                                select = "concat(
+                                          'Protocol Health Professional ',
+                                          'Abstract Disclaimer;Protocol ',
+                                          'health professional abstract ',
+                                          'disclaimer')"/>
+ <xsl:variable                    name = "patDisc"
+                                select = "concat(
+                                          'Protocol patient abstract ',
+                                          'disclaimer;Protocol patient ',
+                                          'abstract disclaimer')"/>
+
+ <!-- *
+ ==================================================================
+ Copy everything AS IS and invoke matched templates by default.
+ ================================================================== -->
+ <xsl:template                   match = "InScopeProtocol |
+                                          ScientificProtocolInfo">
+  <xsl:copy>
+   <xsl:apply-templates         select = "document('cdrutil:/docid')"/>
+   <xsl:apply-templates         select = "document('cdr:/*/CdrCtl')"/>
+
+   <xsl:apply-templates/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!-- *
+ ==============================================================
+ Template Professional sections
+ Copy all nodes and add the ProfessionalDisclaimer
+ ============================================================== -->
+ <xsl:template                   match = "Professional">
+  <xsl:element                    name = "{name()}">
+   <xsl:for-each                select = "child::node()">
+    <xsl:copy-of                select = "."/>
+   </xsl:for-each>
+
+  <!-- Adding the Professional Disclaimer from the Misc Documents 
+       ========================================================== -->
+   <ProfessionalDisclaimer>
+    <xsl:variable                 name = "miscDoc1" 
+                                select = "document(concat('cdr:name:',
+                                                          $hpDisc,
+                                                          '/lastp'))"/>
+    <xsl:apply-templates        select = "$miscDoc1/MiscellaneousDocument
+                                                   /MiscellaneousDocumentText">
+     <xsl:with-param              name = "miscDocId"
+                                select = "'_ProtHPDisclaimer'"/>
+    </xsl:apply-templates>
+   </ProfessionalDisclaimer>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- *
+ ==================================================================
+ MiscellaneousDocumentText Template
+ ================================================================== -->
+ <xsl:template                   match = "MiscellaneousDocumentText">
+  <xsl:param                      name = "miscDocId"/>
+  <xsl:apply-templates          select = "Section/Para|Para"
+                                  mode = "miscDoc">
+   <xsl:with-param                name = "miscDocId" 
+                                select = "$miscDocId"/>
+  </xsl:apply-templates>
+ </xsl:template>
+
+
+ <!-- *
+ ==============================================================
+ Template Patient sections
+ Copy all nodes, perform denormalization and add the 
+ PatientDisclaimer
+
+ Note:  The only links in the Patient section are Glossary 
+        Links.  These are denormalized on the fly for the QC
+        reports and the vendors are to normalize these on their
+        own.  Therefore there is no need to denormalize these 
+        links and all children can be copied as is.
+ ============================================================== -->
+ <xsl:template                   match = "Patient">
+  <xsl:element                    name = "{name()}">
+   <xsl:for-each                select = "child::node()">
+    <xsl:copy-of                select = "."/>
+   </xsl:for-each>
+
+  <!-- Adding the Patient Disclaimer from the Misc Documents 
+       ========================================================== -->
+   <PatientDisclaimer>
+    <xsl:variable                 name = "miscDoc2" 
+                                select = "document(concat('cdr:name:',
+                                                          $patDisc,
+                                                          '/lastp'))"/>
+    <xsl:apply-templates        select = "$miscDoc2/MiscellaneousDocument
+                                                   /MiscellaneousDocumentText">
+     <xsl:with-param              name = "miscDocId"
+                                select = "'_ProtPatientDisclaimer'"/>
+    </xsl:apply-templates>
+   </PatientDisclaimer>
+  </xsl:element>
+ </xsl:template>
+
+
+<!-- *
+ ==============================================================
+ Template Intervention
+ Denormalization and upcoding of InterventionType and 
+ InterventionNameLink
+ ============================================================== -->
+ <xsl:template                   match = "Intervention">
+  <xsl:element                    name = "{name()}">
+   <xsl:variable                  name = "IntervenID" 
+                                select = "InterventionType/@cdr:ref"/>
+   <!-- 
+   ===============================================================
+   Don't eliminate the call to cdrscr:newUri(); we need the side
+   effect!
+   =============================================================== -->
+   <xsl:variable                  name = "uri"
+                                select = "cdrscr:newUri($IntervenID)"/>
+   <xsl:variable                  name = "IntervenInfo" 
+                                select = "document($uri)"/>
+   <InterventionType>
+    <Term>
+     <xsl:for-each              select = "InterventionType/@*">
+      <xsl:attribute              name = "{name()}">
+       <xsl:value-of            select = "."/>
+      </xsl:attribute>
+     </xsl:for-each>
+
+     <xsl:copy-of               select = "$IntervenInfo/Term/PreferredName"/>
+
+     <!-- 
+     ====================================================
+     Upcode the parent terms
+     ==================================================== -->
+     <xsl:call-template           name = "upcodeTerm">
+      <xsl:with-param             name = "termDoc"
+                                select = "$IntervenInfo"/>
+      <xsl:with-param             name = "parentElementName"
+                                select = "'Term'"/>
+     </xsl:call-template>
+
+    </Term>
+   </InterventionType>
+
+   <xsl:for-each                select = "InterventionNameLink">
+    <xsl:if                       test = "@cdr:ref">
+     <xsl:variable                name = "IntervenNameID"
+                                select = "@cdr:ref"/>
+     <xsl:variable                name = "IntervenNameInfo" 
+                                select = "document(concat('cdr:',
+                                                          $IntervenNameID, 
+                                                          '/lastp'))"/>
+     <InterventionNameLink>
+      <Term>
+       <xsl:for-each            select = "@*">
+        <xsl:attribute            name = "{name()}">
+         <xsl:value-of          select = "."/>
+        </xsl:attribute>
+       </xsl:for-each>
+       <xsl:copy-of             select = "$IntervenNameInfo/Term/
+                                           PreferredName"/>
+      </Term>
+     </InterventionNameLink>
+    </xsl:if>
+   </xsl:for-each>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- *
+ ==============================================================
+ Template for Condition
+ ============================================================== -->
+ <xsl:template                   match = "Condition">
+  <!-- 
+  ========================================================
+  Resolving the Condition to include ConditionParent.
+  Don't eliminate the call to cdrscr:newUri(); we rely on
+  its side effect!
+  ======================================================== -->
+  <xsl:variable                   name = "CondID" 
+                                select = "@cdr:ref"/>
+  <xsl:variable                   name = "uri"
+                                select = "cdrscr:newUri($CondID)"/>
+  <xsl:variable                   name = "CondInfo" 
+                                select = "document($uri)"/>
+
+  <xsl:element                    name = "{name()}">
+   <Term>
+    <xsl:for-each               select = "@*">
+     <xsl:attribute               name = "{name()}">
+      <xsl:value-of             select = "."/>
+     </xsl:attribute>
+    </xsl:for-each>
+    <xsl:copy-of                select = "$CondInfo/Term/PreferredName"/>
+
+    <!-- 
+    ====================================================
+    Upcode the parent terms
+    ==================================================== -->
+    <xsl:call-template            name = "upcodeTerm">
+     <xsl:with-param              name = "termDoc"
+                                select = "$CondInfo"/>
+     <xsl:with-param              name = "parentElementName"
+                                select = "'Term'"/>
+    </xsl:call-template>
+
+   </Term>
+  </xsl:element>
+ </xsl:template>
+
+
+
+ <!-- *
+ ==============================================================
+ Template for Diagnosis
+ ============================================================== -->
+ <xsl:template                   match = "Diagnosis">
+  <!--
+  ========================================================
+  Resolving the Diagnosis to include SpecificDiagnosis and
+  DiagnosisParent.  Don't eliminate the call to 
+  cdrscr:newUri(); we rely on its side effect!
+  ======================================================== -->
+   <xsl:variable                  name = "DiagID" 
+                                select = "@cdr:ref"/>
+   <xsl:variable                  name = "uri"
+                                select = "cdrscr:newUri($DiagID)"/>
+   <xsl:variable                  name = "DiagInfo" 
+                                select = "document($uri)"/>
+
+   <xsl:element                   name = "{name()}">
+    <Term>
+     <xsl:for-each              select = "@*">
+      <xsl:attribute              name = "{name()}">
+       <xsl:value-of            select = "."/>
+      </xsl:attribute>
+     </xsl:for-each>
+     <xsl:copy-of              select = "$DiagInfo/Term/PreferredName"/>
+
+    <!-- 
+    ====================================================
+    Upcode the parent terms
+    ==================================================== -->
+    <xsl:call-template            name = "upcodeTerm">
+     <xsl:with-param              name = "termDoc"
+                                select = "$DiagInfo"/>
+     <xsl:with-param              name = "parentElementName"
+                                select = "'Term'"/>
+    </xsl:call-template>
+
+    </Term>
+   </xsl:element>
+ </xsl:template>
+
+
+ <!-- *
+ ==============================================================
+ Template for extracting Glossary Term definitions for Patient
+ Abstract section
+ ============================================================== -->
+ <xsl:template                   match = "ExclusionCriteria | Gene">
+  <!-- 
+  ========================================================
+  Resolving the Exclusion Criteria                         
+  ======================================================== -->
+  <xsl:variable                   name = "ExcludeID" 
+                                select = "@cdr:ref"/>
+  <xsl:variable                   name = "ExcludeInfo" 
+                                select = "document(concat('cdr:',
+                                                          $ExcludeID, 
+                                                          '/lastp'))"/>
+  <xsl:element                    name = "{name()}">
+   <Term>
+    <xsl:for-each               select = "@*">
+     <xsl:attribute               name = "{name()}">
+      <xsl:value-of             select = "."/>
+     </xsl:attribute>
+    </xsl:for-each>
+    <xsl:copy-of               select = "$ExcludeInfo/Term/PreferredName"/>
+   </Term>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- *
+ ==================================================================
+ Template for displaying RelatedProtocols section.
+ If no publishable version of the protocol exists, a pseudo-protocol
+ fragment is being created to allow the users to preview the 
+ entered information.  The vendor filter will have to filter out 
+ this protocol to prevent it from going out to the vendor.
+ An attribute Publishable="No" has been introduced to identify these
+ invalid protocols.
+ ================================================================== -->
+ <xsl:template                  match = "RelatedProtocols | RelatedWebsites">
+    <xsl:choose>
+     <xsl:when                   test = "name() = 'RelatedProtocols'">
+      <xsl:variable              name = "relProtRef"
+                               select = "@cdr:ref"/>
+      <xsl:variable              name = "prot_uri"
+                               select = "concat('cdrx:', $relProtRef,
+                                                '/lastp')"/>
+      <xsl:variable              name = "protocolDoc"
+                               select = "document($prot_uri)"/>
+
+      <!--  
+      Do not display the RelatedProtocols element if that protocol
+      is not marked as publishable                                
+      ============================================================ -->
+      <xsl:choose>
+      <xsl:when                  test = "$protocolDoc/InScopeProtocol">
+       <xsl:element              name = "{name()}">
+        <InScopeProtocol>
+         <xsl:for-each         select = "@*">
+          <xsl:attribute         name = "{name()}">
+           <xsl:value-of         select = "."/>
+          </xsl:attribute>
+         </xsl:for-each>
+         <xsl:copy-of          select = "$protocolDoc/InScopeProtocol/
+                                         ProtocolIDs"/>
+         <xsl:for-each         select = "$protocolDoc/InScopeProtocol/
+                                         ProtocolTitle">
+          <xsl:copy-of         select = "."/>
+         </xsl:for-each>
+        </InScopeProtocol>
+       </xsl:element>
+      </xsl:when>
+      <!-- Create the information for protocols that are not publishable -->
+      <xsl:otherwise>
+       <xsl:element              name = "{name()}">
+        <InScopeProtocol>
+         <xsl:for-each         select = "@*">
+          <xsl:attribute         name = "{name()}">
+           <xsl:value-of         select = "."/>
+          </xsl:attribute>
+          <xsl:attribute         name = "Publishable">
+           <xsl:value-of         select = "'No'"/>
+          </xsl:attribute>
+         </xsl:for-each>
+         <ProtocolIDs><PrimaryID><IDString>
+          <xsl:text>***WARNING: Document is not publishable. ***</xsl:text>
+         </IDString></PrimaryID></ProtocolIDs>
+         <ProtocolTitle>
+          <xsl:attribute         name = "Type">
+           <xsl:text>Professional</xsl:text>
+          </xsl:attribute>
+          <xsl:text>***WARNING: Document is not publishable. ***</xsl:text>
+         </ProtocolTitle>
+         <ProtocolTitle>
+          <xsl:attribute         name = "Type">
+           <xsl:text>Patient</xsl:text>
+          </xsl:attribute>
+          <xsl:text>***WARNING: Document is not publishable. ***</xsl:text>
+         </ProtocolTitle>
+         <ProtocolTitle>
+          <xsl:attribute         name = "Type">
+           <xsl:text>Original</xsl:text>
+          </xsl:attribute>
+          <xsl:text>***WARNING: Document is not publishable. ***</xsl:text>
+         </ProtocolTitle>
+
+        </InScopeProtocol>
+       </xsl:element>
+      </xsl:otherwise>
+     </xsl:choose>
+
+
+      <!-- 
+      Do display the RelatedProtocolsForQC element even if that protocol
+      is not marked as publishable but indicate this as a warning
+      message                                                      
+      ================================================================== -->
+
+       <!-- 
+       Don't stop processing if the link cannot be resolved. 
+       Note:  The message is never displayed with the terminate=No 
+              attribute but it is caught as part of the validation 
+              (The handling of the message = No is implementation 
+               dependend)
+       =========================================================== -->
+       <xsl:if                   test = "not($protocolDoc/InScopeProtocol)">
+        <xsl:message        terminate = "no">
+         <xsl:text>Publishable Version of Related Protocol </xsl:text>
+         <xsl:text>document </xsl:text>
+         <xsl:value-of         select = "substring-after(
+                                          substring-before($prot_uri, '/'), 
+                                                                      ':')"/>
+         <xsl:text> does not exist.&lt;BR/&gt;</xsl:text>
+        </xsl:message> 
+       </xsl:if>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:copy>
+       <xsl:copy-of            select = "."/>
+      </xsl:copy>
+     </xsl:otherwise>
+    </xsl:choose>
+ </xsl:template>
+
+
+ <!-- *
+ ==============================================================
+ Template Published Results section
+ ============================================================== -->
+ <xsl:template                  match = "Citation">
+  <Citation>
+   <xsl:attribute                name = "cdr:ref">
+    <xsl:value-of              select = "@cdr:ref"/>
+   </xsl:attribute>
+   <xsl:variable                 name = "citRef"
+                               select = "@cdr:ref"/>
+   <xsl:variable                 name = "citInfo" 
+                               select = "document(concat('cdr:', $citRef,
+                                                            '/lastp'))"/>
+
+   <xsl:apply-templates        select = "$citInfo/Citation/PDQCitation | 
+                                         $citInfo/Citation/PubmedArticle"/>
+
+  </Citation>
+ </xsl:template>
+
+
+
+ <!-- *
+ ==============================================================
+ Template PublishedIn section
+ ============================================================== -->
+ <xsl:template                  match = "PublishedIn">
+  <xsl:element                   name = "{name()}">
+   <xsl:for-each               select = "@*">
+    <xsl:attribute               name = "{name()}">
+     <xsl:value-of             select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+
+   <xsl:variable                 name = "citRef"
+                               select = "@cdr:ref"/>
+   <xsl:variable                 name = "citInfo" 
+                               select = "document(concat('cdr:', $citRef,
+                                                            '/lastp'))"/>
+   <xsl:copy-of                select = "$citInfo/Citation"/>
+
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- *
+ ==============================================================
+ Template for Protocol Admin section
+ ============================================================== -->
+ <xsl:template                  match = "LeadOrganizationID">
+  <xsl:call-template             name = "getOrganization"/>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Extract the information for one lead organization.
+ =================================================================== -->
+ <xsl:template                   match = "ProtocolSites">
+  <xsl:element                    name = "{name()}">
+   <xsl:for-each                select = "OrgSite/OrgSiteID | 
+                                          OrgSite/PrivatePracticeSite">
+    <xsl:call-template            name = "getOrganization"/>
+   </xsl:for-each>
+
+  </xsl:element>
+ </xsl:template>
+
+
+
+ <!-- *
+ ============================================================= 
+ Create the Para template including the renamed attribute for 
+ the paragraph IDs.
+ ============================================================= -->
+ <xsl:template                   match = "Para"
+                                 mode  = "miscDoc">
+  <xsl:param                     name  = "miscDocId"/>
+  <Para>
+   <xsl:attribute                 name = "id">
+    <xsl:value-of               select = "$miscDocId"/>
+    <xsl:value-of               select = "./@cdr:id"/>
+   </xsl:attribute>
+   <xsl:apply-templates/>
+  </Para>
+ </xsl:template>
+
+
+
+
+ <!-- *
+ ===================================================================
+ Called Templates
+ =================================================================== --> 
+ <!-- *
+ ===================================================================
+ Bring in the parents for a terminology document.  Called by at
+ least three places in this script.
+ =================================================================== -->
+ <xsl:template                    name = "upcodeTerm">
+  <xsl:param                      name = "termDoc"/>
+  <xsl:param                      name = "parentElementName"/>
+
+  <!-- 
+  =================================================================
+  There can be more than one parent!
+  ================================================================= -->
+  <xsl:for-each                 select = "$termDoc/Term
+                                           /TermRelationship/ParentTerm
+                                           /TermId">
+
+   <!-- 
+   ================================================================
+   Filter out duplicates.
+   ================================================================ -->
+   <xsl:if                        test = "not(cdrscr:seenMe(@cdr:ref))">
+    <xsl:variable                 name = "uri"
+                                select = "concat('cdr:', @cdr:ref, '/lastp')"/>
+    <xsl:variable                 name = "parent"
+                                select = "document($uri)"/>
+
+    <!-- 
+    ===============================================================
+    The Parent Term is only printed if it is not of TermTypeName = 
+    Header term | Obsolete term
+    =============================================================== -->
+    <xsl:if                       test = "not($parent/Term/
+                                              TermType/TermTypeName = 
+                                              'Header term') and
+                                          not($parent/Term/
+                                              TermType/TermTypeName = 
+                                              'Obsolete term')">
+     <xsl:element                 name = "{$parentElementName}">
+      <xsl:for-each             select = "@*">
+       <xsl:attribute             name = "{name()}">
+        <xsl:value-of           select = "."/>
+       </xsl:attribute>
+      </xsl:for-each>
+      <xsl:copy-of             select = "$parent/Term/PreferredName"/>
+     </xsl:element>
+    </xsl:if>
+
+    <!-- 
+    ===============================================================
+    Even if we skip this parent, we keep crawling up the hierarchy,
+    looking for ancestor terms which do meet the criteria (per Lakshmi,
+    2002-12-02).
+    =============================================================== -->
+    <xsl:call-template            name = "upcodeTerm">
+     <xsl:with-param              name = "termDoc"
+                                select = "$parent"/>
+     <xsl:with-param              name = "parentElementName"
+                                select = "$parentElementName"/>
+    </xsl:call-template>
+   </xsl:if>
+  </xsl:for-each>
+ </xsl:template>
+
+
+ <!-- *
+ ===================================================================
+ Upcoding the Parent Names for the address block.
+ =================================================================== -->
+ <xsl:template                    name = "upcode-parentname">  
+  <xsl:param                      name = "ParentDoc"/> 
+  <OrganizationName>
+   <xsl:value-of                select = "$ParentDoc/Organization/
+                                          OrganizationNameInformation/
+                                          OfficialName/Name"/>
+  </OrganizationName>
+
+  <xsl:if                         test = "$ParentDoc/Organization/
+                                           OrganizationParent/
+                                           ParentOrganization/@cdr:ref">
+   <xsl:variable                  name = "nextParentID" 
+                                select = "$ParentDoc/Organization/
+                                           OrganizationParent/
+                                           ParentOrganization/@cdr:ref"/>
+   <xsl:variable                  name = "nextParentDoc" 
+                                select = "document(concat('cdr:',
+                                                          $nextParentID,
+                                                          '/last'))"/>
+
+   <xsl:call-template             name = "upcode-parentname">    
+    <xsl:with-param               name = "ParentDoc"
+                                select = "$nextParentDoc"/>
+   </xsl:call-template>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- *
+ =========================================================================
+ ========================================================================= -->
+ <xsl:template match="node() | @*">
+  <xsl:copy>
+   <xsl:apply-templates select="@* | node()" />
+  </xsl:copy>
+ </xsl:template>
+
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
