@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.10 2002-07-26 23:59:33 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.11 2002-08-01 19:17:15 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2002/07/26 23:59:33  bkline
+ * Extra parameter for Person Location Picklist.
+ *
  * Revision 1.9  2002/06/07 13:53:18  bkline
  * Added missing fragment id for participating org personnel.
  *
@@ -500,7 +503,6 @@ namespace
     i = parm.find(L"PrivatePracticeOnly");
     if (i != parm.end())
         privatePracticeOnly = i->second;
-    std::wcout << L"privatePracticeOnly=" << privatePracticeOnly << L"\n";
     cdr::String filterName = L"Person Locations Picklist";
     cdr::FilterParmVector parms;
     parms.push_back(std::pair<cdr::String, cdr::String>(L"docId", docId));
