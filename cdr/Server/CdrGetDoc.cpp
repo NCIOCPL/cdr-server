@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.17 2002-03-06 21:56:42 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.18 2002-03-28 22:19:31 ameyer Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2002/03/06 21:56:42  bkline
+ * Caught reference to cdr::Exception instead of object.
+ *
  * Revision 1.16  2002/01/31 22:40:49  ameyer
  * Restored missing lines that broke return of type and id attributes when
  * getting a verions.  Must have inadvertently deleted them sometime.
@@ -503,7 +506,7 @@ cdr::String denormalizeLinks(const cdr::String& xml, cdr::db::Connection& conn)
         denormXml = cdr::filterDocumentByScriptTitle(xml,
                 L"Fast Denormalization Filter", conn, &dummyErrStr, &pv);
     }
-    catch (cdr::Exception& e) {
+    catch (cdr::Exception&) {
         // Can't do it, just return what we had
         denormXml = xml;
     }
