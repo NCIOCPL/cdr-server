@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!--
-    $Id: GlossarySchema.xml,v 1.13 2002-06-07 13:54:13 arkd Exp $
+    $Id: GlossarySchema.xml,v 1.14 2003-04-09 19:06:37 bkline Exp $
 
     $Log: not supported by cvs2svn $
+    Revision 1.13  2002/06/07 13:54:13  arkd
+    All the "string" types changed for "NotEmptyString".
+
     Revision 1.12  2002/05/29 17:55:31  arkd
     Comment added before DateLastModified.
 
@@ -77,13 +80,15 @@
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
       <element       name            = 'TermDefinition'
-                     type            = 'PhraseLevel'/>
+                     type            = 'GlossaryDefinition'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'SpanishTermName'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
       <element       name            = 'SpanishTermDefinition'
-                     type            = 'PhraseLevel'
-                     minOccurs       = '0'/>
+                     type            = 'GlossaryDefinition'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'TermSource'
                      type            = 'TermSource'/>
       <element       name            = 'TermType'
@@ -106,6 +111,27 @@
     </sequence>
     <attribute       name            = 'xmlns:cdr'
                      type            = 'anyURI'
+                     minOccurs       = '0'/>
+    <attribute       name            = 'Dictionary'
+                     type            = 'Exclude'
+                     minOccurs       = '0'/>
+  </complexType>
+
+  <complexType       name            = 'GlossaryDefinition'
+                     mixed           = 'true'>
+    <choice          minOccurs       = '0'
+                     maxOccurs       = 'unbounded'>
+      <group         ref             = 'PhraseElements'/>
+      <group         ref             = 'CommonTextElements'/>
+    </choice>
+    <attribute       name            = 'Audience'
+                     type            = 'HealthProfessional'
+                     minOccurs       = '0'/>
+    <attribute       name            = 'cdr:id'
+                     type            = 'NotEmptyString'
+                     minOccurs       = '0'/>
+    <attribute       name            = 'PdqKey'
+                     type            = 'NotEmptyString'
                      minOccurs       = '0'/>
   </complexType>
 
@@ -141,6 +167,18 @@
     <restriction     base            = 'NotEmptyString'>
       <enumeration   value           = 'Approved'/>
       <enumeration   value           = 'Pending'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'Exclude'>
+    <restriction     base            = 'NotEmptyString'>
+      <enumeration   value           = 'Exclude'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'HealthProfessional'>
+    <restriction     base            = 'NotEmptyString'>
+      <enumeration   value           = 'HealthProfessional'/>
     </restriction>
   </simpleType>
 
