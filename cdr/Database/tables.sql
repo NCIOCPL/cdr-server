@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.87 2003-10-29 16:32:32 bkline Exp $
+ * $Id: tables.sql,v 1.88 2003-11-10 13:42:58 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.87  2003/10/29 16:32:32  bkline
+ * Backed out some NOT NULL restrictions on ctgov_import to accomodate
+ * new requirements.
+ *
  * Revision 1.86  2003/10/23 14:32:33  bkline
  * Added tables to support import of documents from ClinicalTrials.gov.
  *
@@ -1774,7 +1778,7 @@ GO
 /*
  * Table for tracking documents downloaded from NLM's CancerTrials.gov site.
  *
- *       nlm_id  uniquely identifies the document withing CT.gov
+ *       nlm_id  uniquely identifies the document within CT.gov
  *        title  official title, if present; otherwise brief title
  *          xml  unmodified XML document as downloaded from NLM
  *   downloaded  date/time of download
@@ -1796,4 +1800,42 @@ CREATE TABLE ctgov_import
      changed DATETIME          NULL,
       cdr_id INTEGER           NULL REFERENCES all_docs,
      comment NTEXT             NULL)
+GO
+CREATE INDEX ctgov_import_title ON ctgov_import(title)
+GO
+CREATE INDEX ctgov_import_down  ON ctgov_import(downloaded)
+GO
+
+/*
+ * Record of each CTGovProtocol import job.
+ *
+ *           id  primary key for table
+ *           dt  datetime job was run
+ */
+CREATE TABLE ctgov_import_job
+         (id INTEGER IDENTITY PRIMARY KEY,
+          dt DATETIME NOT NULL)
+GO
+CREATE INDEX ctgov_import_job_dt ON ctgov_import_job(dt)
+GO
+
+/*
+ * Remembers what happened to each document processed by a given
+ * CTGov import job.
+ *
+ *          job  foreign key into ctgov_import_job table
+ *       nlm_id  foreign key into ctgov_import table
+ *          new  'Y' if this is the first import of the document; otherwise 'N'
+ * needs_review  'Y' if NLM made changes which might affect PDQ indexing;
+ *               otherwise 'N'
+ *  pub_version  'Y' if a publishable version was created; otherwise 'N'
+ */
+CREATE TABLE ctgov_import_event
+        (job INTEGER     NOT NULL REFERENCES ctgov_import_job,
+      nlm_id VARCHAR(16) NOT NULL REFERENCES ctgov_import,
+      locked CHAR(1)     NOT NULL DEFAULT 'N',
+         new CHAR(1)         NULL,
+needs_review CHAR(1)         NULL,
+ pub_version CHAR(1)         NULL,
+  CONSTRAINT ctgov_import_event_pk PRIMARY KEY(job, nlm_id))
 GO
