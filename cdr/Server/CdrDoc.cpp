@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.9 2001-02-27 18:31:16 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.10 2001-05-10 02:07:23 ameyer Exp $
  *
  */
 
@@ -339,18 +339,21 @@ static cdr::String CdrPutDoc (
     cdr::db::Connection& dbConn,
     bool newrec
 ) {
-    cdr::String cmdCheckIn,     // Checkin flag from command
-                cmdValidate,    // Validate flag from command
-                cmdReason;      // Reason to associate with new version
+    bool cmdCheckIn,            // True=Check in doc, else doc still locked
+         cmdVersion,            // True=Create new version in version control
+         cmdValidate;           // True=Perform validation, else just store
+    cdr::String cmdReason,      // Reason to associate with new version
+                errorStr;       // Error string returned by validation
     cdr::dom::Node topNode,     // Top level node in command
                    child,       // Child node in command
                    docNode;     // Node containing CdrDoc
 
 
     // Default values, may be replace by elements in command
+    cmdVersion  = false;
+    cmdValidate = true;
+
     // Default reason is NULL created by cdr::String contructor
-    cmdValidate = L"Y";
-    cmdCheckIn  = L"N";
     cmdReason   = L"";
 
     // Parse command to get document and relevant parts
@@ -359,11 +362,19 @@ static cdr::String CdrPutDoc (
         if (topNode.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String name = topNode.getNodeName();
 
+            // User must specify whether to check-in (unlock) the
+            //   document or leave it locked
             if (name == L"CheckIn")
-                cmdCheckIn = cdr::dom::getTextContent (topNode);
+                cmdCheckIn = cdr::ynCheck (cdr::dom::getTextContent (topNode),
+                                           false, L"CheckIn");
+
+            else if (name == L"Version")
+                cmdVersion = cdr::ynCheck (cdr::dom::getTextContent (topNode),
+                                           false, L"Version");
 
             else if (name == L"Validate")
-                cmdValidate = cdr::dom::getTextContent (topNode);
+                cmdValidate = cdr::ynCheck (cdr::dom::getTextContent (topNode),
+                                           false, L"Validate");
 
             else if (name == L"Reason")
                 cmdReason = cdr::dom::getTextContent (topNode);
@@ -403,20 +414,21 @@ static cdr::String CdrPutDoc (
         throw cdr::Exception (L"CdrPutDoc: Attempt to replace doc "
                               L"without existing ID");
 
-    // Can perform schema validation before starting transaction
-    if (cmdValidate == L"Y") {
-        // XXXX
-        ;
-    }
-
     // Start transaction - everything is serialized from here on
     // If any called function throws an exception, CdrServer
     //   will catch it and perform a rollback
     dbConn.setAutoCommit (false);
 
     // If new record, store it so we can get the new ID
-    if (newrec)
+    if (newrec) {
         doc.Store ();
+
+        // If we need to store a version, the user must check it out first
+        // But he can't have done that for a new record, so we do it now
+        if (cmdVersion)
+            cdr::checkOut (session, doc.getId(), dbConn,
+                           L"Temp checkout by addDoc", false);
+    }
 
     else {
         // Is document locked by this or another user?
@@ -462,28 +474,43 @@ static cdr::String CdrPutDoc (
                     L"Storing document not allowed");
     }
 
-    // Perform link validation if requested
-    // Must be inside transaction wrapper
-    if (cmdValidate == L"Y") {
-        // XXXX Call link validation, link table update
+    // If new record, store it so we can get the new ID
+    // Perform validation if requested
+    errorStr = L"";
+    if (cmdValidate) {
         // Any other validation
         // Set valid_status and valid_date in the doc object
         // Will overwrite whatever is there
-        ;
+        errorStr = cdr::execValidateDoc (doc, cdr::UpdateUnconditionally);
     }
 
-    // If no errors, store it
+    // If we haven't already done so, store it
     if (!newrec)
         doc.Store ();
 
     // Add support for queries.
     doc.updateQueryTerms();
 
-    // Check-in to version control if requested
-    int version = 0;
-    if (cmdCheckIn == L"Y")
-        version = cdr::checkIn (session, doc.getId(), dbConn,
-                                &cmdReason, 0, 0);
+    // Checkin must be performed either to checkin or version the doc.
+    // If versioning without long term checkin, then an immediate
+    //   re-checkout is required.
+    if (cmdCheckIn || cmdVersion) {
+
+        // "abandon" parameter on checkIn tells version control to
+        //   NOT create a new version.
+        bool vcAbandon = true;
+        if (cmdVersion)
+            vcAbandon = false;
+
+        // Perform checkIn and (possibly) versioning
+        cdr::checkIn (session, doc.getId(), dbConn, &cmdReason, vcAbandon);
+
+        // If user wants to keep his lock on the document, we check it out
+        //    again.
+        if (!cmdCheckIn)
+            cdr::checkOut (session, doc.getId(), dbConn,
+                           L"Continue editing after versioning");
+    }
 
     // Append audit info
     auditDoc (dbConn, doc.getId(), session.getUserId(), action,
@@ -494,11 +521,10 @@ static cdr::String CdrPutDoc (
     dbConn.setAutoCommit (true);
 
     // Return string with errors, etc.
-    // XXXX - FIX THIS
     cdr::String rtag = newrec ? L"Add" : L"Rep";
     cdr::String resp = cdr::String (L"  <Cdr") + rtag + L"DocResp>\n"
                      + L"   <DocId>" + doc.getTextId() + L"</DocId>\n"
-                     + L"  </Cdr" + rtag + L"DocResp>\n";
+                     + errorStr + L"  </Cdr" + rtag + L"DocResp>\n";
     return resp;
 
 } // CdrPutDoc
@@ -515,9 +541,7 @@ cdr::String cdr::delDoc (
     const cdr::dom::Node& cmdNode,
     cdr::db::Connection& conn
 ) {
-    cdr::String cmdValidate,    // Validate flag from command
-                cmdReason,      // Reason to associate with new version
-                cmdCheckIn,     // Check-in command, Y or N, if present
+    cdr::String cmdReason,      // Reason to associate with new version
                 docIdStr,       // Doc id in string form
                 docTypeStr;     // Doc type in string form
     int         docId,          // Doc id as unadorned integer
@@ -525,8 +549,8 @@ cdr::String cdr::delDoc (
                 userId,         // User invoking this command
                 outUserId,      // User with the doc checked out, if it is
                 errCount;       // Number of link releated errors
-    bool        abandon,        // True=checkin not requested, abandon checkout
-                autoCommitted;  // True=Not inside SQL transaction at start
+    bool        autoCommitted,  // True=Not inside SQL transaction at start
+                cmdValidate;    // True=Validate that nothing links to doc
     cdr::dom::Node topNode,     // Top level node in command
                    child,       // Child node in command
                    docNode;     // Node containing CdrDoc
@@ -536,8 +560,9 @@ cdr::String cdr::delDoc (
 
     // Default values, may be replace by elements in command
     // Default reason is NULL created by cdr::String contructor
-    cmdValidate = L"Y";
+    cmdValidate = true;
     cmdReason   = L"";
+    docId       = -1;
 
     // Parse incoming command
     topNode = cmdNode.getFirstChild();
@@ -551,10 +576,8 @@ cdr::String cdr::delDoc (
             }
 
             else if (name == L"Validate")
-                cmdValidate = cdr::dom::getTextContent (topNode);
-
-            else if (name == L"CheckIn")
-                cmdCheckIn = cdr::dom::getTextContent (topNode);
+                cmdValidate = cdr::ynCheck (cdr::dom::getTextContent (topNode),
+                                           false, L"Validate");
 
             else if (name == L"Reason")
                 cmdReason = cdr::dom::getTextContent (topNode);
@@ -599,25 +622,22 @@ cdr::String cdr::delDoc (
     // Has anyone got this document checked out?
     // If not, that's okay.  We don't require a check-out in order to
     //   delete a document - as long as no one else has it checked out.
+    // However if it is checked out we'll check it in.  Won't allow
+    //   a deleted document to stay checked out.
     userId = session.getUserId();
     if (isCheckedOut(docId, conn, &outUserId)) {
         if (outUserId != userId)
             throw cdr::Exception (L"Document " + docIdStr + L" is checked out"
                                   L" by another user");
 
-        // If it's checked out and check in was requested, we'll check it in
-        // Otherwise we abandon any checkout
-        abandon = (cmdCheckIn == L"Y" || cmdCheckIn == L"y") ? false : true;
-        checkIn (session, docId, conn, &cmdReason, abandon, false);
+        // If it's checked out, we'll check it in
+        checkIn (session, docId, conn, &cmdReason, false, false);
     }
-    else if (cmdCheckIn == L"Y" || cmdCheckIn == L"y")
-        throw cdr::Exception (L"Must check-out document before check-in");
 
     // Update the link net to delete links from this document
     // If validation was requested, we tell CdrDelLinks to abort if
     //   there are any links _to_ this document
-    vRule =  (cmdValidate == L"Y" || cmdValidate == L"y") ?
-             UpdateIfValid : UpdateUnconditionally;
+    vRule = cmdValidate ? UpdateIfValid : UpdateUnconditionally;
 
     errCount = cdr::link::CdrDelLinks (conn, docId, vRule, errList);
 
@@ -707,6 +727,48 @@ static void auditDoc (
     stmt.setString (4, program);
     stmt.setString (5, comment);
     cdr::db::ResultSet rs = stmt.executeQuery();
+}
+
+
+/**
+ * External command interface to updating query terms for a doc.
+ */
+cdr::String cdr::reIndexDoc (
+    cdr::Session&         session,
+    const cdr::dom::Node& commandNode,
+    cdr::db::Connection&  dbConnection
+) {
+    int         docId;      // Doc id from transaction
+    cdr::String docIdStr,   // String form "CDR00..."
+                name;       // Element name
+
+
+    // Get document id from command
+    cdr::dom::Node node = commandNode.getFirstChild();
+    while (node != 0) {
+
+        if (node.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            name = node.getNodeName();
+            if (name != L"DocId")
+                throw cdr::Exception (L"reIndexDoc: Element '" + name
+                                    + L"' in CdrReindexDocs request is "
+                                      L"currently unsupported");
+
+            docIdStr = cdr::dom::getTextContent (node);
+            docId    = docIdStr.extractDocId();
+        }
+
+        node = node.getNextSibling();
+    }
+
+    // Construct CdrDoc for this document
+    cdr::CdrDoc doc(dbConnection, docId);
+
+    // Update the index table
+    doc.updateQueryTerms();
+
+    // Failures are impossible - except for internal exceptions
+    return (L"<CdrReindexResp/>");
 }
 
 
