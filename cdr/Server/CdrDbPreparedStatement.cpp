@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbPreparedStatement.cpp,v 1.1 2000-05-03 15:17:10 bkline Exp $
+ * $Id: CdrDbPreparedStatement.cpp,v 1.2 2000-08-10 15:00:22 bkline Exp $
  *
  * Implementation of class for prepared CDR SQL queries.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/05/03 15:17:10  bkline
+ * Initial revision
+ *
  */
 
 #include <iostream>
@@ -90,7 +93,7 @@ void cdr::db::PreparedStatement::setString(int pos, const cdr::String& val)
     Parameter* p = new Parameter;
     p->position  = pos;
     p->cType     = SQL_C_WCHAR;
-    p->sType     = val.size() > 2000 ? SQL_WLONGVARCHAR : SQL_WVARCHAR;
+    p->sType     = val.size() >= 2000 ? SQL_WLONGVARCHAR : SQL_WVARCHAR;
     if (val.isNull()) {
         p->len   = 1; // Required by ODBC even for NULL data!
         p->value = 0;
