@@ -1,9 +1,13 @@
 /*
- * $Id: CdrCommand.cpp,v 1.2 2000-04-15 14:08:44 bkline Exp $
+ * $Id: CdrCommand.cpp,v 1.3 2000-04-16 21:42:25 bkline Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/15 14:08:44  bkline
+ * Changed cdr::DbConnection* to cdr::db::Connection&.  Replaced stub
+ * for cdr::logon with real implementation.
+ *
  * Revision 1.1  2000/04/13 17:08:10  bkline
  * Initial revision
  */
@@ -71,13 +75,13 @@ cdr::String cdr::logon(cdr::Session& session,
                        cdr::db::Connection& dbConnection) {
     return stub(L"Logon");
 }
-#endif
 
 cdr::String cdr::logoff(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
                         cdr::db::Connection& dbConnection) {
     return stub(L"Logoff");
 }
+#endif
 
 cdr::String cdr::checkAuth(cdr::Session& session, 
                            const cdr::dom::Node& commandNode,
