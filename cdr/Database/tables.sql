@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.42 2001-10-22 11:54:33 bkline Exp $
+ * $Id: tables.sql,v 1.43 2001-11-02 20:43:10 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.42  2001/10/22 11:54:33  bkline
+ * Added email column to put_proc.
+ *
  * Revision 1.41  2001/10/19 14:19:56  bkline
  * Added 'external' column to pub_proc table.
  *
@@ -282,6 +285,7 @@ CREATE TABLE format
  *               this type.
  * title_filter  Identifier (document id) of XSLT filter for generating
  *               a document title from this document type.
+ *       active  'Y' for document types currently in use; otherwise 'N'.
  *      comment  optional free-text description of additional characteristics
  *               of documents of this type.
  */
@@ -296,6 +300,7 @@ CREATE TABLE doc_type
  schema_date DATETIME NOT NULL DEFAULT GETDATE(),
          css NTEXT NOT NULL,
 title_filter INT REFERENCES ALL_DOCS (ID) NULL,
+      active CHAR NOT NULL DEFAULT 'Y'
      comment VARCHAR(255) NULL)
 
 /* 
