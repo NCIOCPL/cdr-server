@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.16 2002-01-31 21:35:09 mruben Exp $
+ * $Id: CdrFilter.cpp,v 1.17 2002-02-01 22:08:01 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2002/01/31 21:35:09  mruben
+ * changed default format for current date
+ *
  * Revision 1.15  2002/01/23 18:23:13  mruben
  * Changed components of CdrDocCtl from uri
  *
@@ -346,7 +349,7 @@ namespace
       case MH_LEVEL_ERROR:
       {
         wostringstream msg;
-        msg << L"XSLT error: code: " << code;
+        msg << L"XSLT error: code: " << code << L"\n";
         if (fields != NULL)
           while (*fields != NULL)
             msg << cdr::String(*(fields++)) << L"\n";
