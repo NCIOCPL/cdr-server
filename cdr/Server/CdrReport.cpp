@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.11 2002-08-01 19:17:15 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.12 2002-09-08 12:27:21 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2002/08/01 19:17:15  bkline
+ * Removed debugging output.
+ *
  * Revision 1.10  2002/07/26 23:59:33  bkline
  * Extra parameter for Person Location Picklist.
  *
@@ -40,6 +43,7 @@
 
 #include <cstdio>
 #include <map>
+#include <vector>
 #include <sstream>
 #include <string>
 
@@ -272,6 +276,23 @@ namespace
                                   cdr::db::Connection& dbConnection,
                                   cdr::Report::ReportParameters parm);
   };
+
+#if 0
+  /*************************************************************************/
+  /* Find linked documents (direct or indirect) except Citations.          */
+  /*************************************************************************/
+  class PublishLinkedDocs : public cdr::Report
+  {
+    public:
+      PublishLinkedDocs() : 
+          cdr::Report("Publish Linked Docs") {}
+
+    private:
+      virtual cdr::String execute(cdr::Session& session,
+                                  cdr::db::Connection& dbConnection,
+                                  cdr::Report::ReportParameters parm);
+  };
+#endif
 
   /*
    * Methods ('execute') which specialize the behavior for each report.
@@ -687,6 +708,92 @@ namespace
     return result.str();
   }
 
+#if 0
+struct TargetDoc { 
+    int id; 
+    cdr::String docType; 
+    TargetDoc(int i, const cdr::String& dt) : id(i), docType(dt) {}
+};
+
+  cdr::String PublishLinkedDocs::execute(cdr::Session& session,
+                                         cdr::db::Connection& dbConnection,
+                                         cdr::Report::ReportParameters parm)
+  {
+    ReportParameters::iterator i = parm.find(L"DocType");
+    if (i == parm.end())
+      throw cdr::Exception(L"Must specify DocType");
+    cdr::String docType = i->second;
+
+    // Get the XML for the filter we'll use repeatedly.
+    cdr::String filterXml = getNamedFilter(L"Dated Actions", dbConnection);
+
+    // Get a list of documents of this type which have dated actions.
+    char * query = "SELECT DISTINCT n.source_doc,        "
+                   "                n.target_doc,        "
+                   "                t.name               "
+                   "           FROM link_net n           "
+                   "           JOIN document d           "
+                   "             ON d.id = n.target_doc  "
+                   "           JOIN doc_type t           "
+                   "             ON t.id = d.doc_type    "
+                   "          WHERE t.name <> 'Citation' ";
+      
+    cdr::db::Statement select = dbConnection.createStatement();
+    cdr::db::ResultSet rs = select.executeQuery(query);
+    std::map<int, std::vector<TargetDoc> > links;
+    while (rs.next())
+    {
+      int sourceDoc = rs.getInt(1);
+      int targetDoc = rs.getInt(2);
+      cdr::String docType = rs.getString(3);
+      TargetDoc td(targetDoc, docType);
+      if (links.find(sourceDoc) == links.end())
+          links[sourceDoc] = std::vector<TargetDoc>();
+      links[sourceDoc].push_back(td);
+    }
+#if 0
+    cdr::FilterParmVector parms;
+#endif
+    wostringstream result;
+    result << L"<ReportBody><![CDATA[\n"
+              L"<ReportName>" << getName() << L"</ReportName>\n";
+
+#if 1
+    result << L"Built map for " << links.size() << L"linking docs";
+#else
+    // Have to collect these and close the query so filter module can get the
+    // documents.  Ideally, we'd like to put together a local struct
+    // definition to package id+title pairs together, but the C++ language (or
+    // at least Microsoft's implementation of it) does not allow for types
+    // without external linkage as template arguments.
+    std::vector<int> ids;
+    std::vector<cdr::String> titles;
+    while (rs.next())
+    {
+      ids.push_back(rs.getInt(1));
+      titles.push_back(rs.getString(2));
+    }
+    select.close();
+    std::vector<int>::iterator idIter = ids.begin();
+    std::vector<cdr::String>::const_iterator titleIter = titles.begin();
+    while (idIter != ids.end())
+    {
+      cdr::String docXml = getDocumentXml(*idIter, dbConnection);
+      result << L"<ReportRow><DocId>"
+             << cdr::stringDocId(*idIter++)
+             << L"</DocId><DocTitle>"
+             << *titleIter++
+             << L"</DocTitle>"
+             << cdr::filterDocument(docXml, filterXml, dbConnection, 0, &parms)
+             << L"</ReportRow>";
+    }
+
+#endif
+    result << L"]]></ReportBody>\n";
+    return result.str();
+  }
+#endif
+
   // Instantiations of report objects.
   Inactive                      inactive;
   LeadOrgPicklist               leadOrgPicklist;
@@ -695,6 +802,9 @@ namespace
   PersonAddressFragment         personAddressFragment;
   ParticipatingOrgs             participatingOrgs;
   DatedActions                  datedActions;
+#if 0
+  PublishLinkedDocs             publishLinkedDocs;
+#endif
 }
 
 /**
