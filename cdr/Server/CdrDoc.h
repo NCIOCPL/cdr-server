@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.9 2001-08-01 00:00:10 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.10 2001-09-25 15:07:25 ameyer Exp $
  *
  */
 
@@ -49,6 +49,13 @@ namespace cdr {
      *     etc.
      */
     const int INDEX_POS_WIDTH = 4;
+
+    /**
+     * Maximum number of ordinal positions representable at one level.
+     * The number is so high that it's inconceivable that any actual
+     * document could reach it.
+     */
+    const int MAX_INDEX_ELEMENT_POS = 0x7FFFFFFF;
 
     /**
      * Class for manipulating CDR documents - adding, replacing and deleting.
@@ -140,6 +147,23 @@ namespace cdr {
              */
             void malFormed();
 
+            /**
+             * Generate fragment identifiers for all elements for which
+             * cdr:id is a legal attribute, but no cdr:id attribute exists.
+             *
+             * The fragment identifier is a unique (within the document)
+             * value of the form "_n" where n is a number starting at 1
+             * and going up as high as necessary.  The last used number
+             * is stored with the row for the document in the document
+             * table, so that the next time this routine is invoked,
+             * no fragment id will be re-used.
+             *
+             * Generating fragment ids saves the user the time of generating
+             * them and keeps him from having to search the and/or
+             * validate the document be sure the id he creates is unique.
+             */
+            void genFragmentIds ();
+
             // Accessors
             int getId()                    {return Id;}
             int getDocType()               {return DocType;}
@@ -155,7 +179,7 @@ namespace cdr {
             cdr::dom::Element& getDocumentElement() {return docElem;}
 
             // Get errors as an STL list of strings
-            cdr::StringList getErrList() {return errList;}
+            cdr::StringList& getErrList() {return errList;}
 
             // Get errors packed as a single string - only if there are any
             cdr::String getErrString() {
@@ -176,10 +200,10 @@ namespace cdr {
             cdr::String ActiveStatus;   // Y/N
             cdr::String TextDocType;    // Form used in document tag
             cdr::String Title;          // External title
-            cdr::String titleFilter;    // Filter id for constructin Title
             cdr::String Xml;            // Actual document as XML, not CDATA
             cdr::String revisedXml;     // After any filtering of insertion
                                         //  and deletion markup
+            cdr::String schemaXml;      // Schema text for this doc
             cdr::Blob   BlobData;       // Associated non-XML, if any
             cdr::String Comment;        // Free text
             cdr::dom::Element docElem;  // Top node of a parsed document
@@ -187,6 +211,9 @@ namespace cdr {
             bool malformed;             // True=parse failed
             bool revFilterFailed;       // True=Revision filtering failed
             int  revFilterLevel;        // Filtering done at this level
+            int  schemaDocId;           // Doc id for the schema for this doc
+            int  titleFilterId;         // Filter id for constructing Title
+            int  lastFragmentId;        // Last used generated cdr:id number
             cdr::StringList errList;    // Errors from validation, parsing,
                                         //   filtering, or wherever.
 
@@ -220,8 +247,12 @@ namespace cdr {
 
             /**
              * Generate a title for a document using an XSLT filter, if
-             * one is available.  Otherwise use an existing title (probably
-             * supplied by a user).  Or create an error title.
+             * one is available.
+             *
+             * Always creates a title, either from titleFilterId, if one
+             * exists, or from a literal default string.  If an existing
+             * user supplied title must be preserved, don't call this
+             * function.
              */
             void cdr::CdrDoc::createTitle();
     };
