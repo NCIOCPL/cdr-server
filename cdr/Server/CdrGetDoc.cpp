@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.10 2001-06-12 20:55:03 ameyer Exp $
+ * $Id: CdrGetDoc.cpp,v 1.11 2001-06-12 22:37:23 bkline Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2001/06/12 20:55:03  ameyer
+ * Added ActiveStatus to output.
+ *
  * Revision 1.9  2001/03/13 22:15:09  mruben
  * added ability to use CdrDoc element for filter
  *
@@ -45,7 +48,6 @@
 #include "CdrBlob.h"
 
 // Local functions.
-static cdr::String encodeBlob(const cdr::Blob& blob);
 static cdr::String fixString(const cdr::String& s);
 static cdr::String makeDocXml(const cdr::String& xml);
 static cdr::String makeDocBlob(const cdr::Blob& blob);
@@ -250,8 +252,9 @@ static cdr::String makeDocXml (
 static cdr::String makeDocBlob (
     const cdr::Blob& blob
 ) {
+    cdr::String encodedBlob = blob.encode();
     return (L"<CdrDocBlob encoding='base64'>"
-            +  encodeBlob(blob) +  L"\n</CdrDocBlob>\n");
+            +  encodedBlob +  L"\n</CdrDocBlob>\n");
 }
 
 
@@ -302,63 +305,6 @@ cdr::String cdr::getDocCtlString(
     cdrDoc += L"</CdrDocCtl>\n";
 
     return cdrDoc;
-}
-
-cdr::String encodeBlob(const cdr::Blob& blob)
-{
-    wchar_t *buf = 0;
-    static const wchar_t codes[] = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                   L"abcdefghijklmnopqrstuvwsyz"
-                                   L"0123456789+/";
-    const wchar_t pad = L'=';
-    try {
-        size_t nBytes = blob.size();
-        size_t nChars = (nBytes /  3 + 1) * 4   // encoding bloat
-                      + (nBytes / 76 + 1) * 2;  // line breaks
-        wchar_t* buf = new wchar_t[nChars];
-        size_t i = 0;
-        wchar_t* p = buf;
-        size_t charsInLine = 0;
-        while (i < nBytes) {
-            switch (nBytes - i) {
-            case 1:
-                p[0] = codes[(blob[i + 0] >> 2)                    & 0x3F];
-                p[1] = codes[(blob[i + 0] << 4)                    & 0x3F];
-                p[2] = pad;
-                p[3] = pad;
-                break;
-            case 2:
-                p[0] = codes[(blob[i + 0] >> 2)                    & 0x3F];
-                p[1] = codes[(blob[i + 0] << 4 | blob[i + 1] >> 4) & 0x3F];
-                p[2] = codes[(blob[i + 1] << 2)                    & 0x3F];
-                p[3] = pad;
-                break;
-            default:
-                p[0] = codes[(blob[i + 0] >> 2)                    & 0x3F];
-                p[1] = codes[(blob[i + 0] << 4 | blob[i + 1] >> 4) & 0x3F];
-                p[2] = codes[(blob[i + 1] << 2 | blob[i + 2] >> 6) & 0x3F];
-                p[3] = codes[(blob[i + 2])                         & 0x3F];
-                break;
-            }
-            i += 3;
-            p += 4;
-            charsInLine += 4;
-            if (charsInLine >= 76) {
-                *p++ = L'\r';
-                *p++ = L'\n';
-                charsInLine = 0;
-            }
-        }
-
-        // Release buffer and return as string
-        cdr::String retval = cdr::String(buf, p - buf);
-        delete [] buf;
-        return retval;
-    }
-    catch (...) {
-        delete [] buf;
-        throw;
-    }
 }
 
 /**
