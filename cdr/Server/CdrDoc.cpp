@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.27 2002-02-08 14:31:49 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.28 2002-02-12 23:09:42 ameyer Exp $
  *
  */
 
@@ -208,10 +208,8 @@ cdr::CdrDoc::CdrDoc (
     if (Xml.size() == 0)
         throw cdr::Exception (L"CdrDoc: Missing required 'Xml' element");
 
-    // If a title should be system generated, replace whatever came
-    //   in with the transaction
-    if (titleFilterId > 0)
-        createTitle();
+    // Generate a title, or use an existing one, or create an error title
+    createTitle();
 
 } // CdrDoc ()
 
@@ -1050,25 +1048,23 @@ cdr::String cdr::CdrDoc::getRevisionFilteredXml (
 void cdr::CdrDoc::createTitle()
 {
     // If a filter is available, use it
-    // This check should already have been done and th
     if (titleFilterId > 0) {
 
         // If revision markup not yet filtered, filter it now.
         // This is needed because it might affect the title generation fields
         cdr::String xml = getRevisionFilteredXml(DEFAULT_REVISION_LEVEL, true);
 
-
         // Generate title
-        Title = L"";
-        cdr::String filterMsgs = L"";
+        cdr::String filterTitle = L"";
+        cdr::String filterMsgs  = L"";
         try {
-            Title = cdr::filterDocumentByScriptId (
+            filterTitle = cdr::filterDocumentByScriptId (
                     Xml, titleFilterId, docDbConn, &filterMsgs);
         }
         catch (cdr::Exception e) {
             // Add an error to the doc object
             errList.push_back (L"Generating title: " + cdr::String (e.what()));
-            Title = L"";
+            filterTitle = L"";
         }
 
         // If any messages returned, make them available for later viewing
@@ -1076,6 +1072,11 @@ void cdr::CdrDoc::createTitle()
             errList.push_back (
                 L"Generating title, filter produced these messages: " +
                 filterMsgs);
+
+        // If we got a title, it replaces whatever is was passed in
+        //   an update transaction.
+        if (filterTitle.size() > 0)
+            Title = filterTitle;
     }
 
     // If we still have no title because:
@@ -1338,7 +1339,7 @@ void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
 }
 
 // Routines to modify the document before saving or validating.
-// Make sure these get called in an order which meets any interdependencies 
+// Make sure these get called in an order which meets any interdependencies
 // between the preprocessing requirements.
 void cdr::CdrDoc::preProcess(bool validating)
 {
@@ -1543,8 +1544,8 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
     cdr::String newXml;
     cdr::String errorStr;
     try {
-        newXml = cdr::filterDocumentByScriptTitle(Xml, 
-                                                  L"Set Protocol Status", 
+        newXml = cdr::filterDocumentByScriptTitle(Xml,
+                                                  L"Set Protocol Status",
                                                   docDbConn, &errorStr, &pv);
 
         // Save the transformation for later steps
@@ -1555,7 +1556,7 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
         parsed = false;
     }
     catch (cdr::Exception e) {
-        errList.push_back(L"Failure setting protocol status: " + 
+        errList.push_back(L"Failure setting protocol status: " +
                           cdr::String(e.what()));
     }
 }
