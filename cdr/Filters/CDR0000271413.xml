@@ -1,0 +1,216 @@
+<CdrDoc Type='Filter' Id='CDR0000271413'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Approved Not Yet Active Protocols Report Filter</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+
+<xsl:transform       xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                     xmlns:cdr = "cips.nci.nih.gov/cdr"
+                       version = "1.0">
+
+ <!-- 
+ =========================================================================
+ Select the lead orgs which have a CurrentOrgStatus of "Approved-not yet
+ active."
+ ========================================================================= -->
+ <xsl:template           match = "/">
+  <LeadOrgs>
+   <xsl:apply-templates select = "/InScopeProtocol/ProtocolAdminInfo
+                                  /ProtocolLeadOrg
+                                  [LeadOrgProtocolStatuses
+                                  /CurrentOrgStatus
+                                  /StatusName = 'Approved-not yet active']"/>
+  </LeadOrgs>
+ </xsl:template>
+
+ <!-- 
+ =========================================================================
+ Pull out the org name, the org protocol ID, and the contact information.
+ ========================================================================= -->
+ <xsl:template           match = "ProtocolLeadOrg">
+  <xsl:variable           name = "orgId"
+                        select = "LeadOrganizationID/@cdr:ref"/>
+  <xsl:variable           name = "orgUrl"
+                        select = "concat('cdrx:', $orgId)"/>
+  <xsl:variable           name = "org"
+                        select = "document($orgUrl)"/>
+  <xsl:variable           name = "orgName"
+                        select = "$org/Organization/
+                                  OrganizationNameInformation/
+                                  OfficialName/Name"/>
+  <LeadOrg>
+   <OrgName>
+    <xsl:value-of       select = "$orgName"/>
+   </OrgName>
+   <OrgProtId>
+    <xsl:value-of       select = "LeadOrgProtocolID"/>
+   </OrgProtId>
+   <xsl:apply-templates select = "LeadOrgPersonnel
+                                  [PersonRole = 'Update person']"/>
+  </LeadOrg>
+ </xsl:template>
+
+ <!-- 
+ =========================================================================
+ Extract contact information for the protocol update person.
+ ========================================================================= -->
+ <xsl:template           match = "LeadOrgPersonnel">
+  <xsl:variable           name = "protPhone"
+                        select = "ProtocolSpecificContact/Phone"/>
+  <xsl:variable           name = "protEmail"
+                        select = "ProtocolSpecificContact/Email"/>
+  <xsl:variable           name = "docId"
+                        select = "Person/@cdr:ref"/>
+  <xsl:variable           name = "url"
+                        select = "concat('cdrx:', $docId)"/>
+  <xsl:variable           name = "doc"
+                        select = "document($url)"/>
+  <xsl:variable           name = "nameInfo"
+                        select = "$doc/Person/PersonNameInformation"/>
+  <xsl:variable           name = "fragId"
+                        select = "substring-after($docId, '#')"/>
+  <xsl:variable           name = "loc">
+   <xsl:call-template     name = "findLocation">
+    <xsl:with-param       name = "person"
+                        select = "$doc"/>
+    <xsl:with-param       name = "fragId"
+                        select = "$fragId"/>
+   </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable           name = "phone">
+   <xsl:choose>
+    <xsl:when             test = "$protPhone">
+     <xsl:value-of      select = "$protPhone"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:call-template   name = "findPhone">
+      <xsl:with-param     name = "loc"
+                        select = "$loc"/>
+     </xsl:call-template>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+  <xsl:variable           name = "email">
+   <xsl:choose>
+    <xsl:when             test = "$protEmail">
+     <xsl:value-of      select = "$protEmail"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:call-template   name = "findEmail">
+      <xsl:with-param     name = "loc"
+                        select = "$loc"/>
+     </xsl:call-template>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+  <PUP>
+   <GivenName>
+    <xsl:value-of       select = "$nameInfo/GivenName"/>
+   </GivenName>
+   <MiddleInitial>
+    <xsl:value-of       select = "$nameInfo/MiddleInitial"/>
+   </MiddleInitial>
+   <Surname>
+    <xsl:value-of       select = "$nameInfo/SurName"/>
+   </Surname>
+   <Phone>
+    <xsl:value-of       select = "$phone"/>
+   </Phone>
+   <Email>
+    <xsl:value-of       select = "$email"/>
+   </Email>
+  </PUP>
+ </xsl:template>
+
+ <!-- 
+ =========================================================================
+
+ Get the location information which matches the caller's fragment id.
+ ========================================================================= -->
+ <xsl:template            name = "findLocation">
+  <xsl:param              name = "person"/>
+  <xsl:param              name = "fragId"/>
+  <xsl:choose>
+   <xsl:when              test = "$person/Person/PersonLocations/
+                                  OtherPracticeLocation[@cdr:id = $fragId]">
+    <xsl:copy-of        select = "$person/Person/PersonLocations/
+                                  OtherPracticeLocation[@cdr:id = $fragId]"/>
+   </xsl:when>
+   <xsl:when              test = "$person/Person/PersonLocations/
+                                  PrivatePractice/PrivatePracticeLocations
+                                  [@cdr:id = $fragId]">
+                                  OtherPracticeLocation[@cdr:id = $fragId]">
+    <xsl:copy-of        select = "$person/Person/PersonLocations/
+                                  PrivatePractice/PrivatePracticeLocation
+                                  [@cdr:id = $fragId]"/>
+   </xsl:when>
+   <xsl:when              test = "$person/Person/PersonLocations/
+                                  Home[@cdr:id = $fragId]">
+    <xsl:copy-of        select = "$person/Person/PersonLocations/
+                                  Home[@cdr:id = $fragId]"/>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:template>
+
+ <!-- 
+ =========================================================================
+ Pull out the person's phone (or the org phone if available).
+ ========================================================================= -->
+ <xsl:template            name = "findPhone">
+  <xsl:param              name = "loc"/>
+  <xsl:choose>
+   <xsl:when              test = "$loc/OtherPracticeLocation/SpecificPhone">
+    <xsl:value-of       select = "$loc/OtherPracticeLocation/SpecificPhone"/>
+   </xsl:when>
+   <xsl:when              test = "$loc/PrivatePracticeLocation/Phone">
+    <xsl:value-of       select = "$loc/PrivatePracticeLocation/Phone"/>
+   </xsl:when>
+   <xsl:when              test = "$loc/Home/Phone">
+    <xsl:value-of       select = "$loc/Home/Phone"/>
+   </xsl:when>
+   <xsl:when              test = "$loc/OtherPracticeLocation/
+                                  OrganizationLocation/@cdr:ref">
+    <xsl:variable         name = "orgId"
+                        select = "$loc/OtherPracticeLocation/
+                                  OrganizationLocation/@cdr:ref"/>
+    <xsl:variable         name = "fragId"
+                        select = "substring-after($orgId, '#')"/>
+    <xsl:variable         name = "uri"
+                        select = "concat('cdrx:',  $orgId)"/>
+    <xsl:variable         name = "org"
+                        select = "document($uri)"/>
+    <xsl:variable         name = "orgLoc"
+                        select = "$org/Organization/OrganizationLocations/
+                                  OrganizationLocation/Location
+                                  [@cdr:id = $fragId]"/>
+    <xsl:value-of       select = "$orgLoc/Phone"/>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:template>
+
+ <!-- 
+ =========================================================================
+ Pull out the person's email address (do not use org's email address).
+ ========================================================================= -->
+ <xsl:template            name = "findEmail">
+  <xsl:param              name = "loc"/>
+  <xsl:choose>
+   <xsl:when              test = "$loc/OtherPracticeLocation/SpecificEmail">
+    <xsl:value-of       select = "$loc/OtherPracticeLocation/SpecificEmail"/>
+   </xsl:when>
+   <xsl:when              test = "$loc/PrivatePracticeLocation/Email">
+    <xsl:value-of       select = "$loc/PrivatePracticeLocation/Email"/>
+   </xsl:when>
+   <xsl:when              test = "$loc/Home/Email">
+    <xsl:value-of       select = "$loc/Home/Email"/>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
