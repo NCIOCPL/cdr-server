@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.39 2001-12-14 15:14:54 bkline Exp $
+# $Id: Makefile,v 1.40 2002-01-02 20:01:06 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.39  2001/12/14 15:14:54  bkline
+# Used macro XML4C in LFLAGS.
+#
 # Revision 1.38  2001/11/28 20:36:16  bkline
 # Added some targets to the `clean' rule.
 #
@@ -135,7 +138,7 @@ CDR    =/cdr
 XML4C  =/usr/xml4c
 SABLOT =/usr/sablot
 REGEX  =/usr/regex
-CDRINC =$(CDR)/include
+CDRINC =.
 INC    =-I$(XML4C)/include -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)/include
 CFLAGS =$(INC) -W3 -GX -MT -GR -Zi -nologo
 LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
@@ -175,6 +178,7 @@ HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrValidateDoc.h \
         $(CDRINC)/CdrVersion.h \
         $(CDRINC)/CdrXsd.h \
+        $(CDRINC)/HeapDebug.h \
         $(CDRINC)/catchexp.h
 LIBOBJS=CdrString.obj \
         CdrXsd.obj \
