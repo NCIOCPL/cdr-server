@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.20 2001-02-28 02:37:16 bkline Exp $
+ * $Id: CdrString.h,v 1.21 2001-04-05 22:34:21 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2001/02/28 02:37:16  bkline
+ * Added explicit assignment operators.
+ *
  * Revision 1.19  2000/12/26 23:22:59  ameyer
  * Fixed bad html in comment string.
  *
@@ -189,15 +192,15 @@ namespace cdr {
          *  @param  w           reference to object to be copied.
          *  @return             reference to modified String object.
          */
-        String& operator=(const String& s) 
+        String& operator=(const String& s)
             { assign(s); null = s.null; return *this; }
-        String& operator=(const StdWstring& s) 
+        String& operator=(const StdWstring& s)
             { assign(s); null = false; return *this; }
         String& operator=(const wchar_t* s)
             { assign(s); null = false; return *this; }
-        String& operator=(const DOMString& s) 
+        String& operator=(const DOMString& s)
             { assign(s.rawBuffer(), s.length()); null = false; return *this; }
-        String& operator=(const std::string& s) 
+        String& operator=(const std::string& s)
             { utf8ToUtf16(s.c_str()); null = false; return *this; }
         String& operator=(const char* s)
             { utf8ToUtf16(s); null = false; return *this; }
@@ -392,6 +395,23 @@ namespace cdr {
      *  @return             string date in format suitable for XML
      */
      extern String toXmlDate(String date);
+
+    /**
+     * Determine if a string contains "Y" or "N" or "y" or "n".
+     *
+     *  @param  ynString    String to check.
+     *  @param  defaultVal  Value to return if neither Y nor N found.
+     *  @param  forceMsg    If non-empty, throw exception if Y or N not found
+     *                      and use this string to tell a user what data object
+     *                      did not contain Y or N but should have.
+     *  @return             True or false.
+     *  @throws cdr::Exception if neither Y nor N found and caller specified
+     *                      force.
+     */
+
+    bool ynCheck (cdr::String ynString, bool defaultVal,
+                  cdr::String forceMsg = L"");
+
 }
 
 #endif
