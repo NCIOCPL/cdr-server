@@ -1,9 +1,14 @@
 /*
- * $Id: tables.sql,v 1.8 2000-04-14 15:55:14 bkline Exp $
+ * $Id: tables.sql,v 1.9 2000-04-15 22:59:59 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2000/04/14 15:55:14  bkline
+ * Altered some character columns to use wide characters.  Added default for
+ * versioning column of doc_type ('Y').  Added 'ended' column to session
+ * table.
+ *
  * Revision 1.7  2000/04/13 22:09:05  bkline
  * Cleaned up DDL to make it runnable.
  *
@@ -120,7 +125,7 @@ CREATE TABLE usr
  */
 CREATE TABLE session
          (id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL,
+        name VARCHAR(32) NOT NULL UNIQUE,
          usr INTEGER NOT NULL REFERENCES usr,
    initiated DATETIME NOT NULL,
     last_act DATETIME NOT NULL,
