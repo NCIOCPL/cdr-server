@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-     $Id: PersonSchema.xml,v 1.11 2001-10-23 13:19:03 ArkD Exp $ 
+     $Id: PersonSchema.xml,v 1.12 2001-10-24 18:11:40 ArkD Exp $ 
 
      $Log: not supported by cvs2svn $
+     Revision 1.11  2001/10/23 13:19:03  ArkD
+     Optional PDQKey element added to the root.
+     Optional xmlns:cdr attribute added to the root.
+     GeneticsBoardCertification Comment made optional.
+     PhysiciansBoardCertification Comment made optional.
+     CertificationVerification type YesNo=>Yes and element made optional.
+     Status Comment made optional.
+     Value lists updated.
+     ProfessionalSuffix wrapper made single.
+     GeneticsProfessionalDetail Comment made optional.
+
      Revision 1.10  2001/08/20 21:09:37  ArkD
      Specialties values changed.
      Renamed Organization into OrganizationLocation.
@@ -70,10 +81,12 @@
                      type            = 'DatedAction'
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
-      <element       name            = 'PDQKey'
+      <element       name            = 'DateLastModified'
+                     type            = 'date'
+                     minOccurs       = '0'/>
+      <element       name            = 'PdqKey'
                      type            = 'string'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
+                     minOccurs       = '0'/>
     </sequence>
     <attribute       name            = 'xmlns:cdr'
                      type            = 'anyURI'
@@ -237,13 +250,26 @@
   </complexType>
 
   <complexType       name            = 'PhysicianSpecialtyInformation'>
-    <sequence>
-      <element       name            = 'PhysicianSpecialtyName'
-                     type            = 'PhysicianSpecialtyName'/>
-      <element       name            = 'PhysiciansBoardCertification'
-                     type            = 'PhysiciansBoardCertification'
+    <choice>
+      <element       name            = 'BoardCertifiedSpecialty'
+                     type            = 'BoardCertifiedSpecialty'
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
+      <element       name            = 'OtherSpecialty'
+                     type            = 'OtherSpecialty'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+    </choice>
+  </complexType>
+
+  <complexType       name            = 'BoardCertifiedSpecialty'>
+    <sequence>
+      <element       name            = 'BoardCertifiedSpecialtyName'
+                     type            = 'BoardCertifiedSpecialtyName'/>
+      <element       name            = 'Certified'
+                     type            = 'YesNo'/>
+      <element       name            = 'Verified'
+                     type            = 'YesNo'/>
     </sequence>
   </complexType>
 
@@ -481,45 +507,50 @@
     </restriction>
   </simpleType>
 
-  <simpleType        name            = 'PhysicianSpecialtyName'>
+  <simpleType        name            = 'BoardCertifiedSpecialtyName'>
     <restriction     base            = 'string'>
-      <enumeration   value           = 'Medical oncology'/>
+      <enumeration   value           = 'Gynecologic oncology'/>
       <enumeration   value           = 'Hematology'/>
-      <enumeration   value           = 'Surgery'/>
-      <enumeration   value           = 'Surgical oncology'/>
+      <enumeration   value           = 'Pediatric hematology/oncology'/>
       <enumeration   value           = 'Radiation oncology'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'OtherSpecialty'>
+    <restriction     base            = 'string'>
       <enumeration   value           = 'Bone marrow transplantation'/>
       <enumeration   value           = 'Colon and rectal surgery'/>
+      <enumeration   value           = 'Dermatology'/>
+
+      <enumeration   value           = 'Medical oncology'/>
+      <enumeration   value           = 'Surgery'/>
+      <enumeration   value           = 'Surgical oncology'/>
+      <enumeration   value           = 'Dermatologic oncology'/>
+
       <enumeration   value           = 'Head and neck surgery'/>
       <enumeration   value           = 'Urology'/>
       <enumeration   value           = 'Pediatric hematology/oncology'/>
-      <enumeration   value           = 'Dermatologic oncology'/>
+      <enumeration   value           = 'Endocrinology'/>
+      <enumeration   value           = 'Gastroenterology'/>
+      <enumeration   value           = 'Head and neck surgery'/>
       <enumeration   value           = 'Immunology'/>
+      <enumeration   value           = 'Infectious diseases'/>
+      <enumeration   value           = 'Neurologic oncology'/>
+
       <enumeration   value           = 'Gynecologic oncology'/>
       <enumeration   value           = 'Otolaryngology'/>
-      <enumeration   value           = 'Neurologic oncology'/>
-      <enumeration   value           = 'Gastroenterology'/>
-      <enumeration   value           = 'Thoracic surgery'/>
-      <enumeration   value           = 'Dermatology'/>
-      <enumeration   value           = 'Pulmonary disease'/>
-      <enumeration   value           = 'Infectious disease'/>
-      <enumeration   value           = 'Endocrinology'/>
-      <enumeration   value           = 'Pediatric surgery'/>
-      <enumeration   value           = 'Plastic surgery'/>
       <enumeration   value           = 'Neurology'/>
       <enumeration   value           = 'Ophthalmology'/>
       <enumeration   value           = 'Orthopedic surgery'/>
-      <enumeration   value           = 'Internal medicine'/>
+      <enumeration   value           = 'Otolaryngology'/>
+      <enumeration   value           = 'Pediatric surgery'/>
+      <enumeration   value           = 'Plastic surgery'/>
+      <enumeration   value           = 'Pulmonary disease'/>
       <enumeration   value           = 'Psychiatry'/>
-      <enumeration   value           = 'Neurosurgery'/>
-      <enumeration   value           = 'Pathology'/>
-      <enumeration   value           = 'Radiology'/>
-      <enumeration   value           = 'Oncology'/>
-      <enumeration   value           = 'Nuclear medicine'/>
-      <enumeration   value           = 'Pediatric neurology/oncology'/>
-      <enumeration   value           = 'Pediatric neurology'/>
-      <enumeration   value           = 'Endocrinology and metabolism'/>
-      <enumeration   value           = 'Nephrology'/>
+      <enumeration   value           = 'Surgery'/>
+      <enumeration   value           = 'Surgical oncology'/>
+      <enumeration   value           = 'Thoracic surgery'/>
+      <enumeration   value           = 'Urology'/>
     </restriction>
   </simpleType>
 
