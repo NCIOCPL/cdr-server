@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLog.cpp,v 1.5 2002-03-04 20:51:18 bkline Exp $
+ * $Id: CdrLog.cpp,v 1.6 2002-03-04 21:22:57 bkline Exp $
  *
  * Implementation of writing info to the log table in the database.
  * If that can't be done, takes an alternative action to write to file.
@@ -7,6 +7,9 @@
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2002/03/04 20:51:18  bkline
+ * Added workaround for memory leak caused by bug in MS CRT.
+ *
  * Revision 1.4  2002/02/28 01:02:53  bkline
  * Added code to close mutex handle.
  *
@@ -230,7 +233,7 @@ void cdr::log::WriteFile (
      *
      * wchar_t *wct = _wctime (&ltime);
      */
-    const char* ascTime = asctime(&ltime);
+    const char* ascTime = asctime(localtime(&ltime));
     cdr::String timeStr(ascTime);
 
 
