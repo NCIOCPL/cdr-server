@@ -1,10 +1,14 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.67 2002-11-26 22:30:40 ameyer Exp $
+# $Id: Makefile,v 1.68 2002-12-11 14:31:38 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.67  2002/11/26 22:30:40  ameyer
+# Upgraded to newer version of ccdoc with different options.
+# Now building docs if and only if output directory $(DOC) exists.
+#
 # Revision 1.66  2002/11/25 21:16:28  bkline
 # Fixed DBG code to point to cdrd.lib.
 #
@@ -256,7 +260,7 @@ SVC_CFLAGS =-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT \
 LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
         wsock32.lib odbc32.lib user32.lib 
 !ELSE
-CFLAGS =$(INC) -W3 -GX -MD -GR -nologo -Zi #-DSINGLE_THREAD_DEBUGGING
+CFLAGS =$(INC) -W3 -GX -MD -GR -nologo -Zi -D_DEBUG #-DSINGLE_THREAD_DEBUGGING
 LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
         /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/$(REVER) /DEBUG
 CDRLIB =$(CDR)/lib/cdrd.lib
