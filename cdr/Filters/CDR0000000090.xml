@@ -3,6 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Glossary Term QC Report filter</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
    <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -55,43 +56,59 @@
           <font size='3'>
             <center>
              <xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/>
-            </center>
-          </font>
+         </center>
+         </font>
          </b><br /><br />
          <b>
-            <font size='3'>
-               <xsl:apply-templates select="PDQKey"/>
-            </font>
+         <font size='3'>
+         <xsl:apply-templates select="PDQKey"/>
+         </font>
          </b><br />
-         <b><xsl:value-of select="document('cdrutil:/docid')"/></b><br />
+         <b><xsl:value-of select="document('cdrutil:/docid')"/></b><br /><br />
+            <xsl:if test="@Dictionary='Exclude'">
+             <b>
+               <font size='3'>Dictionary</font>
+            </b>
+                 <xsl:text>......................................</xsl:text>
+             <xsl:apply-templates select="@Dictionary"/><br /><br />
+           </xsl:if>
+
             <b>
                <font size='3'>Name</font>
             </b>
              <xsl:text>..............................................</xsl:text>
-             <xsl:apply-templates select="TermName"/>
+             <xsl:apply-templates select="TermName"/><br /><br />
          
          <xsl:if test="not(TermPronunciation)">
            <b>
              <font size='3'>Pronunciation</font>
-           </b>
+           </b><br /><br />
          </xsl:if>
          <xsl:if test="TermPronunciation">
            <p>
              <b>
                 <font size='3'>Pronunciation</font>
              </b>
-             <xsl:text>.................................</xsl:text>
+             <xsl:text>..............................</xsl:text>
              <xsl:apply-templates select="TermPronunciation"/>
            </p>
          </xsl:if>
-         <p>
-           <b>
-             <font size='3'>Definition</font>
-           </b><br />
+           
+          
            <xsl:for-each select="TermDefinition">
-             <xsl:value-of select="."/><br />
-           </xsl:for-each>
-         </p>
+            <xsl:choose>
+            <xsl:when test="not(@Audience)">
+           <b><font size='3'>Definition</font>
+              </b><br />
+            </xsl:when>
+            <xsl:otherwise>
+            <b><font size='3'>Definition[Health Professional]</font>
+               </b><br />
+            </xsl:otherwise>
+            </xsl:choose>
+            <xsl:value-of select="."/><br /><br />
+            </xsl:for-each>
+            
 
          <p>
             <b>
