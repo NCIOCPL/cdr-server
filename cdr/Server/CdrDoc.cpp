@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.38 2002-07-03 12:54:44 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.39 2002-07-15 20:08:21 bkline Exp $
  *
  */
 
@@ -575,7 +575,7 @@ static cdr::String CdrPutDoc (
 
                         // Turn back on the specifically requested ones
                         validationTypes = attr.getNodeValue();
-                        if (validationTypes.find (L"schema") !=
+                        if (validationTypes.find (L"Schema") !=
                                 validationTypes.npos)
                             cmdSchemaVal = true;
                         if (validationTypes.find (L"Links") !=
