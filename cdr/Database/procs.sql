@@ -1,9 +1,11 @@
 /*
- * $Id: procs.sql,v 1.1 2001-04-08 19:08:34 bkline Exp $
+ * $Id: procs.sql,v 1.2 2001-04-08 19:20:53 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2001/04/08 19:08:34  bkline
+ * Initial revision
  */
 
 /*
@@ -14,6 +16,7 @@ IF EXISTS (SELECT *
             WHERE name = 'sp_find_address'
               AND type = 'P')
     DROP PROCEDURE cdr_get_term_tree
+GO
 
 /**
  * Finds all the parents and children of a Term document in the CDR.  Two
@@ -131,3 +134,4 @@ AS
     DROP TABLE #parents
     DROP TABLE #children
     DROP TABLE #term_parents
+GO
