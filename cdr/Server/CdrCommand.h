@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.7 2000-05-03 18:49:14 bkline Exp $
+ * $Id: CdrCommand.h,v 1.8 2000-05-09 21:09:40 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2000/05/03 18:49:14  bkline
+ * Added parameter names (for ccdoc).
+ *
  * Revision 1.6  2000/05/03 18:15:55  bkline
  * More ccdoc comments.
  *
@@ -303,6 +306,22 @@ namespace cdr {
      * Examines the specified document to determine whether it meets the
      * Schema and Link validation requirements.  The document can be submitted
      * as part of the command, or can be referenced by it document ID.
+     * <P>
+     * Validates the document using the following steps.
+     *  <OL>
+     *   <LI> Get the document to be validated (from the database or directly 
+     *        from the command, depending on the variant invoked)</LI>
+     *   <LI> Parse the document</LI>
+     *   <LI> Extract the document type</LI>
+     *   <LI> Retrieve the schema for the document type</LI>
+     *   <LI> Validate the document against the schema</LI>
+     *   <LI> Verify the validity of the links to and from the document</LI>
+     *  </OL>
+     *
+     * As many errors are reported as possible (in contrast to an algorithm
+     * which bails out when the first error is encountered).  Obviously, if the
+     * document isn't even well-formed, there's not much else we can report,
+     * however.
      *
      *  @param      session     contains information about the current user.
      *  @param      node        contains the XML for the command.
