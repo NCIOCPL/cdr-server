@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.12 2000-10-23 14:54:45 mruben Exp $
+ * $Id: CdrCommand.h,v 1.13 2000-12-28 13:30:36 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2000/10/23 14:54:45  mruben
+ * added commands for version control
+ *
  * Revision 1.11  2000/10/04 18:21:06  bkline
  * Added searchLinks and listDocTypes.
  *
@@ -547,6 +550,22 @@ namespace cdr {
     extern String listDocTypes(Session&          session,
                                const dom::Node&  node,
                                db::Connection&   conn);
+
+    /**
+     * Load the row from the doc_type table for the requested document type.
+     * Send back the schema (and if requested) the DTD for the document type.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String getSchema  (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Converts a DOM node to its String representation
