@@ -9,29 +9,14 @@
 <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0"
                xmlns:cdr="cips.nci.nih.gov/cdr">
- <xsl:strip-space elements="*"/>
+  
+  <xsl:include href = "cdr:name:Module: Vendor Filter Templates"/>
+
   <xsl:output method="xml" omit-xml-declaration="no"/>
 <!-- ====================================================================
      Filter to create XML data for HP summary to add references to end of
      each summary section for vendor publishing
      ==================================================================== -->
-<!-- Written by Cheryl Burg 8-2-2001 -->
-<!-- Modified to make changes to reference formats 6/26-7/30/2002-->
-<!-- =====================================================================
-     Select data elements to be copied and add tags when an incomplete
-     node is copied 
-     This filter resolves the CDR link provided for the citation and
-      formats the citations at the end of each summary section
-     ==================================================================== -->
- 
-  <xsl:template match="*">
-  <xsl:copy>
-<DocId><xsl:value-of select="document('cdrutil:/docid')"/></DocId>
-<xsl:apply-templates/>
- </xsl:copy>
- </xsl:template>
-
-
 
 <!-- =================================================================
                   add refidx to CitationReference elements 
@@ -444,6 +429,36 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
      <xsl:apply-templates/>
      </xsl:copy> 
      </xsl:template>
+
+<!-- ======================================================================
+     WARNING: Overwrite the default action for text node.     
+     This template must be placed below all templates that match text node,
+     to guarantee that this template will be invoked by this filter.
+     Therefore, we don't include this template from other filters.
+     ===================================================================== -->
+  <xsl:template                  match = "text()"> 
+    <xsl:choose>
+
+      <!-- For performance concern, we avoid call-template overhead. -->
+      <xsl:when                   test = "normalize-space() != ''">
+        <xsl:value-of    select = "."/>
+      </xsl:when>
+
+      <xsl:otherwise>
+        <xsl:call-template        name = "stripSpaceNode"/>
+      </xsl:otherwise>
+
+    </xsl:choose>   
+  </xsl:template>
+
+<!-- ======================================================================
+     Overwrite the template for these nodes from include file.
+     ===================================================================== -->
+  <xsl:template                  match = "Comment | PdqKey">
+    <xsl:copy>    
+     <xsl:value-of              select = "."/>
+    </xsl:copy> 
+  </xsl:template>  
 
 </xsl:transform>]]>
 </CdrDocXml>
