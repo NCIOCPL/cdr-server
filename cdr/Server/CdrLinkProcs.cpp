@@ -19,9 +19,13 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.13 2002-05-09 19:42:47 ameyer Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.14 2002-05-09 21:39:29 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2002/05/09 19:42:47  ameyer
+ * Revised customLinkCheck() to free up db connection before passing it
+ * down to lower level custom routines.
+ *
  * Revision 1.12  2002/05/08 20:34:26  pzhang
  * Added implementation of makeQueries and getSearchLinksRespWithProp.
  *
@@ -175,7 +179,6 @@ static void freePropVector (
             --i;
             delete *i;
         } while (i != propVector.begin());
-        delete *i;
     }
 }
 
