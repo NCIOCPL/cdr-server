@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.8 2001-11-06 21:41:24 bkline Exp $
+ * $Id: CdrLink.cpp,v 1.9 2001-12-19 15:49:29 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2001/11/06 21:41:24  bkline
+ * Fixed a SQL bug.
+ *
  * Revision 1.7  2001/09/25 14:56:35  ameyer
  * Bob added preliminary version of pasteLink().
  *
@@ -69,7 +72,7 @@
 #include "CdrLink.h"
 
 // Prototypes for internal functions
-static int linkTree (cdr::db::Connection&, cdr::dom::Node&,
+static int linkTree (cdr::db::Connection&, const cdr::dom::Node&,
                      int, int, cdr::String&, cdr::link::LnkList&,
                      cdr::StringSet&, cdr::StringSet&, cdr::StringList&);
 
@@ -629,24 +632,29 @@ int cdr::link::CdrSetLinks (
     linkTree (dbConn, xmlNode, ui, docType, docTypeStr,
               lnkList, uniqSet, fragSet, errList);
 
-    // Validate all links, appending to an error message return string
-    cdr::link::LnkList::iterator i = lnkList.begin();
-    err_count = 0;
-    while (i != lnkList.end()) {
-        err_count += i->validateLink (dbConn, fragSet);
-        if (i->getErrCount() > 0)
-            errList.push_back (i->dumpString (dbConn));
-        ++i;
+    // Unless we're not validating
+    if (validRule != cdr::UpdateLinkTablesOnly) {
+
+        // Validate all links, appending to an error message return string
+        cdr::link::LnkList::iterator i = lnkList.begin();
+        err_count = 0;
+        while (i != lnkList.end()) {
+            err_count += i->validateLink (dbConn, fragSet);
+            if (i->getErrCount() > 0)
+                errList.push_back (i->dumpString (dbConn));
+            ++i;
+        }
+
+        // Check for missing fragments
+        // This is not part of validateLink because the errors are not
+        //   found in a link, but rather in the absence of a fragment
+        err_count += checkMissedFrags (dbConn, ui, validRule, fragSet,errList);
     }
 
-    // Check for missing fragments
-    // This is not part of validateLink because the errors are not
-    //   found in a link, but rather in the absence of a fragment
-    err_count += checkMissedFrags (dbConn, ui, validRule, fragSet, errList);
-
     // Update the link net if required
-    if (validRule == cdr::UpdateUnconditionally ||
-            (validRule == cdr::UpdateIfValid && err_count == 0)) {
+    if (validRule == cdr::UpdateLinkTablesOnly ||
+        validRule == cdr::UpdateUnconditionally ||
+        (validRule == cdr::UpdateIfValid && err_count == 0)) {
 
         // All together now
         bool oldCommitted = dbConn.getAutoCommit();
@@ -1204,7 +1212,7 @@ static void addLinkTarget (
  * node which contains a link attribute.
  *
  *  @param      conn        Reference to database connection.
- *  @param      node        Reference to the top node of the DOM parse
+ *  @param      topNode     Reference to the top node of the DOM parse
  *                           tree for the XML document.
  *  @param      docId       CDR document ID for XML document containing node.
  *  @param      docType     Document type for containing document.
@@ -1224,7 +1232,7 @@ static void addLinkTarget (
 
 static int linkTree (
     cdr::db::Connection&  conn,
-    cdr::dom::Node&       node,
+    const cdr::dom::Node& topNode,
     int                   docId,
     int                   docType,
     cdr::String&          docTypeStr,
@@ -1245,8 +1253,8 @@ static int linkTree (
     // Return value from set insertion
     std::pair<cdr::StringSet::iterator, bool> ins_stat;
 
-
     // Process this node and it's siblings, while there are any
+    cdr::dom::Node node = topNode;
     while (node != 0) {
 
         // Only concerned with element nodes
@@ -1286,8 +1294,9 @@ static int linkTree (
                     multiLinkErr = true;
             }
 
-            // If we found any of the three types of link
-            if (lnkStyle != cdr::link::not_set) {
+            // If we found either of the two types of internal link
+            if (lnkStyle == cdr::link::ref ||
+                lnkStyle == cdr::link::href) {
 
                 // Create a link object for this node
                 cdr::link::CdrLink lnk (conn, node, docId, docType,
@@ -1659,8 +1668,8 @@ cdr::String cdr::pasteLink (
             else if (name == L"TargetFragmentId")
                 targetFragId = dom::getTextContent(node);
             else
-                throw Exception(L"pasteLink: Element '" + 
-                                name + 
+                throw Exception(L"pasteLink: Element '" +
+                                name +
                                 L"' in CdrPasteLink request is "
                                 L"currently unsupported");
         }
