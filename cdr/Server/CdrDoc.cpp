@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.49 2002-10-17 20:01:54 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.50 2003-01-10 00:04:21 ameyer Exp $
  *
  */
 
@@ -71,6 +71,7 @@ cdr::CdrDoc::CdrDoc (
     Id (0),
     DocType (0),
     ActiveStatus (L"A"),
+    ValStatus (L"U"),
     Xml (L""),
     schemaDocId (0),
     lastFragmentId (0),
@@ -96,13 +97,18 @@ cdr::CdrDoc::CdrDoc (
         Id = TextId.extractDocId ();
 
         // Does the document exist?
-        // Find out and also get the last used auto generated fragment id
-        std::string qry = "SELECT Id, last_frag_id FROM document WHERE Id = ?";
+        // Find out and also get info that must come from the database
+        //   active_status
+        //   last_fragment_id
+        // This overrides any default initializations
+        std::string qry =
+          "SELECT active_status, last_frag_id FROM document WHERE Id = ?";
         cdr::db::PreparedStatement select = dbConn.prepareStatement(qry);
         select.setInt(1, Id);
         cdr::db::ResultSet rs = select.executeQuery();
         if (!rs.next())
             throw cdr::Exception(L"CdrDoc: Unable to find document " + TextId);
+        ActiveStatus   = rs.getString (1);
         lastFragmentId = rs.getInt (2);
     }
     else
@@ -133,11 +139,6 @@ cdr::CdrDoc::CdrDoc (
         schemaDocId = 0;
     else
         schemaDocId = sdi;
-
-    // Default values for control elements in the document table
-    // All others are defaulted to NULL by cdr::String constructor
-    ValStatus    = L"U";
-    ActiveStatus = L"A";
 
     // Pull out the parts of the document from the dom
     cdr::dom::Node child = docDom.getFirstChild ();
