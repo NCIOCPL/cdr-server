@@ -1,3 +1,11 @@
+/*
+ * $Id: tCdrString.cpp,v 1.2 2000-04-13 17:07:34 bkline Exp $
+ *
+ * Test driver for CdrString class.
+ *
+ * $Log: not supported by cvs2svn $
+ */
+
 #include <cstring>
 #include <iostream>
 #include <ctime>
