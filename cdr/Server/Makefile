@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.17 2000-05-10 21:51:31 mruben Exp $
+# $Id: Makefile,v 1.18 2000-05-17 13:54:46 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.17  2000/05/10 21:51:31  mruben
+# fixed command line arguments for Sablotron libraries and includes
+#
 # Revision 1.16  2000/05/09 19:54:56  mruben
 # added CdrDOMtoString
 #
@@ -85,6 +88,7 @@ CDRSVR =$(CDRBIN)/CdrServer.exe
 HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrCommand.h \
         $(CDRINC)/CdrDbConnection.h \
+        $(CDRINC)/CdrDoc.h \
         $(CDRINC)/CdrDbPreparedStatement.h \
         $(CDRINC)/CdrDbResultSet.h \
         $(CDRINC)/CdrDbStatement.h \
@@ -123,15 +127,16 @@ OBJS   =CdrCommand.obj \
         CdrModUsr.obj \
         CdrDelUsr.obj \
         CdrListUsrs.obj \
+        CdrDoc.obj \
         CdrValidateDoc.obj \
         CdrSearch.obj \
         CdrSearch_tab.obj \
         CdrGetDoc.obj \
-	CdrFilter.obj \
-	CdrDOMtoString.obj
+        CdrFilter.obj \
+        CdrDOMtoString.obj
 
 LIBS   =cdr.lib xerces-c_1.lib sablot.lib xmlparse.lib xmltok.lib \
-	wsock32.lib odbc32.lib user32.lib 
+        wsock32.lib odbc32.lib user32.lib 
 
 #--------------------------------------------------------------------------
 # File suffixes examined for rule interpretation
