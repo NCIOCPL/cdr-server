@@ -1,10 +1,13 @@
 /*
- * $Id: CdrSearch.h,v 1.3 2000-04-22 18:57:38 bkline Exp $
+ * $Id: CdrSearch.h,v 1.4 2000-04-26 01:37:28 bkline Exp $
  *
  * Interface for CDR search implementation.  Used by implementation of search
  * command and by the query parser.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/04/22 18:57:38  bkline
+ * Added ccdoc comment markers for namespaces and @pkg directives.
+ *
  * Revision 1.2  2000/04/22 18:01:26  bkline
  * Fleshed out documentation comments.
  *
@@ -186,6 +189,7 @@ namespace cdr {
         Query*      query;
         void*       parserInput;
     };
+
 }
 
 /**
@@ -194,8 +198,6 @@ namespace cdr {
  * control over the crude methods by the parser generator to create names).
  * At least we can change the "yy" prefix so the system can have more than one
  * parser type in the same global namespace.
- *
- * @pkg [ROOT]
  */
 extern int CdrSearchparse(void*);
 
