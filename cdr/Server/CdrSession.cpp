@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSession.cpp,v 1.5 2000-05-03 15:25:41 bkline Exp $
+ * $Id: CdrSession.cpp,v 1.6 2000-10-30 17:41:00 mruben Exp $
  *
  * Session control information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/05/03 15:25:41  bkline
+ * Fixed database statement creation.
+ *
  * Revision 1.4  2000/04/22 09:30:22  bkline
  * Fixed a couple of typo bugs.
  *
@@ -73,6 +76,33 @@ bool cdr::Session::canDo(db::Connection& conn,
     ps.setInt(1, uid);
     ps.setString(2, action);
     ps.setString(3, docType);
+    cdr::db::ResultSet rs = ps.executeQuery();
+    if (!rs.next())
+        // Shouldn't ever reach here.
+        throw cdr::Exception(L"Database failure extracting result count");
+    int count = rs.getInt(1);
+    return count > 0;
+}
+
+bool cdr::Session::canDo(db::Connection& conn, 
+                         const cdr::String& action,
+                         int docId) const
+{
+    std::string query = "SELECT COUNT(*)"
+                        "  FROM grp_usr    gu,"
+                        "       grp_action ga,"
+                        "       action     a,"
+                        "       document   d"
+                        " WHERE ga.action   = a.id"
+                        "   AND ga.doc_type = d.doc_type"
+                        "   AND ga.grp      = gu.grp"
+                        "   AND gu.usr      = ?"
+                        "   AND a.name      = ?"
+                        "   AND d.id        = ?";
+    cdr::db::PreparedStatement ps = conn.prepareStatement(query);
+    ps.setInt(1, uid);
+    ps.setString(2, action);
+    ps.setInt(3, docId);
     cdr::db::ResultSet rs = ps.executeQuery();
     if (!rs.next())
         // Shouldn't ever reach here.

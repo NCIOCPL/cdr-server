@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSession.h,v 1.8 2000-05-09 21:10:06 bkline Exp $
+ * $Id: CdrSession.h,v 1.9 2000-10-30 17:42:57 mruben Exp $
  *
  * Information about the current login.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2000/05/09 21:10:06  bkline
+ * Replaced struct with class.
+ *
  * Revision 1.7  2000/05/04 12:39:43  bkline
  * More ccdoc comments.
  *
@@ -165,6 +168,25 @@ namespace cdr {
         bool canDo(db::Connection&    connection, 
                    const cdr::String& action, 
                    const cdr::String& docType) const;
+
+        /**
+         * Returns <code>true</code> if the user account for the current
+         * session is authorized to perform the specified action on the
+         * specified document.
+         *
+         *  @param  connection      reference to active connection object
+         *                          for the CDR database, which we query to
+         *                          determine whether the user can perform the
+         *                          specified action.
+         *  @param  action          name of the action to be checked.
+         *  @param  docId           integer document ID
+         *  @return                 <code>true</code> iff the user is 
+         *                          authorized to perform the specified
+         *                          action.
+         */
+        bool canDo(db::Connection&    connection, 
+                   const cdr::String& action, 
+                   int docId) const;
 
     private:
 
