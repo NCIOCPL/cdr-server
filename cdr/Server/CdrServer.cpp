@@ -1,5 +1,5 @@
 /*
- * $Id: CdrServer.cpp,v 1.19 2001-12-14 15:03:20 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.20 2001-12-14 15:18:14 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
@@ -81,6 +81,7 @@
 #include "CdrDbConnection.h"
 #include "CdrException.h"
 #include "CdrDbStatement.h"
+#include "HeapDebug.h"
 
 // Local constants.
 const short CDR_PORT = 2019;
@@ -101,7 +102,9 @@ static cdr::String      getElapsedTime(DWORD);
 static void             sendErrorResponse(int, const cdr::String&,
                                           const cdr::String&);
 static void __cdecl     dispatcher(void*);
+static void             realDispatcher(void* arg);
 static void __cdecl     sessionSweep(void*);
+static int              handleNextClient(int sock);
 
 static bool             timeToShutdown = false;
 static cdr::log::Log    log;
@@ -149,27 +152,51 @@ main(int ac, char **av)
     }
     std::cout << "listening...\n";
 
+#ifndef SINGLE_THREAD_DEBUGGING
     if (_beginthread(sessionSweep, 0, (void*)0) == -1) {
         std::cerr << "CreateThread: " << GetLastError() << '\n';
         return EXIT_FAILURE;
     }
+#endif
 
     while (!timeToShutdown) {
-        struct sockaddr_in client_addr;
-        int len = sizeof client_addr;
-        memset(&client_addr, 0, sizeof client_addr);
-        int fd = accept(sock, (struct sockaddr *)&client_addr, &len);
-        if (timeToShutdown)
-            break;
-        if (fd < 0) {
-            perror("accept");
-            return EXIT_FAILURE;
-        }
-        if (_beginthread(dispatcher, 0, (void*)fd) == -1) {
-            std::cerr << "CreateThread: " << GetLastError() << '\n';
-            return EXIT_FAILURE;
-        }
+        SHOW_HEAP_USED("Top of main processing loop");
+        int rc = handleNextClient(sock);
+        if (rc != EXIT_SUCCESS)
+            return rc;
+        SHOW_HEAP_USED("Bottom of main processing loop");
     }
+    return EXIT_SUCCESS;
+}
+
+/**
+ * Meat of main processing loop, broken out to make stack cleanup 
+ * easier to track during heapdebuggin.
+ */
+int handleNextClient(int sock)
+{
+    struct sockaddr_in client_addr;
+    int len = sizeof client_addr;
+    memset(&client_addr, 0, sizeof client_addr);
+    int fd = accept(sock, (struct sockaddr *)&client_addr, &len);
+    if (timeToShutdown)
+        return EXIT_SUCCESS;
+    if (fd < 0) {
+        perror("accept");
+        return EXIT_FAILURE;
+    }
+#ifndef SINGLE_THREAD_DEBUGGING
+    if (_beginthread(dispatcher, 0, (void*)fd) == -1) {
+        std::cerr << "CreateThread: " << GetLastError() << '\n';
+        closesocket(fd);
+        return EXIT_FAILURE;
+    }
+#else
+    // Use this version (and turn off the invocation of the session cleanup
+    // thread below) when you want to debug without dealing with multiple
+    // threads.
+    realDispatcher((void*)fd);
+#endif
     return EXIT_SUCCESS;
 }
 
@@ -186,14 +213,14 @@ void cleanup()
  * Implements thread processing to handle a new connection.  Capable
  * of handling multiple command sets for the connection.
  */
-void __cdecl dispatcher(void* arg) {
+void realDispatcher(void* arg) {
     cdr::db::Connection conn =
         cdr::db::DriverManager::getConnection(cdr::db::url,
                                               cdr::db::uid,
                                               cdr::db::pwd);
     cdr::String now = conn.getDateTimeString();
     now[10] = L'T';
-    std::wcerr << L"NOW=" << now << L"\n";
+    //std::wcerr << L"NOW=" << now << L"\n";
 
     // Create thread specific log pointer
     // Done early in thread creation so anything in the thread can
@@ -211,6 +238,15 @@ void __cdecl dispatcher(void* arg) {
 
     // Thread is about to go, done with thread specific log
     delete cdr::log::pThreadLog;
+    closesocket(fd);
+}
+
+/**
+ * Do the real work in a separate function to force Microsoft to clean
+ * up the stack.
+ */
+void __cdecl dispatcher(void* arg) {
+    realDispatcher(arg);
     _endthread();
 }
 
@@ -317,7 +353,7 @@ void processCommands(int fd, const std::string& buf,
                 elementName = n.getNodeName();
                 if (elementName == L"SessionId") {
                     cdr::String sessionId = cdr::dom::getTextContent(n);
-                    std::wcerr << L"sessionId=" << sessionId << L"\n";
+                    //std::wcerr << L"sessionId=" << sessionId << L"\n";
                     session.lookupSession(sessionId, conn);
                     session.setLastActivity(conn);
                 }
@@ -386,13 +422,15 @@ cdr::String processCommand(cdr::Session& session,
         int type = specificCmd.getNodeType();
         if (type == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String cmdName = specificCmd.getNodeName();
-            std::wcerr << L"Received command: " << cmdName << L"\n";
+            //std::wcerr << L"Received command: " << cmdName << L"\n";
 
             // Log info about the command
             cdr::String cmdText = L"Cmd: " + cmdName + L"  User: "
                                 + session.getUserName();
 
+            SHOW_HEAP_USED("Before call to cdr::log::Log::Write()");
             cdr::log::pThreadLog->Write (L"processCommand", cmdText);
+            SHOW_HEAP_USED("After call to cdr::log::Log::Write()");
 
             cdr::Command cdrCommand = cdr::lookupCommand(cmdName);
             if (!cdrCommand) {
@@ -513,8 +551,10 @@ cdr::String processCommand(cdr::Session& session,
             if (cmdName == L"CdrShutdown")
                 timeToShutdown = true;
 
+            SHOW_HEAP_USED("Before call to cdr::log::Log::Write()");
             cdr::log::pThreadLog->Write (L"processCommand result",
                                          session.getStatus());
+            SHOW_HEAP_USED("After call to cdr::log::Log::Write()");
 
             return response;
         }
@@ -549,7 +589,7 @@ void sendResponse(int fd, const cdr::String& response)
 void __cdecl sessionSweep(void* arg) {
 
     const char* query = "UPDATE session"
-		                "   SET ended = GETDATE()"
+                        "   SET ended = GETDATE()"
                         " WHERE ended IS NULL"
                         "   AND DATEDIFF(hour, last_act, GETDATE()) > 24";
     int counter = 0;
