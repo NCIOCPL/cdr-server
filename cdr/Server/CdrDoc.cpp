@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.13 2001-06-12 19:53:27 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.14 2001-06-12 22:37:39 bkline Exp $
  *
  */
 
@@ -46,9 +46,9 @@ cdr::CdrDoc::CdrDoc (
     cdr::db::Connection& dbConn,
     cdr::dom::Node& docDom
 ) : docDbConn (dbConn),
-    Comment (false),
-    BlobData (false),
-    ValDate (false),
+    Comment (true),
+    BlobData (true),
+    ValDate (true),
     parsed (false),
     malformed (false),
     Id (0),
@@ -152,9 +152,7 @@ cdr::CdrDoc::CdrDoc (
 
             else if (name == L"CdrDocBlob") {
 
-                // XXXX Need to decode before storing
-                // XXXX NOT STORING YET
-                // BlobData = cdr::dom::getTextContent (child);
+                BlobData = cdr::Blob(cdr::dom::getTextContent(child));
             }
 
             else
@@ -287,7 +285,7 @@ void cdr::CdrDoc::Store ()
         docStmt.setInt    (8, Id);
 
     // Do it
-    docStmt.executeQuery ();
+    docStmt.executeUpdate ();
 
     // If new record, find out what was the key
     if (!Id) {
@@ -298,6 +296,25 @@ void cdr::CdrDoc::Store ()
         sprintf (idbuf, "CDR%010d", Id);
         TextId = idbuf;
     }
+
+    // Clear out any old blob data for the document.
+    static const char* const delBlobQuery = "DELETE doc_blob WHERE id = ?";
+    cdr::db::PreparedStatement delBlob = 
+        docDbConn.prepareStatement(delBlobQuery);
+    delBlob.setInt(1, Id);
+    delBlob.executeUpdate();
+
+    // Store the blob data, if any.
+    if (!BlobData.isNull()) {
+        static const char* const insBlobQuery = 
+            "INSERT doc_blob(id, data) VALUES(?,?)";
+        cdr::db::PreparedStatement insBlob =
+            docDbConn.prepareStatement(insBlobQuery);
+        insBlob.setInt(1, Id);
+        insBlob.setBytes(2, BlobData);
+        insBlob.executeUpdate();
+    }
+
 } // Store
 
 /**
