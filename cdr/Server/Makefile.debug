@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile.debug,v 1.2 2001-12-14 18:48:47 bkline Exp $
+# $Id: Makefile.debug,v 1.3 2002-02-28 00:28:53 bkline Exp $
 #
 # Rules for building debugging version of CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.2  2001/12/14 18:48:47  bkline
+# Changed CdrFilterDebug.obj back to CdrFilter.obj.
+#
 # Revision 1.1  2001/12/14 15:21:31  bkline
 # Initial revision
 #
@@ -14,23 +17,25 @@
 # Makefile variables
 #--------------------------------------------------------------------------
 
-CDR    =/cdr
-XML4C  =/usr/xml4c
-SABLOT =/bkline/sablot
-REGEX  =/usr/regex
-CDRINC =$(CDR)/include
+DRV    =d:
+CDR    =$(DRV)/cdrdbg
+XML4C  =$(DRV)/usr/xml4c
+SABLOT =$(DRV)/usr/sablot
+REGEX  =$(DRV)/usr/regex
+CDRINC =.
 INC    =-I$(XML4C)/include -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)/include
-CFLAGS =$(INC) -W3 -GX -MTd -GR -Zi -nologo -DHEAPDEBUG -D_DEBUG
+CFLAGS =$(INC) -W3 -GX -MTd -GR -Zi -nologo -DHEAPDEBUG -D_DEBUG \
+        -DSINGLE_THREAD_DEBUGGING
 LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
 	/LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/lib /DEBUG
 # Only use these when you have lots of time on your hands.
 #CC     =nmcl
 #LN     =nmlink
 CC     =cl
+BISON  =bison
 LN     =link
-DOC    =../../InetPub/wwwtest/cdr/
-DOCS   =$(DOC)default.htm
-CDRLIB =$(CDR)/lib/cdrdbg.lib
+CVSUPD =cvs update
+CDRLIB =$(CDR)/lib/cdr.lib
 CDRBIN =$(CDR)/bin
 CDRSVR =$(CDRBIN)/CdrServer.exe
 SERVICE=$(CDRBIN)/CdrService.exe
@@ -106,7 +111,7 @@ OBJS   =CdrCommand.obj \
         CdrDOMtoString.obj \
         HeapDebug.obj
 
-LIBS   =cdrdbg.lib xerces-c_1.lib sablot.lib \
+LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
         wsock32.lib odbc32.lib user32.lib 
 
 #--------------------------------------------------------------------------
@@ -118,7 +123,13 @@ LIBS   =cdrdbg.lib xerces-c_1.lib sablot.lib \
 #--------------------------------------------------------------------------
 # Targets
 #--------------------------------------------------------------------------
-all: init CdrServer.exe
+all: cvsupdate
+	$(MAKE) DRV=$(DRV) -f Makefile.debug _all
+
+cvsupdate:
+	$(CVSUPD)
+
+_all: init CdrServer.exe CdrTestClient.exe
 
 #--------------------------------------------------------------------------
 # Initialization, saving two generations of old errors
@@ -152,8 +163,8 @@ service.obj: service.c service.h
 # Rule for building test client.
 #--------------------------------------------------------------------------
 
-CdrTestClient.exe: CdrTestClient.cpp ../lib/cdr.lib
-	$(CC) $(CFLAGS) CdrTestClient.cpp ../lib/cdr.lib wsock32.lib
+CdrTestClient.exe: CdrTestClient.cpp $(CDRLIB)
+	$(CC) $(CFLAGS) CdrTestClient.cpp $(CDRLIB) wsock32.lib
 
 #--------------------------------------------------------------------------
 # We're not doing dependency checking.
@@ -180,15 +191,6 @@ CdrSearch_tab.obj: CdrSearch_tab.c $(HDRS)
 
 CdrSearch_tab.c: CdrSearch.y $(HDRS)
 	bison -p CdrSearch CdrSearch.y
-
-#--------------------------------------------------------------------------
-# Rule for building CDR programmer documentation.
-#--------------------------------------------------------------------------
-CdrDocs: $(DOCS)
-
-$(DOCS): $(HDRS)
-	ccdoc -html $(DOC) -imgurl images/ $(HDRS)
-	cp -f $(DOC)ccdoc.index.html $(DOCS)
 
 #--------------------------------------------------------------------------
 # Generic rules for object files
