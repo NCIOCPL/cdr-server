@@ -1,11 +1,11 @@
-/*
+/**
  * CdrDoc.cpp
  *
  * Implementation of adding or replacing a document in the database.
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.5 2000-09-28 20:04:42 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.6 2000-10-27 02:31:12 ameyer Exp $
  *
  */
 
@@ -21,13 +21,19 @@
 #include "CdrDbPreparedStatement.h"
 #include "CdrDbStatement.h"
 #include "CdrDbResultSet.h"
+#include "CdrVersion.h"
 #include "CdrDoc.h"
+#include "CdrLink.h"
+#include "CdrValidateDoc.h"
 
 // XXX For debugging
 #include <iostream>
 
-static cdr::String CdrPutDoc (cdr::Session& session,
-   const cdr::dom::Node& cmdNode, cdr::db::Connection& dbConn, bool newrec);
+static cdr::String CdrPutDoc (cdr::Session&, const cdr::dom::Node&,
+                              cdr::db::Connection&, bool);
+
+static void auditDoc (cdr::db::Connection&, int, int, cdr::String,
+                      cdr::String, cdr::String);
 
 // Constructor for a CdrDoc
 // Extracts the various elements from the CdrDoc for database update
@@ -347,6 +353,7 @@ static cdr::String CdrPutDoc (
     // Default reason is NULL created by cdr::String contructor
     cmdValidate = L"Y";
     cmdCheckIn  = L"N";
+    cmdReason   = L"";
 
     // Parse command to get document and relevant parts
     topNode = cmdNode.getFirstChild();
@@ -405,16 +412,57 @@ static cdr::String CdrPutDoc (
     }
 
     // Start transaction - everything is serialized from here on
+    // If any called function throws an exception, CdrServer
+    //   will catch it and perform a rollback
     dbConn.setAutoCommit (false);
 
     // If new record, store it so we can get the new ID
     if (newrec)
         doc.Store ();
 
-    else
-        // Is document locked by another user?
-        // XXXX - Call something here to find out, throw exception if so
-        ;
+    else {
+        // Is document locked by this or another user?
+        int         lockUserId;     // User id of person who checked out doc
+        cdr::String lockDate;       // Date checked out
+        cdr::String errMsg;         // For reporting lock errors
+
+        if (cdr::isCheckedOut (doc.getId(), dbConn, &lockUserId, &lockDate)) {
+            if (lockUserId != session.getUserId()) {
+
+
+                // It's checked out to someone else
+                // Tell user who it is and give date/time checked out
+                std::string qry = "SELECT name, fullname "
+                                  "  FROM usr "
+                                  " WHERE id = ?";
+                cdr::db::PreparedStatement stmt = dbConn.prepareStatement(qry);
+                stmt.setInt(1, lockUserId);
+                cdr::db::ResultSet rs = stmt.executeQuery();
+
+                // Should never happen
+                if (!rs.next())
+                    throw cdr::Exception (L"Document is checked out but "
+                                          L"user not identified!");
+
+                // Report who has it, and when
+                // Give brief user name and full name ifwe have it
+                cdr::String lockUserName     = rs.getString (1);
+                cdr::String lockUserFullName = rs.getString (2);
+                if (lockUserFullName.size() > 0)
+                    lockUserFullName = L" (" + lockUserFullName + L"";
+                throw cdr::Exception (
+                        L"User " + session.getUserName()
+                        + L" cannot check-in document checked out by user "
+                        + lockUserName + lockUserFullName
+                        + L" at " + lockDate);
+            }
+        }
+
+        else
+            throw cdr::Exception (L"User " + session.getUserName()
+                    + L" has not checked out this document.  "
+                    L"Storing document not allowed");
+    }
 
     // Perform link validation if requested
     // Must be inside transaction wrapper
@@ -434,14 +482,14 @@ static cdr::String CdrPutDoc (
     doc.updateQueryTerms();
 
     // Check-in to version control if requested
-    if (cmdCheckIn == L"Y") {
-        // XXXX - VERSION CONTROL
-        ;
-    }
+    int version = 0;
+    if (cmdCheckIn == L"Y")
+        version = cdr::checkIn (doc.getId(), dbConn, session.getUserId(),
+                                &cmdReason, 0, 0);
 
-    // XXXX - Unlock document
-
-    // XXXX - Append audit info
+    // Append audit info
+    auditDoc (dbConn, doc.getId(), session.getUserId(), action,
+              L"CdrPutDoc", cmdReason);
 
     // If we got here okay commit all updates
     dbConn.commit();
@@ -456,6 +504,189 @@ static cdr::String CdrPutDoc (
     return resp;
 
 } // CdrPutDoc
+
+
+/**
+ * Delete a document.
+ *
+ * See CdrDoc.h for details.
+ */
+
+cdr::String cdr::delDoc (
+    cdr::Session& session,
+    const cdr::dom::Node& cmdNode,
+    cdr::db::Connection& conn
+) {
+    cdr::String cmdValidate,    // Validate flag from command
+                cmdReason,      // Reason to associate with new version
+                docIdStr;       // Doc id in string form
+    int         docId,          // Doc id as unadorned integer
+                docType,        // Document type
+                userId,         // User invoking this command
+                outUserId,      // User with the doc checked out, if it is
+                errCount;       // Number of link releated errors
+    bool        checkedOut,     // True=doc checked out by someone
+                autoCommitted;  // True=Not inside SQL transaction at start
+    cdr::dom::Node topNode,     // Top level node in command
+                   child,       // Child node in command
+                   docNode;     // Node containing CdrDoc
+    cdr::ValidRule vRule;       // Validation request to CdrDelLinks
+    cdr::StringList errList;    // List of errors from CdrDelLinks
+
+
+    // Default values, may be replace by elements in command
+    // Default reason is NULL created by cdr::String contructor
+    cmdValidate = L"Y";
+    cmdReason   = L"";
+
+    // Parse incoming command
+    topNode = cmdNode.getFirstChild();
+    while (topNode != 0) {
+        if (topNode.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String name = topNode.getNodeName();
+
+            if (name == L"DocId") {
+                docIdStr = cdr::dom::getTextContent (topNode);
+                docId    = docIdStr.extractDocId ();
+            }
+
+            else if (name == L"Validate")
+                cmdValidate = cdr::dom::getTextContent (topNode);
+
+            else if (name == L"Reason")
+                cmdReason = cdr::dom::getTextContent (topNode);
+
+            else
+                throw cdr::Exception (L"CdrDelDoc: Unrecognized element '" +
+                                        name + L"' in command");
+        }
+
+        topNode = topNode.getNextSibling ();
+    }
+
+    // Get document type, need it to check user authorization
+    std::string tQry = "SELECT doc_type FROM document WHERE id = ?";
+    cdr::db::PreparedStatement tSel = conn.prepareStatement (tQry);
+    tSel.setInt (1, docId);
+    cdr::db::ResultSet tRs = tSel.executeQuery();
+    if (!tRs.next())
+        throw cdr::Exception (L"delDoc: Unable to find document " + docIdStr);
+    docType = tRs.getInt (1);
+
+    // Is user authorized to do this?
+    cdr::String foo = L"DELETE DOCUMENT";
+    // if (!session.canDo (conn, L"DELETE DOCUMENT", docType))
+    if (!session.canDo (conn, foo, docType))
+        throw cdr::Exception (L"delDoc: User not authorized to delete docs "
+                              L"of this type");
+
+    // From now on, do everything or nothing
+    // setAutoCommit() checks state first, so it won't end an existing
+    //   transaction
+    autoCommitted = conn.getAutoCommit();
+    conn.setAutoCommit(false);
+
+    // Has anyone got this document checked out?
+    checkedOut = false;
+    userId = session.getUserId();
+    if (isCheckedOut(docId, conn, &outUserId)) {
+        if (outUserId != userId)
+            throw cdr::Exception (L"Document " + docIdStr + L" is checked out"
+                                  L" by another user");
+        checkedOut = true;
+    }
+
+    // Update the link net to delete links from this document
+    // If validation was requested, we tell CdrDelLinks to abort if
+    //   there are any links _to_ this document
+    vRule =  (cmdValidate == L"Y" || cmdValidate == L"y") ?
+             UpdateIfValid : UpdateUnconditionally;
+
+    errCount = cdr::link::CdrDelLinks (conn, docId, vRule, errList);
+
+    if (errCount == 0 || vRule == UpdateUnconditionally) {
+
+        // Proceed with deletion
+        // Begin by deleting all query terms pointing to this doc
+        std::string qQry = "DELETE query_term WHERE doc_id = ?";
+        cdr::db::PreparedStatement qSel = conn.prepareStatement (qQry);
+        qSel.setInt (1, docId);
+        cdr::db::ResultSet tRs = qSel.executeQuery();
+
+        // And the document itself
+        std::string dQry = "DELETE document WHERE id = ?";
+        cdr::db::PreparedStatement dSel = conn.prepareStatement (dQry);
+        dSel.setInt (1, docId);
+        cdr::db::ResultSet dRs = dSel.executeQuery();
+
+        // Record what we've done
+        auditDoc (conn, docId, userId, L"DELETE DOCUMENT",
+                  L"CdrDelDoc", cmdReason);
+    }
+
+    // Restore autocommit status if required
+    conn.setAutoCommit(autoCommitted);
+
+    // Prepare response
+    cdr::String resp = L"  <CdrDelDocResp>\n"
+                       L"   <DocId>" + docIdStr + L"</DocId>\n";
+
+    // Include any errors
+    if (errCount > 0)
+        resp += cdr::packErrors (errList);
+
+    // Terminate and return response
+    return (resp + L"  </CdrDelDocResp>\n");
+}
+
+
+/**
+ * Log an action on a document to the audit_trail
+ *
+ * @param  dbConn       Database connection.
+ * @param  docId        Document ID.
+ * @param  user         Userid.
+ * @param  action       An id from the action table, corresponding to one of:
+ *                         "ADD DOCUMENT"
+ *                         "MODIFY DOCUMENT"
+ *                         "DELETE DOCUMENT"
+ * @param  program      Optional program name or null string.
+ * @param  comment      Optional free text comment or null string.
+ */
+
+static void auditDoc (
+    cdr::db::Connection& dbConn,
+    int                  docId,
+    int                  userId,
+    cdr::String          action,
+    cdr::String          program,
+    cdr::String          comment
+) {
+    int actionId = 0;
+
+    // Convert action string to expected code
+    std::string actQry = "SELECT id FROM action WHERE name = ?";
+    cdr::db::PreparedStatement actStmt = dbConn.prepareStatement(actQry);
+    actStmt.setString (1, action);
+    cdr::db::ResultSet actRs = actStmt.executeQuery();
+    if (!actRs.next())
+        throw cdr::Exception (L"auditDoc: Bad action string '"
+                              + action
+                              + L"'  Can't happen.");
+    actionId = actRs.getInt (1);
+
+    // Insert
+    std::string qry = "INSERT INTO audit_trail (document, dt, usr, action, "
+                      "program, comment) VALUES (?, GETDATE(), ?, ?, ?, ?)";
+    cdr::db::PreparedStatement stmt = dbConn.prepareStatement(qry);
+    stmt.setInt (1, docId);
+    stmt.setInt (2, userId);
+    stmt.setInt (3, actionId);
+    stmt.setString (4, program);
+    stmt.setString (5, comment);
+    cdr::db::ResultSet rs = stmt.executeQuery();
+}
+
 
 /**
  * Replaces the rows in the query_term table for the current document.
