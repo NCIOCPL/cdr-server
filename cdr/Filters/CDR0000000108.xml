@@ -914,9 +914,7 @@
  <xsl:template                    name = "upcode-parentname">
   <xsl:param                      name = "ParentID"/>
   <xsl:param                      name = "ParentDoc"/> 
-  <!-- What's this?
-  VVVV
-  -->
+  <!-- VVVV -->
   <OrganizationName>
    <xsl:value-of                select = "$ParentDoc/Organization/
                                           OrganizationNameInformation/
@@ -1125,8 +1123,7 @@
                                   mode = "copy"/>
 
    <!-- Collect the participating org personnel information. -->
-   <!-- WHAT'S THIS??? -->
-   <PracticeSiteContact>XXX
+   <PracticeSiteContact><!-- XXX -->
     <xsl:apply-templates        select = "PrivatePracticePerson"/>
    </PracticeSiteContact>
   </PrivatePracticeSite>
@@ -1190,8 +1187,8 @@
                                 select = "document(concat('cdr:',
                                                           $PPID, 
                                                           '/last'))"/>
-  <!-- WHAT'S THIS??? -->
-  YYY<SpecificPerson               ref = "{$PPID}">
+  <!-- YYY -->
+  <SpecificPerson                  ref = "{$PPID}">
    <xsl:apply-templates         select = "$PPInfo/Person/PersonNameInformation"
                                   mode = "copy"/>
    <xsl:apply-templates         select = "Role"
@@ -1308,67 +1305,66 @@
   The update-parent template can only retrieve the parents in the
   default sort order.  A separate filter will have to run in order
   to resort the parents in case the value is set to Yes
+
+  RMK 2002-09-06: According to a phone conversation with Lakshmi
+  (and followup email) she wants the OrganizationAddressNames
+  element created even if the IncludeParentName is not set to
+  'Yes'; in that case only the direct organization will be
+  included (without its parents).
   ================================================================ -->
-<!-- <xsl:message terminate='yes'>
- <xsl:value-of select = -->
-  <xsl:if                         test = "$orgDoc/Organization/
-                                           OrganizationLocations/
-                                           OrganizationLocation/
-                                           @IncludeParentName">
-   <OrganizationAddressNames>
-    <xsl:if                       test = "$orgDoc/Organization/
+  <OrganizationAddressNames>
+
+   <xsl:if                        test = "$orgDoc/Organization/
                                            OrganizationLocations/
                                            OrganizationLocation/
                                            @OrderParentNameFirst">
-     <xsl:attribute               name = "OrderParentNameFirst">
-      <xsl:value-of             select = "$orgDoc/Organization/
+    <xsl:attribute                name = "OrderParentNameFirst">
+     <xsl:value-of              select = "$orgDoc/Organization/
                                            OrganizationLocations/
                                            OrganizationLocation/
                                            @OrderParentNameFirst"/>
-     </xsl:attribute>
-    </xsl:if>
+    </xsl:attribute>
+   </xsl:if>
+
+   <OrganizationName>
+    <xsl:value-of               select = "$orgDoc/Organization/
+                                           OrganizationNameInformation/
+                                           OfficialName/Name"/>
+   </OrganizationName>
+     
+   <xsl:if                        test = "$orgDoc/Organization/
+                                           OrganizationLocations/
+                                           OrganizationLocation/
+                                           @IncludeParentName">
 
     <xsl:variable                 name = "ParentID" 
                                 select = "$orgDoc/Organization/
                                            OrganizationParent/
                                            ParentOrganization/@cdr:ref"/>
 
-    <!-- Stop processing if document link cannot be resolved -->
-    <xsl:if                       test = "substring-before($fragRef, '#')
-                                          = 'CDR0000000000'">
-     <xsl:message            terminate = "yes">
-      <xsl:text>Error:  OrganizationAddress element failed!    
-      </xsl:text>
-      <xsl:value-of              select = "$orgDoc"/>
-     </xsl:message> 
-    </xsl:if>
-
-    <xsl:variable                  name = "ParentDoc" 
-                                 select = "document(concat('cdr:',
+    <xsl:variable                 name = "ParentDoc" 
+                                select = "document(concat('cdrx:',
                                                            $ParentID,
                                                            '/last'))"/>
 
-    <!-- 
-    <xsl:if                        test = "not($orgDoc/Organization/
-                                                OrganizationLocations/
-                                                OrganizationLocation/
-                                                @OrderParentNameFirst)">
-    -->
-    <OrganizationName>
-     <xsl:value-of              select = "$orgDoc/Organization/
-                                           OrganizationNameInformation/
-                                           OfficialName/Name"/>
-    </OrganizationName>
-     
+    <!-- Stop processing if document link cannot be resolved -->
+    <xsl:if                       test = "not($ParentDoc)">
+     <xsl:message            terminate = "yes">
+      <xsl:text>Cannot resolve link </xsl:text>
+      <xsl:value-of             select = "concat($ParentID, '/last')"/>
+      <xsl:text> for parent organization of </xsl:text>
+      <xsl:value-of             select = "concat($fragRef, '/last')"/>
+     </xsl:message> 
+    </xsl:if>
+
     <xsl:call-template            name = "upcode-parentname">
      <xsl:with-param              name = "ParentID"
                                 select = "$ParentID"/>
      <xsl:with-param              name = "ParentDoc"
                                 select = "$ParentDoc"/>
     </xsl:call-template>
-
-   </OrganizationAddressNames>
-  </xsl:if>
+   </xsl:if>
+  </OrganizationAddressNames>
 
   <!-- Include the Organization Address Block -->
   <xsl:choose>
