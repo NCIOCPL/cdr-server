@@ -36,19 +36,6 @@
 <xsl:apply-templates select="OtherName" mode="copy"/>
 </xsl:if>
 
-<!-- =================================================================
-                     copy source information 
-     ================================================================== -->
- 
-<xsl:if test="SourceInformation">
-<xsl:apply-templates select="SourceInformation" mode="copy"/>
-</xsl:if>
-<xsl:if test="VocabularySource">
-<xsl:apply-templates select="VocabularySource" mode="copy"/>
-</xsl:if>
-<xsl:if test="DefinitionSource">
-<xsl:apply-templates select="DefinitionSource" mode="copy"/>
-</xsl:if>
 
 <!-- =====================================================================
                    copy term type data elements 
@@ -110,9 +97,12 @@
          </xsl:if>
         <xsl:apply-templates select="MenuType" mode="copy"/>
           <xsl:if test="MenuParent">
+          <xsl:for-each select="MenuParent">
           <MenuParent>
-         <xsl:apply-templates select="MenuParent/@cdr:ref" mode="copy"/>
-         <xsl:variable name="MenuID" select="MenuParent/@cdr:ref"/>
+          <xsl:attribute name="cdr:ref">
+          <xsl:value-of select="@cdr:ref"/>
+          </xsl:attribute>  
+         <xsl:variable name="MenuID" select="@cdr:ref"/>
          <xsl:variable name="MenuInfo" select="document(concat('cdr:',$MenuID,'/lastp'))"/>
         <xsl:choose>
         <xsl:when test="DisplayName=$MenuInfo/Term/MenuInformation/MenuItem/DisplayName">
@@ -123,14 +113,16 @@
         </xsl:otherwise>
         </xsl:choose>
         </MenuParent>
+        </xsl:for-each>
         </xsl:if>
         <xsl:apply-templates select="DisplayName" mode="copy"/>
         <xsl:apply-templates select="MenuStatus" mode="copy"/>
         <xsl:apply-templates select="EnteredBy" mode="copy"/>
         <xsl:apply-templates select="EntryDate" mode="copy"/>
         </MenuItem>
-        </xsl:for-each>  
+       </xsl:for-each> 
         </MenuInformation>
+      <!--  <xsl:for-each>-->
         </xsl:if>    
               
   
