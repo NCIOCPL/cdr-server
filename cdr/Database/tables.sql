@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.51 2002-04-02 19:02:02 bkline Exp $
+ * $Id: tables.sql,v 1.52 2002-04-10 13:39:40 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.51  2002/04/02 19:02:02  bkline
+ * Added failure column to pub_proc_doc (and published_doc view).
+ *
  * Revision 1.50  2002/02/02 01:39:51  bkline
  * Fixed typo in pub_proc table creation.
  *
@@ -1295,4 +1298,16 @@ AS
      WHERE d.doc_type = t.id    
        AND t.name     = 'Term'    
        AND d.xml LIKE '%<TermParent%'
+GO
+
+/*
+ * Useful view for troubleshooting login failures or detecting intruders.
+ */
+CREATE VIEW failed_login_attempts
+AS
+    SELECT recorded,
+           source,
+           msg
+      FROM debug_log
+     WHERE source LIKE 'Failed logon attempt%'
 GO
