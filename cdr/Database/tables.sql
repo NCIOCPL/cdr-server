@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.24 2001-03-21 22:55:16 mruben Exp $
+ * $Id: tables.sql,v 1.25 2001-04-08 19:13:13 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2001/03/21 22:55:16  mruben
+ * corrected comment
+ *
  * Revision 1.23  2001/02/20 15:44:24  bkline
  * Added css to doc_type table; fixed default for schema_date.
  *
@@ -738,3 +741,13 @@ CREATE TABLE query_term_rule
 CREATE TABLE query_term_def
        (path VARCHAR(512) NOT NULL,
    term_rule INTEGER NULL REFERENCES query_term_rule)
+
+/*
+ * Contains child-parent document ID pairs for Term document hierarchical
+ * relationships.
+ */
+CREATE VIEW term_parents
+         AS SELECT DISTINCT doc_id AS child,
+                            CAST(SUBSTRING(value, 4, 10) AS INT) as parent
+                       FROM query_term
+                      WHERE path = '/Term/TermParent/@cdr:ref'
