@@ -1,11 +1,14 @@
 #----------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.4 2001-12-22 01:56:37 bkline Exp $
+# $Id: Makefile,v 1.5 2001-12-24 01:00:28 bkline Exp $
 #
 # Rules for initializing CDR database at data conversion time.
 # Must be run as system administrator.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.4  2001/12/22 01:56:37  bkline
+# Added rules to check scripts out of source code control.
+#
 # Revision 1.3  2001/12/19 21:04:42  bkline
 # Replaced rename command with 'mv -f'; moved LoadControlData.sql to
 # LoadControlData.sql.old after use.
@@ -19,9 +22,7 @@
 #
 #----------------------------------------------------------------------
 
-SQL=CreateCdrLogin.sql\
-    CreateDatabase.sql\
-    CreateMoreLogins.sql\
+SQL=CreateLogins.sql\
     tables.sql\
     procs.sql\
     LoadControlData.sql\
@@ -31,13 +32,11 @@ SQL=CreateCdrLogin.sql\
 # Top-level rule.
 #----------------------------------------------------------------------
 all: $(SQL)
-	osql -n -E                -i CreateCdrLogin.sql
-	osql -n -U cdr -P ***REMOVED*** -i CreateDatabase.sql
-	osql -n -E                -i CreateMoreLogins.sql
-	osql -n -U cdr -P ***REMOVED*** -i tables.sql
-	osql -n -U cdr -P ***REMOVED*** -i procs.sql
-	osql -n -U cdr -P ***REMOVED*** -i LoadControlData.sql
-	osql -n -U cdr -P ***REMOVED*** -i ShowCounts.sql
+	osql -n -E -i tables.sql
+	osql -n -E -i procs.sql
+	osql -n -E -i LoadControlData.sql
+	osql -n -E -i CreateLogins.sql
+	osql -n -E -i ShowCounts.sql
 	mv -f LoadControlData.sql LoadControlData.sql.old
 
 #----------------------------------------------------------------------
@@ -51,14 +50,8 @@ LoadControlData.sql: base_data_sql.py
 #----------------------------------------------------------------------
 # Get the rest from source code control.
 #----------------------------------------------------------------------
-CreateCdrLogin.sql:
-	co CreateCdrLogin.sql
-
-CreateDatabase.sql:
-	co CreateDatabase.sql
-
-CreateMoreLogins.sql:
-	co CreateMoreLogins.sql
+CreateLogins.sql:
+	co CreateLogins.sql
 
 tables.sql:
 	co tables.sql
