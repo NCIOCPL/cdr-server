@@ -1,9 +1,14 @@
 /*
- * $Id: CdrCache.cpp,v 1.4 2004-07-02 01:26:36 ameyer Exp $
+ * $Id: CdrCache.cpp,v 1.5 2004-07-02 02:13:46 ameyer Exp $
  *
  * Specialized cacheing for performance optimization, where useful.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2004/07/02 01:26:36  ameyer
+ * New concepts for starting and stopping cacheing using request counter.
+ * New concept for timing out stale cache.
+ * Bug fixes.
+ *
  * Revision 1.3  2004/05/26 01:14:49  ameyer
  * New handling of PdqKey and cdr:ref attributes.
  *
@@ -106,7 +111,7 @@ bool cdr::cache::Term::initTermCache(
 
                 // Turn off by deleting the map if no process is
                 //   still expecting the cache to be on
-                if (S_cacheOnCount < 1) {
+                if (S_cacheOnCount < 1 && S_pTermMap) {
                     cdr::cache::Term::clearMap(S_pTermMap);
                     S_cacheStartTime = (time_t) 0;
                 }
