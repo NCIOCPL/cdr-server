@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.66 2002-11-25 21:16:28 bkline Exp $
+# $Id: Makefile,v 1.67 2002-11-26 22:30:40 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.66  2002/11/25 21:16:28  bkline
+# Fixed DBG code to point to cdrd.lib.
+#
 # Revision 1.65  2002/11/21 21:13:47  ameyer
 # Removed DOMtoString - obsolete function.
 # Should use operator<< in CdrDom.cpp instead.
@@ -238,7 +241,7 @@ BISON  =bison
 LN     =link
 CP     =cp -f
 CVSUPD =cvs update
-DOC    =$(DRV)/InetPub/wwwroot/cdr/
+DOC    =$(DRV)/InetPub/wwwroot/cdr/ccdoc/
 DOCS   =$(DOC)default.htm
 CDRBIN =$(CDR)/bin
 CDRSVR =$(CDRBIN)/CdrServer.exe
@@ -434,8 +437,12 @@ CdrSearch_tab.c: CdrSearch.y $(HDRS)
 CdrDocs: $(DOCS)
 
 $(DOCS): $(HDRS)
-	ccdoc -html $(DOC) -imgurl images/ $(HDRS)
-	$(CP) $(DOC)ccdoc.index.html $(DOCS)
+    if exist $(DOC) (rm $(DOC)ccdoc*html)
+    if exist $(DOC) ( \
+      ccdoc -html $(DOC) -db $(DOC)ccdoc.db -root cdr \
+            -header $(DOC)save/serverhdr.html $(HDRS) \
+    )
+    if exist $(DOC) ($(CP) $(DOC)ccdoc.cdr.pkg.html $(DOCS))
 
 #--------------------------------------------------------------------------
 # Generic rules for object files
