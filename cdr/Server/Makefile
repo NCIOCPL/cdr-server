@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.74 2004-04-30 01:35:39 ameyer Exp $
+# $Id: Makefile,v 1.75 2004-05-06 20:51:58 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.74  2004/04/30 01:35:39  ameyer
+# Added CdrTiming.obj.
+#
 # Revision 1.73  2004/03/31 03:08:44  ameyer
 # Added analyzeException.obj
 # Added -EHa to enable C++ handling of Windows structured exceptions.
@@ -268,24 +271,22 @@ CVSUPD =cvs update
 DOC    =$(DRV)/InetPub/wwwroot/cdr/ccdoc/
 DOCS   =$(DOC)default.htm
 CDRBIN =$(CDR)/bin
+CDRLDIR=$(CDR)/lib
 CDRSVR =$(CDRBIN)/CdrServer.exe
 SERVICE=$(CDRBIN)/CdrService.exe
 CFLAGS =$(INC) -W3 -GX -EHa -MD -GR -nologo
 LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
         /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/$(REVER)
-LIBS   =xml4c_5.lib sablot.lib wsock32.lib odbc32.lib user32.lib 
+CDRLIB =cdr.lib
+LIBS   =$(CDRLIB) xml4c_5.lib sablot.lib wsock32.lib odbc32.lib user32.lib 
 SVCFLGS=-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT \
         -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MT
 !IF "$(DBG)" == ""
 CFLAGS =$(CFLAGS) -O2 -D_NDEBUG
-CDRLIB =$(CDR)/lib/cdr.lib
-LIBS   =cdr.lib $(LIBS)
 !ELSE
 CFLAGS =$(CFLAGS) -Zi
 LFLAGS =$(LFLAGS) /DEBUG
-CDRLIB =$(CDR)/lib/cdrd.lib
 SVCFLGS=-DDEBUG $(SVCFLGS)
-LIBS   =cdrd.lib $(LIBS)
 !ENDIF
 HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrCommand.h \
@@ -389,6 +390,7 @@ _all: init CdrServer.exe CdrTestClient.exe #CdrDocs $(SERVICE)
 _install: CdrServer.exe CdrDocs
 	-net stop Cdr
 	$(CP) CdrServer.exe $(CDRBIN)
+	$(CP) $(CDRLIB) $(CDRLDIR)
 	net start Cdr
 
 #--------------------------------------------------------------------------
