@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.cpp,v 1.2 2000-04-15 14:06:39 bkline Exp $
+ * $Id: CdrDom.cpp,v 1.3 2000-04-26 01:30:38 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/15 14:06:39  bkline
+ * Added getTextContent function.
+ *
  * Revision 1.1  2000/04/11 14:16:41  bkline
  * Initial revision
  *
@@ -21,6 +24,12 @@ void cdr::dom::Parser::parse(const std::string& xml)
 {
     MemBufInputSource s((const XMLByte* const)xml.c_str(), xml.size(), "MEM");
     ((::DOMParser *)this)->parse(s);
+}
+
+void cdr::dom::Parser::parse(const cdr::String& xml)
+    throw(cdr::dom::DOMException)
+{
+    parse(xml.toUtf8());
 }
 
 cdr::String cdr::dom::getTextContent(const cdr::dom::Node& node)
