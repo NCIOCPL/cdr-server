@@ -1,10 +1,13 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.3 2000-04-27 13:10:49 bkline Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.4 2000-04-29 15:50:13 bkline Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/04/27 13:10:49  bkline
+ * Replaced stubs for validation of simple types.
+ *
  * Revision 1.2  2000/04/26 01:25:01  bkline
  * First working version, with stubs for validation of simple types.
  *
@@ -54,12 +57,15 @@ static void validateElement(
         const cdr::xsd::Type&           type,
         cdr::xsd::Schema&               schema,
         cdr::StringList&                errors);
-static void verifyAttributes(
+static bool validateAttributes(
         cdr::dom::Element&              element, 
         const cdr::xsd::ComplexType&    type,
+        cdr::xsd::Schema&               schema,
         cdr::StringList&                errors);
 static void validateSimpleType(
-        cdr::dom::Element&              docElement,
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              value,
         const cdr::xsd::SimpleType&     simpleType,
         cdr::StringList&                errors);
 static void verifyNoText(
@@ -79,47 +85,56 @@ static void verifyElements(
         cdr::xsd::Schema&               schema,
         cdr::StringList&                errors);
 static void checkMaxInclusive(
-        const cdr::String&              name,
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              value,
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void checkMinInclusive(
-        const cdr::String&              name,
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              value,
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void validateTimeInstant(
-        const cdr::String&              name, 
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              val, 
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void validateUri(
-        const cdr::String&              name, 
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              val, 
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void validateBinary(
-        const cdr::String&              name, 
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              val, 
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void validateInteger(
-        const cdr::String&              name, 
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              val, 
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void validateDecimal(
-        const cdr::String&              name, 
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              val, 
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void validateTime(
-        const cdr::String&              name, 
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              val, 
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void validateDate(
-        const cdr::String&              name, 
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              val, 
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors); 
@@ -149,9 +164,10 @@ static bool matchPattern(
  * document isn't even well-formed, there's not much else we can report,
  * however.
  */
-cdr::String cdr::validateDoc(cdr::Session& session, 
-                             const cdr::dom::Node& commandNode,
-                             cdr::db::Connection& dbConnection) 
+cdr::String cdr::validateDoc(
+        cdr::Session&                   session, 
+        const cdr::dom::Node&           commandNode,
+        cdr::db::Connection&            dbConnection) 
 {
     // Extract the data elements from the command node.
     cdr::String         docIdString;
@@ -408,7 +424,7 @@ cdr::String makeResponse(cdr::String&     docId,
         response += L"   <Errors>\n";
         cdr::StringList::iterator i = errors.begin();
         while (i != errors.end())
-            response += L"    <Error>" + *i++ + L"</Error>\n";
+            response += L"    <Err>" + *i++ + L"</Err>\n";
         response += L"   </Errors>\n";
     }
     return response + L"  </CdrValidateDocResp>\n";
@@ -436,14 +452,82 @@ void setDocStatus(
  * attributes are present which are undefined for this element
  * type or which do not meet the type requirements for the
  * attribute.
+ *
+ *  @return     <code>true</code> if element is denormalized.
  */
-void verifyAttributes(
-        cdr::dom::Element&              e, 
-        const cdr::xsd::ComplexType&    t,
+bool validateAttributes(
+        cdr::dom::Element&              element, 
+        const cdr::xsd::ComplexType&    type,
+        cdr::xsd::Schema&               schema,
         cdr::StringList&                errors) 
 {
-    std::wcerr << L"Stub for verifyAttributes...\n";
+    // Look for attributes expected for this element type.
+    bool isDenormalized = false;
+    cdr::xsd::AttrEnum attrEnum = type.getAttributes();
+    while (attrEnum != type.getAttrEnd()) {
+        cdr::xsd::Attribute* attr = *attrEnum++;
+        cdr::String attrName      = attr->getName();
+        cdr::String attrVal       = element.getAttribute(attrName.c_str());
+        if (attrName == L"cdr::link")
+            isDenormalized = true;
+        if (attrVal.empty()) {
+            if (!attr->isOptional()) {
+                cdr::String err = cdr::String(L"Missing required attribute ")
+                                + attr->getName()
+                                + L" in element "
+                                + cdr::String(element.getNodeName());
+                errors.push_back(err);
+            }
+        }
+        else {
+
+            // Make sure the attribute has been assigned a type.
+            const cdr::xsd::Type* attrType = attr->getType(schema);
+            if (!attrType) {
+                cdr::String err = cdr::String(L"Attribute ")
+                                + attrName
+                                + L" has not been assigned a type";
+                errors.push_back(err);
+                continue;
+            }
+
+            // Make sure the type is a simple type.
+            const cdr::xsd::SimpleType* simpleType =
+                dynamic_cast<const cdr::xsd::SimpleType*>(attrType);
+            if (!simpleType) {
+                cdr::String err = cdr::String(L"Attribute ")
+                                + attrName
+                                + L" does not have a simple type";
+                errors.push_back(err);
+            }
+            else
+                validateSimpleType(element.getNodeName(),
+                                   attr->getName(),
+                                   attrVal,
+                                   *simpleType,
+                                   errors);
+        }
+    }
+
+    // Check for attributes which weren't expected for this element type.
+    cdr::dom::NamedNodeMap attrs = element.getAttributes();
+    int nAttrs = attrs.getLength();
+    for (int i = 0; i < nAttrs; ++i) {
+        cdr::dom::Node  attr = attrs.item(i);
+        cdr::String     name = attr.getNodeName();
+        if (!type.hasAttribute(name)) {
+            cdr::String err = cdr::String(L"Unexpected attribute ")
+                            + name
+                            + L"='"
+                            + cdr::String(attr.getNodeValue())
+                            + L"' in element "
+                            + cdr::String(element.getNodeName());
+            errors.push_back(err);
+        }
+    }
+    return isDenormalized;
 }
+
 
 /**
  * Recursively validates specified element against its schema specification.
@@ -459,8 +543,18 @@ void validateElement(
     simpleType  = dynamic_cast<const cdr::xsd::SimpleType*>(&type);
     complexType = dynamic_cast<const cdr::xsd::ComplexType*>(&type);
     if (simpleType)
-        validateSimpleType(docElement, *simpleType, errors);
+        validateSimpleType(docElement.getNodeName(), 
+                           L"",
+                           cdr::dom::getTextContent(docElement),
+                           *simpleType,
+                           errors);
     else {
+        bool denormalized = validateAttributes(docElement, 
+                                               *complexType, 
+                                               schema,
+                                               errors);
+        if (denormalized)
+            return;
         switch (complexType->getContentType()) {
         case cdr::xsd::ComplexType::EMPTY:
             verifyNoText(docElement, errors);
@@ -478,7 +572,6 @@ void validateElement(
             break;
         }
 
-        verifyAttributes(docElement, *complexType, errors);
     }
 }
 
@@ -502,14 +595,32 @@ bool matchPattern(
         const cdr::String&              value)
 {
     cdr::RegEx re(pattern);
-    return re.match(value);
+    bool result = re.match(value);
+    return result;
+}
+
+/**
+ * Builds string to identify element (and possibly attribute) containing
+ * text value, suitable for concatenating to error message.
+ */
+cdr::String identifyTextValue(
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName)
+{
+    if (attrName.empty())
+        return cdr::String(L"' in element ") + elemName;
+    else
+        return cdr::String(L"' in attribute ") + attrName
+                                              + L" of element "
+                                              + elemName;
 }
 
 /**
  * Reports any errors found with a date value.
  */
 void validateDate(
-        const cdr::String&              name, 
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              val, 
         const cdr::xsd::SimpleType&     t,
         cdr::StringList&                errors) 
@@ -518,8 +629,7 @@ void validateDate(
     if (!matchPattern(pattern, val)) {
         cdr::String err = cdr::String(L"Invalid date value: '")
                         + val
-                        + L"' in element "
-                        + name;
+                        + identifyTextValue(elemName, attrName);
         errors.push_back(err);
     }
 }
@@ -528,7 +638,8 @@ void validateDate(
  * Reports any errors found with a time value.
  */
 void validateTime(
-        const cdr::String&              name, 
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              val, 
         const cdr::xsd::SimpleType&     t,
         cdr::StringList&                errors) 
@@ -538,8 +649,7 @@ void validateTime(
     if (!matchPattern(pattern, val)) {
         cdr::String err = cdr::String(L"Invalid time value: '")
                         + val
-                        + L"' in element "
-                        + name;
+                        + identifyTextValue(elemName, attrName);
         errors.push_back(err);
     }
 }
@@ -548,17 +658,17 @@ void validateTime(
  * Reports any errors found with a decimal value.
  */
 void validateDecimal(
-        const cdr::String&              name, 
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              val, 
         const cdr::xsd::SimpleType&     t,
         cdr::StringList&                errors) 
 { 
-    static const wchar_t pattern[] = L"^\\d+(\\.\\d*)?|\\d*\\.\\d+$";
+    static const wchar_t pattern[] = L"^[-+]?\\d+(\\.\\d*)?|\\d*\\.\\d+$";
     if (!matchPattern(pattern, val)) {
         cdr::String err = cdr::String(L"Invalid decimal value: '")
                         + val
-                        + L"' in element "
-                        + name;
+                        + identifyTextValue(elemName, attrName);
         errors.push_back(err);
     }
     int precision = t.getPrecision();
@@ -567,8 +677,12 @@ void validateDecimal(
         int valPrecision       = 0;
         int valScale           = 0;
 
-        // Skip past leading zeroes.
+        // Skip past leading sign.
         size_t i = 0;
+        if (i < val.size() && (val[i] == L'-' || val[i] == L'+'))
+            ++i;
+
+        // Skip past leading zeroes.
         while (i < val.size() && val[i] == L'0')
             ++i;
 
@@ -595,21 +709,17 @@ void validateDecimal(
 
         // Check the scale if appropriate.
         if (scale != -1 && valScale > scale) {
-            cdr::String err = cdr::String(L"Invalid scale for element ")
-                            + name 
-                            + L": '"
+            cdr::String err = cdr::String(L"Invalid scale: '")
                             + val
-                            + L"'";
+                            + identifyTextValue(elemName, attrName);
             errors.push_back(err);
         }
 
         // Check the precision.
         if (precision != -1 && valPrecision > precision) {
-            cdr::String err = cdr::String(L"Invalid precision for element ")
-                            + name 
-                            + L": '"
+            cdr::String err = cdr::String(L"Invalid precision: '")
                             + val
-                            + L"'";
+                            + identifyTextValue(elemName, attrName);
             errors.push_back(err);
         }
     }
@@ -619,17 +729,17 @@ void validateDecimal(
  * Reports any errors found with an integer value.
  */
 void validateInteger(
-        const cdr::String&              name, 
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              val, 
         const cdr::xsd::SimpleType&     t,
         cdr::StringList&                errors) 
 { 
-    static const wchar_t pattern[] = L"^\\d+$";
+    static const wchar_t pattern[] = L"^[-+]?\\d+$";
     if (!matchPattern(pattern, val)) {
         cdr::String err = cdr::String(L"Invalid integer value: '")
                         + val
-                        + L"' in element "
-                        + name;
+                        + identifyTextValue(elemName, attrName);
         errors.push_back(err);
     }
 
@@ -638,8 +748,12 @@ void validateInteger(
 
         int valPrecision       = 0;
 
-        // Skip past leading zeroes.
+        // Skip past leading sign.
         size_t i = 0;
+        if (i < val.size() && (val[i] == L'-' || val[i] == L'+'))
+            ++i;
+
+        // Skip past leading zeroes.
         while (i < val.size() && val[i] == L'0')
             ++i;
 
@@ -651,11 +765,9 @@ void validateInteger(
 
         // Check the precision.
         if (valPrecision > precision) {
-            cdr::String err = cdr::String(L"Invalid precision for element ")
-                            + name 
-                            + L": '"
+            cdr::String err = cdr::String(L"Invalid precision: '")
                             + val
-                            + L"'";
+                            + identifyTextValue(elemName, attrName);
             errors.push_back(err);
         }
     }
@@ -663,21 +775,44 @@ void validateInteger(
 
 /**
  * Reports any errors found with a URI value.
+ *
+ * @see section 4 of RFC 2396.
  */
 void validateUri(
-        const cdr::String&              name, 
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              val, 
         const cdr::xsd::SimpleType&     t,
         cdr::StringList&                errors) 
 { 
-    std::wcout << L"validateUri stub: " << name << L"=" << val << L"\n";
+    /*
+     * The pattern is from RFC 2396, with parentheses only needed for 
+     * extracting subexpressions removed.
+     */
+    const wchar_t* rfcPattern = 
+        L"^([^:/?#]+:)?(//[^/?#]*)?[^?#]*(\?[^#]*)?(#.*)?$";
+
+    /*
+     * This is for a second pass to ensure that we stay within the character
+     * set prescribed by the RFC.  These two patterns won't catch every
+     * syntax error in URIs, but the BNF for the full grammar in RFC 2396
+     * is beyond the reach of simple pattern-matching.
+     */
+    const wchar_t* charSetPattern = L"$[-A-Za-z0-9%_.!~*'()/;?:@&=$+,#]*$";
+    if (!matchPattern(rfcPattern, val) || !matchPattern(charSetPattern, val)) {
+        cdr::String err = cdr::String(L"Invalid URI value: '")
+                        +  val
+                        + identifyTextValue(elemName, attrName);
+        errors.push_back(err);
+    }
 }
 
 /**
  * Reports any errors found with a binary value.
  */
 void validateBinary(
-        const cdr::String&              name, 
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              val, 
         const cdr::xsd::SimpleType&     t,
         cdr::StringList&                errors) 
@@ -690,8 +825,7 @@ void validateBinary(
         if (!matchPattern(hexPattern, val)) {
             cdr::String err = cdr::String(L"Invalid HEX encoding: '")
                             + val
-                            + L"' in element "
-                            + name;
+                            + identifyTextValue(elemName, attrName);
             errors.push_back(err);
         }
     }
@@ -699,8 +833,7 @@ void validateBinary(
         if (!matchPattern(base64Pattern, val)) {
             cdr::String err = cdr::String(L"Invalid base-64 encoding: '")
                             + val
-                            + L"' in element "
-                            + name;
+                            + identifyTextValue(elemName, attrName);
             errors.push_back(err);
         }
     }
@@ -710,7 +843,8 @@ void validateBinary(
  * Reports any errors found with a date/time value.
  */
 void validateTimeInstant(
-        const cdr::String&              name, 
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              val, 
         const cdr::xsd::SimpleType&     t,
         cdr::StringList&                errors) 
@@ -721,8 +855,7 @@ void validateTimeInstant(
     if (!matchPattern(pattern, val)) {
         cdr::String err = cdr::String(L"Invalid date/time value: '")
                         + val
-                        + L"' in element "
-                        + name;
+                        + identifyTextValue(elemName, attrName);
         errors.push_back(err);
     }
 }
@@ -731,7 +864,8 @@ void validateTimeInstant(
  * Determines whether the value is less than any minimum specified.
  */
 void checkMinInclusive(
-        const cdr::String&              name,
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              value,
         const cdr::xsd::SimpleType&     t,
         cdr::StringList&                errors) 
@@ -739,39 +873,24 @@ void checkMinInclusive(
     if (t.getMinInclusive().size() > 0) {
         switch (t.getBuiltinType()) {
         case cdr::xsd::SimpleType::DECIMAL:
-            if (value.getFloat() < t.getMinInclusive().getFloat()) {
-                cdr::String err = cdr::String(L"'")
-                                + value
-                                + L"' is below the minimum '"
-                                + t.getMinInclusive()
-                                + L"' allowed for element "
-                                + name;
-                errors.push_back(err);
-            }
+            if (value.getFloat() >= t.getMinInclusive().getFloat())
+                return;
             break;
         case cdr::xsd::SimpleType::INTEGER:
-            if (value.getInt() < t.getMinInclusive().getInt()) {
-                cdr::String err = cdr::String(L"'")
-                                + value
-                                + L"' is below the minimum '"
-                                + t.getMinInclusive()
-                                + L"' allowed for element "
-                                + name;
-                errors.push_back(err);
-            }
+            if (value.getInt() >= t.getMinInclusive().getInt())
+                return;
             break;
         default:
-            if (value < t.getMinInclusive()) {
-                cdr::String err = cdr::String(L"'")
-                                + value
-                                + L"' is below the minimum '"
-                                + t.getMinInclusive()
-                                + L"' allowed for element "
-                                + name;
-                errors.push_back(err);
-            }
+            if (value >= t.getMinInclusive())
+                return;
             break;
         }
+        cdr::String err = cdr::String(L"Value below minimum of ")
+                        + t.getMinInclusive()
+                        + L": '"
+                        + value
+                        + identifyTextValue(elemName, attrName);
+        errors.push_back(err);
     }
 }
 
@@ -779,7 +898,8 @@ void checkMinInclusive(
  * Determines whether the value is greater than any maximum specified.
  */
 void checkMaxInclusive(
-        const cdr::String&              name,
+        const cdr::String&              elemName, 
+        const cdr::String&              attrName, 
         const cdr::String&              value,
         const cdr::xsd::SimpleType&     t,
         cdr::StringList&                errors) 
@@ -787,39 +907,24 @@ void checkMaxInclusive(
     if (t.getMaxInclusive().size() > 0) {
         switch (t.getBuiltinType()) {
         case cdr::xsd::SimpleType::DECIMAL:
-            if (value.getFloat() > t.getMaxInclusive().getFloat()) {
-                cdr::String err = cdr::String(L"'")
-                                + value
-                                + L"' is above the maximum '"
-                                + t.getMaxInclusive()
-                                + L"' allowed for element "
-                                + name;
-                errors.push_back(err);
-            }
+            if (value.getFloat() <= t.getMaxInclusive().getFloat())
+                return;
             break;
         case cdr::xsd::SimpleType::INTEGER:
-            if (value.getInt() > t.getMaxInclusive().getInt()) {
-                cdr::String err = cdr::String(L"'")
-                                + value
-                                + L"' is above the maximum '"
-                                + t.getMaxInclusive()
-                                + L"' allowed for element "
-                                + name;
-                errors.push_back(err);
-            }
+            if (value.getInt() <= t.getMaxInclusive().getInt())
+                return;
             break;
         default:
-            if (value < t.getMaxInclusive()) {
-                cdr::String err = cdr::String(L"'")
-                                + value
-                                + L"' is above the maximum '"
-                                + t.getMaxInclusive()
-                                + L"' allowed for element "
-                                + name;
-                errors.push_back(err);
-            }
+            if (value <= t.getMaxInclusive())
+                return;
             break;
         }
+        cdr::String err = cdr::String(L"Value below maximum of ")
+                        + t.getMaxInclusive()
+                        + L": '"
+                        + value
+                        + identifyTextValue(elemName, attrName);
+        errors.push_back(err);
     }
 }
 
@@ -827,39 +932,45 @@ void checkMaxInclusive(
  * Checks the value of a text value against its simple type requirements.
  */
 void validateSimpleType(
-        cdr::dom::Element&              docElement,
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              value,
         const cdr::xsd::SimpleType&     simpleType,
         cdr::StringList&                errors)
 {
-    cdr::String name = docElement.getNodeName();
-    cdr::String value = cdr::dom::getTextContent(docElement);
+    cdr::String err;
+    cdr::xsd::SimpleType::BuiltinType builtinType =
+        simpleType.getBuiltinType();
     switch (simpleType.getBuiltinType()) {
     case cdr::xsd::SimpleType::STRING:
-        std::wcout << L"validateSimpleType: STRING\n";
+        // Nothing special to do for plain string.
         break;
     case cdr::xsd::SimpleType::DATE:
-        validateDate(name, value, simpleType, errors);
+        validateDate(elemName, attrName, value, simpleType, errors);
         break;
     case cdr::xsd::SimpleType::TIME:
-        validateTime(name, value, simpleType, errors);
+        validateTime(elemName, attrName, value, simpleType, errors);
         break;
     case cdr::xsd::SimpleType::DECIMAL:
-        validateDecimal(name, value, simpleType, errors);
+        validateDecimal(elemName, attrName, value, simpleType, errors);
         break;
     case cdr::xsd::SimpleType::INTEGER:
-        validateInteger(name, value, simpleType, errors);
+        validateInteger(elemName, attrName, value, simpleType, errors);
         break;
     case cdr::xsd::SimpleType::URI:
-        validateUri(name, value, simpleType, errors);
+        validateUri(elemName, attrName, value, simpleType, errors);
         break;
     case cdr::xsd::SimpleType::BINARY:
-        validateBinary(name, value, simpleType, errors);
+        validateBinary(elemName, attrName, value, simpleType, errors);
         break;
     case cdr::xsd::SimpleType::TIME_INSTANT:
-        validateTimeInstant(name, value, simpleType, errors);
+        validateTimeInstant(elemName, attrName, value, simpleType, errors);
         break;
     default:
-        throw cdr::Exception(L"Unrecognized base type for element", name);
+        err = cdr::String(L"Unrecognized base type for '")
+            + value
+            + identifyTextValue(elemName, attrName);
+        errors.push_back(err);
     }
 
     // Check the value length.
@@ -870,11 +981,9 @@ void validateSimpleType(
     if (typeLen != -1 && valueLen != typeLen
     ||  minLen  != -1 && valueLen <  minLen
     ||  maxLen  != -1 && valueLen >  maxLen) {
-        cdr::String err = cdr::String(L"Invalid length for element ")
-                        + name 
-                        + L": '"
-                        + value
-                        + L"'";
+        err = cdr::String(L"Invalid length: '")
+            + value
+            + identifyTextValue(elemName, attrName);
         errors.push_back(err);
     }
 
@@ -882,15 +991,16 @@ void validateSimpleType(
     const cdr::StringVector& patterns = simpleType.getPatterns();
     if (patterns.size() > 0) {
         bool foundMatch = false;
-        for (size_t i = 0; !foundMatch && i < patterns.size(); ++i)
-            foundMatch = matchPattern(patterns[i], value);
+        for (size_t i = 0; !foundMatch && i < patterns.size(); ++i) {
+            cdr::String pattern = cdr::String(L"^")
+                                + patterns[i]
+                                + L"$";
+            foundMatch = matchPattern(pattern.c_str(), value);
+        }
         if (!foundMatch) {
-            cdr::String err = cdr::String(L"Pattern constraints not matched"
-                                          L"for element ")
-                            + name 
-                            + L": '"
+            err = cdr::String(L"Pattern constraints not matched for '")
                             + value
-                            + L"'";
+                            + identifyTextValue(elemName, attrName);
             errors.push_back(err);
         }
     }
@@ -901,18 +1011,16 @@ void validateSimpleType(
         while (!foundMatch && i != enums.end())
             foundMatch = *i++ == value;
         if (!foundMatch) {
-            cdr::String err = cdr::String(L"'")
+            cdr::String err = cdr::String(L"Invalid value: '")
                             + value
-                            + L"' is not a valid "
-                            + name
-                            + L" value.";
+                            + identifyTextValue(elemName, attrName);
             errors.push_back(err);
         }
     }
 
     // Check for upper and lower bounds on the value space.
-    checkMinInclusive(name, value, simpleType, errors);
-    checkMaxInclusive(name, value, simpleType, errors);
+    checkMinInclusive(elemName, attrName, value, simpleType, errors);
+    checkMaxInclusive(elemName, attrName, value, simpleType, errors);
 }
 
 /**
@@ -924,8 +1032,9 @@ void verifyNoText(
         cdr::StringList&                errors)
 {
     cdr::String value = cdr::dom::getTextContent(docElement);
-    if (value.find_first_not_of(L" \t\r\n") != value.npos)
-        errors.push_back(cdr::String(L"No text content allowed for element")
+    size_t pos = value.find_first_not_of(L" \t\r\n");
+    if (pos != value.npos)
+        errors.push_back(cdr::String(L"No text content allowed for element ")
                 + cdr::String(docElement.getNodeName()));
 }
 
@@ -950,49 +1059,48 @@ void verifyElementList(
         cdr::xsd::Element* e = *i++;
         int nOccs = 0;
 
-        // Skip nodes which aren't elements.
-        while (n != 0) {
+        // Loop to end of occurrences which match.
+        for (; n != 0; n = n.getNextSibling()) {
+            
+            // Skip nodes which aren't elements.
             if (n.getNodeType() != cdr::dom::Node::ELEMENT_NODE)
-                n = n.getNextSibling();
-            else
-                break;
-        }
+                continue;
 
-        // Check for too few occurrences.
-        occName = n.getNodeName();
-        if (n == 0 || occName != e->getName()) {
-            if (nOccs < e->getMinOccs()) {
-                cdr::String err;
-                if (nOccs == 0)
-                    err = cdr::String(L"Missing required element ")
-                        + e->getName()
-                        + L" within element "
-                        + parentName;
-                else
-                    err = cdr::String(L"Too few occurrences of element ")
-                        + e->getName()
-                        + L" within element "
-                        + parentName;
+            // See if this occurrence matches what we're looking for.
+            occName = n.getNodeName();
+            if (occName != e->getName())
+                break;
+
+            // Check for too many occurrences.
+            if (++nOccs > e->getMaxOccs()) {
+                cdr::String err = cdr::String(L"Too many occurrences "
+                                  L"of element ")
+                                + e->getName()
+                                + L" within element "
+                                + parentName;
                 errors.push_back(err);
             }
 
-            // Skip to next expected element.
-            continue;
+            // Recursively check the element.
+            validateElement(static_cast<cdr::dom::Element&>(n), 
+                            *e->getType(schema), schema, errors);
         }
 
-        // Check for too many occurrences.
-        if (nOccs > e->getMaxOccs()) {
-            cdr::String err = cdr::String(L"Too many occurrences of element ")
-                            + e->getName()
-                            + L" within element "
-                            + parentName;
+        // Check for too few occurrences.
+        if (nOccs < e->getMinOccs()) {
+            cdr::String err;
+            if (nOccs == 0)
+                err = cdr::String(L"Missing required element ")
+                    + e->getName()
+                    + L" within element "
+                    + parentName;
+            else
+                err = cdr::String(L"Too few occurrences of element ")
+                    + e->getName()
+                    + L" within element "
+                    + parentName;
             errors.push_back(err);
         }
-
-        // Recursively check the element.
-        validateElement(static_cast<cdr::dom::Element&>(n), 
-                        *e->getType(schema), schema, errors);
-        n = n.getNextSibling();
     }
 
     // Complain about leftover elements which weren't expected.
