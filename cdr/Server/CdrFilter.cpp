@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.1 2000-08-23 14:19:03 mruben Exp $
+ * $Id: CdrFilter.cpp,v 1.2 2000-08-24 13:43:11 mruben Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/08/23 14:19:03  mruben
+ * Initial revision
+ *
  */
 
 #if defined _MSC_VER
@@ -147,6 +150,11 @@ namespace
     UriInfo u;
     cdr::db::Connection& connection = *static_cast<cdr::db::Connection*>(data);
 
+    while (*rest == '/')
+      ++rest;
+    if (*rest == '\0')
+      return 1;
+
     // we don't let an exception go back through Sablotron since we're not
     // sure if it's exception safe.  Instead we just return error if we can't
     // get the document
@@ -170,6 +178,7 @@ namespace
         return 0;
       }
 
+    *handle = uri_list.size();
     uri_list.push_back(u);
     return 0;
   }
@@ -266,7 +275,7 @@ namespace
         SchemeHandler sh = { uri_getall, uri_free, uri_open,
                              uri_get, uri_put,  uri_close
         };
-        if (SablotRegHandler(proc, HLR_SCHEME, &sh, &connection))p
+        if (SablotRegHandler(proc, HLR_SCHEME, &sh, &connection))
           throw cdr::Exception(L"cannot register Sablotron scheme handler");
       
         if ((rc = SablotRunProcessor(proc, "arg:/_stylesheet",
