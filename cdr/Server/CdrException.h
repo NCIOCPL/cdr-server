@@ -1,7 +1,10 @@
 /*
- * $Id: CdrException.h,v 1.4 2000-05-15 19:12:19 mruben Exp $
+ * $Id: CdrException.h,v 1.5 2000-06-09 04:00:52 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/05/15 19:12:19  mruben
+ * added constructor using cdr::String
+ *
  * Revision 1.3  2000/05/04 01:14:32  bkline
  * Added ccdoc comments.  Changed getString() to what() (modeled after
  * standard exception class).
@@ -17,6 +20,7 @@
 #define CDR_EXCEPTION_
 
 #include "CdrString.h"
+#include "CdrLog.h"
 
 /**@#-*/
 
@@ -25,6 +29,12 @@ namespace cdr {
 /**@#+*/
 
     /** @pkg cdr */
+
+    /**
+     * Used when logging an exception to say it came from the
+     * cdr exception constructor.
+     */
+    static const cdr::String ExcpLogSrc = L"CdrException";
 
     /**
      * Carries information about an error condition which was encountered
@@ -51,7 +61,8 @@ namespace cdr {
          *
          *  @param  s           address of String
          */
-        Exception(const String& s) : str(s) {}
+        Exception(const String& s) : str(s)
+            { cdr::log::pThreadLog->Write(cdr::ExcpLogSrc, str); }
 
         /**
          * Creates a new <code>Exception</code> object from a pair of
@@ -64,8 +75,9 @@ namespace cdr {
          *  @param  s2          reference to specific error string.
          *
          */
-        Exception(const cdr::String& s1, const cdr::String& s2) 
-            : str(s1 + L": " + s2) {}
+        Exception(const cdr::String& s1, const cdr::String& s2)
+            : str(s1 + L": " + s2)
+            { cdr::log::pThreadLog->Write(cdr::ExcpLogSrc, str); }
 
         /**
          * Accessor method for the string version of the object.
