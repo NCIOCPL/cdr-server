@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!--
-     $Id: Mailer.xml,v 1.10 2002-06-07 13:57:03 arkd Exp $
+     $Id: Mailer.xml,v 1.11 2002-10-17 17:28:42 bkline Exp $
 
      Schema for mailer tracking documents.
 
      $Log: not supported by cvs2svn $
+     Revision 1.10  2002/06/07 13:57:03  arkd
+     All the "string" types changed for "NotEmptyString".
+
      Revision 1.9  2002/05/30 22:25:13  ameyer
      Added RemailerFor element to assist in finding docs needing remailing.
 
@@ -43,7 +46,7 @@
 <!--=====================================================================-->
 <!--                  COMMON CDR SCHEMA COMPONENTS                       -->
 <!--=====================================================================-->
-  <include           schemaLocation  = 'CdrCommonSchema.xml'/>
+  <include           schemaLocation  = 'CdrCommonBase.xml'/>
 
 <!--=====================================================================-->
 <!--                   TOP-LEVEL DOCUMENT ELEMENT                        -->
@@ -65,8 +68,13 @@
                      type            = 'integer'/>
       <element       name            = 'Recipient'
                      type            = 'CdrRef'/>
-      <element       name            = 'Address'
+      <!-- This is temporary, until we flush out current test set. -->
+      <choice        minOccurs       = '0'>
+        <element     name            = 'Address'
                      type            = 'ContactDetail'/>
+        <element     name            = 'MailerAddress'
+                     type            = 'MailerAddress'/>
+      </choice>
       <element       name            = 'Document'
                      type            = 'CdrRef'/>
       <element       name            = 'Sent'
@@ -94,6 +102,19 @@
       <element       name            = 'Comment'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'MailerAddress'>
+    <sequence>
+      <element       name            = 'Country'
+                     type            = 'CountryLink'/>
+      <element       name            = 'PostalCode'
+                     type            = 'NotEmptyString'
+                     minOccurs       = '0'/>
+      <element       name            = 'AddressLine'
+                     type            = 'NotEmptyString'/>
+                     maxOccurs       = 'unbounded'/>
     </sequence>
   </complexType>
 
@@ -130,6 +151,13 @@
       <enumeration   value           = 'Major'/>
       <enumeration   value           = 'Returned to sender'/>
       <enumeration   value           = 'Legacy-no category'/>
+    </restriction>
+  </simpleType>
+
+  <!-- For mailers, 'CountryLink' isn't really a link, just a string. -->
+  <simpleType        name            = 'CountryLink'>
+    <restriction     base            = 'string'>
+      <minLength     value           = '1'/>
     </restriction>
   </simpleType>
 
