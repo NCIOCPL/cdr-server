@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.46 2002-08-14 01:35:07 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.47 2002-08-23 01:14:34 ameyer Exp $
  *
  */
 
@@ -1557,6 +1557,15 @@ void cdr::CdrDoc::genFragmentIds ()
 {
     // Not for control documents
     if (isControlType())
+        return;
+
+    // Protocols are composed of two separate documents that get merged
+    // Only generate fragment ids for the component that becomes the
+    //   final, complete document after the merge, not for the component
+    //   that disappears after the merge.
+    // If we generate fragment ids for the component that gets merged in,
+    //   they will conflict with the ones in the doc we merge into.
+    if (TextDocType == L"ScientificProtocolInfo")
         return;
 
     cdr::String xslt;       // XSLT transform for creating fragment ids
