@@ -1,9 +1,15 @@
 /*
- * $Id: CdrCache.cpp,v 1.2 2004-05-25 22:39:18 ameyer Exp $
+ * $Id: CdrCache.cpp,v 1.3 2004-05-26 01:14:49 ameyer Exp $
  *
  * Specialized cacheing for performance optimization, where useful.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2004/05/25 22:39:18  ameyer
+ * This version gets PdqKey and cdr:ref for a parent from the terminology
+ * link in the child record.  That works, and mirrors what used to be done,
+ * but doesn't get the PdqKey and cdr:ref for the main term itself.
+ * I'm going to change the way this is done in the next version.
+ *
  * Revision 1.1  2004/05/14 02:04:34  ameyer
  * CdrCache serverside cacheing to speed publishing.
  *
@@ -36,6 +42,19 @@ static cdr::cache::TERM_MAP *S_pTermMap = 0;
 // Name of the mutex preventing two separate threads from reading
 //   or updating the system-wide static S_pTermMap
 static const char* const termCacheMutexName = "TermCacheMutex";
+
+// Constructor
+cdr::cache::Term::Term (
+    int docId
+) {
+    char buf[40];
+
+    id     = docId;
+    typeOK = true;
+    sprintf (buf, " cdr:ref=\"%d\"", id);
+    cdrRef = buf;
+std::cout << "Constructing Term, ref: " << cdrRef << "\n";
+}
 
 // Turn system-wide cacheing on or off.  Default start state is off
 bool cdr::cache::Term::initTermCache(
@@ -181,8 +200,13 @@ cdr::cache::Term * cdr::cache::Term::getTerm(
 
             // Preferred name of the Term
             if (nodeName == L"PreferredName")
-              pTerm->name =
-                 cdr::trimWhiteSpace(cdr::dom::getTextContent(node)).toUtf8();
+              pTerm->name = cdr::dom::getTextContent(node).toUtf8();
+
+            // Save PdqKey to use as an attribute
+            if (nodeName == L"PdqKey")
+              pTerm->pdqKey = " PdqKey=\"" +
+                              cdr::dom::getTextContent(node).toUtf8() +
+                              "\"";
 
             // Ensure this term isn't a type we don't look at
             else if (nodeName == L"TermType") {
@@ -238,25 +262,6 @@ cdr::cache::Term * cdr::cache::Term::getTerm(
                       // If we haven't already seen this one, process it
                       if (!pTerm->parentPtrs.count(pParentTerm)) {
 
-                        // Get all the attributes associated with parent and
-                        //   save them too
-                        // But we may have seen the term in another parent
-                        //   tree, so check before building attributes
-                        if (pParentTerm->attrXml.size() == 0) {
-                          cdr::dom::NamedNodeMap attrs =
-                                       gChildNode.getAttributes();
-                          int nAttrs = attrs.getLength();
-                          for (int i=0; i<nAttrs; i++) {
-                              cdr::dom::Node attr = attrs.item(i);
-                              cdr::String attrName = attr.getNodeName();
-                              cdr::String attrVal  = attr.getNodeValue();
-                              pParentTerm->attrXml += s_SPACE
-                                  + attrName.toUtf8() + s_EQUOT
-                                  + attrVal.toUtf8() + s_QUOTE;
-                          }
-                        }
-std::cout << pParentTerm->name << pParentTerm->attrXml << "\n";
-
                         // Install it in the parent term set for this Term
                         pTerm->parentPtrs.insert(pParentTerm);
 
@@ -311,17 +316,28 @@ std::string cdr::cache::Term::getNameXml() {
 std::string cdr::cache::Term::getFamilyXml() {
 
     if (familyXml == "") {
-        familyXml = "<Term xmlns:cdr = 'cips.nci.nih.gov/cdr'>\n"
-                    " <PreferredName>" + name + "</PreferredName>\n";
+        // Main term preferred name and attributes
+        // XML namespace declaration required in order to use cdrRef
+        //   which contains "cdr:ref='...'".  XSLT processor will
+        //   complain if we don't declare cdr namespace prefix.
+        familyXml = "<Term xmlns:cdr = 'cips.nci.nih.gov/cdr'";
+        if (pdqKey.size() > 0)
+            familyXml += pdqKey;
+        familyXml += cdrRef + ">\n <PreferredName>" + name +
+                     "</PreferredName>\n";
 
         // Get name of each parent
         PARENT_SET::iterator parIter = parentPtrs.begin();
         while (parIter != parentPtrs.end()) {
             // Only include terms for which the type was ok and name stored
-            if ((*parIter)->typeOK)
-                familyXml += " <Term" + (*parIter)->getAttrs() +
+            if ((*parIter)->typeOK) {
+                familyXml += " <Term";
+                if ((*parIter)->pdqKey.size() > 0)
+                    familyXml += (*parIter)->pdqKey;
+                familyXml += (*parIter)->cdrRef +
                              "><PreferredName>" + (*parIter)->getName() +
                              "</PreferredName></Term>\n";
+            }
             ++parIter;
         }
 

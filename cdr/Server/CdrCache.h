@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCache.h,v 1.1 2004-05-14 02:04:04 ameyer Exp $
+ * $Id: CdrCache.h,v 1.2 2004-05-26 01:14:30 ameyer Exp $
  *
  * Header for cacheing used to speed operations.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/05/14 02:04:04  ameyer
+ * Header for CdrCache serverside cacheing to speed publishing.
+ *
  */
 
 #ifndef CDR_CACHE_
@@ -136,9 +139,11 @@ namespace cdr {
 
             int         id;         // CDR ID of term
             bool        typeOK;     // Term type is usable for denormalization
+            std::string cdrRef;     // Id in cdr:ref attribute format
             std::string name;       // Preferred name for the concept
             std::string nameXml;    // Preferred name as XML string
             std::string familyXml;  // Full denormalization, see above.
+            std::string pdqKey;     // PdqKey for this Term, if there is one
             PARENT_SET  parentPtrs; // Hierarchical parents of this term
 
             // Functions
@@ -155,7 +160,7 @@ namespace cdr {
              *
              *  @param docId       Document ID
              */
-            Term (int docId) { id = docId; typeOK = true; };
+            Term (int docId);
 
             /**
              * Get a Term object corresponding to an ID.
