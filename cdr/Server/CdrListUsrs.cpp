@@ -1,10 +1,13 @@
 
 /*
- * $Id: CdrListUsrs.cpp,v 1.3 2000-05-03 15:25:41 bkline Exp $
+ * $Id: CdrListUsrs.cpp,v 1.4 2002-01-31 13:19:10 bkline Exp $
  *
  * Retrieves list of the existing CDR users.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/05/03 15:25:41  bkline
+ * Fixed database statement creation.
+ *
  * Revision 1.2  2000/04/23 01:19:58  bkline
  * Added function-level comment header.
  *
@@ -31,7 +34,10 @@ cdr::String cdr::listUsrs(cdr::Session& session,
 
     // Submit the query to the database
     cdr::db::Statement s = dbConnection.createStatement();
-    cdr::db::ResultSet r = s.executeQuery("SELECT name FROM usr");
+    cdr::db::ResultSet r = s.executeQuery(" SELECT name                "
+                                          "   FROM usr                 "
+                                          "  WHERE expired IS NULL     "
+                                          "     OR expired > GETDATE() ");
     
     // Pull in the names from the result set.
     cdr::String response;
