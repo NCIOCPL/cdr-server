@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.73 2002-11-11 17:18:36 bkline Exp $
+ * $Id: tables.sql,v 1.74 2002-11-14 20:18:08 pzhang Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.73  2002/11/11 17:18:36  bkline
+ * Made filter_set.name UNIQUE.
+ *
  * Revision 1.72  2002/11/11 16:09:08  bkline
  * Added filter_set and filter_set_member tables.
  *
@@ -1606,7 +1609,7 @@ GO
  * with Cancer.Gov.
  *
  *           id  primary key of document sent to Cancer.Gov.
- *          num  earliest version of a document to be deleted.
+ *          num  version of the document sent to Cancer.Gov.
  *       cg_job  job which sent the document to Cancer.Gov.
  *   vendor_job  job which produced the filtered documents.
  *     doc_type  document type name of the document.
@@ -1615,7 +1618,7 @@ GO
  */
 CREATE TABLE pub_proc_cg_work
          (id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs,
-         num INTEGER NULL,
+         num INTEGER NOT NULL,
   vendor_job INTEGER NOT NULL REFERENCES pub_proc,
       cg_job INTEGER NOT NULL REFERENCES pub_proc,
     doc_type VARCHAR(32) NOT NULL,
