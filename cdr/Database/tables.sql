@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.91 2004-01-13 21:41:19 bkline Exp $
+ * $Id: tables.sql,v 1.92 2004-01-13 21:45:39 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.91  2004/01/13 21:41:19  bkline
+ * Created table ctgov_download_stats.
+ *
  * Revision 1.90  2004/01/12 21:19:20  bkline
  * Added column 'dropped' to ctgov_import.
  *
@@ -1859,6 +1862,7 @@ GO
  *           dt  date/time of download job (primary key)
  * total_trials  number of cancer trials that meet query criteria
  *   new_trials  new active and approved-not yet active trials
+ *      updated  Updates to previously downloaded trials
  *    unchanged  skipped trials since no changes from previous download
  *      pdq_cdr  skipped trials from PDQ/CDR
  *   duplicates  skipped duplicate trials
@@ -1869,6 +1873,7 @@ CREATE TABLE ctgov_download_stats
          (dt DATETIME NOT NULL PRIMARY KEY,
 total_trials INTEGER  NOT NULL,
   new_trials INTEGER  NOT NULL,
+     updated INTEGER  NOT NULL,
    unchanged INTEGER  NOT NULL,
      pdq_cdr INTEGER  NOT NULL,
   duplicates INTEGER  NOT NULL,
