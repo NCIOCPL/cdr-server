@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.h,v 1.10 2001-10-17 13:52:19 bkline Exp $
+ * $Id: CdrDom.h,v 1.11 2002-05-01 01:05:23 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2001/10/17 13:52:19  bkline
+ * Added output insertion operator for DOM node.
+ *
  * Revision 1.9  2000/10/05 21:22:29  bkline
  * Added parseFile(const char*) method.
  *
@@ -32,6 +35,9 @@
 
 #ifndef CDR_DOM_H_
 #define CDR_DOM_H_
+
+// Shut off silly Microsoft warnings.
+#pragma warning(disable : 4290)
 
 // System headers.
 #include <string>
