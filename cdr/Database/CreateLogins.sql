@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.5 2002-06-07 20:06:35 bkline Exp $
+ * $Id: CreateLogins.sql,v 1.6 2002-07-03 12:16:38 bkline Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2002/06/07 20:06:35  bkline
+ * New stored procedure to support the Person QC report.
+ *
  * Revision 1.4  2002/06/04 18:50:58  ameyer
  * Granted rights on new remailer_ids table.
  *
@@ -305,4 +308,8 @@ GO
 GRANT SELECT ON failed_login_attempts TO CdrGuest
 GO
 GRANT EXECUTE ON cdr_get_count_of_links_to_persons TO CdrGuest
+GO
+GRANT SELECT ON doc_info TO CdrGuest
+GO
+GRANT SELECT ON docs_with_pub_status TO CdrGuest
 GO

@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.57 2002-06-11 15:54:44 bkline Exp $
+ * $Id: tables.sql,v 1.58 2002-07-03 12:16:38 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.57  2002/06/11 15:54:44  bkline
+ * Added missing 'GO'.
+ *
  * Revision 1.56  2002/06/08 03:17:04  ameyer
  * Added GO after remailer_ids.
  *
@@ -1361,3 +1364,83 @@ AS
       FROM debug_log
      WHERE source LIKE 'Failed logon attempt%'
 GO
+
+/*
+ * Used by the document version history report.
+ */
+CREATE VIEW doc_info AS
+            SELECT d.id        doc_id,
+                   d.title     doc_title,
+                   t.name      doc_type,
+                   u1.fullname created_by,
+                   a1.dt       created_date,
+                   u2.fullname mod_by,
+                   a2.dt       mod_date
+              FROM document d
+              JOIN doc_type t
+                ON t.id = d.doc_type
+              JOIN audit_trail a1
+                ON a1.document = d.id
+              JOIN usr u1
+                ON u1.id = a1.usr
+              JOIN audit_trail a2
+                ON a2.document = d.id
+              JOIN usr u2
+                ON u2.id = a2.usr
+               AND a1.dt = (SELECT MIN(audit_trail.dt)
+                              FROM audit_trail
+                              JOIN action
+                                ON action.id = audit_trail.action
+                             WHERE audit_trail.document = d.id
+                               AND action.name = 'ADD DOCUMENT')
+               AND a2.dt = (SELECT MAX(audit_trail.dt)
+                              FROM audit_trail
+                              JOIN action
+                                ON action.id = audit_trail.action
+                             WHERE audit_trail.document = d.id
+                               AND action.name = 'MODIFY DOCUMENT')
+
+/*
+ * Used by New Documents with Publication Status report.
+ */
+CREATE VIEW docs_with_pub_status
+AS
+         SELECT d.id             doc_id,
+                cu.name          cre_user,
+                c.dt             cre_date,
+                v.dt             ver_date,
+                vu.name          ver_user,
+                t.name           doc_type,
+                pv = CASE
+                          WHEN v.publishable IS NOT NULL
+                           AND v.publishable = 'Y'
+                           AND d.active_status = 'A'
+                               THEN 'Y'
+                          ELSE      'N'
+                     END,
+                epv = (SELECT COUNT(*)
+                         FROM doc_version
+                        WHERE id = d.id
+                          AND num < v.num
+                          AND publishable = 'Y')
+           FROM document d
+           JOIN audit_trail c
+             ON c.document = d.id
+            AND c.dt = (SELECT MIN(audit_trail.dt)
+                          FROM audit_trail
+                          JOIN action
+                            ON action.id = audit_trail.action
+                         WHERE audit_trail.document = d.id
+                           AND action.name = 'ADD DOCUMENT')
+           JOIN usr cu
+             ON cu.id = c.usr
+           JOIN doc_type t
+             ON t.id = d.doc_type
+LEFT OUTER JOIN doc_version v
+             ON v.id = d.id
+            AND v.num = (SELECT MAX(num)
+                           FROM doc_version
+                          WHERE id = d.id)
+LEFT OUTER JOIN usr vu
+             ON vu.id = v.usr
+
