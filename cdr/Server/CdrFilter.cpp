@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.22 2002-05-21 19:08:55 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.23 2002-06-07 13:52:10 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2002/05/21 19:08:55  bkline
+ * Implemented support for finding documents by title in URI.
+ *
  * Revision 1.21  2002/04/04 19:06:12  bkline
  * Eliminated unused variable.  Fixed typo in comment.
  *
@@ -164,7 +167,7 @@ namespace
     }
   }
 
-/***************************************************************************/
+  /***************************************************************************/
   /* returns pointer to UTF-8 string of data in s.  Note that this string    */
   /* is owned by the caller and must be delete[]ed.                          */
   /***************************************************************************/
@@ -485,7 +488,7 @@ namespace
           }
           if (!version_str.empty()
               && !isdigit(static_cast<unsigned char>(version_str[0]))
-              && version_str != "last")
+              && version_str != "last" && version_str != "lastp")
           {
             spec = version_str;
             version_str = "";
@@ -496,9 +499,11 @@ namespace
         int version = 0;
         if (version_str == L"last")
           version = cdr::getVersionNumber(uid.extractDocId(), connection);
-        else
-          if (!version_str.empty())
-            version = version_str.getInt();
+        else if (version_str == L"lastp")
+          version = cdr::getLatestPublishableVersion(uid.extractDocId(), 
+                                                     connection);
+        else if (!version_str.empty())
+          version = version_str.getInt();
 
         if (type == L"CdrCtl")
           u.doc = cdr::getDocCtlString(uid, version, connection,

@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.h,v 1.6 2001-06-05 20:48:25 mruben Exp $
+ * $Id: CdrVersion.h,v 1.7 2002-06-07 13:52:41 bkline Exp $
  *
  * Internal support functions for CDR verison control
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2001/06/05 20:48:25  mruben
+ * changed to maintain publishable flag on version
+ *
  * Revision 1.5  2001/05/23 01:27:50  ameyer
  * Added actStatus parameter to checkIn prototype.
  *
@@ -176,6 +179,23 @@ namespace cdr {
   int getVersionNumber(int                    docId,
                        cdr::db::Connection&   conn,
                        cdr::String* date = 0);
+
+    /**
+     * Gets version number of latest publishable version of document.
+     *
+     *  @param  docId       int document ID.
+     *  @param  conn        reference to an active connection to the CDR
+     *                      database.
+     *  @param  date        pointer to cdr::String.  If not null, date of
+     *                      most recent checked in version is stored.
+     *
+     *  @return             current version number.  -1 if document does
+     *                      not exist
+     *
+     */
+  int getLatestPublishableVersion(int                    docId,
+                                  cdr::db::Connection&   conn,
+                                  cdr::String*           date = 0);
 
     /**
      * Checks if document has changed since last version in control

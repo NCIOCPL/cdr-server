@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.15 2002-05-03 20:35:46 bkline Exp $
+ * $Id: CdrVersion.cpp,v 1.16 2002-06-07 13:52:09 bkline Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2002/05/03 20:35:46  bkline
+ * New CdrListVersions command added.
+ *
  * Revision 1.14  2002/04/30 12:36:35  bkline
  * Added workaround for suspicious semantics of `abandoned' parameter.
  *
@@ -492,6 +495,30 @@ int cdr::getVersionNumber(int docId, cdr::db::Connection& conn,
   cdr::db::PreparedStatement select = conn.prepareStatement(query);
   select.setInt(1, docId);
   select.setInt(2, docId);
+  cdr::db::ResultSet rs = select.executeQuery();
+  if (rs.next())
+  {
+    if (date != NULL)
+      *date = cdr::toXmlDate(rs.getString(2));
+
+    return rs.getInt(1);
+  }
+
+  return -1;
+}
+
+int cdr::getLatestPublishableVersion(int docId, cdr::db::Connection& conn,
+                                     cdr::String* date)
+{
+  string query = "SELECT v.num, v.dt                       "
+                 "  FROM doc_version v                     "
+                 " WHERE v.id = ?                          "
+                 "   AND v.num = (SELECT MAX(num)          "
+                 "                  FROM doc_version       "
+                 "                 WHERE id = v.id         "
+                 "                   AND publishable = 'Y')";
+  cdr::db::PreparedStatement select = conn.prepareStatement(query);
+  select.setInt(1, docId);
   cdr::db::ResultSet rs = select.executeQuery();
   if (rs.next())
   {
