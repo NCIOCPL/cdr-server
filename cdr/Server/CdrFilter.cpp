@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.3 2000-09-25 14:00:14 mruben Exp $
+ * $Id: CdrFilter.cpp,v 1.4 2001-02-26 16:09:27 mruben Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/09/25 14:00:14  mruben
+ * added cdrx protocol for XSLT URIs
+ *
  * Revision 1.2  2000/08/24 13:43:11  mruben
  * added support for cdr: URIs
  *
@@ -224,16 +227,25 @@ namespace
                  const char* rest, char** buffer, int* count)
   {
     int handle;
-    int rc = uri_open(data, processor, scheme, rest, &handle);
-    if (rc)
-    {
-      *buffer = NULL;
-      return 1;
-    }
+    
+    *buffer = NULL;
 
-    *count = uri_list[handle].doc.size();
-    *buffer = new char[*count + 1];
-    strcpy(*buffer, uri_list[handle].doc.c_str());
+    try
+    {
+      int rc = uri_open(data, processor, scheme, rest, &handle);
+      if (rc)
+        return 1;
+
+      *count = uri_list[handle].doc.size();
+      *buffer = new char[*count + 1];
+      strcpy(*buffer, uri_list[handle].doc.c_str());
+    }
+    catch (...)
+    {
+      delete[] *buffer;
+      throw;
+    }
+      
     return 0;
   }
 
