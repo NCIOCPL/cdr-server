@@ -23,8 +23,6 @@ static bool in_text = false, first = true, just_opened = false;
 (\<[^/!][^>]*\>)|(\<!\[CDATA\[) { bool emptyTag = false;
                  if (level < showlevels) {
                     if (!first) std::cout << '\n';
-                    else std::cerr << "showlevels is " << showlevels << '\n';
-//std::cout << "***FOUND open tag: " << yytext << " LEVEL=" << level << '\n';
                     for (int i = 0; i < level; ++i) std::cout << ' ';
                     emptyTag = false;
                     size_t len = strlen(yytext);
@@ -37,7 +35,6 @@ static bool in_text = false, first = true, just_opened = false;
                 first = false;
                 if (!emptyTag)
                     ++level;
-                //std::cerr << "level " << level << ": " << yytext << '\n';
               }
 (\<\/[^>\n]*\>)|(\]\]\>) { if (level-- <= showlevels) {
                     if (!in_text && !just_opened) {
@@ -45,11 +42,9 @@ static bool in_text = false, first = true, just_opened = false;
                         for (int i = 0; i < level; ++i)
                             std::cout << ' ';
                     }
-//std::cout << "***FOUND close tag: " << yytext << " LEVEL=" << level << '\n';
                     std::cout << yytext;
                     just_opened = in_text = false;
                 }
-                //std::cerr << "level " << level << ": " << yytext << '\n';
               }
 \n            ;
 [^<\]]*       { if (level <= showlevels && level) {
@@ -69,7 +64,6 @@ static bool in_text = false, first = true, just_opened = false;
 main(int ac, char **av)
 {
     if (ac > 1) showlevels = atoi(av[1]);
-    //std::cerr << "using showlevels of " << showlevels << '\n';
     yylex();
     std::cout << '\n';
     return 0;
