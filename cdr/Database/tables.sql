@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.9 2000-04-15 22:59:59 bkline Exp $
+ * $Id: tables.sql,v 1.10 2000-04-21 22:16:11 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2000/04/15 22:59:59  bkline
+ * Made session.name UNIQUE.
+ *
  * Revision 1.8  2000/04/14 15:55:14  bkline
  * Altered some character columns to use wide characters.  Added default for
  * versioning column of doc_type ('Y').  Added 'ended' column to session
@@ -100,7 +103,7 @@ CREATE TABLE ctl
  */
 CREATE TABLE usr
          (id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL,
+        name VARCHAR(32) NOT NULL UNIQUE,
     password VARCHAR(32) NOT NULL,
      created DATETIME NOT NULL,
     fullname VARCHAR(100) NULL,
@@ -142,7 +145,7 @@ CREATE TABLE session
  */
 CREATE TABLE format
          (id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL,
+        name VARCHAR(32) NOT NULL UNIQUE,
      comment VARCHAR(255) NULL)
 /* 
  * Every document stored in the repository must have a type represented by a
@@ -170,7 +173,7 @@ CREATE TABLE format
  */
 CREATE TABLE doc_type
          (id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL,
+        name VARCHAR(32) NOT NULL UNIQUE,
       format INTEGER NOT NULL REFERENCES format,
      created DATETIME NOT NULL,
   versioning CHAR NOT NULL DEFAULT 'Y',
@@ -189,7 +192,7 @@ CREATE TABLE doc_type
  */
 CREATE TABLE action
          (id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL,
+        name VARCHAR(32) NOT NULL UNIQUE,
      comment VARCHAR(255) NULL)
 
 /* 
@@ -205,7 +208,7 @@ CREATE TABLE action
  */
 CREATE TABLE grp
          (id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL,
+        name VARCHAR(32) NOT NULL UNIQUE,
      comment VARCHAR(255) NULL)
 
 /* 
@@ -221,7 +224,7 @@ CREATE TABLE grp
  */
 CREATE TABLE doc_status
          (id CHAR PRIMARY KEY,
-        name VARCHAR(32) NOT NULL,
+        name VARCHAR(32) NOT NULL UNIQUE,
      comment VARCHAR(255) NULL)
 
 /* 
@@ -349,7 +352,7 @@ CREATE TABLE attr
  */
 CREATE TABLE id_category
    (category INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL,
+        name VARCHAR(32) NOT NULL UNIQUE,
      comment VARCHAR(255) NULL)
 
 /* 
