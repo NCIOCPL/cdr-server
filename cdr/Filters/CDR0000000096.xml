@@ -171,6 +171,27 @@ Filter to create a Person Content QC Report
                                          PreferredContactMode"/>
      </td>
     </tr>
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Update Mode</b>
+     </td>
+     <xsl:if                      test = "PersonLocations/
+                                          UpdateMode">
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <xsl:for-each            select = "PersonLocations/
+                                          UpdateMode">
+        <li>
+         <xsl:value-of           select = "."/>
+        </li>
+        <b>
+         <xsl:text> (</xsl:text>
+          <xsl:value-of         select = "@MailerType"/>
+         <xsl:text>)</xsl:text>
+        </b>
+       </xsl:for-each>
+      </td>
+     </xsl:if>
+    </tr>
    </table>
    <p/>
 
@@ -657,15 +678,21 @@ Filter to create a Person Content QC Report
  Display Person Location Information for Private Practice and 
  Home Location
  ===================================================================== -->
- <xsl:template                    match = "Home                    | 
+ <xsl:template                   match = "Home                     | 
                                           PrivatePracticeLocation"> 
   <b>
    <xsl:choose>
-    <xsl:when                      test = "name() = 'Home'">
-     <font size='3'>Home</font>
+    <xsl:when                     test = "name() = 'Home'">
+     <xsl:text>Home</xsl:text>
+     <xsl:text> [</xsl:text>
+     <xsl:value-of              select = "@cdr:id"/>
+     <xsl:text>]</xsl:text>
     </xsl:when>
     <xsl:otherwise>
-     <font size='3'>Private Practice</font>
+     <xsl:text>Private Practice</xsl:text>
+     <xsl:text> [</xsl:text>
+     <xsl:value-of              select = "@cdr:id"/>
+     <xsl:text>]</xsl:text>
     </xsl:otherwise>
    </xsl:choose>
   </b>
@@ -727,6 +754,9 @@ Filter to create a Person Content QC Report
  <xsl:template                 match = "OtherPracticeLocation">
   <b>
    <font size='3'>Other Practice Location</font>
+   <xsl:text> [</xsl:text>
+   <xsl:value-of              select = "@cdr:id"/>
+   <xsl:text>]</xsl:text>
   </b>
  
   <xsl:if                       test = "../CIPSContact = @cdr:id">
