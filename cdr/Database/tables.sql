@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.2 1999-11-23 20:31:11 bobk Exp $
+ * $Id: tables.sql,v 1.3 1999-12-14 23:06:58 bobk Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  1999/11/23  20:31:11  bobk
+ * Added column-level comments.
+ *
  * Revision 1.1  1999/11/23  19:20:33  bobk
  * Initial revision
  */
@@ -87,6 +90,27 @@ CREATE TABLE usr
      expired DATETIME NULL,
      comment VARCHAR(255) NULL)
 
+/*
+ * Sessions created on behalf of individual users.
+ *
+ *           id  automatically generated primary key for the table
+ *         name  newly generated string which identifies the session for
+ *               purposes of the external client interface.  Returned to 
+ *               the client as SessionId
+ *          usr  identifies the user on whose behalf the session has been
+ *               created
+ *    initiated  date/time the session was created
+ *     last_act  date/time of the most recent activity for the session
+ *      comment  optional free-text notes about the session
+ */
+CREATE TABLE session
+         (id INTEGER IDENTITY PRIMARY KEY,
+        name VARCHAR(32) NOT NULL,
+         usr INTEGER NOT NULL REFERENCES usr,
+   initiated DATETIME NOT NULL,
+    last_act DATETIME NOT NULL,
+     comment VARCHAR(255) NULL)
+
 /* 
  * Tells whether the document type is in XML, or in some other format, such
  * as Microsoft Word 95, JPEG, HTML, PNG, etc.
@@ -107,13 +131,19 @@ CREATE TABLE format
  *               since the id is unique throughout the repository, this 
  *               column satisfies requirement 2.3.2
  *         name  display name for this document type; e.g. PROTOCOL
+ *       format  identifies whether document is in XML, or some other format,
+ *               such as Microsoft Word 95, JPEG, HTML, PNG, etc.
  *      created  date/time when the document type was created
  *   versioning  flag indicating whether version control is to be applied to
  *               documents of this type (see requirement 2.4.2)
  *          dtd  XML document type definition used to validate documents of
- *               this type; document types for which this column contains a
- *               NULL are "unstructured," from the perspective of the
- *               repository system (for example, PNG ILLUSTRATION)
+ *               this type; even document types which are "unstructured" from
+ *               the perspective of the repository system (for example, PNG
+ *               ILLUSTRATION) have a DTD for the XML information carried for
+ *               the document.
+ *   xml_schema  XML schema which identifies requirements of the elements
+ *               of documents of this type; required even for "unstrucutred"
+ *               document types
  *      comment  optional free-text description of additional characteristics
  *               of documents of this type
  */
@@ -123,7 +153,8 @@ CREATE TABLE doc_type
       format INTEGER NOT NULL REFERENCES format,
      created DATETIME NOT NULL,
   versioning CHAR NOT NULL,
-         dtd TEXT NULL,
+         dtd TEXT NOT NULL,
+  xml_schema TEXT NOT NULL,
      comment VARCHAR(255) NULL)
 
 /* 
@@ -181,12 +212,13 @@ CREATE TABLE doc_status
  *      created  date/time the document was first added to the repository
  *      creator  identification of user account responsible for adding the
  *               document to the repository
- *       status  foreign key reference into the doc_status table
+ *   val_status  foreign key reference into the doc_status table
  *     doc_type  foreign key reference into the doc_type table
  *        title  required string containing title for document; TBD is
  *               whether titles will be required to be unique, if only by
  *               artificially adding some distinguishing suffix when necessary
  *     modified  date/time the document's data was last changed
+ *     modifier  user responsible for last change to document
  *          xml  for structured documents, this is the data for the document;
  *               for unstructured documents this contains tagged textual
  *               information associated with the document (for example, the
@@ -198,10 +230,12 @@ CREATE TABLE document
          (id INTEGER IDENTITY PRIMARY KEY,
      created DATETIME NOT NULL,
      creator INTEGER NOT NULL REFERENCES usr,
-      status CHAR NOT NULL DEFAULT 'U' REFERENCES doc_status,
+  val_status CHAR NOT NULL DEFAULT 'U' REFERENCES doc_status,
+    val_date DATETIME NULL,
     doc_type INTEGER NOT NULL REFERENCES doc_type,
        title VARCHAR(255) NOT NULL,
     modified DATETIME NULL,
+    modifier INTEGER NULL REFERENCES usr,
          xml TEXT NOT NULL,
      comment VARCHAR(255) NULL)
 
