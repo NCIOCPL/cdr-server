@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.24 2003-09-29 18:15:18 bkline Exp $
+ * $Id: CdrLink.cpp,v 1.25 2003-12-30 22:49:16 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2003/09/29 18:15:18  bkline
+ * Fixed a memory leak on line 1663 (unwanted use of new operator).
+ *
  * Revision 1.23  2003/09/23 23:02:42  ameyer
  * Modified link_net.target_doc updating to insert null if no target_doc id
  * is present instead of 0.
@@ -322,8 +325,16 @@ cdr::link::CdrLink::CdrLink (
         // Error will be caught again and reported later
         saveLink = false;
     }
-    else
+    else {
         type = rs.getInt (1);
+
+        // Runtime check of table integrity
+        // Should never be more than one definition for a doctype + element
+        if (rs.next())
+            throw cdr::Exception (
+              L"System Error - More than one link type defined for doctype=\""
+              + srcDocTypeStr + L"\" element=\"" + srcField + L"\"");
+    }
 
 } // Constructor
 
@@ -961,7 +972,6 @@ cdr::String cdr::putLinkType (
         cdr::db::PreparedStatement pstmt =
                  conn.prepareStatement (S_delLinkQuery[i]);
         pstmt.setInt (1, linkId);
-std::cout << "Exeuting '" << S_delLinkQuery[i] << "' linkId=" << linkId << "\n";
         pstmt.executeQuery();
         pstmt.close();
         ++i;
@@ -1220,9 +1230,34 @@ static void addLinkSource (
         throw cdr::Exception (L"Missing required SrcField field "
                               L"in LinkSource");
 
+    // Make sure we don't already have a link type defined for this
+    //   doc_type + element name.
+    // We aren't supporting creation of two entries in the link_net
+    //   for one actual link.
+    std::string chkQry = "SELECT l.name FROM link_type l "
+                         "  JOIN link_xml x "
+                         "    ON l.id = x.link_id "
+                         "  JOIN doc_type t "
+                         "    ON t.id = x.doc_type "
+                         " WHERE t.name = ? "
+                         "   AND x.element = ?";
+    cdr::db::PreparedStatement cstmt = conn.prepareStatement (chkQry);
+    cstmt.setString (1, srcDocType);
+    cstmt.setString (2, srcField);
+    cdr::db::ResultSet chkRs = cstmt.executeQuery();
+    if (chkRs.next()) {
+        cdr::String existingName = chkRs.getString (1);
+        cstmt.close();
+        throw cdr::Exception (L"Link type \"" + existingName +
+              L"\" is already defined for doctype=\"" + srcDocType +
+              L"\" and element name=\"" + srcField + L"\"");
+    }
+    cstmt.close();
+
     // Failures here shouldn't happen through the
     //  admin interface, so I won't bother to catch
     //  and analyze any exceptions.
+    // Anyway, if an exception is thrown, this is all inside a transaction
     // I'll change this if it turns out to be a problem.
     std::string qry = "INSERT INTO link_xml "
                       "(element, link_id, doc_type) "
