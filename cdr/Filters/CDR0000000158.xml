@@ -12,6 +12,8 @@
                   exclude-result-prefixes="cdr">
 
  <xsl:import    href = "cdr:name:InLine Markup Formatter"/>
+ <xsl:include   href = "cdr:name:Table Formatter"/>
+     
  <xsl:output method="html"/>
 
 <!--Filter written by C.Burg - 6/12/2001 -->
@@ -35,7 +37,7 @@
               in Navy 
               ================================================-->
          <STYLE>
-            H2,H3,H4 {color: Navy}
+          <!--  H2,H3,H4 {color: Navy}-->
             <!-- H2,H4 {font-size: medium} -->
             p {font-size: 12pt}
             dt {font-size: 12pt}
@@ -58,10 +60,8 @@
 <xsl:template match="Summary">
    <xsl:if test="SummaryMetaData/SummaryAudience='Patients'">
    <BODY>
-      <xsl:for-each select="SummaryTitle">
-         <H2><xsl:value-of select="."/></H2>
-      </xsl:for-each>
-
+     <xsl:apply-templates select="SummaryTitle" mode="ContentTitle"/>  
+    
    <!--==========================================
          Display summary type and audience 
        ==========================================-->
@@ -80,19 +80,19 @@
       <h2>Table of Contents</h2>
       <dl>
          <xsl:for-each select="SummarySection">
-         <dt>
-            <a href="#{translate(Title,' ','-')}"><xsl:value-of select="Title"/>
-            </a>
+          <dt>
+           <a href="#{translate(Title,' ','-')}"><xsl:apply-templates select="Title" mode="CL"/>
+          </a>
          </dt>
-        <dl>  
+         <dl>  
       <xsl:for-each select="./SummarySection">
       <xsl:if test="not (SummarySection/SummarySection/SummarySection/SummarySection/Title or SummarySection/SummarySection/SummarySection/SummarySection/SummarySection/Title )">
 
- <dt><a href="#{translate(Title,' ','-')}"><xsl:value-of select="Title"/></a></dt>
+ <dt><a href="#{translate(Title,' ','-')}"><xsl:apply-templates select="Title" mode="CL"/></a></dt>
  
   <dl>
 <xsl:for-each select="./SummarySection">
-<dt><a href="#{translate(Title,' ','-')}"><xsl:value-of select="Title"/></a></dt>
+<dt><a href="#{translate(Title,' ','-')}"><xsl:apply-templates select="Title" mode="CL"/></a></dt>
 </xsl:for-each>
   </dl>
  </xsl:if>
@@ -117,23 +117,32 @@
      Display a summary section/summary section title and include anchor 
      ====================================================================-->
 
-   <xsl:template match="SummarySection/SummarySection/Title">
+   <xsl:template match="SummarySection/SummarySection/Title | SummarySection/SummarySection/*/Title  | */SummarySection/SummarySection/Title | SummarySection/*/SummarySection/Title | */SummarySection/*/SummarySection/Title">
    <h3><a name="{translate(.,' ','-')}"><xsl:apply-templates/></a></h3>
    </xsl:template>
 
-    <xsl:template match="SummarySection/SummarySection/SummarySection/Title">
+   
+
+    <xsl:template match="SummarySection/SummarySection/SummarySection/Title | SummarySection/SummarySection/SummarySection/*/Title | */SummarySection/SummarySection/SummarySection/Title  | SummarySection/*/SummarySection/SummarySection/Title | SummarySection/SummarySection/*/SummarySection/Title | */SummarySection/*/SummarySection/SummarySection/Title | */SummarySection/*/SummarySection/*/SummarySection/Title">
     <h3><a name="{translate(.,' ','-')}"><xsl:apply-templates/></a></h3>
     </xsl:template>
 
-   <xsl:template match="SummarySection/SummarySection/SummarySection/SummarySection/Title">
+   <xsl:template match="SummarySection/SummarySection/SummarySection/SummarySection/Title | SummarySection/SummarySection/SummarySection/SummarySection/*/Title | */SummarySection/SummarySection/SummarySection/SummarySection/Title | SummarySection/*/SummarySection/SummarySection/SummarySection/Title | SummarySection/SummarySection/*/SummarySection/SummarySection/Title | SummarySection/SummarySection/SummarySection/*/SummarySection/Title | */SummarySection/*/SummarySection/SummarySection/SummarySection/Title | */SummarySection/*/SummarySection/*/SummarySection/SummarySection/Title | */SummarySection/*/SummarySection/*/SummarySection/*/SummarySection/Title">
    <i><h4><a name="{translate(.,' ','-')}"><xsl:apply-templates/></a></h4></i>
    </xsl:template>
 
-<xsl:template match="Title">
- <xsl:if test="not(SummarySection/SummarySection)">
+  <xsl:template match="SummarySection/Title | SummarySection/*/Title | */SummarySection/Title">
   <h2><a name="{translate(.,' ','-')}"><xsl:apply-templates/></a></h2>
-   </xsl:if>
- </xsl:template>
+  </xsl:template>
+
+ <!-- ===============================================================
+        Display a title for TOC
+      =============================================================== -->
+
+  <xsl:template match="Title" mode="CL">
+  <font size='4'><a name="{translate(.,' ','-')}"><xsl:apply-templates/></a></font>
+  </xsl:template>
+
 
  
 <!-- =======================================
@@ -142,7 +151,7 @@
 
    <xsl:template match="KeyPoints">
 
-   <xsl:if test="KeyPointsList/ListItem">
+   <xsl:if test="KeyPointsList/ListItem/KeyPoint">
       <table align='center' border='1'>
       <tr>
          <td align='middle'>
@@ -154,9 +163,6 @@
            <xsl:if test="KeyPointsList !=''">
            <xsl:apply-templates/>
            </xsl:if>
-                  
-       
-                   
          </td>
       </tr>
       </table>
@@ -164,17 +170,22 @@
   </xsl:if>
 </xsl:template>
 
-<!-- =========================================
-      Display an ordered list 
-     =========================================
+<!-- ================================================================== 
+                       Display an Insertion 
+     =================================================================== -->
 
-<xsl:template match="OrderedList/ListItem">
-   <dl>
-      <dd>
-         <xsl:apply-templates/>
-      </dd><br /><br />
-   </dl>
-</xsl:template>-->
+                <xsl:template match="Insertion">
+                <font color="#FF0000"><xsl:apply-templates/></font>
+                </xsl:template>
+
+
+<!-- ==================================================================
+                     Display a Deletion 
+     =================================================================== -->
+
+              <xsl:template match="Deletion">
+              <strike><xsl:apply-templates/></strike>
+              </xsl:template>
 
 <!-- ===========================================
       display footnotes
@@ -208,47 +219,6 @@
    </xsl:if>
 </xsl:template>
 
-<!-- ===============================================
-       Display a bulleted itemized list 
-     ===============================================
-
-<xsl:template match="ItemizedList[@Style='bullet']">
-   <ul>
-   <xsl:for-each select="ListItem">
-      <li list-style-type='none'>
-         <xsl:apply-templates/>
-      </li><br />
-   </xsl:for-each>
-   </ul>
-   <br />
-</xsl:template>-->
-
-<!-- ===============================================
-      display a dashed itemized list 
-     ===============================================
-
-<xsl:template match="ItemizedList[@Style='dash']">
-   <ul>
-      <xsl:for-each select="ListItem">
-       
-     <li type='square'><xsl:apply-templates/></li><br />
-      </xsl:for-each>
-   </ul>
-   <br />
-</xsl:template>-->
-
-<!-- ==================================================
-      display a itemized list 
-     ==================================================
-
-<xsl:template match="ItemizedList">
-   <ul>
-      <xsl:for-each select="ListItem">
-         <xsl:apply-templates/>
-      </xsl:for-each>
-   </ul>
-</xsl:template>-->
-
 
 <!-- ================================================================
       This template deletes data elements not used in the display 
@@ -264,60 +234,6 @@
    <p><xsl:apply-templates/></p>
 </xsl:template>
 
-<!-- =================================================================
-      Create a link to another document or website -old XML
-     =================================================================-->
-<!--
-<xsl:template match="ZLNK">
-   <xsl:variable name="nlink" select="."/>
-   <a href="{$nlink}">
-   <xsl:apply-templates/></a>
-</xsl:template>-->
-
-<!-- ====================================================================
-      Display tables [preliminary version RMK 17Nov2001; to be expanded. 
-     ====================================================================-->
-
-<xsl:template match="Table">
-   <center>
-      <xsl:if test="Title">
-         <h3><xsl:apply-templates select="Title"/></h3>
-      </xsl:if>
-      <table border='1' cellspacing='0' cellpadding='3'>
-         <xsl:if test="@Frame='all'">
-            <xsl:attribute name='border'>1</xsl:attribute>
-         </xsl:if>
-         <xsl:for-each select="TGroup/THead/Row">
-            <tr>
-               <xsl:for-each select='entry'>
-                  <th>
-                     <xsl:apply-templates/>
-                  </th>
-               </xsl:for-each>
-            </tr>
-         </xsl:for-each>
-         <xsl:for-each select="TGroup/TBody/Row">
-            <tr>
-            <xsl:for-each select='entry'>
-               <td>
-                  <xsl:apply-templates/>
-               </td>
-            </xsl:for-each>
-            </tr>
-         </xsl:for-each>
-      </table>
-      <xsl:for-each select='TGroup//Row/entry/Note'>
-         <i>
-            <xsl:value-of select="."/><br />
-         </i>
-      </xsl:for-each>
-   </center>
-</xsl:template>
-
-<!-- =========================================================
-      don't do anything for Note   =========================================================
-
-<xsl:template match="entry/Note"/>-->
 
 <!-- =========================================================
         Display as formatted in document 
@@ -342,14 +258,13 @@
 
 <!-- =========================================================
              create anchor from keypoint in table to text
-     =========================================================-->
+     ========================================================= -->
 
-<xsl:template match="KeyPoint">
-   <b>
-      <a name="{translate(substring(.,1,15),' ','-')}">
-      <xsl:value-of select="."/></a><br /><br />
-   </b>
-</xsl:template>
+         
+    <xsl:template match="KeyPoint">
+    <!-- <a name="{translate(substring(.,1,15),' ','-')}">-->
+   <b><font size='4'><xsl:apply-templates/></font></b>
+     </xsl:template>
 
 <!-- =========================================================
            Create a link to an external website 
@@ -369,6 +284,42 @@
          <xsl:template match="TranslationOf | PdqKey | DateLastModified">
          </xsl:template>
     
+<!--=====================================================================
+         Display an ordered list 
+    ==================================================================== -->
+  <xsl:template                  match = "OrderedList">
+    <xsl:variable                 name = "redline">
+      <xsl:text>Redline</xsl:text>
+    </xsl:variable>
+    <xsl:call-template            name = "OrderedList">
+      <xsl:with-param             name = "markup"        
+                                select = "$redline"/>
+    </xsl:call-template>
+  </xsl:template>
+
+<!--=====================================================================
+                Display an Itemized List
+    ==================================================================== -->
+  <xsl:template                  match = "ItemizedList">
+    <xsl:variable                 name = "redline">
+      <xsl:text>Redline</xsl:text>
+    </xsl:variable>
+    <xsl:call-template            name = "ItemizedList">
+      <xsl:with-param             name = "markup"        
+                                select = "$redline"/>
+    </xsl:call-template>
+  </xsl:template>
+
+    <!-- ===================================================================
+
+             Display Insertion for Redline/strikeout report
+      =================================================================== -->
+
+   <xsl:template    match="Insertion/Table">
+    <xsl:apply-templates select="." mode="R"/>
+    </xsl:template>
+
+
 
 
 </xsl:transform>]]>
