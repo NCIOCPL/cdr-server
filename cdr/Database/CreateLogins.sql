@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.10 2002-10-17 22:41:30 ameyer Exp $
+ * $Id: CreateLogins.sql,v 1.11 2002-11-01 05:20:39 ameyer Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2002/10/17 22:41:30  ameyer
+ * Added batch_job permissions.
+ *
  * Revision 1.9  2002/08/23 17:26:37  pzhang
  * Corrected mistakes.
  *
@@ -263,7 +266,7 @@ GRANT SELECT, UPDATE, INSERT, DELETE ON pub_proc_cg_work TO CdrPublishing
 GO
 GRANT SELECT ON remailer_ids TO CdrGuest
 GO
-GRANT SELECT, UPDATE, INSERT ON remailer_ids TO CdrPublishing
+GRANT SELECT, UPDATE, INSERT, DELETE ON remailer_ids TO CdrPublishing
 GO
 GRANT SELECT ON active_doc TO CdrGuest
 GO
