@@ -8,6 +8,7 @@
 #include "CdrException.h"
 #include "CdrLink.h"
 #include "CdrLinkProcs.h"
+#include "CdrLock.h"
 
 /*
  * CdrLinkProcs.cpp
@@ -17,9 +18,12 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.5 2001-11-08 19:02:41 ameyer Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.6 2001-11-08 23:00:04 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2001/11/08 19:02:41  ameyer
+ * Added comment about a problem.  See XXXX.
+ *
  * Revision 1.4  2001/09/28 01:20:43  ameyer
  * Completed first implementation of getLinkTargetRestrictions.
  *
@@ -166,58 +170,40 @@ static cdr::link::LinkChkTargContains *findOrMakeRuleTree (
     //   an existing parse of the rule we want
     if (s_LinkContainsMutex != 0) {
 
-        DWORD stat = WaitForSingleObject (s_LinkContainsMutex, 5000);
+        cdr::Lock lock(s_LinkContainsMutex, 5000);
+        if (lock.m) {
 
-        switch (stat) {
+            // Have exclusive ownership of the parse tree array
+            // Search it for an existing parse of the passed rule
+            for (i=0; i<s_parsedCount; i++) {
+                if (s_parsedRule[i]->ruleCompare (rule)) {
 
-            case WAIT_OBJECT_0:
-            case WAIT_ABANDONED:
-                // Have exclusive ownership of the parse tree array
-                // Search it for an existing parse of the passed rule
-                for (i=0; i<s_parsedCount; i++) {
-                    if (s_parsedRule[i]->ruleCompare (rule)) {
-
-                        // Found it
-                        ruleTree = s_parsedRule[i];
-                        break;
-                    }
+                    // Found it
+                    ruleTree = s_parsedRule[i];
+                    break;
                 }
+            }
 
-                // If we didn't find it, we have to create it
-                // This shouldn't happen very often at all
-                if (ruleTree == 0) {
+            // If we didn't find it, we have to create it
+            // This shouldn't happen very often at all
+            if (ruleTree == 0) {
 
-                    // Need room in the array
-                    if (s_parsedCount >= maxRules)
-                        throw cdr::Exception (
-                            L"Too many link proc rules, bug?");
-
-                    // Parse this rule
-                    // Throws exception if parse fails
-                    ruleTree = new cdr::link::LinkChkTargContains (rule);
-
-                    // Add it to the array
-                    s_parsedRule[s_parsedCount++] = ruleTree;
-                }
-
-                // Release mutex
-                if (!ReleaseMutex (s_LinkContainsMutex)) {
+                // Need room in the array
+                if (s_parsedCount >= maxRules)
                     throw cdr::Exception (
-                        L"Can't release Link Procs mutex.  Error="
-                        + cdr::String::toString (GetLastError ()));
-                }
+                        L"Too many link proc rules, bug?");
 
-                break;
+                // Parse this rule
+                // Throws exception if parse fails
+                ruleTree = new cdr::link::LinkChkTargContains (rule);
 
-            case WAIT_TIMEOUT:
-                throw cdr::Exception (
-                 L"Timeout waiting for mutex for link proc parse tree object");
-                break;
-
-            default:
-                throw cdr::Exception (
-              L"Unknown mutex error on link proc parse trees - can't happen!");
+                // Add it to the array
+                s_parsedRule[s_parsedCount++] = ruleTree;
+            }
         }
+        else 
+            throw cdr::Exception (
+                 L"Timeout waiting for mutex for link proc parse tree object");
     }
     else {
         throw cdr::Exception (
@@ -342,11 +328,6 @@ static std::string parseTag (const char **stringpp)
 
     // Initialize from passed ptr to ptr
     p = startp = *stringpp;
-
-    // A tag must start with an alphabetic
-    if (!isalpha(*p++))
-        throw cdr::Exception (L"Link property validation expression string "
-                              L"does not contain valid XML tag");
 
     // Continue until we run out of tag characters
     // Note that string terminator ends check because s_nmchars[0]==false
