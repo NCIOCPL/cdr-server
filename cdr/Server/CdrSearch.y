@@ -1,10 +1,13 @@
 %{
 /*
- * $Id: CdrSearch.y,v 1.1 2000-04-21 13:53:59 bkline Exp $
+ * $Id: CdrSearch.y,v 1.2 2000-10-04 18:30:16 bkline Exp $
  *
  * Parser for CDR Search module.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/21 13:53:59  bkline
+ * Initial revision
+ *
  */
 
 /*
@@ -39,10 +42,11 @@
        NameChar ::= Letter | Digit | '-' | '_' | '.' | ':'
           Digit ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' |
                     '8' | '9'
-   ComparisonOp ::= EqualityOp | InequalityOp | SubstringOp
+   ComparisonOp ::= EqualityOp | InequalityOp | SubstringOp | StartsOp
      EqualityOp ::= '=' | 'eq'
    InequalityOp ::= '!=' | 'ne' | 'lt' | 'gt' | 'lte' | 'gte'
     SubstringOp ::= 'contains'
+       StartsOp ::= 'begins'
          RValue ::= "'" String "'" | '"' String '"'
          String ::= ("\'" | [^'#xD#xA#x9])* | ('\"' | [^"#xD#xA#x9])*
        Negation ::= 'not(' Disjunction ')'
@@ -84,6 +88,7 @@ static cdr::QueryNode::OpType comparisonOp;
 %token  <keyword>   Lte
 %token  <keyword>   Gte
 %token  <keyword>   Contains
+%token  <keyword>   Begins
 %token  <keyword>   Root
 %token  <keyword>   DocId
 %token  <keyword>   CtlDocId
@@ -142,6 +147,7 @@ static cdr::QueryNode::OpType comparisonOp;
                 | Gte          { $$ = cdr::QueryNode::GTE;        }
                 | Lte          { $$ = cdr::QueryNode::LTE;        }
                 | Contains     { $$ = cdr::QueryNode::CONTAINS;   }
+                | Begins       { $$ = cdr::QueryNode::BEGINS;     }
         CtlPath : CtlDocId     { $$ = cdr::QueryNode::DOC_ID;     }
                 | CtlCreator   { $$ = cdr::QueryNode::CREATOR;    }
                 | CtlCreated   { $$ = cdr::QueryNode::CREATED;    }
@@ -191,6 +197,7 @@ int yylex(void* parm1, void* parm2)
             { L"lte",               Lte           },
             { L"gte",               Gte           },
             { L"contains",          Contains      },
+            { L"begins",            Begins        },
             { L"//CdrDoc",          Root          },
             { L"/CdrCtl/DocId",     DocId         },
             { L"CdrCtl/DocId",      CtlDocId      },
