@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.60 2005-02-24 14:09:21 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.61 2005-03-04 02:42:57 ameyer Exp $
  *
  */
 
@@ -91,16 +91,17 @@ cdr::CdrDoc::CdrDoc (
     warningCount (0)
 {
     // Get doctype and id from CdrDoc attributes
-    const cdr::dom::Element& docElement =
-        static_cast<const cdr::dom::Element&>(docDom);
+    const cdr::dom::Element& docElement(docDom);
     textDocType = docElement.getAttribute (L"Type");
     if (textDocType.size() == 0)
         throw cdr::Exception (L"CdrDoc: Doctag missing 'Type' attribute");
-    textId = docElement.getAttribute (L"Id");
     String strFilterLevel = docElement.getAttribute(L"RevisionFilterLevel");
     revFilterLevel = strFilterLevel.getInt();
     if (!revFilterLevel)
         revFilterLevel = DEFAULT_REVISION_LEVEL;
+
+    // Get the document ID if present in the transaction
+    textId = docElement.getAttribute (L"Id");
 
     // If Id was passed, document must exist in database.
     if (textId.size() > 0) {
@@ -167,6 +168,28 @@ cdr::CdrDoc::CdrDoc (
                     if (ctlNode.getNodeType() == cdr::dom::Node::ELEMENT_NODE){
                         cdr::String ctlTag = ctlNode.getNodeName();
 
+                        // XXX: Hopefully temporary code
+                        // Due to fubar factors, CdrValidateDoc transactions
+                        //   don't currently have an Id attribute in the
+                        //   CdrDoc element.
+                        // They use a DocCtl/DocId subelement instead
+                        // The processing done above on textId is,
+                        //   fortunately, unnecessary for validateDoc calls
+                        //   so we can simplify our temporary workaround
+                        //   by picking up the docId here, where it's easily
+                        //   found without re-traversing the tree.
+                        // XXX: Hopefully temporary code
+                        if (ctlTag == L"DocId") {
+                            if (Id == 0) {
+                                textId = cdr::dom::getTextContent (ctlNode);
+                                if (textId.size() > 0)
+                                    Id = textId.extractDocId();
+                                else
+                                    throw cdr::Exception(
+                                            "No text in DocId element");
+                            }
+                        }
+
                         // Capture each element.
                         // Many elements are not allowed to be modified
                         //   by client programs.  These are skipped.  Only
@@ -230,7 +253,12 @@ cdr::CdrDoc::CdrDoc (
 
     // No passed XML may be legal or may not, have to check other things
     if (Xml.size() == 0) {
-        // If it's a new record, XML is required
+        // Note: In developing the blob code I appear to have accidentally
+        //       developed a pathological test case with a blob, no XML
+        //       and no ID.  That should not happen in real usage, but is
+        //       protected against with the following two tests - AHM.
+
+        // If it's a new record (no Id), XML is required
         if (!Id)
             throw cdr::Exception(
                     "LCdrDoc: Can't construct new record with no XML");
@@ -604,7 +632,6 @@ static cdr::String cdrPutDoc (
                 }
             }
 
-
             else if (name == L"Validate") {
                 cmdValidate = cdr::ynCheck (cdr::dom::getTextContent (child),
                                            false, L"Validate");
@@ -855,7 +882,8 @@ static cdr::String cdrPutDoc (
         //   was already parsed, or if not, parse it.  It also
         //   handles revision filtering before the parse.
         if (doc.parseAvailable())
-            cdr::link::CdrSetLinks (doc.getDocumentElement(), dbConn,
+            cdr::link::CdrSetLinks (cdr::dom::Node(doc.getDocumentElement()),
+                                    dbConn,
                                     doc.getId(), doc.getTextDocType(),
                                     cdr::UpdateLinkTablesOnly,
                                     doc.getErrList());
@@ -1136,8 +1164,9 @@ bool cdr::CdrDoc::parseAvailable ()
         return false;
     }
 
-    // Build a parse tree
-    cdr::dom::Parser parser;
+    // Build a parse tree, being sure memory is saved
+    //   after the parser goes out of scope
+    cdr::dom::Parser parser(true);
     try {
         // Successful or not, the parse will have been attempted
         parsed = true;
@@ -1807,21 +1836,16 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
         return;
 
     // Get a parsed copy of the document so we can examine the org statuses.
-    cdr::dom::Parser  parser;
-    cdr::dom::Element docElement;
-    try {
-        parser.parse(Xml);
-        docElement = parser.getDocument().getDocumentElement();
+    // DOM tree will be in this->docElem if parse was successful
+    if (!parseAvailable()) {
+        // Parsing will be tried again later, errors here are redundant
+        // Validation will catch the fact that the document is malformed.
+        return;
     }
-
-    // Parsing will be tried again later, errors here are redundant
-    // Validation will catch the fact that the document is malformed.
-    catch (cdr::Exception&) { return; }
-    catch (cdr::dom::XMLException &) { return; }
 
     // Find the statuses for the lead organizations.
     std::set<cdr::String> statusSet;
-    cdr::dom::Node child = docElement.getFirstChild();
+    cdr::dom::Node child = docElem.getFirstChild();
     cdr::String targetName = L"ProtocolAdminInfo";
     while (child != 0 && targetName != cdr::String(child.getNodeName())) {
         //errList.push_back(L"child name is " +
