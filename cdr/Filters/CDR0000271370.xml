@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ===========================================================================
- $Id: CDR0000271370.xml,v 1.17 2004-12-07 19:42:00 venglisc Exp $
+ $Id: CDR0000271370.xml,v 1.18 2005-01-04 23:25:01 venglisc Exp $
 
  Filter including misc Vendor filter templates.
 
@@ -79,8 +79,8 @@
  ========================================================================= -->
  <xsl:template                   match = "MediaLink">
   <!-- 
-  Define language variable to select the caption
-  =============================================== -->     
+  Define language variable to select the caption and alt text
+  =========================================================== -->     
   <xsl:variable                   name = "docLanguage">
    <xsl:choose>
     <xsl:when                     test = "/Summary/
@@ -95,6 +95,22 @@
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
+  <!-- 
+  Define audience variable to select the alt text
+  =============================================== -->     
+  <xsl:variable                   name = "docAudience">
+   <xsl:choose>
+    <xsl:when                     test = "/Summary/
+                                          SummaryMetaData/
+                                          SummaryAudience 
+                                            = 'Health Professional'">
+     <xsl:text>Health_professional</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>Patient</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
 
   <!--
   Create MediaLink Element and attributes
@@ -103,9 +119,30 @@
    <xsl:attribute                 name = "ref">
     <xsl:value-of               select = "MediaID/@cdr:ref"/>
    </xsl:attribute>
-   <xsl:attribute                 name = "alt">
-    <xsl:value-of               select = "@AlternativeText"/>
-   </xsl:attribute>
+
+   <!--
+   alt text is taken from summary AlternativeText attribute or
+   from the Media Content description matching the audience and
+   language of the document type
+   ============================================================ -->
+   <xsl:choose>
+    <xsl:when                     test = "@AlternativeText">
+     <xsl:attribute               name = "alt">
+      <xsl:value-of             select = "@AlternativeText"/>
+     </xsl:attribute>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:attribute               name = "alt">
+      <xsl:value-of             select = "MediaID/Media/
+                                          MediaContent/
+                                          ContentDescriptions/
+                                          ContentDescription
+                                            [@language=$docLanguage
+                                             and
+                                             @audience=$docAudience]"/>
+     </xsl:attribute>
+    </xsl:otherwise>
+   </xsl:choose>
 
    <!-- Optional Attributes -->
    <xsl:if                        test = "@cdr:id">
@@ -115,11 +152,20 @@
    </xsl:if>
 
    <!--
-   The language attribute is being added based on the summary language
+   The language attribute is being added only if the Media document
+   specifies a different language then that of the document type
+   i.e. if an image with English labels is being displayed in a 
+        Spanish summary
+   By default, the MediaLanguage element will not be specified.
    =================================================================== -->
-   <xsl:attribute                 name = "language">
-    <xsl:value-of               select = "$docLanguage"/>
-   </xsl:attribute>
+   <xsl:if                        test = "$docLanguage != MediaID/
+                                                          Media/
+                                                          MediaContent/
+                                                          MediaLanguage">
+    <xsl:attribute                name = "language">
+     <xsl:value-of              select = "$docLanguage"/>
+    </xsl:attribute>
+   </xsl:if>
 
    <xsl:if                        test = "@Inline">
     <xsl:attribute                name = "inline">
@@ -153,7 +199,12 @@
      <xsl:value-of              select = "@size"/>
     </xsl:attribute>
    </xsl:if>
-   <xsl:if                        test = "@thumb">
+
+   <!--
+   The thumb attribute is only being displayed if its value is set to No.
+   By default all images are clickable thumbs.
+   ====================================================================== -->
+   <xsl:if                        test = "@thumb = 'No'">
     <xsl:attribute                name = "thumb">
      <xsl:value-of              select = "@thumb"/>
     </xsl:attribute>
@@ -175,7 +226,9 @@
                                           MediaContent/
                                           Captions/
                                           MediaCaption
-                                            [@language=$docLanguage]"/>
+                                            [@language = $docLanguage
+                                             and
+                                             @audience = $docAudience]"/>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:if>
@@ -187,7 +240,8 @@
  =========================================================================
  Template for Caption and MediaCaption elements
  ========================================================================= -->
- <xsl:template                   match = "Caption|MediaCaption">
+ <xsl:template                   match = "Caption |
+                                          MediaCaption">
   <xsl:element                    name = "Caption">
    <xsl:if                        test = "@language">
     <xsl:attribute                name = "language">
