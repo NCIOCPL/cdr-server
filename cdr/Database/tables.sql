@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.80 2003-02-10 15:37:34 pzhang Exp $
+ * $Id: tables.sql,v 1.81 2003-06-13 20:09:40 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.80  2003/02/10 15:37:34  pzhang
+ * Added completed column back to primary_pub_job to avoid
+ * possible backward compatibility problem.
+ *
  * Revision 1.79  2003/02/07 21:03:13  pzhang
  * Deleted filtering removed in primary_pub_doc table because we need
  * to show removed docs in Cancer.gov job.
@@ -1550,6 +1554,7 @@ AS
                 v.dt             ver_date,
                 vu.name          ver_user,
                 t.name           doc_type,
+                d.title          doc_title
                 pv = CASE
                           WHEN v.publishable IS NOT NULL
                            AND v.publishable = 'Y'
