@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.cpp,v 1.34 2002-11-12 11:44:37 bkline Exp $
+ * $Id: CdrCommand.cpp,v 1.35 2002-11-14 13:23:58 bkline Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2002/11/12 11:44:37  bkline
+ * Added filter set support.
+ *
  * Revision 1.33  2002/06/26 02:22:14  ameyer
  * Added CdrLastVersions => lastVersion().
  *
@@ -166,6 +169,7 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
         CommandMap(L"CdrGetFilterSet",       cdr::getFilterSet),
         CommandMap(L"CdrAddFilterSet",       cdr::addFilterSet),
         CommandMap(L"CdrRepFilterSet",       cdr::repFilterSet),
+        CommandMap(L"CdrDelFilterSet",       cdr::delFilterSet),
         CommandMap(L"CdrGetLinks",           cdr::getLinks),
         CommandMap(L"CdrGetLinkType",        cdr::getLinkType),
         CommandMap(L"CdrAddLinkType",        cdr::putLinkType),

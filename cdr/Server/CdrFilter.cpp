@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.31 2002-11-12 11:44:37 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.32 2002-11-14 13:23:58 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2002/11/12 11:44:37  bkline
+ * Added filter set support.
+ *
  * Revision 1.30  2002/10/03 02:56:08  bkline
  * Added a custom function to map a Cancer.gov GUID to a pretty URL.
  *
@@ -138,7 +141,6 @@ static cdr::String getPrettyUrl(const cdr::String& guid);
 
 static void getFiltersInSet(const cdr::String& name,
                             std::vector<int>& filterSet, 
-                            int depth,
                             cdr::db::Connection& conn);
 
 static void getFiltersInSet(int,
@@ -960,6 +962,31 @@ cdr::String cdr::filter(cdr::Session& session,
           filters.push_back(getDocument(child, connection, CdrFilterType,
                                         NULL, &ui));
         else
+        if (name == L"FilterSet")
+        {
+          const cdr::dom::Element& e = 
+              static_cast<const cdr::dom::Element&>(child);
+          std::vector<int> filterSet;
+          String setName = e.getAttribute("Name");
+          String versionStr = e.getAttribute("Version");
+          getFiltersInSet(setName, filterSet, connection);
+          for (size_t i = 0; i < filterSet.size(); ++i) 
+          {
+            int id = filterSet[i];
+            int ver = 0;
+            String idStr = stringDocId(id);
+            if (versionStr == L"last")
+              ver = getVersionNumber(id, connection);
+            else if (versionStr == L"lastp")
+              ver = getLatestPublishableVersion(id, connection);
+            else if (!versionStr.empty())
+              throw Exception(L"Invalid value for Version attribute",
+                              versionStr);
+            String doc = getDocument(idStr, ver, connection, CdrFilterType);
+            filters.push_back(doc);
+          }
+        }
+        else
         if (name == L"Parms")
         {
           for (cdr::dom::Node pchild = child.getFirstChild();
@@ -1370,7 +1397,7 @@ cdr::String cdr::addFilterSet(cdr::Session& session,
 {
     // Check user authorization.
     if (!session.canDo(connection, L"ADD FILTER SET", L""))
-        throw Exception (L"CdrPutDoc: User '" + session.getUserName() +
+        throw Exception (L"addFilterSet: User '" + session.getUserName() +
                          L"' not authorized to create new filter sets.");
 
     // Extract the parameters from the command.
@@ -1423,7 +1450,7 @@ cdr::String cdr::repFilterSet(cdr::Session& session,
 {
     // Check user authorization.
     if (!session.canDo(connection, L"MODIFY FILTER SET", L""))
-        throw Exception (L"CdrPutDoc: User '" + session.getUserName() +
+        throw Exception (L"repFilterSet: User '" + session.getUserName() +
                          L"' not authorized to modify existing filter sets.");
 
     // Extract the parameters from the command.
@@ -1514,7 +1541,7 @@ cdr::String cdr::getFilterSet(Session& session,
             "       description, "
             "       notes        "
             "  FROM filter_set   "
-            "  WHERE name = ?    ");
+            " WHERE name = ?     ");
     q1.setString(1, filterSetName);
     db::ResultSet rs1 = q1.executeQuery();
     if (!rs1.next())
@@ -1581,6 +1608,82 @@ cdr::String cdr::getFilterSet(Session& session,
     }
     response << L"</CdrGetFilterSetResp>";
     return response.str();
+}
+
+/**
+ * Deletes a named CDR filter set.  Blocked if the set is used as a
+ * nested member of another filter set.
+ *
+ *  @param      session     contains information about the current user.
+ *  @param      node        contains the XML for the command.
+ *  @param      conn        reference to the connection object for the
+ *                          CDR database.
+ *  @return                 String object containing the XML for the
+ *                          command response.
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::delFilterSet(Session& session,
+                              const dom::Node& commandNode,
+                              db::Connection& connection)
+{
+    // Check user authorization.
+    if (!session.canDo(connection, L"DELETE FILTER SET", L""))
+        throw Exception (L"delFilterSet: User '" + session.getUserName() +
+                         L"' not authorized to delete filter sets.");
+
+    String filterSetName;
+    dom::Node child = commandNode.getFirstChild();
+    while (child != 0) {
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String name = child.getNodeName();
+            if (name == L"FilterSetName")
+                filterSetName = cdr::dom::getTextContent(child);
+        }
+        child = child.getNextSibling();
+    }
+    if (filterSetName.empty())
+        throw Exception(L"Required FilterSetName element missing");
+
+    // Find the filter set.
+    db::PreparedStatement q1 = connection.prepareStatement(
+            "SELECT id         "
+            "  FROM filter_set "
+            " WHERE name = ?   ");
+    q1.setString(1, filterSetName);
+    db::ResultSet rs1 = q1.executeQuery();
+    if (!rs1.next())
+        throw Exception(L"Filter set not found", filterSetName);
+    int    id    = rs1.getInt(1);
+
+    // Make sure the set isn't a nested member of another set.
+    db::PreparedStatement q2 = connection.prepareStatement(
+            "SELECT COUNT(*)          "
+            "  FROM filter_set_member "
+            " WHERE subset = ?        ");
+    q2.setInt(1, id);
+    db::ResultSet rs2 = q2.executeQuery();
+    if (!rs2.next())
+        throw Exception(L"Internal error checking for nested set membership");
+    if (rs2.getInt(1) > 0)
+        throw Exception(L"Set cannot be deleted",
+                        L"Set is used as a member of other sets");
+
+    // Open a transaction and start deleting rows.
+    connection.setAutoCommit(false);
+    db::PreparedStatement q3 = connection.prepareStatement(
+            "DELETE FROM filter_set_member "
+            "      WHERE filter_set = ?    ");
+    q3.setInt(1, id);
+    q3.executeUpdate();
+    db::PreparedStatement q4 = connection.prepareStatement(
+            "DELETE FROM filter_set "
+            "      WHERE id = ?     ");
+    q4.setInt(1, id);
+    q4.executeUpdate();
+    connection.commit();
+
+    // Report success.
+    return L"<CdrDelFilterSetResp/>";
 }
 
 /**
@@ -1662,7 +1765,6 @@ cdr::String cdr::getFilters(cdr::Session& session,
 
 void getFiltersInSet(const cdr::String& name,
                      std::vector<int>& filterSet, 
-                     int depth,
                      cdr::db::Connection& conn)
 {
     cdr::db::PreparedStatement stmt = conn.prepareStatement(

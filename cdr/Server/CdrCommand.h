@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.27 2002-11-12 11:44:37 bkline Exp $
+ * $Id: CdrCommand.h,v 1.28 2002-11-14 13:23:58 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2002/11/12 11:44:37  bkline
+ * Added filter set support.
+ *
  * Revision 1.26  2002/06/26 02:21:52  ameyer
  * Added lastVersions(), plus a bit of extra documentation on listVersions().
  *
@@ -859,6 +862,22 @@ namespace cdr {
     extern String addFilterSet (Session&          session,
                                 const dom::Node&  node,
                                 db::Connection&   conn);
+
+    /**
+     * Deletes a named CDR filter set.  Blocked if the set is used as a
+     * nested member of another filter set.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String delFilterSet(Session&         session,
+                               const dom::Node& node,
+                               db::Connection&  conn);
 
     /**
      * Reports the links which exist in the CDR to and from the specified
