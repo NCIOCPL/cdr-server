@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Health Professional Summary Report-Bold/Underline</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.33: Proposed deletion</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!-- ==================================================================
@@ -86,30 +86,31 @@
        Display CitationLink
      ===================================================================== -->
     <xsl:template              match = "CitationLink">
-     <xsl:variable              name = "nextRef" 
-                              select = "position()+1"/>
-     <xsl:variable              name = "firstRef" 
-                              select = "position()-1"/>
-     <xsl:variable              name = "ref" 
-                              select = "."/>
+     <xsl:if                   test="not(@InsertionOrDeletion='Deletion')">
+         <xsl:variable         name = "nextRef" 
+                               select = "position()+1"/>
+         <xsl:variable         name = "firstRef" 
+                               select = "position()-1"/>
+         <xsl:variable         name = "ref" 
+                               select = "."/>
       
-     <xsl:if                    test = "name(../node()[$firstRef])
+        <xsl:if                test = "name(../node()[$firstRef])
                                         != 'CitationLink'">
-      <xsl:value-of           select = "'['"/>
-     </xsl:if>
+        <xsl:value-of          select = "'['"/>
+        </xsl:if>
                     
-     <xsl:choose>
-      <xsl:when                 test = "@InsertionOrDeletion
+        <xsl:choose>
+        <xsl:when              test = "@InsertionOrDeletion
                                         = 'Insertion'">
-       <xsl:choose>
-        <xsl:when               test = "@RevisionLevel='proposed'">
+        <xsl:choose>
+        <xsl:when              test = "@RevisionLevel='proposed'">
          <b>
-          <xsl:value-of       select = "@refidx"/>
+        <xsl:value-of          select = "@refidx"/>
          </b>
         </xsl:when>
         <xsl:otherwise>
          <b><u>
-          <xsl:value-of       select = "@refidx"/>
+          <xsl:value-of         select = "@refidx"/>
          </u></b>
         </xsl:otherwise>
        </xsl:choose>
@@ -117,21 +118,22 @@
       <xsl:when                 test = "@InsertionOrDeletion
                                         = 'Deletion'"/>  
       <xsl:otherwise>
-       <xsl:value-of       select = "@refidx"/>
+       <xsl:value-of            select = "@refidx"/>
       </xsl:otherwise> 
      </xsl:choose>  	    
 	    	
      <xsl:if                    test = "name(../node()[$nextRef])
                                         = 'CitationLink'">
-      <xsl:value-of           select = "','"/>
+     <xsl:value-of              select = "','"/>
      </xsl:if>            
           
      <xsl:if                    test = "name(../node()[$nextRef])
                                         != 'CitationLink'">
-      <xsl:value-of           select = "']'"/>
-     </xsl:if>   
+      <xsl:value-of             select = "']'"/>
+      </xsl:if>   
+   </xsl:if>
       
-    </xsl:template>
+   </xsl:template>
                           
 <!-- ================================================================== 
        Display an Insertion 
@@ -160,20 +162,31 @@
     <xsl:apply-templates/>
     </strike>  
     </xsl:if>
-    </xsl:template>                            
+    </xsl:template>      
+
+     <!-- ================================================================
+            Display Comments ( Commented out until data changes are made)
+       =============================================================== 
+
+
+              <xsl:template          match="Comment">
+                <i>
+                <b>
+                <xsl:apply-templates/>
+                </b>
+                </i>
+                </xsl:template>-->
+                             
 
 
 <!-- ==================================================================
        Don't display any Deletion 
      ================================================================== -->
     <xsl:template        match = "Deletion[@RevisionLevel='approved'] |
-                                  Deletion[@RevisionLevel='publish']"/> 
-    
-    
-    
-                                                              
-                                   
- 
+                                  Deletion[@RevisionLevel='publish']"/>
+
+   
+   
 <!-- ================================================================== 
        This template deletes data elements not used in the display 
      ================================================================== -->
@@ -184,6 +197,7 @@
                                         SecondaryTopics | DocId |
                                         DateLastModified |PatientVersionOf |
                                         TranslationOf | ReplacementFor"/>
+                                        
 </xsl:transform>]]>
 </CdrDocXml>
 </CdrDoc>
