@@ -8,9 +8,12 @@
 <CdrDocXml><![CDATA[<?xml version='1.0'?>
 
 <!--
-     $Id: CDR0000349693.xml,v 1.1 2003-12-14 19:20:18 bkline Exp $
+     $Id: CDR0000349693.xml,v 1.2 2003-12-22 14:25:43 bkline Exp $
 
      $Log: not supported by cvs2svn $
+     Revision 1.1  2003/12/14 19:20:18  bkline
+     Final version for promotion to production system.
+
   -->
 
 <xsl:transform            xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
@@ -129,29 +132,27 @@
  </xsl:template>
 
  <xsl:template                match = 'Location'>
-  <xsl:if                      test = 'Status = "Active" or
-                                       (/CTGovProtocol/OverallStatus = "Active"
-                                        and Status = "")'>
+  <xsl:if                      test = 'normalize-space(Status) = "Active" or
+                                       (normalize-space(
+                                        /CTGovProtocol/OverallStatus) = "Active"
+                                        and normalize-space(Status) = "")'>
    <Location>
-    <xsl:apply-templates     select = 'Facility      | 
-                                       Status        | 
-                                       Contact       | 
-                                       ContactBackup |
-                                       Investigator' />
+    <xsl:apply-templates     select = 'Facility | Status'/>
+    <xsl:if                    test = 'normalize-space(Status) = ""'>
+     <Status>
+      <xsl:value-of          select = '/CTGovProtocol/OverallStatus'/>
+     </Status>
+    </xsl:if>
+    <xsl:apply-templates     select = 'Contact | ContactBackup | Investigator'/>
    </Location>
   </xsl:if>
  </xsl:template>
 
  <xsl:template                match = 'Status'>
   <Status>
-   <xsl:choose>
-    <xsl:when                  test = 'normalize-space() != ""'>
-     <xsl:value-of           select = 'normalize-space()'/>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:value-of           select = '/CTGovProtocol/OverallStatus'/>
-    </xsl:otherwise>
-   </xsl:choose>
+   <xsl:if                     test = 'normalize-space() != ""'>
+    <xsl:value-of            select = 'normalize-space()'/>
+   </xsl:if>
   </Status>
  </xsl:template>
  
