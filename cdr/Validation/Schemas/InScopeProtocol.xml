@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: InScopeProtocol.xml,v 1.8 2001-08-14 21:19:15 bkline Exp $
+      $Id: InScopeProtocol.xml,v 1.9 2001-08-22 17:09:56 ArkD Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.8  2001/08/14 21:19:15  bkline
+      Added namespace declaration for cdr namespace.
+
       Revision 1.7  2001/07/13 14:50:03  ArkD
       ProtocolSites moved from ProtocolAdminInfo into ProtocolLeadOrg.
 
@@ -74,8 +77,8 @@
       <element       name            = 'FundingInfo'
                      type            = 'FundingInfo'
                      minOccurs       = '0'/>
-      <element       name            = 'ProtocolSource'
-                     type            = 'ProtocolSource'/>
+      <element       name            = 'ProtocolSources'
+                     type            = 'ProtocolSources'/>
       <element       name            = 'ProtocolApproval'
                      type            = 'ProtocolApproval'/>
       <element       name            = 'ProtocolSponsors'
@@ -87,7 +90,6 @@
                      maxOccurs       = 'unbounded'/>
       <element       name            = 'ProtocolTitle'
                      type            = 'ProtocolTitle'
-                     minOccurs       = '3'
                      maxOccurs       = '3'/>
       <element       name            = 'ProtocolAbstract'
                      type            = 'ProtocolAbstract'/>
@@ -110,7 +112,8 @@
                      type            = 'ProtocolDesign'
                      maxOccurs       = 'unbounded'/>
       <element       name            = 'ProtocolSpecialCategory'
-                     type            = 'ProtocolSpecialCategory'/>
+                     type            = 'ProtocolSpecialCategory'
+                     minOccurs       = '0'/>
       <element       name            = 'ProtocolAdminInfo'
                      type            = 'ProtocolAdminInfo'/>
     </sequence>
@@ -155,11 +158,18 @@
     </sequence>
   </complexType>
 
-  <complexType       name            = 'ProtocolSource'>
+  <complexType       name            = 'ProtocolSources'>
+    <sequence>
+      <element       name            = 'Source'
+                     type            = 'Source'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'Source'>
     <sequence>
       <element       name            = 'SourceName'
-                     type            = 'SourceName'
-                     maxOccurs       = 'unbounded'/>
+                     type            = 'SourceName'/>
       <element       name            = 'DateReceived'
                      type            = 'dateTime'/>
     </sequence>
@@ -181,7 +191,8 @@
   <complexType       name            = 'ProtocolSponsors'>
     <sequence>
       <element       name            = 'SponsorName'
-                     type            = 'string'/>
+                     type            = 'string'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'Comment'
                      type            = 'string'
                      minOccurs       = '0'/>
@@ -218,7 +229,8 @@
       <element       name            = 'LeadOrgProtocolStatus'
                      type            = 'ProtocolStatusName'/>
       <element       name            = 'LeadOrgProtocolID'
-                     type            = 'string'/>
+                     type            = 'string'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'LeadOrgPersonnel'
                      type            = 'LeadOrgPersonnel'
                      maxOccurs       = 'unbounded'/>
@@ -232,14 +244,14 @@
 
   <complexType       name            = 'LeadOrgPersonnel'>
     <sequence>
-      <element       name            = 'PersonID'
-                     type            = 'PersonLink'/>
-      <element       name            = 'PersonRole'
-                     type            = 'ProtocolPersonRole'
-                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'Person'
+                     type            = 'PersonFragmentLink'/>
       <element       name            = 'ProtocolSpecificContact'
                      type            = 'ContactDetail'
                      minOccurs       = '0'/>
+      <element       name            = 'PersonRole'
+                     type            = 'ProtocolPersonRole'
+                     maxOccurs       = 'unbounded'/>
     </sequence>
     <attribute       name            = 'Public'
                      type            = 'No'
@@ -263,7 +275,7 @@
   <complexType       name            = 'Site'>
     <sequence>
       <element       name            = 'SiteID'
-                     type            = 'OrganizationLink'/>
+                     type            = 'OrganizationFragmentLink'/>
       <element       name            = 'SiteStatus'
                      type            = 'ProtocolStatusName'/>
       <element       name            = 'SiteContact'
@@ -286,11 +298,12 @@
   <complexType       name            = 'SpecificPerson'>
     <sequence>
       <element       name            = 'Person'
-                     type            = 'PersonLink'/>
+                     type            = 'PersonFragmentLink'/>
       <element       name            = 'Role'
                      type            = 'SpecificPersonRole'/>
       <element       name            = 'SpecificPhone'
-                     type            = 'string'/>
+                     type            = 'string'
+                     minOccurs       = '0'/>
     </sequence>
   </complexType>
 
@@ -371,6 +384,7 @@
     <restriction     base            = 'string'>
       <enumeration   value           = 'Active'/>
       <enumeration   value           = 'Approved-Not Yet Active'/>
+      <enumeration   value           = 'Status not known'/>
       <enumeration   value           = 'Temporarily Closed'/>
       <enumeration   value           = 'Closed'/>
       <enumeration   value           = 'Completed'/>
