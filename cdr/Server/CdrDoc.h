@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.6 2001-06-15 02:31:27 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.7 2001-06-20 00:57:19 ameyer Exp $
  *
  */
 
@@ -88,6 +88,33 @@ namespace cdr {
             bool parseAvailable();
 
             /**
+             * If it has not already been done, pass the XML for the
+             * document through filtering to remove revision markup as
+             * per our default revision markup rules.
+             *
+             *  @param errorStr         Reference to string to receive
+             *                            any filter warning or error
+             *                            messages.
+             *  @param revisionLevel    Integer 1..3 where
+             *                            1=All proposed revisions included
+             *                            2=All accepted revisions included
+             *                            3=Only accepted and publishable
+             *                              revisions included
+             *                          Default = 3.
+             *                          These are Well Known Numbers.
+             *  @param getIfUnfiltered  True=Return unfiltered Xml if
+             *                            revision filtering fails for any
+             *                            reason.  Note that raw Xml may
+             *                            well be unusuable if filtering
+             *                            didn't work.
+             *                          Default = false;
+             *  @return                 Filtered (or raw) XML, or L"".
+             */
+            cdr::String getRevisionFilteredXml (cdr::String &errorStr,
+                                                int revisionLevel=3,
+                                                bool getIfUnfiltered=false);
+
+            /**
              * Mark a document as malformed.
              */
             void malFormed();
@@ -103,9 +130,15 @@ namespace cdr {
             cdr::String getTitle()         {return Title;}
             cdr::String getXml()           {return Xml;}
             cdr::String getComment()       {return Comment;}
-            cdr::String getParseErrMsg()   {return parseErrMsg;}
             cdr::db::Connection& getConn() {return docDbConn;}
             cdr::dom::Element& getDocumentElement() {return docElem;}
+
+            // Get errors as an STL list of strings
+            cdr::StringList getErrList() {return errList;}
+
+            // Get errors packed as a single string
+            cdr::String getErrString() {return cdr::packErrors(errList); }
+
 
         private:
             // Values corresponding to document table data
@@ -119,14 +152,17 @@ namespace cdr {
             cdr::String TextDocType;    // Form used in document tag
             cdr::String Title;          // External title
             cdr::String Xml;            // Actual document as XML, not CDATA
-            cdr::String filteredXml;    // After any filtering of insertion
+            cdr::String revisedXml;     // After any filtering of insertion
                                         //  and deletion markup
             cdr::Blob   BlobData;       // Associated non-XML, if any
             cdr::String Comment;        // Free text
             cdr::dom::Element docElem;  // Top node of a parsed document
             bool parsed;                // True=parse was attempted
             bool malformed;             // True=parse failed
-            cdr::String parseErrMsg;    // Error message from parse
+            bool revFilterFailed;       // True=Revision filtering failed
+            int  revFilterLevel;        // Filtering done at this level
+            cdr::StringList errList;    // Errors from validation, parsing,
+                                        //   filtering, or wherever.
 
             // Connection to the database
             cdr::db::Connection& docDbConn;
