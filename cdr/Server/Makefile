@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.62 2002-09-09 12:42:55 bkline Exp $
+# $Id: Makefile,v 1.63 2002-10-06 23:39:36 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.62  2002/09/09 12:42:55  bkline
+# Added support for debugging Sablotron.
+#
 # Revision 1.61  2002/09/07 17:05:34  bkline
 # Changed VCVER from 6 to 7.
 #
@@ -219,7 +222,7 @@ VCVER  =7
 REVER  =vc$(VCVER)
 CDRINC =.
 INC    =-I$(XML4C)/include -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)
-CFLAGS =$(INC) -W3 -GX -MDd -GR -nologo -Zi #-D_NDEBUG
+CFLAGS =$(INC) -W3 -GX -MD -GR -nologo -Zi #-DSINGLE_THREAD_DEBUGGING #-D_NDEBUG
 LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
         /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/$(REVER) /DEBUG
 CC     =cl
