@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.76 2003-01-28 18:46:01 ameyer Exp $
+ * $Id: tables.sql,v 1.77 2003-01-30 23:46:38 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.76  2003/01/28 18:46:01  ameyer
+ * Added sys_value table for system wide control values.
+ *
  * Revision 1.75  2002/12/19 17:15:27  pzhang
  * Added doc_status in doc_info.
  *
@@ -1694,6 +1697,8 @@ GO
  *                  mailer/Person/maxmailers = ...
  *                  mailer/Person/interval = ...
  *                  mailer/Organization/maxmailers = ...
+ *               Because name is unique, we limit len to below sys limit
+ *               of 900 chars on index length.  Should be more than enough.
  *        value  String to retrieve for this name.
  *  last_change  Date-time when value last set.
  *          usr  ID of user making the last change.
@@ -1701,7 +1706,7 @@ GO
  *        notes  Optional notes documenting this system value.
  */
 CREATE TABLE sys_value
-       (name VARCHAR(2000) NOT NULL,
+       (name VARCHAR(800) NOT NULL UNIQUE,
        value VARCHAR(2000) NOT NULL,
          usr INT NOT NULL REFERENCES usr,
  last_change DATETIME NOT NULL,
