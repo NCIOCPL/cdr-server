@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.11 2001-06-12 22:37:23 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.12 2001-06-15 02:28:21 ameyer Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2001/06/12 22:37:23  bkline
+ * Fixed blob handling.
+ *
  * Revision 1.10  2001/06/12 20:55:03  ameyer
  * Added ActiveStatus to output.
  *
@@ -113,7 +116,7 @@ cdr::String cdr::getDocString(
             valDate[10] = L'T';
         cdrDoc += readOnlyWrap (valDate, L"DocValDate");
     }
-    cdrDoc += tagWrap (title, L"DocTitle");
+    cdrDoc += readOnlyWrap (title, L"DocTitle");
     if (!comment.isNull() && comment.length() > 0)
         cdrDoc += tagWrap (comment, L"DocComment");
     cdrDoc += L"</CdrDocCtl>\n";
@@ -375,8 +378,11 @@ cdr::String cdr::getDoc(cdr::Session& session,
             versionLabel = version.substr (6, 99);
         }
         else if (iswdigit(version.c_str()[0])) {
-            versionNum  = version.getInt();
-            versionType = numbered;
+            versionNum = version.getInt();
+            if (versionNum == 0)
+                versionType = current;
+            else
+                versionType = numbered;
         }
         else
             throw cdr::Exception (L"Unrecognized DocVersion value = '"
