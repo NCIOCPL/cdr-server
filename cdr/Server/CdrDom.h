@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.h,v 1.1 2000-04-11 14:17:50 bkline Exp $
+ * $Id: CdrDom.h,v 1.2 2000-04-16 19:10:30 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/11 14:17:50  bkline
+ * Initial revision
+ *
  */
 
 #ifndef CDR_DOM_H_
@@ -16,6 +19,8 @@
 #include <framework/StdInInputSource.hpp>
 #include <dom/DOM_Node.hpp>
 #include <dom/DOM_NamedNodeMap.hpp>
+
+#include "CdrString.h"
 
 namespace cdr {
     namespace dom {
@@ -37,6 +42,8 @@ namespace cdr {
                 XMLPlatformUtils::Initialize(); return true; 
             }
         };
+
+        extern cdr::String getTextContent(const Node&);
     }
 }
 
