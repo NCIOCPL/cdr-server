@@ -1,10 +1,13 @@
 
 /*
- * $Id: CdrModGrp.cpp,v 1.2 2000-05-03 15:25:41 bkline Exp $
+ * $Id: CdrModGrp.cpp,v 1.3 2001-04-13 12:28:59 bkline Exp $
  *
  * Modifies authorizations, comment, and possibly name of existing group.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/05/03 15:25:41  bkline
+ * Fixed database statement creation.
+ *
  * Revision 1.1  2000/04/22 09:31:32  bkline
  * Initial revision
  *
@@ -29,6 +32,7 @@ cdr::String cdr::modGrp(cdr::Session& session,
 
     // Extract the data elements from the command node.
     AuthList authList;
+    cdr::StringList usrList;
     cdr::String grpName, newGrpName, comment(true);
     cdr::dom::Node child = commandNode.getFirstChild();
     while (child != 0) {
@@ -38,6 +42,8 @@ cdr::String cdr::modGrp(cdr::Session& session,
                 grpName = cdr::dom::getTextContent(child);
             else if (name == L"Comment")
                 comment = cdr::dom::getTextContent(child);
+            else if (name == L"UserName")
+                usrList.push_back(cdr::dom::getTextContent(child));
             else if (name == L"NewGrpName")
                 newGrpName = cdr::dom::getTextContent(child);
             else if (name == L"Auth") {
@@ -84,11 +90,41 @@ cdr::String cdr::modGrp(cdr::Session& session,
     update.setInt(pos++, grpId);
     update.executeQuery();
 
+    // Clear out any existing membership in the group.
+    query = "DELETE grp_usr WHERE grp = ?";
+    cdr::db::PreparedStatement delUsers = conn.prepareStatement(query);
+    delUsers.setInt(1, grpId);
+    delUsers.executeQuery();
+
+    // Add users, if any present.
+    if (usrList.size() > 0) {
+        StringList::const_iterator i = usrList.begin();
+        while (i != usrList.end()) {
+            const cdr::String uName = *i++;
+
+            // Do INSERT the hard way so we can determine success.
+            std::string select = "SELECT id FROM usr WHERE name = ?";
+            cdr::db::PreparedStatement usrQuery = conn.prepareStatement(select);
+            usrQuery.setString(1, uName);
+            cdr::db::ResultSet rs = 
+                usrQuery.executeQuery();
+            if (!rs.next())
+                throw cdr::Exception(L"Unknown user", uName);
+            int usrId = rs.getInt(1);
+            std::string insert = "INSERT INTO grp_usr(grp, usr) VALUES(?, ?)";
+            cdr::db::PreparedStatement usrInsert =
+                conn.prepareStatement(insert);
+            usrInsert.setInt(1, grpId);
+            usrInsert.setInt(2, usrId);
+            usrInsert.executeQuery();
+        }
+    }
+
     // Clear out any existing authorizations.
     query = "DELETE grp_action WHERE grp = ?";
-    cdr::db::PreparedStatement del = conn.prepareStatement(query);
-    del.setInt(1, grpId);
-    del.executeQuery();
+    cdr::db::PreparedStatement delActions = conn.prepareStatement(query);
+    delActions.setInt(1, grpId);
+    delActions.executeQuery();
 
     // Add authorizations back in, if any present.
     if (authList.size() > 0) {
