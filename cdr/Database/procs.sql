@@ -1,9 +1,13 @@
 /*
- * $Id: procs.sql,v 1.4 2001-09-04 20:30:28 bkline Exp $
+ * $Id: procs.sql,v 1.5 2001-10-12 22:22:01 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2001/09/04 20:30:28  bkline
+ * Changed MemberOfCooperativeGroup to MemberOfCooperativeGroups to reflect
+ * switch made by Ark.
+ *
  * Revision 1.3  2001/09/04 19:38:06  bkline
  * Added procedure get_participating_orgs.
  *
@@ -221,3 +225,37 @@ AS
                     #po.path,
                     pi.title,
                     pi.id
+
+/*
+ * Needed because of a bug in Microsoft's ADO, which chokes on the
+ * use of a query parameter placeholder following a nested query.
+ */
+CREATE PROCEDURE prot_init_mailer_docs
+    @start_date VARCHAR(50)
+AS
+    SELECT DISTINCT d.doc_id, MAX(v.num) AS version
+               FROM doc_version v
+               JOIN ready_for_review d
+                 ON d.doc_id = v.id
+               JOIN query_term s
+                 ON s.doc_id = d.doc_id
+              WHERE s.value IN ('Active', 'Approved-Not Yet Active')
+                AND s.path = '/InScopeProtocol/ProtocolAdminInfo' +
+                             '/CurrentProtocolStatus'
+                AND NOT EXISTS (SELECT *
+                                  FROM query_term src
+                                 WHERE src.value = 'NCI Liaison ' +
+                                                   'Office-Brussels'
+                                   AND src.path  = '/InScopeProtocol' +
+                                                   '/ProtocolSources' +
+                                                   '/ProtocolSource' +
+                                                   '/SourceName'
+                                   AND src.doc_id = d.doc_id)
+                AND EXISTS (SELECT *
+                              FROM pub_proc_doc p
+                             WHERE p.doc_id = d.doc_id)
+                AND (SELECT MIN(dt)
+                       FROM audit_trail a
+                      WHERE a.document = d.doc_id) > @start_date
+           GROUP BY d.doc_id
+
