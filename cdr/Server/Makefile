@@ -1,10 +1,15 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.43 2002-01-25 00:35:29 ameyer Exp $
+# $Id: Makefile,v 1.44 2002-01-25 01:45:22 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.43  2002/01/25 00:35:29  ameyer
+# Added cvs update to the init target.
+# Modified CP macro to use MS copy silently.
+# Added comments.
+#
 # Revision 1.42  2002/01/24 23:29:03  ameyer
 # Added some extra control for what drive to use to enable the makefile to
 # work on other machines while still building for the main CDR development
@@ -155,7 +160,7 @@ CDRINC =.
 INC    =-I$(XML4C)/include -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)/include
 CFLAGS =$(INC) -W3 -GX -MT -GR -Zi -nologo
 LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
-	/LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/lib /DEBUG
+        /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/lib /DEBUG
 CC     =cl
 BISON  =bison
 LN     =link
@@ -255,7 +260,7 @@ all: init CdrServer.exe CdrTestClient.exe #CdrDocs $(SERVICE)
 
 service: $(SERVICE)
 
-install: CdrServer.exe
+install: CdrServer.exe CdrDocs
 	-net stop Cdr
 	$(CP) CdrServer.exe ../bin/CdrServer.exe
 	net start Cdr
@@ -298,7 +303,8 @@ service.obj: service.c service.h
 
 CdrTestClient.exe: CdrTestClient.cpp $(CDRLIB)
 	$(CVSUPD)
-	$(CC) $(CFLAGS) CdrTestClient.cpp $(CDRLIB) wsock32.lib
+	$(CC) $(CFLAGS) CdrTestClient.cpp /link /LIBPATH:$(CDR)/lib \
+    cdr.lib wsock32.lib
 
 #--------------------------------------------------------------------------
 # We're not doing dependency checking.
