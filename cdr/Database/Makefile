@@ -1,11 +1,14 @@
 #----------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.1 2001-12-19 20:47:12 bkline Exp $
+# $Id: Makefile,v 1.2 2001-12-19 20:51:44 bkline Exp $
 #
 # Rules for initializing CDR database at data conversion time.
 # Must be run as system administrator.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.1  2001/12/19 20:47:12  bkline
+# Initial revision
+#
 #----------------------------------------------------------------------
 
 SQL=CreateCdrLogin.sql\
@@ -32,4 +35,5 @@ all: $(SQL)
 # Generate SQL script for loading seed data.
 #----------------------------------------------------------------------
 LoadControlData.sql: base_data_sql.py 
-	python base_data_sql.py > LoadControlData.sql
+	python base_data_sql.py > tmp.sql
+	ren tmp.sql LoadControlData.sql
