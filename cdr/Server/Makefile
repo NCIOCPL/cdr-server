@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.15 2000-05-09 19:27:45 mruben Exp $
+# $Id: Makefile,v 1.16 2000-05-09 19:54:56 mruben Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.15  2000/05/09 19:27:45  mruben
+# modified for CdrFilter
+#
 # Revision 1.14  2000/05/04 16:49:10  bkline
 # Added empty .SUFFIXES directive to clear out builtin suffix list.
 #
@@ -119,7 +122,8 @@ OBJS   =CdrCommand.obj \
         CdrSearch.obj \
         CdrSearch_tab.obj \
         CdrGetDoc.obj \
-	CdrFilter.obj
+	CdrFilter.obj \
+	CdrDOMtoString.obj
 
 LIBS   =cdr.lib xerces-c_1.lib sablot.lib xmlparse.lib xmltok.lib \
 	wsock32.lib odbc32.lib user32.lib 
