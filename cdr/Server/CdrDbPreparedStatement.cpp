@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbPreparedStatement.cpp,v 1.2 2000-08-10 15:00:22 bkline Exp $
+ * $Id: CdrDbPreparedStatement.cpp,v 1.3 2000-10-23 14:09:31 mruben Exp $
  *
  * Implementation of class for prepared CDR SQL queries.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/08/10 15:00:22  bkline
+ * Fixed problem with string values exactly 2000 characters long.
+ *
  * Revision 1.1  2000/05/03 15:17:10  bkline
  * Initial revision
  *
@@ -157,6 +160,31 @@ void cdr::db::PreparedStatement::setInt(int pos, const cdr::Int& val)
         p->cb    = 0;
         int i    = val;
         memcpy(p->value, &i, sizeof(int));
+    }
+    paramVector.push_back(p);
+}
+
+
+/**
+ * Saves a copy of the blob value <code>val</code> for the <code>pos</code>
+ * parameter of the current query.
+ */
+void cdr::db::PreparedStatement::setBytes(int pos, const cdr::Blob& val)
+{
+    Parameter* p = new Parameter;
+    p->position  = pos;
+    p->cType     = SQL_C_BINARY;
+    p->sType     = val.size() >= 2000 ? SQL_LONGVARBINARY : SQL_VARBINARY; 
+    if (val.isNull()) {
+        p->len   = 1; // Required by ODBC even for NULL data!
+        p->value = 0;
+        p->cb    = SQL_NULL_DATA;
+    }
+    else {
+        p->len   = val.size();
+        p->value = new unsigned char[val.size()];
+        p->cb    = p->len;
+        memcpy(p->value, val.c_str(), p->len);
     }
     paramVector.push_back(p);
 }
