@@ -1,9 +1,12 @@
 /*
- * $Id: CdrValidateDoc.h,v 1.4 2001-04-05 15:27:52 ameyer Exp $
+ * $Id: CdrValidateDoc.h,v 1.5 2001-06-20 00:56:10 ameyer Exp $
  *
  * Support routines for CDR document validation.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2001/04/05 15:27:52  ameyer
+ * Fixed out of date comments in execValidateDoc().
+ *
  * Revision 1.3  2000/10/05 21:23:27  bkline
  * Fixed a couple of minor comment bugs.
  *
@@ -55,7 +58,9 @@ namespace cdr {
      * Also called by CdrPutDoc when adding or replacing a document in
      *   the database.
      *
-     *  @param  docObj          Reference to CdrDoc object to validate
+     *  @param  docObj          Reference to CdrDoc object to validate.
+     *                          Actual error messages are stored in this
+     *                          object.
      *  @param  dbUpdate        Instructions pertaining to database update
      *                          ValidateOnly - Do not update status/link info.
      *                          UpdateIfValid - Update info if doc valid
@@ -80,7 +85,10 @@ namespace cdr {
      *                          substrings, so any separators or other
      *                          characters in the parameter are ignored.
      *
-     *  @return                 Error messages in a single XML string
+     *  @return                 Validation status of document:
+     *                            L"V"alid
+     *                            L"I"nvalid
+     *                            L"M"alformed
      *
      *  @exception cdr::Exception  if database error encountered, no
      *                          permission to validate, etc.
