@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.32 2002-09-02 14:06:46 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.33 2002-10-17 17:36:11 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2002/09/02 14:06:46  bkline
+ * Plugged memory leak in Schema constructor.
+ *
  * Revision 1.31  2002/08/27 17:14:17  bkline
  * Fixed bug in code to get list of elements which can contain a certain
  * attribute; used this to fix code to get list of linking elements for
@@ -1153,6 +1156,9 @@ cdr::xsd::ComplexType::ComplexType(cdr::xsd::Schema& schema,
 
                 // The attributes are stored inside the extension node.
                 childNode = childNode.getFirstChild();
+                if (childNode == 0)
+                    throw cdr::Exception(
+                            L"simpleContent created with no attributes");
             }
             else {
                 if (contentType == EMPTY)
@@ -6738,6 +6744,7 @@ void cdr::xsd::Schema::writeDtdElement(cdr::xsd::Element& elem,
         static cdr::StringSet declaredElems;
         if (isTopElement) {
             os << L"<!ELEMENT CdrDocCtl (DocId, DocTitle)>\n";
+            os << L"<!ATTLIST CdrDocCtl readyForReview CDATA #IMPLIED>\n";
             os << L"<!ELEMENT DocId (#PCDATA)>\n";
             os << L"<!ATTLIST DocId readonly (yes|no) #IMPLIED>\n";
             os << L"<!ELEMENT DocTitle (#PCDATA)>\n";
