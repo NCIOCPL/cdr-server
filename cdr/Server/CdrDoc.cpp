@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.24 2001-11-06 21:37:38 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.25 2001-12-19 15:45:04 ameyer Exp $
  *
  */
 
@@ -317,8 +317,9 @@ void cdr::CdrDoc::Store ()
             "   doc_type,"
             "   title,"
             "   xml,"
-            "   comment"
-            ") VALUES (?, ?, ?, ?, ?, ?, ?)";
+            "   comment,"
+            "   last_frag_id"
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     }
 
     // Existing record
@@ -346,10 +347,10 @@ void cdr::CdrDoc::Store ()
     docStmt.setString (5, Title);
     docStmt.setString (6, Xml);
     docStmt.setString (7, Comment);
+    docStmt.setInt    (8, lastFragmentId);
 
     // For existing records, fill in ID
     if (Id) {
-        docStmt.setInt (8, lastFragmentId);
         docStmt.setInt (9, Id);
     }
 
@@ -497,6 +498,7 @@ static cdr::String CdrPutDoc (
          cmdVersion,            // True=Create new version in version control
          cmdPublishVersion,     // True=New version ctl version is publishable
          cmdValidate,           // True=Perform validation, else just store
+         cmdSetLinks,           // True=Update link tables
          cmdEcho;               // True=Client want modified doc echoed back
     cdr::String cmdReason;      // Reason to associate with new version
     cdr::dom::Node child,       // Child node in command
@@ -510,6 +512,7 @@ static cdr::String CdrPutDoc (
     cmdValidate       = true;
     cmdCheckIn        = false;
     cmdEcho           = false;
+    cmdSetLinks       = true;
 
     // Default reason is NULL created by cdr::String contructor
     cmdReason   = L"";
@@ -546,6 +549,13 @@ static cdr::String CdrPutDoc (
             else if (name == L"Validate")
                 cmdValidate = cdr::ynCheck (cdr::dom::getTextContent (child),
                                            false, L"Validate");
+
+            else if (name == L"SetLinks")
+                // Update of link tables might be turned off to speed up
+                //   certain kinds of batch loads - with link updates done
+                //   later
+                cmdSetLinks = cdr::ynCheck (cdr::dom::getTextContent (child),
+                                           false, L"SetLinks");
 
             else if (name == L"Echo")
                 cmdEcho = cdr::ynCheck (cdr::dom::getTextContent (child),
@@ -663,11 +673,32 @@ static cdr::String CdrPutDoc (
 
     // Perform validation if requested
     if (cmdValidate) {
-        // Any other validation
+        // If !cmdSetLinks, don't do any link validation / link_net update
+        cdr::String validationTypes;
+        if (!cmdSetLinks)
+            // Only do schema validation
+            validationTypes = "Schema";
+        else
+            // Do the default = all validation
+            validationTypes = "";
+
+        // Perform validation
         // Set valid_status and valid_date in the doc object
         // Will overwrite whatever is there
-        cdr::execValidateDoc (doc, cdr::UpdateUnconditionally);
+        cdr::execValidateDoc (doc,cdr::UpdateUnconditionally,validationTypes);
     }
+    else
+        // Update of link tables is part of unconditional validation
+        // But if not done there, we have to do it here unless it was
+        //   specifically suppressed with the SetLinks command.
+        // Call to parseAvailable is done first to check if the document
+        //   was already parsed, or if not, parse it.  It also
+        //   handles revision filtering before the parse.
+        if (cmdSetLinks && doc.parseAvailable())
+            cdr::link::CdrSetLinks (doc.getDocumentElement(), dbConn,
+                                    doc.getId(), doc.getTextDocType(),
+                                    cdr::UpdateLinkTablesOnly,
+                                    doc.getErrList());
 
     // If we haven't already done so, store it
     if (!newrec)
@@ -881,14 +912,18 @@ bool cdr::CdrDoc::parseAvailable ()
 {
     cdr::String data;
 
-    // XXXX Invoke filter here to create revisedXml
-    if (revisedXml.size() == 0) {
-        // Must use a try block since filtering will throw an exception
-        //   for malformed XML - which is legal to store
-        // try {
-            ;
-        // }
+    // If we've already got a parse tree, one way or another, we're done
+    if (parsed) {
+        if (malformed)
+            return false;
+        return true;
     }
+
+    // The XML to parse should be revision filtered
+    // This is a design decision with pros and cons, but we've
+    //   decided the pros win
+    if (revisedXml.size() == 0)
+        getRevisionFilteredXml();
 
     // Parse whatever is available
     if (revisedXml.size() > 0)
@@ -1217,6 +1252,11 @@ void cdr::CdrDoc::updateQueryTerms()
             // Indexing of ordinal position paths will begin at the level
             //   below the document node.  Since we start at the document
             //   node, we pass a depth of -1 here.
+            // XXXX - BUG - XXXX
+            //   THIS USED TO WORK BUT NOW THROWS AN UNEXPECTED
+            //   EXCEPTION ON node.getNodeName()
+            //   SOMETHING MAY BE WRONG IN parseAvailable()
+            //   OR SOME RELATED FUNCTION
             addQueryTerms(cdr::String(L""), node.getNodeName(), node, paths,
                           ordPosPath, -1);
         }
@@ -1455,10 +1495,10 @@ static cdr::String createFragIdTransform (cdr::db::Connection& conn,
 
     // Parse the schema, preparatory to creating a schema object
     cdr::dom::Parser parser;
-    cdr::dom::Element docElem;
+    cdr::dom::Element schemaDocElem;
     try {
         parser.parse (schemaXml);
-        docElem = parser.getDocument().getDocumentElement();
+        schemaDocElem = parser.getDocument().getDocumentElement();
     }
     catch (const cdr::dom::XMLException& e) {
         throw cdr::Exception(L"createFragIdTransform: Unable to parse schema:"
@@ -1466,7 +1506,7 @@ static cdr::String createFragIdTransform (cdr::db::Connection& conn,
     }
 
     // Create the object
-    cdr::xsd::Schema schema (docElem, &conn);
+    cdr::xsd::Schema schema (schemaDocElem, &conn);
 
     // Get a list of elements in the schema that can have a cdr:id attr
     cdr::StringList elemList;
