@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.3 2002-04-10 14:17:53 bkline Exp $
+ * $Id: CreateLogins.sql,v 1.4 2002-06-04 18:50:58 ameyer Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/04/10 14:17:53  bkline
+ * Granted SELECT rights to CdrGuest on failed_login_attempts view.
+ *
  * Revision 1.2  2002/01/22 22:28:05  bkline
  * Added permissions for views.
  *
@@ -231,6 +234,10 @@ GO
 GRANT SELECT ON pub_proc_doc TO CdrGuest
 GO
 GRANT SELECT, UPDATE, INSERT ON pub_proc_doc TO CdrPublishing
+GO
+GRANT SELECT ON remailer_ids TO CdrGuest
+GO
+GRANT SELECT, UPDATE, INSERT ON remailer_ids TO CdrPublishing
 GO
 GRANT SELECT ON active_doc TO CdrGuest
 GO
