@@ -6,9 +6,12 @@
  *                                      @author Alan Meyer
  *                                      @date February 2001
  *
- * $Id: CdrLinkProcs.h,v 1.3 2001-09-28 01:22:01 ameyer Exp $
+ * $Id: CdrLinkProcs.h,v 1.4 2002-05-08 20:33:34 pzhang Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2001/09/28 01:22:01  ameyer
+ * Added getLinkTargetRestrictions().
+ *
  * Revision 1.2  2001/09/25 15:06:34  ameyer
  * Added makeWhere, proper namespaces.
  *
@@ -189,6 +192,23 @@ class LinkChkNode {
         void makeWhere (std::string& sql,
                         std::string& tagColumn,
                         std::string& valColumn);
+
+        /**
+         * Generate sub-queries for a complete parse tree.
+         *
+         * There are problems with SQL server executing a query containing
+         *      3 query_term tables joined, although joining 2 tables seems
+         *      fine. We hence drop that idea and generate this specific version 
+         *      of subqueries from the parse tree. 
+         *
+         * @param  query      Ptr to string containing the query to be returned.
+         *
+         * @param  cdrId      A table alias followed by a column name for CDR Id.
+         *
+         * @throws            CdrException if syntax or other error.
+         */ 
+        void makeSubQueries (std::string& query,
+                             std::string& cdrid);
 };
 
 
