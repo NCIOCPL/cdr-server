@@ -27,9 +27,7 @@
                               encoding = "UTF-8"/> 
 
  <xsl:include href = "cdr:name:Module: PersonLocations Denormalization"/>
-<!-- 
  <xsl:include href = "cdr:name:Module: Denormalize and Upcode Protocol Terminology"/>
--->
 
  <xsl:variable                    name = "pa_hp" 
                                 select = "/InScopeProtocol
@@ -55,6 +53,17 @@
                                           'Protocol patient abstract ',
                                           'disclaimer;Protocol patient ',
                                           'abstract disclaimer')"/>
+ <xsl:variable                    name = "patEligiDisc"
+                                select = "concat(
+                                          'Protocol Patient Abstract ',
+                                          'Eligibility Text;Protocol ',
+                                          'patient abstract eligibility ',
+                                          'text')"/>
+ <xsl:variable                    name = "protNum"
+                                select = "translate(/InScopeProtocol/
+                                                     ProtocolIDs/
+                                                     PrimaryID/
+                                                     IDString, ', ', '__')"/>
 
  <!-- *
  ==================================================================
@@ -128,7 +137,33 @@
  <xsl:template                   match = "Patient">
   <xsl:element                    name = "{name()}">
    <xsl:for-each                select = "child::node()">
-    <xsl:copy-of                select = "."/>
+
+    <!-- 
+    ==========================================================
+    Adding the misc document for EligibilityText, copying all
+    other elements as is.
+    ========================================================== -->
+    <xsl:choose>
+     <xsl:when                    test = "name() = 'EligibilityText'">
+      <xsl:element                name = "{name()}">
+       <xsl:for-each            select = "child::node()">
+        <xsl:copy-of            select = "."/>
+       </xsl:for-each>
+       <xsl:variable              name = "miscEligiDoc" 
+                                select = "document(concat('cdr:name:',
+                                                          $patEligiDisc,
+                                                          '/lastp'))"/>
+       <xsl:apply-templates     select = "$miscEligiDoc/MiscellaneousDocument
+                                                   /MiscellaneousDocumentText">
+        <xsl:with-param           name = "miscDocId"
+                                select = "'_EligibilityDisclaimer'"/>
+       </xsl:apply-templates>
+      </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:copy-of                select = "."/>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:for-each>
 
   <!-- Adding the Patient Disclaimer from the Misc Documents 
@@ -375,11 +410,57 @@
     <xsl:value-of               select = "$miscDocId"/>
     <xsl:value-of               select = "./@cdr:id"/>
    </xsl:attribute>
-   <xsl:apply-templates/>
+   <!--
+   ==========================================================
+   Need to pass the miscDocId allowing to modify the cdr:xref
+   element of the misc document added to the EligibilityText
+   section 
+   ========================================================== -->
+   <xsl:apply-templates>
+    <xsl:with-param               name = "miscDocId"
+                                select = "$miscDocId"/>
+   </xsl:apply-templates>
   </Para>
  </xsl:template>
 
 
+ <!-- *
+ ============================================================= 
+ Create the Para template including the renamed attribute for 
+ the paragraph IDs.
+ Need to add a mode to the paragraph displaying the misc 
+ document text for the EligibilityText element in order to 
+ being able and modify the cdr:xref attribute.
+ ============================================================= -->
+ <xsl:template                   match = "ExternalRef">
+  <xsl:param                      name = "miscDocId"/>
+  <xsl:element                    name = "{name()}">
+   <xsl:choose>
+    <xsl:when                     test = "$miscDocId = 
+                                                    '_EligibilityDisclaimer'">
+     <xsl:apply-templates       select = "node() | @*" 
+                                  mode = "eText"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates       select = "node() | @*"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- *
+ ===============================================================
+ Create the Cancer.gov link that displayes the HP version of the
+ current document by modifying the cdr:xref attribute.
+ =============================================================== -->
+ <xsl:template                   match = "@cdr:xref" 
+                                  mode = "eText">
+  <xsl:attribute                  name = "{name()}">
+   <xsl:value-of                select = "concat(., 'clinicaltrials/',
+                                                     $protNum)"/>
+  </xsl:attribute>
+ </xsl:template>
 
 
  <!-- *
@@ -421,13 +502,13 @@
 
  <!-- *
  =========================================================================
+ Default Template
  ========================================================================= -->
- <xsl:template match="node() | @*">
+ <xsl:template                   match = "node() | @*">
   <xsl:copy>
-   <xsl:apply-templates select="@* | node()" />
+   <xsl:apply-templates         select = "@* | node()" />
   </xsl:copy>
  </xsl:template>
-
 
 </xsl:transform>
 ]]>
