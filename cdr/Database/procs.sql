@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.6 2001-12-19 20:09:47 bkline Exp $
+ * $Id: procs.sql,v 1.7 2002-01-02 21:58:54 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2001/12/19 20:09:47  bkline
+ * Added some new procedures.
+ *
  * Revision 1.5  2001/10/12 22:22:01  bkline
  * Added prot_init_mailer_docs.
  *
@@ -58,26 +61,16 @@ GO
  *
  *  @param  doc_id      primary key for Term document whose children and
  *                      parents are requested.
+ *  @param  depth       number of levels (usually 1) to descend for child
+ *                      terms.
  */
 CREATE PROCEDURE cdr_get_term_tree
-    @doc_id INT
+    @doc_id INT,
+    @depth  INT
 AS
     -- Used for loop control.
-    DECLARE @nrows INT
-
-    /*
-     * Create a temporary table containing integers for all of the
-     * child-parent relationships of CDR Term documents.  For all but the most
-     * trivial requests the performance advantage of working with the integer
-     * forms of the keys significantly outweighs the cost of creating the
-     * temporary table from the term_parents view, which has the string
-     * representation of the parent ID under its definition.
-     */
-    SELECT child, parent
-      INTO #term_parents
-      FROM /* term_parents */ term_kids
-    CREATE INDEX idx_tpc ON #term_parents(child)
-    CREATE INDEX idx_tpp ON #term_parents(parent)
+    DECLARE @nrows   INT
+    DECLARE @nlevels INT
 
     /*
      * Create temporary tables for the parents and children of the caller's
@@ -96,7 +89,7 @@ AS
      */
     INSERT INTO #parents(child, parent)
          SELECT child, parent
-           FROM #term_parents
+           FROM term_kids
           WHERE child = @doc_id
 
     /*
@@ -106,9 +99,9 @@ AS
     WHILE @nrows > 0
     BEGIN
             INSERT INTO #parents(child, parent)
-        SELECT DISTINCT tp.child, tp.parent
-                   FROM #term_parents tp, #parents p
-                  WHERE tp.child = p.parent
+        SELECT DISTINCT tk.child, tk.parent
+                   FROM term_kids tk, #parents p
+                  WHERE tk.child = p.parent
                     AND p.parent NOT IN (SELECT child
                                            FROM #parents)
         SELECT @nrows = @@ROWCOUNT
@@ -120,25 +113,25 @@ AS
      */
     INSERT INTO #children(child, parent)
          SELECT child, parent
-           FROM #term_parents
+           FROM term_kids
           WHERE parent = @doc_id
 
     /*
-     * Continue gathering children until we find no more.
+     * Continue gathering children to depth requested until we find no more.
      */
-/*
-    SELECT @nrows = @@ROWCOUNT
-    WHILE @nrows > 0
+    SELECT @nrows   = @@ROWCOUNT
+    SELECT @nlevels = 1
+    WHILE @nrows > 0 AND @nlevels < @depth
     BEGIN
             INSERT INTO #children(child, parent)
-        SELECT DISTINCT tp.child, tp.parent
-                   FROM #term_parents tp, #children c
-                  WHERE tp.parent = c.child
+        SELECT DISTINCT tk.child, tk.parent
+                   FROM term_kids tk, #children c
+                  WHERE tk.parent = c.child
                     AND c.child NOT IN (SELECT parent
                                           FROM #children)
         SELECT @nrows = @@ROWCOUNT
+        SELECT @nlevels = @nlevels + 1
     END
-*/
 
     /*
      * Generate the first result set, containing all the child-parent
@@ -167,7 +160,6 @@ AS
     -- Clean up after ourselves.
     DROP TABLE #parents
     DROP TABLE #children
-    DROP TABLE #term_parents
 GO
 
 /*
