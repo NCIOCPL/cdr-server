@@ -5,180 +5,236 @@
 <DocTitle readonly="yes">Vendor Filter: Term</DocTitle>
 <ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
-
-<!-- ===================================================================
-       Filter to create the vendor Terminology XML 
-     =================================================================== -->
-  <xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                               version = "1.0"
-                             xmlns:cdr = "cips.nci.nih.gov/cdr" 
-               exclude-result-prefixes = "cdr">
+<CdrDocXml><![CDATA[<?xml  version = "1.0"?>
+<!-- 
+===================================================================
+Filter to create the vendor Terminology XML 
+=================================================================== -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0">
     
-   <xsl:include href = "cdr:name:Module: Vendor Filter Templates"/>
-   <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
-   
-   <xsl:output                   method = "xml" 
+ <xsl:output                    method = "xml" 
                   omit-xml-declaration = "no" 
                                 indent = "yes"/>
 
-  <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
-  <xsl:param                      name = "DateFirstPub"
+ <xsl:include  href = "cdr:name:Module: Vendor Filter Templates"/>
+   
+ <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
+ <xsl:param                       name = "DateFirstPub"
                                 select = "''"/> 
 
-<!-- ======================================================================
-      Copy DocId, PreferredName, OtherTermName, OtherNameType
-     ==================================================================== -->
-
-<xsl:template match="Term">
-
-<xsl:text disable-output-escaping="yes">&lt;!DOCTYPE Term &gt;</xsl:text>
-
-<xsl:element name='{name()}'>   
-<xsl:for-each select="DocId">
-<xsl:attribute name="id">
-<xsl:value-of select="."/>
-</xsl:attribute>
-</xsl:for-each>
-<xsl:if test="PdqKey">
-<xsl:attribute name="LegacyPDQID">
-<xsl:value-of select="PdqKey"/>
-</xsl:attribute>
-</xsl:if>  
-<xsl:apply-templates   select="PreferredName" mode="copy"/>
-
-<xsl:if test="OtherName">
-<xsl:for-each select="OtherName">
-<OtherName>
-<OtherTermName><xsl:value-of   select="OtherTermName"/></OtherTermName>
-<OtherNameType><xsl:value-of select="OtherNameType"/></OtherNameType>
-</OtherName>
-</xsl:for-each>
-</xsl:if>
-
-<xsl:for-each select="Definition">
-<Definition>
-<xsl:apply-templates  select="DefinitionText" mode="copy"/>
-<DefinitionType><xsl:value-of  select="DefinitionType"/></DefinitionType>
-</Definition>
-</xsl:for-each>
+ <!-- *
+ ====================================================================
+ Root element.
+ ==================================================================== -->
+ <xsl:template                   match = "*">
+  <xsl:apply-templates/>
+ </xsl:template>
 
 
-      
+ <!-- 
+ ======================================================================
+ Copy DocId, PreferredName, OtherTermName, OtherNameType
+ ====================================================================== -->
+ <xsl:template                   match = "Term">
+  <xsl:element                    name = '{name()}'>   
+   <xsl:attribute                 name = "id">
+    <xsl:value-of               select = "DocId"/>
+   </xsl:attribute>
+   <xsl:attribute                 name = "LegacyPDQID">
+    <xsl:value-of               select = "PdqKey"/>
+   </xsl:attribute>
 
-<!-- ===================================================================
-                    Copy TermType,SemanticTypeText
-      code needs to be updated when ref is added to XML records
-     ================================================================== -->  
-<xsl:for-each select="TermType">
-<xsl:for-each select="TermTypeName">
-<xsl:if test=".='Protocol selection criteria'">
-<TermTypeName><xsl:apply-templates select="."/></TermTypeName>
-</xsl:if>
-<xsl:if test=".='Obsolete term'">
-<TermTypeName><xsl:apply-templates select="."/></TermTypeName>
-</xsl:if>
-<xsl:if test=".='Header term'">
-<TermTypeName><xsl:apply-templates select="."/></TermTypeName>
-</xsl:if>
-<xsl:if test=".='Semantic type'">
-<TermTypeName><xsl:apply-templates select="."/></TermTypeName>
-</xsl:if>
-
-</xsl:for-each>
-</xsl:for-each>
-
-<xsl:for-each select="SemanticType">
-<xsl:variable name="ref" select="@ref"/>
-<SemanticType ref="{$ref}"><xsl:value-of select="."/></SemanticType>
-</xsl:for-each>
-
-<!-- =================================================================
-        Copy Term Relationship (Parent TermId,PreferredName,ParentType
-     ================================================================== -->
-               <xsl:if test="TermRelationship">
-               <TermRelationship>
-               <xsl:for-each select="TermRelationship">
-               <xsl:for-each select="ParentTerm">
-               <ParentTerm>
-               <ParentTermName>
-                <xsl:attribute name="ref">
-                <xsl:value-of select="@cdr:ref"/>
-                </xsl:attribute>
-                <xsl:for-each select="PreferredName">
-                <xsl:value-of select="."/>
-                </xsl:for-each>
-                </ParentTermName>
-                <xsl:apply-templates select="ParentType" mode="copy"/>
-                </ParentTerm>
-                </xsl:for-each>
-                 <xsl:for-each select="RelatedTerm">
-               <RelatedTerm>
-               <RelatedTermName>
-                <xsl:attribute name="ref">
-                <xsl:value-of select="@cdr:ref"/>
-                </xsl:attribute>
-                <xsl:for-each select="PreferredName">
-                <xsl:value-of select="."/>
-                </xsl:for-each>
-                </RelatedTermName>
-                <xsl:apply-templates select="RelationshipType" mode="copy"/>
-                </RelatedTerm>
-                </xsl:for-each>
-                </xsl:for-each>
-                </TermRelationship>
-                </xsl:if>
-
-          <xsl:if test="MenuInformation !=''">
-          <MenuInformation>
-          <xsl:for-each select="MenuInformation/MenuItem">
-          <MenuItem>
-          <xsl:if test="@SortOrder">
-          <xsl:attribute name="SortOrder">
-          <xsl:value-of select="@SortOrder"/>
-          </xsl:attribute>
-          </xsl:if>
-          <xsl:apply-templates select="MenuType" mode="copy"/>
-         <xsl:if test="MenuParent/@cdr:ref">
-         <xsl:for-each select="MenuParent">
-         <MenuParent>
-         <xsl:attribute name="ref">
-          <xsl:value-of select="@cdr:ref"/>
-          </xsl:attribute>
-          <xsl:apply-templates select="DisplayName"/>
-          </MenuParent>
-          </xsl:for-each>
-          </xsl:if>
-          <xsl:apply-templates select="DisplayName" mode="copy"/>
-          </MenuItem>
-          </xsl:for-each>
-          </MenuInformation>
-          </xsl:if>
+   <xsl:apply-templates         select = "PreferredName" 
+                                  mode = "copy"/>
+   <xsl:apply-templates         select = "OtherName"/>
+   <xsl:apply-templates         select = "Definition"/>
+   <xsl:apply-templates         select = "TermType/TermTypeName"/>
+   <xsl:apply-templates         select = "SemanticType"/>
+   <xsl:apply-templates         select = "TermRelationship"/>
+   <xsl:apply-templates         select = "MenuInformation"/>
                
-<!-- ===================================================================
-            Copy Date First Published and Date Last Modified
-     ================================================================== -->
-  <xsl:choose>
+   <!-- 
+   ===================================================================
+   Copy Date First Published and Date Last Modified
+   =================================================================== -->
+   <xsl:choose>
     <xsl:when                     test = "CdrDocCtl/FirstPub/Date">
-      <DateFirstPublished>
+     <DateFirstPublished>
       <xsl:value-of             select = "substring-before(CdrDocCtl/
                                             FirstPub/Date,'T')"/>
-      </DateFirstPublished>
+     </DateFirstPublished>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:call-template          name = "getDateFirstPub">
-        <xsl:with-param           name = "date"
+     <xsl:call-template           name = "getDateFirstPub">
+      <xsl:with-param             name = "date"
                                 select = "$DateFirstPub"/>
-      </xsl:call-template>    
+     </xsl:call-template>    
     </xsl:otherwise>
-  </xsl:choose>
-
-    
-     <xsl:apply-templates select="DateLastModified" mode="copy"/>
-     
+   </xsl:choose>
+ 
+   <xsl:apply-templates         select = "DateLastModified" 
+                                  mode = "copy"/>
   </xsl:element>
-  </xsl:template>
+ </xsl:template>
 
-</xsl:transform>]]>
+
+ <!--
+ ===================================================================
+ =================================================================== -->
+ <xsl:template                   match = "OtherName">
+  <OtherName>
+   <OtherTermName>
+    <xsl:value-of               select = "OtherTermName"/>
+   </OtherTermName>
+   <OtherNameType>
+    <xsl:value-of               select = "OtherNameType"/>
+   </OtherNameType>
+  </OtherName>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ =================================================================== -->
+ <xsl:template                   match = "Definition">
+  <Definition>
+   <xsl:apply-templates         select = "DefinitionText" 
+                                  mode = "copy"/>
+   <DefinitionType>
+    <xsl:value-of               select = "DefinitionType"/>
+   </DefinitionType>
+  </Definition>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ =================================================================== -->
+ <xsl:template                   match = "TermTypeName">
+  <xsl:if                         test = ". = 
+                                             'Protocol selection criteria' or
+                                          . = 
+                                             'Obsolete term'               or
+                                          . = 
+                                             'Header term'                or
+                                          . = 
+                                             'Semantic type'">
+
+  <TermTypeName>
+   <xsl:value-of                select = "."/>
+  </TermTypeName>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ =================================================================== -->
+ <xsl:template                   match = "SemanticType">
+  <SemanticType>
+   <xsl:attribute                 name = "ref">
+    <xsl:value-of               select = "Term/@cdr:ref"/>
+   </xsl:attribute>
+   <xsl:value-of                select = "Term/PreferredName"/>
+  </SemanticType>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Copy Term Relationship (Parent TermId,PreferredName,ParentType
+ =================================================================== -->
+ <xsl:template                   match = "TermRelationship">
+  <TermRelationship>
+   <xsl:apply-templates         select = "ParentTerm | RelatedTerm"/>
+  </TermRelationship>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Copy Term Relationship (Parent TermId,PreferredName,ParentType
+ =================================================================== -->
+ <xsl:template                   match = "ParentTerm">
+  <ParentTerm>
+   <ParentTermName>
+    <xsl:attribute                name = "ref">
+     <xsl:value-of              select = "Term/@cdr:ref"/>
+    </xsl:attribute>
+    <xsl:value-of               select = "Term/PreferredName"/>
+   </ParentTermName>
+ 
+   <xsl:apply-templates         select = "ParentType" 
+                                  mode = "copy"/>
+  </ParentTerm>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Copy Term Relationship (Parent TermId,PreferredName,ParentType
+ =================================================================== -->
+ <xsl:template                   match = "RelatedTerm">
+  <RelatedTerm>
+   <RelatedTermName>
+    <xsl:attribute                name = "ref">
+     <xsl:value-of              select = "Term/@cdr:ref"/>
+    </xsl:attribute>
+    <xsl:value-of               select = "Term/PreferredName"/>
+   </RelatedTermName>
+   <xsl:apply-templates         select = "RelationshipType" 
+                                  mode = "copy"/>
+  </RelatedTerm>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Copy Term Relationship (Parent TermId,PreferredName,ParentType
+ =================================================================== -->
+ <xsl:template                   match = "MenuInformation">
+  <MenuInformation>
+   <xsl:apply-templates         select = "MenuItem"/>
+  </MenuInformation>
+ </xsl:template>
+
+ <!--
+ ===================================================================
+ Copy Term Relationship (Parent TermId,PreferredName,ParentType
+ =================================================================== -->
+ <xsl:template                   match = "MenuItem">
+  <MenuItem>
+   <xsl:if                        test = "@SortOrder">
+    <xsl:attribute                name = "SortOrder">
+     <xsl:value-of              select = "@SortOrder"/>
+    </xsl:attribute>
+   </xsl:if>
+
+   <xsl:apply-templates         select = "MenuType" 
+                                  mode = "copy"/>
+   <xsl:apply-templates         select = "MenuParent"/>
+   <xsl:apply-templates         select = "DisplayName" 
+                                  mode = "copy"/>
+  </MenuItem>
+ </xsl:template>
+
+ <!--
+ ===================================================================
+ Copy Term Relationship (Parent TermId,PreferredName,ParentType
+ =================================================================== -->
+ <xsl:template                   match = "MenuParent">
+  <MenuParent>
+   <xsl:attribute name = "ref">
+    <xsl:value-of select = "Term/@cdr:ref"/>
+   </xsl:attribute>
+
+   <xsl:apply-templates select = "Term/MenuInformation/
+                                  MenuItem/DisplayName"/>
+  </MenuParent>
+ </xsl:template>
+</xsl:transform>
+]]>
 </CdrDocXml>
 </CdrDoc>
