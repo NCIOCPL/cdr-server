@@ -1,9 +1,13 @@
 /*
- * $Id: CdrVersion.cpp,v 1.22 2003-08-04 17:03:26 bkline Exp $
+ * $Id: CdrVersion.cpp,v 1.23 2003-11-05 01:43:12 ameyer Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2003/08/04 17:03:26  bkline
+ * Fixed breakage caused by upgrade to latest version of Microsoft's
+ * C++ compiler.
+ *
  * Revision 1.21  2003/02/09 21:16:02  bkline
  * Added code to get version date; added code to escape special characters
  * in comment.
@@ -553,6 +557,10 @@ int cdr::getLatestPublishableVersion(int docId, cdr::db::Connection& conn,
 
 bool cdr::isChanged(int docId, cdr::db::Connection& conn)
 {
+  // Compare updated_dt datetime on last version to datetime in audit_trail
+  //   for last action that was an add or modify
+  // If a match is found, CWD = last version, else CWD last saved without
+  //   a version.
   string query = "SELECT num FROM doc_version d "
                  "INNER JOIN audit_trail a ON d.id = a.document "
                  "WHERE d.updated_dt = a.dt "
@@ -560,7 +568,10 @@ bool cdr::isChanged(int docId, cdr::db::Connection& conn)
                  "  AND d.num = (SELECT MAX(dd.num) from doc_version dd"
                  "                  WHERE dd.id = ?)"
                  "  AND a.dt = (SELECT MAX(aa.dt) from audit_trail aa "
-                 "                 WHERE aa.document = ?)";
+                 "                JOIN action act on aa.action = act.id "
+                 "               WHERE aa.document = ? "
+                 "       AND act.name in ('ADD DOCUMENT', 'MODIFY DOCUMENT'))";
+
   cdr::db::PreparedStatement select = conn.prepareStatement(query);
   select.setInt(1, docId);
   select.setInt(2, docId);
