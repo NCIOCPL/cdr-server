@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.61 2002-09-07 17:05:34 bkline Exp $
+# $Id: Makefile,v 1.62 2002-09-09 12:42:55 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.61  2002/09/07 17:05:34  bkline
+# Changed VCVER from 6 to 7.
+#
 # Revision 1.60  2002/07/24 15:09:36  bkline
 # Added performance enhancements to link and query_term table updates.
 #
@@ -211,7 +214,6 @@ DRV    =d:
 CDR    =$(DRV)/cdr
 XML4C  =$(DRV)/usr/xml4c
 SABLOT =$(DRV)/usr/sablot
-#SABLOT = $(DRV)/Sablot-0.95
 REGEX  =$(DRV)/usr/regex
 VCVER  =7
 REVER  =vc$(VCVER)
@@ -318,16 +320,16 @@ LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
 # Targets
 #--------------------------------------------------------------------------
 all: cvsupdate
-	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) _all
+	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) SABLOT=$(SABLOT) _all
 
 cvsupdate:
 	$(CVSUPD)
 
 service: cvsupdate
-	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) $(SERVICE)
+	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) SABLOT=$(SABLOT) $(SERVICE)
 
 install: cvsupdate
-	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) _install
+	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) SABLOT=$(SABLOT) _install
 
 _all: init CdrServer.exe CdrTestClient.exe #CdrDocs $(SERVICE)
 
