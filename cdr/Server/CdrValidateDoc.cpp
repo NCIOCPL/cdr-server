@@ -1,10 +1,13 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.10 2001-04-10 21:39:02 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.11 2001-05-16 15:46:11 bkline Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2001/04/10 21:39:02  ameyer
+ * Added catch(...) to ensure doc object allocate on heap is deleted.
+ *
  * Revision 1.9  2001/04/05 19:58:18  ameyer
  * Fixed comments.
  *
@@ -293,7 +296,11 @@ void cdr::validateDocAgainstSchema(
         cdr::StringList&                errors)
 {
     // Go get the schema for the document's type.
-    std::string query = "SELECT xml_schema FROM doc_type WHERE name = ?";
+    std::string query = "SELECT xml"
+                        "  FROM document,"
+                        "       doc_type"
+                        " WHERE doc_type.name       = ?"
+                        "   AND doc_type.xml_schema = document.id";
     cdr::db::PreparedStatement select = conn.prepareStatement(query);
     select.setString(1, docTypeName);
     cdr::db::ResultSet rs = select.executeQuery();
