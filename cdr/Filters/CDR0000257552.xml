@@ -1,0 +1,107 @@
+<CdrDoc Type='Filter' Id='CDR0000257552'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Organization Locations Picklist</DocTitle>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<!--
+     $Id: CDR0000257552.xml,v 1.1 2002-08-22 18:26:20 bkline Exp $
+
+     Filter which extracts address information for organization
+     info picklist.
+     Created:  07/11/2002        Volker Englisch
+-->
+
+<xsl:transform       xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                     xmlns:cdr = "cips.nci.nih.gov/cdr"
+                       version = "1.0">
+
+ <!-- Passed in by the caller -->
+ <xsl:param               name = "docId"/>
+ <xsl:param               name = "repName"/>
+
+
+ <!-- Start at the top.     -->
+ <xsl:template           match = "/">
+  <ReportBody>
+   <ReportName>
+    <xsl:value-of select='$repName'/>
+   </ReportName>
+   <xsl:apply-templates select = "//OrganizationLocation"/>
+  </ReportBody>
+ </xsl:template>
+
+
+ <!-- Extract the address information for the Organization elements -->
+ <xsl:template           match = "OrganizationLocation">
+  <xsl:variable           name = "fragRef"
+                        select = "Location/@cdr:id"/>
+   <xsl:variable          name = "orgName"
+                        select = "//OfficialName/Name"/>
+   <xsl:variable          name = "addrStr">
+   <xsl:apply-templates select = "Location/PostalAddress"/>
+   <xsl:apply-templates select = "Location/Phone"/>
+   <xsl:apply-templates select = "Location/TollFreePhone"/>
+   <xsl:apply-templates select = "Location/Fax"/>
+   <xsl:apply-templates select = "Location/Email"/>
+   <xsl:apply-templates select = "Location/WebSite"/>
+   </xsl:variable>
+   <xsl:if                test = "string($addrStr)">
+    <ReportRow>
+     <Link>
+      <xsl:value-of    select = 'concat($docId,"#",Location/@cdr:id)'/>
+     </Link>
+     <Data>
+      <xsl:value-of    select = 'concat($orgName, $addrStr)'/>
+     </Data>
+    </ReportRow>
+   </xsl:if>
+ </xsl:template>
+
+
+ <xsl:template           match = 'PostalAddress'>
+  <xsl:apply-templates  select = 'Street|City|CitySuffix|
+                                  PoliticalSubUnit_State'/>
+  <xsl:apply-templates  select = 'Country|PostalCode_ZIP'/>
+ </xsl:template>
+
+
+ <xsl:template           match = 'Street|City|CitySuffix|PostalCode_ZIP|
+                                  Phone|TollFreePhone|Fax|Email'>
+  <xsl:if                 test = "string(.)">
+   <xsl:value-of        select = "concat('/',string(.))"/>
+  </xsl:if>
+ </xsl:template>
+
+
+ <xsl:template           match = 'PoliticalSubUnit_State|Country|WebSite'>
+  <xsl:if                 test = "string(.)">
+   <xsl:value-of        select = "concat('/',string(.))"/>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template           match = 'TollFreePhone'>
+  <xsl:if                 test = "string(.)">
+   <xsl:value-of        select = "concat('/',string(.))"/>
+  </xsl:if>
+ </xsl:template>
+
+
+ <xsl:template           match = 'Fax|Email|WebSite'>
+  <xsl:if                 test = "string(.)">
+   <xsl:value-of        select = "concat('/',string(.))"/>
+  </xsl:if>
+ </xsl:template>
+
+
+ <xsl:template           match = 'WebSite'>
+  <xsl:if                 test = "string(./@cdr:xref)">
+   <xsl:value-of        select = "concat('/',string(./@cdr:xref))"/>
+  </xsl:if>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>

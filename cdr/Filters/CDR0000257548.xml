@@ -1,0 +1,59 @@
+<CdrDoc Type='Filter' Id='CDR0000257548'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Denormalization: sort OrganizationName</DocTitle>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+  <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                version="1.0"
+               xmlns:cdr="cips.nci.nih.gov/cdr">
+  <xsl:output method="xml" omit-xml-declaration="no"/>
+
+  <xsl:template match="*">
+  <xsl:copy-of select="*"/>
+<!-- <xsl:apply-templates/>-->
+
+<!--<DocId><xsl:value-of select="document('cdrutil:/docid')"/></DocId>-->
+ </xsl:template>
+  
+    <xsl:template match="OrganizationAddressNames"> 
+     <xsl:choose>
+     <xsl:when test="../@OrderParentNameFirst='Yes'">
+          <OrganizationAddressNames>
+          <xsl:for-each select="OrganizationName">
+          <xsl:sort select="position()" order="descending"/>
+          <xsl:copy-of select="."/>
+          </xsl:for-each>
+          </OrganizationAddressNames>
+          </xsl:when>
+     <xsl:when test="../../@OrderParentNameFirst='Yes'">
+          <OrganizationAddressNames>
+          <xsl:for-each select="OrganizationName">
+          <xsl:sort select="position()" order="descending"/>
+          <xsl:copy-of select="."/>
+          </xsl:for-each>
+          </OrganizationAddressNames>
+          </xsl:when>
+
+    <xsl:otherwise>
+    <xsl:copy-of select="."/>
+   </xsl:otherwise>
+   </xsl:choose>
+    </xsl:template>
+   <!-- ===================================================================
+      Template rule used to do XML to XML transformations which
+       copies any attribute node, or node that is child of of something 
+     ==================================================================== -->
+
+   <xsl:template match="@*|node()">
+     <xsl:copy>
+     <xsl:apply-templates select="@*"/>
+     <xsl:apply-templates/>
+     </xsl:copy> 
+     </xsl:template>
+
+            
+ </xsl:transform>]]>
+</CdrDocXml>
+</CdrDoc>

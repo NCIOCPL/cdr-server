@@ -1,0 +1,875 @@
+<CdrDoc Type='Filter' Id='CDR0000257553'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Vendor Filte: Summary</DocTitle>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+
+<xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                         xmlns:cdr = "cips.nci.nih.gov/cdr"
+                           version = "1.0"
+           exclude-result-prefixes = "cdr">
+
+ <xsl:output                method = "xml" 
+              omit-xml-declaration = "no"
+                          encoding = "UTF-8"/>
+
+  <!-- ===========================================================
+       Root element
+       =========================================================== -->
+  <xsl:template              match = "/" >
+  <xsl:text disable-output-escaping="yes">&lt;!DOCTYPE Summary &gt;</xsl:text>
+
+    <xsl:apply-templates    select = "Summary"/>
+  </xsl:template>
+
+  <!-- ===========================================================
+       Document element.
+       =========================================================== -->
+  <xsl:template              match = "Summary">
+
+<!-- Creating Document Element and adding Doc ID as attribute
+     ======================================================== -->
+     <Summary>
+     <xsl:attribute           name = "id">
+       <xsl:value-of        select = "DocId"/>
+     </xsl:attribute>
+     <xsl:attribute           name = "LegacyPDQID">
+       <xsl:value-of        select = "PdqKey"/>
+     </xsl:attribute>
+
+      <xsl:apply-templates  select = "SummaryMetaData"/>
+      <xsl:apply-templates  select = "SummaryTitle"
+                            mode   = "copy"/>
+
+<!-- Create the SummarySection elements 
+     ================================== -->
+      <xsl:apply-templates  select = "SummarySection"/>
+
+<!-- =============================================================
+     Display the About PDQ and To Learn More misc documents
+     based on the entries of 
+     Language        - English, Spanish
+     SummaryAudience - Patient (only Patient summaries get this)
+     SummaryType     - Treatment, CAM, etc...
+     EditorialBoard  - Pediatric, Adult  
+     ============================================================= -->   
+     <xsl:if                             test   = "SummaryMetaData/
+                                                   SummaryAudience='Patients'">
+     <SummarySection>
+<!-- Selecting **** English **** Language -->
+        <xsl:choose>
+         <xsl:when                       test   = "SummaryMetaData/
+                                                   SummaryLanguage='English'">
+          <xsl:choose>
+           <xsl:when                     test   = "SummaryMetaData/
+                                                   SummaryAudience='Patients'">
+            <xsl:choose>
+             <!-- Adding english patient treatment document -->
+             <xsl:when                   test   = "SummaryMetaData/
+                                                   SummaryType='Treatment'">
+              <xsl:choose>
+               <xsl:when                   test = "contains(
+                                                   SummaryMetaData/PDQBoard/
+                                                   Board, 'Pediatric')">
+                <xsl:variable              name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'About PDQ;Treatment;', 
+                                                   'Patients;About ',
+                                                   'PDQ-Pediatric treatment ',
+                                                   'patient summary'))"/>
+                <xsl:apply-templates     select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_AboutPDQ'"/>
+                </xsl:apply-templates>
+               </xsl:when>
+               <xsl:otherwise>
+                <xsl:variable              name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'About PDQ;Treatment;',
+                                                   'Patients;About ',
+                                                   'PDQ-Adult treatment ',
+                                                   'patient summary'))"/>
+                 <xsl:apply-templates    select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_AboutPDQ'"/>
+                </xsl:apply-templates>
+               </xsl:otherwise>
+              </xsl:choose>
+             </xsl:when>
+             <xsl:when                   test   = "SummaryMetaData/
+                                                   SummaryType='Screening'">
+              <xsl:variable                name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'About PDQ;Screening;',
+                                                   'Patients;About PDQ-',
+                                                   'Screening patient ',
+                                                   'summary'))"/>
+                 <xsl:apply-templates    select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_AboutPDQ'"/>
+                </xsl:apply-templates>
+             </xsl:when>
+             <xsl:when                   test   = "SummaryMetaData/
+                                                   SummaryType='Prevention'">
+              <xsl:variable                name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'About PDQ;Prevention;',
+                                                   'Patients;About PDQ-',
+                                                   'Prevention patient ',
+                                                   'summary'))"/>
+                 <xsl:apply-templates    select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_AboutPDQ'"/>
+                </xsl:apply-templates>
+             </xsl:when>
+             <xsl:when                   test   = "SummaryMetaData/
+                                                   SummaryType=
+                                                   'Supportive care'">
+              <xsl:variable                name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'About PDQ;Supportive ',
+                                                   'care;Patients;About PDQ-',
+                                                   'Supportive care patient ',
+                                                   'summary'))"/>
+                 <xsl:apply-templates    select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_AboutPDQ'"/>
+                </xsl:apply-templates>
+              </xsl:when>
+              <xsl:when                  test   = "SummaryMetaData/
+                                                   SummaryType=
+                                      'Complementary and alternative medicine'">
+                  <xsl:text>*********** not available yet ***********</xsl:text>
+                  <!--xsl:variable            name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'TBD'))"/>
+                 <xsl:apply-templates    select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_AboutPDQ'"/>
+                </xsl:apply-templates-->
+              </xsl:when>
+              <xsl:when                  test   = "SummaryMetaData/
+                                                   SummaryType='Genetics'">
+                  <xsl:text>*********** not available yet ***********</xsl:text>
+                  <!--xsl:variable            name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'TBD'))"/>
+                 <xsl:apply-templates    select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_AboutPDQ'"/>
+                </xsl:apply-templates-->
+              </xsl:when>
+             </xsl:choose>
+            </xsl:when>
+           </xsl:choose>
+          </xsl:when>
+
+<!-- Selecting ***** Spanish ***** Language -->
+          <xsl:otherwise>
+<!-- Summary: 1-Spanish,  -->
+            <xsl:choose>
+             <xsl:when                   test   = "SummaryMetaData/
+                                                   SummaryAudience='Patients'">
+<!-- 2-Patient,  -->
+               <xsl:choose>
+                <xsl:when                test   = "SummaryMetaData/
+                                                   SummaryType='Treatment'">
+                  <xsl:choose>
+                    <xsl:when              test = "contains(
+                                                SummaryMetaData/PDQBoard/Board, 
+                                                              'Pediatric')">
+                      <!--xsl:variable        name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'About PDQ;Treatment;',
+                                                   'Patients;About ',
+                                                   'PDQ-Adult treatment ',
+                                                   'patient summary'))"/>
+                 <xsl:apply-templates    select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_AboutPDQ'"/>
+                </xsl:apply-templates-->
+                    </xsl:when>
+                    <xsl:otherwise>
+<!-- 4-Adult -->
+                     <!--xsl:variable         name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'About PDQ;Treatment;',
+                                                   'Patients;About ',
+                                                   'PDQ-Adult treatment ',
+                                                   'patient summary'))"/>
+                 <xsl:apply-templates    select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_AboutPDQ'"/>
+                </xsl:apply-templates-->
+                    </xsl:otherwise>
+                  </xsl:choose>
+                </xsl:when>
+                <xsl:when                test   = "SummaryMetaData/
+                                                   SummaryType='Screening'">
+                  <!--xsl:variable            name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'About PDQ;Treatment;',
+                                                   'Patients;About ',
+                                                   'PDQ-Adult treatment ',
+                                                   'patient summary'))"/>
+                 <xsl:apply-templates    select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_AboutPDQ'"/>
+                </xsl:apply-templates-->
+                </xsl:when>
+                <xsl:when                test   = "SummaryMetaData/
+                                                  SummaryType='Prevention'">
+                  <!--xsl:variable            name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'About PDQ;Treatment;',
+                                                   'Patients;About ',
+                                                   'PDQ-Adult treatment ',
+                                                   'patient summary'))"/>
+                 <xsl:apply-templates    select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_AboutPDQ'"/>
+                </xsl:apply-templates-->
+                </xsl:when>
+                <xsl:when                test   = "SummaryMetaData/
+                                                 SummaryType='Supportive care'">
+                  <!--xsl:variable            name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'About PDQ;Treatment;',
+                                                   'Patients;About ',
+                                                   'PDQ-Adult treatment ',
+                                                   'patient summary'))"/>
+                 <xsl:apply-templates    select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_AboutPDQ'"/>
+                </xsl:apply-templates-->
+                </xsl:when>
+                <xsl:when                test   = "SummaryMetaData/
+                                                  SummaryType=
+                                      'Complementary and alternative medicine'">
+                  <!--xsl:variable            name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'About PDQ;Treatment;',
+                                                   'Patients;About ',
+                                                   'PDQ-Adult treatment ',
+                                                   'patient summary'))"/>
+                 <xsl:apply-templates    select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_AboutPDQ'"/>
+                </xsl:apply-templates-->
+                </xsl:when>
+                <xsl:when                test   = "SummaryMetaData/
+                                                   SummaryType='Genetics'">
+                  <!--xsl:variable            name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'About PDQ;Treatment;',
+                                                   'Patients;About ',
+                                                   'PDQ-Adult treatment ',
+                                                   'patient summary'))"/>
+                 <xsl:apply-templates    select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_AboutPDQ'"/>
+                </xsl:apply-templates-->
+                </xsl:when>
+               </xsl:choose>
+             </xsl:when>
+            </xsl:choose>
+            <SummarySection>
+             <!--xsl:variable                 name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                   'About PDQ;Treatment;',
+                                                   'Patients;About ',
+                                                   'PDQ-Adult treatment ',
+                                                   'patient summary'))"/>
+                 <xsl:apply-templates    select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+                  <xsl:with-param          name = "miscDocId"
+                                         select = "'_AboutPDQ'"/>
+                </xsl:apply-templates-->
+            </SummarySection>
+          </xsl:otherwise>
+        </xsl:choose>
+     </SummarySection>
+     </xsl:if>
+     <SummarySection>
+       <xsl:variable                       name = "miscDoc" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                    'To Learn More;',
+                                                    'patient summary;',
+                                                    'To Learn More-patient ',
+                                                    'summary'))"/>
+
+       <xsl:apply-templates              select = "$miscDoc/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+        <xsl:with-param                    name = "miscDocId"
+                                         select = "'_ToLearnMore'"/>
+       </xsl:apply-templates>
+
+     </SummarySection>
+     <xsl:apply-templates                select = "TranslationOf"
+                                         mode   = "copy"/>
+
+<!-- ===================================================================
+            Copy Date First Published and Date Last Modified
+     ================================================================== -->
+     <xsl:if                               test = "CdrDocCtl/FirstPub/Date">
+      <DateFirstPublished>
+       <xsl:value-of                     select = "substring-before
+                                                (CdrDocCtl/FirstPub/Date,'T')"/>
+      </DateFirstPublished>
+     </xsl:if>
+
+     <xsl:apply-templates                select = "DateLastModified"
+                                         mode   = "copy"/>
+
+     <xsl:if                             test   = "not(SummaryMetaData/
+                                                   SummaryAudience='Patients')">
+      <ProfessionalDisclaimer>
+       <xsl:variable                       name = "profDisclaimer" 
+                                         select = "document
+                                                   (concat('cdr:name:',
+                                                    'Professional ',
+                                                    'Disclaimer;Summary-health',
+                                                    ' professional ',
+                                                    'disclaimer'))"/>
+        <xsl:apply-templates             select = "$profDisclaimer/
+                                                   MiscellaneousDocument/
+                                                   MiscellaneousDocumentText"
+                                           mode = "ProfDisclaimer">
+         <xsl:with-param                   name = "profDisclaimer"
+                                         select = "'_ProfDisclaimer'"/>
+        </xsl:apply-templates>
+      </ProfessionalDisclaimer>
+     </xsl:if>
+    </Summary>
+  </xsl:template>
+
+<!-- ==================================================================
+     SummarySection Template
+     ================================================================== -->  <xsl:template                    match = "SummarySection">
+  <SummarySection>
+    <xsl:if                       test = "./@cdr:id">
+     <xsl:attribute               name = "id">
+      <xsl:value-of             select = "./@cdr:id"/>
+     </xsl:attribute>
+    </xsl:if>
+
+    <xsl:apply-templates        select = "AltTitle"
+                                mode   = "copy"/>
+    <xsl:apply-templates        select = "PdqKey"/>
+    <xsl:apply-templates/>
+  </SummarySection>
+</xsl:template>
+
+
+<!-- ==================================================================
+     Template to create the Reference Section for each SummarySection
+     ================================================================== -->  <xsl:template                    match = "ReferenceList">
+<!-- Create the Reference Section of the summary section
+     =================================================== -->
+      <ReferenceSection>
+        <xsl:for-each           select = "Reference">
+          <Citation>
+          <xsl:attribute          name = "idx">
+            <xsl:value-of       select = "./@refidx"/>
+          </xsl:attribute>
+          <xsl:if                 test = "./@PMID">
+            <xsl:attribute        name = "PMID">
+              <xsl:value-of     select = "./@PMID"/>
+            </xsl:attribute>
+          </xsl:if>
+          <xsl:if                 test = "./@MedlineID">
+            <xsl:attribute        name = "MedlineID">
+              <xsl:value-of     select = "./@MedlineID"/>
+            </xsl:attribute>
+          </xsl:if>
+          <xsl:if                 test = "./@CancerLitID">
+            <xsl:attribute        name = "CancerlitID">
+              <xsl:choose>
+               <xsl:when          test = "contains(./@CancerLitID, 'ICDB/')">
+                <xsl:value-of   select = "substring(./@CancerLitID, 6)"/>
+               </xsl:when>
+               <xsl:otherwise>
+                <xsl:value-of   select = "./@CancerLitID"/>
+               </xsl:otherwise>
+              </xsl:choose>
+            </xsl:attribute>
+          </xsl:if>
+          <xsl:if                 test = "./@ProtocolID">
+            <xsl:attribute        name = "ProtocolID">
+              <xsl:value-of     select = "./@ProtocolID"/>
+            </xsl:attribute>
+          </xsl:if>
+          <xsl:value-of         select = "."/>
+          </Citation>
+        </xsl:for-each>
+      </ReferenceSection>
+</xsl:template>
+
+
+
+<!-- ==================================================================
+     MiscellaneousDocumentText Template
+     ================================================================== -->  <xsl:template                    match = "MiscellaneousDocumentText">
+    <xsl:param                    name = "miscDocId"/>
+
+    <xsl:apply-templates>
+     <xsl:with-param      name = "miscDocId" select = "$miscDocId"/>
+    </xsl:apply-templates>
+</xsl:template>
+
+
+
+<!-- ==================================================================
+     MiscellaneousDocumentText Template
+     ================================================================== -->  <xsl:template                    match = "MiscellaneousDocumentText"
+                                  mode = "ProfDisclaimer">
+    <xsl:param                    name = "profDisclaimer"/>
+
+    <xsl:apply-templates        select = "Section"
+                                  mode = "ProfDisclaimer">
+     <xsl:with-param      name = "miscDocId" select = "$profDisclaimer"/>
+    </xsl:apply-templates>
+</xsl:template>
+
+
+
+<!-- ==================================================================
+     Section Template for Misc Docs
+     Need to pass the parameter of the CDR Doc ID to set the ID 
+     attribute properly.  The misc doc can be either the 'To Learn More'
+     or the 'About PDQ' section.
+     ================================================================== -->  <xsl:template                    match = "Section">
+ <xsl:param                       name = "miscDocId"/>
+
+  <SummarySection>
+    <xsl:choose>
+     <xsl:when                    test = "$miscDocId">
+      <xsl:if                      test = "./@cdr:id">
+       <xsl:attribute              name = "id">
+        <xsl:value-of            select = "$miscDocId"/>
+        <xsl:value-of            select = "./@cdr:id"/>
+       </xsl:attribute>
+      </xsl:if>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:if                     test = "./@cdr:id">
+       <xsl:attribute             name = "id">
+        <xsl:value-of           select = "./@cdr:id"/>
+       </xsl:attribute>
+      </xsl:if>
+     </xsl:otherwise>
+    </xsl:choose>
+
+    <xsl:apply-templates        select = "Title"/>
+    <xsl:apply-templates        select = "Para"  
+                                  mode = "miscDoc">
+     <xsl:with-param              name = "miscDocId" 
+                                select = "$miscDocId"/>
+    </xsl:apply-templates>
+    <xsl:apply-templates        select = "ExternalRef"/>
+  </SummarySection>
+</xsl:template>
+
+
+<!-- ==================================================================
+     Section Template for Misc Doc Professional Disclaimer
+     Need to pass the parameter of the CDR Doc ID to set the ID 
+     attribute properly.  
+     ================================================================== -->  <xsl:template                    match = "Section"
+                                  mode = "ProfDisclaimer">
+ <xsl:param                       name = "miscDocId"/>
+
+  <Section>
+    <xsl:choose>
+     <xsl:when                    test = "$miscDocId">
+      <xsl:if                      test = "./@cdr:id">
+       <xsl:attribute              name = "id">
+        <xsl:value-of            select = "$miscDocId"/>
+        <xsl:value-of            select = "./@cdr:id"/>
+       </xsl:attribute>
+      </xsl:if>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:if                     test = "./@cdr:id">
+       <xsl:attribute             name = "id">
+        <xsl:value-of           select = "./@cdr:id"/>
+       </xsl:attribute>
+      </xsl:if>
+     </xsl:otherwise>
+    </xsl:choose>
+
+    <xsl:apply-templates        select = "Title"/>
+    <xsl:apply-templates        select = "Para"  
+                                  mode = "miscDoc">
+     <xsl:with-param              name = "miscDocId" 
+                                select = "$miscDocId"/>
+    </xsl:apply-templates>
+    <xsl:apply-templates        select = "ExternalRef"/>
+  </Section>
+</xsl:template>
+
+
+<!-- ==============================================================
+     Template for extracting External Ref Definition
+     ============================================================== -->
+<xsl:template                    match = "ExternalRef">
+  <ExternalRef>
+    <xsl:attribute                name = "xref">
+     <xsl:value-of              select = "@cdr:xref"/>
+    </xsl:attribute>
+    <xsl:apply-templates/>
+  </ExternalRef>
+</xsl:template>
+
+
+<!-- ==============================================================
+     Template for extracting Summary Ref Definition
+     ============================================================== -->
+<xsl:template                    match = "SummaryRef">
+  <SummaryRef>
+    <xsl:attribute                name = "href">
+     <xsl:value-of              select = "@cdr:href"/>
+    </xsl:attribute>
+    <xsl:apply-templates/>
+  </SummaryRef>
+</xsl:template>
+
+
+<!-- ==================================================================
+     SummaryMetaData Template
+     ================================================================== -->  <xsl:template                match = "SummaryMetaData">
+  <SummaryMetaData>
+    <xsl:apply-templates        select = "SummaryType"
+                                mode   = "copy"/>
+    <xsl:apply-templates        select = "SummaryAudience"
+                                mode   = "copy"/>
+    <xsl:apply-templates        select = "SummaryLanguage"
+                                mode   = "copy"/>
+    <xsl:apply-templates        select = "MainTopics"/>
+    <xsl:apply-templates        select = "SecondaryTopics"/>
+  </SummaryMetaData>
+</xsl:template>
+
+
+
+<!-- ==================================================================
+     SectMetaData Template
+     ================================================================== -->  <xsl:template                    match = "SectMetaData">
+  <SectMetaData>
+    <xsl:if                       test = "Diagnosis">
+      <SpecificDiagnosis>
+        <xsl:attribute            name = "ref">
+         <xsl:value-of          select = "Diagnosis/@cdr:ref"/>
+        </xsl:attribute> 
+        <xsl:value-of           select = "Diagnosis"/>
+      </SpecificDiagnosis>
+    </xsl:if>
+    <xsl:apply-templates        select = "SectionType"
+                                mode   = "copy"/>
+  </SectMetaData>
+</xsl:template>
+
+
+
+<!-- ============================================================= 
+     Create the Para template including the renamed attribute for 
+     the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+     ============================================================= -->
+  <xsl:template              match = "Para">
+    <Para>
+      <xsl:attribute          name = "id">
+        <xsl:value-of       select = "./@cdr:id"/>
+      </xsl:attribute>
+      <xsl:apply-templates/>
+    </Para>
+  </xsl:template>
+    
+
+<!-- ============================================================= 
+     Create the Para template including the renamed attribute for 
+     the paragraph IDs.
+     Displaying by default the 'To Learn More' misc document.
+     ============================================================= -->
+  <xsl:template              match = "Para"
+                             mode  = "miscDoc">
+   <xsl:param                name  = "miscDocId"/>
+    <Para>
+      <xsl:attribute          name = "id">
+       <xsl:value-of        select = "$miscDocId"/>
+       <xsl:value-of        select = "./@cdr:id"/>
+      </xsl:attribute>
+      <xsl:apply-templates  select = "Para" 
+                              mode = "copy"/>
+      <xsl:apply-templates/>
+    </Para>
+  </xsl:template>
+    
+
+
+<!-- ============================================================= 
+     Create the Title template 
+     ============================================================= -->
+  <xsl:template              match = "Title   | AltTitle">
+    <xsl:copy>
+      <xsl:apply-templates/>
+    </xsl:copy>
+  </xsl:template>
+    
+
+<!-- ==================================================================== 
+     Create the ItemizedList template including the renamed attribute for 
+     the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+     ==================================================================== -->
+  <xsl:template              match = "ItemizedList">
+    <ItemizedList>
+      <xsl:attribute          name = "id">
+        <xsl:value-of       select = "./@cdr:id"/>
+      </xsl:attribute>
+      <xsl:if                 test = "./@Style">
+       <xsl:attribute          name = "Style">
+        <xsl:value-of       select = "./@Style"/>
+       </xsl:attribute>
+      </xsl:if>
+      <xsl:if                 test = "./@Compact">
+       <xsl:attribute          name = "Compact">
+        <xsl:value-of       select = "./@Compact"/>
+       </xsl:attribute>
+      </xsl:if>
+      <xsl:apply-templates/>
+    </ItemizedList>
+  </xsl:template>
+    
+
+
+<!-- ==================================================================== 
+     Create the OrderedList template including the renamed attribute for 
+     the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+     ==================================================================== -->
+  <xsl:template              match = "OrderedList">
+    <OrderedList>
+      <xsl:attribute          name = "id">
+        <xsl:value-of       select = "./@cdr:id"/>
+      </xsl:attribute>
+      <xsl:if                 test = "./@Style">
+       <xsl:attribute          name = "Style">
+        <xsl:value-of       select = "./@Style"/>
+       </xsl:attribute>
+      </xsl:if>
+      <xsl:apply-templates/>
+    </OrderedList>
+  </xsl:template>
+    
+
+
+<!-- ==================================================================== 
+     Create the OrderedList template including the renamed attribute for 
+     the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+     ==================================================================== -->
+  <xsl:template              match = "ListItem">
+    <ListItem>
+      <xsl:apply-templates/>
+    </ListItem>
+  </xsl:template>
+    
+
+<!-- ==================================================================== 
+     Create the ListTitle
+     ==================================================================== -->
+  <xsl:template              match = "ListTitle">
+    <ListTitle>
+      <xsl:apply-templates/>
+    </ListTitle>
+  </xsl:template>
+    
+
+<!-- ==================================================================== 
+     Create the OrderedList template including the renamed attribute for 
+     the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+     ==================================================================== -->
+  <xsl:template              match = "Table">
+    <Table>
+      <xsl:attribute          name = "id">
+        <xsl:value-of       select = "./@cdr:id"/>
+      </xsl:attribute>
+      <xsl:apply-templates    mode = "copy"/>
+    </Table>
+  </xsl:template>
+
+
+<!-- ============================================================= 
+     Create the KeyPoint template including the renamed attribute for 
+     the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+     ============================================================= -->
+  <xsl:template              match = "KeyPoint">
+    <KeyPoint>
+      <xsl:attribute          name = "id">
+        <xsl:value-of       select = "./@cdr:id"/>
+      </xsl:attribute>
+      <xsl:apply-templates/>
+      <!-- xsl:value-of         select = "."/ -->
+    </KeyPoint>
+  </xsl:template>
+    
+
+<!-- ============================================================= 
+     Create the Para template including the renamed attribute for 
+     the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+     ============================================================= -->
+  <xsl:template              match = "MainTopics">
+    <MainTopics>
+     <TermRef>
+      <xsl:attribute          name = "ref">
+        <xsl:value-of       select = "Term/@cdr:ref"/>
+      </xsl:attribute>
+      <xsl:apply-templates/>
+     </TermRef>
+    </MainTopics>
+  </xsl:template>
+    
+
+<!-- ============================================================= 
+     Create the Para template including the renamed attribute for 
+     the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+     ============================================================= -->
+  <xsl:template              match = "SecondaryTopics">
+    <SecondaryTopics>
+     <TermRef>
+      <xsl:attribute          name = "ref">
+        <xsl:value-of       select = "Term/@cdr:ref"/>
+      </xsl:attribute>
+      <xsl:apply-templates/>
+     </TermRef>
+    </SecondaryTopics>
+  </xsl:template>
+    
+
+<!-- ============================================================= 
+     Create the CitationLink template including the renamed attribute 
+     for the Citation ref (cdr:ref ID needs to be renamed to ref).
+     The template displayes the refidx entries embedded within the 
+     text.
+     ============================================================= -->
+  <xsl:template              match = "CitationLink">
+    <Reference>
+      <xsl:attribute          name = "refidx">
+        <xsl:value-of       select = "./@refidx"/>
+      </xsl:attribute>
+      <!--xsl:value-of         select = "."/-->
+    </Reference>
+  </xsl:template>
+
+
+<!-- ============================================================= 
+     Create the GlossaryTermRef template and rename the attribute 
+     (cdr:href ID needs to be renamed to href).
+     ============================================================= -->
+  <xsl:template              match = "GlossaryTermRef">
+    <GlossaryTermRef>
+      <xsl:attribute          name = "href">
+        <xsl:value-of       select = "./@cdr:href"/>
+      </xsl:attribute>
+      <xsl:value-of         select = "."/>
+    </GlossaryTermRef>
+  </xsl:template>
+
+
+<!-- ==============================================================
+     Template for TT tag
+     ============================================================== -->
+  <xsl:template              match = "TT">
+    <TT>
+      <xsl:if                 test = "./@cdr:id">
+       <xsl:attribute          name = "id">
+        <xsl:value-of       select = "./@cdr:id"/>
+       </xsl:attribute>
+      </xsl:if>
+       <xsl:apply-templates/>
+    </TT>
+  </xsl:template>
+
+
+<!-- ==============================================================
+     Template for in-line mark-up
+     ============================================================== -->
+  <xsl:template              match = "Emphasis       | Strong         |
+                                      Subscript      | Superscript    |
+                                      GeneName       | ScientificName |
+                                      ForeignName">
+   <xsl:copy>
+      <xsl:apply-templates/>
+   </xsl:copy>
+  </xsl:template>
+
+
+<!-- ==============================================================
+     Template for to do nothing
+     ============================================================== -->
+<xsl:template                    match = "PdqKey">
+</xsl:template>
+
+
+<!-- ================================================================ 
+     Template rule used to do XML to XML transformations which
+     copies any attribute node, or node that is child of of something 
+     ================================================================ -->
+ <xsl:template               match = "@*|node()"
+                              mode = "copy">
+  <xsl:copy>
+   <xsl:apply-templates     select = "@*" 
+                              mode = "copy"/>
+   <xsl:apply-templates       mode = "copy"/>
+  </xsl:copy>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
