@@ -6,11 +6,15 @@
 <DocComment>CVS-V1.32: Proposed deletion</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
-<!-- 
-===================================================================
-Filter to create Health Professional Summary Report
-(Based on new Denormalization)
-=================================================================== -->
+<!--
+ ================================================================
+     $Id: CDR0000000079.xml,v 1.53 2004-07-16 17:09:15 venglisc Exp $
+
+     Filter to create Health Professional Summary Report
+        Written by Volker Englisch, 2004-07-16
+
+     $Log: not supported by cvs2svn $
+ ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -23,7 +27,11 @@ Filter to create Health Professional Summary Report
  <xsl:include   href = "cdr:name:Module: Checkbox Formatter"/>
  <xsl:include   href = "cdr:name:Module: Table Formatter"/>
  <xsl:include   href = "cdr:name:Module: STYLE Default"/>  
+ <xsl:include   href = "cdr:name:Module: STYLE QC Summary"/>  
+ <xsl:include   href = "cdr:name:Module: STYLE RS Insertion Deletion"/>  
 
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
  <!-- 
  ==================================================================
  Create HTML Output
@@ -35,21 +43,22 @@ Filter to create Health Professional Summary Report
    <HEAD>
     <xsl:variable                 name = "cdrdocs" 
                                 select = "document('cdrx:/*/CdrCtl')"/>
+
     <TITLE>
-     <xsl:value-of              select = "document('cdrutil:/docid')"/>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
      <xsl:text>: </xsl:text>
-     <xsl:value-of              select = "substring-before($cdrdocs/
-                                          CdrDocCtl/DocTitle,';')"/>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/> 
     </TITLE>
      
     <!--Inline sytle sheet to display H2 and H4 headers in Navy -->
     <STYLE type='text/css'>
      <xsl:call-template           name = "defaultStyle"/>  
-
-     h2 { font style: bold font size: 14pt}
-     h3 { font style: bold font size: 13pt}
-     h4 { font style: bold font size: 12pt}
-     td { font size: 8pt}
+     <xsl:call-template           name = "qcSummaryStyle"/>  
+     <xsl:call-template           name = "rsInsertionDeletionStyle"/>  
     </STYLE>
    </HEAD>
    <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif'/> 
@@ -105,190 +114,450 @@ Filter to create Health Professional Summary Report
  </xsl:template>
 
 
- <!-- Remove the CdrDocCtl elements from the HTML output -->
- <xsl:template                  match = "CdrDocCtl"/>
+ <!-- 
+ ======================================================================
+ Remove the CdrDocCtl elements from the HTML output 
+ ====================================================================== -->
+ <xsl:template                   match = "CdrDocCtl"/>
+
+
+ <!-- 
+ ======================================================================
+ Display CitationLinks
+ ====================================================================== -->
+ <xsl:template                   match = "Citation">
+  <xsl:variable                   name = "nextRef" 
+                                select = "position()+1"/>
+  <xsl:variable                   name = "firstRef" 
+                                select = "position()-1"/>
+  <xsl:variable                   name = "ref" 
+                                select = "."/>
+
+  <!--
+  Displaying the Left Bracket of a list of citations with marked up 
+  ================================================================= -->
+  <xsl:if                         test = "name(../node()[$firstRef])
+                                            != 'Citation'">
+   <xsl:choose>
+    <xsl:when                     test = "@InsertionOrDeletion = 'Insertion'">
+     <xsl:choose>
+      <xsl:when                   test = "@RevisionLevel = 'proposed'">
+       <span class="insertproposed">
+        <xsl:text>[</xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <span class="insertapproved">
+        <xsl:text>[</xsl:text>
+       </span>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:when>
+    <xsl:when                     test = "@InsertionOrDeletion = 'Deletion'">
+     <xsl:choose>
+      <xsl:when                   test = "@existing">
+       <xsl:text>[</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:choose>
+        <xsl:when                 test = "@RevisionLevel = 'proposed'">
+         <span class="deleteproposed">
+          <xsl:text>[</xsl:text>
+         </span>
+        </xsl:when>
+        <xsl:otherwise>
+         <span class="deleteapproved">
+          <xsl:text>[</xsl:text>
+         </span>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>[</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:if>
+                    
+  <!--
+  Displaying the citation ID with marked up 
+  ========================================= -->
+  <xsl:choose>
+   <xsl:when                      test = "@InsertionOrDeletion
+                                            = 'Deletion'">
+    <xsl:choose>
+     <xsl:when                    test = "@RevisionLevel = 'proposed'">
+      <span class="deleteproposed">
+       <xsl:value-of            select = "@refidx"/>
+      </span>
+     </xsl:when>
+     <xsl:otherwise>
+      <span class="deleteapproved">
+       <xsl:value-of            select = "@refidx"/>
+      </span>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when> 
+   <xsl:when                      test = "@InsertionOrDeletion
+                                            = 'Insertion'">
+    <xsl:choose>
+     <xsl:when                    test = "@RevisionLevel = 'proposed'">
+      <span class="insertproposed">
+       <xsl:value-of            select = "@refidx"/>
+      </span>
+     </xsl:when>
+     <xsl:otherwise>
+      <span class="insertapproved">
+       <xsl:value-of            select = "@refidx"/>
+      </span>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when> 
+   <xsl:otherwise>
+    <xsl:value-of               select = "@refidx"/>
+   </xsl:otherwise> 
+  </xsl:choose>  	    
+
+  <!--
+  Displaying the comma of a list of citations with marked up 
+  ========================================================== -->
+  <xsl:choose>
+   <xsl:when                      test = "name(../node()[$nextRef]) 
+                                            = 'Citation'">
+    <xsl:choose>
+     <xsl:when                    test = "@InsertionOrDeletion = 'Insertion'">
+      <xsl:choose>
+       <xsl:when                  test = "@RevisionLevel = 'proposed'">
+        <span class="insertproposed">
+         <xsl:text>, </xsl:text>
+        </span>
+       </xsl:when>
+       <xsl:otherwise>
+        <span class="insertapproved">
+         <xsl:text>, </xsl:text>
+        </span>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
+     <xsl:when                    test = "@InsertionOrDeletion = 'Deletion'">
+      <xsl:choose>
+       <xsl:when                  test = "@existing">
+        <xsl:text>, </xsl:text>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:choose>
+         <xsl:when                test = "@RevisionLevel='proposed'">
+          <span class="deleteproposed">
+           <xsl:text>, </xsl:text>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="deleteapproved">
+           <xsl:text>, </xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>, </xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+          
+   <!--
+   Displaying the Right Bracket of a list of citations with marked up 
+   ================================================================== -->
+   <xsl:when                      test = "name(../node()[$nextRef])
+                                            != 'Citation'">
+    <xsl:choose>
+     <xsl:when                    test = "@InsertionOrDeletion = 'Insertion'">
+      <xsl:choose>
+       <xsl:when                  test = "@RevisionLevel = 'proposed'">
+        <span class="insertproposed">
+         <xsl:text>]</xsl:text>
+        </span>
+       </xsl:when>
+       <xsl:otherwise>
+        <span class="insertapproved">
+         <xsl:text>]</xsl:text>
+        </span>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
+     <xsl:when                    test = "@InsertionOrDeletion = 'Deletion'">
+      <xsl:choose>
+       <xsl:when                  test = "@existing">
+        <xsl:text>]</xsl:text>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:choose>
+         <xsl:when                test = "@RevisionLevel = 'proposed'">
+          <span class="deleteproposed">
+           <xsl:text>]</xsl:text>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="deleteapproved">
+           <xsl:text>]</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>]</xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:template>
 
 
  <!-- 
  ======================================================================
  Display CitationLinks
  ===================================================================== -->
-    <xsl:template              match = "Citation">
-     <xsl:variable              name = "nextRef" 
-                              select = "position()+1"/>
-     <xsl:variable              name = "firstRef" 
-                              select = "position()-1"/>
-     <xsl:variable              name = "ref" 
-                              select = "."/>
-      
-     <!--
-     Displaying the Left Bracket of a list of citations with marked up 
-     ================================================================= -->
-     <xsl:if                   test = "name(../node()[$firstRef])!= 'Citation'">
-      <xsl:choose>
-       <xsl:when                 test = "@InsertionOrDeletion = 'Insertion'">
-        <font color="RED">
-         <xsl:text>[</xsl:text>
-        </font>
-       </xsl:when>
-       <xsl:when                 test = "@InsertionOrDeletion = 'Deletion'">
-        <xsl:choose>
-         <xsl:when               test = "@existing">
-          <xsl:text>[</xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <strike>
-           <xsl:text>[</xsl:text>
-          </strike>
-         </xsl:otherwise>
-        </xsl:choose>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:text>[</xsl:text>
-       </xsl:otherwise>
-      </xsl:choose>
-     </xsl:if>
-                    
-     <xsl:choose>
-      <xsl:when                 test = "@InsertionOrDeletion
-                                       = 'Deletion'">
-       <strike>
-        <xsl:value-of         select = "@refidx"/>
-       </strike>
-      </xsl:when> 
-      <xsl:when                 test = "@InsertionOrDeletion
-                                        = 'Insertion'">
-       <xsl:choose>
-        <xsl:when               test = "@RevisionLevel='proposed'">
-         <font color="FUCHSIA">
-          <xsl:value-of       select = "@refidx"/>
-         </font>
-        </xsl:when>
-        <xsl:otherwise>
-         <font color="RED">
-          <xsl:value-of       select = "@refidx"/>
-         </font>
-        </xsl:otherwise>
-       </xsl:choose>
-      </xsl:when> 
-      <xsl:otherwise>
-        <xsl:value-of         select = "@refidx"/>
-      </xsl:otherwise> 
-     </xsl:choose>  	    
-	    	
-     <!--
-     Displaying the comma of a list of citations with marked up 
-     ========================================================== -->
-     <xsl:if                    test = "name(../node()[$nextRef])= 'Citation'">
-      <xsl:choose>
-       <xsl:when                 test = "@InsertionOrDeletion = 'Insertion'">
-        <font color="RED">
-         <xsl:text>, </xsl:text>
-        </font>
-       </xsl:when>
-       <xsl:when                 test = "@InsertionOrDeletion = 'Deletion'">
-        <xsl:choose>
-         <xsl:when               test = "@existing">
-          <xsl:text>, </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <strike>
-           <xsl:text>, </xsl:text>
-          </strike>
-         </xsl:otherwise>
-        </xsl:choose>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:text>, </xsl:text>
-       </xsl:otherwise>
-      </xsl:choose>
-     </xsl:if>
-          
-     <!--
-     Displaying the Right Bracket of a list of citations with marked up 
-     ================================================================== -->
-     <xsl:if                    test = "name(../node()[$nextRef])!= 'Citation'">
-      <xsl:choose>
-       <xsl:when                 test = "@InsertionOrDeletion = 'Insertion'">
-        <font color="RED">
-         <xsl:text>]</xsl:text>
-        </font>
-       </xsl:when>
-       <xsl:when                 test = "@InsertionOrDeletion = 'Deletion'">
-        <xsl:choose>
-         <xsl:when               test = "@existing">
-          <xsl:text>]</xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <strike>
-           <xsl:text>]</xsl:text>
-          </strike>
-         </xsl:otherwise>
-        </xsl:choose>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:text>]</xsl:text>
-       </xsl:otherwise>
-      </xsl:choose>
-     </xsl:if>
-    </xsl:template>
+ <xsl:template                   match = "Citation"
+                                  mode = "compactNo">
+  <xsl:variable                   name = "nextRef" 
+                                select = "position()+1"/>
+  <xsl:variable                   name = "firstRef" 
+                                select = "position()-1"/>
+  <xsl:variable                   name = "ref" 
+                                select = "."/>
 
-<!-- =======================================================================
-       This template deletes data elements not used in the display 
-     ==================================================================== --> 
-    <xsl:template              match = "PdqKey | PDQBoard | SectionType |
-                                        Diagnosis | SummaryLanguage |       
-                                        SummaryType |SummaryAudience |
-                                        SummaryTitle |MainTopics | 
-                                        SecondaryTopics | DocId| 
-                                        DateLastModified | PatientVersionOf |
-                                        TranslationOf | ReplacementFor"/>
-                       
-<!-- ================================================================== 
-       Display an Insertion 
-     =================================================================== -->
-    <xsl:template              match = "Insertion">
+  <!--
+  Displaying the Left Bracket of a list of citations with marked up 
+  ================================================================= -->
+  <xsl:if                         test = "name(../node()[$firstRef])
+                                         != 'Citation'">
+   <xsl:choose>
+    <xsl:when                     test = "@InsertionOrDeletion = 'Insertion'">
+     <span class="insertapproved">
+      <xsl:text>[</xsl:text>
+     </span>
+    </xsl:when>
+    <xsl:when                     test = "@InsertionOrDeletion = 'Deletion'">
      <xsl:choose>
-      <xsl:when                 test = "@RevisionLevel = 'proposed'">
-       <font color="FUCHSIA">
-        <xsl:apply-templates/>
-       </font>
+      <xsl:when                   test = "@existing">
+       <xsl:text>[</xsl:text>
       </xsl:when>
       <xsl:otherwise>
-       <font color="RED">
-        <xsl:apply-templates/>
-       </font>
+       <span class="deleteapproved">
+        <xsl:text>[</xsl:text>
+       </span>
       </xsl:otherwise>
      </xsl:choose>
-    </xsl:template>
-         
-<!-- ==================================================================
-       Display a Deletion 
-     =================================================================== -->
-    <xsl:template              match = "Deletion">
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>[</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:if>
+                    
+  <xsl:choose>
+   <xsl:when                      test = "@InsertionOrDeletion
+                                            = 'Deletion'">
+    <span class="deleteapproved">
+     <xsl:value-of              select = "@refidx"/>
+    </span>
+   </xsl:when> 
+   <xsl:when                      test = "@InsertionOrDeletion
+                                            = 'Insertion'">
+    <xsl:choose>
+     <xsl:when                    test = "@RevisionLevel='proposed'">
+      <span class="insertproposed">
+       <xsl:value-of            select = "@refidx"/>
+      </span>
+     </xsl:when>
+     <xsl:otherwise>
+      <span class="insertapproved">
+       <xsl:value-of            select = "@refidx"/>
+      </span>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when> 
+   <xsl:otherwise>
+    <xsl:value-of               select = "@refidx"/>
+   </xsl:otherwise> 
+  </xsl:choose>  	    
+
+  <!--
+  Displaying the comma of a list of citations with marked up 
+  ========================================================== -->
+  <xsl:choose>
+   <xsl:when                      test = "name(../node()[$nextRef]) 
+                                            = 'Citation'">
+    <xsl:choose>
+     <xsl:when                    test = "@InsertionOrDeletion = 'Insertion'">
+      <span class="insertapproved">
+       <xsl:text>, </xsl:text>
+      </span>
+     </xsl:when>
+     <xsl:when                    test = "@InsertionOrDeletion = 'Deletion'">
       <xsl:choose>
-      <xsl:when                 test = "@RevisionLevel = 'proposed'">
-       <strike>
-       <font color="FUCHSIA">
-        <xsl:apply-templates/>
-       </font>
-       </strike>
-      </xsl:when>
-      <xsl:otherwise>
-       <strike>
-        <xsl:apply-templates/>
-       </strike>
-      </xsl:otherwise>
-     </xsl:choose>
-     </xsl:template>
+       <xsl:when                  test = "@existing">
+        <xsl:text>, </xsl:text>
+       </xsl:when>
+       <xsl:otherwise>
+        <span class="deleteapproved">
+         <xsl:text>, </xsl:text>
+        </span>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>, </xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+          
+   <!--
+   Displaying the Right Bracket of a list of citations with marked up 
+   ================================================================== -->
+   <xsl:when                      test = "name(../node()[$nextRef])
+                                            != 'Citation'">
+    <xsl:choose>
+     <xsl:when                    test = "@InsertionOrDeletion = 'Insertion'">
+      <span class="insertapproved">
+       <xsl:text>]</xsl:text>
+      </span>
+     </xsl:when>
+     <xsl:when                    test = "@InsertionOrDeletion = 'Deletion'">
+      <xsl:choose>
+       <xsl:when                  test = "@existing">
+        <xsl:text>]</xsl:text>
+       </xsl:when>
+       <xsl:otherwise>
+        <span class="deleteapproved">
+         <xsl:text>]</xsl:text>
+        </span>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>]</xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ =======================================================================
+ This template deletes data elements not used in the display 
+ ==================================================================== --> 
+ <xsl:template                   match = "DateLastModified | 
+                                          Diagnosis        | 
+                                          DocId            | 
+                                          MainTopics       | 
+                                          PatientVersionOf |
+                                          PDQBoard         | 
+                                          PdqKey           | 
+                                          ReplacementFor   |
+                                          SecondaryTopics  | 
+                                          SectionType      |
+                                          SummaryAudience  |
+                                          SummaryLanguage  |       
+                                          SummaryTitle     |
+                                          SummaryType      |
+                                          TranslationOf"/>
+                       
+ <!-- 
+ Note: The insertion/deletion templates for the Redline/Strikeout
+       and the patient summary reports are identical.
+       However, the Bold/Underline report is slightly different.
+ ================================================================== 
+ Display text with Insertion (Citation text is handled separately)
+ ================================================================== -->
+ <xsl:template                   match = "Insertion">
+  <xsl:choose>
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
+    <span class="insertproposed">
+     <xsl:apply-templates/>
+    </span>
+   </xsl:when>
+   <xsl:otherwise> 
+    <span class="insertapproved">
+     <xsl:apply-templates/>
+    </span>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+ <!-- 
+ ==================================================================
+ Display text proposed for Deletion (Citation text is handled 
+ separately).
+ ================================================================== -->
+ <xsl:template                   match = "Deletion"> 
+  <xsl:choose>
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
+    <span class="deleteproposed">
+     <xsl:apply-templates/>
+    </span>  
+   </xsl:when>
+   <xsl:otherwise>
+    <span class="deleteapproved">
+     <xsl:apply-templates/>
+    </span>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>      
+
+
+ <!-- 
+ ================================================================== 
+ Display an Insertion 
+ =================================================================== -->
+ <xsl:template                   match = "Insertion"
+                                  mode = "compactNo">
+  <xsl:choose>
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
+    <span class="insertproposed">
+     <xsl:apply-templates/>
+    </span>
+   </xsl:when>
+   <xsl:otherwise>
+    <span class="insertapproved">
+     <xsl:apply-templates/>
+    </span>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+         
+ <!-- 
+ ==================================================================
+ Display a Deletion 
+ =================================================================== -->
+ <xsl:template                   match = "Deletion"
+                                  mode = "compactNo">
+  <xsl:choose>
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
+    <span class="deleteproposed">
+     <xsl:apply-templates/>
+    </span>
+   </xsl:when>
+   <xsl:otherwise>
+    <span class="deleteapproved">
+     <xsl:apply-templates/>
+    </span>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
 
  <!-- 
  ================================================================
  Display Comments 
  ================================================================ -->
- <xsl:template                  match = "Comment">
-  <xsl:apply-templates         select = "." 
-                                 mode = "RS"/>
+ <xsl:template                   match = "Comment">
+  <xsl:apply-templates          select = "." 
+                                  mode = "RS"/>
  </xsl:template>  
 
 
@@ -296,41 +565,43 @@ Filter to create Health Professional Summary Report
  ================================================================
  Display a Note
  ================================================================ -->
- <xsl:template                  match = "Note">
-  <xsl:apply-templates         select = "." 
-                                 mode = "RS"/>
+ <xsl:template                   match = "Note">
+  <xsl:apply-templates          select = "." 
+                                  mode = "RS"/>
  </xsl:template>  
 
 
-<!-- =====================================================================
-       Display references
-     ===================================================================== -->
- <xsl:template              match = "ReferenceList"> 
-   <xsl:choose>
-    <xsl:when                test = "//SummaryLanguage='Spanish'">
-     <h3>Bibliograf&#xED;a:</h3>
-    </xsl:when>
-    <xsl:otherwise>
-     <h3>References:</h3>
-    </xsl:otherwise>
-   </xsl:choose>    
+ <!-- 
+ =====================================================================
+ Display references
+ ===================================================================== -->
+ <xsl:template                   match = "ReferenceList"> 
+  <xsl:choose>
+   <xsl:when                      test = "//SummaryLanguage='Spanish'">
+    <h3>Bibliograf&#xED;a:</h3>
+   </xsl:when>
+   <xsl:otherwise>
+    <h3>References:</h3>
+   </xsl:otherwise>
+  </xsl:choose>    
        
-   <ol>
-    <xsl:for-each           select = "Citation">
-     <xsl:call-template       name = "markupCitation"/>
-    </xsl:for-each>
-   </ol>
+  <ol>
+   <xsl:for-each                select = "Citation">
+    <xsl:call-template            name = "markupCitation"/>
+   </xsl:for-each>
+  </ol>
  </xsl:template>
 
+
  <!--
-   ==============================================================
-      Display Section Titles 
-      Temporary until all Patient summaries are in new format
-   ============================================================  -->
-    <xsl:template               match ="Title">
-    <xsl:apply-templates        select = "."
-                                mode="RB"/>
-    </xsl:template>
+ ==============================================================
+ Display Section Titles 
+ Temporary until all Patient summaries are in new format
+ ============================================================  -->
+ <xsl:template                   match ="Title">
+  <xsl:apply-templates          select = "."
+                                  mode = "RB"/>
+ </xsl:template>
        
      
 
@@ -338,51 +609,77 @@ Filter to create Health Professional Summary Report
  =====================================================================
  Display Citations with Markup
  ===================================================================== -->
- <xsl:template                 name = "markupCitation"> 
+ <xsl:template                    name = "markupCitation"> 
   <xsl:choose>
-   <xsl:when                 test = "@InsertionOrDeletion = 'Insertion'">
+   <xsl:when                      test = "@InsertionOrDeletion = 'Insertion'">
     <xsl:choose>
-     <xsl:when               test = "@existing">
+     <xsl:when                    test = "@existing">
       <li>
-       <xsl:value-of       select = "."/>
+       <xsl:value-of            select = "."/>
        <br/>
        <br/>
       </li>
      </xsl:when>
      <xsl:otherwise>
-      <li>
-       <font color="RED">
-        <xsl:value-of       select = "."/>
-       </font>
-       <br/>
-       <br/>
-      </li>
+      <xsl:choose>
+       <xsl:when                  test = "@RevisionLevel = 'proposed'">
+        <li class="refinsertprop">
+         <span class="insertproposed">
+          <xsl:value-of         select = "."/>
+         </span>
+         <br/>
+         <br/>
+        </li>
+       </xsl:when>
+       <xsl:otherwise>
+        <li class="refinsertappr">
+         <span class="insertapproved">
+          <xsl:value-of         select = "."/>
+         </span>
+         <br/>
+         <br/>
+        </li>
+       </xsl:otherwise>
+      </xsl:choose>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:when>
-   <xsl:when                 test = "@InsertionOrDeletion = 'Deletion'">
+   <xsl:when                      test = "@InsertionOrDeletion = 'Deletion'">
     <xsl:choose>
-     <xsl:when               test = "@existing">
+     <xsl:when                    test = "@existing">
       <li>
-       <xsl:value-of       select = "."/>
+       <xsl:value-of            select = "."/>
        <br/>
        <br/>
       </li>
      </xsl:when>
      <xsl:otherwise>
-      <li>
-       <strike>
-        <xsl:value-of       select = "."/>
-       </strike>
-       <br/>
-       <br/>
-      </li>
+      <xsl:choose>
+       <xsl:when                  test = "@RevisionLevel = 'proposed'">
+        <li class="refdeleteprop">
+         <span class="deleteproposed">
+          <xsl:value-of         select = "."/>
+         </span>
+         <br/>
+         <br/>
+        </li>
+       </xsl:when>
+       <xsl:otherwise>
+        <li class="refdeleteappr">
+         <span class="deleteapproved">
+          <xsl:value-of         select = "."/>
+         </span>
+         <br/>
+         <br/>
+        </li>
+       </xsl:otherwise>
+      </xsl:choose>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:when>
    <xsl:otherwise>
     <li>
-     <xsl:value-of         select = "."/>
+     <xsl:value-of              select = "."/>
      <br/>
      <br/>
     </li>
@@ -393,42 +690,39 @@ Filter to create Health Professional Summary Report
  
 
  <!-- 
- ==============================================================
+ ===================================================================
  Display a Glossary Link
- ============================================================== -->
- <xsl:template                  match = "GlossaryTermRef | LOERef">
+ =================================================================== -->
+ <xsl:template                   match = "GlossaryTermRef | LOERef">
   <xsl:choose>
-   <xsl:when                     test = "/Summary/SummaryMetaData/
-                                          SummaryAudience = 
+   <xsl:when                      test = "/Summary/SummaryMetaData/
+                                           SummaryAudience = 
                                                         'Health professionals'
-                                          and 
-                                         /Summary/SummaryMetaData/
-                                          SummaryType != 
+                                           and 
+                                          /Summary/SummaryMetaData/
+                                           SummaryType != 
                                        'Complementary and alternative medicine' 
-                                          and
-                                         /Summary/SummaryMetaData/
-                                          SummaryLanguage = 'English'">
-                                                                    
-    
-                              
-    <xsl:apply-templates      select = "."  
-                                mode = "HPE"/>
+                                           and
+                                          /Summary/SummaryMetaData/
+                                           SummaryLanguage = 'English'">
+    <xsl:apply-templates        select = "."  
+                                  mode = "HPE"/>
    </xsl:when>
-   <xsl:when                    test = "/Summary/SummaryMetaData/
-                                         SummaryType = 
+   <xsl:when                      test = "/Summary/SummaryMetaData/
+                                           SummaryType = 
                                      'Complementary and alternative medicine'">
         
-    <xsl:apply-templates      select = "."  
-                                mode = "PE"/>
+    <xsl:apply-templates        select = "."  
+                                  mode = "PE"/>
    </xsl:when>
-   <xsl:when                    test = "/Summary/
-                                         SummaryMetaData/SummaryAudience =
+   <xsl:when                      test = "/Summary/
+                                           SummaryMetaData/SummaryAudience =
                                                          'Health professionals' 
-                                         and 
-                                        /Summary/SummaryMetaData/
-                                         SummaryLanguage = 'Spanish'">
-    <xsl:apply-templates      select = "."  
-                                mode = "HPS"/>
+                                           and 
+                                          /Summary/SummaryMetaData/
+                                           SummaryLanguage = 'Spanish'">
+    <xsl:apply-templates        select = "."  
+                                  mode = "HPS"/>
    </xsl:when>
    <xsl:otherwise>
     <xsl:apply-templates/>

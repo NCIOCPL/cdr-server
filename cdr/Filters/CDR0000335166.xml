@@ -6,6 +6,15 @@
 <DocComment>Restored after refresh of CDR database on Mahler</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
+<!--
+ ================================================================
+     $Id: CDR0000335166.xml,v 1.2 2004-07-16 17:14:42 venglisc Exp $
+
+     Filter to display Summary elements selected by Checkbox
+        Written by Volker Englisch, 2004-07-16
+
+     $Log: not supported by cvs2svn $
+ ================================================================ -->
 <xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              version = "1.0"
                            xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -57,15 +66,97 @@
            
     <xsl:for-each           select = "GlossaryTerm">
      <tr>
-      <td>
-       <xsl:value-of        select = "GlossaryTermRef"/>
-      </td>
-      <td>
-       <xsl:value-of        select = "TermName"/>
-      </td>
-      <td>
-       <xsl:value-of        select = "DefinitionText"/>
-      </td>
+       <xsl:choose>
+        <xsl:when             test = "GlossaryTermRef/Deletion">
+         <xsl:choose>
+          <xsl:when           test = "GlossaryTermRef/Deletion/
+                                         @RevisionLevel = 'proposed'">
+           <td>
+            <span class="deleteproposed">
+             <xsl:value-of        select = "GlossaryTermRef/Deletion"/>
+            </span>
+           </td>
+           <td>
+            <span class="deleteproposed">
+             <xsl:value-of        select = "TermName"/>
+            </span>
+           </td>
+           <td>
+            <span class="deleteproposed">
+             <xsl:value-of        select = "DefinitionText"/>
+            </span>
+           </td>
+          </xsl:when>
+          <xsl:otherwise>
+           <td>
+            <span class="deleteapproved">
+             <xsl:value-of        select = "GlossaryTermRef/Deletion"/>
+            </span>
+           </td>
+           <td>
+            <span class="deleteapproved">
+             <xsl:value-of        select = "TermName"/>
+            </span>
+           </td>
+           <td>
+            <span class="deleteapproved">
+             <xsl:value-of        select = "DefinitionText"/>
+            </span>
+           </td>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:when>
+        <xsl:when             test = "GlossaryTermRef/Insertion">
+         <xsl:choose>
+          <xsl:when           test = "GlossaryTermRef/Insertion/
+                                         @RevisionLevel = 'proposed'">
+           <td>
+            <span class="insertproposed">
+             <xsl:value-of        select = "GlossaryTermRef/Insertion"/>
+            </span>
+           </td>
+           <td>
+            <span class="insertproposed">
+             <xsl:value-of        select = "TermName"/>
+            </span>
+           </td>
+           <td>
+            <span class="insertproposed">
+             <xsl:value-of        select = "DefinitionText"/>
+            </span>
+           </td>
+          </xsl:when>
+          <xsl:otherwise>
+           <td>
+            <span class="insertapproved">
+             <xsl:value-of        select = "GlossaryTermRef/Insertion"/>
+            </span>
+           </td>
+           <td>
+            <span class="insertapproved">
+             <xsl:value-of        select = "TermName"/>
+            </span>
+           </td>
+           <td>
+            <span class="insertapproved">
+             <xsl:value-of        select = "DefinitionText"/>
+            </span>
+           </td>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:when>
+        <xsl:otherwise>
+         <td>
+          <xsl:value-of        select = "GlossaryTermRef"/>
+         </td>
+         <td>
+          <xsl:value-of        select = "TermName"/>
+         </td>
+         <td>
+          <xsl:value-of        select = "DefinitionText"/>
+         </td>
+        </xsl:otherwise>
+       </xsl:choose>
      </tr>
     </xsl:for-each>
    </table>
@@ -84,57 +175,77 @@
   <xsl:if                     test = "$DisplayComments = 'Y'">
    <xsl:choose>
     <xsl:when                 test = "Deletion">
-     <strike>
-      <i>
-       <b>
+     <xsl:choose>
+      <xsl:when               test = "Deletion/@RevisionLevel = 'approved'">
+       <span class="comdeleteappr">
         <xsl:text> [Comment: </xsl:text>
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
-       </b>
-      </i>
-     </strike>
+       </span>
+      </xsl:when>   
+      <xsl:when                 test = "Deletion/@RevisionLevel = 'proposed'">
+       <span class="comdeleteprop">
+        <xsl:text> [Comment: </xsl:text>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <span class="commentnormal">
+        <xsl:text> [Comment: </xsl:text>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:otherwise>
+     </xsl:choose>
     </xsl:when>
+    <xsl:when                 test = "Insertion">
+     <xsl:choose>
+      <xsl:when               test = "Insertion/@RevisionLevel = 'approved'">
+       <span class="cominsertappr">
+        <xsl:text> [Comment: </xsl:text>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:when>   
+      <xsl:when                 test = "Insertion/@RevisionLevel = 'proposed'">
+       <span class="cominsertprop">
+        <xsl:text> [Comment: </xsl:text>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <span class="commentnormal">
+        <xsl:text> [Comment: </xsl:text>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:when>
+    <xsl:when                 test = "Deletion">
+      <xsl:if                   test = "Deletion/@RevisionLevel = 'proposed'">
+       <span class="comdeleteprop">
+        <xsl:text> [Comment: </xsl:text>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:if>
+    </xsl:when>
+
+
+
     <xsl:otherwise>
-     <i>
-      <b>
-       <xsl:choose>
-        <xsl:when     test = "Insertion">
-         <font color="red">
-          <xsl:text>[Comment: </xsl:text>
-          <xsl:apply-templates/>
-          <xsl:text>] </xsl:text>
-         </font>
-        </xsl:when>
-        <xsl:otherwise>
-         <xsl:text>[Comment: </xsl:text>
-         <xsl:apply-templates/>
-         <xsl:text>] </xsl:text>
-        </xsl:otherwise>
-       </xsl:choose>
-      </b>
-     </i>
+     <span class="commentnormal">
+      <xsl:text> [Comment: </xsl:text>
+      <xsl:apply-templates/>
+      <xsl:text>] </xsl:text>
+     </span>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:if>
  </xsl:template>
-
-
- <!-- 
- ================================================================
- Display Comments - Bold/UnderLine
- ================================================================ -->
- <!-- xsl:template               match = "Comment" 
-                              mode = "BU">
-  <xsl:if                     test = "$DisplayComments = 'Y'">
-   <i>
-    <b>
-     <xsl:text>[Comment: </xsl:text>
-     <xsl:apply-templates/>
-     <xsl:text>] </xsl:text>
-    </b>
-   </i>
-  </xsl:if>
- </xsl:template -->
 
 
  <!-- 
@@ -149,24 +260,103 @@
   <xsl:if                     test = "$DisplayComments = 'Y'">
    <xsl:choose>
     <xsl:when                 test = "Insertion">
-     <i>
-      <b>
-       <u>
-       <xsl:text>[Comment: </xsl:text>
+     <xsl:choose>
+      <xsl:when               test = "Insertion/@RevisionLevel = 'approved'">
+       <span class="cominsertappr">
+        <xsl:text> [Comment: </xsl:text>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:when>   
+      <xsl:when                 test = "Insertion/@RevisionLevel = 'proposed'">
+       <span class="cominsertprop">
+        <xsl:text> [Comment: </xsl:text>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <span class="commentnormal">
+        <xsl:text> [Comment: </xsl:text>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:when>
+    <xsl:when                 test = "Deletion">
+     <xsl:if                   test = "Deletion/@RevisionLevel = 'proposed'">
+      <span class="comdeleteprop">
+       <xsl:text> [Comment: </xsl:text>
        <xsl:apply-templates/>
        <xsl:text>] </xsl:text>
-       </u>
-      </b>
-     </i>
+      </span>
+     </xsl:if>
     </xsl:when>
     <xsl:otherwise>
-     <i>
-      <b>
-       <xsl:text>[Comment: </xsl:text>
+     <span class="commentnormal">
+      <xsl:text> [Comment: </xsl:text>
+      <xsl:apply-templates/>
+      <xsl:text>] </xsl:text>
+     </span>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ ================================================================
+ Display the Comment elements with markup if the checkbox
+ is checked.
+ The comments are being displayed without insertion/deletion
+ markup within insertion and are not displayed by default for 
+ the deletions.
+ ================================================================ -->
+ <xsl:template               match = "Comment"
+                              mode = "compactNo">
+  <xsl:if                     test = "$DisplayComments = 'Y'">
+   <xsl:choose>
+    <xsl:when                 test = "Insertion">
+     <xsl:choose>
+      <xsl:when               test = "Insertion/@RevisionLevel = 'approved'">
+       <span class="cominsertappr">
+        <xsl:text> [Comment: </xsl:text>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:when>   
+      <xsl:when                 test = "Insertion/@RevisionLevel = 'proposed'">
+       <span class="cominsertprop">
+        <xsl:text> [Comment: </xsl:text>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <span class="commentnormal">
+        <xsl:text> [Comment: </xsl:text>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:when>
+    <xsl:when                  test = "Deletion">
+     <xsl:if                   test = "Deletion/@RevisionLevel = 'proposed'">
+      <span class="comdeleteprop">
+       <xsl:text> [Comment: </xsl:text>
        <xsl:apply-templates/>
        <xsl:text>] </xsl:text>
-      </b>
-     </i>
+      </span>
+     </xsl:if>
+    </xsl:when>
+    <xsl:otherwise>
+     <span class="commentnormal">
+      <xsl:text> [Comment: </xsl:text>
+      <xsl:apply-templates/>
+      <xsl:text>] </xsl:text>
+     </span>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:if>
