@@ -1,9 +1,11 @@
 /*
- * $Id: xCdrCommand.cpp,v 1.1 2000-04-13 17:08:10 bkline Exp $
+ * $Id: xCdrCommand.cpp,v 1.2 2000-04-15 14:08:44 bkline Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/13 17:08:10  bkline
+ * Initial revision
  */
 
 #include "CdrCommand.h"
@@ -63,146 +65,148 @@ static cdr::String stub(const cdr::String name)
 }
 
 // Stubs.  Replace these as they are implemented.
+#if 0
 cdr::String cdr::logon(cdr::Session& session, 
                        const cdr::dom::Node& commandNode,
-                       cdr::DbConnection* dbConnection) {
+                       cdr::db::Connection& dbConnection) {
     return stub(L"Logon");
 }
+#endif
 
 cdr::String cdr::logoff(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"Logoff");
 }
 
 cdr::String cdr::checkAuth(cdr::Session& session, 
                            const cdr::dom::Node& commandNode,
-                           cdr::DbConnection* dbConnection) {
+                           cdr::db::Connection& dbConnection) {
     return stub(L"CheckAuth");
 }
 
 cdr::String cdr::addGrp(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"AddGrp");
 }
 
 cdr::String cdr::getGrp(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"GetGrp");
 }
 
 cdr::String cdr::modGrp(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"ModGrp");
 }
 
 cdr::String cdr::delGrp(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"DelGrp");
 }
 
 cdr::String cdr::listGrps(cdr::Session& session, 
                           const cdr::dom::Node& commandNode,
-                          cdr::DbConnection* dbConnection) {
+                          cdr::db::Connection& dbConnection) {
     return stub(L"ListGrps");
 }
 
 cdr::String cdr::addUsr(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"AddUsr");
 }
 
 cdr::String cdr::getUsr(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"GetUsr");
 }
 
 cdr::String cdr::modUsr(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"ModUsr");
 }
 
 cdr::String cdr::delUsr(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"DelUsr");
 }
 
 cdr::String cdr::listUsrs(cdr::Session& session, 
                           const cdr::dom::Node& commandNode,
-                          cdr::DbConnection* dbConnection) {
+                          cdr::db::Connection& dbConnection) {
     return stub(L"ListUsrs");
 }
 
 cdr::String cdr::addDoc(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"AddDoc");
 }
 
 cdr::String cdr::repDoc(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"RepDoc");
 }
 
 cdr::String cdr::delDoc(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"DelDoc");
 }
 
 cdr::String cdr::validateDoc(cdr::Session& session, 
                              const cdr::dom::Node& commandNode,
-                             cdr::DbConnection* dbConnection) {
+                             cdr::db::Connection& dbConnection) {
     return stub(L"ValidateDoc");
 }
 
 cdr::String cdr::search(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"Search");
 }
 
 cdr::String cdr::getDoc(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"GetDoc");
 }
 
 cdr::String cdr::checkOut(cdr::Session& session, 
                           const cdr::dom::Node& commandNode,
-                          cdr::DbConnection* dbConnection) {
+                          cdr::db::Connection& dbConnection) {
     return stub(L"CheckOut");
 }
 
 cdr::String cdr::checkIn(cdr::Session& session, 
                          const cdr::dom::Node& commandNode,
-                         cdr::DbConnection* dbConnection) {
+                         cdr::db::Connection& dbConnection) {
     return stub(L"CheckIn");
 }
 
 cdr::String cdr::report(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"Report");
 }
 
 cdr::String cdr::filter(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
-                        cdr::DbConnection* dbConnection) {
+                        cdr::db::Connection& dbConnection) {
     return stub(L"Filter");
 }
 
 cdr::String cdr::getLinks(cdr::Session& session, 
                           const cdr::dom::Node& commandNode,
-                          cdr::DbConnection* dbConnection) {
+                          cdr::db::Connection& dbConnection) {
     return stub(L"GetLinks");
 }
