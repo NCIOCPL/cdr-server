@@ -6,50 +6,335 @@
 <ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
-<xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                          version  = "1.0"
-                         xmlns:cdr = "cips.nci.nih.gov/cdr">
 
- <xsl:output                method = "xml" 
-              omit-xml-declaration = "no"/>
+<!-- Written by Volker Englisch, 2003-08-12 -->
+<!-- 
+ =====================================================================
+ Filter to format the summary citation data.
+ ===================================================================== -->
+<xsl:transform                xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                                version = "1.0"
+                              xmlns:cdr = "cips.nci.nih.gov/cdr">
 
-<!-- ====================================================================
-     This filter adds the same attribute assigned to the citation link at
-     the end of the summary section to the matching citation link in the 
-     the summary section text 
-     ==================================================================== -->   
+ <xsl:output                     method = "xml" 
+                   omit-xml-declaration = "no"/>
 
-<!-- ====================================================================
-     add refidx to CitationReference elements 
-     ==================================================================== -->
-<xsl:template                match = "CitationLink | ProtocolLink">
-  <xsl:variable               name = "ref">
-   <xsl:value-of            select = "@cdr:ref"/>
-  </xsl:variable>
+ <!-- 
+ =================================================================
+ Copy control information and generate current date
+ ================================================================= -->
+ <xsl:template                    match = "Summary">
   <xsl:copy>
-   <xsl:apply-templates     select = "@*"/>
-   <xsl:attribute             name = "refidx">
-    <xsl:value-of           select = "ancestor::SummarySection/
-                                      ReferenceList//
-                                      Reference[@cdr:ref=$ref]/@refidx"/>
-   </xsl:attribute>
 
    <xsl:apply-templates/>
+
   </xsl:copy>
-</xsl:template>
+ </xsl:template>
 
 
-<!-- ================================================================
-     Template rule used to do XML to XML transformations which
-     copies any attribute node, or node that is child of of something 
+ <!-- 
+ =================================================================
+ De-dup ReferenceList
+ Note:  References need to be displayed unique.
+        If a reference has been moved, display as regular ref.
+ ================================================================= -->
+ <xsl:template                    match = "ReferenceListX">
+  <xsl:copy>
+
+   <xsl:for-each                 select = "Citation">
+    <xsl:sort                    select = "@cdr:ref"/>
+    <xsl:variable                  name = "thisCitation" 
+                                 select = "@cdr:ref"/>
+    <xsl:variable                  name = "actionInsDel"
+                                 select = "@InsertionOrDeletion"/>
+    <!-- xsl:if                        test = "not(
+                                            boolean(preceding-sibling::
+                                                    Citation[@cdr:ref = 
+                                                             $thisCitation]))" -->
+     <xsl:apply-templates        select = "."/>
+    <!-- /xsl:if -->
+   </xsl:for-each>
+
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ De-dup ReferenceList
+ Note:  References need to be displayed unique.
+        If a reference has been moved, display as regular ref.
+ ================================================================= -->
+ <xsl:template                    match = "ReferenceList">
+  <xsl:copy>
+
+   <!--
+   Process all Citation within a Reference Section
+   =============================================== -->
+   <xsl:for-each                 select = "Citation">
+    <xsl:variable                  name = "thisCitation" 
+                                 select = "@cdr:ref"/>
+
+    <xsl:choose>
+    <xsl:when                      test = "preceding-sibling::
+                                                    Citation[@cdr:ref = 
+                                                             $thisCitation]
+                                           or
+                                           following-sibling::
+                                                    Citation[@cdr:ref = 
+                                                             $thisCitation]">
+     <!-- MoreThanOne/ -->  <!-- Only apply on first occurrence -->
+    <xsl:if                        test = "not(
+                                            boolean(preceding-sibling::
+                                                    Citation[@cdr:ref = 
+                                                             $thisCitation]))">
+     <!-- MoreThanOneAndFirst/ -->
+     <!-- xsl:apply-templates        select = "."/ -->
+
+     <!--
+     Process all Citations with the same cdr:ref ID regardless of the
+     InsertionOrDeletion attribute
      ================================================================ -->
-<xsl:template                match = "@*|node()">
- <xsl:copy>
-  <xsl:apply-templates      select = "@*"/>
-  <xsl:apply-templates/>
- </xsl:copy> 
-</xsl:template>
+     <!-- Start -->
+      <xsl:for-each              select = "../
+                                            Citation[@cdr:ref = $thisCitation]">
+       <xsl:choose>
+        <!-- 
+        Checking if one of the group of identical citations is listed
+        without markup.  The first one that we find will be displayed.
+        No matter how many inserted/deleted citations we find for this
+        reference, it will always be displayed without markup.
+        ============================================================== -->
+        <xsl:when                  test = "not(@InsertionOrDeletion)
+                                           and
+                                           not(preceding-sibling::Citation
+                                             [@cdr:ref = $thisCitation])">
+         <!-- FoundTheFirstExistingOne/ -->
+         <xsl:apply-templates    select = "."/>
+        </xsl:when>
+        <!--
+        We come here because the group of citations did not contain
+        a reference without markup.  We now have to deal with several
+        different combinations of markup.
+        ============================================================= -->
+        <xsl:otherwise>
+         <xsl:choose>
+          <xsl:when                test = "@InsertionOrDeletion = 'Deletion'
+                                           and 
+                                           not(preceding-sibling::Citation
+                                             [@cdr:ref = $thisCitation
+                                              and
+                                              @InsertionOrDeletion = 
+                                                 'Insertion'])
+                                           and
+                                           not(following-sibling::Citation
+                                             [@cdr:ref = $thisCitation
+                                              and
+                                              @InsertionOrDeletion = 
+                                                 'Insertion'])">
+           <!-- NoInsertionExists/ -->
+           <!--
+           Pick up the very first citation marked as a deletion of a group of
+           citations to be deleted provided no citation without markup
+           exists.
+           ============================================================== -->
+           <xsl:choose>
+            <xsl:when              test = "not(preceding-sibling::
+                                                Citation[
+                                                @cdr:ref = $thisCitation 
+                                                ])">
+             <!-- CitationDeleted_OtherDeletionsExist/ -->
+             <xsl:apply-templates   select = "."/>
+            </xsl:when>
+           </xsl:choose>
+          </xsl:when>
+          <!--
+          Pick up the first citation marked as a deletion of a group of
+          citations if one exists also as an insertion
+          This citation will have to be displayed without markup and is 
+          therefore displayed with the additional existing="Y" attribute
+          ============================================================== -->
+          <xsl:when                test = "@InsertionOrDeletion = 'Deletion'
+                                           and
+                                           not(preceding-sibling::
+                                                Citation[
+                                                @cdr:ref = $thisCitation 
+                                                and
+                                                @InsertionOrDeletion = 
+                                                                  'Deletion'])
+                                           and 
+                                           following-sibling::
+                                                Citation[
+                                                @cdr:ref = $thisCitation 
+                                                and
+                                                @InsertionOrDeletion = 
+                                                                  'Insertion']">
+           <!-- CitationMoved_DeletionThenInsertion/ -->
+           <xsl:call-template      name = "existingCitation"/>
+          </xsl:when>
+          <!--
+          Pick up the first citation marked as an insertion of a group of
+          citations if one exists also as a deletion
+          This citation will have to be displayed without markup and is 
+          therefore displayed with the additional existing="Y" attribute
+          ============================================================== -->
+          <xsl:when                test = "@InsertionOrDeletion = 'Insertion'
+                                           and
+                                           not(preceding-sibling::
+                                                Citation[
+                                                @cdr:ref = $thisCitation 
+                                                and
+                                                @InsertionOrDeletion = 
+                                                                  'Insertion'])
+                                           and 
+                                           following-sibling::
+                                                Citation[
+                                                @cdr:ref = $thisCitation 
+                                                and
+                                                @InsertionOrDeletion = 
+                                                                  'Deletion']">
+           <!-- CitationMoved_InsertionThenDeletion/ -->
+           <xsl:call-template      name = "existingCitation"/>
+          </xsl:when>
+          <!-- 
+          The last combination of markup is a group of citations that
+          has only insertion markup.  We're displaying the first one only
+          =============================================================== -->
+          <!--
+          Pick up the very first insertion marked as a insertion of a 
+          group of citations to be inserted
+          ============================================================== -->
+          <xsl:when              test = "@InsertionOrDeletion = 'Insertion'
+                                           and
+                                           not(preceding-sibling::
+                                                Citation[
+                                                @cdr:ref = $thisCitation])
+                                           and
+                                           not(following-sibling::
+                                                Citation[
+                                                @cdr:ref = $thisCitation 
+                                                and
+                                                @InsertionOrDeletion = 
+                                                                  'Deletion'])">
+           <!-- CitationInserted_OtherInsertionsExist/ -->
+           <xsl:apply-templates   select = "."/>
+          </xsl:when>
+          <!-- xsl:otherwise -->
 
-</xsl:transform>]]>
+           <!--
+           Pick up the very first citation marked as a deletion of a group of
+           citations to be deleted
+           ============================================================== -->
+<!--
+            <xsl:if                test = "not(preceding-sibling::
+                                                Citation[
+                                                @cdr:ref = $thisCitation 
+                                                and
+                                                @InsertionOrDeletion = 
+                                                                 'Insertion'])">
+-->
+             <!-- CitationInserted_OtherInsertionsExist/ -->
+             <!--xsl:apply-templates   select = "."/>
+            </xsl:if>
+          </xsl:otherwise -->
+         </xsl:choose>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:for-each>
+     <!-- /Start -->
+    </xsl:if>    <!-- Only apply on first occurrence -->
+    </xsl:when>
+
+     <!-- 
+     The citation has been identified as being unique.  
+     Display as is including insertion/deletion markup
+     ================================================= -->
+     <xsl:otherwise>
+      <!-- UniqueCitation/ -->
+      <xsl:apply-templates        select = "."/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:for-each>
+
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ De-dup ReferenceList
+ Note:  References need to be displayed unique.
+        If a reference has been moved, display as regular ref.
+ ================================================================= -->
+ <xsl:template                    match = "ReferenceList_save">
+  <xsl:copy>
+
+   <xsl:for-each                 select = "Citation">
+    <xsl:variable                  name = "thisCitation" 
+                                 select = "@cdr:ref"/>
+    <xsl:variable                  name = "actionInsDel"
+                                 select = "@InsertionOrDeletion"/>
+    <xsl:value-of                select = "count(../Citation[@cdr:ref = 
+                                                             $thisCitation])"/>X
+    <xsl:if                        test = "not(
+                                            boolean(preceding-sibling::
+                                                    Citation[@cdr:ref = 
+                                                             $thisCitation]))">
+     <xsl:apply-templates        select = "."/>
+    </xsl:if>
+   </xsl:for-each>
+
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!-- *
+ ==============================================================
+ Template Published Results section
+ ============================================================== -->
+ <xsl:template                   name = "existingCitation">
+  <Citation>
+   <xsl:for-each               select = "@*">
+    <xsl:attribute               name = "{name()}">
+     <xsl:value-of             select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+   <xsl:attribute                name = "existing">
+    <xsl:text>Y</xsl:text>
+   </xsl:attribute>
+   <xsl:apply-templates/>
+  </Citation>
+ </xsl:template>
+
+
+ <!-- *
+ ==============================================================
+ Template Published Results section
+ ============================================================== -->
+ <xsl:template                  match = "ReferenceList/Citation">
+  <xsl:copy>
+   <xsl:for-each               select = "@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+   <xsl:apply-templates/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Template rule used to do XML to XML transformations which
+ copies any attribute node, or node that is child of of something 
+ ================================================================== -->
+ <xsl:template                    match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates          select = "@*|node()"/>
+  </xsl:copy> 
+ </xsl:template>
+
+</xsl:transform>
+]]>
 </CdrDocXml>
 </CdrDoc>
