@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.cpp,v 1.9 2004-03-23 16:26:47 bkline Exp $
+ * $Id: CdrDom.cpp,v 1.10 2005-03-04 02:51:12 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2004/03/23 16:26:47  bkline
+ * Upgraded to version 5.4.0 of xml4c (but still using deprecated APIs).
+ *
  * Revision 1.8  2002/11/21 21:01:13  bkline
  * Fixed serializing code in insertion operator (replacing special
  * characters with entities).
@@ -32,12 +35,58 @@
 #include <iostream> // XXX Substitute logging when in place.
 #include "CdrDom.h"
 #include "CdrException.h"
-#include <xercesc/framework/MemBufInputSource.hpp>
+#include <xercesc/framework/MemBufInputSource.hpp> // XXX Do we still need this?
 #include <xercesc/sax/SAXParseException.hpp>
+#include <xercesc/sax/ErrorHandler.hpp>
+
+            /**
+             * Max number of Xerces Parsers that we allocate.
+             */
+            static const int MAX_PARSERS = 20;
+
+            /**
+             * Array of pointers to Xerces parsers.
+             *
+             * We keep all of them around for the execution of
+             * one transaction in order to be sure that we have
+             * finished using any DOM trees created by any of them
+             * before deleting the parsers - which also deletes all
+             * Node memory in the DOM tree created by that parser.
+             *
+             * An array is used rather than a vector because an std::vector
+             * uses a constructor, which is not allowed with thread
+             * memory.
+             *
+             * If our guess on the max is too low, something is
+             * seriously wrong with our conception of what happens in
+             * one transaction.
+             */
+            static __declspec(thread) int guard1 = 0;
+            static __declspec(thread)
+                   XERCES_CPP_NAMESPACE::XercesDOMParser
+                   *allThreadParsers[MAX_PARSERS];
+
+            /**
+             * Error handlers associated with the above DOM parsers.
+             */
+            static __declspec(thread) int guard2 = 0;
+            static __declspec(thread)
+                   XERCES_CPP_NAMESPACE::ErrorHandler
+                   *allErrorHandlers[MAX_PARSERS];
+
+            /**
+             * Index of next free parser pointer in allThreadParsers.
+             */
+            static __declspec(thread) int guard3 = 0;
+            static __declspec(thread) int nextThreadParser = 0;
+            static __declspec(thread) int guard4 = 0;
+
+            // For debug - how many parsers were created but not saved
+            static __declspec(thread) int countNonSavedParsers = 0;
 
 namespace cdr {
     namespace dom {
-        class ErrorHandler : public xml4c::ErrorHandler {
+        class ErrorHandler : public XERCES_CPP_NAMESPACE::ErrorHandler {
         public:
             void warning(const SAXParseException& e) {
                 // Substitute logging when in place.
@@ -62,18 +111,102 @@ namespace cdr {
     }
 }
 
+cdr::dom::Node cdr::dom::NamedNodeMap::getNamedItem(cdr::String name) {
+    return pNodeMap ?
+        cdr::dom::Node(pNodeMap->getNamedItem((const XMLCh*)name.c_str())) :
+        cdr::dom::Node();
+}
+
+cdr::dom::Node cdr::dom::NamedNodeMap::item(int index) {
+    return pNodeMap ? cdr::dom::Node(pNodeMap->item(index)) :
+                      cdr::dom::Node();
+}
+
+// This is needed, but why?  What's going on here
 bool cdr::dom::Parser::initialized = cdr::dom::Parser::doInit();
 
-cdr::dom::Parser::Parser() : errorHandler(0)
+cdr::dom::Parser::Parser(bool saveMem) : errorHandler(0)
 {
+    // If we would exceed the max allowable open parsers
+    if (nextThreadParser == MAX_PARSERS) {
+        domLog("Exceeded max thread parsers - fatal error (!)");
+        throw cdr::Exception(L"Exceeded max thread parsers");
+    }
+
+    // Create and initialize a new parser
     errorHandler = new cdr::dom::ErrorHandler();
-    setErrorHandler(errorHandler);
+    pXparser = new XERCES_CPP_NAMESPACE::XercesDOMParser();
+    pXparser->setErrorHandler(errorHandler);
+
+    // Tells whether to save these pointers in thread static memory
+    //  that survives our destructor or not
+    savingMem = saveMem;
+    if (savingMem) {
+        // Save pointer to real parser until we know any generated DOM
+        //   tree is no longer needed
+        allThreadParsers[nextThreadParser] = pXparser;
+        allErrorHandlers[nextThreadParser] = errorHandler;
+        ++nextThreadParser;
+    }
 }
 
 cdr::dom::Parser::~Parser()
 {
-    delete errorHandler;
-    errorHandler = 0;
+    // If not saving data beyond the scope of the parse, delete it here
+    if (!savingMem) {
+        delete errorHandler;
+        errorHandler = 0;
+        delete pXparser;
+        pXparser = 0;
+    }
+}
+
+void cdr::dom::Parser::deleteAllThreadParsers()
+{
+// DEBUG
+char msg[80];
+sprintf(msg, "Deleting %d thread parsers, unsaved=%d", nextThreadParser,
+countNonSavedParsers);
+domLog(msg);
+int errorHandlerErrs = 0;
+int threadParserErrs = 0;
+if (guard1 !=0) domLog ("Start guard1 violation (!)");
+if (guard2 !=0) domLog ("Start guard2 violation (!)");
+if (guard3 !=0) domLog ("Start guard3 violation (!)");
+if (guard4 !=0) domLog ("Start guard4 violation (!)");
+
+    // Delete zero or more parser objects
+    while (nextThreadParser > 0) {
+        --nextThreadParser;
+
+        // Sanity checks first
+        if (!allErrorHandlers[nextThreadParser]) {
+domLog("Null error handler in deleteAllThreadParsers (!)");
+            ++errorHandlerErrs;
+}
+        else {
+            delete allErrorHandlers[nextThreadParser];
+            allErrorHandlers[nextThreadParser] = 0;
+        }
+
+        if (!allThreadParsers[nextThreadParser]) {
+domLog("Null threadParser in deleteAllThreadParsers (!)");
+            ++threadParserErrs;
+}
+        else {
+            delete allThreadParsers[nextThreadParser];
+            allThreadParsers[nextThreadParser] = 0;
+        }
+    }
+if (guard1 !=0) domLog ("End guard1 violation (!)");
+if (guard2 !=0) domLog ("End guard2 violation (!)");
+if (guard3 !=0) domLog ("End guard3 violation (!)");
+if (guard4 !=0) domLog ("End guard4 violation (!)");
+domLog("Finished deleting all thread parsers");
+if (errorHandlerErrs + threadParserErrs != 0) {
+sprintf(msg, "errorHandlerErrs=%d, threadParserErrs=%d", errorHandlerErrs, threadParserErrs);
+domLog(msg);
+}
 }
 
 /**
@@ -84,24 +217,25 @@ void cdr::dom::Parser::parse(const std::string& xml)
     throw(cdr::dom::DOMException)
 {
     // Used to track down a bug in xml4c RMK 2000-09-07
-    //std::cerr << "XML=[" << xml << "]" << std::endl;
-    xml4c::MemBufInputSource s((const XMLByte* const)xml.c_str(),
-                               xml.size(), "MEM");
-    ((xml4c::DOMParser*)this)->parse(s);
+    XERCES_CPP_NAMESPACE::MemBufInputSource s(
+            (const XMLByte* const)xml.c_str(), xml.size(), "MEM");
+    pXparser->parse(s);
 }
 
-void cdr::dom::Parser::parse(const cdr::String& xml)
-    throw(cdr::dom::DOMException)
-{
-    parse(xml.toUtf8());
-}
-
-void cdr::dom::Parser::parseFile(const char* fileName)
-    throw(cdr::dom::DOMException)
-{
-    ((xml4c::DOMParser*)this)->parse(fileName);
-}
-
+/**
+ * Obsolete version of getTextContent, left in for reference.
+ *
+ * This old version only gets text content from immediate children
+ * of an element.  The new version gets content from the entire
+ * tree beneath an element.
+ *
+ * The Xerces 2.60 version is a Node method.  Our version was an
+ * external function.  We have therefore wrapped the new Xerces
+ * Node method in an external function of the same name to maintain
+ * compatibility with this old version - for which there were 140+
+ * uses.
+ */
+/*
 cdr::String cdr::dom::getTextContent(const cdr::dom::Node& node)
 {
     cdr::String str;
@@ -113,6 +247,60 @@ cdr::String cdr::dom::getTextContent(const cdr::dom::Node& node)
     }
     return str;
 }
+*/
+
+cdr::dom::Element::Element(const cdr::dom::Document& doc) {
+    pNode = (XERCES_CPP_NAMESPACE::DOMElement *)(doc.getDocPtr());
+}
+
+cdr::dom::Node::Node(cdr::dom::Element& elem) {
+    pNode = static_cast<XERCES_CPP_NAMESPACE::DOMNode *>
+        (elem.getNodePtr());
+}
+
+cdr::String cdr::dom::Node::getNodeValue() const
+{
+    // return (cdr::String(pNode->getNodeValue()));
+    if (pNode->getNodeValue() == NULL) {
+        return cdr::String(false);
+    }
+    cdr::String val = cdr::String(pNode->getNodeValue());
+
+    return (cdr::String(pNode->getNodeValue()));
+}
+
+cdr::String cdr::dom::getTextContent(const cdr::dom::Node& node) {
+    return node.getTextContent();
+}
+
+cdr::String cdr::dom::getTextContent(const cdr::dom::Element& elem) {
+    return elem.getTextContent();
+}
+
+bool cdr::dom::hasText(const Element& elem, const bool excludeWhiteSpace)
+{
+    cdr::dom::Node node = elem.getFirstChild();
+    while (node != NULL) {
+        if (node.getNodeType() == cdr::dom::Node::TEXT_NODE) {
+            if (excludeWhiteSpace) {
+                cdr::String val = node.getNodeValue();
+                if (val.find_first_not_of(L" \t\r\n") != val.npos)
+                    // Text node is not just white space
+                    return true;
+            }
+            else
+                // Text node exists and we don't care if it's whitespace
+                return true;
+        }
+
+        // Get the next child of the element
+        node = node.getNextSibling();
+    }
+
+    // Didn't find any text nodes, or any with non-whitespace
+    return false;
+}
+
 
 std::wostream& operator<<(std::wostream& os, const cdr::dom::Node& node)
 {
@@ -193,4 +381,27 @@ std::wostream& operator<<(std::wostream& os, const cdr::dom::Node& node)
         }
     }
     return os;
+}
+
+#include <stdio.h>
+#include <stdlib.h>
+
+// Log messages, no action if fails
+static FILE *fp = 0;
+void domLog(const char *msg1) {
+    if (!fp)
+        fp = fopen("d:\\cdr\\Log\\DomLog", "a");
+    if (fp) {
+        fprintf (fp, "=(%d) %s\n", GetCurrentThreadId(), msg1);
+        fflush(fp);
+    }
+}
+void domLog(const char *msg1, const cdr::String& msg2) {
+    if (!fp)
+        fp = fopen("d:\\cdr\\Log\\DomLog", "a");
+    if (fp) {
+        fprintf (fp, "=(%d) %s \"%s\"\n", GetCurrentThreadId(),
+                 msg1, msg2.toUtf8().c_str());
+        fflush(fp);
+    }
 }
