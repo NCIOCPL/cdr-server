@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbPreparedStatement.cpp,v 1.4 2001-01-17 21:50:10 bkline Exp $
+ * $Id: CdrDbPreparedStatement.cpp,v 1.5 2002-05-01 00:51:14 bkline Exp $
  *
  * Implementation of class for prepared CDR SQL queries.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2001/01/17 21:50:10  bkline
+ * Added executeUpdate() method.
+ *
  * Revision 1.3  2000/10/23 14:09:31  mruben
  * added setBytes
  *
@@ -63,7 +66,7 @@ void cdr::db::PreparedStatement::close()
 void cdr::db::PreparedStatement::clearParameters()
 {
     //std::cerr << "PreparedStatement::clearParameters()\n";
-    for (int i = 0; i < paramVector.size(); ++i) {
+    for (size_t i = 0; i < paramVector.size(); ++i) {
         Parameter* p = paramVector[i];
         delete [] p->value;
         delete p;
@@ -78,7 +81,7 @@ void cdr::db::PreparedStatement::clearParameters()
 cdr::db::ResultSet cdr::db::PreparedStatement::executeQuery()
 {
     SQLRETURN rc;
-    for (int i = 0; i < paramVector.size(); ++i) {
+    for (size_t i = 0; i < paramVector.size(); ++i) {
         Parameter* p = paramVector[i];
         rc = SQLBindParameter(hstmt, p->position, SQL_PARAM_INPUT, 
                                      p->cType, p->sType, 
@@ -100,7 +103,7 @@ cdr::db::ResultSet cdr::db::PreparedStatement::executeQuery()
 int cdr::db::PreparedStatement::executeUpdate()
 {
     SQLRETURN rc;
-    for (int i = 0; i < paramVector.size(); ++i) {
+    for (size_t i = 0; i < paramVector.size(); ++i) {
         Parameter* p = paramVector[i];
         rc = SQLBindParameter(hstmt, p->position, SQL_PARAM_INPUT, 
                                      p->cType, p->sType, 
