@@ -1,9 +1,14 @@
 /*
- * $Id: CdrServer.cpp,v 1.42 2005-03-04 02:57:23 ameyer Exp $
+ * $Id: CdrServer.cpp,v 1.43 2005-03-29 15:29:56 ameyer Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.42  2005/03/04 02:57:23  ameyer
+ * Converted to new DOM parser that requires that parser for command
+ * stay in scope until we are done with DOM tree created for the command.
+ * Also retaining some logging here that may eventually be discarded.
+ *
  * Revision 1.41  2004/04/30 01:31:17  ameyer
  * Added call to cdr::buildFilterString2IdMap() to initialize filter profiling.
  *
@@ -670,10 +675,7 @@ cdr::String processCommand(cdr::Session& session,
             // Log info about the command
             cdr::String cmdText = L"Cmd: " + cmdName + L"  User: "
                                 + session.getUserName();
-
             cdr::log::pThreadLog->Write (L"processCommand", cmdText);
-// DEBUG
-domLog("Processing ", cmdText);
 
             cdr::Command cdrCommand = cdr::lookupCommand(cmdName);
             if (!cdrCommand) {
