@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.7 2000-10-30 17:41:47 mruben Exp $
+ * $Id: CdrDoc.cpp,v 1.8 2000-12-13 01:49:51 ameyer Exp $
  *
  */
 
@@ -519,13 +519,15 @@ cdr::String cdr::delDoc (
 ) {
     cdr::String cmdValidate,    // Validate flag from command
                 cmdReason,      // Reason to associate with new version
-                docIdStr;       // Doc id in string form
+                cmdCheckIn,     // Check-in command, Y or N, if present
+                docIdStr,       // Doc id in string form
+                docTypeStr;     // Doc type in string form
     int         docId,          // Doc id as unadorned integer
                 docType,        // Document type
                 userId,         // User invoking this command
                 outUserId,      // User with the doc checked out, if it is
                 errCount;       // Number of link releated errors
-    bool        checkedOut,     // True=doc checked out by someone
+    bool        abandon,        // True=checkin not requested, abandon checkout
                 autoCommitted;  // True=Not inside SQL transaction at start
     cdr::dom::Node topNode,     // Top level node in command
                    child,       // Child node in command
@@ -553,6 +555,9 @@ cdr::String cdr::delDoc (
             else if (name == L"Validate")
                 cmdValidate = cdr::dom::getTextContent (topNode);
 
+            else if (name == L"CheckIn")
+                cmdCheckIn = cdr::dom::getTextContent (topNode);
+
             else if (name == L"Reason")
                 cmdReason = cdr::dom::getTextContent (topNode);
 
@@ -565,20 +570,27 @@ cdr::String cdr::delDoc (
     }
 
     // Get document type, need it to check user authorization
-    std::string tQry = "SELECT doc_type FROM document WHERE id = ?";
+    std::string tQry = "SELECT t.id, t.name "
+                       "  FROM document d "
+                       "  JOIN doc_type t "
+                       "    ON d.doc_type = t.id "
+                       " WHERE d.id = ?";
     cdr::db::PreparedStatement tSel = conn.prepareStatement (tQry);
     tSel.setInt (1, docId);
     cdr::db::ResultSet tRs = tSel.executeQuery();
     if (!tRs.next())
         throw cdr::Exception (L"delDoc: Unable to find document " + docIdStr);
-    docType = tRs.getInt (1);
+    docType    = tRs.getInt (1);
+    docTypeStr = tRs.getString (2);
 
     // Is user authorized to do this?
-    cdr::String foo = L"DELETE DOCUMENT";
-    // if (!session.canDo (conn, L"DELETE DOCUMENT", docType))
-    if (!session.canDo (conn, foo, docType))
+    if (!session.canDo (conn, L"DELETE DOCUMENT", docTypeStr))
         throw cdr::Exception (L"delDoc: User not authorized to delete docs "
                               L"of this type");
+
+    // If no reason given, supply a default
+    if (cmdReason.length() == 0)
+        cmdReason = L"Document deleted.  No reason recorded.";
 
     // From now on, do everything or nothing
     // setAutoCommit() checks state first, so it won't end an existing
@@ -587,14 +599,21 @@ cdr::String cdr::delDoc (
     conn.setAutoCommit(false);
 
     // Has anyone got this document checked out?
-    checkedOut = false;
+    // If not, that's okay.  We don't require a check-out in order to
+    //   delete a document - as long as no one else has it checked out.
     userId = session.getUserId();
     if (isCheckedOut(docId, conn, &outUserId)) {
         if (outUserId != userId)
             throw cdr::Exception (L"Document " + docIdStr + L" is checked out"
                                   L" by another user");
-        checkedOut = true;
+
+        // If it's checked out and check in was requested, we'll check it in
+        // Otherwise we abandon any checkout
+        abandon = (cmdCheckIn == L"Y" || cmdCheckIn == L"y") ? false : true;
+        checkIn (session, docId, conn, &cmdReason, abandon, false);
     }
+    else if (cmdCheckIn == L"Y" || cmdCheckIn == L"y")
+        throw cdr::Exception (L"Must check-out document before check-in");
 
     // Update the link net to delete links from this document
     // If validation was requested, we tell CdrDelLinks to abort if
@@ -613,8 +632,13 @@ cdr::String cdr::delDoc (
         qSel.setInt (1, docId);
         cdr::db::ResultSet tRs = qSel.executeQuery();
 
-        // And the document itself
-        std::string dQry = "DELETE document WHERE id = ?";
+        // The document itself is not removed from the database, it
+        //   is simply marked as deleted
+        // Note that if document is already deleted, we silently do
+        //   nothing
+        std::string dQry = "UPDATE document "
+                           "   SET active_status = 'D' "
+                           " WHERE id = ?";
         cdr::db::PreparedStatement dSel = conn.prepareStatement (dQry);
         dSel.setInt (1, docId);
         cdr::db::ResultSet dRs = dSel.executeQuery();
