@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.59 2002-07-03 13:06:43 bkline Exp $
+ * $Id: tables.sql,v 1.60 2002-07-05 15:05:33 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.59  2002/07/03 13:06:43  bkline
+ * Added primary_pub_job view; adjusted formatting.
+ *
  * Revision 1.58  2002/07/03 12:16:38  bkline
  * Added new views for reports.
  *
@@ -1460,3 +1463,11 @@ AS
      WHERE document.title = 'Primary'
        AND pub_proc.status = 'Success'
        AND pub_proc.completed IS NOT NULL
+
+CREATE VIEW primary_pub_doc
+AS
+    SELECT pub_proc_doc.*, primary_pub_job.completed
+      FROM pub_proc_doc
+      JOIN primary_pub_job
+        ON pub_proc_doc.pub_proc = primary_pub_job.id
+

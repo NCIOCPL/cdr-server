@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.6 2002-07-03 12:16:38 bkline Exp $
+ * $Id: CreateLogins.sql,v 1.7 2002-07-05 15:05:33 bkline Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2002/07/03 12:16:38  bkline
+ * Added new views for reports.
+ *
  * Revision 1.5  2002/06/07 20:06:35  bkline
  * New stored procedure to support the Person QC report.
  *
@@ -312,4 +315,8 @@ GO
 GRANT SELECT ON doc_info TO CdrGuest
 GO
 GRANT SELECT ON docs_with_pub_status TO CdrGuest
+GO
+GRANT SELECT ON primary_pub_job TO CdrGuest
+GO
+GRANT SELECT ON primary_pub_doc TO CdrGuest
 GO
