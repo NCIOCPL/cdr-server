@@ -1,10 +1,13 @@
 /*
- * $Id: CdrLink.h,v 1.8 2002-08-14 01:36:51 ameyer Exp $
+ * $Id: CdrLink.h,v 1.9 2002-08-29 21:53:07 ameyer Exp $
  *
  * Header for Link Module software - to maintain the link_net
  * table describing the link relationships among CDR documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2002/08/14 01:36:51  ameyer
+ * Added constants for max sizes in link references.
+ *
  * Revision 1.7  2002/05/08 20:30:26  pzhang
  * Added getSearchLinksResp and getSearchLinksRespWithProp.
  *
@@ -60,6 +63,17 @@ namespace cdr {
      */
     const int MAX_FRAG_SIZE = 32;
     const int MAX_URL_SIZE  = 256;
+
+    /**
+     * Values used in a CdrLink object when we have no values
+     * provided in the cdr:ref, cdr:href or cdr:xref.
+     *
+     * These values are only used in memory.  The database uses
+     * NULL for these values.
+     */
+    const int         NO_DOC_ID   = 0;
+    const cdr::String NO_FRAGMENT = L"";
+    const cdr::String NO_REF_TEXT = L"";
 
     /**
      * Possible linking styles
