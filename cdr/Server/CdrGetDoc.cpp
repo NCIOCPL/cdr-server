@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.31 2004-11-05 05:55:26 ameyer Exp $
+ * $Id: CdrGetDoc.cpp,v 1.32 2004-11-10 03:18:20 ameyer Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2004/11/05 05:55:26  ameyer
+ * Can now retrieve xml, blob, or both.
+ *
  * Revision 1.30  2002/10/17 17:37:01  bkline
  * Added ReadyForReview to CdrDocCtl.
  *
@@ -311,7 +314,7 @@ cdr::String cdr::getDocString(
         cdrDoc += usecdata ? makeDocXml (xml) : xml;
     }
 
-    if (getBlob && !docVer->data.isNull())
+    if (getBlob && !docVer->blob_id.isNull())
         cdrDoc += makeDocBlob (docVer->data);
 
     // Terminate and return the string to the caller.
