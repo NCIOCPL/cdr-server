@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.86 2003-10-23 14:32:33 bkline Exp $
+ * $Id: tables.sql,v 1.87 2003-10-29 16:32:32 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.86  2003/10/23 14:32:33  bkline
+ * Added tables to support import of documents from ClinicalTrials.gov.
+ *
  * Revision 1.85  2003/09/29 17:26:23  bkline
  * Renamed catgory column of external_map_usage table to id.
  *
@@ -1784,9 +1787,9 @@ GO
  */
 CREATE TABLE ctgov_import
      (nlm_id VARCHAR(16)   NOT NULL PRIMARY KEY,
-       title NVARCHAR(255) NOT NULL,
-         xml NTEXT         NOT NULL,
-  downloaded DATETIME      NOT NULL,
+       title NVARCHAR(255)     NULL,
+         xml NTEXT             NULL,
+  downloaded DATETIME          NULL,
  disposition INTEGER       NOT NULL REFERENCES ctgov_disposition,
           dt DATETIME      NOT NULL,
     verified DATETIME          NULL,
