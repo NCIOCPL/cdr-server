@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.48 2002-01-31 13:19:31 bkline Exp $
+# $Id: Makefile,v 1.49 2002-01-31 16:42:22 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.48  2002/01/31 13:19:31  bkline
+# Added definition for DRV macro.
+#
 # Revision 1.47  2002/01/29 23:55:49  bkline
 # Made bison rules more portable.
 #
@@ -273,16 +276,16 @@ LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
 # Targets
 #--------------------------------------------------------------------------
 all: cvsupdate
-	$(MAKE) _all
+	$(MAKE) DRV=$(DRV) _all
 
 cvsupdate:
 	$(CVSUPD)
 
 service: cvsupdate
-	$(MAKE) $(SERVICE)
+	$(MAKE) DRV=$(DRV) $(SERVICE)
 
 install: cvsupdate
-	$(MAKE) _install
+	$(MAKE) DRV=$(DRV) _install
 
 _all: init CdrServer.exe CdrTestClient.exe #CdrDocs $(SERVICE)
 
