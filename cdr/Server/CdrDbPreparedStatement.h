@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbPreparedStatement.h,v 1.2 2000-05-03 22:04:43 bkline Exp $
+ * $Id: CdrDbPreparedStatement.h,v 1.3 2000-10-05 18:16:31 mruben Exp $
  *
  * Specialized Statement class for handling parameterized queries.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/05/03 22:04:43  bkline
+ * More ccdoc comments.
+ *
  * Revision 1.1  2000/05/03 15:38:34  bkline
  * Initial revision
  *
@@ -13,6 +16,7 @@
 #define CDR_DB_PREPARED_STATEMENT_
 
 #include "CdrDbStatement.h"
+#include "CdrBlob.h"
 
 /**@#-*/
 
@@ -76,6 +80,16 @@ namespace cdr {
              */
             void        setInt(int pos, const cdr::Int& val);
 
+            /**
+             * Registers a Blob parameter for a query.  Uses
+             * the cdr::Blob class, which can represent a NULL value.
+             *
+             *  @param  pos     position of the parameter in the query
+             *                  string.
+             *  @param  val     value to be plugged into the query.
+             */
+            void        setBytes(int pos, const cdr::Blob& val);
+            
             /**
              * Closes any open cursors associated with the query,
              * making it available for re-use.  Also clears parameter list.
@@ -155,7 +169,8 @@ namespace cdr {
 
                 /**
                  * Set to SQL_NTS (SQL Null-Terminated String) for string
-                 * parameters.  Set to 0 (and ignored) for numeric types.
+                 * parameters.  Set to length of binary paramenters.
+                 * Set to 0 (and ignored) for numeric types.
                  */
                 SDWORD  cb;
             };
