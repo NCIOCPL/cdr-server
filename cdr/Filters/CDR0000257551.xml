@@ -105,28 +105,31 @@
                                          ../../../LeadOrganizationID/@cdr:ref, 
                                                                   '#'),'#')"/>
 
-<!-- Change the status for the specified Organization
-     if no LeadOrgId is provided (default)
-     and the organization IDs match
-     ================================================ -->
+  <!-- 
+  Change the status for the specified Organization
+  if no LeadOrgId is provided (default)
+  and the organization IDs match
+  ================================================ -->
   <xsl:choose>
    <xsl:when                     test = "$leadOrgId">
 
-<!-- Both optional parameters - leadOrgId and personId are provided
+     <!-- 
+     Both optional parameters - leadOrgId and personId are provided
      If the person is NOT the only SpecificContact for this site
      terminate the update with an error message.
      ============================================================== -->
      <xsl:choose>
       <xsl:when                  test = "$leadOrgId = $thisLeadOrgId">
 
-       <!-- personId is provided and leadOrgId is provided
-            a) terminate update if an organization status should be changed
-               for which more then one SpecificPerson exists and the orgId
-               matches.
-            b) perform update if exactly one SpecificPerson exists and the 
-               ordId matches.
-            c) Copy as is if personId and orgId don't match.
-            =============================================================== -->
+       <!-- 
+       personId is provided and leadOrgId is provided
+       a) terminate update if an organization status should be changed
+          for which more then one SpecificPerson exists and the orgId
+          matches.
+       b) perform update if exactly one SpecificPerson exists and the 
+          ordId matches.
+       c) Copy as is if personId and orgId don't match.
+       =============================================================== -->
        <xsl:choose>
         <xsl:when                test = "$personId">
          <xsl:for-each         select = "../OrgSiteContact/
@@ -152,7 +155,6 @@
              <xsl:value-of     select = "$newStatus"/>
             </OrgSiteStatus>
            </xsl:when>
-
            <xsl:otherwise>
             <!-- The program should never come to this default section -->
             <xsl:text>DO NOTHING -- Notify Programming Staff</xsl:text>
@@ -161,7 +163,6 @@
                                          processing-instruction()|text()"/>
             </xsl:copy>
            </xsl:otherwise>
-
           </xsl:choose>
          </xsl:for-each>
         </xsl:when>
@@ -174,12 +175,18 @@
           <xsl:value-of        select = "$newStatus"/>
          </OrgSiteStatus>
         </xsl:when>
+        <xsl:otherwise>
+         <xsl:copy>
+          <xsl:apply-templates select = "@*|comment()|*|
+                                         processing-instruction()|text()"/>
+         </xsl:copy>
+        </xsl:otherwise>
        </xsl:choose>
       </xsl:when>
-
+      <!-- 
+      Copy input to output as is - No changes necessary        
+      ========================================================= -->
       <xsl:otherwise>  <!-- "$leadOrgId NOT $thisLeadOrgId" -->
-     <!-- Copy input to output as is - No changes necessary        
-          ========================================================= -->
        <xsl:copy>
         <xsl:apply-templates   select = "@*|comment()|*|
                                          processing-instruction()|text()"/>
@@ -187,19 +194,20 @@
       </xsl:otherwise>
      </xsl:choose>
    </xsl:when>
-
-<!-- ========================================================
-     THE DEFAULT - leadOrgId is empty
-     Only the parameters orgId, newStatus, oldStatus are 
-     prvided and all orgId occurences for all LeadOrgs are 
-     updated.
-     Note:  personId is not tested if leadOrgId is empty.  
-            The filter behaves as if both leadOrgId and personId
-            were empty.
-     ======================================================== -->
+   <!-- 
+   ========================================================
+   THE DEFAULT - leadOrgId is empty
+   Only the parameters orgId, newStatus, oldStatus are 
+   prvided and all orgId occurences for all LeadOrgs are 
+   updated.
+   Note:  personId is not tested if leadOrgId is empty.  
+          The filter behaves as if both leadOrgId and personId
+          were empty.
+   ======================================================== -->
    <xsl:otherwise>
-    <!-- organizationIds match:  Change the status 
-         =============================================================== -->
+    <!-- 
+    organizationIds match:  Change the status 
+    =============================================================== -->
     <xsl:choose>
      <xsl:when                   test = ". = $oldStatus and 
                                          $thisOrgId = $orgId">
@@ -207,8 +215,9 @@
        <xsl:value-of           select = "$newStatus"/>
       </OrgSiteStatus>
      </xsl:when>
-     <!-- organizationIds don't match: No changes necessary, copy as is.        
-          ============================================================== -->
+     <!-- 
+     organizationIds don't match: No changes necessary, copy as is.        
+     ============================================================== -->
      <xsl:otherwise>
       <xsl:copy>
        <xsl:apply-templates    select = "@*|comment()|*|
