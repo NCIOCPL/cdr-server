@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.14 2000-07-11 22:42:03 ameyer Exp $
+ * $Id: CdrString.h,v 1.15 2000-07-21 21:08:08 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2000/07/11 22:42:03  ameyer
+ * Added stringDocId() helper function.
+ *
  * Revision 1.13  2000/06/09 04:01:22  ameyer
  * Added toString template function.
  *
@@ -305,6 +308,15 @@ namespace cdr {
      *  @return             string form of the doc id.
      */
     extern String stringDocId (const int);
+
+    /**
+     * Wrap an xml tag around a string, returning the wrapped string.
+     *
+     *  @param  data        reference to string to be wrapped as element data.
+     *  @param  tag         reference to tag to wrap around data.
+     *  @return             string with <tag>data</tag>
+     */
+    extern String tagWrap (const String&, const String&);
 
     /**
      * Packs the error messages contained in the caller's list into a

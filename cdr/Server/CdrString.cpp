@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.7 2000-07-11 22:41:24 ameyer Exp $
+ * $Id: CdrString.cpp,v 1.8 2000-07-21 21:07:19 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2000/07/11 22:41:24  ameyer
+ * Added stringDocId() helper function.
+ *
  * Revision 1.6  2000/05/16 21:19:09  bkline
  * Added packErrors() method.
  *
@@ -154,6 +157,15 @@ cdr::String cdr::stringDocId(const int id)
     cdr::String s(buf);
     return s;
 }
+
+/**
+ * Wrap an xml tag around a string, returning the wrapped string.
+ */
+cdr::String cdr::tagWrap (const cdr::String& data, const cdr::String& tag)
+{
+    return (L"<" + tag + L">" + data + L"</" + tag + L">");
+}
+
 
 /**
  * Packs the error messages contained in the caller's list into a single
