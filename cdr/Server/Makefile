@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.20 2000-05-21 00:51:33 bkline Exp $
+# $Id: Makefile,v 1.21 2000-06-09 04:02:33 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.20  2000/05/21 00:51:33  bkline
+# Added CdrShutdown.
+#
 # Revision 1.19  2000/05/19 00:14:25  bkline
 # Cosmetic edit.
 #
@@ -101,6 +104,7 @@ HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrException.h \
         $(CDRINC)/CdrGetDoc.h \
         $(CDRINC)/CdrInt.h \
+        $(CDRINC)/CdrLog.h \
         $(CDRINC)/CdrParserInput.h \
         $(CDRINC)/CdrRegEx.h \
         $(CDRINC)/CdrSearch.h \
@@ -115,6 +119,7 @@ LIBOBJS=CdrString.obj \
         CdrDbStatement.obj \
         CdrDbPreparedStatement.obj \
         CdrDbResultSet.obj \
+        CdrLog.obj \
         CdrSession.obj \
         CdrParserInput.obj \
         CdrRegEx.obj
