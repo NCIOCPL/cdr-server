@@ -1,9 +1,11 @@
 /*
- * $Id: CdrCheckAuth.cpp,v 1.1 2000-04-17 21:23:43 bkline Exp $
+ * $Id: CdrCheckAuth.cpp,v 1.2 2000-04-20 17:12:53 bkline Exp $
  *
  * Reports which actions are allowed for the current session.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/17 21:23:43  bkline
+ * Initial revision
  */
 
 // Eliminate annoying warnings about truncated debugging information.
@@ -52,8 +54,8 @@ cdr::String cdr::checkAuth(cdr::Session& session,
 
     // Construct the response.
     if (actions.size() == 0)
-        return L"  <CdrCheckAuth/>\n";
-    cdr::String response = L"  <CdrCheckAuth>\n";
+        return L"  <CdrCheckAuthResp/>\n";
+    cdr::String response = L"  <CdrCheckAuthResp>\n";
     for (Actions::const_iterator i = actions.begin(); i != actions.end(); ++i)
     {
         const cdr::String& action = i->first;
@@ -71,7 +73,7 @@ cdr::String cdr::checkAuth(cdr::Session& session,
             response += L"</Auth>\n";
         }
     }
-    response += L"  </CdrCheckAuth>\n";
+    response += L"  </CdrCheckAuthResp>\n";
     return response;
 }
 
