@@ -5,105 +5,141 @@
 <DocTitle readonly="yes">InScopeProtocol Administrative Report Filter</DocTitle>
 <DocComment>CVS-V1.19: Adding Related Protocols (Bug 897)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--Filter written by C.Burg - 3/13/2002 -->
 <!-- ================================================================
            Filter to generate a Protocol Administrative QC Report
      ================================================================ -->
-  
- <xsl:transform       xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                         version="1.0"
-                       xmlns:cdr="cips.nci.nih.gov/cdr">
- <xsl:include    href ="cdr:name:Module: HP InScopeProtocol Titles"/>
- <xsl:include    href = "cdr:name:Module: HP InScopeProtocol Identification"/>
- <xsl:include   href = "cdr:name:Module: InScopeProtocol Administrative Details"/> 
- <xsl:include   href = "cdr:name:Module: HP InScopeProtocol Record Information"/>
- 
-  <xsl:include    href = "cdr:name:Module: Inline Markup Formatter"/>
-  <xsl:include    href = "cdr:name:Module: Table Formatter"/>
-  <xsl:include    href = "cdr:name:Module: STYLE Default"/>     
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
 
-   <xsl:output method="html"/>
+ <xsl:output                    method = "html"/>
 
-<!-- ===============================================================
-                    Generate Report Headings
-     =============================================================== -->
+ <xsl:include  href = "cdr:name:Module: HP InScopeProtocol Titles"/>
+ <xsl:include  href = "cdr:name:Module: HP InScopeProtocol Identification"/>
+ <xsl:include  href = "cdr:name:Module: InScopeProtocol Administrative Details"/> 
+ <xsl:include  href = "cdr:name:Module: HP InScopeProtocol Record Information"/>
+ 
+ <xsl:include  href = "cdr:name:Module: Inline Markup Formatter"/>
+ <xsl:include  href = "cdr:name:Module: Table Formatter"/>
+ <xsl:include  href = "cdr:name:Module: STYLE Default"/>     
 
-   <xsl:template match="/">
-  
- 
-   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
-    <HTML>
-     <HEAD>
-       <xsl:variable                 name = "docID"
-                                     select = "document('cdrutil:/docid')"/>
-        <xsl:variable                name="cdrmydoc" 
-                                     select="document('cdrx:/*/CdrCtl')"/>
+ <!-- Defining standard HTML Attribute Sets -->
+ <xsl:attribute-set               name = "table">
+  <xsl:attribute                  name = "border">0</xsl:attribute>
+  <xsl:attribute                  name = "width">100%</xsl:attribute>
+  <xsl:attribute                  name = "cellspacing">0</xsl:attribute>
+  <xsl:attribute                  name = "cellpadding">0</xsl:attribute>
+ </xsl:attribute-set>
 
- 
-       <TITLE>
-         <xsl:value-of   select = "concat('CDR', 
-                                   number(
-                                   substring-after($docID, 'CDR')))"/>
-                                   <xsl:text>: </xsl:text>
-                                   <xsl:value-of  select="
-                                   substring-before
-                                   ($cdrmydoc/CdrDocCtl/DocTitle,';')"/>  
-                                                                                                                                           
-            </TITLE>
-                    
- <!--  <LINK REL='stylesheet' 
-           HREF='/stylesheets/protocol2.css' 
-           TYPE='text/css' /> -->
-     <STYLE type='text/css'>
-     <xsl:call-template           name = "defaultStyle"/> 
-     </STYLE>
+ <xsl:attribute-set               name = "cell1of2">
+  <xsl:attribute                  name = "width">35%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
 
-    </HEAD>
-    <BASEFONT FACE='Arial, Helvetica, sans-serif' /> 
-    <xsl:apply-templates select="InScopeProtocol"/>
-    </HTML>
-    </xsl:template>
-    <xsl:template match="InScopeProtocol">
-    <BODY>
-    <b><font size='4'><center>Administrative Protocol<br />QC Report</center></font></b>
- 
- <b><font size='3'><center><xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/></center></font>
- </b>
- <br />
- 
-  <xsl:variable                name = "docID"
+ <xsl:attribute-set               name = "cell2of2">
+  <xsl:attribute                  name = "width">65%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
+
+ <xsl:attribute-set               name = "mcell1of2">
+  <xsl:attribute                  name = "width">30%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
+
+ <xsl:attribute-set               name = "mcell2of2">
+  <xsl:attribute                  name = "width">70%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
+
+ <xsl:variable                    name = "docID"
                                 select = "document('cdrutil:/docid')"/>
- <b>
- <font size='4'>
- <xsl:value-of              select = "concat('CDR', 
+
+
+ <!-- 
+ ===============================================================
+ Generate Report Headings
+ =============================================================== -->
+ <xsl:template match="/">
+  <HTML>
+   <HEAD>
+    <xsl:variable                 name = "cdrdocs" 
+                                select = "document('cdrx:/*/CdrCtl')"/>
+    <TITLE>
+     <xsl:value-of              select = "concat('CDR', 
                                            number(
                                            substring-after($docID, 'CDR')))"/>
+     <xsl:text>: </xsl:text>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/> 
+    </TITLE>
+    <STYLE type='text/css'>
+     <xsl:call-template           name = "defaultStyle"/>  
+    </STYLE>
+   </HEAD>
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
+   <xsl:apply-templates         select = "InScopeProtocol"/>
+  </HTML>
+ </xsl:template>
+                    
 
- </font>
- </b>
-  <br />
-  <br />
-  <xsl:apply-templates/>
+ <!-- 
+ ======================================================================
+ ====================================================================== -->
+ <xsl:template                   match = "InScopeProtocol">
+  <BODY>
+
+   <!-- 
+   ==================================================================
+   Display Report heading and subheading 
+   ================================================================== -->
+   <b>
+    <font size='4'>
+     <center>
+      <xsl:text>Administrative Protocol</xsl:text>
+      <br/>
+      <xsl:text>QC Report</xsl:text>
+     </center>
+    </font>
+    <font size='3'>
+     <center>
+      <xsl:value-of             select = "document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M% 25p')"/>
+     </center>
+    </font>
+   </b>
+   <p/>
+ 
+   <!-- 
+   ====================================================================
+   Display CDR ID
+   ==================================================================== -->
+   <b>
+    <font size='4'>
+     <xsl:value-of               select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+    </font>
+   </b>
+   <p/>
+
+   <xsl:apply-templates/>
   </BODY>
-  </xsl:template>   
+ </xsl:template>   
                        
   
-  <!-- ===============================================================
-           Do not display data elements
-       =============================================================== -->
-   
-              <xsl:template    match = "ProtocolAbstract  |
-                                        ProtocolDesign | ProtocolAbstract2 |
-                                        ProtocolDetail |
-                                        Eligibility |
-                                        PublishedResults"/>
-                                                                             
-                                           
-                                        
-                                         
-     
+ <!-- 
+ ===============================================================
+ Do not display data elements
+ =============================================================== -->
+ <xsl:template                  match = "ProtocolAbstract  |
+                                         ProtocolDesign | ProtocolAbstract2 |
+                                         ProtocolDetail |
+                                         Eligibility |
+                                         PublishedResults"/>
 
-</xsl:transform>]]>
+</xsl:transform>
+]]>
 </CdrDocXml>
 </CdrDoc>
