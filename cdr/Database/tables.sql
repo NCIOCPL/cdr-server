@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.21 2001-02-16 00:53:35 mruben Exp $
+ * $Id: tables.sql,v 1.22 2001-02-16 01:59:07 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2001/02/16 00:53:35  mruben
+ * changes to save more in version control
+ *
  * Revision 1.20  2001/01/02 23:30:23  ameyer
  * Changed length of link_prop[value] from 64 to 1024 max chars.
  *
@@ -641,20 +644,6 @@ CREATE TABLE link_target (
 )
 
 /*
- * Types of properties of links.
- * A list of properties which may appear in the link_prop table.
- *
- *     id       Unique identifier of property.
- *     name     Human readable property name.
- *     comment  Free text comments.
- */
-CREATE TABLE link_prop_type (
-          id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32) UNIQUE,
-     comment VARCHAR(256) NULL
-)
-
-/*
  * Properties of links.
  * Checked by link validation software to determine whether 
  *  any given link or link set has the specified properties.
@@ -662,19 +651,18 @@ CREATE TABLE link_prop_type (
  *     link_id   Identifier for a type of link.
  *     property  Identifier for a property type.
  *     value     A valid value of this property for this link type.
+ *     comment   Free text comments.
  *
- * Some example properties are:
- *   Allowed source document type
- *   Allowed source element type
- *   Allowed target document type
- *   Link type is transitive
- *   Link type is reflexive
- *   etc.
+ * Example:
+ *   Link target doc must contain certain field/value pairs.
+ *      (we have a whole megillah for checking this.)
  */
+
 CREATE TABLE link_prop (
       link_id INTEGER NOT NULL REFERENCES link_type,
-     property INTEGER NOT NULL REFERENCES link_prop_type,
+     property VARCHAR(32) UNIQUE,
         value VARCHAR(1024),
+      comment VARCHAR(256) NULL
   PRIMARY KEY (link_id, property)
 )
 
