@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.28 2002-04-10 14:32:39 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.29 2002-04-12 01:49:31 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2002/04/10 14:32:39  bkline
+ * Fixed bug in recognition of readonly attribute.
+ *
  * Revision 1.27  2002/03/19 00:38:05  bkline
  * Modified isRequired to look deeper.
  *
@@ -1199,8 +1202,6 @@ void cdr::xsd::validateDocAgainstSchema(
 {
     // Parse the schema
     cdr::xsd::Schema schema(schemaElem, conn);
-    cdr::log::WriteFile(L"validateDocAgainstSchema", L"Testing log fix",
-            "d:/cdr/log/testing.log");
 
     // Use the schema to validate the XML portion of the document
     cdr::xsd::Element schemaElement = schema.getTopElement();
