@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.16 2000-05-09 19:54:56 mruben Exp $
+# $Id: Makefile,v 1.17 2000-05-10 21:51:31 mruben Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.16  2000/05/09 19:54:56  mruben
+# added CdrDOMtoString
+#
 # Revision 1.15  2000/05/09 19:27:45  mruben
 # modified for CdrFilter
 #
@@ -65,11 +68,13 @@
 
 CDR    =/cdr
 XML4C  =/usr/xml4c
+SABLOT =/usr/sablot
 REGEX  =/usr/regex
 CDRINC =$(CDR)/include
-INC    =-I$(XML4C)/include -I$(CDRINC) -I$(REGEX)/include
+INC    =-I$(XML4C)/include -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)/include
 CFLAGS =$(INC) -W3 -GX -MT -GR -Zi
-LFLAGS =/LIBPATH:/usr/xml4c/lib /LIBPATH:$(CDR)/lib /DEBUG
+LFLAGS =/LIBPATH:/usr/xml4c/lib /LIBPATH:$(SABLOT)/lib \
+	/LIBPATH:$(CDR)/lib /DEBUG
 CC     =cl
 LN     =link
 DOC    =../../InetPub/wwwtest/cdr/
