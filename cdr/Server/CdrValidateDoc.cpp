@@ -1,10 +1,13 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.9 2001-04-05 19:58:18 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.10 2001-04-10 21:39:02 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2001/04/05 19:58:18  ameyer
+ * Fixed comments.
+ *
  * Revision 1.8  2000/10/05 21:26:14  bkline
  * Moved most of the lower-level schema validation routines to the CdrXsd
  * module.
@@ -85,10 +88,11 @@ cdr::String cdr::validateDoc(
         const cdr::dom::Node&           commandNode,
         cdr::db::Connection&            conn)
 {
-    cdr::CdrDoc    *docObj;         // Pointer to doc object to validate
+    cdr::CdrDoc    *docObj = NULL;  // Pointer to doc object to validate
     cdr::String    docTypeString;   // String form of doc type name
     cdr::String    validationTypes; // E.g., "Schema Links"
     cdr::ValidRule validRule;       // Do we update the DB or just validate?
+    cdr::String    returnString;    // Returned errors
 
     // Get document type and check user authorization to validate it
     const cdr::dom::Element& commandElement =
@@ -105,69 +109,81 @@ cdr::String cdr::validateDoc(
         throw cdr::Exception(err.c_str());
     }
 
-    // Extract the document or its ID from the command.
-    cdr::dom::Node docNode;
-    cdr::String    docIdString;
-    cdr::dom::Node child = commandNode.getFirstChild();
-    while (child != 0) {
-        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
-            cdr::String name = child.getNodeName();
-            if (name == L"CdrDoc") {
+    try {
+        // Extract the document or its ID from the command.
+        cdr::dom::Node docNode;
+        cdr::String    docIdString;
+        cdr::dom::Node child = commandNode.getFirstChild();
+        while (child != 0) {
+            if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+                cdr::String name = child.getNodeName();
+                if (name == L"CdrDoc") {
 
-                // Document is right here
-                // Create an object for it
-                docNode = child;
-                docObj = new cdr::CdrDoc (conn, docNode);
+                    // Document is right here
+                    // Create an object for it
+                    docNode = child;
+                    docObj = new cdr::CdrDoc (conn, docNode);
 
-                // This version assumes that doc is passed in solely
-                //   for validation.
-                // It may not even be in the database at all.
-                // So we won't try to update any stored validation status.
-                validRule = ValidateOnly;
-            }
-
-            else if (name == L"DocId") {
-
-                // Document is in the database
-                // Get ID for it
-                docIdString = cdr::dom::getTextContent (child);
-
-                // Construct object from the database
-                docObj = new cdr::CdrDoc (conn, docIdString.extractDocId());
-
-                // Make sure the caller is telling the truth about the DocType.
-                if (docTypeString != docObj->getTextDocType()) {
-                    delete docObj;
-                    throw cdr::Exception(
-                       L"Command specifies incorrect DocType", docTypeString);
+                    // This version assumes that doc is passed in solely
+                    //   for validation.
+                    // It may not even be in the database at all.
+                    // So we won't try to update any stored validation status.
+                    validRule = ValidateOnly;
                 }
 
-                // If doc is in the database, we assume we want to
-                //  update the stored validation status, unless told
-                //  otherwise.
-                cdr::dom::Element& elem =
-                    static_cast<cdr::dom::Element&>(child);
-                cdr::String validateOnlyAttr =
-                    elem.getAttribute(L"ValidateOnly");
-                if (validateOnlyAttr == L"Y")
-                    validRule = ValidateOnly;
-                else
-                    validRule = UpdateUnconditionally;
+                else if (name == L"DocId") {
+
+                    // Document is in the database
+                    // Get ID for it
+                    docIdString = cdr::dom::getTextContent (child);
+
+                    // Construct object from the database
+                    docObj = new cdr::CdrDoc (conn, docIdString.extractDocId());
+
+                    // Make sure the caller tells the truth about the DocType.
+                    if (docTypeString != docObj->getTextDocType())
+                        // catch at end will cleanup docObj
+                        throw cdr::Exception (
+                                L"Command specifies incorrect DocType",
+                                docTypeString);
+
+                    // If doc is in the database, we assume we want to
+                    //  update the stored validation status, unless told
+                    //  otherwise.
+                    cdr::dom::Element& elem =
+                        static_cast<cdr::dom::Element&>(child);
+                    cdr::String validateOnlyAttr =
+                        elem.getAttribute(L"ValidateOnly");
+                    if (validateOnlyAttr == L"Y")
+                        validRule = ValidateOnly;
+                    else
+                        validRule = UpdateUnconditionally;
+                }
             }
+            child = child.getNextSibling();
         }
-        child = child.getNextSibling();
+
+        // Make sure we got what we need.
+        int  docId = 0;
+        if (docIdString.empty() && docNode == 0)
+            throw cdr::Exception(L"Command requires DocId or CdrDoc element");
+        if (docNode != 0 && !docIdString.empty())
+            throw cdr::Exception(L"Both DocId and CdrDoc specified");
+
+        // Execute validation
+        returnString = cdr::execValidateDoc (*docObj, validRule,
+                                             validationTypes);
     }
 
-    // Make sure we got what we need.
-    int  docId = 0;
-    if (docIdString.empty() && docNode == 0)
-        throw cdr::Exception(L"Command requires DocId or CdrDoc element");
-    if (docNode != 0 && !docIdString.empty())
-        throw cdr::Exception(L"Both DocId and CdrDoc specified");
+    // Cleanup from any exception, anywhere in or beneath us
+    catch (...) {
+        // Don't leave allocated objects in the heap
+        if (docObj)
+            delete docObj;
 
-    // Execute validation
-    cdr::String returnString = cdr::execValidateDoc (*docObj, validRule,
-                                                     validationTypes);
+        // Rethrow exception
+        throw;
+    }
 
     // Delete temporary object and return results
     delete docObj;
