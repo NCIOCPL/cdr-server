@@ -1,9 +1,13 @@
 /*
- * $Id: ParseSchema.cpp,v 1.5 2001-03-21 02:47:57 bkline Exp $
+ * $Id: ParseSchema.cpp,v 1.6 2001-04-15 13:00:43 bkline Exp $
  *
  * Prototype for CDR schema parser.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2001/03/21 02:47:57  bkline
+ * Support for more schema features.  Better support for mixed content.
+ * Moved NMTOKEN check to library code.
+ *
  * Revision 1.4  2001/01/02 22:56:54  bkline
  * Fixed handling of mixed content in DTD; added NMTOKEN support.
  *
@@ -22,6 +26,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <ctime>
 
 // Project headers.
 #include "CdrString.h"
@@ -31,7 +36,7 @@
 // Local support functions.
 static std::string        readSchemaFile(const char*);
 static bool               areNMTokens(const cdr::StringSet&);
-static void               writeDtd(const cdr::xsd::Schema&);
+static void               writeDtd(const cdr::xsd::Schema&, const std::string&);
 static const char* const  getCountCharacter(const cdr::xsd::CountConstrained&);
 static std::ostream&      operator<<(std::ostream&, const cdr::xsd::Node*);
 static void               outputMixedContent(const cdr::xsd::Node*, 
@@ -58,7 +63,7 @@ int main(int ac, char** av)
         cdr::dom::Document document = parser.getDocument();
         cdr::dom::Element docElement = document.getDocumentElement();
         cdr::xsd::Schema schema(docElement);
-        writeDtd(schema);
+        writeDtd(schema, name);
     }
 
     catch (const cdr::Exception& cdrEx) {
@@ -120,11 +125,16 @@ std::string readSchemaFile(const char* name)
 /**
  * Writes the DTD equivalent of the schema to standard output.
  */
-void writeDtd(const cdr::xsd::Schema& schema)
+void writeDtd(const cdr::xsd::Schema& schema, const std::string& name)
 {
     if (!&schema.getTopElement())
         throw cdr::Exception(L"No top element declared");
-    std::cout << "<?xml version='1.0' encoding='UTF-8'?>\n";
+    time_t now = time(0);
+    const char* when = asctime(localtime(&now));
+    std::cout << "<!--\n\n     Machine generated " << when
+              << "     From XML Schema " << name 
+              << "\n\n  -->\n\n";
+    //std::cout << "<?xml version='1.0' encoding='UTF-8'?>\n";
     writeElement(schema, schema.getTopElement(), true);
 }
 
@@ -171,9 +181,6 @@ void writeElement(const cdr::xsd::Schema& schema, cdr::xsd::Element& elem,
 
         case cdr::xsd::ComplexType::TEXT_ONLY:
 
-            if (elements)
-                throw cdr::Exception(L"Elements not allowed for "
-                                     L"textOnly content");
             std::cout << "(#PCDATA)>\n";
             break;
 
@@ -275,7 +282,7 @@ void writeElement(const cdr::xsd::Schema& schema, cdr::xsd::Element& elem,
                 }
                 else
 #endif
-                    std::cout << "CDATA";
+                    std::cout << a->getDtdType(); //"CDATA";
                 if (a->isOptional())
                     std::cout << " #IMPLIED";
                 else
@@ -350,7 +357,7 @@ void outputMixedContent(const cdr::xsd::Node* node, cdr::StringSet& elements)
 
     // Sanity check.  Should never reach this point.
     throw cdr::Exception(L"Internal error",
-            L"Content must be element, group, choice, or sequence");
+            L"Mixed content must be element, group, choice, or sequence");
 }
 
 /**
@@ -502,9 +509,14 @@ void declareChildElements(const cdr::xsd::Schema& schema,
         return;
     }
 
+    // Is this simple content?
+    if (dynamic_cast<const cdr::xsd::SimpleContent*>(n))
+        return;
+
     // Sanity check.  Should never reach this point.
     throw cdr::Exception(L"Internal error",
-            L"Content must be element, group, choice, or sequence");
+            L"Content must be element, group, choice, sequence"
+            L" or simpleContent");
 }
 
 /**
