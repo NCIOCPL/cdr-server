@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.cpp,v 1.9 2001-04-16 17:59:16 bkline Exp $
+ * $Id: CdrDbResultSet.cpp,v 1.10 2001-06-12 22:37:04 bkline Exp $
  *
  * Implementation for ODBC result fetching wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2001/04/16 17:59:16  bkline
+ * Removed unreferenced local variable nRows.
+ *
  * Revision 1.8  2001/04/08 22:46:22  bkline
  * Added code in constructor to skip to the first result set.
  *
@@ -234,11 +237,11 @@ cdr::Blob cdr::db::ResultSet::getBytes(int pos)
     }
     if (largeValue) {
         delete[] data;
-        size_t chars = cbData / sizeof(wchar_t);
+        size_t chars = cbData;
         data = new unsigned char[chars + 1];
         data[chars] = 0;
         rc = SQLGetData(st.hstmt, (UWORD)pos, SQL_C_BINARY, (PTR)data,
-                        cbData + sizeof(wchar_t), &cbData);
+                        cbData, &cbData);
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
             delete [] data;
             throw cdr::Exception("Database failure extracting data",
