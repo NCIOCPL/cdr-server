@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbConnection.cpp,v 1.8 2002-02-28 01:02:53 bkline Exp $
+ * $Id: CdrDbConnection.cpp,v 1.9 2002-03-04 20:52:03 bkline Exp $
  *
  * Implementation for ODBC connection wrapper.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2002/02/28 01:02:53  bkline
+ * Added code to close mutex handle.
+ *
  * Revision 1.7  2001/12/14 15:19:10  bkline
  * Added optional hooks for tracking number of active connections during
  * heap debugging.
@@ -306,7 +309,10 @@ cdr::String cdr::db::Connection::getDateTimeString()
     cdr::db::ResultSet rs = query.executeQuery("SELECT GETDATE()");
     if (!rs.next())
         throw cdr::Exception(L"Failure getting date from DBMS");
-    return rs.getString(1);
+    // Unless we explicitly put this on the stack the destructor is never called
+    // (bug in Microsoft's runtime).
+    cdr::String result = rs.getString(1);
+    return result;
 }
 
 cdr::db::Statement cdr::db::Connection::createStatement()
