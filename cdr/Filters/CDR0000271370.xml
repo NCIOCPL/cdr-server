@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ===========================================================================
- $Id: CDR0000271370.xml,v 1.22 2005-01-10 23:25:33 venglisc Exp $
+ $Id: CDR0000271370.xml,v 1.23 2005-01-12 16:28:10 venglisc Exp $
 
  Filter including misc Vendor filter templates.
 
@@ -290,7 +290,10 @@
                                           @UseCaption = 'Yes'">
     <xsl:choose>
      <xsl:when                    test = "Caption">
-      <xsl:apply-templates      select = "Caption"/>
+      <xsl:apply-templates      select = "Caption">
+       <xsl:with-param            name = "capLanguage"
+                                select = "$docLanguage"/>
+      </xsl:apply-templates>
      </xsl:when>
      <xsl:otherwise>
       <xsl:apply-templates      select = "MediaID/Media/
@@ -313,12 +316,21 @@
  ========================================================================= -->
  <xsl:template                   match = "Caption |
                                           MediaCaption">
+  <xsl:param                      name = "capLanguage"/>
+
   <xsl:element                    name = "Caption">
-   <xsl:if                        test = "@language">
-    <xsl:attribute                name = "language">
-     <xsl:value-of              select = "@language"/>
-    </xsl:attribute>
-   </xsl:if>
+   <xsl:choose>
+    <xsl:when                     test = "@language">
+     <xsl:attribute               name = "language">
+      <xsl:value-of             select = "@language"/>
+     </xsl:attribute>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:attribute               name = "language">
+      <xsl:value-of             select = "$capLanguage"/>
+     </xsl:attribute>
+    </xsl:otherwise>
+   </xsl:choose>
    <xsl:apply-templates/>
   </xsl:element>
  </xsl:template>
