@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSearch.cpp,v 1.6 2001-05-21 20:31:41 bkline Exp $
+ * $Id: CdrSearch.cpp,v 1.7 2001-09-19 18:48:55 bkline Exp $
  *
  * Queries the CDR to create subset list of documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2001/05/21 20:31:41  bkline
+ * Added commands for query term definition support.
+ *
  * Revision 1.5  2001/03/21 02:40:21  bkline
  * Changed attr.name to attr.path and attr.id to attr.doc_id.
  *
@@ -325,7 +328,7 @@ cdr::String cdr::Query::getSql(int maxDocs)
         /* } */
         sql += where + L"(" + tree->getSql() + L")";
     }
-    return sql;
+    return sql + L" ORDER BY document.title";
 }
 
 void cdr::Query::checkTablesJoined(const cdr::QueryNode* n)
@@ -433,7 +436,7 @@ cdr::String cdr::searchLinks(cdr::Session& session,
         }
         qry += ")";
     }
-    qry += " ORDER BY id";
+    qry += " ORDER BY title";
 
     // Submit the query to the DBMS.
     cdr::db::PreparedStatement stmt = conn.prepareStatement(qry);
