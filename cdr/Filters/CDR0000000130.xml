@@ -17,8 +17,10 @@
                          version="1.0"
                        xmlns:cdr="cips.nci.nih.gov/cdr">
 
+        <xsl:import    href = "cdr:name:InLine Markup Formatter"/>
         <xsl:include   href = "cdr:name:Table Formatter"/>
      
+        
       <xsl:output method="html"/>
 
       <xsl:template match="/">
@@ -82,43 +84,7 @@
       </xsl:template>-->
 
 
- <!-- ==================================================================
-          Display an Itemized List
-       ================================================================ -->
-                                              
-       <xsl:template match="ItemizedList">
-
-       <p><xsl:value-of  select="ListTitle"/></p>
-
-       <xsl:choose>
-          <xsl:when test="@Style='bullet'">
-              <ul>
-             <xsl:for-each select="ListItem">
-                <li type='disc'><xsl:apply-templates/></li>
-             </xsl:for-each>
-             </ul>
-          </xsl:when>
-          <xsl:when test="@Style='dash'">
-              <ul>
-             <xsl:for-each select="ListItem">
-                <li type='square'><xsl:apply-templates/></li>
-             </xsl:for-each>
-             </ul>
-             <br />
-             </xsl:when>
-
-          <xsl:otherwise>
-             <ul>
-             <xsl:for-each select="ListItem">
-             <li class='lnone'><xsl:apply-templates/></li><br />
-             </xsl:for-each>
-             </ul>
-       </xsl:otherwise>
-       </xsl:choose>
  
-       </xsl:template>
-
-         
  
  <!--  ===================================================================
                Display Strong 
@@ -147,31 +113,6 @@
          <h3><xsl:value-of select="."/></h3>
       </xsl:template>
  
-
- <!-- ==============================================================
-                     Display an Ordered List
-      ================================================================ -->
-      <xsl:template match="OrderedList">
-        <h3><xsl:value-of select="ListTitle"/></h3>
-      <xsl:choose>
-         <xsl:when test="@Style='LAlpha'">
-            <ol>
-            <xsl:for-each select="ListItem">
-                 <li type='a'><xsl:apply-templates/></li>
-            </xsl:for-each>
-            </ol>
-         </xsl:when>
-         <xsl:otherwise>
-            <ol>
-            <xsl:for-each select="ListItem">
-            <li><xsl:apply-templates/></li><br />
-            </xsl:for-each>
-            </ol>
-           
-         </xsl:otherwise>
-      </xsl:choose>
-      </xsl:template>
-
       
   
  <!-- ==============================================================
@@ -203,45 +144,35 @@
 </xsl:for-each>
        </xsl:template>
 
+  <!--=====================================================================
+         Display an ordered list 
+    ==================================================================== -->
+  <xsl:template                  match = "OrderedList">
+    <xsl:variable                 name = "redline">
+      <xsl:text>Redline</xsl:text>
+    </xsl:variable>
+    <xsl:call-template            name = "OrderedList">
+      <xsl:with-param             name = "markup"        
+                                select = "$redline"/>
+    </xsl:call-template>
+  </xsl:template>
+
+<!--=====================================================================
+                Display an Itemized List
+    ==================================================================== -->
+  <xsl:template                  match = "ItemizedList">
+    <xsl:variable                 name = "redline">
+      <xsl:text>Redline</xsl:text>
+    </xsl:variable>
+    <xsl:call-template            name = "ItemizedList">
+      <xsl:with-param             name = "markup"        
+                                select = "$redline"/>
+    </xsl:call-template>
+  </xsl:template>
+
    
 
- <!-- ====================================================================
-         Display a table - 10/11/2002 (CB) Code has been replaced with the
-         standard table formatter filter as an include
-      =================================================================== 
-
-             
-             <xsl:template match="Table">
-             <xsl:if test="Title">
-                 <br />
-             <b><xsl:apply-templates select="Title"/></b><br />
-              </xsl:if>
-              <table border='1' cellspacing='0' cellpadding='0' width='60%'>
-              <xsl:for-each select="TGroup/THead/Row">
-              <tr>
-              <xsl:for-each select="entry">
-              <th><xsl:apply-templates/></th>
-              </xsl:for-each>
-              </tr>
-              </xsl:for-each>
-              <xsl:for-each select="TGroup/TBody/Row">
-              <tr>
-              <xsl:for-each select='entry'>
-              <xsl:variable name="cols" select="../../..@Cols"/>
-              <xsl:if test="not(@NameEnd)"> 
-              <td><xsl:apply-templates select="."/></td>
-              </xsl:if>
-              <xsl:if test="@NameEnd"> 
-        <td colspan='{$cols}' width='50%'><xsl:apply-templates select="."/></td>
-            </xsl:if>
-       
-            </xsl:for-each>
-            </tr>
-            </xsl:for-each>
-           
-            </table>
-            </xsl:template>-->
-                
+ 
             
         
 </xsl:transform>]]>
