@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.39 2003-11-05 22:28:32 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.40 2003-11-18 16:29:54 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.39  2003/11/05 22:28:32  bkline
+ * Added support for new extern-map function.
+ *
  * Revision 1.38  2003/09/09 19:25:01  bkline
  * Added new custom function for validating U.S. ZIP codes.
  *
@@ -1951,9 +1954,21 @@ string lookupExternalValue(const string& parms,
     stmt.setString(1, usageName);
     stmt.setString(2, externName);
     cdr::db::ResultSet rs = stmt.executeQuery();
-    if (!rs.next())
+    if (!rs.next()) {
+        cdr::db::PreparedStatement s = conn.prepareStatement(
+            "INSERT INTO external_map (usage, value, last_mod) "
+            "SELECT id, ?, GETDATE()                           "
+            "  FROM external_map_usage                         "
+            " WHERE name = ?                                   ");
+        s.setString(1, externName);
+        s.setString(2, usageName);
+        s.executeUpdate();
         return "<DocId/>";
+    }
+
     int docId = rs.getInt(1);
+    if (!docId)
+        return "<DocId/>";
     cdr::String idString = cdr::stringDocId(docId);
     std::ostringstream os;
     os << "<DocId>" << idString.toUtf8() << "</DocId>";
