@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.cpp,v 1.10 2001-06-12 22:37:04 bkline Exp $
+ * $Id: CdrDbResultSet.cpp,v 1.11 2001-12-14 15:20:08 bkline Exp $
  *
  * Implementation for ODBC result fetching wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2001/06/12 22:37:04  bkline
+ * Fixed bug in handling of large blobs (buffer too small).
+ *
  * Revision 1.9  2001/04/16 17:59:16  bkline
  * Removed unreferenced local variable nRows.
  *
@@ -158,7 +161,7 @@ cdr::String cdr::db::ResultSet::getString(int pos)
     SQLRETURN rc;
     Column* c = columnVector[pos - 1];
     bool largeValue = c->size > 10000;
-    size_t bufSize = largeValue ? 0 : c->size + 1;
+    size_t bufSize = largeValue ? 1 : c->size + 1;
     wchar_t* data = new wchar_t[bufSize];
     memset(data, 0, bufSize * sizeof(wchar_t));
     SDWORD cbData = (bufSize) * sizeof(wchar_t);
@@ -220,7 +223,7 @@ cdr::Blob cdr::db::ResultSet::getBytes(int pos)
     SQLRETURN rc;
     Column* c = columnVector[pos - 1];
     bool largeValue = c->size > 10000;
-    size_t bufSize = largeValue ? 0 : c->size + 1;
+    size_t bufSize = largeValue ? 1 : c->size + 1;
     unsigned char* data = new unsigned char[bufSize];
     memset(data, 0, bufSize);
     SDWORD cbData = bufSize;
