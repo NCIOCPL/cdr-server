@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.88 2003-11-10 13:42:58 bkline Exp $
+ * $Id: tables.sql,v 1.89 2003-12-06 15:54:43 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.88  2003/11/10 13:42:58  bkline
+ * Added ctgov_import_job and ctgov_import_event tables.
+ *
  * Revision 1.87  2003/10/29 16:32:32  bkline
  * Backed out some NOT NULL restrictions on ctgov_import to accomodate
  * new requirements.
@@ -746,6 +749,7 @@ GO
  * strings used by ClinicalTrials.gov at NLM to identify agencies or
  * sponsors.
  *
+ *           id  primary key for this table
  *        usage  category of this external identifier
  *        value  value of the external identifier
  *       doc_id  identifies the document which this external value matches
@@ -753,12 +757,13 @@ GO
  *     last_mod  date/time the entry was created or modified
  */
 CREATE TABLE external_map
-      (usage INTEGER       NOT NULL REFERENCES external_map_usage,
+         (id INTEGER       IDENTITY PRIMARY KEY,
+       usage INTEGER       NOT NULL REFERENCES external_map_usage,
        value NVARCHAR(256) NOT NULL,
-      doc_id INTEGER       NOT NULL REFERENCES all_docs,
-         usr INTEGER       NOT NULL REFERENCES usr,
+      doc_id INTEGER           NULL REFERENCES all_docs,
+         usr INTEGER           NULL REFERENCES usr,
     last_mod DATETIME      NOT NULL,
- PRIMARY KEY (usage, value))
+CONSTRAINT external_map_unique UNIQUE (usage, value))
 GO
 
 /* 
