@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.49 2002-01-31 16:42:22 bkline Exp $
+# $Id: Makefile,v 1.50 2002-01-31 21:23:26 mruben Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.49  2002/01/31 16:42:22  bkline
+# Added DRV=$(DRV) to recursive make invocation.
+#
 # Revision 1.48  2002/01/31 13:19:31  bkline
 # Added definition for DRV macro.
 #
@@ -349,12 +352,12 @@ $(CDRLIB): $(LIBOBJS)
 #--------------------------------------------------------------------------
 # For Bison, we're not attempting a generic rule
 #--------------------------------------------------------------------------
-BISON_SIMPLE=$(DRV)/etc/bison.cdrtest
+BISON_SIMPLE_FILE=$(DRV)/etc/bison.cdrtest
 CdrSearch_tab.obj: CdrSearch_tab.c $(HDRS)
 	$(CC) $(CFLAGS) -c -TP CdrSearch_tab.c >> errs
 
 CdrSearch_tab.c: CdrSearch.y $(HDRS)
-	set BISON_SIMPLE=$(BISON_SIMPLE)
+	set BISON_SIMPLE=$(BISON_SIMPLE_FILE)
 	$(BISON) -p CdrSearch CdrSearch.y -o CdrSearch_tab.c
 
 #--------------------------------------------------------------------------
