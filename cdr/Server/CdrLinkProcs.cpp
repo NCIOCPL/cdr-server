@@ -17,9 +17,12 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.4 2001-09-28 01:20:43 ameyer Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.5 2001-11-08 19:02:41 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2001/09/28 01:20:43  ameyer
+ * Completed first implementation of getLinkTargetRestrictions.
+ *
  * Revision 1.3  2001/09/25 14:55:07  ameyer
  * Many new features and functions related to link target checking.
  *
@@ -704,6 +707,18 @@ bool getLinkTargetRestrictions (
 
 /*
  * Generate SQL for a complete parse tree - to be evaluated separately.
+ *
+ * XXXX THIS VERSION IS INADEQUATE
+ *      PROBLEM IS THAT WE NEED MULTIPLE ALIASES FOR THE SAME tagColumn
+ *      WHEN THERE IS A BOOLEAN OPERATOR PRESENT, E.G.
+ *      where ((a.path='foo' and a.value='bar') and
+ *             (b.path='whiz' and b.value='bang') and
+ *             (a.id = b.id))
+ *      PROBABLE SOLUTION IS:
+ *          Assume, path, value, id are columns
+ *          Generate sql as above
+ *          Use a fixed sequence of aliases, e.g., L1, L2, L3 ...
+ *          Return a count of aliases used.
  */
 
 void cdr::link::LinkChkNode::makeWhere (
