@@ -7,6 +7,7 @@
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--Filter written by C.Burg - 3/13/2002 -->
+
 <!-- ================================================================
            Filter to generate a Protocol Administrative QC Report
      ================================================================ -->
@@ -61,533 +62,1291 @@
      =============================================================== -->
 
   <b><font size='4'>Identification Information</font></b><br /><br />
+ <table width='90%'>
+  <tr>
+  <th align='left' width='40%'>
+<b><font size='3'>PDQ ID
+   </font>
+ </b>
+</th>
+ <td width='60%'>
+ <xsl:apply-templates               select="PdqKey"/>
+ </td>
+ </tr>
+ 
+  <tr>
+  <th align='left' width='40%'>
+  <b><font size='3'>Primary ID
+     </font>
+  </b>
+  </th>
+  <td width='60%'>
+ <xsl:apply-templates select="ProtocolIDs/PrimaryID/IDString"/><br />
+ </td>
+ </tr>
+ </table>
+<b><font size='3'>Comments
+   </font>
+   </b>
+   <br />
 
-<b><font size='3'>PDQ ID</font></b><xsl:text>...................................................</xsl:text> 
-<xsl:apply-templates select="PdqKey"/><br />
-
-
-<b><font size='3'>Primary ID</font></b><xsl:text>.............................................</xsl:text>
-<xsl:apply-templates select="ProtocolIDs/PrimaryID/IDString"/><br />
-
-<b><font size='3'>Comments</font></b><br />
-<xsl:apply-templates select="ProtocolIDs/PrimaryID/Comment"/><br /><br />
-
-<xsl:for-each select="ProtocolIDs/OtherID">
-<b><font size='3'>Other ID</font></b><xsl:text>..................................................</xsl:text>
-<xsl:value-of select="IDType"/>,
-<xsl:value-of select="IDString"/><br />
-<b><font size='3'>Comments</font></b><br />
-<xsl:apply-templates select="ProtocolIDs/OtherID/Comment"/><br />
+<xsl:apply-templates          select="ProtocolIDs/PrimaryID/Comment"/>
+    <br /><br />
+ 
+ <xsl:for-each                select="ProtocolIDs/OtherID">
+   <table width='90%'>
+   <tr align='left' width='40%'>
+   <th>
+  <b><font size='3'>Other ID
+   </font>
+  </b>
+  </th>
+   <td width='60%'>
+  <xsl:value-of                 select="IDType"/>,
+  <xsl:value-of select="IDString"/>
+  </td>
+  </tr>
+  </table>
+  <b><font size='3'>Comments
+     </font>
+  </b>
+ <br />
+<xsl:apply-templates          select="Comment"/>
+ <br />
 </xsl:for-each>
 <br /><br />
+
+   <!-- =============================================================
+               Display Protocol Special Category
+       ============================================================ -->
+
+              
+              <xsl:if test="not(preceding-sibling::ProtocolSpecialCategory)">
+              <b>
+              <font size='4'>
+              <xsl:text>Protocol Special Category</xsl:text>
+              </font>
+              </b>
+              <br /><br />
+              </xsl:if>
+              <table width='90%'> 
+              <tr>
+              <th align='left' width='40%'>   
+              <b><font size='3'>Special Category
+              </font></b>
+              </th>
+              <td width='60%'>
+              <xsl:value-of             select="ProtocolSpecialCategory/
+                                                SpecialCategory"/>
+              </td>
+              </tr>
+              </table>
+              <b><font size='3'>Comment
+              </font></b><br />
+              <xsl:value-of             select="ProtocolSpecialCategory/
+                                                Comment"/><br /><br />
+              
+
 
 <!-- ============================================================
               Display the funding information
      ============================================================ -->
  
-<b><font size='4'>Funding Information</font></b><br /><br />
-<xsl:for-each select="FundingInfo/NIHGrantContract">
-<b><font size='3'>NIH Grant Contract Type</font></b><xsl:text>.......................</xsl:text>
+      <b><font size='4'>Funding Information</font></b>
+       <br /><br />
+      <xsl:for-each            select="FundingInfo/NIHGrantContract">
+      <table width='90%'>
+      <tr>
+      <th align='left' width='40%'>
+      <b><font size='3'>NIH Grant Contract Type
+         </font>
+       </b>
+       </th>
+       <td>
+     <xsl:value-of             select="NIHGrantContractType"/>
+       </td>
+       </tr>
+       <tr>
+      <th align='left' width='40%'>
+      <b><font size='3'>Grant Contract Number
+         </font>
+      </b>
+      </th>
+      <td width='60%'>
+     <xsl:value-of            select="GrantContractNo"/><br />
+      </td>
+      </tr>
+      </table>
+       <b><font size='3'>Comment
+         </font>
+      </b>
+      <br />
+      <xsl:apply-templates select="Comment"/>
+      </xsl:for-each>
+   
+       <br />
+       <br />
+       <b><font size='3'>Other Grant Contract Information</font></b>
+     <xsl:for-each   select="FundingInfo/OtherGrantContractInfo"> 
+     <table width='90%'>
+      <tr>
+      <th align='left' width='40%'>
+      <b>
+      <font size='3'>Grant Contract Number
+      </font>
+      </b> 
+     </th>
 
-<xsl:value-of select="NIHGrantContractType"/><br />
-<b><font size='3'>Grant Contract Number</font></b> <xsl:text>.........................</xsl:text>
-<xsl:value-of select="GrantContractNo"/><br />
-<b><font size='3'>Comments</font></b><br />
-<xsl:apply-templates select="Comment"/>
-</xsl:for-each>
-<br /><br />
+     <td width='60%'>
+     <xsl:value-of                select="GrantContractNo"/>
+                                          
+     </td>
+     </tr>
+     </table>
+    <b><font size='3'>Comment</font></b><br />
+     <xsl:value-of                select="Comment"/>
+    <br />                                      
+    </xsl:for-each>
+    <br /><br />
+
+   
 
 <!-- ================================================================
                    Display the Protocol Source
      ================================================================= -->
 
 
-<b><font size='4'>Protocol Source</font></b><br /><br />
-<xsl:for-each select="ProtocolSources/ProtocolSource">
-<b><font size='3'>Source </font></b><xsl:text>.....................................................</xsl:text>
-<xsl:value-of select="SourceName"/><br />
-<b><font size='3'>Date Received</font></b><xsl:text>........................................</xsl:text>
-<xsl:value-of select="DateReceived"/><br />
-</xsl:for-each>
-<br />
+           <b><font size='4'>Protocol Source</font></b>
+                   <br /><br />
+          <xsl:for-each               select="ProtocolSources/ProtocolSource">
+            <table width='90%'>
+            <tr>
+           <th align='left' width='40%'>
+           <b><font size='3'>Source
+           </font>
+          </b>
+          </th>
+          <td width='60%'>
+          <xsl:value-of                  select="SourceName"/><br />
+          </td>
+          </tr>
+           <tr>
+           <th align='left' width='40%'>
+           <b><font size='3'>Date
+           </font>
+          </b>
+          </th>
+          <td width='60%'>
+          <xsl:value-of                select="DateReceived"/>
+          </td>
+          </tr>
+         </table>
+         </xsl:for-each>
+           <br />
 
 <!-- ====================================================================
                 Display the Protocol Approval Information
      ===================================================================== -->
 
-<b><font size='4'>Protocol Approval</font></b><br /><br />
-<xsl:for-each select="ProtocolApproval">
-<b><font size='3'>Review Approval Type</font></b><xsl:text>..........................</xsl:text>
-<xsl:value-of select="ReviewApprovalType"/><br />
-<b><font size='3'>Reimbursement Approval Type</font></b> <xsl:text>...........</xsl:text>
-<xsl:value-of select="ReimbursementApprovalType"/><br />
-<b><font size='3'>Comments</font></b><br />
-<xsl:apply-templates select="Comment"/>
-</xsl:for-each>
-<br /><br />
+       <b><font size='4'>Protocol Approval</font></b>
+                       <br /><br />
+       <xsl:for-each              select="ProtocolApproval">
+           <table width='90%'>
+           <tr>
+           <th align='left' width='40%'>
+           <b><font size='3'>Review ApprovalType
+           </font>
+          </b>
+          </th>
+          <td width='40%'>
+        <xsl:value-of            select="ReviewApprovalType"/><br />
+        </td>
+        </tr>
+          <tr>
+           <th align='left' width='40%'>
+           <b><font size='3'>Reimbursement Approval Type
+           </font>
+          </b>
+          </th>
+          <td width='60%'>
+         <xsl:value-of            select="ReimbursementApprovalType"/>
+         </td>
+         </tr>
+         </table>
+  <b><font size='3'>Comments
+     </font>
+  </b>
+   <br />
+   <xsl:apply-templates select="Comment"/>
+   </xsl:for-each>
+         <br /><br />
 
 <!-- ===============================================================
                   Display the Protocol Sponsors
      ================================================================ -->
 
-<b><font size='4'>Protocol Sponsors</font></b><br /><br />
-<xsl:for-each select="ProtocolSponsors/SponsorName">
-<b><font size='3'>Name</font></b> <xsl:text>......................................................</xsl:text>
-<xsl:value-of select="."/><br />
-<b><font size='3'>Comments</font></b><br /><br />
-<xsl:value-of select="Comment"/>
-</xsl:for-each>
-<br />
+     <b><font size='4'>Protocol Sponsors</font></b>
+     <br /><br />
+      <xsl:for-each                 select="ProtocolSponsors/SponsorName">
+           <table width='90%'>
+           <tr>
+           <th align='left' width='40%'>
+           <b><font size='3'>Name
+           </font>
+          </b>
+          </th>
+          <td width='60%'>
+         <xsl:value-of             select="."/>
+         </td>
+         </tr>
+         </table>         
+         <b><font size='3'>Comments</font></b>
+              <br /><br />
+        <xsl:value-of              select="Comment"/>
+        </xsl:for-each>
+            <br />
 
 <!-- ====================================================================
                   Display the Protocol Status Information
      ==================================================================== -->
 
-<b><font size='4'>Current Protocol Status</font></b><br /><br />
-<xsl:for-each select="ProtocolAdminInfo/CurrentProtocolStatus">
-<b><font size='3'>Status</font></b> <xsl:text>.....................................................</xsl:text>
-<xsl:value-of select="."/><br />
-</xsl:for-each>
-<br />
+      <b><font size='4'>Current Protocol Status</font></b>
+      <br /><br />
+      <xsl:for-each            select="ProtocolAdminInfo/
+                                       CurrentProtocolStatus">
+           <table width='90%'>
+           <tr>
+           <th align='left' width='40%'>
+           <b><font size='3'>Status
+           </font>
+          </b>
+          </th>
+          <td width='60%'>
+          <xsl:value-of                select="."/>
+          </td>
+          </tr>
+          </table>
+          <br />
+          </xsl:for-each>
+          <br />
 
 <!-- ====================================================================
               Display the Lead Organization Information
      ==================================================================== -->
 
-<xsl:for-each select="ProtocolAdminInfo">
-<xsl:for-each select="ProtocolLeadOrg">
-<b><font size='4'>Lead Organization</font></b><br /><br />
-<b><font size='3'>Organization Name</font></b> <xsl:text>.............................</xsl:text>
-<xsl:value-of select="LeadOrganizationID/Organization/
-                      OrganizationNameInformation/OfficialName/Name"/><br />
-<b><font size='3'>Organization Role</font></b> <xsl:text>...............................</xsl:text>
-<xsl:value-of select="LeadOrgRole"/><br />
-<b><font size='3'>Protocol ID</font></b> <xsl:text>..........................................</xsl:text>
-<xsl:value-of select="LeadOrgProtocolID"/><br />
-<b><font size='3'>Current Protocol Status</font></b> <br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Status</font></b> 
-<xsl:text>....................................................</xsl:text>
-<xsl:value-of select="LeadOrgProtocolStatuses/CurrentOrgStatus/StatusName"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>Date</font></b>
- <xsl:text>........................................................</xsl:text>
-<xsl:value-of select="LeadOrgProtocolStatuses/CurrentOrgStatus/StatusDate"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>User</font></b>
- <xsl:text>........................................................</xsl:text>
-<xsl:value-of select="LeadOrgProtocolStatuses/CurrentOrgStatus/EnteredBy"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>Entry Date</font></b>
- <xsl:text>..............................................</xsl:text>
-<xsl:value-of select="LeadOrgProtocolStatuses/CurrentOrgStatus/EntryDate"/><br />
-
-<b><font size='3'>Previous Protocol Status</font></b><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>Status</font></b>
- <xsl:text>.....................................................</xsl:text>
-<xsl:value-of select="LeadOrgProtocolStatuses/PreviousOrgStatus/StatusName"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>Date</font></b>
- <xsl:text>........................................................</xsl:text>
-<xsl:value-of select="LeadOrgProtocolStatuses/PreviousOrgStatus/StatusDate"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>User</font></b>
- <xsl:text>........................................................</xsl:text>
-<xsl:value-of select="LeadOrgProtocolStatuses/PreviousOrgStatus/EnteredBy"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>Entry Date</font></b>
- <xsl:text>..............................................</xsl:text>
-<xsl:value-of select="LeadOrgProtocolStatuses/PreviousOrgStatus/EntryDate"/><br />
-<br />
-<!--</xsl:for-each>-->
+    <xsl:for-each                      select="ProtocolAdminInfo">
+    <xsl:for-each                      select="ProtocolLeadOrg">
+    <b>
+   <font size='4'>Lead Organization
+   </font>
+   </b>
+      <br /><br />
+       <table width='90%'>
+        <tr>
+       <th align='left' width='40%'>
+       <b><font size='3'>Organization Name</font></b>
+       </th>
+       <td width='60%'>
+       <xsl:value-of                    select="LeadOrganizationID/
+                                                Organization/
+                                                OrganizationNameInformation/
+                                                OfficialName/Name"/>
+        </td>
+        </tr>
+        </table>
+        <table width='90%'>
+        <tr>
+       <th align='left' width='40%'>
+       <b><font size='3'>Organization Role</font></b>
+       </th>
+     <td width='60%'>
+      <xsl:value-of             select="LeadOrgRole"/>
+      </td>
+      </tr>
+      </table>
+      <table width='90%'>
+       <tr>
+      <th align='left' width='40%'>
+       <b><font size='3'>Protocol ID</font></b>
+       </th>
+      <td width='60%'>      
+       <xsl:value-of               select="LeadOrgProtocolID"/>
+       </td>
+       </tr>
+       </table>
+       <table width='90%'>
+       <tr>
+       <th align='left' width='40%'>
+       <b><font size='3'>Current Protocol Status</font></b>
+       </th>
+       <td>
+       <xsl:text>&#xa0;</xsl:text>
+       </td>
+       </tr>
+       </table>
+       <table width='90%'>
+       <tr>
+       <th align='left' width='40%'>
+       <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+                 &#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+       <b><font size='3'>Status
+       </font>
+       </b>
+       </th>
+       <td width='60%'>
+       <xsl:value-of                     select="LeadOrgProtocolStatuses/
+                                        CurrentOrgStatus/StatusName"/>
+       </td>
+        </tr>
+       </table>
+        <table width='90%'>     
+        <tr>
+       <th align='left' width='40%'>
+        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+                  &#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+        <b><font size='3'>Date</font></b>
+       </th>
+       <td width='60%'>
+       <xsl:value-of                  select="LeadOrgProtocolStatuses/
+                                              CurrentOrgStatus/StatusDate"/>
+       </td>
+       </tr>
+       </table>
+       <table width='90%'>
+       <tr>
+       <th align='left' width='40%'>
+        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+                 &#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+        <b><font size='3'>User</font></b>
+       </th>
+       
+      <td width='60%'>
+      <xsl:value-of               select="LeadOrgProtocolStatuses/
+                                          CurrentOrgStatus/EnteredBy"/>
+       </td>
+       </tr>
+       </table>
+       <table width='90%'>
+       <tr>
+       <th align='left' width='40%'>
+        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+                 &#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+        <b><font size='3'>Entry Date</font></b>
+       </th>
+      <td width='60%'>
+      <xsl:value-of               select="LeadOrgProtocolStatuses/
+                                          CurrentOrgStatus/EntryDate"/>
+       </td>
+       </tr>
+       </table>
+       <table width='90%'>
+       <tr>
+       <th align='left' width='40%'>
+       <b><font size='3'>Previous Protocol Status</font></b>
+       </th>
+       <td>
+       <xsl:text>&#xa0;</xsl:text>
+       </td>
+       </tr>
+        </table>
+       <table width='90%'>
+       <tr>
+       <th align='left' width='40%'>
+       <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+                 &#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+       <b><font size='3'>Status
+       </font>
+       </b>
+       </th>
+      <td width='60%'>
+       <xsl:value-of                     select="LeadOrgProtocolStatuses/
+                                                PreviousOrgStatus/
+                                                StatusName"/>
+        </td>
+        </tr>
+       </table>
+       <table width='90%'>
+       <tr>
+       <th align='left' width='40%'>
+        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+                  &#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+        <b><font size='3'>Date</font></b>
+       </th>
+       <td width='60%'>
+       <xsl:value-of               select="LeadOrgProtocolStatuses/
+                                           PreviousOrgStatus/StatusDate"/>
+       </td>
+       </tr>
+       </table>
+       <table width='90%'>
+       <tr>
+       <th align='left' width='40%'>
+        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+                 &#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+        <b><font size='3'>User</font></b>
+       </th>
+       <td width='60%'>
+      <xsl:value-of               select="LeadOrgProtocolStatuses/
+                                          PreviousOrgStatus/EnteredBy"/>
+       </td>
+       </tr>
+       </table>
+       <table width='90%'>
+       <tr>
+       <th align='left' width='40%'>
+        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+                 &#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+        <b><font size='3'>Entry Date</font></b>
+       </th>
+       
+      <td width='60%'>
+      <xsl:value-of               select="LeadOrgProtocolStatuses/
+                                          PreviousOrgStatus/EntryDate"/>
+       </td>
+       </tr>
+       </table>
 
 <!-- ==================================================================
-               Display Lead Organization Personnel Information
+               Display Lead Organization Information
      ================================================================= -->
 
-<b><font size='3'>Lead Organization Personnel</font></b><br /><br />
-
-<xsl:for-each select="LeadOrgPersonnel/Person">
-<!-- <xsl:for-each select="Person">-->
-<b><font size='3'>Person</font></b>
- <xsl:text>.............................................</xsl:text>
-<xsl:value-of select="Person/PersonNameInformation/SurName"/>,
-<xsl:value-of select="Person/PersonNameInformation/GivenName"/><br />
-<b><font size='3'>Role</font></b> <xsl:text>..................................................</xsl:text>
-<xsl:for-each select="../PersonRole">
-<xsl:value-of select="."/><br /><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;</xsl:text>
-</xsl:for-each>
-<br />
-
-<b><font size='3'>Organization Name</font></b>
-<xsl:text>......................</xsl:text>
-<xsl:variable name="orgref" select="Person/@cdr:ref"/>
-<xsl:variable name="OrgFrag" select="substring-after($orgref,'#')"/>
-<xsl:value-of select="Person/PersonLocations/OtherPracticeLocation
-                      [@cdr:id=$OrgFrag]/OrganizationLocation/
-                      Organization/OrganizationNameInformation/
-                      OfficialName/Name"/><br />
-          
-<!--</xsl:for-each>-->
- <b><font size='3'>Contact</font></b><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>Street</font></b>
-<xsl:text>.......................................</xsl:text>
- <xsl:choose>
-<xsl:when test="Person/PersonLocations/OtherPracticeLocation 
-                  [@cdr:id=$OrgFrag]/
-                  SpecificPostalAddress"> 
-  <xsl:for-each select="Person/PersonLocations/OtherPracticeLocation  
-                        [@cdr:id=$OrgFrag]/SpecificPostalAddress/Street">       
- <xsl:apply-templates select="."/><br /><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- </xsl:for-each>
-  <br />
-<xsl:for-each select="Person/PersonLocations/OtherPracticeLocation        [@cdr:id=$OrgFrag]/SpecificPostalAddress">
-                       
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>City</font></b>
-<xsl:text>..........................................</xsl:text>
-<xsl:value-of select="City"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>State/Political Unit</font></b>
-<xsl:text>...............</xsl:text>
-<xsl:value-of select="PoliticalSubUnit_State/PoliticalSubUnitFullName"/><br />
-  <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Country</font></b>
-<xsl:text>..................................</xsl:text>
-<xsl:value-of select="Country/CountryFullName"/><br />
+     <br />
+     <b><font size='3'>Lead Organization Personnel
+        </font>
+     </b>
+    <br /><br />
+    <xsl:for-each                          select="LeadOrgPersonnel/Person">
+         <xsl:variable name="orgref"       select="Person/@cdr:ref"/>
+         <xsl:variable name="OrgFrag"      select="substring-after 
+                                                  ($orgref,'#')"/>
         
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>Zip/Postal Code</font></b>
- <xsl:text>...................</xsl:text>
- <xsl:value-of select="PostalCode_ZIP"/><br /><br />
-
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Phone</font></b>
-<xsl:text>...................................</xsl:text>
-<xsl:value-of select="../SpecificPhone"/><br />
-<xsl:if test="../SpecificPhone/@Public">
-<xsl:text>(Public=</xsl:text>
-<xsl:value-of select="../SpecificPhone/@Public"/>
-<xsl:text>)</xsl:text>
-</xsl:if>
-<!--<br />-->
-
-<xsl:if  test = "../SpecificTollFreePhone">
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>Toll Free Phone</font></b>
- <xsl:text>...............</xsl:text>
- <xsl:value-of select="../SpecificTollFreePhone"/><br />
-</xsl:if>
-
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Fax</font></b>
-<xsl:text>.........................................</xsl:text>
-<xsl:value-of select="../SpecificFax"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Email</font></b>
-<xsl:text>......................................</xsl:text>
-<xsl:value-of select="../SpecificEmail"/>&#xa0;
-<xsl:if test="../Email/@Public">
-<xsl:text>(Public=</xsl:text>
-<xsl:value-of select="../SpecificEmail/@Public"/>
-<xsl:text>)</xsl:text>
-</xsl:if>
-<br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>URL</font></b>
-<xsl:text>......................................</xsl:text>
-<xsl:value-of select="../SpecificWebSite"/><br />
-
- </xsl:for-each> 
- <br />    
-
- </xsl:when>
- <xsl:otherwise>                        
-<xsl:for-each select="Person/PersonLocations/OtherPracticeLocation        [@cdr:id=$OrgFrag]/OrganizationLocation/Organization/OrganizationLocations/
- OrganizationLocation/Location/PostalAddress/Street">
- <xsl:apply-templates select="."/><br /><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- </xsl:for-each>
-  <br />
-<xsl:for-each select="Person/PersonLocations/OtherPracticeLocation        [@cdr:id=$OrgFrag]/OrganizationLocation/Organization/OrganizationLocations/
- OrganizationLocation/Location/PostalAddress">
-                       
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>City</font></b>
-<xsl:text>..........................................</xsl:text>
-<xsl:value-of select="City"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>State/Political Unit</font></b>
-<xsl:text>...............</xsl:text>
-<xsl:value-of select="PoliticalSubUnit_State/PoliticalSubUnitFullName"/><br />
-  <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Country</font></b>
-<xsl:text>..................................</xsl:text>
-<xsl:value-of select="Country/CountryFullName"/><br />
+        <table width='90%'>
+         <tr>
+         <th align='left' width='40%'>
+        <b><font size='3'>Person
+         </font>
+        </b>
+        </th>
+        <td width='60%'>
+         <xsl:value-of             select="Person/
+                                           PersonNameInformation/SurName"/>,
+          <xsl:value-of            select="Person/PersonNameInformation/
+                                           GivenName"/>&#xa0;
+         <xsl:variable name="personref"
+                                   select="Person/@cdr:ref"/>
+         <xsl:variable name="FragPersonRef" 
+                                   select="substring-after($personref,'#')"/>
+        <xsl:text>[</xsl:text>
+        <xsl:value-of              select="$FragPersonRef"/>
+         <xsl:text>]</xsl:text>
+         </td>
+         </tr>
+         </table>
+         <xsl:for-each             select="../PersonRole">
+         <table width='90%'>
+         <tr>
+         <th align='left' width='40%'>
+        <xsl:text>Role</xsl:text>
+       </th>
+       <td width='60%'>            
+      <xsl:value-of               select="."/>
+     </td>
+     </tr>
+     </table>
+     </xsl:for-each>
+     <table width='90%'>
+      <tr>
+      <th align='left' width='40%'>
+      <xsl:text>Organization Name</xsl:text>
+      </th>
+           
+     <td>
+    <xsl:value-of                    select="Person/PersonLocations/
+                                             OtherPracticeLocation
+                                             [@cdr:id=$OrgFrag]/
+                                             OrganizationLocation/
+                                             Organization/
+                                             OrganizationNameInformation/
+                                             OfficialName/Name"/>
+     </td>
+     </tr>
+     </table>
+     <table width='90%'>
+     <tr>
+     <th align='left' width='40%'>
+      <xsl:text>Contact</xsl:text>
+      </th>
+      </tr>
+     </table>
+     
+      <!--<xsl:choose>
+       <xsl:when               test="Person/PersonLocations/
+                                    OtherPracticeLocation 
+                                    [@cdr:id=$OrgFrag]/
+                                    SpecificPostalAddress"> 
+    
+      <table width='90%'>  
+      <tr>
+      <th align='left' width='40%'>
+      <xsl:text>&#xa0;&#xa0;&#xa0;Street</xsl:text>
+      </th>
+            
+       <xsl:for-each           select="Person/PersonLocations/
+                                       OtherPracticeLocation  
+                                       [@cdr:id=$OrgFrag]/
+                                       SpecificPostalAddress">
+      
         
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>Zip/Postal Code</font></b>
- <xsl:text>...................</xsl:text>
- <xsl:value-of select="PostalCode_ZIP"/><br /><br />
+      <td width='60%'>
+      <xsl:value-of            select="Street"/>
+      </td>
+      </xsl:for-each>
+      </tr>
+      </table>
+      
+      <xsl:for-each           select="Person/PersonLocations/
+                                       OtherPracticeLocation  
+                                       [@cdr:id=$OrgFrag]/
+                                       SpecificPostalAddress">
+      
+     <table width='90%'>
+      <tr>
+      <th align='left' width='40%'>
+      <xsl:text>&#xa0;&#xa0;&#xa0;City</xsl:text>
+      </th>
+      <td width='60%'>
+      <xsl:value-of               select="City"/>
+       </td>
+       </tr>
+       </table>
+        <table width='90%'>                       
+     <tr>
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;City Suffix</xsl:text>
+   </th>
+   <td width='60%'>
+  <xsl:value-of        select="CitySuffix"/>
+  </td>
+  </tr>
+  </table>
+ 
+ 
+  <table width='90%'>                       
+    <tr>
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;State/Political Unit</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="PoliticalSubUnit_State/
+                                PoliticalSubUnitFullName"/>
+  </td>
+  </tr>
+  </table>
+ 
+   <table width='90%'> 
+   <tr>                      
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;Country</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="Country/
+                                CountryFullName"/>
+  </td>
+  </tr>
+  </table>
+   <table width='90%'> 
+   <tr>                      
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;Zip/Postal Code</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="PostalCode_ZIP"/>
+        
+  </td>
+  </tr>
+  </table>
+  
+   <table width='90%'> 
+   <tr>                      
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;Phone</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="../SpecificPhone"/>
+   <xsl:if test="../Phone/@Public">
+   <xsl:text>(Public=</xsl:text>
+   <xsl:value-of select="../SpecificPhone/@Public"/>
+   <xsl:text>)</xsl:text>
+   </xsl:if>
+   </td>
+   </tr>
+   </table>
 
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Phone</font></b>
-<xsl:text>...................................</xsl:text>
-<xsl:value-of select="../Phone"/><br />
-<xsl:if test="../Phone/@Public">
-<xsl:text>(Public=</xsl:text>
-<xsl:value-of select="../Phone/@Public"/>
-<xsl:text>)</xsl:text>
-</xsl:if>
-<!--<br />-->
+    <table width='90%'> 
+   <tr>                      
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;Toll Free Phone</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="../SpecificTollFreePhone"/>
+   </td>
+   </tr>
+   </table>
+   <table width='90%'> 
+   <tr>                      
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;Fax</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="../SpecificFax"/>
+   </td>
+   </tr>
+   </table>
+   <table width='90%'> 
+   <tr>                      
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;Email</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="../SpecificEmail"/>
+   <xsl:if test="../Email/@Public">
+   <xsl:text>(Public=</xsl:text>
+   <xsl:value-of select="../SpecificEmail/@Public"/>
+   <xsl:text>)</xsl:text>
+   </xsl:if>
+   </td>
+   </tr>
+   </table>
 
-<xsl:if  test = "../TollFreePhone">
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>Toll Free Phone</font></b>
- <xsl:text>...............</xsl:text>
- <xsl:value-of select="../TollFreePhone"/><br />
-</xsl:if>
+   <table width='90%'> 
+   <tr>                      
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;URL</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="../SpecificWebSite/@cdr:xref"/>
+   <br />
+   <xsl:value-of        select="../SpecificWebSite"/>
+   </td>
+   </tr>
+   </table>
 
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Fax</font></b>
-<xsl:text>.........................................</xsl:text>
-<xsl:value-of select="../Fax"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Email</font></b>
-<xsl:text>......................................</xsl:text>
-<xsl:value-of select="../Email"/>&#xa0;
-<xsl:if test="../Email/@Public">
-<xsl:text>(Public=</xsl:text>
-<xsl:value-of select="../Email/@Public"/>
-<xsl:text>)</xsl:text>
-</xsl:if>
-<br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>URL</font></b>
-<xsl:text>......................................</xsl:text>
-<xsl:value-of select="../WebSite"/><br />
+  
+ </xsl:when>-->
+  <!--<xsl:otherwise> -->
+   <table width='90%'>
+   <tr>
+   <th align ='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;Street</xsl:text>
+    </th>
+    </tr>
+    </table>
+   <table width='90%'>                       
+   <xsl:for-each       select="Person/PersonLocations/
+                              OtherPracticeLocation[@cdr:id=$OrgFrag]     
+                              /OrganizationLocation/
+                              Organization/OrganizationLocations/
+                              OrganizationLocation/Location/
+                              PostalAddress/Street">
+   <tr>
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text>
+   </th>
+   <td width='60%'>
+ <xsl:value-of        select="."/>
+  </td>
+  </tr>
+  </xsl:for-each>
+  </table>
+ 
+                     
+   <xsl:for-each       select="Person/PersonLocations/
+                              OtherPracticeLocation[@cdr:id=$OrgFrag]     
+                              /OrganizationLocation/
+                              Organization/OrganizationLocations/
+                              OrganizationLocation/Location/
+                              PostalAddress">
+   <table width='90%'>   
+   <tr>
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;City</xsl:text>
+   </th>
+   <td width='60%'>
+ <xsl:value-of        select="City"/>
+  </td>
+  </tr>
+  </table>
+ 
+ 
+ 
+   <table width='90%'>                       
+     <tr>
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;City Suffix</xsl:text>
+   </th>
+   <td width='60%'>
+  <xsl:value-of        select="CitySuffix"/>
+  </td>
+  </tr>
+  </table>
+ 
+ 
+  <table width='90%'>                       
+    <tr>
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;State/Political Unit</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="PoliticalSubUnit_State/
+                                PoliticalSubUnitFullName"/>
+  </td>
+  </tr>
+  </table>
+ 
+   <table width='90%'> 
+   <tr>                      
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;Country</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="Country/
+                                CountryFullName"/>
+  </td>
+  </tr>
+  </table>
+   <table width='90%'> 
+   <tr>                      
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;Zip/Postal Code</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="PostalCode_ZIP"/>
+        
+  </td>
+  </tr>
+  </table>
+  
+   <table width='90%'> 
+   <tr>                      
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;Phone</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="../Phone"/>
+   <xsl:if test="../Phone/@Public">
+   <xsl:text>(Public=</xsl:text>
+   <xsl:value-of select="../Phone/@Public"/>
+   <xsl:text>)</xsl:text>
+   </xsl:if>
+   </td>
+   </tr>
+   </table>
 
- </xsl:for-each> 
- <br />    
-</xsl:otherwise>
-</xsl:choose>
- </xsl:for-each>
+    <table width='90%'> 
+   <tr>                      
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;Toll Free Phone</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="../TollFreePhone"/>
+   </td>
+   </tr>
+   </table>
+   <table width='90%'> 
+   <tr>                      
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;Fax</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="../Fax"/>
+   </td>
+   </tr>
+   </table>
+   <table width='90%'> 
+   <tr>                      
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;Email</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="../Email"/>
+   <xsl:if test="../Email/@Public">
+   <xsl:text>(Public=</xsl:text>
+   <xsl:value-of select="../Email/@Public"/>
+   <xsl:text>)</xsl:text>
+   </xsl:if>
+   </td>
+   </tr>
+   </table>
 
-<!--<xsl:for-each select="Person/Street">
-<xsl:value-of select="."/><br />
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
- </xsl:for-each>
-<br />
-<xsl:for-each select="Person/City">
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>City</font></b>
-<xsl:text>.........................................</xsl:text>
-<xsl:value-of select="."/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>State/Political Unit</font></b>
-<xsl:text>..............</xsl:text>
-<xsl:value-of select="../PoliticalSubUnit_State/PoliticalSubUnitFullName"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Country</font></b>
-<xsl:text>.................................</xsl:text>
-<xsl:value-of select="../Country/CountryFullName"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Zip/Postal Code</font></b>
-<xsl:text>..................</xsl:text>
-<xsl:value-of select="../PostalCode_ZIP"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Phone</font></b>
-<xsl:text>....................................</xsl:text>
-<xsl:value-of select="../Phone"/>&#xa0;
-<xsl:if test="../Phone/@Public">
-<xsl:text>(Public=</xsl:text>
-<xsl:value-of select="../Phone/@Public"/>
-<xsl:text>)</xsl:text>
-</xsl:if>
-<br />
+   <table width='90%'> 
+   <tr>                      
+   <th align='left' width='40%'>
+   <xsl:text>&#xa0;&#xa0;&#xa0;URL</xsl:text>
+   </th>
+   <td width='60%'>
+   <xsl:value-of        select="../WebSite/@cdr:xref"/>
+   <xsl:text>&#xa0;</xsl:text><br />
+   <xsl:value-of        select="../WebSite"/>
+   </td>
+   </tr>
+   </table>
+   </xsl:for-each>
+   </xsl:for-each>
 
-<xsl:if  test = "../TollFreePhone">
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>Toll Free Phone</font></b>
- <xsl:text>...................</xsl:text>
- <xsl:value-of select="../TollFreePhone"/><br />
-</xsl:if>
-
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Fax</font></b>
-<xsl:text>.........................................</xsl:text>
-<xsl:value-of select="../Fax"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Email</font></b>
-<xsl:text>........................................</xsl:text>
-<xsl:value-of select="../Email"/>&#xa0;
-<xsl:if test="../Email/@Public">
-<xsl:text>(Public=</xsl:text>
-<xsl:value-of select="../Email/@Public"/>
-<xsl:text>)</xsl:text>
-</xsl:if>
-<br />
-
-</xsl:for-each>
-<br />
-</xsl:for-each>-->
 
 <!-- ================================================================
-      Display Participating Orgs Name, Status, and Contact Information
+      Display Orgs Name, Status, and Contact Information
      ================================================================= -->
- <xsl:for-each select="ProtocolSites">
-  <u><b><font size='3'>Participating Organizations (for Lead Organization)</font></b></u><br /><br />
-      <xsl:for-each select="OrgSiteID">  
-      <xsl:value-of select="position()"/>.    
-        <b><font size='3'>Organization Name</font></b>
-        <xsl:text>.................................</xsl:text>
-      <xsl:value-of select="Organization/
-                            OrganizationNameInformation/
-                            OfficialName/Name"/><br />
-       <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Organization Protocol Status</font></b>
-       <xsl:text>.............</xsl:text>
-       <xsl:value-of select="Organization/Status/CurrentStatus"/><br />
-        <xsl:for-each select="OrgSiteContact">
-       <xsl:if test="SpecificPerson">
-       <xsl:for-each select="SpecificPerson/Person">
-       <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Contact</font></b>
-          <xsl:text>.....................................................</xsl:text>
-          <xsl:if test="PersonNameInformation/SurName">
-          <xsl:value-of select="PersonNameInformation/SurName"/>,
-          </xsl:if>
-          <xsl:value-of select="PersonNameInformation/GivenName"/><br />
-       <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Role</font></b>
-                <xsl:text>............................................................</xsl:text>
-          <xsl:value-of select="../Role"/><br />
-         <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Phone</font></b>
-                <xsl:text>........................................................</xsl:text>
-          <xsl:value-of select="PersonLocations/OtherPracticeLocation/SpecificPhone"/>&#xa0;
-           <xsl:if test="SpecificPhone/@Public">
-          <xsl:text>(Public=</xsl:text>
-          <xsl:value-of select="SpecificPhone/@Public"/>
-          <xsl:text>)</xsl:text>
-          </xsl:if>
-          <br />
-
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Toll Free Phone</font></b>
-                <xsl:text>......................................</xsl:text>
-          <xsl:value-of select="PersonLocations/OtherPracticeLocation/SpecificTollFreePhone"/><br />
-       <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Fax</font></b>
-                <xsl:text>.............................................................</xsl:text>
-          <xsl:value-of select="PersonLocations/OtherPracticeLocation/SpecificFax"/><br />
-        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Email</font></b>
-         <xsl:text>..........................................................</xsl:text>
-          <xsl:value-of select="PersonLocations/OtherPracticeLocation/SpecificEmail"/>&#xa0;
-          <xsl:if test="SpecificEmail/@Public">
-          <xsl:text>(Public=</xsl:text>
-          <xsl:value-of select="PersonLocations/OtherPracticeLocation/SpecificEmail/@Public"/>
-          <xsl:text>)</xsl:text>
-          </xsl:if>
-          <br />
-
-
-          <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;URL</font></b>
-         <xsl:text>...........................................................</xsl:text>
-          <xsl:value-of select="PersonLocations/OtherPracticeLocation/SpecificWebSite"/><br /><br /> 
-          </xsl:for-each>              
-          </xsl:if>  
-         <xsl:if test="GenericPerson">
-          <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;Generic Title</font></b>
-          <xsl:text>...........................................</xsl:text>
-          <xsl:value-of select="GenericPerson/PersonTitle"/><br />
-
-          <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;Generic Contact</font></b>
-          <xsl:text>....................................</xsl:text>
-          <xsl:value-of select="GenericPerson/GenericPersonContact/ContactName"/><br />
-
-           <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;Street</font></b>
-           <xsl:text>........................................................</xsl:text>
-
-           <xsl:for-each select="GenericPerson/GenericPersonContact/ContactDetail/PostalAddress/Street">
-           <xsl:value-of select="."/><br /><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;</xsl:text>
-          </xsl:for-each>
-           <br />
-           <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;City</font></b>
-           <xsl:text>............................................................</xsl:text>
-           <xsl:value-of select="GenericPerson/GenericPersonContact/ContactDetail/PostalAddress/City"/><br />
-
-           <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;State/PolitcalSubUnit</font></b>
-           <xsl:text>...........................</xsl:text>
-       
-          <xsl:value-of select="GenericPerson/GenericPersonContact/ContactDetail/PostalAddress/PoliticalSubUnit_State/PoliticalSubUnitFullName"/><br />
-
-          <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;Country</font></b>
-           <xsl:text>....................................................</xsl:text>
-            <xsl:value-of select="GenericPerson/GenericPersonContact/ContactDetail/PostalAddress/Country/CountryFullName"/><br />
-           <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;Zip/PostalCode</font></b>
-           <xsl:text>......................................</xsl:text>
-
-          <xsl:value-of select="GenericPerson/GenericPersonContact/ContactDetail/PostalAddress/PostalCode_ZIP"/><br />
-                                                                                                               
-          <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;Phone</font></b>
-                <xsl:text>.......................................................</xsl:text>
-          <xsl:value-of select="GenericPerson/GenericPersonContact/ContactDetail/Phone"/>&#xa0;
-          <xsl:if test="GenericPerson/GenericPersonContact/ContactDetail/Phone/@Public">
-          <xsl:text>(Public=</xsl:text>
-          <xsl:value-of select="GenericPerson/GenericPersonContact/ContactDetail/Phone/@Public"/>
-          <xsl:text>)</xsl:text>
-          </xsl:if>
-          <br />
-        
-         <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;Toll Free Phone</font></b>
-                <xsl:text>....................................</xsl:text>
-          <xsl:value-of select="GenericPerson/GenericPersonContact/ContactDetail/TollFreePhone"/><br />
-         <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;Fax</font></b>
-                <xsl:text>...........................................................</xsl:text>
-          <xsl:value-of select="GenericPerson/GenericPersonContact/ContactDetail/Fax"/><br />
-         <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;Email</font></b>
-         <xsl:text>.......................................................</xsl:text>
-         
-          <xsl:value-of select="GenericPerson/GenericPersonContact/ContactDetail/Email"/>&#xa0;  
-          <xsl:if test="GenericPerson/Email/@Public">
-          <xsl:text>(Public=</xsl:text>
-          <xsl:value-of select="GenericPerson/GenericPersonContact/ContactDetail/Email/@Public"/>
-          <xsl:text>)</xsl:text>
-          </xsl:if>
-          <br />
-  
-          <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;URL</font></b>
-         <xsl:text>..........................................................</xsl:text>
-          <xsl:value-of select="GenericPerson/GenericPersonContact/ContactDetail/WebSite"/><br />               
-          </xsl:if>       
-          </xsl:for-each>
-          </xsl:for-each>
-          </xsl:for-each>
-          </xsl:for-each>
-         </xsl:for-each>
-            </BODY>
-          </xsl:template>
+ <xsl:for-each           select="ProtocolSites">
+  <u>
+  <b>
+   <font size='3'>Participating Organizations (for Lead Organization)        
+   </font>
+  </b>
+  </u>
+   <br /><br />
    
-</xsl:transform>
-]]>
+      <xsl:for-each      select="OrgSiteID">
+     <xsl:value-of      select="position()"/>. 
+      <b><font size='3'>Organization Name</font></b>
+      <br />
+      <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+      </xsl:text>
+      
+      <xsl:value-of     select="Organization/
+                                OrganizationNameInformation/
+                                OfficialName/Name"/>
+       <br />
+       <br />
+     
+   
+                  
+       <xsl:for-each         select="OrgSiteContact">
+       <xsl:if               test="SpecificPerson">
+       <xsl:for-each         select="SpecificPerson/Person">
+       <xsl:variable name="PerFrag"  select="substring-after(@cdr:ref,'#')"/>
+      <table width='90%'>
+      <tr>
+       <th align='left' width='40%'>
+          <b>
+         <font size='3'>Organization Protocol Status
+         </font>
+         </b>
+         </th>
+         <td width='60%'>
+      <xsl:value-of          select="../../../OrgSiteStatus"/>
+      </td>
+       </tr>
+           
+         <tr>
+         <th align='left' width='40%'>
+         <b><font size='3'>Contact
+         </font>
+         </b>
+         </th>
+        <td width='60%'>
+         <xsl:value-of       select="PersonNameInformation/SurName"/>,
+         <xsl:value-of       select="PersonNameInformation/GivenName"/>&#xa0;
+         <xsl:text>[</xsl:text>
+         <xsl:value-of  select="$PerFrag"/>
+         <xsl:text>]</xsl:text>
+         </td>
+         </tr>        
+         <tr>
+         <th align='left' width='40%'>
+         <b><font size='3'>Role
+         </font>
+         </b>
+         </th>
+         <td width='60%'>
+       <xsl:value-of            select="../Role"/>
+       </td>
+       </tr>
+       <tr>
+       <th align='left' width='40%'>
+         <b><font size='3'>Phone
+         </font>
+         </b>
+        </th>
+         <td width='60%'>
+       <xsl:value-of         select="../SpecificPhone"/>
+                                                                       
+       <xsl:if               test="../SpecificPhone/@Public">                         
+       <xsl:text>(Public=</xsl:text>
+       <xsl:value-of           select="../SpecificPhone/@Public"/>
+
+       <xsl:text>)</xsl:text>
+       </xsl:if>
+       <xsl:if                  test="not(../SpecificPhone)">
+       <xsl:value-of            select="PersonLocations/OtherPracticeLocation
+                                        [$PerFrag=@cdr:id]/SpecificPhone"/>
+      <xsl:if               test="PersonLocations/
+                                  OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                   SpecificPhone/@Public">
+       <xsl:text>(Public=</xsl:text>
+
+       <xsl:value-of        select="PersonLocations/
+                                    OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                    SpecificPhone/@Public"/>
+       <xsl:text>)</xsl:text>
+       </xsl:if>
+       </xsl:if>
+                                    
+       <xsl:if                test = "not(PersonLocations/
+                                    OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                    SpecificPhone | ../SpecificPhone)">
+       <i>              
+       <xsl:value-of           select="PersonLocations/
+                                        OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                        OrganizationLocation/Organization/
+                                        OrganizationLocations/
+                                        OrganizationLocation/Location/Phone"/>  
+                                    
+       </i>
+       </xsl:if>
+       </td>
+       </tr>
+   
+       <tr>
+        <th align='left' width='40%'>
+         <b><font size='3'>Toll Free Phone
+        </font>
+        </b>
+        </th>
+        <td width='60%'>
+        <xsl:value-of            select="PersonLocations/
+                                        OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                         SpecificTollFreePhone"/>
+       <xsl:if                  test="not(PersonLocations/
+                                    OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                     SpecificTollFreePhone)">
+      <i><xsl:value-of           select="PersonLocations/
+                                        OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                        OrganizationLocation/Organization/
+                                        OrganizationLocations/
+                                        OrganizationLocation/Location/
+                                        TollFreePhone"/>  
+                                    
+       </i>
+       </xsl:if>
+       </td>
+       </tr>
+       <tr>
+       <th align='left' width='40%'>
+       <b><font size='3'>Fax
+        </font>
+        </b>
+        </th>
+        <td width='60%'>
+        <xsl:value-of          select="PersonLocations/
+                                       OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                       SpecificFax"/>
+         <xsl:if                  test="not(PersonLocations/
+                                    OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                     SpecificFax)">
+      <i><xsl:value-of           select="PersonLocations/
+                                        OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                        OrganizationLocation/Organization/
+                                        OrganizationLocations/
+                                        OrganizationLocation/Location/Fax"/>  
+                                    
+       </i>
+       </xsl:if>
+ 
+       </td>
+       </tr>
+      
+        <tr>
+        <th align='left' width='40%'>
+        <b><font size='3'>Email
+        </font>
+        </b>
+        </th>
+        <td width='60%'>
+        <xsl:value-of            select="PersonLocations/
+                                        OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                         SpecificEmail"/>
+        
+          <xsl:if                test="PersonLocations/
+                                       OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                       SpecificEmail/@Public">
+          <xsl:text>(Public=</xsl:text>
+          <xsl:value-of          select="PersonLocations/OtherPracticeLocation/
+                                         SpecificEmail/@Public"/>
+          <xsl:text>)</xsl:text>
+          </xsl:if>
+          </td>
+          </tr>
+         <tr>
+        <th align='left' width='40%'>
+        <b><font size='3'>URL
+        </font>
+        </b>
+        </th>
+        <td width='60%'>
+        <xsl:value-of          select="PersonLocations/
+                                       OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                       SpecificWebSite/@cdr:xref"/>
+        <br />
+        <xsl:value-of          select="PersonLocations/
+                                       OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                       SpecificWebSite"/>
+                
+        <xsl:if                  test="not(PersonLocations/
+                                    OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                     SpecificWebSite)">
+      <i><xsl:value-of           select="PersonLocations/
+                                        OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                        OrganizationLocation/Organization/
+                                        OrganizationLocations/
+                                        OrganizationLocation/Location/
+                                        WebSite/@cdr:xref"/> 
+     <br />
+     <xsl:value-of                select="PersonLocations/
+                                        OtherPracticeLocation[$PerFrag=@cdr:id]/
+                                        OrganizationLocation/Organization/
+                                        OrganizationLocations/
+                                        OrganizationLocation/Location/
+                                        WebSite"/>   
+                                    
+       </i>
+       </xsl:if>
+ 
+        </td>
+        </tr>
+       </table>
+       </xsl:for-each>
+       <br />
+       </xsl:if> 
+
+      <xsl:if test="GenericPerson">
+      <table width='90%'>
+      <tr>
+      <th align='left' width='40%'>
+    
+        <b><font size='3'>Generic Title
+        </font>
+        </b>
+        </th>
+        <td width='60%'>
+       <xsl:value-of        select="GenericPerson/PersonTitle"/>
+       </td>
+       </tr>
+        <tr>
+        <th align='left' width='40%'>
+     
+        <b><font size='3'>GenericContact
+        </font>
+        </b>
+        </th>
+       <td width='60%'>
+       <xsl:value-of        select="GenericPerson/
+                                    GenericPersonContact/ContactName"/>
+        </td>
+        </tr>
+         
+        <tr>
+        <th align='left' width='40%'>
+        <b><font size='3'>Street
+        </font>
+        </b>
+        </th>
+        <td width='60%'>
+        
+        <xsl:for-each            select="GenericPerson/GenericPersonContact/
+                                        ContactDetail/PostalAddress/Street">
+        <tr>                     
+        <th align='left' width='40%'>
+       </th>
+      <td width='60%'>
+       <xsl:value-of            select="."/>
+       </td>
+       </tr>
+       </xsl:for-each>
+       </td>
+       </tr>
+         <tr>
+        <th align='left' width='40%'>
+        <b><font size='3'>City
+        </font>
+        </b>
+        </th>
+        <td width='60%'>              
+       <xsl:value-of              select="GenericPerson/GenericPersonContact/
+                                          ContactDetail/PostalAddress/City"/>
+       </td>
+        </tr>
+        <tr>
+        <th align='left' width='40%'>
+        <b><font size='3'>PoliticalSubUnit
+        </font>
+        </b>
+        </th>
+       <td width='60%'>             
+       <xsl:value-of           select="GenericPerson/GenericPersonContact/
+                                         ContactDetail/PostalAddress/
+                                         PoliticalSubUnit_State/
+                                         PoliticalSubUnitFullName"/>
+        </td>
+        </tr>
+        <tr>
+        <th align='left' width='40%'>
+        <b><font size='3'>Country
+        </font>
+        </b>
+        </th>
+        <td width='60%'>              
+        <xsl:value-of            select="GenericPerson/GenericPersonContact/
+                                         ContactDetail/PostalAddress/
+                                         Country/CountryFullName"/>
+         </td>
+         </tr>
+         <tr>
+        <th align='left' width='40%'>
+        <b>
+        <font size='3'>ZIP/PostalCode
+        </font>
+        </b>
+        </th>
+       <td width='60%'>
+       <xsl:value-of                    select="GenericPerson/
+                                                GenericPersonContact/
+                                                ContactDetail/
+                                                PostalAddress/
+                                                PostalCode_ZIP"/>
+       </td>
+       </tr>
+        <tr>
+        <th align='left' width='40%'>
+        <b><font size='3'>Phone
+        </font>
+        </b>
+        </th>
+        <td width='60%'>             
+                       
+         <xsl:value-of                  select="GenericPerson/
+                                                GenericPersonContact/
+                                                ContactDetail/Phone"/>&#xa0;
+         <xsl:if                        test="GenericPerson/
+                                              GenericPersonContact/
+                                              ContactDetail/Phone/@Public">
+          <xsl:text>(Public=</xsl:text>
+          <xsl:value-of                 select="GenericPerson/
+                                                GenericPersonContact/
+                                                ContactDetail/Phone/@Public"/>
+          <xsl:text>)</xsl:text>
+          </xsl:if>
+          <br />
+          </td>
+          </tr>
+          <tr>
+          <th align='left' width='40%'>
+          <b><font size='3'>Toll Free Phone
+          </font>
+          </b>
+         </th>
+         <td width='60%'>              
+        <xsl:value-of                 select="GenericPerson/
+                                              GenericPersonContact/
+                                              ContactDetail/
+                                              TollFreePhone"/>
+         </td>
+         </tr>
+           <tr>
+        <th align='left' width='40%'>
+        <b><font size='3'>Fax
+        </font>
+        </b>
+        </th>
+       <td width='60%'>             
+      <xsl:value-of                     select="GenericPerson/
+                                                GenericPersonContact/
+                                                ContactDetail/Fax"/>
+      </td>
+      </tr>
+      <tr>
+        <th align='left' width='40%'>
+        <b><font size='3'>Email
+        </font>
+        </b>
+        </th>
+        <td width='60%'>                         
+          <xsl:value-of                   select="GenericPerson/
+                                                  GenericPersonContact/
+                                                  ContactDetail/
+                                                  Email"/>&#xa0;  
+          <xsl:if                         test="GenericPerson/Email/@Public">
+          <xsl:text>(Public=</xsl:text>
+          <xsl:value-of                   select="GenericPerson/
+                                                 GenericPersonContact/
+                                                 ContactDetail/Email/@Public"/>
+          <xsl:text>)</xsl:text>
+          </xsl:if>
+          </td>
+          </tr>
+         <tr>
+        <th align='left' width='40%'>
+        <b><font size='3'>URL
+        </font>
+        </b>
+        </th>
+        <td width='60%'>
+        <xsl:value-of                      select="GenericPerson/
+                                                   GenericPersonContact/
+                                                   ContactDetail/WebSite"/>
+         </td>
+         </tr>
+         </table>
+         </xsl:if>
+          </xsl:for-each>
+          </xsl:for-each>
+          </xsl:for-each>
+          </xsl:for-each>
+         
+         </xsl:for-each>
+         
+    <!-- =================================================================
+                        Protocol Processing Details
+      ================================================================ -->
+              <br />
+             <xsl:for-each       select="ProtocolProcessingDetails">
+              <b><font size='4'>Protocol Processing Details
+              </font>
+              </b>
+              <br /><br />
+             <table width='90%'>
+             <tr>
+             <th align='left' width='40%'>
+             <b><font size='3'>Processing Status 
+             </font>
+             </b>
+             </th>
+             <td width='60%'>
+             <xsl:value-of     select="ProcessingStatus"/></td>
+             </tr>
+             <tr>
+            <th align='left' width='40%'>
+            <b>
+             <font size='3'>Processing Date
+             </font>
+            </b>
+            </th>
+            <td width='60%'>
+            <xsl:value-of      select="ProcessingDate"/>
+                 
+            </td>
+            </tr>
+            </table>
+            <b><font size='3'>Comments</font></b><br />
+          <xsl:apply-templates       select="Comment"/><br />
+           </xsl:for-each>
+               </BODY>
+          </xsl:template>
+            
+
+
+
+
+</xsl:transform>]]>
 </CdrDocXml>
 </CdrDoc>
