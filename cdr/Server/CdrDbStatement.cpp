@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbStatement.cpp,v 1.2 2000-04-17 21:24:48 bkline Exp $
+ * $Id: CdrDbStatement.cpp,v 1.3 2000-04-21 13:55:03 bkline Exp $
  *
  * Implementation for ODBC HSTMT wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/17 21:24:48  bkline
+ * Added nullability for ints and strings.  Fixed length byte for setString().
+ *
  * Revision 1.1  2000/04/15 12:21:14  bkline
  * Initial revision
  *
@@ -66,7 +69,6 @@ void cdr::db::Statement::setString(int pos, const cdr::String& val)
         p->len   = val.size() * sizeof(wchar_t) + sizeof(wchar_t);
         p->value = new wchar_t[val.size() + 1];
         p->cb    = SQL_NTS;
-        memset(p->value, 0, p->len + sizeof(wchar_t));
         memcpy(p->value, val.c_str(), p->len);
     }
     paramVector.push_back(p);
@@ -87,7 +89,6 @@ void cdr::db::Statement::setString(int pos, const std::string& val, bool null)
         p->len   = val.size() + 1;
         p->value = new char[val.size() + 1];
         p->cb    = SQL_NTS;
-        memset(p->value, 0, p->len + sizeof(char));
         memcpy(p->value, val.c_str(), p->len);
     }
     paramVector.push_back(p);
