@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.52 2002-04-10 13:39:40 bkline Exp $
+ * $Id: tables.sql,v 1.53 2002-05-14 16:55:01 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.52  2002/04/10 13:39:40  bkline
+ * Added failed_login_attempts view.
+ *
  * Revision 1.51  2002/04/02 19:02:02  bkline
  * Added failure column to pub_proc_doc (and published_doc view).
  *
@@ -823,7 +826,7 @@ GO
  */
 CREATE TABLE link_xml (
       doc_type INTEGER      NOT NULL REFERENCES doc_type,
-       element VARCHAR(32)  NOT NULL,
+       element VARCHAR(64)  NOT NULL,
        link_id INTEGER      NOT NULL REFERENCES link_type,
    PRIMARY KEY (doc_type, element)
 )
@@ -910,7 +913,7 @@ GO
 CREATE TABLE link_net (
           link_type INTEGER     NOT NULL REFERENCES link_type,
          source_doc INTEGER     NOT NULL REFERENCES all_docs,
-        source_elem VARCHAR(32) NOT NULL,
+        source_elem VARCHAR(64) NOT NULL,
          target_doc INTEGER         NULL /* REFERENCES all_docs */ ,
         target_frag VARCHAR(32)     NULL,
                 url VARCHAR(256)    NULL
