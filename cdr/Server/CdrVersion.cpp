@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.7 2001-05-03 18:43:48 bkline Exp $
+ * $Id: CdrVersion.cpp,v 1.8 2001-05-04 17:01:17 mruben Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2001/05/03 18:43:48  bkline
+ * Fixed bug in query (two result set columns reversed).
+ *
  * Revision 1.6  2001/02/26 16:09:53  mruben
  * expanded information saved for version
  *
@@ -489,7 +492,7 @@ cdr::String cdr::checkVerOut(cdr::Session& session,
 
   cdr::dom::NamedNodeMap cmdattr = commandNode.getAttributes();
   cdr::dom::Node attr = cmdattr.getNamedItem("ForceCheckOut");
-  if (attr != NULL && attr.getNodeValue() == "Y")
+  if (attr != NULL && cdr::String(attr.getNodeValue()) == L"Y")
     force = true;
 
   for (cdr::dom::Node child = commandNode.getFirstChild();
@@ -541,10 +544,10 @@ cdr::String cdr::checkVerIn(cdr::Session& session,
 
   cdr::dom::NamedNodeMap cmdattr = commandNode.getAttributes();
   cdr::dom::Node attr = cmdattr.getNamedItem("Abandon");
-  if (attr != NULL && attr.getNodeValue() == "Y")
+  if (attr != NULL && cdr::String(attr.getNodeValue()) == L"Y")
     abandon = true;
   attr = cmdattr.getNamedItem("ForceCheckIn");
-  if (attr != NULL && attr.getNodeValue() == "Y")
+  if (attr != NULL && cdr::String(attr.getNodeValue()) == L"Y")
     force = true;
 
   for (cdr::dom::Node child = commandNode.getFirstChild();
