@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.5 2001-06-12 19:54:16 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.6 2001-06-15 02:31:27 ameyer Exp $
  *
  */
 
@@ -87,6 +87,11 @@ namespace cdr {
              */
             bool parseAvailable();
 
+            /**
+             * Mark a document as malformed.
+             */
+            void malFormed();
+
             // Accessors
             int getId()                    {return Id;}
             int getDocType()               {return DocType;}
@@ -107,7 +112,8 @@ namespace cdr {
             int Id;                     // Numeric form of document id
             int DocType;                // Internal key to document type
             cdr::String TextId;         // With "CDR00..." prefix
-            cdr::String ValStatus;      // V/I/U
+            cdr::String ValStatus;      // V(alid) I(nvalid)
+                                        //   U(nvalidated) M(alformed)
             cdr::String ValDate;        // Datetime
             cdr::String ActiveStatus;   // Y/N
             cdr::String TextDocType;    // Form used in document tag
