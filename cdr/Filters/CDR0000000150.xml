@@ -182,9 +182,106 @@
                                       Purpose         |
                                       EligibilityText |
                                       TreatmentIntervention">
-   <xsl:apply-templates     select = "Para|ItemizedList"
-                              mode = "copy"/>
+   <xsl:apply-templates/>
  </xsl:template>
+
+
+<!-- ==================================================================== 
+     Create the ItemizedList template. 
+     ==================================================================== -->
+  <xsl:template              match = "ItemizedList">
+    <ItemizedList>
+      <xsl:attribute          name = "id">
+        <xsl:value-of       select = "./@id"/>
+      </xsl:attribute>
+      <xsl:if                 test = "./@Style">
+       <xsl:attribute          name = "Style">
+        <xsl:value-of       select = "./@Style"/>
+       </xsl:attribute>
+      </xsl:if>
+      <xsl:if                 test = "./@Compact">
+       <xsl:attribute          name = "Compact">
+        <xsl:value-of       select = "./@Compact"/>
+       </xsl:attribute>
+      </xsl:if>
+      <xsl:apply-templates/>
+    </ItemizedList>
+  </xsl:template>
+    
+
+
+<!-- ==================================================================== 
+     Create the OrderedList template.
+     ==================================================================== -->
+  <xsl:template              match = "OrderedList">
+    <OrderedList>
+      <xsl:attribute          name = "id">
+        <xsl:value-of       select = "./@id"/>
+      </xsl:attribute>
+      <xsl:if                 test = "./@Style">
+       <xsl:attribute          name = "Style">
+        <xsl:value-of       select = "./@Style"/>
+       </xsl:attribute>
+      </xsl:if>
+      <xsl:apply-templates/>
+    </OrderedList>
+  </xsl:template>
+    
+
+
+<!-- ==================================================================== 
+     Create the ListItems for ItemizedList and OrderedList.
+     ==================================================================== -->
+  <xsl:template              match = "ListItem">
+    <ListItem>
+      <xsl:apply-templates/>
+    </ListItem>
+  </xsl:template>
+    
+
+<!-- ==================================================================== 
+     Create the ListTitle
+     ==================================================================== -->
+  <xsl:template              match = "ListTitle">
+    <ListTitle>
+      <xsl:apply-templates/>
+    </ListTitle>
+  </xsl:template>
+    
+
+ <!--
+ ====================================================================
+ Assemble the Para element.
+ ==================================================================== -->
+ <xsl:template               match = "Para">
+  <Para>
+   <xsl:attribute             name = "id">
+    <xsl:value-of           select = "@id"/>
+   </xsl:attribute>
+   <xsl:apply-templates/>
+  </Para>
+ </xsl:template>
+
+
+ <!-- ==============================================================
+      Template for extracting Glossary Term definitions for Patient
+      Abstract section
+      ============================================================== -->
+ <xsl:template               match = "GlossaryTermRef">
+    <GlossaryTermRef>
+      <xsl:attribute          name = "href">
+       <xsl:value-of        select = "@cdr:href"/>
+      </xsl:attribute>
+      <xsl:apply-templates/>
+    </GlossaryTermRef>
+  </xsl:template>
+
+
+ <!-- ==============================================================
+      Remove the GlossaryTerm entries from the vendor output
+      ============================================================== -->
+ <xsl:template               match = "GlossaryTerm">
+  </xsl:template>
 
 
  <!--
