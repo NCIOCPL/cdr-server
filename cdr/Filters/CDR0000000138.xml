@@ -1,293 +1,671 @@
-<CdrDoc Type='Filter' Id='CDR0000000138'>
+<CdrDoc Type='Filter' Id='CDR0000000096'>
 <CdrDocCtl>
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Vendor Filter: Person</DocTitle>
+<DocTitle readonly="yes">Person QC Report Filter</DocTitle>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 
-<!-- ===============================================================
-      Filter to create Vendor Person XML documents 
-     =============================================================== -->
+<!-- ================================================================
+        Filter to create a Person Content QC Report 
+     ================================================================ -->
 
-  <xsl:transform   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                     version="1.0"
-                    xmlns:cdr="cips.nci.nih.gov/cdr"
-                    exclude-result-prefixes="cdr">
-        <xsl:output method="xml" omit-xml-declaration="no"/>
- 
-<!-- =================================================================
-                        Copy control information 
-     ================================================================= -->
+  <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                 version="1.0"
+                 xmlns:cdr="cips.nci.nih.gov/cdr">
+   <xsl:output method="html"/>
+   <xsl:template match="/">
+     <!--Filter written by C.Burg - 4/26/2002 -->
+     <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+    <HTML>
+    <HEAD>
+      <xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
 
-   <xsl:template match="Person">
-   <xsl:copy>
- <xsl:for-each select="DocId">
-   <xsl:attribute name="id">
-   <xsl:value-of select="."/>
-   </xsl:attribute>
-  </xsl:for-each>
-    <xsl:attribute name="LegacyPDQID">
-   <xsl:value-of select="PdqKey"/>
-   </xsl:attribute>
+    <TITLE><xsl:value-of select="document('cdrutil:/docid')"/>&#xa0;&#xa0;<xsl:value-of select="substring-before($cdrmydoc/CdrDocCtl/DocTitle,';')"/> </TITLE>
+     
+       <!--
+     <LINK REL='stylesheet' 
+           HREF='/stylesheets/protocol2.css' 
+           TYPE='text/css' /> -->
+    </HEAD>
+  <BASEFONT FACE='Arial, Helvetica, sans-serif' />
+    <xsl:apply-templates select="Person"/>
+    
+    </HTML>
+    </xsl:template>
+  <!-- Generate the HTML for the Person QC Report-->
+  <xsl:template match="Person">
+    <BODY>
 
- 
- <!--  <xsl:apply-templates select="document('cdrx:/*/CdrCtl')" mode="copy"/>-->
+ <!-- ==================================================================
+              Display Report heading and subheading 
+      ================================================================== -->
+
+  <!--<b><font size='4'><left>Person Content<br />
+      QC Report</left></font></b><br />-->
+<!-- Display report title -->
+ <b><font size='4'><center><xsl:text>Person QC Report</xsl:text></center></font></b>
+ <b><font size='3'><center><xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/></center></font></b><br /><br />
 
 <!-- ====================================================================
-                        Copy name information
+                 Display Name Header, and PersonNameInformation
      ==================================================================== -->
-<PersonNameInformation>
-<xsl:apply-templates select="PersonNameInformation/GivenName" mode="copy"/>
-<xsl:apply-templates select="PersonNameInformation/MiddleInitial" mode="copy"/>
-<xsl:apply-templates select="PersonNameInformation/SurName" mode="copy"/>
-<xsl:apply-templates select="PersonNameInformation/Prefix" mode="copy"/>
-<ProfessionalSuffix>
-<xsl:for-each select="PersonNameInformation/ProfessionalSuffix">
+ 
+ <br /><br />
+ <b><xsl:value-of select="document('cdrutil:/docid')"/></b><br /><br />
+ 
+ <b><font size='4'><xsl:text>Name</xsl:text></font></b><br /><br />
+ <xsl:apply-templates select="PersonNameInformation/Prefix"/>
+ <xsl:text>&#xa0;</xsl:text>
+ <xsl:apply-templates select="PersonNameInformation/GivenName"/>
+ <xsl:text>&#xa0;</xsl:text>
+ <xsl:apply-templates select="PersonNameInformation/MiddleInitial"/>
+ 
+
+<!--test for generation suffix and display if present -->
+   <xsl:if test="PersonNameInformaton/GenerationSuffix">
+   <xsl:for-each select="PersonNameInformation/GenerationSuffix">
+   <xsl:value-of select="."/>
+   <xsl:text>&#xa0;</xsl:text>
+   </xsl:for-each>
+   </xsl:if>
+<!--check for Professional suffix and display -->
+   <xsl:choose>
+   <xsl:when test="PersonNameInformation/ProfessionalSuffix">
+    <xsl:apply-templates select="PersonNameInformation/SurName"/>,
+    <xsl:for-each select="PersonNameInformation/ProfessionalSuffix">
 <xsl:for-each select="StandardProfessionalSuffix | CustomProfessionalSuffix">
 <xsl:value-of select="."/>
 <xsl:if test="position() !=last()">,&#xa0;</xsl:if>
 </xsl:for-each>
 </xsl:for-each>
-</ProfessionalSuffix>
 <xsl:for-each select="PersonNameInformation">
 <xsl:for-each select="GenerationalSuffix">
 <GenerationalSuffix><xsl:value-of select="."/></GenerationalSuffix>
 </xsl:for-each>
 </xsl:for-each>
-<xsl:apply-templates select="PersonNameInformation/NameFormat" mode="copy"/>
-</PersonNameInformation>
-<!-- ======================================================================
-    Copy Professional Information  NOTE: Genetics Professional Details not
-    available until Phase II of CDR when code will need to be added to
-    include those data elements
-    ======================================================================== -->
-<ProfessionalInformation>
-<xsl:if test="ProfessionalInformation/PhysicianDetails/AdministrativeInformation/Directory/Include='Include'">
-<xsl:if test="CurrentStatus='Active'">
-<PhysicianDetails>
-<xsl:for-each select="ProfessionalInformation/PDQBoardMembershipDetails/PDQEditorialBoard/Name">
-<PDQBoardMembership><xsl:value-of select="."/></PDQBoardMembership>
-</xsl:for-each>
+  <br /><br />
+   </xsl:when>
+   <xsl:otherwise>
+   <!-- Display surname if no Suffix is present -->
+    <xsl:apply-templates select="PersonNameInformation/SurName"/><br /><br />
+    </xsl:otherwise>
+    </xsl:choose>
+ <b><font size='4'>Comment</font></b><br />
+ <xsl:apply-templates select="PersonNameInformation/Comment"/><br /><br />
+ <!-- ============================================================
+                  Display Professional information 
+      ============================================================ -->
 
- <xsl:apply-templates select="ProfessionalInformation/PhysicianDetails/PhysicianSpecialtyInformation" mode="copy"/>
-
-<!-- =================================================================
-       Copy Physician Membership Information, Member of Cooperative
-       Group, Member of Medical Society
-     ================================================================= -->
-  <PhysicianMembershipInformation>   
-      <xsl:for-each select="ProfessionalInformation/PhysicianDetails/PhysicianMembershipInformation/MemberOfCooperativeGroup/CooperativeGroup">
-     <MemberOfCooperativeGroup>
-     <xsl:attribute name="ref">
-      <xsl:value-of select="Ref"/>
-      </xsl:attribute>
-      <xsl:value-of select="OfficialName/Name"/>
-      </MemberOfCooperativeGroup>
-      </xsl:for-each>
-
-<!-- ==================================================================
-                  Copy MemberOfMedicalSociety
-     ================================================================== -->
-      
-          <xsl:apply-templates select="ProfessionalInformation/PhysicianDetails/PhysicianMembershipInformation/MemberOfMedicalSociety" mode="copy"/>
-</PhysicianMembershipInformation>
-</PhysicianDetails>  
+   <b><font size='4'><xsl:text>Professional Information</xsl:text></font></b><br /><br />
+ <dl>
+<xsl:for-each select="ProfessionalInformation/PDQBoardMembershipDetails">
+<xsl:if test="PDQEditorialBoard/Name">
+<dt><b><xsl:text>PDQ Board</xsl:text></b><xsl:text>.......................................</xsl:text><xsl:value-of select="PDQEditorialBoard/Name"/></dt>
 </xsl:if>
+<xsl:if test="PDQAdvisoryBoard/Name">
+<dt><b><xsl:text>PDQ Board</xsl:text></b><xsl:text>.......................................</xsl:text><xsl:value-of select="PDQAdvisoryBoard/Name"/></dt>
 </xsl:if>
-</ProfessionalInformation>
-
-<!-- ====================================================================
-        Copy Contact Information for Home
-     =================================================================== -->
-<PersonLocations>
-<xsl:if test="PersonLocations/Home">
-<xsl:for-each select="PersonLocations/Home">
-<xsl:variable name="id" select="@id"/>
-<Home id="{$id}">
-<PostalAddress>
-<xsl:apply-templates select="PostalAddress/Street" mode="copy"/>
-<xsl:apply-templates select="PostalAddress/City" mode="copy"/>
-<xsl:apply-templates select="PostalAddress/CitySuffix" mode="copy"/>
-<xsl:for-each select="PostalAddress">
-<xsl:if test="PoliticalSubUnitRef">
-<xsl:variable name="pref" select="PoliticalSubUnitRef"/>
-<PoliticalSubUnitName  ref="{$pref}"><xsl:value-of select="PoliticalSubUnitFullName"/></PoliticalSubUnitName>
+<xsl:if test="PDQVoluntaryProtocolReviewBoard/Name">
+<dt><b><xsl:text>PDQ Board</xsl:text></b><xsl:text>.......................................</xsl:text><xsl:value-of select="PDQVoluntaryProtocolReviewBoard/Name"/></dt>
 </xsl:if>
 </xsl:for-each>
-
-<xsl:for-each select="PostalAddress">
-<xsl:variable name="pref" select="CountryRef"/>
-<CountryName  ref="{$pref}"><xsl:value-of select="CountryFullName"/></CountryName>
-</xsl:for-each>
-<xsl:apply-templates select="PostalAddress/PostalCode_ZIP" mode="copy"/>
-<xsl:apply-templates select="PostalAddress/PostalCodePosition" mode="copy"/> 
-</PostalAddress>
-<xsl:if test="Phone">
-<xsl:apply-templates select="Phone" mode="copy"/>
-</xsl:if>
-<xsl:if test="TollFreePhone">
-<xsl:apply-templates select="TollFreePhone" mode="copy"/>
-</xsl:if>
-<xsl:if test="Email">
-<xsl:if test="not(@Public='No')">
-<xsl:apply-templates select="SpecificEmail"/>
-</xsl:if>
-</xsl:if>
-<xsl:if test="WebSite">
-<xsl:apply-templates select="WebSite" mode="copy"/>
-</xsl:if>
-</Home>
-</xsl:for-each>
-</xsl:if>
-
-<!-- =====================================================================
-            Copy Contact Information for Private Practice
-     ==================================================================== --> 
+</dl>
   
-<xsl:if test="PersonLocations/PrivatePractice/PrivatePracticeLocation">
-<xsl:for-each select="PersonLocations/PrivatePractice/PrivatePracticeLocation">
-<xsl:variable name="id" select="@id"/>
-<PrivatePracticeLocation  id="{$id}">
-<xsl:if test="../PreviousLocation">
-<xsl:attribute name="status">
-<xsl:text>Inactive--Contact Information may not be current</xsl:text>
-</xsl:attribute>
-</xsl:if>
-<PostalAddress>
-<xsl:apply-templates select="PostalAddress/Street" mode="copy"/>
-<xsl:apply-templates select="PostalAddress/City" mode="copy"/>
-<xsl:for-each select="PostalAddress">
-<xsl:if test="PoliticalSubUnitRef">
-<xsl:variable name="pref" select="PoliticalSubUnitRef"/>
-<PoliticalSubUnitName  ref="{$pref}"><xsl:value-of select="PoliticalSubUnitFullName"/></PoliticalSubUnitName>
-</xsl:if>
+ 
+ <dl>
+<xsl:for-each select="ProfessionalInformation/PhysicianDetails/PhysicianSpecialtyInformation">
+<xsl:for-each select="BoardCertifiedSpecialty">
+<dt><b><xsl:text>Specialty</xsl:text></b><xsl:text>...........................................</xsl:text><xsl:value-of select="BoardCertifiedSpecialtyName"/></dt>
+<dt><b><xsl:text>Board Certification</xsl:text></b><xsl:text>.........................</xsl:text><xsl:value-of select="Certified"/></dt>
+<dt><b><xsl:text>Verification</xsl:text></b><xsl:text>.......................................</xsl:text><xsl:value-of select="Verified"/></dt>
+<dt><b><xsl:text>Comment</xsl:text></b>
+<xsl:value-of select="Comment"/>
+<xsl:text>&#xa0;</xsl:text><br /><br /></dt>
 </xsl:for-each>
-<xsl:for-each select="PostalAddress">
-<xsl:variable name="pref" select="CountryRef"/>
-<CountryName  ref="{$pref}"><xsl:value-of select="CountryFullName"/></CountryName>
+<xsl:for-each select="OtherSpecialty">
+<dt><b><xsl:text>Other Specialty</xsl:text></b><xsl:text>................................</xsl:text><xsl:value-of select="."/></dt>
 </xsl:for-each>
-<xsl:for-each select="SpecificPostalAddress">
-<xsl:variable name="ref" select="CountryID"/>
-<CountryName ref="{$ref}"><xsl:value-of select="CountryFullName"/></CountryName>
 </xsl:for-each>
-<xsl:apply-templates select="PostalAddress/PostalCode_ZIP" mode="copy"/>
-<xsl:apply-templates select="PostalAddress/PostalCodePosition" mode="copy"/> 
-</PostalAddress>
-<xsl:apply-templates select="../Phone" mode="copy"/>
-<xsl:apply-templates select="../TollFreePhone" mode="copy"/>
-<xsl:if test="Email">
-<xsl:if test="not(@Public='No')">
-<xsl:apply-templates select="SpecificEmail"/>
-</xsl:if>
-</xsl:if>
-<xsl:apply-templates select="../WebSite" mode="copy"/>
-</PrivatePracticeLocation>
-</xsl:for-each>
-</xsl:if>
+</dl>
+  
+ <!--
+ <dl>
+ <xsl:for-each select="ProfessionalInformation/PhysicianDetails/PhysicianSpecialtyInformation/BoardCertifiedSpecialty">
+<dt><b><xsl:text>Board Certification</xsl:text></b><xsl:text>............................</xsl:text><xsl:value-of select="Certified"/></dt>
 
+<dl>
+<dt><b><xsl:text>Verification</xsl:text></b><xsl:text>................................</xsl:text><xsl:value-of select="Verified"/></dt>
 
-<!-- ================================================================
-       Contact Information for Other Practice Locations 
-     ================================================================ -->
-
-<xsl:for-each select="PersonLocations/OtherPracticeLocation">
-<xsl:variable name="ind" select="@id"/>
-<OtherPracticeLocation id="{$ind}">
-<xsl:if test="../PreviousLocation">
-<xsl:attribute name="status">
-<xsl:text>Inactive--Contact Information may not be current</xsl:text>
-</xsl:attribute>
-</xsl:if>
-<xsl:variable name="orgloc" select="Organization/@id"/>
-<xsl:variable name="orgnameloc" select="substring-before(Organization/@id,'#')"/>
-<PersonOrganizationName ref="{$orgnameloc}">
-<xsl:apply-templates select="Organization/Name"/>
-</PersonOrganizationName>
-<xsl:apply-templates select="PersonTitle" mode="copy"/>
-<PersonOrganizationLocation ref="{$orgloc}">
-<PostalAddress>
-<xsl:apply-templates select="SpecificPostalAddress/Street" mode="copy"/>
-<xsl:apply-templates select="SpecificPostalAddress/City" mode="copy"/>
-<xsl:for-each select="SpecificPostalAddress">
-<xsl:if test="PoliticalSubUnitRef">
-<xsl:variable name="ref" select="PoliticalSubUnitRef"/>
-<PoliticalSubUnitName ref="{$ref}"><xsl:value-of select="PoliticalSubUnitFullName"/></PoliticalSubUnitName>
-</xsl:if>
+<dt><b><xsl:text>Comment</xsl:text></b>
+<xsl:value-of select="Comment"/></dt><br />
+</dl>
 </xsl:for-each>
-<xsl:for-each select="SpecificPostalAddress">
-<xsl:variable name="ref" select="CountryRef"/>
-<CountryName ref="{$ref}"><xsl:value-of select="CountryFullName"/></CountryName>
-</xsl:for-each>
-<xsl:apply-templates select="SpecificPostalAddress/PostalCode_ZIP" mode="copy"/>
-<xsl:apply-templates select="SpecificPostalAddress/PostalCodePosition" mode="copy"/> 
-</PostalAddress>
-<xsl:if test="SpecificPhone">
-<Phone><xsl:apply-templates select="SpecificPhone"/></Phone>
-</xsl:if>
-<xsl:if test="Phone">
-<Phone><xsl:apply-templates select="Phone"/></Phone>
-</xsl:if>
-
-<xsl:if test="SpecificTollFreePhone">
-<Phone><xsl:apply-templates select="SpecificTollFreePhone"/></Phone>
-</xsl:if>
-<xsl:if test="SpecificEmail">
-<xsl:if test="not(@Public='No')">
-<Email><xsl:apply-templates select="SpecificEmail"/></Email>
-</xsl:if>
-</xsl:if>
-<!--commented out-only specific email address goes out to vendors-->
-<!--<xsl:if test="Email">
-<xsl:if test="not(@Public='No')">
-<xsl:apply-templates select="Email"/>
-</xsl:if>
-</xsl:if>-->
-<xsl:if test="SpecificWebSite">
-<WebSite>
-<xsl:attribute name="xref">
-<xsl:value-of select="SpecificWebSite@cdr:xref"/>
-</xsl:attribute>
-</WebSite>
-</xsl:if>
-
-</PersonOrganizationLocation>
-<!--<xsl:apply-templates select="PersonRole" mode="copy"/>-->
-</OtherPracticeLocation>
-</xsl:for-each>
-</PersonLocations>
-
-<!-- =================================================================
-               Copy current Status
-     =============================================================== -->
-            
-          <xsl:apply-templates select="CurrentStatus" mode="copy"/>
-            
-               
+ </dl>-->
 
 <!-- ===================================================================
-            Copy Date First Published and Date Last Modified
+                 Display Membership Information
      ================================================================== -->
+ 
+ <b><font size='3'><xsl:text>Membership Information</xsl:text></font></b><br />
+  
 
- <DateFirstPublished><xsl:value-of select="substring-before(CdrDocCtl/Create/Date,'T')"/></DateFirstPublished>
+<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Cooperative Group(s)</font></b><xsl:text>..................</xsl:text>
+ <xsl:for-each  select="ProfessionalInformation/PhysicianDetails/PhysicianMembershipInformation/MemberOfCooperativeGroup/CooperativeGroup/OfficialName">
+<xsl:if test="not(../../GroupChair)">
+<xsl:value-of select="."/><br />
+</xsl:if>
+<xsl:if test="../../GroupChair">
+<xsl:value-of select="."/>
+<xsl:text>&#xa0;&#xa0;(Group Chair)</xsl:text><br />
+</xsl:if>
 
-<DateLastModified><xsl:value-of select="substring-before(CdrDocCtl/Modify/Date,'T')"/></DateLastModified>
+<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;
+</xsl:text>
+</xsl:for-each>
+<br />
+  
+<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Medical Societies</font></b><xsl:text>..........................</xsl:text> 
+   <xsl:for-each  select="ProfessionalInformation/PhysicianDetails/PhysicianMembershipInformation/MemberOfMedicalSociety">
+<xsl:value-of select="."/><br /><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+</xsl:for-each>
 
-</xsl:copy>
-</xsl:template>
+<!-- ======================================================================
+                      Display Administrative Information 
+      ===================================================================== -->
+<br /><br />
+<b><font size='4'>Administrative Information</font></b><br />
+    <dl>
+  <xsl:for-each  select="ProfessionalInformation/PhysicianDetails/AdministrativeInformation/Directory">
+    <dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><xsl:text>Directory</xsl:text></b><xsl:text>....................................</xsl:text><xsl:value-of select="Include"/></dt>
+<dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><xsl:text>Entered By</xsl:text></b><xsl:value-of select="concat('&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;',EnteredBy)"/></dt>
+    <dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><xsl:text>Date</xsl:text></b><xsl:value-of select="concat('&#xa0;&#xa0;&#xa0;         &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;',Date)"/></dt>
+    <dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><xsl:text>Comment</xsl:text></b><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0; &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><xsl:value-of select="Comment"/></dt>
+</xsl:for-each>
+   </dl>
+<dl>
+<xsl:for-each select="Status">
+<dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><xsl:text>Status</xsl:text></b><xsl:value-of select="concat('........................................',CurrentStatus)"/></dt>
+<dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><xsl:text>EnteredBy</xsl:text></b><xsl:value-of select="concat('................................',EnteredBy)"/></dt>
+<dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><xsl:text>Entry Date</xsl:text></b><xsl:value-of select="concat('................................',EntryDate)"/></dt>
 
-<!-- ==================================================================
-     Template rule used to do XML to XML transformations which
-     copies any attribute node, or node that is child of of something 
-     =================================================================== -->
+ </xsl:for-each>
+<!--</dl> 
+  <dl>-->
+<xsl:for-each select="Status/Comment">
+<dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><xsl:text>Comment</xsl:text></b><xsl:value-of select="concat('&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;',Comment)"/></dt>
+ </xsl:for-each>
+ </dl> 
 
-   <xsl:template match="@*|node()" mode="copy">
-       <xsl:copy>
-       <xsl:apply-templates select="@*" mode="copy"/>
-       <xsl:apply-templates mode="copy"/>
-       </xsl:copy> 
-  </xsl:template>
+ <!-- <dl>
+  <xsl:for-each  select="ProfessionalInformation/PhysicianDetails/AdministrativeInformation">
+    <dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><xsl:text>Preferred Contact Mode</xsl:text></b><xsl:value-of select="concat('..........',PreferredContactMode)"/></dt>
+  </xsl:for-each>
+  </dl>-->
 
-</xsl:transform>]]>
+<!-- ======================================================================
+                 Display Location Information for Home Office
+     ===================================================================== -->
+
+<b><font size='4'>Location Information</font></b><br /><br />
+
+   <b><font size='3'>Home</font></b><br />
+    <xsl:if test="PersonLocations/Home">
+    <xsl:if test="PersonLocations/Home/CIPSContact">
+    <b><font size="3">CIPS Contact</font></b><br />
+    </xsl:if>
+    <xsl:for-each select="PersonLocations/Home/PostalAddress">
+    <xsl:for-each select="Street">
+    <xsl:value-of select="."/><br />
+    </xsl:for-each>
+    <xsl:if test="PostalCodePosition='before City'">
+<xsl:value-of select="PostalCode_ZIP"/>&#xa0;
+<xsl:if test="CitySuffix">
+<xsl:value-of select="concat(City,' ',CitySuffix)"/>
+</xsl:if> 
+<xsl:if test="not(CitySuffix)">   
+<xsl:value-of select="City"/>,
+</xsl:if>
+<xsl:text>&#xa0;</xsl:text>
+<xsl:value-of select="PoliticalSubUnitShortName"/><br />
+<xsl:value-of select="CountryFullName"/><br />
+</xsl:if>
+<xsl:if test="PostalCodePosition='after City'">
+<xsl:if test="CitySuffix">
+<xsl:value-of select="concat(City,' ',CitySuffix )"/>
+</xsl:if> 
+<xsl:if test="not(CitySuffix)">   
+<xsl:value-of select="City"/>,
+</xsl:if>
+<xsl:value-of select="PostalCode_ZIP"/>&#xa0;
+<xsl:value-of select="PoliticalSubUnitShortName"/><br />
+<xsl:value-of select="CountryFullName"/><br />
+</xsl:if>
+ 
+<xsl:if test="PostalCodePosition='after PoliticalSubUnit_State'">
+<xsl:if test="CitySuffix">
+<xsl:value-of select="concat(City,' ',CitySuffix, ', ')"/>
+</xsl:if> 
+<xsl:if test="not(CitySuffix)">   
+<xsl:value-of select="City"/>,
+</xsl:if>
+<xsl:value-of select="PoliticalSubUnitShortName"/>&#xa0;
+<xsl:value-of select="PostalCode_ZIP"/><br />
+<xsl:value-of select="CountryFullName"/><br />
+</xsl:if>
+<xsl:if test="PostalCodePosition='after Country'">
+<xsl:if test="CitySuffix">
+<xsl:value-of select="concat(City,' ',CitySuffix)"/>
+</xsl:if> 
+<xsl:if test="not(CitySuffix)">   
+<xsl:value-of select="City"/>,&#xa0;
+</xsl:if>
+<xsl:value-of select="PoliticalSubUnitShortName"/>&#xa0;
+<xsl:value-of select="CountryFullName"/><br />
+<xsl:value-of select="PostalCode_ZIP"/><br />
+</xsl:if>
+ <xsl:text>Phone:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+  <xsl:value-of select="../Phone"/>&#xa0;
+<xsl:if test="../Phone/@Public">
+<xsl:text>(Public=</xsl:text>
+<xsl:value-of select="../Phone/@Public"/>
+<xsl:text>)</xsl:text>
+</xsl:if>
+<br />
+
+  <xsl:value-of select="concat('TollFreePhone:&#xa0;&#xa0;&#xa0;',../TollFreePhone)"/><br />
+
+  <xsl:value-of select="concat('Fax:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;',../Fax)"/><br />
+<xsl:text>Email:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+ 
+ <u><xsl:value-of select="../Email"/></u>&#xa0;
+<xsl:if test="../Email/@Public">
+<xsl:text>(Public=</xsl:text>
+<xsl:value-of select="../Email/@Public"/>
+<xsl:text>)</xsl:text>
+</xsl:if>
+<br />
+
+ <xsl:text>Website:&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+ <u><xsl:value-of select="../WebSite/@cdr:xref"/></u><br />
+ <br />
+ </xsl:for-each>
+ </xsl:if>
+
+    
+    
+<!-- <xsl:for-each select="PersonLocations/Home">
+    <xsl:value-of select="concat('Phone:&#xa0;&#xa0;&#xa0;&#xa0;',Phone)"/><br />
+<xsl:value-of select="concat('Toll Free Phone:&#xa0;&#xa0;&#xa0;&#xa0;',TollFreePhone)"/><br />
+
+ <xsl:value-of select="concat('Fax:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;',Fax)"/><br />
+ <xsl:text>Email:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+ <u><xsl:value-of select="Email"/></u><br />
+ <xsl:text>Web Site:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+ <u><xsl:value-of select="WebSite"/></u>
+  </xsl:for-each>
+</xsl:if>-->
+<br />
+<!-- =====================================================================
+        Display Person Location Information for Private Practice Location
+     ===================================================================== -->
+
+<b><font size='3'>Private Practice</font></b><br /><br />
+
+   <xsl:if test="PersonLocations/PrivatePractice/PrivatePracticeLocation">
+      <xsl:for-each select="PersonLocations/PrivatePractice/PrivatePracticeLocation/PostalAddress">
+  <xsl:if test="../CIPSContact">
+    <b><font size="3">CIPS Contact</font></b><br />
+    </xsl:if>
+    <xsl:if test="../../PreviousLocation">
+<b><xsl:text>(Previous Location)</xsl:text></b><br />
+ </xsl:if>
+     <xsl:for-each select="Street">
+     <xsl:value-of select="."/><br />
+     </xsl:for-each>
+    <xsl:if test="PostalCodePosition='before City'">
+<xsl:value-of select="PostalCode_ZIP"/>&#xa0;
+<xsl:if test="CitySuffix">
+<xsl:value-of select="concat(City,' ',CitySuffix)"/>
+</xsl:if> 
+<xsl:if test="not(CitySuffix)">   
+<xsl:value-of select="City"/>,
+</xsl:if>
+<xsl:value-of select="PoliticalSubUnitShortName"/><br />
+<xsl:value-of select="CountryFullName"/><br />
+</xsl:if>
+<xsl:if test="PostalCodePosition='after City'">
+<xsl:if test="CitySuffix">
+<xsl:value-of select="concat(City,' ',CitySuffix)"/>
+</xsl:if> 
+<xsl:if test="not(CitySuffix)">   
+<xsl:value-of select="City"/>,
+</xsl:if>
+<xsl:value-of select="PostalCode_ZIP"/>&#xa0;
+<xsl:value-of select="PoliticalSubUnitShortName"/><br />
+<xsl:value-of select="CountryFullName"/><br />
+</xsl:if>
+ 
+<xsl:if test="PostalCodePosition='after PoliticalSubUnit_State'">
+<xsl:if test="CitySuffix">
+<xsl:value-of select="concat(City,' ',CitySuffix)"/>
+</xsl:if> 
+<xsl:if test="not(CitySuffix)">   
+<xsl:value-of select="City"/>,
+</xsl:if>
+<xsl:value-of select="PoliticalSubUnitShortName"/>&#xa0;
+<xsl:value-of select="PostalCode_ZIP"/><br />
+<xsl:value-of select="CountryFullName"/><br />
+</xsl:if>
+<xsl:if test="PostalCodePosition='after Country'">
+<xsl:if test="CitySuffix">
+<xsl:value-of select="concat(City,' ',CitySuffix)"/>
+</xsl:if> 
+<xsl:if test="not(CitySuffix)">   
+<xsl:value-of select="City"/>,
+</xsl:if>
+<xsl:value-of select="PoliticalSubUnitShortName"/>&#xa0;
+<xsl:value-of select="CountryFullName"/><br />
+<xsl:value-of select="PostalCode_ZIP"/><br />
+</xsl:if>
+
+ <xsl:value-of select="concat('Phone:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;',../../Phone)"/>&#xa0;
+<xsl:if test="../../Phone/@Public">
+<xsl:text>(Public=</xsl:text>
+<xsl:value-of select="../../Phone/@Public"/>
+<xsl:text>)</xsl:text>
+</xsl:if>
+<br />
+
+ <xsl:value-of select="concat('TollFreePhone:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;',../../TollFreePhone)"/><br />
+
+  <xsl:value-of select="concat('Fax:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;',../../Fax)"/><br />
+<xsl:text>Email:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+ <u><xsl:value-of select="../../Email"/></u>&#xa0;
+ <xsl:if test="../../Email/@Public">
+<xsl:text>(Public=</xsl:text>
+<xsl:value-of select="../../Email/@Public"/>
+<xsl:text>)</xsl:text>
+</xsl:if>
+<br />
+
+ <xsl:text>Website:&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+ <u><xsl:value-of select="../../WebSite/@cdr:xref"/></u><br />
+ <br />
+ </xsl:for-each>
+ </xsl:if>
+
+<!-- ====================================================================
+      Display Other Practice Locations Information
+     ================================================================== -->
+  <xsl:if test="PersonLocations/OtherPracticeLocation">
+     <b><font size='3'>Other Practice Locations</font></b><br /><br />
+  </xsl:if>
+     <xsl:for-each select="PersonLocations/OtherPracticeLocation/SpecificPostalAddress">
+     <xsl:if test="../CIPSContact">
+    <b><font size="3">CIPS Contact</font></b><br />
+    </xsl:if>
+    <xsl:if test="../PreviousLocation">
+    <b><xsl:text>(Previous Location)</xsl:text></b>
+    </xsl:if>
+
+    <xsl:if test="not(../IncludeParentName)">
+    <xsl:value-of select="../Organization/Name"/><br />
+    </xsl:if>
+
+    <xsl:if test="../IncludeParentName">
+    <xsl:if test="../OrderParentNameFirst='Yes'">
+    <xsl:value-of select="../OrganizationParent/ParentOrganization"/><br />
+    <xsl:value-of select="../Organization/Name"/><br />
+    </xsl:if>
+    </xsl:if>
+    <xsl:if test="../IncludeParentName">
+    <xsl:if test="not(../OrderParentNameFirst='Yes')">
+    <xsl:value-of select="../Organization/Name"/><br />
+    <xsl:value-of select="../OrganizationParent/ParentOrganization"/><br />
+    </xsl:if>
+    </xsl:if>
+    <xsl:for-each select="Street">
+    <xsl:value-of select="."/><br />
+    </xsl:for-each>
+    <xsl:if test="PostalCodePosition='before City'">
+<xsl:value-of select="PostalCode_ZIP"/>&#xa0;
+<xsl:if test="CitySuffix">
+<xsl:value-of select="concat(City,' ',CitySuffix)"/>
+</xsl:if> 
+<xsl:if test="not(CitySuffix)">   
+<xsl:value-of select="City"/>,
+</xsl:if>
+<xsl:value-of select="PoliticalSubUnitShortName"/><br />
+<xsl:value-of select="CountryFullName"/><br />
+</xsl:if>
+<xsl:if test="PostalCodePosition='after City'">
+<xsl:if test="CitySuffix">
+<xsl:value-of select="concat(City,' ',CitySuffix)"/>
+</xsl:if> 
+<xsl:if test="not(CitySuffix)">   
+<xsl:value-of select="City"/>,
+</xsl:if>
+<xsl:value-of select="PostalCode_ZIP"/>&#xa0;
+<xsl:value-of select="PoliticalSubUnitShortName"/><br />
+<xsl:value-of select="CountryFullName"/><br />
+</xsl:if>
+ 
+<xsl:if test="PostalCodePosition='after PoliticalSubUnit_State'">
+<xsl:if test="CitySuffix">
+<xsl:value-of select="concat(City,' ',CitySuffix)"/>
+</xsl:if> 
+<xsl:if test="not(CitySuffix)">   
+<xsl:value-of select="City"/>,
+</xsl:if>
+<xsl:value-of select="PoliticalSubUnitShortName"/>&#xa0;
+<xsl:value-of select="PostalCode_ZIP"/><br />
+<xsl:value-of select="CountryFullName"/><br />
+</xsl:if>
+<xsl:if test="PostalCodePosition='after Country'">
+<xsl:if test="CitySuffix">
+<xsl:value-of select="concat(City,' ',CitySuffix)"/>
+</xsl:if> 
+<xsl:if test="not(CitySuffix)">   
+<xsl:value-of select="City"/>,
+</xsl:if>
+<xsl:value-of select="PoliticalSubUnitShortName"/>&#xa0;
+<xsl:value-of select="CountryFullName"/><br />
+<xsl:value-of select="PostalCode_ZIP"/><br />
+</xsl:if>
+<xsl:if test="../SpecificPhone">
+ <xsl:value-of select="concat('Phone:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+ &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;',../SpecificPhone)"/>
+<!--<xsl:text>&#xa0;</xsl:text>-->
+<xsl:if test="../SpecificPhone/@Public">
+<xsl:text>(Public=</xsl:text>
+<xsl:value-of select="../SpecificPhone/@Public"/>
+<xsl:text>)</xsl:text>
+</xsl:if>
+<br />
+</xsl:if>
+
+<xsl:if test="not(../SpecificPhone)">
+<xsl:value-of select="concat('Phone:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;',../Phone)"/>
+<!--<xsl:text>&#xa0;</xsl:text>-->
+<xsl:if test="../Phone/@Public">
+<xsl:text>(Public=</xsl:text>
+<xsl:value-of select="../Phone/@Public"/>
+<xsl:text>)</xsl:text>
+</xsl:if>
+</xsl:if>
+<br />
+<xsl:if test="../SpecificTollFreePhone">
+<xsl:value-of select="concat('TollFreePhone:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;',../SpecificTollFreePhone)"/>
+<br />
+</xsl:if>
+<!--<xsl:if test="../Phone/@Public">
+<xsl:text>(Public=</xsl:text>
+<xsl:value-of select="../Phone/@Public"/>
+<xsl:text>)</xsl:text>
+</xsl:if>-->
+
+
+
+
+<xsl:if test="../SpecificFax">
+  <xsl:value-of select="concat('Fax:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+',../SpecificFax)"/><br />
+</xsl:if>
+<xsl:if test="../Fax">
+  <xsl:value-of select="concat('Fax:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+',../Fax)"/><br />
+</xsl:if>
+
+<xsl:if test="../SpecificEmail">
+<xsl:text>Email:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+ <u><xsl:value-of select="../SpecificEmail"/></u>
+<xsl:text>&#xa0;</xsl:text>
+<xsl:if test="../SpecificEmail/@Public">
+<xsl:text>(Public=</xsl:text>
+<xsl:value-of select="../SpecificEmail/@Public"/>
+<xsl:text>)</xsl:text>
+<br />
+</xsl:if>
+</xsl:if>
+<xsl:if test="../Email">
+<xsl:text>Email:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+          &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+ <u><xsl:value-of select="../Email"/></u>&#xa0;
+<xsl:if test="../Email/@Public">
+<xsl:text>(Public=</xsl:text>
+<xsl:value-of select="../Email/@Public"/>
+<xsl:text>)</xsl:text>
+</xsl:if>
+</xsl:if>
+<br />
+
+
+ <xsl:if test="SpecificWebsite">
+ <xsl:text>Website:&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+ <u><xsl:value-of select="../SpecificWebSite/@cdr:xref"/></u><br />
+ </xsl:if>
+ <xsl:if test="Website">
+ <xsl:text>Website:&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+ <u><xsl:value-of select="../WebSite/@cdr:xref"/></u><br />
+ </xsl:if>
+
+ <br />
+<xsl:if test="../ComplexAffiliation">
+ <b><font size='3'>Complex Affiliation</font></b><br /><br />
+<xsl:for-each select="../ComplexAffiliation">
+<xsl:for-each select="Organization">
+<b><xsl:text>Organization:</xsl:text></b>
+<OfficialName><Name><xsl:value-of select="OfficialName/Name"/><br /></Name></OfficialName>
+<b><xsl:text>Role:&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text></b>
+<xsl:value-of select="RoleAtAffiliatedOrganization"/><br /><br />
+</xsl:for-each>
+</xsl:for-each>
+</xsl:if>
+</xsl:for-each>
+<!--</xsl:if>-->
+  <br /><br />
+
+
+<!--- =================================================================
+       Display links to other documents, Dated Actions, Date Last Modified
+      ===================================================================== -->
+<b><font size='4'>Links to Other Documents</font></b><br /><br />
+
+<!--Variable names should be replaced with a Yes or a No depending on the    
+    query results for the links -->
+
+<b><font size='3'>Active,Approved,Temporarily Closed Protocols</font></b>
+<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+
+</xsl:text>@@ACTIVE_APPR0VED_TEMPORARILY_CLOSED_PROTOCOLS@@<br />
+
+<b><font size='3'>Closed,Completed Protocols</font></b> 
+<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+</xsl:text>
+@@CLOSED_COMPLETED_PROTOCOLS@@<br />
+
+<b><font size='3'>Health Professional Summaries</font></b>
+<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;
+</xsl:text>
+@@HEALTH_PROFESSIONAL_SUMMARIES@@<br />
+<b><font size='3'>Patient Summaries</font></b>
+<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+</xsl:text>
+@@PATIENT_SUMMARIES@@<br /><br />
+
+<b><font size='4'>Dated Action(s)</font></b><br /><br />
+<xsl:for-each select="DatedAction">
+<xsl:value-of select="ActionDescription"/><br />
+<xsl:value-of select="ActionDate"/><br />
+<br />
+</xsl:for-each>
+<br />
+<b><font size='4'>Date Last Modified</font></b><br /><br />
+<xsl:apply-templates select="DateLastModified"/><br /><br />
+
+<!-- =================================================================
+        Display most recent Mailer Information
+     ================================================================= -->
+
+<b><font size='4'>Most Recent Mailer</font></b><br /><br />
+   
+ <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Date Sent</font></b><xsl:text>..............................</xsl:text> @@MAILER_DATE_SENT@@<br />
+<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Date Received</font></b><xsl:text>.....................</xsl:text>@@MAILER_RESPONSE_RECEIVED@@<br />
+ <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Type of Change</font></b><xsl:text>..................</xsl:text> @@MAILER_TYPE_OF_CHANGE@@<br /><br />
+
+
+ <!-- =====================================================================
+             Display Record Information ( Date created, Modified, and User
+      ===================================================================== --> 
+<b><font size='4'>Record</font></b><br /><br />
+<xsl:for-each select="CdrDocCtl">
+<b><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;Created by</xsl:text></b><xsl:text>.............................</xsl:text>
+<xsl:value-of select="Create/User"/><br />
+
+<b><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;Date </xsl:text></b><xsl:text>........................................</xsl:text>
+<xsl:value-of select="substring-before(Create/Date,'T')"/><br /><br />
+
+<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b>Updated by</b><xsl:text>.............................</xsl:text>
+<xsl:value-of select="Modify/User"/><br />
+
+<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b>Date </b><xsl:text>.........................................</xsl:text>
+<xsl:value-of select="substring-before(Modify/Date,'T')"/><br />
+
+</xsl:for-each>
+<br /><br />
+
+    
+                                   
+                   
+   </BODY>
+   </xsl:template>
+  </xsl:transform>]]>
 </CdrDocXml>
 </CdrDoc>
