@@ -275,18 +275,21 @@
      <xsl:apply-templates                select = "DateLastModified"
                                          mode   = "copy"/>
 
-     <ProfessionalDisclaimer>
-      <xsl:variable                        name = "profDisclaimer" 
+     <xsl:if                             test   = "not(SummaryMetaData/
+                                                   SummaryAudience='Patients')">
+      <ProfessionalDisclaimer>
+       <xsl:variable                       name = "profDisclaimer" 
                                          select = "document
                                                    (concat('cdr:name:',
-                                                    'Miscellaneous Document ', 
-                                                    ' - Empty Template;',
-                                                    'About PDQ-Adult treatment',
-                                                    ' patient summary'))"/>
-       <!-- xsl:apply-templates              select = "$profDisclaimer/XXXXXXXX
+                                                    'Professional ',
+                                                    'Disclaimer;Summary-health',
+                                                    ' professional ',
+                                                    'disclaimer'))"/>
+        <xsl:apply-templates             select = "$profDisclaimer/
                                                    MiscellaneousDocument/
-                                                   MiscellaneousDocumentText"/-->
-     </ProfessionalDisclaimer>
+                                                   MiscellaneousDocumentText"/>
+      </ProfessionalDisclaimer>
+     </xsl:if>
     </Summary>
   </xsl:template>
 
@@ -362,6 +365,7 @@
      ================================================================== -->  <xsl:template                    match = "MiscellaneousDocumentText">
     <xsl:param                    name = "miscDocId"/>
     <xsl:apply-templates/>
+    <xsl:apply-templates select="document('cdrutil:/docid')" mode="copy"/>
 <!-- XXXX Need to include passing of docID to section template XXX -->
 </xsl:template>
 
