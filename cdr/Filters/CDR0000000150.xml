@@ -955,7 +955,8 @@
          </xsl:choose>
         </xsl:when>
 
-        <!-- This applies for myScope = SpecificPerson -->
+        <!-- This applies for myScope = SpecificPerson 
+             ========================================= -->
         <xsl:otherwise>
          <xsl:for-each           select = "Person/PersonLocations/
                                            OtherPracticeLocation
@@ -964,15 +965,52 @@
            <xsl:with-param         name = "orgAddressFID"
                                  select = "$orgAddressFID"/>
           </xsl:call-template>
+         </xsl:for-each>
 
-          <xsl:call-template       name = "getPersonOrgPhone">
+         <!-- If a SpecificPhone exists we do not denormalize in
+              order to get a phone number from the person or org
+              record.  The SpecificPhone is overwriting any other
+              phone information. 
+              Note:  The schema doesn't allow for 
+                     SpecificTollFreePhone         (VE, 07/24/03)
+              =================================================== -->
+         <xsl:choose>         
+          <xsl:when                test = "SpecificPhone">
+           <Phone>
+            <xsl:value-of        select = "SpecificPhone"/>
+           </Phone>
+          </xsl:when>
+
+         <!-- The ProtocolSpecific phones do not exist, i.e pick up elsewhere-->
+          <xsl:otherwise>
+           <xsl:for-each         select = "Person/PersonLocations/
+                                           OtherPracticeLocation
+                                            [@cdr:id = $contactFID]">
+            <xsl:call-template     name = "getPersonOrgPhone">
+             <xsl:with-param       name = "orgAddressFID"
+                                 select = "$orgAddressFID"/>
+            </xsl:call-template>
+            <xsl:call-template     name = "getPersonOrgTollFreePhone">
+             <xsl:with-param       name = "orgAddressFID"
+                                 select = "$orgAddressFID"/>
+            </xsl:call-template>
+           </xsl:for-each>
+          </xsl:otherwise>
+         </xsl:choose>
+
+         <xsl:for-each           select = "Person/PersonLocations/
+                                           OtherPracticeLocation
+                                            [@cdr:id = $contactFID]">
+          <!-- xsl:call-template       name = "getPersonOrgPhone">
            <xsl:with-param         name = "orgAddressFID"
                                  select = "$orgAddressFID"/>
-          </xsl:call-template><Volker>XXX</Volker>
+          </xsl:call-template>
           <xsl:call-template       name = "getPersonOrgTollFreePhone">
            <xsl:with-param         name = "orgAddressFID"
                                  select = "$orgAddressFID"/>
           </xsl:call-template>
+         <VolkerEnd/ -->
+
           <xsl:call-template       name = "getPersonOrgEmail">
            <xsl:with-param         name = "orgAddressFID"
                                  select = "$orgAddressFID"/>
