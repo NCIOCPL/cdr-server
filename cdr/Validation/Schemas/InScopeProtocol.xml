@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: InScopeProtocol.xml,v 1.38 2004-01-30 14:32:55 bkline Exp $
+      $Id: InScopeProtocol.xml,v 1.39 2004-03-25 13:21:12 bkline Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.38  2004/01/30 14:32:55  bkline
+      Changed ClinicalTrialOffice from OrganizationFramentLink to
+      OrganizationLink at Lakshmi's request.
+
       Revision 1.37  2004/01/14 19:52:37  bkline
       Added new elements, attributes, and valid values requested by Laksmi in
       issue #1035.
@@ -190,6 +194,20 @@
 
 <schema              xmlns           = 'http://www.w3.org/2001/XMLSchema'
                      xmlns:cdr       = 'cips.nci.nih.gov/cdr'>
+
+ <annotation>
+  <appInfo>
+   <pattern>
+    <rule            context         = 'ProtocolLeadOrg'>
+     <assert         test            = 'LeadOrgRole = "Primary" or
+                                        not(UpdateMode
+                                            [@MailerType =
+                                              "Protocol_Abstract"])'
+     >UpdateMode for prot. abstract only allowed for Primary LeadOrg</assert>
+    </rule>
+   </pattern>
+  </appInfo>
+ </annotation>
 
 <!--=====================================================================-->
 <!--                  COMMON CDR SCHEMA COMPONENTS                       -->
@@ -417,6 +435,10 @@
                      type            = 'IDREF'
                      minOccurs       = '0'/>
       <!--If LeadOrgRole=Primary MailAbstractTo should be required-->
+      <element       name            = 'UpdateMode'
+                     type            = 'UpdateMode'
+                     minOccurs       = '0'
+                     maxOccurs       = '2'/>
     </sequence>
     <attribute       name            = 'Group'
                      type            = 'YesNo'/>
