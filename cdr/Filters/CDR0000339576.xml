@@ -3,9 +3,18 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Module: InLine Markup Formatter</DocTitle>
-<DocComment>CVS-V1.5: Fixed TOC Title (Bug 942)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.9: Add DocRef Element (Bug 1080)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!--
+ ================================================================
+     $Id: CDR0000339576.xml,v 1.10 2004-07-16 17:21:41 venglisc Exp $
+
+     Filter handling all In-Line Markup elements of Summary Docs
+        Written by Volker Englisch, 2004-07-16
+
+     $Log: not supported by cvs2svn $
+ ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -16,45 +25,49 @@
  Display a Summary Reference, SummaryFragmentRef or LOEFragmentRef or 
  ProtocolRef
  ====================================================================== -->
- <xsl:template                 match = "SummaryRef | ProtocolRef |
-                                        SummaryFragmentRef |
-                                        LOEFragmentRef">
+ <xsl:template                   match = "SummaryRef         | 
+                                          ProtocolRef        |
+                                          SummaryFragmentRef |
+                                          LOEFragmentRef">
   <u><xsl:apply-templates/></u>
  </xsl:template>
 
+
  <!-- 
  ======================================================================
  Display a Documentation Reference as a hyperlink
  ====================================================================== -->
- <xsl:template                 match = "DocumentationRef   |
+ <xsl:template                   match = "DocumentationRef   |
                                         DocumentationLink">
-  <xsl:variable                 name = "docRef"
-                              select = "@cdr:href"/>
+  <xsl:variable                   name = "docRef"
+                                select = "@cdr:href"/>
   <a>
-   <xsl:attribute               name = "href">
+   <xsl:attribute                 name = "href">
     <xsl:text>/cgi-bin/cdr/Filter.py?DocId=</xsl:text>
-    <xsl:value-of             select = "$docRef"/>  
+    <xsl:value-of               select = "$docRef"/>  
     <xsl:text>&amp;Filter=name:Documentation+Help+Screens+Filter</xsl:text>
    </xsl:attribute>
    <xsl:apply-templates/>
   </a>
  </xsl:template>
+
+
  <!-- 
  ======================================================================
  Display a Documentation Reference as a hyperlink
  ====================================================================== -->
- <xsl:template                 match = "DocumentationFragmentRef   |
-                                        DocumentationFragmentLink">
-  <xsl:variable                 name = "docRef"
-                              select = "substring-before(@cdr:href, '#')"/>
-  <xsl:variable                 name = "docFrag"
-                              select = "substring-after(@cdr:href, '#')"/>
+ <xsl:template                   match = "DocumentationFragmentRef   |
+                                          DocumentationFragmentLink">
+  <xsl:variable                   name = "docRef"
+                                select = "substring-before(@cdr:href, '#')"/>
+  <xsl:variable                   name = "docFrag"
+                                select = "substring-after(@cdr:href, '#')"/>
   <a>
-   <xsl:attribute               name = "href">
+   <xsl:attribute                 name = "href">
     <xsl:text>/cgi-bin/cdr/Filter.py?DocId=</xsl:text>
-    <xsl:value-of             select = "$docRef"/> 
+    <xsl:value-of               select = "$docRef"/> 
     <xsl:text>#</xsl:text>
-    <xsl:value-of             select = "$docFrag"/> 
+    <xsl:value-of               select = "$docFrag"/> 
     <xsl:text>&amp;Filter=name:Documentation+Help+Screens+Filter</xsl:text>
    </xsl:attribute>
    <xsl:apply-templates/>
@@ -62,74 +75,37 @@
  </xsl:template>
 
 
- <!-- 
- ======================================================================
- Link to glossaryTermRefs -Old
- ====================================================================== 
-    <xsl:template              match = "GlossaryTermRef | LOERef">
-                                                                             
-     <xsl:choose>
-     <xsl:when                  test = "Deletion">
-      <a>
-      <xsl:attribute            name = "href">
-       <xsl:value-of          select = "concat('/cgi-bin/cdr/Filter.py?',
-                                               'DocId=', @cdr:href,
-                                               '&amp;Filter=name:Glossary',
-                                               '+Term+Display+for+Patient',
-                                               '+Summaries')"/>
-      </xsl:attribute>
-      <strike>
-      <xsl:value-of           select = "."/>
-      </strike>
-     </a>
-    </xsl:when>
-    <xsl:otherwise>
-     <a>
-      <xsl:attribute            name = "href">
-       <xsl:value-of          select = "concat('/cgi-bin/cdr/Filter.py?',
-                                               'DocId=', @cdr:href,
-                                               '&amp;Filter=name:Glossary',
-                                               '+Term+Display+for+Patient',
-                                               '+Summaries')"/>
-      </xsl:attribute>
-      <xsl:value-of           select = "."/>
-     </a>
-     </xsl:otherwise>
-     </xsl:choose>
-      </xsl:template-->
-
-  
  <!-- 
  ======================================================================
  Link to glossaryTermRefs - Patients
  ====================================================================== -->
- <xsl:template                 match = "GlossaryTermRef | LOERef"
-                                mode = "PE">
+ <xsl:template                   match = "GlossaryTermRef | LOERef"
+                                  mode = "PE">
   <xsl:choose>
-   <xsl:when                    test = "Deletion">
+   <xsl:when                      test = "Deletion">
     <a>
-     <xsl:attribute             name = "href">
-      <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
-                                               'DocId=', @cdr:href,
-                                               '&amp;Filter=name:Glossary',
-                                               '+Term+Display+for+Patient',
-                                               '+Summaries')"/>
+     <xsl:attribute               name = "href">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Filter=name:Glossary',
+                                                 '+Term+Display+for+Patient',
+                                                 '+Summaries')"/>
      </xsl:attribute>
      <strike>
-      <xsl:value-of           select = "."/>
+      <xsl:value-of             select = "."/>
      </strike>
     </a>
    </xsl:when>
    <xsl:otherwise>
     <a>
-     <xsl:attribute            name = "href">
-      <xsl:value-of          select = "concat('/cgi-bin/cdr/Filter.py?',
-                                               'DocId=', @cdr:href,
-                                               '&amp;Filter=name:Glossary',
-                                               '+Term+Display+for+Patient',
-                                               '+Summaries')"/>
+     <xsl:attribute               name = "href">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Filter=name:Glossary',
+                                                 '+Term+Display+for+Patient',
+                                                 '+Summaries')"/>
      </xsl:attribute>
-     <xsl:value-of           select = "."/>
+     <xsl:value-of              select = "."/>
     </a>
    </xsl:otherwise>
   </xsl:choose>
@@ -140,33 +116,33 @@
  ======================================================================
  Link to glossaryTermRefs - English Health Professional
  ====================================================================== -->
- <xsl:template                match = "GlossaryTermRef | LOERef"
-                               mode = "HPE" >
+ <xsl:template                   match = "GlossaryTermRef | LOERef"
+                                  mode = "HPE" >
   <xsl:choose>
-   <xsl:when                   test = "Deletion">
+   <xsl:when                      test = "Deletion">
     <a>
-     <xsl:attribute            name = "href">
-      <xsl:value-of          select = "concat('/cgi-bin/cdr/Filter.py?',
-                                               'DocId=', @cdr:href,
-                                               '&amp;Filter=name:Glossary',
-                                               '+Term+Display+for+HP',
-                                               '+Summaries')"/>
+     <xsl:attribute               name = "href">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Filter=name:Glossary',
+                                                 '+Term+Display+for+HP',
+                                                 '+Summaries')"/>
      </xsl:attribute>
      <strike>
-      <xsl:value-of          select = "."/>
+      <xsl:value-of             select = "."/>
      </strike>
     </a>
    </xsl:when>
    <xsl:otherwise>
     <a>
-     <xsl:attribute            name = "href">
-      <xsl:value-of          select = "concat('/cgi-bin/cdr/Filter.py?',
-                                               'DocId=', @cdr:href,
-                                               '&amp;Filter=name:Glossary',
-                                               '+Term+Display+for+HP',
-                                               '+Summaries')"/>
+     <xsl:attribute               name = "href">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                'DocId=', @cdr:href,
+                                                 '&amp;Filter=name:Glossary',
+                                                 '+Term+Display+for+HP',
+                                                 '+Summaries')"/>
      </xsl:attribute>
-     <xsl:value-of           select = "."/>
+     <xsl:value-of              select = "."/>
     </a>
    </xsl:otherwise>
   </xsl:choose>
@@ -177,33 +153,33 @@
  ======================================================================
  Link to glossaryTermRefs - Spanish Health Professional
  ====================================================================== -->
- <xsl:template                match = "GlossaryTermRef | LOERef"
-                                        mode = "HPS" >
+ <xsl:template                   match = "GlossaryTermRef | LOERef"
+                                  mode = "HPS" >
   <xsl:choose>
-   <xsl:when                   test = "Deletion">
+   <xsl:when                      test = "Deletion">
     <a>
-     <xsl:attribute            name = "href">
-      <xsl:value-of          select = "concat('/cgi-bin/cdr/Filter.py?',
-                                               'DocId=', @cdr:href,
-                                               '&amp;Filter=name:Glossary',
-                                               '+Term+Display+for+HPS',
-                                               '+Summaries')"/>
+     <xsl:attribute               name = "href">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Filter=name:Glossary',
+                                                 '+Term+Display+for+HPS',
+                                                 '+Summaries')"/>
      </xsl:attribute>
      <strike>
-      <xsl:value-of          select = "."/>
+      <xsl:value-of             select = "."/>
      </strike>
     </a>
    </xsl:when>
    <xsl:otherwise>
     <a>
-     <xsl:attribute            name = "href">
-      <xsl:value-of          select = "concat('/cgi-bin/cdr/Filter.py?',
-                                               'DocId=', @cdr:href,
-                                               '&amp;Filter=name:Glossary',
-                                               '+Term+Display+for+HPS',
-                                               '+Summaries')"/>
+     <xsl:attribute               name = "href">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Filter=name:Glossary',
+                                                 '+Term+Display+for+HPS',
+                                                 '+Summaries')"/>
      </xsl:attribute>
-     <xsl:value-of           select = "."/>
+     <xsl:value-of              select = "."/>
     </a>
    </xsl:otherwise>
   </xsl:choose>
@@ -214,40 +190,8 @@
  =====================================================================
  Display Itemized Lists for KeyPoints
  ===================================================================== -->
- <xsl:template                 match = "KeyPointsList[@Style='bullet'] |
-                                       KeyPointsList[@Style='dash']">
-  <ul>
-   <xsl:attribute               name = "class">
-    <xsl:choose>
-     <xsl:when                  test = "@Style = 'bullet'">        
-      <xsl:text>disc</xsl:text>   
-     </xsl:when>
-     <xsl:when                  test = "@Style = 'dash'">
-      <xsl:text>square</xsl:text>      
-     </xsl:when>
-    </xsl:choose> 
-   </xsl:attribute>
-
-   <xsl:for-each              select = "ListItem">
-    <!-- Don't display empty list items -->
-    <xsl:if                     test = "not(. = '')">
-     <li>
-      <xsl:apply-templates/>
-     </li>
-    </xsl:if>
-   </xsl:for-each>
-  </ul>
- </xsl:template>
-
-
- <!-- 
- =====================================================================
- Display an itemized list
- ===================================================================== -->
- <xsl:template                   match = "ItemizedList">   
-  <xsl:apply-templates          select = "ListTitle"/>
- 
-  <!-- Handle ListItem now. -->
+ <xsl:template                   match = "KeyPointsList[@Style='bullet'] |
+                                          KeyPointsList[@Style='dash']">
   <ul>
    <xsl:attribute                 name = "class">
     <xsl:choose>
@@ -257,67 +201,20 @@
      <xsl:when                    test = "@Style = 'dash'">
       <xsl:text>square</xsl:text>      
      </xsl:when>
-     <xsl:when                    test = "@Style = 'simple'">
-      <xsl:text>lnone</xsl:text>     
-     </xsl:when> 
     </xsl:choose> 
    </xsl:attribute>
 
-   <xsl:for-each                select = "ListItem"> 
+   <xsl:for-each                select = "ListItem">
     <!-- Don't display empty list items -->
     <xsl:if                       test = "not(. = '')">
-     <xsl:call-template           name = "ItemizedListItem"/>
+     <li>
+      <xsl:apply-templates/>
+     </li>
     </xsl:if>
-   </xsl:for-each>    
-  </ul>  
- </xsl:template>  
-
-
- <!-- 
- =====================================================================
- Display an ordered list 
- ===================================================================== -->
- <xsl:template                   match = "OrderedList">   
-  <xsl:apply-templates          select = "ListTitle"/> 
-    
-
-  <!-- Handle ListItem now. -->
-  <ol>
-   <xsl:attribute                 name = "Class">
-    <xsl:choose>
-     <xsl:when                    test = "@Style = 'UAlpha'">        
-      <xsl:text>A</xsl:text>
-     </xsl:when>
-     <xsl:when                    test = "@Style = 'LAlpha'">
-      <xsl:text>little-alpha</xsl:text>
-     </xsl:when>
-     <xsl:when                    test = "@Style = 'URoman'">
-      <xsl:text>I</xsl:text>
-     </xsl:when>
-     <xsl:when                    test = "@Style = 'LRoman'">
-      <xsl:text>little-roman</xsl:text>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:text>d</xsl:text>
-     </xsl:otherwise>
-    </xsl:choose>
-   </xsl:attribute>
-
-   <xsl:for-each                select = "ListItem">
-    <li>  
-     <xsl:apply-templates/>
-     <!-- Take care of extra attribute compact. -->
-     <xsl:if                      test = "position() != last() 
-                                          and
-                                          ../@Compact = 'No'">
-      <br />
-      <br /> 
-     </xsl:if>
-    </li>
    </xsl:for-each>
-  </ol>
- </xsl:template>        
- 
+  </ul>
+ </xsl:template>
+
 
  <!-- 
  =====================================================================
@@ -343,6 +240,28 @@
 
  <!-- 
  =====================================================================
+ Display tables in old format
+ ===================================================================== -->
+ <xsl:template                   match = "TT">
+  <pre><xsl:apply-templates/></pre>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ Create a link to another document or website 
+ ===================================================================== -->
+ <xsl:template                   match = "ExternalRef">
+  <xsl:variable                   name = "nlink" 
+                                select = "@cdr:xref"/>
+  <a href="{$nlink}">
+   <xsl:apply-templates/>
+  </a>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
  Display Strong 
  ===================================================================== -->
  <xsl:template                   match = "Strong">
@@ -354,10 +273,36 @@
 
  <!-- 
  =====================================================================
+ Display Strong within a list but only if it's listed as the very 
+ first element within a listitem (used as a "ListItemTitle")
+ ===================================================================== -->
+ <xsl:template                   match = "Strong"
+                                  mode = "compactNo">
+  <xsl:choose>
+  <xsl:when                       test = "name(..) = 'ListItem'
+                                          and 
+                                          preceding-sibling::text() = ''">
+    <p class="itemtitle">
+     <xsl:apply-templates/>
+    </p>
+   </xsl:when>
+   <xsl:otherwise>
+    <b>
+     <xsl:apply-templates/>
+    </b>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
  Display Emphasis, ScientificName, ForeignWord, GeneName
  ===================================================================== -->
- <xsl:template                   match = "Emphasis | ScientificName |
-                                          ForeignWord | GeneName">
+ <xsl:template                   match = "Emphasis       | 
+                                          ScientificName |
+                                          ForeignWord    | 
+                                          GeneName">
   <i>
    <xsl:apply-templates/>
   </i>
@@ -368,13 +313,13 @@
  =====================================================================
  Display a Note element without markup
  ===================================================================== -->
- <xsl:template               match = "Note"
-                              mode = "R">
+ <xsl:template                   match = "Note"
+                                  mode = "R">
   <i>
    <xsl:text> [</xsl:text>
 
    <xsl:choose>
-    <xsl:when                 test = "//SummaryLanguage = 'Spanish'"> 
+    <xsl:when                     test = "//SummaryLanguage = 'Spanish'"> 
      <xsl:text>Nota: </xsl:text>
     </xsl:when>
     <xsl:otherwise>
@@ -393,68 +338,64 @@
  =====================================================================
  Display a note with mark-up (Redline/Strikeout)
  ===================================================================== -->
- <xsl:template               match = "Note" 
-                              mode = "RS">
+ <xsl:template                   match = "Note" 
+                                  mode = "RS">
   <i>
   <xsl:choose>
-   <xsl:when                  test = "Insertion/@RevisionLevel='approved'
-                                      or
-                                      Insertion/@RevisionLevel='publish'">
-    <font color="RED">
+   <xsl:when                      test = "Insertion/@RevisionLevel='approved'
+                                          or
+                                          Insertion/@RevisionLevel='publish'">
+    <span class="insertapproved">
      <xsl:text> [</xsl:text>
-    </font>
+    </span>
    </xsl:when>
-   <xsl:when                 test  = "Insertion/@RevisionLevel='proposed'">
-    <font color="FUCHSIA">
+   <xsl:when                     test  = "Insertion/@RevisionLevel ='proposed'">
+    <span class="insertproposed">
      <xsl:text> [</xsl:text>
-    </font>
+    </span>
    </xsl:when>
-   <xsl:when                 test  = "Deletion/@RevisionLevel='approved'
-                                      or
-                                      Deletion/@RevisionLevel='publish'">
-    <strike>
+   <xsl:when                     test  = "Deletion/@RevisionLevel = 'approved'
+                                          or
+                                          Deletion/@RevisionLevel = 'publish'">
+    <span class="deleteapproved">
      <xsl:text> [</xsl:text>
-    </strike>
+    </span>
    </xsl:when>
-   <xsl:when                 test  = "Deletion/@RevisionLevel='proposed'">
-    <strike>
-     <font color="FUCHSIA">
-      <xsl:text> [</xsl:text>
-     </font>
-    </strike>
+   <xsl:when                     test  = "Deletion/@RevisionLevel = 'proposed'">
+    <span class="deleteproposed">
+     <xsl:text> [</xsl:text>
+    </span>
    </xsl:when>
    <xsl:otherwise>
     <xsl:text> [</xsl:text>
    </xsl:otherwise>
   </xsl:choose>
   <xsl:choose>
-   <xsl:when                 test = "//SummaryLanguage ='Spanish'"> 
+   <xsl:when                      test = "//SummaryLanguage ='Spanish'"> 
     <xsl:choose>
-     <xsl:when                 test  = "Insertion/@RevisionLevel='approved'
-                                        or
-                                        Insertion/@RevisionLevel='publish'">
-      <font color="RED">
+     <xsl:when                    test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel = 'publish'">
+      <span class="insertapproved">
        <xsl:text>Nota: </xsl:text>
-      </font>
+      </span>
      </xsl:when>
-     <xsl:when                 test  = "Insertion/@RevisionLevel='proposed'">
-      <font color="FUCHSIA">
+     <xsl:when                    test = "Insertion/@RevisionLevel ='proposed'">
+      <span class="insertproposed">
        <xsl:text>Nota: </xsl:text>
-      </font>
+      </span>
      </xsl:when>
-     <xsl:when                 test  = "Deletion/@RevisionLevel='approved'
-                                        or
-                                        Deletion/@RevisionLevel='publish'">
-      <strike>
+     <xsl:when                    test = "Deletion/@RevisionLevel = 'approved'
+                                          or
+                                          Deletion/@RevisionLevel = 'publish'">
+      <span class="deleteapproved">
        <xsl:text>Nota: </xsl:text>
-      </strike>
+      </span>
      </xsl:when>
-     <xsl:when                 test  = "Deletion/@RevisionLevel='proposed'">
-      <strike>
-       <font color="FUCHSIA">
-        <xsl:text>Nota: </xsl:text>
-       </font>
-      </strike>
+     <xsl:when                    test = "Deletion/@RevisionLevel = 'proposed'">
+      <span class="deleteproposed">
+       <xsl:text>Nota: </xsl:text>
+      </span>
      </xsl:when>
      <xsl:otherwise>
       <xsl:text>Nota: </xsl:text>
@@ -463,31 +404,30 @@
    </xsl:when>
    <xsl:otherwise>
     <xsl:choose>
-     <xsl:when                 test  = "Insertion/@RevisionLevel='approved'
-                                        or
-                                        Insertion/@RevisionLevel='publish'">
-      <font color="RED">
+     <xsl:when                    test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel = 'publish'">
+      <span class="insertapproved">
        <xsl:text>Note: </xsl:text>
-      </font>
+      </span>
      </xsl:when>
-     <xsl:when                 test  = "Insertion/@RevisionLevel='proposed'">
-      <font color="FUCHSIA">
+     <xsl:when                    test = "Insertion/@RevisionLevel 
+                                                                  = 'proposed'">
+      <span class="insertproposed">
        <xsl:text>Note: </xsl:text>
-      </font>
+      </span>
      </xsl:when>
-     <xsl:when                 test  = "Deletion/@RevisionLevel='approved'
-                                        or
-                                        Deletion/@RevisionLevel='publish'">
-      <strike>
+     <xsl:when                   test  = "Deletion/@RevisionLevel = 'approved'
+                                          or
+                                          Deletion/@RevisionLevel = 'publish'">
+      <span class="deleteapproved">
        <xsl:text>Note: </xsl:text>
-      </strike>
+      </span>
      </xsl:when>
-     <xsl:when                 test  = "Deletion/@RevisionLevel='proposed'">
-      <strike>
-       <font color="FUCHSIA">
-        <xsl:text>Note: </xsl:text>
-       </font>
-      </strike>
+     <xsl:when                   test  = "Deletion/@RevisionLevel = 'proposed'">
+      <span class="deleteproposed">
+       <xsl:text>Note: </xsl:text>
+      </span>
      </xsl:when>
      <xsl:otherwise>
       <xsl:text>Note: </xsl:text>
@@ -496,12 +436,12 @@
    </xsl:otherwise>
   </xsl:choose>
   <xsl:choose>
-   <xsl:when                 test  = "Insertion/@RevisionLevel='proposed'
-                                      or
-                                      Deletion/@RevisionLevel='proposed'">
-     <font color="FUCHSIA">
+   <xsl:when                     test  = "Insertion/@RevisionLevel = 'proposed'
+                                          or
+                                          Deletion/@RevisionLevel = 'proposed'">
+     <span class="insertproposed">
       <xsl:apply-templates/>
-     </font>
+     </span>
    </xsl:when>
    <xsl:otherwise>
      <xsl:apply-templates/>
@@ -509,31 +449,29 @@
   </xsl:choose>
 
   <xsl:choose>
-   <xsl:when                 test  = "Insertion/@RevisionLevel='approved'
-                                      or
-                                      Insertion/@RevisionLevel='publish'">
-    <font color="RED">
+   <xsl:when                     test  = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel = 'publish'">
+    <span class="insertapproved">
      <xsl:text>] </xsl:text>
-    </font>
+    </span>
    </xsl:when>
-   <xsl:when                 test  = "Insertion/@RevisionLevel='proposed'">
-    <font color="FUCHSIA">
+   <xsl:when                     test  = "Insertion/@RevisionLevel ='proposed'">
+    <span class="insertproposed">
      <xsl:text>] </xsl:text>
-    </font>
+    </span>
    </xsl:when>
-   <xsl:when                 test  = "Deletion/@RevisionLevel='approved'
-                                      or
-                                      Deletion/@RevisionLevel='publish'">
-    <strike>
+   <xsl:when                     test  = "Deletion/@RevisionLevel = 'approved'
+                                          or
+                                          Deletion/@RevisionLevel='publish'">
+    <span class="deleteapproved">
      <xsl:text>] </xsl:text>
-    </strike>
+    </span>
    </xsl:when>
-   <xsl:when                 test  = "Deletion/@RevisionLevel='proposed'">
-    <strike>
-     <font color="FUCHSIA">
-      <xsl:text>] </xsl:text>
-     </font>
-    </strike>
+   <xsl:when                     test  = "Deletion/@RevisionLevel = 'proposed'">
+    <span class="deleteproposed">
+     <xsl:text>] </xsl:text>
+    </span>
    </xsl:when>
    <xsl:otherwise>
     <xsl:text>] </xsl:text>
@@ -547,14 +485,14 @@
  =====================================================================
  Display a note with markup (Bold/Underline)   
  ===================================================================== -->
- <xsl:template               match = "Note" 
-                              mode = "BU">
+ <xsl:template                   match = "Note" 
+                                  mode = "BU">
   <!-- Don't display emply Note elements -->
-  <xsl:if                     test = "not(.='')">
+  <xsl:if                         test = "not(.='')">
    <xsl:choose>
-    <xsl:when                test  =  "Insertion/@RevisionLevel='approved'
-                                       or
-                                       Insertion/@RevisionLevel='publish'">
+    <xsl:when                     test =  "Insertion/@RevisionLevel = 'approved'
+                                           or
+                                           Insertion/@RevisionLevel ='publish'">
      <b>
       <u>
        <i>
@@ -563,22 +501,24 @@
       </u>
      </b>
     </xsl:when>
-    <xsl:when                test  = "Insertion/@RevisionLevel='proposed'">
+    <xsl:when                     test = "Insertion/@RevisionLevel ='proposed'">
      <b>
       <i>
        <xsl:text> [</xsl:text>
       </i>
      </b>
     </xsl:when>
-    <xsl:when                test  = "Deletion/@RevisionLevel='proposed'">
+    <xsl:when                     test = "Deletion/@RevisionLevel = 'proposed'">
      <strike>
       <xsl:text> [</xsl:text>
      </strike>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:if                 test  = "not(Deletion/@RevisionLevel='approved')
-                                      and
-                                      not(Deletion/@RevisionLevel='publish')">
+     <xsl:if                      test = "not(Deletion/@RevisionLevel 
+                                                = 'approved')
+                                          and
+                                          not(Deletion/@RevisionLevel 
+                                                = 'publish')">
       <i>
        <xsl:text> [</xsl:text>
       </i>
@@ -587,11 +527,11 @@
    </xsl:choose>
 
    <xsl:choose>
-    <xsl:when                 test = "//SummaryLanguage ='Spanish'"> 
+    <xsl:when                     test = "//SummaryLanguage ='Spanish'"> 
      <xsl:choose>
-      <xsl:when               test = "Insertion/@RevisionLevel='approved'
-                                      or
-                                      Insertion/@RevisionLevel='publish'">
+      <xsl:when                   test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel = 'publish'">
        <b>
         <u>
          <i>
@@ -600,14 +540,14 @@
         </u>
        </b>
       </xsl:when>
-      <xsl:when               test = "Insertion/@RevisionLevel='proposed'">
+      <xsl:when                   test = "Insertion/@RevisionLevel ='proposed'">
        <b>
         <i>
          <xsl:text>Nota: </xsl:text>
         </i>
        </b>
       </xsl:when>
-      <xsl:when               test = "Deletion/@RevisionLevel='proposed'">
+      <xsl:when                   test = "Deletion/@RevisionLevel = 'proposed'">
        <strike>
         <i>
          <xsl:text>Nota: </xsl:text>
@@ -615,9 +555,11 @@
        </strike>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:if                test = "not(Deletion/@RevisionLevel='approved')
-                                      and
-                                      not(Deletion/@RevisionLevel='publish')">
+       <xsl:if                    test = "not(Deletion/@RevisionLevel 
+                                                = 'approved')
+                                          and
+                                          not(Deletion/@RevisionLevel
+                                                = 'publish')">
        <i>
          <xsl:text>Nota: </xsl:text>
         </i>
@@ -627,9 +569,9 @@
     </xsl:when>
     <xsl:otherwise>
      <xsl:choose>
-      <xsl:when               test = "Insertion/@RevisionLevel='approved'
-                                      or
-                                      Insertion/@RevisionLevel='publish'">
+      <xsl:when                   test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel = 'publish'">
        <b>
         <u>
          <i>
@@ -638,14 +580,14 @@
         </u>
        </b>
       </xsl:when>
-      <xsl:when               test = "Insertion/@RevisionLevel='proposed'">
+      <xsl:when                   test = "Insertion/@RevisionLevel ='proposed'">
        <b>
         <i>
          <xsl:text>Note: </xsl:text>
         </i>
        </b>
       </xsl:when>
-      <xsl:when               test = "Deletion/@RevisionLevel='proposed'">
+      <xsl:when                   test = "Deletion/@RevisionLevel = 'proposed'">
        <strike>
         <i>
          <xsl:text>Note: </xsl:text>
@@ -653,9 +595,11 @@
        </strike>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:if                test = "not(Deletion/@RevisionLevel='approved')
-                                      and
-                                      not(Deletion/@RevisionLevel='publish')">
+       <xsl:if                    test = "not(Deletion/@RevisionLevel
+                                                = 'approved')
+                                          and
+                                          not(Deletion/@RevisionLevel 
+                                                = 'publish')">
         <i>
          <xsl:text>Note: </xsl:text>
         </i>
@@ -669,9 +613,9 @@
     <xsl:apply-templates/>
    </i>
    <xsl:choose>
-    <xsl:when                 test = "Insertion/@RevisionLevel='approved'
-                                      or
-                                      Insertion/@RevisionLevel='publish'">
+    <xsl:when                     test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel = 'publish'">
      <b>
       <u>
        <i>
@@ -680,14 +624,14 @@
       </u>
      </b>
     </xsl:when>
-    <xsl:when                 test = "Insertion/@RevisionLevel='proposed'">
+    <xsl:when                     test = "Insertion/@RevisionLevel ='proposed'">
      <b>
       <i>
        <xsl:text>] </xsl:text>
       </i>
      </b>
     </xsl:when>
-    <xsl:when                 test = "Deletion/@RevisionLevel='proposed'">
+    <xsl:when                     test = "Deletion/@RevisionLevel = 'proposed'">
      <strike>
       <i>
        <xsl:text>] </xsl:text>
@@ -695,9 +639,11 @@
      </strike>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:if                  test = "not(Deletion/@RevisionLevel='approved')
-                                      and
-                                      not(Deletion/@RevisionLevel='publish')">  
+     <xsl:if                      test = "not(Deletion/@RevisionLevel
+                                                = 'approved')
+                                          and
+                                          not(Deletion/@RevisionLevel 
+                                                = 'publish')">  
       <i>
        <xsl:text>] </xsl:text>
       </i>
@@ -709,43 +655,11 @@
 
 
  <!-- 
- ======================================================================
- Template handling ListTitle
- ====================================================================== -->
- <xsl:template               match = "ListTitle">    
-  <!--<br/>-->
-  <b>
-   <i>
-    <xsl:apply-templates /> 
-   </i>
-  </b>      
- </xsl:template>
-
-
- <!-- 
- =====================================================================
- Template handling ListItem in ItemizedList
- ===================================================================== -->  
- <xsl:template                name = "ItemizedListItem">
-   <li>
-   <xsl:apply-templates />
-   <xsl:if                    test = "position() != last() 
-                                      and
-                                      ../@Compact = 'No'">
-    <br/>
-    <br/>
-   </xsl:if>
-
-  </li>
- </xsl:template>
-
-
- <!-- 
  =====================================================================
  Display TOC Summary Title with Deletion and Insertion
  ===================================================================== -->
- <xsl:template               match = "SummaryTitle"
-                              mode = "TOC">
+ <xsl:template                   match = "SummaryTitle"
+                                  mode = "TOC">
   <h2>
    <xsl:apply-templates />
   </h2>
@@ -755,8 +669,8 @@
  =====================================================================
  Display summary titles in TOC.
  ===================================================================== -->
- <xsl:template               match = "Title" 
-                              mode = "TOC">
+ <xsl:template                   match = "Title" 
+                                  mode = "TOC">
   <xsl:apply-templates/>
  </xsl:template>
 
@@ -765,50 +679,47 @@
  =====================================================================
  Display SummarySection in TOC.
  ===================================================================== -->
- <xsl:template                name = "TocSummarySection">
-  <xsl:param                  name = "level"/> 
+ <xsl:template                    name = "TocSummarySection">
+  <xsl:param                      name = "level"/> 
 
-  <xsl:if                     test = "Title"> 
+  <xsl:if                         test = "Title"> 
    <li>
-    <xsl:apply-templates    select = "Title"
-                              mode = "TOC"/>
+    <xsl:apply-templates        select = "Title"
+                                  mode = "TOC"/>
    </li>
   </xsl:if>                   
-   
-  <xsl:if                     test = "SummarySection and
-                                        $level &lt; 3">
+
+  <xsl:if                         test = "SummarySection and
+                                            $level &lt; 3">
    <ul Class="lnone">
-    <xsl:for-each           select = "SummarySection">
-   <!--  <xsl:if                test   =  "not(Title/Deletion)">-->
-      <xsl:call-template      name = "TocSummarySection">
-       <xsl:with-param        name = "level"
-                            select = "$level + 1"/>
+    <xsl:for-each               select = "SummarySection">
+      <xsl:call-template          name = "TocSummarySection">
+       <xsl:with-param            name = "level"
+                                select = "$level + 1"/>
       </xsl:call-template>
-   <!--  </xsl:if>-->
     </xsl:for-each>
    </ul>
   </xsl:if>
  </xsl:template>
 
-  <!--
-      ============================================================
-            Display titles for Patient Summaries
-      ============================================================= -->
+ <!--
+ ============================================================
+ Display titles for Patient Summaries
+ ============================================================= -->
+ <xsl:template                   match = "Title"
+                                  mode = "PT">
+  <xsl:variable                   name = "ancestors"
+                                select = "ancestor::SummarySection"/>
 
-   <xsl:template              match= "Title"
-                              mode = "PT">
-   <xsl:variable              name = "ancestors"
-                              select = "ancestor::SummarySection"/>
-  
-   <xsl:choose>
-    <xsl:when                  test = "count($ancestors) = 2">
+  <xsl:choose>
+   <xsl:when                      test = "count($ancestors) = 2">
     <h3><xsl:apply-templates/></h3>
    </xsl:when>
-   <xsl:when                   test = "count($ancestors) &gt; 2">
-   <h4><xsl:apply-templates/></h4>
+   <xsl:when                      test = "count($ancestors) &gt; 2">
+    <h4><xsl:apply-templates/></h4>
    </xsl:when>
-   </xsl:choose>
-   </xsl:template>
+  </xsl:choose>
+ </xsl:template>
 
 
  <!-- 
@@ -819,43 +730,29 @@
  are not summaries, but with Title.
  Fixed RMK 2003-10-14.
  ===================================================================== -->
- <xsl:template               match = "Title"
-                              mode = "RB">
-
-  <xsl:variable               name = "ancestors"
-                            select = "ancestor::SummarySection"/>
+ <xsl:template                   match = "Title"
+                                  mode = "RB">
+  <xsl:variable                   name = "ancestors"
+                                select = "ancestor::SummarySection"/>
   <xsl:choose>
-   <xsl:when                  test = "count($ancestors) = 1">
+   <xsl:when                      test = "count($ancestors) = 1">
     <h2><xsl:apply-templates/></h2>
    </xsl:when>
-   <xsl:when                  test = "count($ancestors) = 2">
+   <xsl:when                      test = "count($ancestors) = 2">
     <h3><xsl:apply-templates/></h3>
    </xsl:when>
    <xsl:otherwise>
     <h4><xsl:apply-templates/></h4>
    </xsl:otherwise>
   </xsl:choose>
-
  </xsl:template>
  
-
- <!-- 
- ===============================================================
- Display Paragraphs in a ListItem - not approved yet
- =============================================================== -->
- <xsl:template               match = "ListItem/Para">
-  <br />
-  <br />
-  <xsl:apply-templates/>
-  <nobr />
- </xsl:template> 
-
 
  <!-- 
  =====================================================================
  Display Paragraphs 
  ===================================================================== -->
- <xsl:template               match = "Para">
+ <xsl:template                   match = "Para">
   <p>
    <xsl:apply-templates/>
   </p>
@@ -863,43 +760,288 @@
 
 
  <!-- 
+ ===============================================================
+ Display Paragraphs in a ListItem of a compacted list
+ =============================================================== -->
+ <xsl:template                   match = "Para"
+                                  mode = "compactNo">
+  <xsl:if                         test = "preceding-sibling::self = 'Para'">
+   [FIX ME]
+  </xsl:if>
+
+  <p class="nospace">
+   <xsl:apply-templates           mode = "compactNo"/>
+  </p>
+ </xsl:template> 
+
+
+  <!-- 
  =====================================================================
- Display tables in old format
+ Display an itemized list
  ===================================================================== -->
- <xsl:template               match = "TT">
-  <pre><xsl:apply-templates/></pre>
- </xsl:template>
+ <xsl:template                   match = "ItemizedList">
+  <!-- Ensure that Para and List are separated by a blank 
+       line for Compact=No -->
+  <xsl:if                         test = "not(preceding-sibling::self = 'Para')
+                                          and
+                                          ../../@Compact
+                                          or
+                                          preceding-sibling::self = ''">
+   <p/>
+  </xsl:if>
+  <xsl:apply-templates          select = "ListTitle"/>
+  <!-- Handle ListItem now. -->
+  <ul>
+   <xsl:attribute                 name = "class">
+    <xsl:choose>
+     <xsl:when                    test = "@Style = 'bullet'">        
+      <xsl:text>disc</xsl:text>   
+     </xsl:when>
+     <xsl:when                    test = "@Style = 'dash'">
+      <xsl:text>square</xsl:text>      
+     </xsl:when>
+     <xsl:when                    test = "@Style = 'simple'">
+      <xsl:text>lnone</xsl:text>     
+     </xsl:when> 
+    </xsl:choose> 
+   </xsl:attribute>
+
+   <xsl:choose>
+    <xsl:when                     test = "@Compact">
+     <xsl:apply-templates       select = "ListItem"
+                                  mode = "compactNo"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates       select = "ListItem"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </ul>  
+ </xsl:template>  
 
 
  <!-- 
  =====================================================================
- Create a link to another document or website 
+ Display an itemized list - NEW
  ===================================================================== -->
- <xsl:template               match = "ExternalRef">
-  <xsl:variable               name = "nlink" 
-                            select = "@cdr:xref"/>
-  <a href="{$nlink}">
-   <xsl:apply-templates/>
-  </a>
- </xsl:template>
+ <xsl:template                   match = "ItemizedList"
+                                  mode = "compactNo">
+  <!-- Ensure that Para and List are separated by a blank line for Compact=No-->
+  <xsl:if                         test = "not(preceding-sibling::self = 'Para')
+                                          and
+                                          ../../@Compact">
+   <p/>
+  </xsl:if>
+  <xsl:apply-templates          select = "ListTitle"/>
+  <!-- Handle ListItem now. -->
+  <ul>
+   <xsl:attribute                 name = "class">
+    <xsl:choose>
+     <xsl:when                    test = "@Style = 'bullet'">        
+      <xsl:text>disc</xsl:text>   
+     </xsl:when>
+     <xsl:when                    test = "@Style = 'dash'">
+      <xsl:text>square</xsl:text>      
+     </xsl:when>
+     <xsl:when                    test = "@Style = 'simple'">
+      <xsl:text>lnone</xsl:text>     
+     </xsl:when> 
+    </xsl:choose> 
+   </xsl:attribute>
+
+   <xsl:choose>
+    <xsl:when                     test = "@Compact">
+     <xsl:apply-templates       select = "ListItem"
+                                  mode = "compactNo"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates       select = "ListItem"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </ul>  
+ </xsl:template>  
 
 
+ <!-- 
+ =====================================================================
+ Display an ordered list
+ ===================================================================== -->
+ <xsl:template                   match = "OrderedList">
+  <!-- Ensure that Para and List are separated by a blank line for Compact=No-->
+  <xsl:if                         test = "not(preceding-sibling::self = 'Para')
+                                          and
+                                          ../../@Compact">
+   <p/>
+  </xsl:if>
+  <xsl:apply-templates          select = "ListTitle"/>
+  <ol>
+   <xsl:attribute                 name = "Class">
+    <xsl:choose>
+     <xsl:when                    test = "@Style = 'UAlpha'">        
+      <xsl:text>A</xsl:text>
+     </xsl:when>
+     <xsl:when                    test = "@Style = 'LAlpha'">
+      <xsl:text>little-alpha</xsl:text>
+     </xsl:when>
+     <xsl:when                    test = "@Style = 'URoman'">
+      <xsl:text>I</xsl:text>
+     </xsl:when>
+     <xsl:when                    test = "@Style = 'LRoman'">
+      <xsl:text>little-roman</xsl:text>
+     </xsl:when>
+     <xsl:when                    test = "@Style = 'Arabic'">
+      <xsl:text>d</xsl:text>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>none</xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:attribute>
+
+   <xsl:choose>
+    <xsl:when                     test = "@Compact">
+     <xsl:apply-templates       select = "ListItem"
+                                  mode = "compactNo"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates       select = "ListItem"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </ol>
+ </xsl:template>        
  
+
  <!-- 
- ================================================================
- Display Comments - Bold/UnderLine
- ================================================================ -->
- <xsl:template              match = "CommentX" 
-                             mode = "BU">
-  <i>
-   <b>
-    <xsl:text>[Comment: </xsl:text>
-    <xsl:apply-templates/>
-    <xsl:text>] </xsl:text>
-   </b>
-  </i>
+ =====================================================================
+ Display an ordered list
+ ===================================================================== -->
+ <xsl:template                   match = "OrderedList"
+                                  mode = "compactNo">
+  <!-- Ensure that Para and List are separated by a blank line for Compact=No-->
+  <xsl:if                         test = "not(preceding-sibling::self = 'Para')
+                                          and
+                                          ../../@Compact">
+   <p/>
+  </xsl:if>
+  <xsl:apply-templates          select = "ListTitle"/>
+  <ol>
+   <xsl:attribute                 name = "Class">
+    <xsl:choose>
+     <xsl:when                    test = "@Style = 'UAlpha'">        
+      <xsl:text>A</xsl:text>
+     </xsl:when>
+     <xsl:when                    test = "@Style = 'LAlpha'">
+      <xsl:text>little-alpha</xsl:text>
+     </xsl:when>
+     <xsl:when                    test = "@Style = 'URoman'">
+      <xsl:text>I</xsl:text>
+     </xsl:when>
+     <xsl:when                    test = "@Style = 'LRoman'">
+      <xsl:text>little-roman</xsl:text>
+     </xsl:when>
+     <xsl:when                    test = "@Style = 'Arabic'">
+      <xsl:text>d</xsl:text>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>none</xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:attribute>
+
+   <xsl:choose>
+    <xsl:when                     test = "@Compact">
+     <xsl:apply-templates       select = "ListItem"
+                                  mode = "compactNo"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates       select = "ListItem"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </ol>
+ </xsl:template>        
+ 
+
+ <!-- 
+ =====================================================================
+ Display a list item but suppress items without content.
+ ===================================================================== -->
+ <xsl:template                   match = "ListItem">
+  <xsl:if                         test = "not(. = '')">
+   <li>
+    <xsl:choose>
+     <xsl:when                    test = "../@Compact">
+      <xsl:apply-templates/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:apply-templates        mode = "compactNo"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </li>
+  </xsl:if>
  </xsl:template>
 
+
+ <!-- 
+ =====================================================================
+ Display a list item within a compacted list but suppress items 
+ without content.
+ ===================================================================== -->
+ <xsl:template                   match = "ListItem"
+                                  mode = "compactNo">
+  <xsl:if                         test = "not(. = '')">
+   <xsl:choose>
+    <xsl:when                     test = "position() = last()">
+     <li>
+      <xsl:apply-templates/>
+     </li>
+    </xsl:when>
+    <xsl:otherwise>
+     <li class="addspace">
+      <xsl:apply-templates/>
+     </li>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ ======================================================================
+ Template handling ListTitle
+ ====================================================================== -->
+ <xsl:template                   match = "ListTitle">
+  <xsl:choose>
+   <xsl:when                      test = "name(../..) = 'SummarySection'">
+    <p class="listtitletop">
+     <xsl:apply-templates/>
+    </p>
+   </xsl:when>
+   <xsl:otherwise>
+    <p class="listtitle">
+     <xsl:apply-templates/>
+    </p>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ======================================================================
+ Default Template
+ Any node that is a child of a list or para with mode "compactNo"
+ will need to be redirected to he template without a mode.  This task 
+ is performed here by calling itself without a mode.
+ ====================================================================== -->
+ <xsl:template                   match = "@*"
+                                  mode = "compactNo">
+   <xsl:attribute                 name = "{name()}">
+    <xsl:value-of               select = "."/>
+   </xsl:attribute>
+ </xsl:template>
+
+ <xsl:template                   match = "*"
+                                  mode = "compactNo">
+  <xsl:apply-templates          select = "."/> 
+ </xsl:template>
 </xsl:transform>
 ]]>
 </CdrDocXml>
