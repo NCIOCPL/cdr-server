@@ -24,8 +24,7 @@
    <xsl:template match="/">
 
    <!--Filter written by C.Burg   10/18/2001 -->
-
-  
+   <!-- Made Tabular - 6/26/2003 - Nanci -->
 
    <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
 
@@ -34,8 +33,6 @@
     <HEAD>
 
      <xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
-
-
 
        <TITLE><xsl:value-of select="document('cdrutil:/docid')"/>               &#xa0;&#xa0;<xsl:value-of select="substring-before($cdrmydoc/CdrDocCtl/DocTitle,';')"/> 
 
@@ -82,60 +79,128 @@
                 Display preferred name of term 
       ================================================================= -->
 
- <b><font size='3'><xsl:text>Preferred Name</xsl:text></font></b><xsl:text>........................................</xsl:text>
-
-<xsl:apply-templates select="PreferredName"/><br />
+  <table width = '90%'>
+    <tr>
+      <td width = '35%'><b><font size='3'>Preferred Name</font></b></td>
+      <td width = '5%'>&#xa0;</td>
+      <td width = '60%'><xsl:apply-templates select="PreferredName"/></td>
+    </tr>
+  </table>
+  <br />
 
 <!-- ====================================================================
         If other names, display them, including type,review status 
      =================================================================== -->
 
+  <b><font size='3'>Other Names</font></b>
 
- <dl>
+  <xsl:for-each select="OtherName">
+    <table width = '90%'>
+      <tr>
+        <td width = '35%'>
+          &#xa0;&#xa0;&#xa0;&#xa0;<b><font size='3'>Term</font></b>
+        </td>
+        <td width = '5%'>&#xa0;</td>
+        <td width = '60%'><xsl:value-of select="OtherTermName"/></td>
+      </tr>
+      <tr>
+        <td>&#xa0;&#xa0;&#xa0;&#xa0;<b><font size='3'>Type</font></b></td>
+        <td></td>
+        <td><xsl:value-of   select = "OtherNameType"/></td>
+      </tr>
 
-<dt><b><font size='3'>Other Names</font></b></dt>
+      <xsl:if test="not(SourceInformation)">
+        <tr>
+          <td>
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            <b><font size='3'>Source Information</font></b>
+          </td>
+<!--          <td>&#xa0;</td>
+          <td>&#xa0;</td>  -->
+        </tr>
+      </xsl:if>
+    </table>
 
+    <xsl:if test="SourceInformation">
 
+      <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+      <b><font size='3'>Source Information</font></b>
 
-<xsl:for-each select="OtherName">
+      <table width = '90%'>
+        <tr>
+          <td width = '50%'>
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            <b><font size='3'>Reference Source</font></b>
+          </td>
+          <td width = '5%'>&#xa0;</td>
+          <td width = '45%'>
+            <xsl:value-of select = "SourceInformation/ReferenceSource"/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            <b><font size='3'>Vocabulary Source</font></b>
+          </td>
+          <td></td>
+          <td>
+            <xsl:value-of select = "SourceInformation/ReferenceSource
+                                    /VocbularySource"/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            <b><font size='3'>Vocabulary Source Term Type</font></b>
+          </td>
+          <td></td>
+          <td>
+            <xsl:value-of select = "SourceInformation/ReferenceSource/
+                                    VocbularySource/SourceTermType"/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            <b><font size='3'>Vocabulary Source Term ID</font></b>
+          </td>
+          <td></td>
+          <td>
+            <xsl:value-of select = "SourceInformation/ReferenceSource/
+                                    VocbularySource/SourceTermId"/>
+          </td>  
+        </tr>
+     </table>
+   </xsl:if>   
 
-<dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'><xsl:text>Term</xsl:text></font></b><xsl:text>....................................................</xsl:text><xsl:value-of select="OtherTermName"/></dt>
+    <table width = '90%'>
+      <tr>
+        <td width = '35%'>
+          &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+          <b><font size='3'>Review Status</font></b></td>
+        <td width = '5%'>&#xa0;</td>
+        <td width = '60%'><xsl:value-of  select = "ReviewStatus"/></td>
+      </tr>
+    </table>
 
-<dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'><xsl:text>Type</xsl:text></font></b><xsl:text>....................................................</xsl:text><xsl:value-of select="OtherNameType"/></dt><br />
+    <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+    <b><font size='3'>Comment</font></b>
+    <xsl:text>&#xa0;&#xa0;</xsl:text>
+    <xsl:value-of select = "Comment"/>
 
-<xsl:if test="not(SourceInformation)">
-<dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Source Information</font></b></dt>
-</xsl:if>
+    <br /><br />
 
-<xsl:if test="SourceInformation">
-<dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Source Information</font></b><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Reference Source</font></b><xsl:text>...................................</xsl:text><xsl:value-of select="SourceInformation/ReferenceSource"/></dt>
-
-
-
-<dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Vocabulary Source</font></b><xsl:text>...................................</xsl:text><xsl:value-of select="SourceInformation/ReferenceSource/VocbularySource"/></dt>
-
- <dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Vocabulary Source Term Type</font></b><xsl:text>................</xsl:text><xsl:value-of select="SourceInformation/ReferenceSource/VocbularySource/SourceTermType"/></dt>
-
-<dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Vocabulary Source Term ID</font></b><xsl:text>...................</xsl:text><xsl:value-of select="SourceInformation/ReferenceSource/VocbularySource/SourceTermId"/></dt>
-
-</xsl:if> 
-
-<dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'><xsl:text>Review Status</xsl:text></font></b><xsl:text>....................................</xsl:text><xsl:value-of select="ReviewStatus"/></dt>
-
- <dt><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'><xsl:text>Comment</xsl:text></font></b>
-
-<xsl:value-of select="Comment"/></dt>
-
-<br /><br />
-
-</xsl:for-each>
+  </xsl:for-each>
 
 <!-- ======================================================================
                          Display definitions
      ==================================================================== -->
 
-</dl>
+<!-- </dl> -->
 
 <xsl:if test="not(Definition)">
 
@@ -168,48 +233,57 @@
  <xsl:value-of select="Definition/Comment"/>
  <br /><br /> 
 </xsl:if> 
+
 <!-- ==================================================================
                        Display term type 
  ======================================================================= -->
 
-<xsl:if test="TermType">
+  <xsl:if test="TermType">
+    <b><font size='3'>Term Type</font></b>
+    <br />
+    <table width = '90%'>
+      <tr>
+        <td width = '35%'>&#xa0;&#xa0;<b><font size='3'>Name</font></b></td>
+        <td width = '5%'>&#xa0;</td>
+        <td width = '60%'>
+          <table>
+            <xsl:for-each  select = "TermType/TermTypeName">
+              <tr>
+                <td><xsl:value-of select = "."/></td>
+              </tr>
+            </xsl:for-each>
+          </table> 
+        </td>
+      </tr>
+    </table>
 
-<b><font size='3'>Term Type</font></b>
-
-<p>
-
-<xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Name</font></b><xsl:text>....................................................</xsl:text>
-
-
-
-<xsl:for-each select="TermType/TermTypeName">
-
-<xsl:value-of select="."/><br /><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0; &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-
-</xsl:for-each>
-
-</p>
-
-</xsl:if>
-
-
+  </xsl:if>
+  <br />
  
  
 <!-- =================================================================
                    Display semantic type 
     =================================================================== -->
 
-<xsl:if test="SemanticType">
+  <xsl:if test="SemanticType">
 
-<b><font size='3'>Semantic Type</font></b><xsl:text>......................................</xsl:text>
+    <table width = '90%'>
+      <tr>
+        <td width = '35%'><b><font size='3'>Semantic Type</font></b></td>
+        <td width = '5%'>&#xa0;</td>
+        <td width = '60%'>
+          <table>
+            <xsl:for-each select = "SemanticType">
+              <tr>
+                <td><xsl:value-of select="."/></td>
+              </tr>
+            </xsl:for-each>
+          </table>
+        </td>
+      </tr>
+    </table>
 
-<xsl:for-each select="SemanticType">
-
-<xsl:value-of select="."/><br /><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0; &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-
-</xsl:for-each>
-
-</xsl:if>
+  </xsl:if>
 
 <!-- ===================================================================
                Display Parent term,ID, PDQ Key,and type 
@@ -223,234 +297,265 @@
 
 <br />
 
- 
-
  <xsl:for-each  select="TermRelationship/ParentTerm">
+  <table width = '90%'>
+    <tr>
+      <td width = '35%'>
+        &#xa0;&#xa0;&#xa0;&#xa0;<b><font size='3'>Parent Term</font></b>
+      </td>
+      <td width = '5%'>&#xa0;</td>
+      <td width = '60%'><xsl:value-of  select = "PreferredName"/></td>
+    </tr>
+    <tr>
+      <td>&#xa0;&#xa0;&#xa0;&#xa0;<b><font size='3'>Term ID</font></b></td>
+      <td></td>
+      <td><xsl:value-of select="@cdr:ref"/></td>
+    </tr>
+    <tr>
+      <td>
+        &#xa0;&#xa0;&#xa0;&#xa0;<b><font size='3'>Parent PDQ Key</font></b>
+      </td>
+      <td></td>
+      <td><xsl:value-of select="PdqKey"/></td>
+    </tr>
+    <tr>
+      <td>&#xa0;&#xa0;&#xa0;&#xa0;<b><font size='3'>Parent Type</font></b></td>
+      <td></td>
+      <td><xsl:value-of select="ParentType"/></td>
+    </tr>
+  </table>
 
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Parent Term</font></b><xsl:text>.......................................</xsl:text>
- <xsl:value-of select="PreferredName"/><br />
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Term ID</font></b><xsl:text>...............................................</xsl:text>
- <xsl:value-of select="@cdr:ref"/><br />
+    <xsl:if test="not(Comment)">
+      <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+      <b><font size='3'>Comment</font></b>
+      <br /><br />
+    </xsl:if>
 
- 
-
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Parent PDQ Key</font></b><xsl:text>................................</xsl:text>
-
-  
-
- <xsl:value-of select="PdqKey"/><br />
-
-
-
-
-
-
-
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Parent Type</font></b><xsl:text>........................................</xsl:text>
-
-  
-
- <xsl:value-of select="ParentType"/><br />
-
-
-
-<xsl:if test="not(Comment)">
-
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Comment</font></b><br /><br />
-
-</xsl:if>
-
-<xsl:if test="Comment">
-
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Comment</font></b>
-
-
-
- <xsl:value-of select="Comment"/><br /><br />
-
- </xsl:if> 
-
- <!--</xsl:if>-->
+    <xsl:if test="Comment">
+      <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+      <b><font size='3'>Comment</font></b>
+      <xsl:value-of select="Comment"/>
+      <br /><br />
+    </xsl:if> 
 
   </xsl:for-each>
 
-   <!--</xsl:if>-->
+  <br />
 
-<br />
-
-<xsl:if test="not(TermRelationship/RelatedTerm)">
-
- <xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Related Term</font></b><br />
-
-</xsl:if>
+  <xsl:if test="not(TermRelationship/RelatedTerm)">
+    <xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text>
+    <b><font size='3'>Related Term</font></b>
+    <br />
+  </xsl:if>
 
   
 <!-- ===================================================================
             Display related terms, ID, PDQ Key, and type 
      ==================================================================== -->
 
- <xsl:if test="TermRelationship/RelatedTerm">
+  <xsl:if test="TermRelationship/RelatedTerm">
 
- <xsl:for-each select="TermRelationship/RelatedTerm">
+    <xsl:for-each select="TermRelationship/RelatedTerm">
 
+      <table width = '90%'>
+        <tr>
+          <td width = '35%'>
+            &#xa0;&#xa0;&#xa0;<b><font size='3'>Related Term</font></b>
+          </td>
+          <td width = '5%'>&#xa0;</td>
+          <td width = '60%'><xsl:value-of select="PreferredName"/></td>
+        </tr>
+        <tr>
+          <td>
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            <b><font size='3'>Term ID</font></b>
+          </td>
+          <td></td>
+          <td><xsl:value-of select="@cdr:ref"/></td>
+        </tr>
+        <tr>
+          <td>
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            <b><font size='3'>Related PDQ Key</font></b>
+          </td>
+          <td></td>
+          <td><xsl:value-of select="PdqKey"/></td>
+        </tr>
+        <xsl:if  test = "RelationshipType">
+          <tr>
+            <td>
+              &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+              <b><font size='3'>Relationship Type</font></b>
+            </td>
+            <td></td>
+            <td><xsl:value-of select="RelationshipType"/></td>
+          </tr>
+        </xsl:if>
+      </table>
 
+      <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+      <b><font size='3'>Comment</font></b>
+      <xsl:value-of select="Comment"/>
+      <br /><br />
 
-  <xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Related Term</font></b><xsl:text>.......................................</xsl:text>
-
-  
-
- <xsl:value-of select="PreferredName"/><br />
-
- 
-
-  <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Term ID</font></b><xsl:text>..............................................</xsl:text>
-
-  
-
- <xsl:value-of select="@cdr:ref"/><br />
-
-
-
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Related PDQ Key</font></b><xsl:text>..............................</xsl:text>
-
- <xsl:value-of select="PdqKey"/><br />
-
-<xsl:if test="RelationshipType">
-
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Relationship Type</font></b><xsl:text>.............................</xsl:text>
-
-  
-
- <xsl:value-of select="RelationshipType"/><br /><br />
+    </xsl:for-each>
 
   </xsl:if>
+  <br />
 
-
-
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Comment</font></b>
-
-  
-
- <xsl:value-of select="Comment"/><br /><br />
-
-   </xsl:for-each>
-
-   </xsl:if>
-
-<br />
 <!-- ===================================================================
                   Display term status and comment if available 
      ==================================================================== -->
 
-<!--<xsl:if test="TermStatus">-->
+  <b><font size='3'>Term Status</font></b><br />
 
-<b><font size='3'>Term Status</font></b><br />
-
-<!--<p>-->
-
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Status</font></b><xsl:text>..................................................</xsl:text>
-
- <xsl:for-each select="TermStatus">
-
- <xsl:value-of select="."/><br />
-
- </xsl:for-each>
-
- <!-- </p>-->
-
-<!--</xsl:if>-->
-
-<!--<xsl:if test="Comment">-->
-
-<!--<p>-->
-
-
-
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Comment</font></b><br />
-
- <xsl:for-each select="Comment">
+  <table width = '90%'>
+    <tr>
+      <td width = '35%'>
+        &#xa0;&#xa0;&#xa0;&#xa0;<b><font size='3'>Status</font></b>
+      </td>
+      <td width = '5%'>&#xa0;</td>
+      <td width = '60%'>
+        <table>
+          <xsl:for-each select="TermStatus">
+            <tr>
+              <td><xsl:value-of select="."/></td>
+            </tr>
+          </xsl:for-each>
+        </table>
+      </td>
+    </tr>
+  </table>
   <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <xsl:value-of select="."/>
+  <b><font size='3'>Comment</font></b><br />
 
- </xsl:for-each>
+  <xsl:for-each select="Comment">
+    <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+    <xsl:value-of select="."/>
+  </xsl:for-each>
 
- <!-- </p>-->
-
- <!-- </xsl:if>-->
-
-<br /><br />
+  <br /><br />
 
  <!-- =================================================================
                        Display Menu Information
       ================================================================= -->
           
+  <b><font size='3'>Menu Information</font></b>
+  <br /><br />
+  <xsl:for-each select="MenuInformation/MenuItem"> 
+    <xsl:value-of select="position()"/>.
+    <b><font size='3'>Menu Item</font></b>
+    <br />
+    <table width = '90%'>
+      <tr>
+        <td width = '35%'>
+          &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+          <b><font size='3'>Menu Type</font></b>
+        </td>
+        <td width = '5%'>&#xa0;</td>
+        <td width = '60%'><xsl:value-of select="MenuType"/></td>
+      </tr>
+    </table>
 
-     <b><font size='3'>Menu Information</font></b><br /><br />
-     <xsl:for-each select="MenuInformation/MenuItem"> 
-      <xsl:value-of select="position()"/>.
-       <b><font size='3'>Menu Item</font></b><br />
-      <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Menu Type</font></b><xsl:text>.......................................</xsl:text>
- <xsl:value-of select="MenuType"/><br />
+    <xsl:for-each select="MenuParent">
+      <table width = '90%'>
+        <tr>
+          <td width = '35%'>
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            <b><font size='3'>MenuParent</font></b>
+          </td>
+          <td width = '5%'>&#xa0;</td>
+          <td width = '60%'>&#xa0;</td>
+        </tr>
+        <tr>
+          <td>
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            <b><font size='3'>Display Name</font></b>
+          </td>
+          <td></td>
+          <td><xsl:value-of select="DisplayName"/></td>
+        </tr>
+      </table>
+    </xsl:for-each>
 
- <xsl:for-each select="MenuParent">
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>MenuParent</font></b><br />
+    <table width = '90%'>
+      <tr>
+        <td width = '35%'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+          <b><font size='3'>Sort Order</font></b>
+        </td>
+        <td width = '5%'>&#xa0;</td>
+        <td width = '60%'><xsl:value-of select="@SortOrder"/></td>
+      </tr>
+      <tr>
+        <td>
+          &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+          <b><font size='3'>MenuStatus</font></b>
+        </td>
+        <td></td>
+        <td><xsl:value-of select="MenuStatus"/></td>
+      </tr>
+      <tr>
+        <td>
+          &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+          <b><font size='3'>Entered By</font></b>
+        </td>
+        <td></td>
+        <td><xsl:value-of select="EnteredBy"/></td>
+      </tr>
+      <tr>
+        <td>
+          &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+          <b><font size='3'>EntryDate</font></b>
+        </td>
+        <td></td>
+        <td><xsl:value-of select="EntryDate"/></td>
+      </tr>
+    </table>
 
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Display Name</font></b><xsl:text>..............................</xsl:text>
- <xsl:value-of select="DisplayName"/><br />
-</xsl:for-each>
+    <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+    <b><font size='3'>Comment</font></b>
+    <br />
+    <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+    <xsl:value-of select="Comment"/>
+    <br /><br  />
 
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Sort Order</font></b><xsl:text>........................................</xsl:text>
- <xsl:value-of select="@SortOrder"/><br  />
-
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>MenuStatus</font></b><xsl:text>.....................................</xsl:text>
- <xsl:value-of select="MenuStatus"/><br />
-
-   <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Entered By</font></b><xsl:text>.......................................</xsl:text>
- <xsl:value-of select="EnteredBy"/><br />
-
-   <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>EntryDate</font></b><xsl:text>.........................................</xsl:text>
- <xsl:value-of select="EntryDate"/><br />
-
-  <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Comment</font></b><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<xsl:value-of select="Comment"/><br />
-  <br  />
-
- </xsl:for-each>
+  </xsl:for-each>
   
- 
-
 <!-- ===================================================================
                          Display Record Information
       ================================================================ -->
 
-<b><font size='3'>Record Information</font></b><br /><br />
+  <b><font size='3'>Record Information</font></b><br /><br />
 
-<xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
+  <xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
 
-<b><xsl:text>Date Created</xsl:text></b><xsl:text>....................</xsl:text>
-
-<xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/Date"/><br />
-
-<b><xsl:text>User</xsl:text></b><xsl:text>....................................</xsl:text>
-
-<xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/User"/><br />
-
-<b><xsl:text>Date Modfied</xsl:text></b><xsl:text>....................</xsl:text>
-
-<xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/Date"/><br />
-
-<b><xsl:text>User</xsl:text></b><xsl:text>....................................</xsl:text>
-
-<xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/User"/><br />
-
-
+  <table width = '90%'>
+    <tr>
+      <td width = '25%'><b>Date Created</b></td>
+      <td width = '5%'>&#xa0;</td>
+      <td width = '70%'>
+        <xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/Date"/>
+      </td>
+    </tr>
+    <tr>
+      <td><b>User</b></td>
+      <td></td>
+      <td><xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/User"/></td>
+    </tr>
+    <tr>
+      <td><b>Date Modified</b></td>
+      <td></td>
+      <td><xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/Date"/></td>
+    </tr>
+    <tr>
+      <td><b>User</b></td>
+      <td></td>
+      <td><xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/User"/></td>
+    </tr>
+  </table>
 
  
-   <!-- Comment below required exactly as given for Concept/Term Review Report 
-
-     --> 
+<!-- Comment below required exactly as given for Concept/Term Review Report--> 
 
    <xsl:comment>@@TERMTREE@@</xsl:comment>
 
@@ -459,7 +564,6 @@
   </body>
 
    </xsl:template>
-
   </xsl:transform>]]>
 </CdrDocXml>
 </CdrDoc>
