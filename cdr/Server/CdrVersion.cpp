@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.10 2001-06-05 20:48:02 mruben Exp $
+ * $Id: CdrVersion.cpp,v 1.11 2001-06-21 23:58:03 ameyer Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2001/06/05 20:48:02  mruben
+ * changed to maintain publishable flag on version
+ *
  * Revision 1.9  2001/05/23 01:24:53  ameyer
  * Added actStatus parameter to checkIn to state that doc is publishable
  * ('A'ctive) or non-publishable ('I'nactive).
@@ -204,7 +207,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
                     "            (id, num, dt, updated_dt, usr, val_status, "
                     "             val_date, doc_type, title, "
                     "             xml, data, comment, publishable) "
-      "VALUES (?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+      "VALUES (?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     cdr::db::PreparedStatement insert = conn.prepareStatement(newver);
     insert.setInt(1, docId);
     insert.setInt(2, version);
