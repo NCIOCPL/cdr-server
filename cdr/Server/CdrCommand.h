@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.33 2004-08-11 17:48:15 bkline Exp $
+ * $Id: CdrCommand.h,v 1.34 2004-08-20 19:58:55 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2004/08/11 17:48:15  bkline
+ * Adding new command CdrAddExternalMapping.
+ *
  * Revision 1.32  2004/07/08 00:32:38  bkline
  * Added CdrGetGlossaryMap command; added cdr.lib to 'make clean' target.
  *
@@ -1245,6 +1248,21 @@ namespace cdr {
     extern String addExternalMapping(Session&         session,
                                      const dom::Node& node,
                                      db::Connection&  conn);
+
+    /**
+     * Changes the active_status column for a row in the all_docs table.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String setDocStatus(Session&         session,
+                               const dom::Node& node,
+                               db::Connection&  conn);
 
     /**
      * Shuts down the CDR Server.

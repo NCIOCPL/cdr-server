@@ -1,10 +1,14 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.21 2003-04-30 10:36:27 bkline Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.22 2004-08-20 19:58:56 bkline Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2003/04/30 10:36:27  bkline
+ * Implemented support for validation warning messages which do not
+ * cause the document to be marked as invalid.
+ *
  * Revision 1.20  2002/08/14 01:52:39  ameyer
  * Replaced independent check of schema/filter/css document types with
  * call to CdrDoc::isControlType()
@@ -102,7 +106,7 @@ static cdr::String makeResponse(
         const cdr::String&     docIdString,
         const cdr::String&     status,
         const cdr::StringList& errors);
-static void setDocStatus(
+static void setValStatus(
         cdr::db::Connection&   conn,
         int                    docId,
         const wchar_t*         status);
@@ -309,7 +313,7 @@ cdr::String cdr::execValidateDoc (
     docObj.setValStatus(status);
     if (validRule == cdr::UpdateUnconditionally ||
             (validRule == cdr::UpdateIfValid && errList.size() == 0))
-        setDocStatus (docObj.getConn(), docObj.getId(), status);
+        setValStatus (docObj.getConn(), docObj.getId(), status);
 
     // Report the outcome
     return status;
@@ -390,7 +394,7 @@ cdr::String makeResponse(const cdr::String&     docId,
 /**
  * Records the new status of the document in the database.
  */
-void setDocStatus(
+void setValStatus(
         cdr::db::Connection&            conn,
         int                             id,
         const wchar_t*                  status)

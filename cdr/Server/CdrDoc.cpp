@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.57 2004-02-20 00:35:40 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.58 2004-08-20 19:58:56 bkline Exp $
  *
  */
 
@@ -1360,6 +1360,74 @@ static void auditDoc (
 
 
 /**
+ * Changes the active_status column for a row in the all_docs table.
+ *
+ *  @param      session     contains information about the current user.
+ *  @param      node        contains the XML for the command.
+ *  @param      conn        reference to the connection object for the
+ *                          CDR database.
+ *  @return                 String object containing the XML for the
+ *                          command response.
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::setDocStatus(Session&         session,
+                              const dom::Node& node,
+                              db::Connection&  conn)
+{
+    int docId = 0;
+    String docIdStr(true);
+    String newStatus(true);
+
+    // Extract the parameters.
+    dom::Node child = node.getFirstChild();
+    while (child != 0) {
+        String name = child.getNodeName();
+        if (name == L"DocId") {
+            docIdStr = dom::getTextContent(child);
+            docId = docIdStr.extractDocId();
+        }
+        else if (name == L"NewStatus")
+            newStatus = dom::getTextContent(child);
+        child = child.getNextSibling();
+    }
+    if (docIdStr.isNull())
+        throw Exception(L"Missing required document ID");
+    if (newStatus.isNull())
+        throw Exception(L"Missing required status");
+    if (newStatus != L"I" && newStatus != L"A")
+        throw Exception(L"Invalid status " + newStatus);
+
+    // Find out if the user is authorized to change the doc status.
+    db::PreparedStatement s1 = conn.prepareStatement(
+            "SELECT t.name            "
+            "  FROM doc_type t        "
+            "  JOIN all_docs d        "
+            "    ON d.doc_type = t.id "
+            " WHERE d.id = ?          ");
+    s1.setInt(1, docId);
+    db::ResultSet r1 = s1.executeQuery();
+    if (!r1.next())
+        throw Exception(L"Invalid document ID " + docIdStr);
+    String docType = r1.getString(1);
+    if (!session.canDo(conn, L"PUBLISH DOCUMENT", docType))
+        throw Exception(L"User not authorized to change the status of " +
+                        docType + L" documents");
+
+    // Do it.
+    db::PreparedStatement s2 = conn.prepareStatement(
+            "UPDATE all_docs          "
+            "   SET active_status = ? "
+            " WHERE id = ?            ");
+    s2.setString(1, newStatus);
+    s2.setInt   (2, docId);
+    s2.executeUpdate();
+    conn.commit();
+
+    // Report success.
+    return L"<CdrSetDocStatusResp/>";
+}
+
+/**
  * External command interface to updating query terms for a doc.
  */
 cdr::String cdr::reIndexDoc (
@@ -1370,7 +1438,6 @@ cdr::String cdr::reIndexDoc (
     int         docId;      // Doc id from transaction
     cdr::String docIdStr,   // String form "CDR00..."
                 name;       // Element name
-
 
     // Get document id from command
     cdr::dom::Node node = commandNode.getFirstChild();

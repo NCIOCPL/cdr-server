@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.cpp,v 1.40 2004-08-11 17:48:15 bkline Exp $
+ * $Id: CdrCommand.cpp,v 1.41 2004-08-20 19:58:55 bkline Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.40  2004/08/11 17:48:15  bkline
+ * Adding new command CdrAddExternalMapping.
+ *
  * Revision 1.39  2004/07/08 00:32:38  bkline
  * Added CdrGetGlossaryMap command; added cdr.lib to 'make clean' target.
  *
@@ -211,6 +214,7 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
         CommandMap(L"CdrCacheing",           cdr::cacheInit),
         CommandMap(L"CdrGetGlossaryMap",     cdr::getGlossaryMap),
         CommandMap(L"CdrAddExternalMapping", cdr::addExternalMapping),
+        CommandMap(L"CdrSetDocStatus",       cdr::setDocStatus),
         CommandMap(L"CdrShutdown",           cdr::shutdown)
     };
     for (size_t i = 0; i < sizeof map / sizeof *map; ++i) {
