@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.40 2002-01-02 20:01:06 bkline Exp $
+# $Id: Makefile,v 1.41 2002-01-08 18:27:57 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.40  2002/01/02 20:01:06  bkline
+# Pointed CDRINC to currect directory and added HeadDebug.h to header list.
+#
 # Revision 1.39  2001/12/14 15:14:54  bkline
 # Used macro XML4C in LFLAGS.
 #
@@ -151,7 +154,7 @@ CDRLIB =$(CDR)/lib/cdr.lib
 CDRBIN =$(CDR)/bin
 CDRSVR =$(CDRBIN)/CdrServer.exe
 SERVICE=$(CDRBIN)/CdrService.exe
-SVC_CFLAGS =-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT \
+SVC_CFLAGS =-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT -DDEBUG \
             -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MT
 HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrCommand.h \
