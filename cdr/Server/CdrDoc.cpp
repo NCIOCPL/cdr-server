@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.35 2002-05-28 17:49:14 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.36 2002-06-25 22:29:33 ameyer Exp $
  *
  */
 
@@ -1413,6 +1413,11 @@ void cdr::CdrDoc::stripXmetalPis(bool validating)
 {
     // Only do this when the user has requested validation during a save.
     if (!validating)
+        return;
+
+    // Don't touch certain doc types
+    if (TextDocType == L"Filter" ||
+        TextDocType == L"css")
         return;
 
     cdr::FilterParmVector pv;
