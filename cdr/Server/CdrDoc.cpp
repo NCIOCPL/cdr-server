@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.44 2002-08-01 18:44:22 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.45 2002-08-09 11:45:53 bkline Exp $
  *
  */
 
@@ -634,14 +634,6 @@ static cdr::String CdrPutDoc (
     }
     SHOW_ELAPSED("command parsed", incrementalTimer);
 
-    // Make sure validation has been invoked if a publishable version
-    // has been requested.  The DLL will enforce this, but we do it
-    // here as well, since the DLL is our primary, but not our only client.
-    if (cmdPublishVersion && (!cmdSchemaVal || !cmdLinkVal))
-        throw cdr::Exception(L"CdrPubDoc: creation of a published version "
-                             L"not allowed unless full document validation is "
-                             L"invoked.");
-
     // Construct a doc object containing all the data
     // The constructor may look for additonal elements in the DocCtl
     //   not parsed out by the above logic
@@ -650,9 +642,18 @@ static cdr::String CdrPutDoc (
     cdr::CdrDoc doc (dbConn, docNode);
     SHOW_ELAPSED("CdrDoc constructed", incrementalTimer);
 
+    // Make sure validation has been invoked if a publishable version
+    // has been requested.  The DLL will enforce this, but we do it
+    // here as well, since the DLL is our primary, but not our only client.
+    cdr::String doctype = doc.getTextDocType();
+    if (cmdPublishVersion && (!cmdSchemaVal || !cmdLinkVal) && doctype !=
+            L"Filter" && doctype != L"css" && doctype != L"schema")
+        throw cdr::Exception(L"CdrPubDoc: creation of a published version "
+                             L"not allowed unless full document validation is "
+                             L"invoked.");
+
     // Check user authorizations
     cdr::String action = newrec ? L"ADD DOCUMENT" : L"MODIFY DOCUMENT";
-    cdr::String doctype = doc.getTextDocType();
     if (!session.canDo (dbConn, action, doctype))
         throw cdr::Exception (L"CdrPutDoc: User '" + session.getUserName() +
                               L"' not authorized to '" + action +
