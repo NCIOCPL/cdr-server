@@ -101,14 +101,24 @@
    </font>
   </b>
   </th>
-   <td width='60%'>
+   </tr>
+   </table>
+
+   <table width='90%'>
+    <tr>
+   <th align='left' width='40%'>
+  <b><font size='3'>ID Type
+  </font>
+  </b>
+  </th>
+  <td width='60%'>
   <xsl:value-of                 select="IDType"/>,
   <xsl:value-of select="IDString"/>
   </td>
   </tr>
   </table>
   <b><font size='3'>Comments
-     </font>
+   </font>
   </b>
  <br />
 <xsl:apply-templates          select="Comment"/>
@@ -120,7 +130,7 @@
                Display Protocol Special Category
        ============================================================ -->
 
-              
+           
               <xsl:if test="not(preceding-sibling::ProtocolSpecialCategory)">
               <b>
               <font size='4'>
@@ -129,22 +139,27 @@
               </b>
               <br /><br />
               </xsl:if>
-              <table width='90%'> 
+               <table width='90%'> 
               <tr>
               <th align='left' width='40%'>   
               <b><font size='3'>Special Category
               </font></b>
               </th>
               <td width='60%'>
-              <xsl:value-of             select="ProtocolSpecialCategory/
-                                                SpecialCategory"/>
+              <xsl:value-of      select="ProtocolSpecialCategory/
+                                         SpecialCategory"/>              
               </td>
               </tr>
               </table>
               <b><font size='3'>Comment
               </font></b><br />
-              <xsl:value-of             select="ProtocolSpecialCategory/
-                                                Comment"/><br /><br />
+              <xsl:value-of          select="ProtocolSpecialCategory/
+                                             Comment"/>
+               <br />
+               <br />
+          
+                           
+              
               
 
 
@@ -232,7 +247,7 @@
           </tr>
            <tr>
            <th align='left' width='40%'>
-           <b><font size='3'>Date
+           <b><font size='3'>Date Received
            </font>
           </b>
           </th>
@@ -301,8 +316,8 @@
          </tr>
          </table>         
          <b><font size='3'>Comments</font></b>
-              <br /><br />
-        <xsl:value-of              select="Comment"/>
+              <br />
+        <xsl:value-of              select="../Comment"/>
         </xsl:for-each>
             <br />
 
@@ -449,6 +464,7 @@
        </td>
        </tr>
         </table>
+       <xsl:if                    test="PreviousProtocolStatus">
        <table width='90%'>
        <tr>
        <th align='left' width='40%'>
@@ -505,6 +521,7 @@
        </td>
        </tr>
        </table>
+      </xsl:if>
 
 <!-- ==================================================================
                Display Lead Organization Information
@@ -682,27 +699,23 @@
    <xsl:value-of select="../SpecificPhone/@Public"/>
    <xsl:text>)</xsl:text>
    </xsl:if>
-    <xsl:if  test="not(../SpecificPhone)">
+   <xsl:if  test="not(../SpecificPhone)">
   <i>
- <xsl:value-of select="Person/PersonLocations/
-                       OtherPracticeLocation[@cdr:id=$OrgFrag]/
-                       OrganizationLocation/Organization/
-                       OrganizationLocations/
+ <xsl:value-of    select=" ../OrganizationLocation/
+                       Organization/OrganizationLocations/
                        OrganizationLocation/Location/Phone"/>
+                                                            
   </i>
-    <xsl:if test="Person/PersonLocations/
-                  OtherPracticeLocation[@cdr:id=$OrgFrag]/
-                  OrganizationLocation/Organization/
+    <xsl:if test="../OrganizationLocation/Organization/
                   OrganizationLocations/
                   OrganizationLocation/Location/Phone/@Public">
-    <xsl:text> (Public=</xsl:text>
-    <xsl:value-of   select="Person/PersonLocations/
-                            OtherPracticeLocation[@cdr:id=$OrgFrag]/
-                            OrganizationLocation/Organization/
+    
+                 <xsl:text> (Public=</xsl:text>
+    <xsl:value-of   select="../OrganizationLocation/Organization/
                             OrganizationLocations/
                             OrganizationLocation/Location/Phone/@Public"/>
     <xsl:text>)</xsl:text>
-    </xsl:if>
+   </xsl:if>
     </xsl:if>
     </td>
     </tr>
@@ -716,12 +729,10 @@
    <xsl:value-of        select="../SpecificTollFreePhone"/>
    <xsl:if  test="not(../SpecificTollFreePhone)">
    <i>
-  <xsl:value-of  select="Person/PersonLocations/
-                         OtherPracticeLocation[@cdr:id=$OrgFrag]/
-                         OrganizationLocation/Organization/
-                         OrganizationLocations/
-                         OrganizationLocation/Location/TollFreePhone"/>
-   </i>
+  <xsl:value-of         select="../OrganizationLocation/Organization/
+                                OrganizationLocations/
+                                OrganizationLocation/Location/TollFreePhone"/>
+</i>
    </xsl:if>
    </td>
    </tr>
@@ -735,11 +746,11 @@
    <xsl:value-of        select="../SpecificFax"/>
     <xsl:if test="not(../SpecificFax)">
    <i>
-   <xsl:value-of select="Person/PersonLocations/
-                         OtherPracticeLocation[@cdr:id=$OrgFrag]/
-                         OrganizationLocation/Organization/
+   <xsl:value-of select="../OrganizationLocation/Organization/
                          OrganizationLocations/
                          OrganizationLocation/Location/Fax"/>
+
+                        
    </i>
    </xsl:if>
    </td>
@@ -771,18 +782,15 @@
    <xsl:value-of        select="../SpecificWebSite"/>
     <xsl:if test="not(../SpecificWebSite)">
    <i>
-   <xsl:value-of select="Person/PersonLocations/
-                         OtherPracticeLocation[@cdr:id=$OrgFrag]/
-                         OrganizationLocation/Organization/
+   <xsl:value-of select="../OrganizationLocation/Organization/
                          OrganizationLocations/
                          OrganizationLocation/Location/WebSite/@cdr:xref"/>
    </i>
     <i>
-    <xsl:value-of select="Person/PersonLocations/
-                          OtherPracticeLocation[@cdr:id=$OrgFrag]/
-                          OrganizationLocation/Organization/
-                          OrganizationLocations/
-                          OrganizationLocation/Location/WebSite"/>
+   
+   <xsl:value-of     select="../OrganizationLocation/Organization/
+                              OrganizationLocations/
+                              OrganizationLocation/Location/WebSite"/>
    </i>
    </xsl:if>
    </td>
@@ -1011,6 +1019,10 @@
    <br /><br />
    
       <xsl:for-each      select="OrgSiteID">
+      <xsl:variable      name="Faxx"  select="Organization/
+                                              OrganizationLocations/
+                                              OrganizationLocation/Location/
+                                               Fax"/>
      <xsl:value-of      select="position()"/>. 
       <b><font size='3'>Organization Name</font></b>
       <br />
@@ -1183,7 +1195,7 @@
           </tr>
          <tr>
         <th align='left' width='40%'>
-        <b><font size='3'>URL
+        <b><font size='3'>Web Site
         </font>
         </b>
         </th>
@@ -1340,7 +1352,18 @@
                                                 ContactDetail/Phone/@Public"/>
           <xsl:text>)</xsl:text>
           </xsl:if>
-          <br />
+       <!--   <xsl:if                        test = "not(GenericPerson/
+                                                GenericPersonContact/
+                                                ContactDetail/Phone)">
+            <i>
+          <xsl:value-of                    select = "../Organization/
+                                              OrganizationLocations/
+                                              OrganizationLocation/Location/
+                                              Phone"/>
+          </i>
+         </xsl:if>-->
+         
+         <br />
           </td>
           </tr>
           <tr>
@@ -1354,6 +1377,19 @@
                                               GenericPersonContact/
                                               ContactDetail/
                                               TollFreePhone"/>
+
+      <!--    <xsl:if                     test = "not(GenericPerson/
+                                              GenericPersonContact/
+                                              ContactDetail/
+                                              TollFreePhone)">
+          <i>
+          <xsl:value-of                    select = "../Organization/
+                                              OrganizationLocations/
+                                              OrganizationLocation/Location/
+                                               TollFreePhone"/><br />
+          </i>
+         </xsl:if>-->
+         
          </td>
          </tr>
            <tr>
@@ -1366,9 +1402,23 @@
       <xsl:value-of                     select="GenericPerson/
                                                 GenericPersonContact/
                                                 ContactDetail/Fax"/>
-      </td>
-      </tr>
-      <tr>
+
+     <xsl:if                           test = "not(GenericPerson/
+                                                GenericPersonContact/
+                                                ContactDetail/Fax)">
+      <i>
+      <xsl:value-of                    select = "../Organization/
+                                              OrganizationLocations/
+                                              OrganizationLocation/Location/
+                                               Fax"/>
+
+                                    
+       </i>
+       </xsl:if>
+        </td>
+       </tr>
+      
+        <tr>
         <th align='left' width='40%'>
         <b><font size='3'>Email
         </font>
@@ -1390,7 +1440,7 @@
           </tr>
          <tr>
         <th align='left' width='40%'>
-        <b><font size='3'>URL
+        <b><font size='3'>Web Site
         </font>
         </b>
         </th>
@@ -1398,6 +1448,20 @@
         <xsl:value-of                      select="GenericPerson/
                                                    GenericPersonContact/
                                                    ContactDetail/WebSite"/>
+          <xsl:if                           test = "not(GenericPerson/
+                                                GenericPersonContact/
+                                                ContactDetail/WebSite)">
+      <i>
+      <xsl:value-of                    select = "../Organization/
+                                              OrganizationLocations/
+                                              OrganizationLocation/Location/
+                                               WebSite/@cdr:xref"/><br />
+       <xsl:value-of                    select = "../Organization/
+                                              OrganizationLocations/
+                                              OrganizationLocation/Location/
+                                               WebSite"/>
+     </i>
+      </xsl:if>
          </td>
          </tr>
          </table>
@@ -1446,6 +1510,9 @@
            </xsl:for-each>
                </BODY>
           </xsl:template>
+
+         
+  
             
 
 
