@@ -1,15 +1,15 @@
-<CdrDoc Type='Filter' Id='CDR0000000155'>
+<CdrDoc Type='Filter' Id='CDR0000350337'>
 <CdrDocCtl>
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">InScopeProtocol Full QC Report</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocTitle readonly="yes">InScopeProtocol Administrative QC Report</DocTitle>
+<DocComment>CVS-V1.19: Adding Related Protocols (Bug 897)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
-<!-- 
-================================================================
-Filter to create a Full InScope Protocol QC Report
-================================================================ -->
+<!--Filter written by C.Burg - 3/13/2002 -->
+<!-- ================================================================
+           Filter to generate a Protocol Administrative QC Report
+     ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr">
@@ -18,14 +18,12 @@ Filter to create a Full InScope Protocol QC Report
 
  <xsl:include  href = "cdr:name:Module: InScopeProtocol HP Titles"/>
  <xsl:include  href = "cdr:name:Module: InScopeProtocol HP Identification"/>
- <xsl:include  href = "cdr:name:Module: InScopeProtocol HP Abstract"/>
- <xsl:include  href = "cdr:name:Module: InScopeProtocol HP Details"/>
- <xsl:include  href = "cdr:name:Module: InScopeProtocol Patient Abstract"/> 
- <xsl:include  href = "cdr:name:Module: InScopeProtocol Administrative Details"/>
+ <xsl:include  href = "cdr:name:Module: InScopeProtocol Administrative Details"/> 
  <xsl:include  href = "cdr:name:Module: InScopeProtocol HP Record Information"/>
+ 
  <xsl:include  href = "cdr:name:Module: Inline Markup Formatter"/>
  <xsl:include  href = "cdr:name:Module: Table Formatter"/>
- <xsl:include  href = "cdr:name:Module: STYLE Default"/>  
+ <xsl:include  href = "cdr:name:Module: STYLE Default"/>     
 
  <!-- Defining standard HTML Attribute Sets -->
  <xsl:attribute-set               name = "table">
@@ -59,14 +57,11 @@ Filter to create a Full InScope Protocol QC Report
                                 select = "document('cdrutil:/docid')"/>
 
 
- <!--
- =======================================================================
- Filter written by C.Burg - 4/29/2002
- Modified  7/5/2002 to include Inline Markup
- Modified  7/22/2002 to include sort for Diagnosis,InterventionName
- Modified 5/1/2003 to run with new denormalization filter
- ======================================================================= -->
- <xsl:template                   match = "/">
+ <!-- 
+ ===============================================================
+ Generate Report Headings
+ =============================================================== -->
+ <xsl:template match="/">
   <HTML>
    <HEAD>
     <xsl:variable                 name = "cdrdocs" 
@@ -82,22 +77,18 @@ Filter to create a Full InScope Protocol QC Report
     </TITLE>
     <STYLE type='text/css'>
      <xsl:call-template           name = "defaultStyle"/>  
-     ul.term         {margin-left: 16 ; padding-left: 0;}
     </STYLE>
    </HEAD>
    <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
-   <xsl:apply-templates         select = "InScopeProtocol | 
-                                          ScientificProtocolInfo"/>
+   <xsl:apply-templates         select = "InScopeProtocol"/>
   </HTML>
  </xsl:template>
-
+                    
 
  <!-- 
- ===================================================================
- Generate the HTML for the Organization QC Report
- =================================================================== -->
- <xsl:template                   match = "InScopeProtocol | 
-                                          ScientificProtocolInfo">
+ ======================================================================
+ ====================================================================== -->
+ <xsl:template                   match = "InScopeProtocol">
   <BODY>
 
    <!-- 
@@ -107,7 +98,7 @@ Filter to create a Full InScope Protocol QC Report
    <b>
     <font size='4'>
      <center>
-      <xsl:text>Full Protocol</xsl:text>
+      <xsl:text>Administrative Protocol</xsl:text>
       <br/>
       <xsl:text>QC Report</xsl:text>
      </center>
@@ -119,52 +110,34 @@ Filter to create a Full InScope Protocol QC Report
     </font>
    </b>
    <p/>
-
+ 
    <!-- 
    ====================================================================
    Display CDR ID
    ==================================================================== -->
    <b>
     <font size='4'>
-     <xsl:value-of              select = "concat('CDR', 
+     <xsl:value-of               select = "concat('CDR', 
                                            number(
                                            substring-after($docID, 'CDR')))"/>
     </font>
    </b>
    <p/>
 
-   <xsl:variable                  name = "cdrdoc" 
-                                select = "document('cdrx:/*/CdrCtl')"/>
    <xsl:apply-templates/>
   </BODY>
- </xsl:template>
-
+ </xsl:template>   
+                       
+  
  <!-- 
- ================================================================
- Display a Note
- ================================================================ -->
- <xsl:template                  match = "Note">
-  <xsl:apply-templates         select = "." 
-                                 mode = "RS"/>
- </xsl:template>  
-
- <!-- 
- ================================================================
- Display a GlossaryTermRef-Patient
- ================================================================ -->
- <xsl:template                  match = "GlossaryTermRef">
-  <xsl:apply-templates         select = "." 
-                                 mode = "PE"/>
- </xsl:template> 
-
- <!-- 
- ================================================================
- Display a GlossaryTermRef-Health Professional
- ================================================================ -->
- <xsl:template                  match = "GlossaryTermRef | LOERef">
-  <xsl:apply-templates         select = "."
-                                 mode = "HPE" />
- </xsl:template>
+ ===============================================================
+ Do not display data elements
+ =============================================================== -->
+ <xsl:template                  match = "ProtocolAbstract  |
+                                         ProtocolDesign | ProtocolAbstract2 |
+                                         ProtocolDetail |
+                                         Eligibility |
+                                         PublishedResults"/>
 
 </xsl:transform>
 ]]>
