@@ -53,6 +53,7 @@
  Grab the protocol status and descend to the lead org of interest.
 
 
+
  ========================================================================== -->
  <xsl:template                  match = "ProtocolAdminInfo">
   <xsl:param                     name = "title"/>
@@ -103,7 +104,7 @@
     <xsl:value-of              select = "$title"/>
    </ProtocolTitle>
    <CurrentStatus>
-    <xsl:value-of              select = "ProtocolLeadOrgStatuses/
+    <xsl:value-of              select = "LeadOrgProtocolStatuses/
                                          CurrentOrgStatus/StatusName"/>
    </CurrentStatus>
    <xsl:for-each               select = "LeadOrgProtocolID">
@@ -342,13 +343,12 @@
  ========================================================================== -->
  <xsl:template                  match = "ProtocolSites">
   <ProtocolSites>
-   <xsl:apply-templates        select = "OrgSite"/>
+   <xsl:apply-templates        select = "OrgSite|PrivatePracticeSite"/>
   </ProtocolSites>
  </xsl:template>
 
  <!--
  ==========================================================================
-
  Rule for a single participating organization.
  ========================================================================== -->
  <xsl:template                  match = "OrgSite">
@@ -388,7 +388,8 @@
  ==========================================================================
  Find the status for a participating organization.
  ========================================================================== -->
- <xsl:template                  match = "OrgSiteStatus">
+ <xsl:template                  match = "OrgSiteStatus |
+                                         PrivatePracticeSiteStatus">
   <SiteStatus>
    <xsl:value-of               select = "."/>
   </SiteStatus>
@@ -539,6 +540,26 @@
                                          ContactDetail/Phone"/>
    </Phone>
   </GenericPerson>
+ </xsl:template>
+
+ <!--
+ ==========================================================================
+ Extract information for a site not tied to an organization.
+ ========================================================================== -->
+ <xsl:template                  match = "PrivatePracticeSite">
+  <ParticipatingSite>
+   <xsl:apply-templates        select = "PrivatePracticeSiteID"/>
+   <xsl:apply-templates        select = "PrivatePracticeSiteStatus"/>
+  </ParticipatingSite>
+ </xsl:template>
+
+ <!--
+ ==========================================================================
+ Extract information for a private practice person.
+ ========================================================================== -->
+ <xsl:template                  match = "PrivatePracticeSiteID">
+  <xsl:variable                  name = "uri"
+                               select = "@cdr:ref"/>
  </xsl:template>
 
 </xsl:transform>]]>
