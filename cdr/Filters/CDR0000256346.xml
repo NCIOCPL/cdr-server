@@ -76,18 +76,10 @@
       <xsl:call-template        name = "ItemizedListItem"/>
     
       <!-- Take care of extra attributes. -->
-      <xsl:if                   test = "position() != last()">      
-       <xsl:choose>
-        <xsl:when               test = "../@Compact = 'No'">
-         <br />
-         <br />
-        </xsl:when>
-        <xsl:when               test = "not(../@Style = 'dash')">
-         <br />
-        </xsl:when>
-       </xsl:choose>
+      <xsl:if                   test = "position() != last() and
+                                        ../@Compact = 'No'">
+       <br /><br />
       </xsl:if>
-
      </xsl:for-each>    
      </ul>  
     </xsl:template>  
@@ -101,8 +93,30 @@
 
      <!-- Handle ListItem now. -->
      <ol>
+     <xsl:attribute             name = "Class">
+      <xsl:choose>
+       <xsl:when                test = "@Style = 'UAlpha'">        
+        <xsl:text>A</xsl:text>
+       </xsl:when>
+       <xsl:when                test = "@Style = 'LAlpha'">
+        <xsl:text>a</xsl:text>
+       </xsl:when>
+       <xsl:when                test = "@Style = 'URoman'">
+        <xsl:text>I</xsl:text>
+       </xsl:when>
+       <xsl:when                test = "@Style = 'LRoman'">
+        <xsl:text>i</xsl:text>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:text>d</xsl:text>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:attribute>
+
      <xsl:for-each            select = "ListItem">
-      <xsl:call-template        name = "OrderedListItem"/> 
+      <li>      
+       <xsl:apply-templates />
+      </li>
      
       <!-- Take care of extra attribute compact. -->
       <xsl:if                   test = "position() != last() and
@@ -172,39 +186,6 @@
     </xsl:template>
 
 <!-- =====================================================================
-        Template handling ListItem in OrderedList
-     ===================================================================== -->  
-    <xsl:template               name = "OrderedListItem">
-   
-     <li>      
-      <!-- No attribute for Arabic; it is the default. -->
-      <xsl:choose>
-       <xsl:when                test = "../@Style = 'UAlpha'">
-        <xsl:attribute          name = "type">
-         <xsl:text>A</xsl:text>
-        </xsl:attribute>
-       </xsl:when>
-       <xsl:when                test = ".../@Style = 'LAlpha'">
-        <xsl:attribute          name = "type">
-         <xsl:text>a</xsl:text>
-        </xsl:attribute>
-       </xsl:when>
-       <xsl:when                test = "../@Style = 'URoman'">
-        <xsl:attribute          name = "type">
-         <xsl:text>I</xsl:text>
-        </xsl:attribute>
-       </xsl:when>
-       <xsl:when                test = "../@Style = 'LRoman'">
-        <xsl:attribute          name = "type">
-         <xsl:text>i</xsl:text>
-        </xsl:attribute>
-       </xsl:when>
-      </xsl:choose>
-      <xsl:apply-templates />
-     </li>
-    </xsl:template>
-
-<!-- =====================================================================
         Template handling ListItem in ItemizedList
      ===================================================================== -->  
     <xsl:template               name = "ItemizedListItem">
@@ -251,21 +232,23 @@
     <xsl:template               name = "TocSummarySection">
      <xsl:param                 name = "level"/> 
 
-     <dt>
+     <xsl:if                    test = "Title"> 
+      <li>
       <xsl:apply-templates    select = "Title"
                                 mode = "TOC"/>
-     </dt>
+      </li>
+     </xsl:if>                   
    
      <xsl:if                    test = "SummarySection and
                                         $level &lt; 3">
-      <dl>
+      <ul Class="lnone">
       <xsl:for-each           select = "SummarySection">
        <xsl:call-template       name = "TocSummarySection">
         <xsl:with-param         name = "level"
                               select = "$level + 1"/>
        </xsl:call-template>
       </xsl:for-each>
-      </dl>
+      </ul>
      </xsl:if>
 
     </xsl:template>
