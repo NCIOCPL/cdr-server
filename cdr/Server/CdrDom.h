@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.h,v 1.7 2000-05-09 21:10:39 bkline Exp $
+ * $Id: CdrDom.h,v 1.8 2000-10-04 18:21:58 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2000/05/09 21:10:39  bkline
+ * Added error handler.
+ *
  * Revision 1.6  2000/05/04 01:14:08  bkline
  * More ccdoc comments.
  *
@@ -34,6 +37,9 @@
 #include <dom/DOM_Node.hpp>
 #include <dom/DOM_NamedNodeMap.hpp>
 #include <sax/ErrorHandler.hpp>
+#include <sax/SAXException.hpp>
+#include <sax/SAXParseException.hpp>
+#include <dom/DOM_DOMException.hpp>
 
 #include "CdrString.h"
 
@@ -71,7 +77,10 @@ namespace cdr {
         /**
          * Carries error information for a failure of DOM processing.
          */
-        typedef ::XMLException      DOMException;
+        typedef ::XMLException      XMLException;
+        typedef ::DOM_DOMException  DOMException;
+        typedef ::SAXException      SAXException;
+        typedef ::SAXParseException SAXParseException;
 
         /**
          * Wrap Parser class, which is not part of standard.
