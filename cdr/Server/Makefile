@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.35 2001-09-25 14:22:02 ameyer Exp $
+# $Id: Makefile,v 1.36 2001-10-26 20:13:46 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.35  2001/09/25 14:22:02  ameyer
+# Added CdrFilter.h, CdrMergeProt.obj (by someone else).
+#
 # Revision 1.34  2001/04/13 12:29:26  bkline
 # Added CdrActions.obj.
 #
@@ -127,7 +130,7 @@ CDRINC =$(CDR)/include
 INC    =-I$(XML4C)/include -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)/include
 CFLAGS =$(INC) -W3 -GX -MT -GR -Zi -nologo
 LFLAGS =/LIBPATH:/usr/xml4c/lib /LIBPATH:$(SABLOT)/lib \
-	/LIBPATH:$(CDR)/lib /DEBUG
+	/LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/lib /DEBUG
 CC     =cl
 LN     =link
 DOC    =../../InetPub/wwwtest/cdr/
