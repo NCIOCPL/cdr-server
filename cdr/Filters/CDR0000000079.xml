@@ -70,6 +70,7 @@
 
 <!-- ==================================================================
           Display a Contents List of Summary Section Titles 
+          10/06/2002 - Modified code to remove 4th level titles (CB) 
      =================================================================== -->
 
 
@@ -83,7 +84,7 @@
 <xsl:if test="not(SummarySection/SummarySection/SummarySection/SummarySection/Title)">
 <dt><xsl:value-of select="Title"/></dt><br />
 <dl>
-<xsl:for-each select=".//SummarySection">
+<xsl:for-each select="./SummarySection">
 <dt><xsl:value-of select="Title"/></dt><br />
 </xsl:for-each>
 </dl>
@@ -105,27 +106,40 @@
 <!-- ======================================================================
     templates to handle summary section anchors,list formats, and paragraphs
      that can occur in any order in the summaries 
+     10/06/2002 - Added templates for inserted titles to preserve the format
+                  for newly inserted titles (CB)
      ====================================================================== -->
 
 <!-- Display a summary section title and include anchor --> 
 
-<!--<xsl:template match="SummarySection/Title | SummarySection/SummarySection/Title">
-<h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4>
-</xsl:template>-->
 
 <xsl:template match="SummarySection/Title">
 <h2><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h2>
 </xsl:template>
 
+<xsl:template match="SummarySection/Insertion/Title">
+<h2><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h2>
+</xsl:template>
+
+
 <xsl:template match="SummarySection/SummarySection/Title">
 <h3><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h3>
 </xsl:template>
+
+<xsl:template match="SummarySection/SummarySection/Insertion/Title">
+<h3><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h3>
+</xsl:template>
+
+
 
 <xsl:template match="SummarySection/SummarySection/SummarySection/Title | SummarySection/SummarySection/SummarySection/SummarySection/Title">
 <i><h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4></i>
 </xsl:template>
 
-                        
+ <xsl:template match="SummarySection/SummarySection/SummarySection/Insertion/Title | SummarySection/SummarySection/SummarySection/SummarySection/Insertion/Title">
+<i><h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4></i>
+</xsl:template>
+                       
            
 	    
 
@@ -250,17 +264,32 @@
      =================================================================== -->
 
                  <xsl:template match="Insertion">
-                 <font color="#FF0000"><xsl:apply-templates/></font>
+                <font color="#FF0000"><xsl:apply-templates/></font>
+                 </xsl:template>
+   
+       <!-- Added 10/07/2002 to display inserted text in table header (CB)-->
+
+                <xsl:template match="Entry/Insertion">
+                <font color="#FF0000"><xsl:apply-templates/></font>
                  </xsl:template>
 
+         
 <!-- ==================================================================
                      Display a Deletion 
      =================================================================== -->
+
+
 
               <xsl:template match="Deletion">
               <strike><xsl:apply-templates/></strike>
               </xsl:template>
 
+
+     <!-- Added 10/07/2002 to display deleted text in table header (CB)-->
+
+               <xsl:template match="Entry/Deletion">
+               <font color="#FF0000"><xsl:apply-templates/></font>
+               </xsl:template>
 
 
 
@@ -287,86 +316,16 @@
 <pre><xsl:apply-templates/></pre>
 </xsl:template>
 
-  <!-- ====================================================================
-                    Display a table-new format
-      =================================================================== -->
-            <!-- <xsl:template match="Table">
-             <xsl:if test="Title">
-                 <br />
-             <b><xsl:apply-templates select="Title"/></b><br />
-              </xsl:if>
-              <table border='1' valign='top' cellspacing='0' cellpadding='0' width='90%'>-->
-              <!-- <xsl:attribute name='border'>1</xsl:attribute>
-              <xsl:for-each select="TGroup/THead/Row">
-              <tr>
-              <xsl:for-each select="entry">
-              <th><xsl:apply-templates/></th>
-              </xsl:for-each>
-              </tr>
-              </xsl:for-each>
-              <xsl:for-each select="TGroup/TBody/Row">
-              <tr>
-              <xsl:for-each select='entry'>
-              <xsl:variable name="cols" select="../../..@Cols"/>
-              <xsl:if test="not(@NameEnd)"> 
-              <td><xsl:apply-templates select="."/></td>
-              </xsl:if>
-              <xsl:if test="@NameEnd"> 
-              
-             <td colspan='{$cols}width='80%'><xsl:apply-templates select="."/></td>
-            </xsl:if>
-       
-            </xsl:for-each>
-            </tr>
-            </xsl:for-each>
-            <xsl:for-each select="TGroup/TFoot/Row">
-              <tr>
-              <xsl:for-each select="entry">
-               <xsl:variable name="cols" select="../../..@Cols"/>
-              <td colspan='{$cols}' width='60%'><xsl:apply-templates/></td>
-              </xsl:for-each>
-              </tr>
-              </xsl:for-each>
-      
-            </table>
+                    
+       <!-- =====================================================
+                 Prevent display of PatientVersionOf data element
+            ======================================================= -->  
 
-           </xsl:template>-->
-
-<!-- ============================================================ 
-                         Display a note
-      ============================================================ 
-
-                    <xsl:template match="Note">
-                    <xsl:call-template name="Language">
-                    <xsl:with-param     name="Note"
-                          select="."/>
-                    </xsl:call-template>
-
-                   
-               <xsl:template name="Language" >
-                <xsl:param name="Note"/>
-                <xsl:text>&#xa0;[</xsl:text>
-                
-                 <xsl:choose>
-                 <xsl:when test="/Summary/SummaryMetaData/SummaryLanguage='Spanish'">
-                 <i><xsl:text>Nota:</xsl:text></i>
-                 </xsl:when>
-                 <xsl:otherwise>
-                 <i><xsl:text>Note:</xsl:text></i>
-                 </xsl:otherwise>
-                 </xsl:choose>
-                 <i><xsl:value-of select="$Note"/></i>
-                 <xsl:text>]</xsl:text>
-                 </xsl:template>-->
-
-         
-
-      <xsl:template match="PatientVersionOf">
-      </xsl:template>
+           <xsl:template match="PatientVersionOf">
+           </xsl:template>
                 
             
-
-             
+      
             
         
 
