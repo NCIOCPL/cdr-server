@@ -3,6 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Person Protocol Review Report Filter 1</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 
@@ -45,6 +46,7 @@
 
  <!-- 
  ======================================================================
+
  Create a string for the concatenated professional suffixes
  ====================================================================== -->
  <xsl:template                match = "ProfessionalSuffix">
@@ -61,7 +63,8 @@
  Drop down to the practice locations.
  ====================================================================== -->
  <xsl:template                match = "PersonLocations">
-  <xsl:apply-templates       select = "PrivatePractice/PrivatePracticeLocation"/>
+  <xsl:apply-templates       select = "PrivatePractice/
+                                       PrivatePracticeLocation"/>
   <xsl:apply-templates       select = "OtherPracticeLocation"/>
  </xsl:template>
 
@@ -74,6 +77,11 @@
    <xsl:attribute              name = "id">
     <xsl:value-of            select = "@cdr:id"/>
    </xsl:attribute>
+   <xsl:if                     test = "../@PreviousLocation">
+    <xsl:attribute             name = "PreviousLocation">
+     <xsl:value-of           select = "../@PreviousLocation"/>
+    </xsl:attribute>
+   </xsl:if>
    <Location>
     <xsl:apply-templates     select = "PostalAddress"/>
     <xsl:apply-templates     select = "Phone"/>
@@ -106,6 +114,12 @@
    <xsl:attribute              name = "id">
     <xsl:value-of            select = "@cdr:id"/>
    </xsl:attribute>
+
+   <xsl:if                     test = "@PreviousLocation">
+    <xsl:attribute             name = "PreviousLocation">
+     <xsl:value-of           select = "@PreviousLocation"/>
+    </xsl:attribute>
+   </xsl:if>
 
    <OrgName>
     <xsl:value-of            select = "$org/Organization
