@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.18 2002-09-25 13:55:18 pzhang Exp $
+ * $Id: CdrVersion.cpp,v 1.19 2002-09-25 14:37:46 pzhang Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2002/09/25 13:55:18  pzhang
+ * Added "val_status = 'V'" in getLatestPublishableVersion().
+ *
  * Revision 1.17  2002/06/26 02:22:33  ameyer
  * Added lastVersions().
  *
@@ -1040,7 +1043,8 @@ cdr::String cdr::lastVersions(Session& session,
 
   // Find last publishable version, if any
   db::PreparedStatement pubPs = dbConnection.prepareStatement(
-     "SELECT max(num) FROM doc_version WHERE id = ? AND publishable = 'Y'");
+     "SELECT max(num) FROM doc_version WHERE id = ? "
+     "AND val_status = 'V' AND publishable = 'Y'");
   pubPs.setInt(1, docId);
   db::ResultSet pubRs = pubPs.executeQuery();
   if (pubRs.next()) {
