@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.36 2003-05-23 01:24:42 ameyer Exp $
+ * $Id: CdrServer.cpp,v 1.37 2003-07-08 18:50:23 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.36  2003/05/23 01:24:42  ameyer
+ * Added logging of "Unexpected exception" with command that generated it.
+ *
  * Revision 1.35  2003/01/14 19:41:11  bkline
  * Made command logging the default (with environment override).
  *
@@ -207,14 +210,16 @@ main(int ac, char **av)
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(sock, (struct sockaddr *)&addr, sizeof addr) == SOCKET_ERROR) {
+        unsigned long wsaError = (unsigned long)WSAGetLastError();
         perror("bind");
-        logTopLevelFailure(L"bind", (unsigned long)WSAGetLastError());
+        logTopLevelFailure(L"bind", wsaError);
         return EXIT_FAILURE;
     }
     std::cout << "bound...\n";
     if (listen(sock, CDR_QUEUE_SIZE) == SOCKET_ERROR) {
+        unsigned long wsaError = (unsigned long)WSAGetLastError();
         perror("listen");
-        logTopLevelFailure(L"listen", (unsigned long)WSAGetLastError());
+        logTopLevelFailure(L"listen", wsaError);
         return EXIT_FAILURE;
     }
     std::cout << "listening...\n";
