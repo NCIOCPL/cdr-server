@@ -1,15 +1,21 @@
 
 /*
- * $Id: CdrAddUsr.cpp,v 1.1 2000-04-22 09:26:12 bkline Exp $
+ * $Id: CdrAddUsr.cpp,v 1.2 2000-04-23 01:13:47 bkline Exp $
  *
  * Adds new user to CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/22 09:26:12  bkline
+ * Initial revision
  */
 
 #include "CdrCommand.h"
 #include "CdrDbResultSet.h"
 
+/**
+ * Adds a row to the user table, as well as one row to the grp_usr table for
+ * each group to which the user has been assigned.
+ */
 cdr::String cdr::addUsr(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
                         cdr::db::Connection& dbConnection) 
