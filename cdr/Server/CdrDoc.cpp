@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.17 2001-06-22 00:29:23 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.18 2001-07-17 20:19:01 ameyer Exp $
  *
  */
 
@@ -1078,6 +1078,9 @@ void cdr::CdrDoc::updateQueryTerms()
         }
     }
 
+    // Delete old query terms
+    delQueryTerms (docDbConn, Id);
+
     // Add rows for query terms.
     if (!paths.empty()) {
 
@@ -1157,13 +1160,37 @@ void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
 static void addSingleQueryTerm (cdr::db::Connection& conn, int doc_id,
                                 cdr::String& path, cdr::String& value)
 {
+    // If the value has any numerics in it, index them as numerics
+    const wchar_t *p = value.c_str();
+    int           intVal = 0;
+    bool          null = true;
+
+    while (*p) {
+        if (iswdigit(*p)) {
+            cdr::String temp (p);
+            intVal = temp.getInt();
+            null   = false;
+            break;
+        }
+        ++p;
+    }
+
     // Add the absolute path to this term to the query table
-    const char* insert = "INSERT INTO query_term(doc_id, path, value)"
-                         "     VALUES(?,?,?)";
+    const char* insert = "INSERT INTO query_term(doc_id, path, value, int_val)"
+                         "     VALUES(?,?,?,?)";
     cdr::db::PreparedStatement stmt = conn.prepareStatement(insert);
     stmt.setInt(1, doc_id);
     stmt.setString(2, path);
     stmt.setString(3, value);
+
+    // Actual integer value or null if no numerics in value
+    if (null) {
+        cdr::Int nullInt (null);
+        stmt.setInt(4, nullInt);
+    }
+    else
+        stmt.setInt(4, intVal);
+
     stmt.executeQuery();
 }
 
