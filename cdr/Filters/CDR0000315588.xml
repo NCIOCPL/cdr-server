@@ -134,6 +134,14 @@
                               mode = "copy">
  </xsl:template>
 
+
+ <!--
+ ====================================================================
+ Drop the MailAbstractTo attribute which is needed for mailers only
+ ==================================================================== -->
+ <xsl:template               match = "@MailAbstractTo"
+                              mode = "copy"/>
+
  <!-- 
  =====================================================================
  Suppress nodes with or without copy mode that are not to be displayed
@@ -160,13 +168,17 @@
  <xsl:template               match = "Email"
                               mode = "copy">
   <xsl:if                     test = "not(@Public)">
-   <xsl:copy-of             select = "."/>
+   <Email>
+    <xsl:value-of            select = "."/>
+   </Email>
   </xsl:if>
  </xsl:template>
 
  <xsl:template               match = "Email">
   <xsl:if                     test = "not(@Public)">
-   <xsl:copy-of             select = "."/>
+   <Email>
+    <xsl:value-of            select = "."/>
+   </Email>
   </xsl:if>
  </xsl:template>
 
@@ -182,12 +194,14 @@
                               mode = "copy">
   <xsl:variable               name = "pubVersion"
                             select = "document(concat('cdrutil:/get-pv-num/',
-                                                       @cdr:href))"/>
+                                                       @cdr:href))  |
+                                      document(concat('cdrutil:/get-pv-num/',
+                                                       @href))"/>
   <xsl:choose>
-   <xsl:when                  test = "$pubVersion = 0">
+   <xsl:when                  test = "$pubVersion = '0'">
     <xsl:message         terminate = "no">
      <xsl:text>Publishable Version of document </xsl:text>
-     <xsl:value-of         select = "@cdr:href"/>
+     <xsl:value-of         select = "@cdr:href | @href"/>
      <xsl:text> does not exist.&lt;BR/&gt;</xsl:text>
     </xsl:message> 
     <xsl:value-of           select = "."/>
@@ -195,7 +209,7 @@
    <xsl:otherwise>
     <xsl:element              name = "{name()}">
      <xsl:attribute           name = "href">
-      <xsl:value-of         select = "@cdr:href"/>
+      <xsl:value-of         select = "@cdr:href | @href"/>
      </xsl:attribute>
      <xsl:apply-templates     mode = "copy"/>
     </xsl:element>
