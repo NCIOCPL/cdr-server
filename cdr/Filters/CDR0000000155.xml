@@ -13,6 +13,8 @@
                   
                  version="1.0"
                  xmlns:cdr="cips.nci.nih.gov/cdr">
+   <xsl:import    href = "cdr:name:InLine Markup Formatter"/>
+
    <xsl:output method="html"/>
    <xsl:template match="/">
 
@@ -31,7 +33,7 @@
            TYPE='text/css' /> -->
      <STYLE>
         <!-- h3,h4 {color: Navy}-->
-          li.lnone {list-style: none}
+          li.lnone {list-style-type: none}
       </STYLE>
       
     </HEAD>
@@ -148,17 +150,6 @@
   <b><font size='4'><xsl:text>Objectives</xsl:text></font></b><br />
  </xsl:template>-->
 
-<!-- =====================================================================
-        Display Protocol Objectives
-     ==================================================================== -->
-<xsl:template match="OrderedList[@Style='URoman']">
- <ol>
- <xsl:for-each select="ListItem">
-<li type="I"><xsl:apply-templates/></li><br />
-  </xsl:for-each>
-  </ol>
-  </xsl:template>
-
 
 <xsl:template match="Objectives">
 
@@ -167,19 +158,6 @@
   <h3><xsl:text>Objectives</xsl:text></h3>
  <xsl:apply-templates/>
 
- <!-- <xsl:if test="OrderedList/@Style='URoman'">
- <ol>
- <xsl:for-each select="OrderedList">
- <xsl:for-each select="ListItem">
-<li type="I"><xsl:value-of select="."/></li><br />
-  </xsl:for-each>
-  </xsl:for-each>
-  </ol>
- </xsl:if>-->
-
-<!-- <xsl:if test="Para/TT">
- <pre><xsl:value-of select="."/></pre>
- </xsl:if>-->
   </xsl:template>
 
 <!-- ====================================================================
@@ -198,42 +176,17 @@
 <xsl:apply-templates/>
 </xsl:template>
 
-<xsl:template match="ItemizedList">
-<b><i><xsl:value-of select="ListTitle"/></i></b>
-<ul>
- <xsl:for-each select="ListItem">
-   <li class='lnone'><xsl:apply-templates/></li><br />
-  </xsl:for-each>
-</ul>
-
-</xsl:template>
-
-<!--
-<xsl:template match="ProtocolAbstract/Professional/EntryCriteria/PatientCharacteristics">
  
-<h3>Patient Characteristics:</h3>
-
-<xsl:if test="Para/TT">
-<pre><xsl:apply-templates select="Para/TT"/></pre>
-</xsl:if>
- 
-  <xsl:if test="ItemizedList">
-  <xsl:for-each select="ItemizedList">  
-  <i><b><xsl:value-of select="ListTitle"/></b></i>
-  <ul>
-  <xsl:for-each select="ListItem">
-  <li class='lnone'><xsl:value-of select="."/></li>
-   </xsl:for-each>
-   </ul>
-  </xsl:for-each>
- </xsl:if>
-</xsl:template>-->
+<!--================================================================
+          Display Prior concurrent therapy 
+    ================================================================ -->
 
 <xsl:template match="ProtocolAbstract/Professional/EntryCriteria/PriorConcurrentTherapy">
  
  <h3>Prior Concurrent Therapy</h3>
  <xsl:apply-templates/>
  </xsl:template>
+
 <!-- ================================================================
        Display the projected accrual
      ================================================================ -->
@@ -255,7 +208,9 @@
   <br /><br />
  </xsl:template>
 
-
+<!-- ====================================================================
+               Display Outline
+     =================================================================== -->
 
 <xsl:template match="ProtocolAbstract/Professional/Outline">
 <b><font size='4'>Outline</font></b>
@@ -335,15 +290,6 @@
  <p><xsl:apply-templates/></p>
  </xsl:template>
 
-<!--Display an itemized list -->
-
-
-
-<!--<xsl:template match="ItemizedList | ItemizedList/ListItem">
-<dl>
-<dd><xsl:apply-templates/></dd><br />
-</dl>
-</xsl:template>-->
 
 <!--===============================================
        Display Paragraphs
@@ -562,7 +508,7 @@
 
 <!-- =========================================================
                        Link to glossaryTermRefs 
-     =========================================================-->
+     =========================================================
 <xsl:template match="GlossaryTermRef">
  <a>
  <xsl:attribute name="href">
@@ -570,7 +516,7 @@
  </xsl:attribute>
 <xsl:value-of select="."/>
 </a>
-</xsl:template>
+</xsl:template>-->
 
 
  <!-- =====================================================================
@@ -588,41 +534,43 @@
 <b><font size='3'>Protocol ID</font></b> <xsl:text>............................................</xsl:text>
 <xsl:value-of select="LeadOrgProtocolID"/><br />
 <b><font size='3'>Current Protocol Status</font></b> <br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+<xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text>
 <b><font size='3'>Status</font></b> 
 <xsl:text>....................................................</xsl:text>
 <xsl:value-of select="LeadOrgProtocolStatuses/CurrentOrgStatus/StatusName"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+<xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text>
  <b><font size='3'>Date</font></b>
  <xsl:text>........................................................</xsl:text>
 <xsl:value-of select="LeadOrgProtocolStatuses/CurrentOrgStatus/StatusDate"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <b><font size='3'>User</font></b>
+<xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text>
+ <b><font size='3'><xsl:text>User</xsl:text></font></b>
  <xsl:text>........................................................</xsl:text>
 <xsl:value-of select="LeadOrgProtocolStatuses/CurrentOrgStatus/EnteredBy"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+<xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text>
  <b><font size='3'>Entry Date</font></b>
  <xsl:text>..............................................</xsl:text>
 <xsl:value-of select="LeadOrgProtocolStatuses/CurrentOrgStatus/EntryDate"/><br />
 
-<b><font size='3'>Previous Protocol Status</font></b><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+<b><font size='3'>Previous Protocol Status</font></b><br /><br />
+<xsl:if test="LeadOrgProtocolStatuses/PreviousOrgStatus">
+<xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text>
  <b><font size='3'>Status</font></b>
  <xsl:text>.....................................................</xsl:text>
 <xsl:value-of select="LeadOrgProtocolStatuses/PreviousOrgStatus/StatusName"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+<xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text>
  <b><font size='3'>Date</font></b>
  <xsl:text>........................................................</xsl:text>
 <xsl:value-of select="LeadOrgProtocolStatuses/PreviousOrgStatus/StatusDate"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+<xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text>
  <b><font size='3'>User</font></b>
  <xsl:text>........................................................</xsl:text>
 <xsl:value-of select="LeadOrgProtocolStatuses/PreviousOrgStatus/EnteredBy"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
+<xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text>
  <b><font size='3'>Entry Date</font></b>
  <xsl:text>..............................................</xsl:text>
 <xsl:value-of select="LeadOrgProtocolStatuses/PreviousOrgStatus/EntryDate"/><br />
 <br />
+</xsl:if>
 
 <b><font size='3'>Lead Organization Personnel</font></b><br /><br />
 
@@ -726,7 +674,9 @@
        <xsl:if test="SpecificPerson">
        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Contact</font></b>
           <xsl:text>.....................................................</xsl:text>
+          <xsl:if test="SpecificPerson/PersonNameInformation/SurName">
           <xsl:value-of select="SpecificPerson/PersonNameInformation/SurName"/>,
+          </xsl:if>
           <xsl:value-of select="SpecificPerson/PersonNameInformation/GivenName"/><br />
        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Role</font></b>
                 <xsl:text>............................................................</xsl:text>
@@ -815,69 +765,6 @@
           </xsl:for-each>
          </xsl:for-each>
   </xsl:template>
-<!-- ==================================================================
-                     Display a Subscript 
-     =================================================================== -->
-
-              <xsl:template match="Subscript">
-              <sub><xsl:apply-templates/></sub>
-              </xsl:template>
-
-<!-- ==================================================================
-                     Display a Superscript 
-     =================================================================== -->
-
-              <xsl:template match="Superscript">
-              <sup><xsl:apply-templates/></sup>
-              </xsl:template>
-
-<!-- ==================================================================
-                     Display Strong 
-     =================================================================== -->
-
-              <xsl:template match="Strong">
-              <b><xsl:apply-templates/></b>
-              </xsl:template>
-
-<!-- ==================================================================
-                     Display Emphasis 
-     =================================================================== -->
-
-              <xsl:template match="Emphasis">
-              <i><xsl:apply-templates/></i>
-              </xsl:template>
-
-<!-- ==================================================================
-                     Display DrugName
-     =================================================================== -->
-
-              <xsl:template match="DrugName">
-              <i><xsl:apply-templates/></i>
-              </xsl:template>
-
-
-<!-- ==================================================================
-                     Display Scientific Name 
-     =================================================================== -->
-
-              <xsl:template match="ScientificName">
-              <i><xsl:apply-templates/></i>
-              </xsl:template>
-<!-- ==================================================================
-                     Display Foreign Word 
-     =================================================================== -->
-
-              <xsl:template match="ForeignWord">
-              <i><xsl:apply-templates/></i>
-              </xsl:template>
-
-<!-- ==================================================================
-                     Display Gene Name 
-     =================================================================== -->
-
-              <xsl:template match="GeneName">
-              <i><xsl:apply-templates/></i>
-              </xsl:template>
 
 
 

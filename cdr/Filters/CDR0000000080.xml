@@ -13,7 +13,10 @@
   <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                  version="1.0"
                  xmlns:cdr="cips.nci.nih.gov/cdr">
-   <xsl:output method="html"/>
+
+   <xsl:import    href = "cdr:name:InLine Markup Formatter"/>
+
+                   <xsl:output method="html"/>
    <xsl:template match="/">
 
   <!--Filter written by C.
@@ -32,7 +35,7 @@ Burg - 6/21/2001 -->
            TYPE='text/css' /> -->
     </HEAD>
     <STYLE>
-      li.lnone {list-style: none}
+      li.lnone {list-style-type: none}
     </STYLE>
      <BASEFONT FACE='Arial, Helvetica, sans-serif' /> 
     <xsl:apply-templates select="InScopeProtocol"/>
@@ -108,7 +111,7 @@ Burg - 6/21/2001 -->
 <xsl:text>................................</xsl:text>
 <xsl:apply-templates select="IDType"/>,
 <xsl:apply-templates select="IDString"/><br />
-<b><xsl:text>Comment</xsl:text></b>
+<b><xsl:text>Comment</xsl:text></b><br />
 <xsl:if test="Comment">
 <xsl:apply-templates select="Comment"/>
 </xsl:if>
@@ -120,25 +123,14 @@ Burg - 6/21/2001 -->
 <!--<xsl:template match="ProtocolAbstract">
   <b><font size='4'><xsl:text>Professional Abstract</xsl:text></font></b><br />
  </xsl:template>-->
-
-<!--<xsl:template match="ProtocolAbstract/Professional">
+<!-- ===============================================================
+           Display Objectives
+     ================================================================ -->
+<xsl:template match="ProtocolAbstract/Professional/Objectives">
   <b><font size='4'><xsl:text>Objectives</xsl:text></font></b><br />
- </xsl:template>-->
-
-<!-- =====================================================================
-        Display Protocol Objectives
-     ==================================================================== -->
-
-<xsl:template match="OrderedList">
- <ol>
- <xsl:for-each select="ListItem">
-<li type="I"><xsl:value-of select="."/></li><br />
-  </xsl:for-each>
-  </ol>
- <!--<xsl:if test="Para/TT">
- <pre><xsl:value-of select="."/></pre>
- </xsl:if>-->
+  <xsl:apply-templates/>
  </xsl:template>
+
 <!-- ====================================================================
       Display the Disease characteristics, Patient characteristics,
       Prior concurrent therapy
@@ -151,20 +143,16 @@ Burg - 6/21/2001 -->
 </xsl:template>
 
 <xsl:template match="PatientCharacteristics">
-<h3>Patient Characteristics:</h3>
+ <h3>Entry Criteria</h3>
+<h3>Patient Characteristics:</h3> 
 <xsl:apply-templates/>
 </xsl:template>
 
-<xsl:template match="ItemizedList">
-<b><i><xsl:value-of select="ListTitle"/></i></b>
-<ul>
- <xsl:for-each select="ListItem">
-   <li class='lnone'><xsl:apply-templates/></li><br />
-  </xsl:for-each>
-</ul>
 
-</xsl:template>
 
+<!--==================================================================
+                    Display Prior Concurrent therapy
+    ================================================================== -->
   
 <xsl:template match="PriorConcurrentTherapy">
  
@@ -315,7 +303,7 @@ Burg - 6/21/2001 -->
    <b><font size='4'>Professional Title</font></b><br />
        <p><xsl:apply-templates/></p>
   <b><font size='4'>Professional Abstract</font></b><br /><br />
-   <b><font size='3'>Objectives</font></b>
+  <!-- <b><font size='3'>Objectives</font></b>-->
    </xsl:if>
 <xsl:if test="@Type='Patient'">
    <b><font size='4'>Patient Title</font></b><br />

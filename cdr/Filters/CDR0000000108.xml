@@ -73,7 +73,10 @@
         XXXXX Replace with Professional Disclaimer when available XXXXXXXXXXX
         <xsl:variable               name = "ProfDisclaimer" 
                                   select = "document
-                                           (concat('cdrx:','CDR0000000000'))"/>
+                                           (concat
+                                           ('cdrx:', 'CDR0000000000', 
+                                                            '/lastp'))"/>
+
         <xsl:apply-templates      select = "$ProfDisclaimer/
                                             MiscellaneousDocument/
                                             MiscellaneousDocumentText"/>
@@ -133,7 +136,9 @@
        <PatientDisclaimer>
         <xsl:variable               name = "PatDisclaimer" 
                                   select = "document
-                                           (concat('cdrx:','CDR0000000313'))"/>
+                                           (concat
+                                           ('cdrx:','CDR0000000313',
+                                                           '/lastp'))"/>
         <xsl:apply-templates      select = "$PatDisclaimer/
                                             MiscellaneousDocument/
                                             MiscellaneousDocumentText"/>
@@ -164,7 +169,9 @@
             <xsl:variable          name   = "PubCit" 
                                    select = "@cdr:ref"/>
             <xsl:variable            name = "CitInfo" 
-                                  select = "document(concat('cdrx:',$PubCit))"/>
+                                  select = "document
+                                            (concat
+                                            ('cdrx:',$PubCit, '/lastp'))"/>
 
             <xsl:if test="$CitInfo/Citation/PDQCitation">
               <Citation ref = "{$PubCit}">
@@ -385,7 +392,9 @@
           <xsl:variable          name = "GlossID" 
                                select = "@cdr:href"/>
           <xsl:variable        name   = "GlossInfo" 
-                               select = "document(concat('cdrx:',$GlossID))"/>
+                               select = "document
+                                         (concat
+                                         ('cdrx:',$GlossID, '/lastp'))"/>
           <GlossaryTerm>
           <xsl:apply-templates select = "$GlossInfo/GlossaryTerm/TermName" 
                                  mode = "copy"/>
@@ -451,7 +460,8 @@
       <xsl:variable       name   = "DiagID" 
                           select = "@cdr:ref"/>
       <xsl:variable       name   = "DiagInfo" 
-                          select = "document(concat('cdrx:',$DiagID))"/>
+                          select = "document
+                                    (concat('cdrx:',$DiagID, '/lastp'))"/>
 
       <Diagnosis>
         <SpecificDiagnosis   ref = "{$DiagID}">
@@ -475,7 +485,8 @@
       <xsl:variable       name   = "ExcludeID" 
                           select = "@cdr:ref"/>
       <xsl:variable       name   = "ExcludeInfo" 
-                          select = "document(concat('cdrx:',$ExcludeID))"/>
+                          select = "document
+                                    (concat('cdrx:',$ExcludeID, '/lastp'))"/>
 
       <ExclusionCriteria>
         <xsl:attribute    name   = "ref">
@@ -526,7 +537,7 @@
                 <xsl:otherwise>
                     <xsl:variable   name = "IntervenInfo" 
                                   select = "document(concat 
-                                           ('cdrx:',$IntervenID))"/>
+                                           ('cdrx:',$IntervenID, '/lastp'))"/>
                   <InterventionType  ref = "{$IntervenID}">
                   <xsl:value-of   select = "$IntervenInfo/Term/PreferredName"/>
                   </InterventionType>
@@ -553,8 +564,9 @@
                <xsl:variable         name = "IntervenNameID"
                                    select = "@cdr:ref"/>
                <xsl:variable         name = "IntervenNameInfo" 
-                                   select = "document
-                                            (concat('cdrx:',$IntervenNameID))"/>
+                                   select = "document(concat
+                                             ('cdrx:',$IntervenNameID, 
+                                                              '/lastp'))"/>
                <InterventionNameLink  ref = "{$IntervenNameID}">
                <xsl:value-of       select = "$IntervenNameInfo/Term/
                                             PreferredName"/>
@@ -592,7 +604,8 @@
    <xsl:variable            name = "orgID"
                           select = "LeadOrganizationID/@cdr:ref"/>
    <xsl:variable            name = "org"
-                          select = "document(concat('cdrx:', $orgID))"/>
+                          select = "document(concat
+                                    ('cdrx:', $orgID, '/last'))"/>
    <ProtocolLeadOrg          ref = "{$orgID}">
     <xsl:apply-templates  select = "$org/Organization/
                                     OrganizationNameInformation/OfficialName"
@@ -632,8 +645,8 @@
    <xsl:variable            name = "fragId"
                           select = "substring-after(Person/@cdr:ref, '#')"/>
    <xsl:variable            name = "person"
-                          select = "document(concat('cdrx:',
-                                                        $personId,'/lastp'))"/>
+                          select = "document(concat
+                                    ('cdrx:', $personId,'/last'))"/>
    <LeadOrgPersonnel>
     <Person                  ref = "{$personId}#{$fragId}">
      <xsl:apply-templates select = "$person/Person/PersonNameInformation"
@@ -676,7 +689,8 @@
    <xsl:variable            name = "orgId" 
                           select = "OrgSiteID/@cdr:ref"/>
    <xsl:variable            name = "org"
-                          select = "document(concat('cdrx:', $orgId))"/>
+                          select = "document(concat
+                                    ('cdrx:', $orgId, '/last'))"/>
    <OrgSite                  ref = "{$orgId}">
 
 <!-- Remove for Production: Start ============================= -->
@@ -718,7 +732,7 @@
    <xsl:variable            name = "SPFrag"
                           select = "substring-after($SPID, '#')"/>
    <xsl:variable            name = "SPInfo" 
-                          select = "document(concat('cdrx:',$SPID))"/>
+                          select = "document(concat('cdrx:',$SPID, '/last'))"/>
    <SpecificPerson           ref = "{$SPID}">
     <xsl:apply-templates  select = "$SPInfo/Person/PersonNameInformation"
                             mode = "copy"/>
@@ -788,8 +802,8 @@
    <xsl:variable            name = "fragRef"
                           select = "OrganizationLocation/@cdr:ref"/>
    <xsl:variable            name = "orgDoc"
-                          select = "document(concat('cdrx:', 
-                                                    $fragRef))"/>
+                          select = "document(concat
+                                    ('cdrx:', $fragRef, '/last'))"/>
    <xsl:variable            name = "fragId"
                           select = "substring-after($fragRef, '#')"/>
    <xsl:variable            name = "orgLoc"
@@ -878,7 +892,8 @@
    <xsl:variable            name = "stateId"
                           select = "PoliticalSubUnit_State/@cdr:ref"/>
    <xsl:variable            name = "country"
-                          select = "document(concat('cdrx:', $countryId))"/>
+                          select = "document(concat
+                                    ('cdrx:', $countryId, '/lastp'))"/>
 
    <xsl:apply-templates   select = "Street"
                             mode = "copy"/>
@@ -892,7 +907,8 @@
 
    <xsl:if                  test = "$stateId">
     <xsl:variable           name = "state"
-                          select = "document(concat('cdrx:', $stateId))"/>
+                          select = "document(concat
+                                   ('cdrx:', $stateId, '/lastp'))"/>
     <xsl:if                 test = "$state">
      <PoliticalSubUnit_State>
       <xsl:attribute        name = "ref">
