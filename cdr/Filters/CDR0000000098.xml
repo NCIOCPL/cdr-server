@@ -3,6 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">InScopeProtocol Status and Participant Mailer</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -44,8 +45,6 @@
   <xsl:apply-templates         select = "ProtocolAdminInfo">
    <xsl:with-param               name = "title"
                                select = "$title"/>
-   <xsl:with-param               name = "protId"
-                               select = "ProtocolIDs/PrimaryID/IDString"/>
   </xsl:apply-templates>
  </xsl:template>
 
@@ -55,14 +54,11 @@
  ========================================================================== -->
  <xsl:template                  match = "ProtocolAdminInfo">
   <xsl:param                     name = "title"/>
-  <xsl:param                     name = "protId"/>
   <xsl:apply-templates         select = "ProtocolLeadOrg
                                         [LeadOrganizationID/
                                         @cdr:ref = $leadOrgId]">
    <xsl:with-param               name = "title"
                                select = "$title"/>
-   <xsl:with-param               name = "protId"
-                               select = "$protId"/>
    <xsl:with-param               name = "status"
                                select = "CurrentProtocolStatus"/>
   </xsl:apply-templates>
@@ -75,7 +71,6 @@
  ========================================================================== -->
  <xsl:template                  match = "ProtocolLeadOrg">
   <xsl:param                     name = "title"/>
-  <xsl:param                     name = "protId"/>
   <xsl:param                     name = "status"/>
   <xsl:variable                  name = "uri"
                                select = "concat('cdrx:', $leadOrgId)"/>
@@ -96,7 +91,7 @@
                                         [PersonRole = 'Update person'])">
    <xsl:message             terminate = "yes">
     <xsl:value-of              select = "concat('Cannot find protocol update ',
-                                                'person for lead organization  ',
+                                                'person for lead organization ',
                                                 $leadOrgId)"/>
    </xsl:message>
   </xsl:if>
@@ -111,12 +106,17 @@
    <CurrentStatus>
     <xsl:value-of              select = "$status"/>
    </CurrentStatus>
-   <ID>
-    <xsl:value-of              select = "$protId"/>
-   </ID>
+   <xsl:for-each               select = "LeadOrgProtocolID">
+    <ID>
+     <xsl:value-of             select = "."/>
+    </ID>
+   </xsl:for-each>
    <LeadOrg>
     <xsl:value-of              select = "$orgName"/>
    </LeadOrg>
+   <LeadOrgRole>
+    <xsl:value-of              select = "LeadOrgRole"/>
+   </LeadOrgRole>
    <xsl:for-each               select = "LeadOrgPersonnel
                                         [PersonRole != 'Update person']">
     <Personnel>
@@ -166,7 +166,11 @@
  Paste together a personal name string.
  ========================================================================== -->
  <xsl:template                  match = "PersonNameInformation">
-  <xsl:value-of                select = "concat(GivenName, ' ', SurName)"/>
+  <xsl:for-each                select = "*">
+   <xsl:if                       test = "name() != 'Comment'">
+    <xsl:copy-of               select = "."/>
+   </xsl:if>
+  </xsl:for-each>
  </xsl:template>
 
  <!--
