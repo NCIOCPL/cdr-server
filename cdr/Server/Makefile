@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.8 2000-04-22 09:26:36 bkline Exp $
+# $Id: Makefile,v 1.9 2000-04-26 01:27:03 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.8  2000/04/22 09:26:36  bkline
+# Added rules for user and group commands.
+#
 # Revision 1.7  2000/04/21 13:52:24  bkline
 # Added CdrSearch module.
 #
@@ -38,10 +41,12 @@ CDR    =/cdr
 XML4C  =/usr/xml4c
 CDRINC =$(CDR)/include
 INC    =-I$(XML4C)/include -I$(CDRINC)
-CFLAGS =$(INC) -GX -MD -GR -Zi
+CFLAGS =$(INC) -GX -MT -GR -Zi
 LFLAGS =/LIBPATH:/usr/xml4c/lib /LIBPATH:$(CDR)/lib /DEBUG
 CC     =cl
 LN     =link
+DOC    =../../InetPub/wwwtest/cdr/
+DOCS   =$(DOC)default.htm
 CDRLIB =$(CDR)/lib/cdr.lib
 CDRBIN =$(CDR)/bin
 CDRSVR =$(CDRBIN)/CdrServer.exe
@@ -56,7 +61,8 @@ HDRS   =$(CDRINC)/CdrString.h \
         $(CDRINC)/CdrCommand.h \
         $(CDRINC)/CdrSession.h \
         $(CDRINC)/CdrParserInput.h \
-        $(CDRINC)/CdrInt.h
+        $(CDRINC)/CdrInt.h \
+        $(CDRINC)/CdrSearch.h
 LIBOBJS=CdrString.obj \
         CdrXsd.obj \
         CdrDom.obj \
@@ -80,6 +86,7 @@ OBJS   =CdrServer.obj \
         CdrModUsr.obj \
         CdrDelUsr.obj \
         CdrListUsrs.obj \
+        CdrValidateDoc.obj \
         CdrSearch.obj \
         CdrSearch_tab.obj
 LIBS   =cdr.lib xerces-c_1.lib wsock32.lib odbc32.lib
@@ -141,6 +148,9 @@ CdrListUsrs.obj: CdrListUsrs.cpp $(HDRS)
 CdrSearch.obj: CdrSearch.cpp $(HDRS) $(CDRINC)/CdrSearch.h
 	$(CC) $(CFLAGS) -c CdrSearch.cpp
 
+CdrValidateDoc.obj: CdrValidateDoc.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrValidateDoc.cpp
+
 BISON_SIMPLE=/etc/bison.cdrtest
 CdrSearch_tab.obj: CdrSearch_tab.c $(HDRS)
 	$(CC) $(CFLAGS) -c -TP CdrSearch_tab.c
@@ -181,5 +191,17 @@ CdrParserInput.obj: CdrParserInput.cpp $(HDRS)
 tCdrString.exe: tCdrString.cpp $(CDRLIB)
 	$(CC) $(CFLAGS) tCdrString.cpp $(CDRLIB)
 
+#--------------------------------------------------------------------------
+# Rule for building CDR programmer documentation.
+#--------------------------------------------------------------------------
+CdrDocs: $(DOCS)
+
+$(DOCS): $(HDRS)
+	ccdoc -html $(DOC) -imgurl images/ $(HDRS)
+	cp -f $(DOC)ccdoc.index.html $(DOCS)
+
+#--------------------------------------------------------------------------
+# Cleanup rules.
+#--------------------------------------------------------------------------
 clean:
 	rm -f *.obj *~ CdrSearch_tab.c
