@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.22 2002-01-28 23:10:36 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.23 2002-02-01 20:48:21 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2002/01/28 23:10:36  bkline
+ * Added handler for unexpected exception when processing a single command.
+ *
  * Revision 1.21  2001/12/14 18:28:46  bkline
  * Added use of heap debugging conditional macros.
  *
@@ -111,7 +114,8 @@ static void __cdecl     dispatcher(void*);
 static void             realDispatcher(void* arg);
 static void __cdecl     sessionSweep(void*);
 static int              handleNextClient(int sock);
-
+static void             logTopLevelFailure(const cdr::String what, 
+                                           unsigned long code);
 static bool             timeToShutdown = false;
 static cdr::log::Log    log;
 
@@ -136,7 +140,9 @@ main(int ac, char **av)
         set_exception_catcher ("CdrServer.crash");
 
     if (WSAStartup(0x0101, &wsadata) != 0) {
-        std::cerr << "WSAStartup: " << WSAGetLastError() << '\n';
+        int err = WSAGetLastError();
+        std::cerr << "WSAStartup: " << err << '\n';
+        logTopLevelFailure(L"WSAStartup", (unsigned long)err);
         return EXIT_FAILURE;
     }
     atexit(cleanup);
@@ -146,6 +152,7 @@ main(int ac, char **av)
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         perror("socket");
+        logTopLevelFailure(L"socket", (unsigned long)WSAGetLastError());
         return EXIT_FAILURE;
     }
     std::cout << "socket created...\n";
@@ -154,11 +161,13 @@ main(int ac, char **av)
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(sock, (struct sockaddr *)&addr, sizeof addr) == SOCKET_ERROR) {
         perror("bind");
+        logTopLevelFailure(L"bind", (unsigned long)WSAGetLastError());
         return EXIT_FAILURE;
     }
     std::cout << "bound...\n";
     if (listen(sock, CDR_QUEUE_SIZE) == SOCKET_ERROR) {
         perror("listen");
+        logTopLevelFailure(L"listen", (unsigned long)WSAGetLastError());
         return EXIT_FAILURE;
     }
     std::cout << "listening...\n";
@@ -166,6 +175,7 @@ main(int ac, char **av)
 #ifndef SINGLE_THREAD_DEBUGGING
     if (_beginthread(sessionSweep, 0, (void*)0) == -1) {
         std::cerr << "CreateThread: " << GetLastError() << '\n';
+        logTopLevelFailure(L"listen", (unsigned long)WSAGetLastError());
         return EXIT_FAILURE;
     }
 #endif
@@ -194,11 +204,14 @@ int handleNextClient(int sock)
         return EXIT_SUCCESS;
     if (fd < 0) {
         perror("accept");
+        logTopLevelFailure(L"accept", (unsigned long)WSAGetLastError());
         return EXIT_FAILURE;
     }
 #ifndef SINGLE_THREAD_DEBUGGING
     if (_beginthread(dispatcher, 0, (void*)fd) == -1) {
-        std::cerr << "CreateThread: " << GetLastError() << '\n';
+        DWORD err = GetLastError();
+        std::cerr << "CreateThread: " << err << '\n';
+        logTopLevelFailure(L"CreateThread", err);
         closesocket(fd);
         return EXIT_FAILURE;
     }
@@ -669,4 +682,14 @@ cdr::String getElapsedTime(DWORD start)
     wchar_t buf[80];
     swprintf(buf, L"%lu.%03lu", millis / 1000L, millis % 1000L);
     return buf;
+}
+
+/**
+ * Logs an error which occurs outside of a specific thread.
+ */
+void logTopLevelFailure(const cdr::String what, unsigned long code)
+{
+    wchar_t buf[80];
+    swprintf(buf, L"%lu", code);
+    cdr::log::WriteFile(what, buf);
 }
