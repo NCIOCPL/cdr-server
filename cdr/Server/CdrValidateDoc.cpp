@@ -1,10 +1,13 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.19 2002-07-15 18:57:05 bkline Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.20 2002-08-14 01:52:39 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2002/07/15 18:57:05  bkline
+ * Restored 'schema' to 'Schema' for validation type.
+ *
  * Revision 1.18  2002/07/03 12:55:19  bkline
  * Fixed check for Schema doctype.
  *
@@ -244,6 +247,11 @@ cdr::String cdr::execValidateDoc (
     cdr::ValidRule       validRule,
     const cdr::String&   validationTypes
 ) {
+    // Should not get here for control docs, but secondary check just in case
+    // Just say it's valid if this is one of them.
+    if (docObj.isControlType())
+        return L"V";
+
     bool              parseOK = false;
     cdr::String       docTypeString = docObj.getTextDocType();
 
