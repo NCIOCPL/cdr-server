@@ -1,9 +1,12 @@
 /*
- * $Id: CdrGetDoc.h,v 1.8 2002-01-08 18:18:19 mruben Exp $
+ * $Id: CdrGetDoc.h,v 1.9 2002-01-23 18:24:12 mruben Exp $
  *
  * Internal support functions for CDR document retrieval.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2002/01/08 18:18:19  mruben
+ * added support for denormalization and getting control information
+ *
  * Revision 1.7  2001/04/05 23:58:50  ameyer
  * Added default value to last arg on overloaded getDocString().
  *
@@ -112,12 +115,15 @@ namespace cdr {
       /**
        * The components of CdrCtl
        */
-      enum { all = 0xffff,
+      enum { all                 = 0xffff,
              DocValStatus        = 0x0001,
              DocValDate          = 0x0002,
              DocTitle            = 0x0004,
              DocComment          = 0x0008,
-             DocActiveStatus     = 0x0010
+             DocActiveStatus     = 0x0010,
+             std                 = 0x001f,
+             DocCreate           = 0x0020,  // date & user
+             DocMod              = 0x0040,  // date & user
       };
     }
 
@@ -128,14 +134,16 @@ namespace cdr {
      *  @param  docId       reference to string containing the document's ID.
      *  @param  conn        reference to an active connection to the CDR
      *                      database.
-     *  @param  elements    bit mask selecting components to include
+     *  @param  elements    bit mask selecting components to include.  Note
+     *                      that this specifies the minimum to be included.
+     *                      Additional elements may be included.
      *  @return             wide-character String object containing XML
      *                      for the document.
      */
     extern cdr::String getDocCtlString(const cdr::String&      docId,
                                        cdr::db::Connection&    conn,
                                        int elements
-                                           = cdr::DocCtlComponents::all);
+                                           = cdr::DocCtlComponents::std);
 
     /**
      * Pulls the control components of a CDR document from the database
@@ -153,7 +161,7 @@ namespace cdr {
                                        int                     version,
                                        cdr::db::Connection&    conn,
                                        int elements
-                                           = cdr::DocCtlComponents::all);
+                                           = cdr::DocCtlComponents::std);
 
 }
 
