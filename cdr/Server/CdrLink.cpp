@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.20 2002-08-11 22:48:34 bkline Exp $
+ * $Id: CdrLink.cpp,v 1.21 2002-08-14 01:51:04 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2002/08/11 22:48:34  bkline
+ * Plugged in makeshift solution for overlong values for link_net table.
+ *
  * Revision 1.19  2002/07/25 09:57:33  bkline
  * Turned off timing code.
  *
@@ -119,7 +122,7 @@ struct LinkNetRow {
     cdr::String target_frag;
     cdr::String url;
     LinkNetRow(int t, int sd, const cdr::String& se, const cdr::Int& td,
-               const cdr::String& tf, const cdr::String& u) 
+               const cdr::String& tf, const cdr::String& u)
         : link_type(t), source_doc(sd), source_elem(se), target_doc(td),
           target_frag(tf), url(u) {}
     bool operator==(const LinkNetRow& r) const {
@@ -278,6 +281,18 @@ cdr::link::CdrLink::CdrLink (
         }
     }
 
+    // Validate that lengths don't violate database sizes
+    if (trgFrag.size() > cdr::link::MAX_FRAG_SIZE) {
+        this->addLinkErr (L"Fragment '" +
+                trgFrag + L"' too large for database table");
+        saveLink = false;
+    }
+    if (ref.size() > cdr::link::MAX_URL_SIZE) {
+        this->addLinkErr (L"Full reference '" +
+                trgFrag + L"' too large for database table");
+        saveLink = false;
+    }
+
     // Find the link type expected for this doctype/fieldtag
     qry = "SELECT link_id FROM link_xml WHERE doc_type = ? AND element = ?";
     cdr::db::PreparedStatement select = conn.prepareStatement (qry);
@@ -287,11 +302,10 @@ cdr::link::CdrLink::CdrLink (
 
     if (!rs.next()) {
         // Error will be caught again and reported later
-        this->saveLink = false;
+        saveLink = false;
     }
     else
         type = rs.getInt (1);
-
 
 } // Constructor
 
@@ -1486,6 +1500,14 @@ void cdr::link::updateLinkNet (
     cdr::link::LnkList::iterator linkIter;
     for (linkIter = lnkList.begin(); linkIter != lnkList.end(); ++linkIter) {
         cdr::String targetFrag(true);
+
+        // Link objects may have been created for erroneous links that
+        //   can/should not be saved.  They are in the list because
+        //   the associated error messages are useful, but they must
+        //   not be written to the database.
+        if (linkIter->getSaveLink() == false)
+            continue;
+
         if (linkIter->getTrgFrag().size() > 0)
             targetFrag = linkIter->getTrgFrag();
         LinkNetRow row(linkIter->getType(),
@@ -1590,7 +1612,7 @@ void cdr::link::updateLinkNet (
         insStmt.executeUpdate();
     }
     SHOW_ELAPSED("inserted new link rows", linkTimer);
- 
+
 } // updateLinkNet()
 
 
@@ -1863,57 +1885,57 @@ cdr::String cdr::link::getSearchLinksResp (
     // Get link_id first. We will get one most of the time.
     int link_id = 0;
     std::string qry = "SELECT lx.link_id"
-                      "  FROM link_xml lx,"  
+                      "  FROM link_xml lx,"
                       "       doc_type dt"
-                      " WHERE lx.doc_type = dt.id"                      
+                      " WHERE lx.doc_type = dt.id"
                       "   AND lx.element = ?"
-                      "   AND dt.name = ?"; 
+                      "   AND dt.name = ?";
     cdr::db::PreparedStatement stmt = conn.prepareStatement(qry);
     stmt.setString(1, srcElem);
-    stmt.setString(2, srcDocType);    
+    stmt.setString(2, srcDocType);
     cdr::db::ResultSet rs = stmt.executeQuery();
     while (rs.next()) {
-        link_id = rs.getInt(1);      
+        link_id = rs.getInt(1);
     }
-    if (link_id == 0) 
+    if (link_id == 0)
         throw cdr::Exception(L"No links permitted from this element");
-                         
-    // Get link_property ids and values if exist.    
+
+    // Get link_property ids and values if exist.
     qry = "SELECT lp.property_id, lp.value, lpt.name"
                       "  FROM link_properties lp,"
-                      "       link_prop_type lpt"                      
+                      "       link_prop_type lpt"
                       " WHERE lpt.id = lp.property_id"
-                      "   AND lp.link_id = ?"; 
+                      "   AND lp.link_id = ?";
     std::vector<int>         prop_ids;
-    std::vector<cdr::String> prop_values;   
+    std::vector<cdr::String> prop_values;
     cdr::db::PreparedStatement stmt2 = conn.prepareStatement(qry);
-    stmt2.setInt(1, link_id);     
+    stmt2.setInt(1, link_id);
     cdr::db::ResultSet rs2 = stmt2.executeQuery();
     while (rs2.next()) {
         int         prop_id    = rs2.getInt(1);
         cdr::String prop_value = rs2.getString(2);
         cdr::String prop_name  = rs2.getString(3);
-       
-        // We can only handle one property type at the moment.        
+
+        // We can only handle one property type at the moment.
         if (prop_name != L"LinkTargetContains")
             throw cdr::Exception (L"Not supporting link property type: "
-                                  + prop_name); 
-        
-        // We can only handle property ids with values.  
-        if (prop_value == L"") 
-            throw cdr::Exception (L"Not supporting null property value");   
-        
-        prop_ids.push_back(prop_id); 
-        prop_values.push_back(prop_value);            
+                                  + prop_name);
+
+        // We can only handle property ids with values.
+        if (prop_value == L"")
+            throw cdr::Exception (L"Not supporting null property value");
+
+        prop_ids.push_back(prop_id);
+        prop_values.push_back(prop_value);
     }
 
     // There is at least one link property for this link.
-    if (prop_ids.size() > 0)         
-        return getSearchLinksRespWithProp(conn, link_id, prop_ids, 
-                                          prop_values, titlePattern, 
-                                          maxRows); 
-     
-    // There is no link property for this link.    
+    if (prop_ids.size() > 0)
+        return getSearchLinksRespWithProp(conn, link_id, prop_ids,
+                                          prop_values, titlePattern,
+                                          maxRows);
+
+    // There is no link property for this link.
     qry = "SELECT ";
     if (maxRows > 0) {
         char buf[40];
@@ -1922,21 +1944,21 @@ cdr::String cdr::link::getSearchLinksResp (
     }
     qry += "          d.id, d.title"
            "  FROM    document d, link_target lt"
-           " WHERE    d.doc_type = lt.target_doc_type"           
+           " WHERE    d.doc_type = lt.target_doc_type"
            "   AND    d.title LIKE ?"
            "   AND    lt.source_link_type = ?"
-           " ORDER BY d.title";   
+           " ORDER BY d.title";
 
     // Submit the query to the DBMS.
-    cdr::db::PreparedStatement stmt3 = conn.prepareStatement(qry); 
-    stmt3.setString(1, titlePattern);   
-    stmt3.setInt(2, link_id);   
+    cdr::db::PreparedStatement stmt3 = conn.prepareStatement(qry);
+    stmt3.setString(1, titlePattern);
+    stmt3.setInt(2, link_id);
     cdr::db::ResultSet rs3 = stmt3.executeQuery();
 
     // Construct the response.
     cdr::String response = L"<CdrSearchLinksResp>";
     int rows = 0;
-    while (rs3.next()) {       
+    while (rs3.next()) {
         int         id      = rs3.getInt(1);
         cdr::String title   = rs3.getString(2);
 
@@ -1945,7 +1967,7 @@ cdr::String cdr::link::getSearchLinksResp (
         wchar_t tmp[1000];
         swprintf(tmp, L"<QueryResult><DocId>CDR%010ld</DocId>"
                       L"<DocTitle>%.500s</DocTitle>"
-                      L"</QueryResult>", 
+                      L"</QueryResult>",
                  id, title.c_str());
         response += tmp;
     }
