@@ -1,10 +1,16 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.11 2000-05-02 21:54:41 ameyer Exp $
+# $Id: Makefile,v 1.12 2000-05-03 15:27:13 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.11  2000/05/02 21:54:41  ameyer
+# Changed to generic rules.
+# Added error redirection to a file.
+# Removed main program from OBJS.
+# Made CdrDocs part of the all target.
+#
 # Revision 1.10  2000/05/02 19:26:38  bkline
 # Added CdrRegEx, CdrBlob, CdrValidateDoc, and prelimintary CdrGetDoc.
 #
@@ -49,7 +55,7 @@ XML4C  =/usr/xml4c
 REGEX  =/usr/regex
 CDRINC =$(CDR)/include
 INC    =-I$(XML4C)/include -I$(CDRINC) -I$(REGEX)/include
-CFLAGS =$(INC) -GX -MT -GR -Zi
+CFLAGS =$(INC) -W3 -GX -MT -GR -Zi
 LFLAGS =/LIBPATH:/usr/xml4c/lib /LIBPATH:$(CDR)/lib /DEBUG
 CC     =cl
 LN     =link
@@ -65,6 +71,7 @@ HDRS   =$(CDRINC)/CdrString.h \
         $(CDRINC)/CdrCommand.h \
         $(CDRINC)/CdrDbConnection.h \
         $(CDRINC)/CdrDbStatement.h \
+        $(CDRINC)/CdrDbPreparedStatement.h \
         $(CDRINC)/CdrDbResultSet.h \
         $(CDRINC)/CdrCommand.h \
         $(CDRINC)/CdrSession.h \
@@ -80,6 +87,7 @@ LIBOBJS=CdrString.obj \
         CdrDom.obj \
         CdrDbConnection.obj \
         CdrDbStatement.obj \
+        CdrDbPreparedStatement.obj \
         CdrDbResultSet.obj \
         CdrSession.obj \
         CdrParserInput.obj \
@@ -116,7 +124,7 @@ all: init $(CDRSVR) CdrDocs
 init:
 	-cp errs.1 errs.2
 	-cp errs errs.1
-	-rm errs
+	-rm -f errs
 
 #--------------------------------------------------------------------------
 # Rule for building CDR server.
