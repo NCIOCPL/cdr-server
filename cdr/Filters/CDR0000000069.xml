@@ -7,7 +7,7 @@
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
-     $Id: CDR0000000069.xml,v 1.4 2003-08-14 20:49:33 bkline Exp $
+     $Id: CDR0000000069.xml,v 1.5 2003-08-22 22:03:18 bkline Exp $
 
      Filter which extracts address information for protocol update person
      contact info picklist.
@@ -32,6 +32,8 @@
  <xsl:param                    name = "repName"/>
  <xsl:param                    name = "privatePracticeOnly"
                              select = "'no'"/>
+ <xsl:param                    name = "includeHomeAddresses"
+                             select = "'no'"/>
 
  <!-- 
  ========================================================================
@@ -47,14 +49,18 @@
    <xsl:if                     test = "$privatePracticeOnly = 'no'">
     <xsl:apply-templates     select = "//OtherPracticeLocation"/>
    </xsl:if>
+   <!-- Added at Lakshmi's request (#826) 2003-08-22. -->
+   <xsl:if                     test = "$includeHomeAddresses = 'yes'">
+    <xsl:apply-templates     select = "Person/PersonLocations/Home"/>
+   </xsl:if>
   </ReportBody>
  </xsl:template>
 
  <!-- 
  ========================================================================
- Extract the address information for the PrivatePractice element. 
+ Extract the address information for the PrivatePractice or Home element. 
  ======================================================================== -->
- <xsl:template                match = "PrivatePracticeLocation">
+ <xsl:template                match = "PrivatePracticeLocation|Home">
   <xsl:variable                name = "addrStr">
    <xsl:call-template          name = "concat-address-pieces"/>
   </xsl:variable>
@@ -183,6 +189,7 @@
 
  <!-- 
  ========================================================================
+
  Templates for concatenating the individual pieces.
  ======================================================================== -->
  <xsl:template                match = 'Street|City|CitySuffix|PostalCode_ZIP|
