@@ -3,25 +3,24 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Documentation Help Screens Filter</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.13: Include File Name Change (Bug 842)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 
- <!--Filter written by C.Burg - 3/14/2002 -->
-
- <!-- ===========================================================
+<!--Filter written by C.Burg - 3/14/2002 -->
+<!-- ===========================================================
            Filter to display XMetal Help Screens 
       ============================================================ -->
-
-<xsl:transform         xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                         version = "1.0"
-                       xmlns:cdr = "cips.nci.nih.gov/cdr">
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
 
  <xsl:import    href = "cdr:name:Module: InLine Markup Formatter"/>
  <xsl:include   href = "cdr:name:Module: Table Formatter"/>
  <xsl:include   href = "cdr:name:Module: STYLE Default"/>  
         
- <xsl:output                    method = "html"/>
+ <xsl:output                    method = "html"
+                                indent = "no"/>
 
 
  <xsl:template                   match = "/">
@@ -45,64 +44,76 @@
     </STYLE>
    </HEAD>
    <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif'/> 
-   <xsl:apply-templates select="Documentation"/>
+   <xsl:apply-templates         select = "Documentation"/>
   </HTML>
  </xsl:template>
 
 
-       <xsl:template match="Documentation">
-         <BODY>
-            <xsl:apply-templates/>
-         </BODY>
-       </xsl:template>
+ <xsl:template                   match = "Documentation">
+  <BODY>
+   <xsl:apply-templates/>
+  </BODY>
+ </xsl:template>
 
- <!-- ============================================================
-                    Display the Title of the Help Screen
-      ============================================================= -->
 
-      <xsl:template match="DocumentationTitle">
-         <h3><xsl:value-of select="."/></h3>
-      </xsl:template>
-  
- <!-- ====================================================================
-                           Display a topic section title
-      ====================================================================  -->
+ <!-- 
+ ============================================================
+ Display the Title of the Help Screen
+ ============================================================ -->
+ <xsl:template                   match = "DocumentationTitle">
+  <h3>
+   <xsl:value-of                select = "."/>
+  </h3>
+ </xsl:template>
 
-      <xsl:template match="TopicSectionTitle">
-         <h3><xsl:value-of select="."/></h3>
-      </xsl:template>
+
+ <!-- 
+ ====================================================================
+ Display a topic section title
+ ====================================================================  -->
+ <xsl:template                   match = "TopicSectionTitle">
+  <h3>
+   <xsl:value-of                select = "."/>
+  </h3>
+ </xsl:template>
+
+
+ <!-- 
+ ==============================================================
+ Do not display these data elements 
+ ============================================================== -->
+ <xsl:template match="Metadata"/>
+
+
+ <!-- 
+ ==============================================================
+ Display Related Topic
+ ============================================================== -->
+ <xsl:template                   match = "TopicRelationship">
+  <xsl:for-each                 select = "//RelatedTopic">  
+   <b>
+    <xsl:value-of               select = "@RelationshipType"/>
+    <xsl:text>:</xsl:text>
+   </b>
+   <br />
+   <xsl:for-each                select = "RelatedTopicID">
+    <a>
+     <xsl:attribute               name = "href">
+      <xsl:value-of select = "concat('/cgi-bin/cdr/Filter.py?DocId=', @cdr:href,
+                       '&amp;Filter=name:Documentation+Help+Screens+Filter')"/>
+     </xsl:attribute>
+     <xsl:value-of              select = "."/>
+     <br />
  
-      
-  
- <!-- ==============================================================
-               Do not display these data elements 
-        ============================================================== -->
-
-       <xsl:template match="Metadata"/>
+     <xsl:if                      test = "position() = last()">
+      <br />
+     </xsl:if>
+    </a>
+   </xsl:for-each>
+  </xsl:for-each>
+ </xsl:template>
        
-       
-                
-
-    
-  <!-- ==============================================================
-                 Display Related Topic
-       ============================================================== -->
-
-       <xsl:template match="TopicRelationship">
-         <xsl:for-each select="//RelatedTopic">   
-             <b><xsl:value-of select="@RelationshipType"/>:</b><br />
-             <xsl:for-each select="RelatedTopicID">
-              <a>
- <xsl:attribute name="href">
- <xsl:value-of select="concat('/cgi-bin/cdr/Filter.py?DocId=',@cdr:href,'&amp;Filter=name:Documentation+Help+Screens+Filter')"/>
- </xsl:attribute>
-<xsl:value-of select="."/><br />
-<xsl:if test="position()=last()"><br /></xsl:if>
-</a>
-</xsl:for-each>
-</xsl:for-each>
-       </xsl:template>
-        
-</xsl:transform>]]>
+</xsl:transform>
+]]>
 </CdrDocXml>
 </CdrDoc>
