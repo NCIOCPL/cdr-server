@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSearch.cpp,v 1.9 2002-04-30 14:09:55 bkline Exp $
+ * $Id: CdrSearch.cpp,v 1.10 2002-05-08 20:36:10 pzhang Exp $
  *
  * Queries the CDR to create subset list of documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2002/04/30 14:09:55  bkline
+ * Removed unused exception parameter.
+ *
  * Revision 1.8  2002/03/06 21:57:46  bkline
  * Catching reference to cdr::Exception instead of object.
  *
@@ -417,61 +420,9 @@ cdr::String cdr::searchLinks(cdr::Session& session,
     else if (titlePattern.empty())
         throw cdr::Exception(L"Missing required TargetTitlePattern element");
 
-    // Find out which link target document types are permissible.
-    std::vector<int> targetDocTypes;
-    cdr::link::findTargetDocTypes(conn, elemName, docType, targetDocTypes);
-    if (targetDocTypes.size() < 1)
-        throw cdr::Exception(L"No links permitted from this element");
-
-    // Construct the query.
-    std::string qry = "SELECT ";
-    if (maxRows > 0) {
-        char buf[40];
-        sprintf(buf, "TOP %d ", maxRows);
-        qry += buf;
-    }
-    qry += "id, title FROM document WHERE title LIKE ?";
-    if (targetDocTypes.size() == 1)
-        qry += " AND doc_type = ?";
-    else {
-        qry += " AND doc_type IN (";
-        const char* placeHolder = "?";
-        for (size_t i = 0; i < targetDocTypes.size(); ++i) {
-            qry += placeHolder;
-            placeHolder = ",?";
-        }
-        qry += ")";
-    }
-    qry += " ORDER BY title";
-
-    // Submit the query to the DBMS.
-    cdr::db::PreparedStatement stmt = conn.prepareStatement(qry);
-    int pos = 1;
-    stmt.setString(pos++, titlePattern);
-    for (size_t i = 0; i < targetDocTypes.size(); ++i)
-        stmt.setInt(pos++, targetDocTypes[i]);
-    cdr::db::ResultSet rs = stmt.executeQuery();
-
-    // Construct the response.
-    cdr::String response = L"<CdrSearchLinksResp>";
-    int rows = 0;
-    while (rs.next()) {
-        if (rows++ == 0)
-            response += L"<QueryResults>";
-        int         id      = rs.getInt(1);
-        cdr::String title   = rs.getString(2);
-        wchar_t tmp[1000];
-        swprintf(tmp, L"<QueryResult><DocId>CDR%010ld</DocId>"
-                      L"<DocTitle>%.500s</DocTitle>"
-                      L"</QueryResult>", 
-                 id, title.c_str());
-        response += tmp;
-    }
-    if (rows > 0)
-        response += L"</QueryResults></CdrSearchLinksResp>";
-    else
-        response += L"<QueryResults/></CdrSearchLinksResp>";
-    return response;
+    // Get the response for CdrSearchLinksResp. 
+    return cdr::link::getSearchLinksResp(conn, elemName, docType, 
+                                         titlePattern, maxRows);
 }
 
 /**
