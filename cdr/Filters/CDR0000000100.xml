@@ -15,6 +15,8 @@
                  version="1.0"
                   xmlns:cdr="cips.nci.nih.gov/cdr">
     <xsl:output method="xml" omit-xml-declaration="no"/>
+     <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
+
 
 <!-- ====================================================================
        Copy Document ID and Document Control Information
@@ -84,13 +86,32 @@
 </xsl:if>
   <!-- Upcode to add Parent orgs to address block-->
           <xsl:if test="../@IncludeParentName">
+          <xsl:if test="../../../OrganizationParent/ParentOrganization/@cdr:ref">
           <OrganizationAddressNames>
           <xsl:variable name="ParentID" select="../../../OrganizationParent/ParentOrganization/@cdr:ref"/>
 <xsl:variable name="ParentDoc" select="document(concat('cdr:',$ParentID,'/last'))"/>
-            <OrganizationName><xsl:value-of select="../../../OrganizationNameInformation/OfficialName/Name"/>
+  
+<!--<xsl:if test="../@OrderParentNameFirst">
+        <OrganizationAddressNames>-->
+        <OrganizationName><xsl:apply-templates select="../../../OrganizationNameInformation/OfficialName/Name"/>
       </OrganizationName>
+        <xsl:call-template name="upcode-parentname">
+        <xsl:with-param     name="ParentID"
+                          select="$ParentID"/>
+        <xsl:with-param      name="ParentDoc"
+                          select="$ParentDoc"/>
+       </xsl:call-template>
       
-    
+    <!--  <OrganizationName><xsl:apply-templates select="../../../OrganizationNameInformation/OfficialName/Name"/>
+      </OrganizationName>-->
+      </OrganizationAddressNames>
+      </xsl:if>
+      </xsl:if>
+      
+    <!-- <xsl:if test="not(../@OrderParentNameFirst)">
+      <OrganizationAddressNames>
+     <OrganizationName><xsl:apply-templates select="../../../OrganizationNameInformation/OfficialName/Name"/>
+      </OrganizationName>   
      <xsl:call-template name="upcode-parentname">
       <xsl:with-param     name="ParentID"
                           select="$ParentID"/>
@@ -99,6 +120,8 @@
       </xsl:call-template>
       </OrganizationAddressNames>
       </xsl:if>
+      </xsl:if>
+     </xsl:if>-->
 <!-- =====================================================================
          Copy the location info, street, city, city suffix, political 
          subunit, country,zipcode, postal code position, phones, fax,
@@ -183,7 +206,7 @@
  <xsl:variable name="CoopGroupID" select="CooperativeGroup/@cdr:ref"/>
  <xsl:variable name="CoopInfo" select="document(concat('cdr:',$CoopGroupID,'/last'))"/>
 <CooperativeGroup>
-<CoopAID><xsl:value-of select="CooperativeGroup/@cdr:ref"/></CoopAID>
+<CoopAID><xsl:apply-templates select="CooperativeGroup/@cdr:ref"/></CoopAID>
 <xsl:apply-templates select="$CoopInfo/Organization/OrganizationNameInformation/OfficialName/Name" mode="copy"/></CooperativeGroup>
 <xsl:if test="contains(MainMember/@cdr:ref,'CDR')">
  <xsl:variable name="CopGroupID" select="MainMember/@cdr:ref"/>
