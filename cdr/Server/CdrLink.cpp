@@ -15,9 +15,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.2 2000-09-27 11:28:44 bkline Exp $
+ * $Id: CdrLink.cpp,v 1.3 2000-09-27 20:25:16 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/09/27 11:28:44  bkline
+ * Added CdrDelLinks() and findTargetDocTypes().
+ *
  * Revision 1.1  2000/09/26 19:04:26  ameyer
  * Initial revision
  *
@@ -883,7 +886,7 @@ void cdr::link::findTargetDocTypes(
         cdr::db::Connection&    conn,
         const cdr::String&      srcElem,
         const cdr::String&      srcDocType,
-        std::vector<int>        typeList)
+        std::vector<int>&       typeList)
 {
     std::string qry = "SELECT lt.target_doc_type"
                       "  FROM link_target lt,"

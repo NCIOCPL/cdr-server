@@ -1,10 +1,13 @@
 /*
- * $Id: CdrLink.h,v 1.2 2000-09-27 11:29:23 bkline Exp $
+ * $Id: CdrLink.h,v 1.3 2000-09-27 20:25:39 bkline Exp $
  *
  * Header for Link Module software - to maintain the link_net
  * table describing the link relationships among CDR documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/09/27 11:29:23  bkline
+ * Added CdrDelLinks() and findTargetDocTypes().
+ *
  * Revision 1.1  2000/09/26 19:05:00  ameyer
  * Initial revision
  *
@@ -262,7 +265,7 @@ namespace cdr {
     extern void findTargetDocTypes(cdr::db::Connection& conn,
                                    const String&        srcElem,
                                    const String&        srcDocType,
-                                   std::vector<int>     typeList);
+                                   std::vector<int>&    typeList);
   }
 }
 
