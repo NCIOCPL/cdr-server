@@ -578,9 +578,9 @@
       </th>
       </tr>
      </table>
+   
      
-      <!--<xsl:choose>
-       <xsl:when               test="Person/PersonLocations/
+       <xsl:if                test="Person/PersonLocations/
                                     OtherPracticeLocation 
                                     [@cdr:id=$OrgFrag]/
                                     SpecificPostalAddress"> 
@@ -590,20 +590,25 @@
       <th align='left' width='40%'>
       <xsl:text>&#xa0;&#xa0;&#xa0;Street</xsl:text>
       </th>
-            
+      </tr>
+      </table>
+
        <xsl:for-each           select="Person/PersonLocations/
                                        OtherPracticeLocation  
                                        [@cdr:id=$OrgFrag]/
-                                       SpecificPostalAddress">
-      
-        
+                                       SpecificPostalAddress/Street">
+      <table width='90%'>  
+      <tr>
+      <th align='left' width='40%'>
+      <xsl:text>&#xa0;&#xa0;</xsl:text>
+      </th>
       <td width='60%'>
-      <xsl:value-of            select="Street"/>
+      <xsl:value-of            select="."/>
       </td>
-      </xsl:for-each>
-      </tr>
+       </tr>
       </table>
-      
+      </xsl:for-each>
+     
       <xsl:for-each           select="Person/PersonLocations/
                                        OtherPracticeLocation  
                                        [@cdr:id=$OrgFrag]/
@@ -665,44 +670,76 @@
   </td>
   </tr>
   </table>
-  
-   <table width='90%'> 
+    <table width='90%'> 
    <tr>                      
    <th align='left' width='40%'>
    <xsl:text>&#xa0;&#xa0;&#xa0;Phone</xsl:text>
    </th>
    <td width='60%'>
    <xsl:value-of        select="../SpecificPhone"/>
-   <xsl:if test="../Phone/@Public">
+   <xsl:if test="../SpecificPhone/@Public">
    <xsl:text>(Public=</xsl:text>
    <xsl:value-of select="../SpecificPhone/@Public"/>
    <xsl:text>)</xsl:text>
    </xsl:if>
-   </td>
-   </tr>
-   </table>
-
-    <table width='90%'> 
+    <xsl:if  test="not(../SpecificPhone)">
+  <i>
+ <xsl:value-of select="Person/PersonLocations/OtherPracticeLocation[@cdr:id=$OrgFrag]/
+  OrganizationLocation/Organization/OrganizationLocations/
+   OrganizationLocation/Location/Phone"/>
+  </i>
+    <xsl:if test="Person/PersonLocations/OtherPracticeLocation[@cdr:id=$OrgFrag]/
+  OrganizationLocation/Organization/OrganizationLocations/
+   OrganizationLocation/Location/Phone/@Public">
+    <xsl:text> (Public=</xsl:text>
+    <xsl:value-of   select="Person/PersonLocations/OtherPracticeLocation[@cdr:id=$OrgFrag]/
+  OrganizationLocation/Organization/OrganizationLocations/
+   OrganizationLocation/Location/Phone/@Public"/>
+    <xsl:text>)</xsl:text>
+    </xsl:if>
+    </xsl:if>
+    </td>
+    </tr>
+    </table>
+       <table width='90%'> 
    <tr>                      
    <th align='left' width='40%'>
    <xsl:text>&#xa0;&#xa0;&#xa0;Toll Free Phone</xsl:text>
    </th>
    <td width='60%'>
    <xsl:value-of        select="../SpecificTollFreePhone"/>
+   <xsl:if  test="not(../SpecificTollFreePhone)">
+   <i>
+  <xsl:value-of  select="Person/PersonLocations/
+                         OtherPracticeLocation[@cdr:id=$OrgFrag]/
+                         OrganizationLocation/Organization/
+                         OrganizationLocations/
+                         OrganizationLocation/Location/TollFreePhone"/>
+   </i>
+   </xsl:if>
    </td>
    </tr>
    </table>
-   <table width='90%'> 
+    <table width='90%'> 
    <tr>                      
    <th align='left' width='40%'>
    <xsl:text>&#xa0;&#xa0;&#xa0;Fax</xsl:text>
    </th>
    <td width='60%'>
    <xsl:value-of        select="../SpecificFax"/>
+    <xsl:if test="not(../SpecificFax)">
+   <i>
+   <xsl:value-of select="Person/PersonLocations/
+                         OtherPracticeLocation[@cdr:id=$OrgFrag]/
+                         OrganizationLocation/Organization/
+                         OrganizationLocations/
+                         OrganizationLocation/Location/Fax"/>
+   </i>
+   </xsl:if>
    </td>
    </tr>
    </table>
-   <table width='90%'> 
+     <table width='90%'> 
    <tr>                      
    <th align='left' width='40%'>
    <xsl:text>&#xa0;&#xa0;&#xa0;Email</xsl:text>
@@ -717,8 +754,7 @@
    </td>
    </tr>
    </table>
-
-   <table width='90%'> 
+    <table width='90%'> 
    <tr>                      
    <th align='left' width='40%'>
    <xsl:text>&#xa0;&#xa0;&#xa0;URL</xsl:text>
@@ -727,14 +763,32 @@
    <xsl:value-of        select="../SpecificWebSite/@cdr:xref"/>
    <br />
    <xsl:value-of        select="../SpecificWebSite"/>
+    <xsl:if test="not(../SpecificWebSite)">
+   <i>
+   <xsl:value-of select="Person/PersonLocations/
+                         OtherPracticeLocation[@cdr:id=$OrgFrag]/
+                         OrganizationLocation/Organization/
+                         OrganizationLocations/
+                         OrganizationLocation/Location/WebSite/@cdr:xref"/>
+   </i>
+    <i>
+    <xsl:value-of select="Person/PersonLocations/
+                          OtherPracticeLocation[@cdr:id=$OrgFrag]/
+                          OrganizationLocation/Organization/
+                          OrganizationLocations/
+                          OrganizationLocation/Location/WebSite"/>
+   </i>
+   </xsl:if>
    </td>
    </tr>
    </table>
-
-  
- </xsl:when>-->
-  <!--<xsl:otherwise> -->
-   <table width='90%'>
+   <br />
+  </xsl:for-each>
+  </xsl:if>
+  <xsl:if             test="not(Person/PersonLocations/
+                            OtherPracticeLocation[@cdr:id=$OrgFrag]/
+                            SpecificPostalAddress)">  
+   <table width='90%'>     
    <tr>
    <th align ='left' width='40%'>
    <xsl:text>&#xa0;&#xa0;&#xa0;Street</xsl:text>
@@ -748,14 +802,22 @@
                               Organization/OrganizationLocations/
                               OrganizationLocation/Location/
                               PostalAddress/Street">
+   <xsl:variable name="OrgRef"  select="../../../../../@cdr:ref"/>
+   <xsl:variable   name="OrgID"  select="substring-after($OrgRef,'#')"/>
+    <xsl:if        test = "$OrgFrag =../../@cdr:id or $OrgID = ../../@cdr:id">
+  
+
    <tr>
    <th align='left' width='40%'>
    <xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text>
    </th>
    <td width='60%'>
+  <i>
  <xsl:value-of        select="."/>
+  </i>
   </td>
   </tr>
+  </xsl:if>
   </xsl:for-each>
   </table>
  
@@ -766,13 +828,20 @@
                               Organization/OrganizationLocations/
                               OrganizationLocation/Location/
                               PostalAddress">
+   <xsl:variable name="OrgRef"  select="../../../../@cdr:ref"/>
+   <xsl:variable   name="OrgID"  select="substring-after($OrgRef,'#')"/>
+   <xsl:if        test = "$OrgFrag =../@cdr:id or $OrgID = ../@cdr:id">
+                 
+
    <table width='90%'>   
    <tr>
    <th align='left' width='40%'>
    <xsl:text>&#xa0;&#xa0;&#xa0;City</xsl:text>
    </th>
    <td width='60%'>
+  <i>
  <xsl:value-of        select="City"/>
+  </i>
   </td>
   </tr>
   </table>
@@ -785,7 +854,9 @@
    <xsl:text>&#xa0;&#xa0;&#xa0;City Suffix</xsl:text>
    </th>
    <td width='60%'>
+  <i>
   <xsl:value-of        select="CitySuffix"/>
+  </i>
   </td>
   </tr>
   </table>
@@ -797,8 +868,10 @@
    <xsl:text>&#xa0;&#xa0;&#xa0;State/Political Unit</xsl:text>
    </th>
    <td width='60%'>
+   <i>
    <xsl:value-of        select="PoliticalSubUnit_State/
                                 PoliticalSubUnitFullName"/>
+  </i>
   </td>
   </tr>
   </table>
@@ -809,8 +882,10 @@
    <xsl:text>&#xa0;&#xa0;&#xa0;Country</xsl:text>
    </th>
    <td width='60%'>
+   <i>
    <xsl:value-of        select="Country/
                                 CountryFullName"/>
+   </i>
   </td>
   </tr>
   </table>
@@ -820,8 +895,9 @@
    <xsl:text>&#xa0;&#xa0;&#xa0;Zip/Postal Code</xsl:text>
    </th>
    <td width='60%'>
+    <i>
    <xsl:value-of        select="PostalCode_ZIP"/>
-        
+    </i>    
   </td>
   </tr>
   </table>
@@ -831,16 +907,21 @@
    <th align='left' width='40%'>
    <xsl:text>&#xa0;&#xa0;&#xa0;Phone</xsl:text>
    </th>
-   <td width='60%'>
-   <xsl:value-of        select="../Phone"/>
-   <xsl:if test="../Phone/@Public">
-   <xsl:text>(Public=</xsl:text>
-   <xsl:value-of select="../Phone/@Public"/>
-   <xsl:text>)</xsl:text>
-   </xsl:if>
-   </td>
-   </tr>
-   </table>
+    <td width='60%'>
+    <xsl:value-of  select="../../../../../../SpecificPhone"/>
+    <xsl:if test="../../../../../../SpecificPhone/@Public">
+    <xsl:text>(Public=</xsl:text>
+    <xsl:value-of select="../../../../../../SpecificPhone/@Public"/>
+    <xsl:text>)</xsl:text>
+    </xsl:if>
+    <xsl:if  test="not(../../../../../../SpecificPhone)">
+    <i>
+    <xsl:value-of  select="../Phone"/>
+    </i>
+    </xsl:if>
+    </td>
+    </tr>
+    </table>
 
     <table width='90%'> 
    <tr>                      
@@ -848,7 +929,11 @@
    <xsl:text>&#xa0;&#xa0;&#xa0;Toll Free Phone</xsl:text>
    </th>
    <td width='60%'>
-   <xsl:value-of        select="../TollFreePhone"/>
+   <xsl:value-of  select="../../../../../../SpecificTollFreePhone"/>
+   <xsl:if  test="not(../../../../../../SpecificTollFreePhone)">
+   <i><xsl:value-of  select="../TollFreePhone"/>
+   </i>
+   </xsl:if>
    </td>
    </tr>
    </table>
@@ -858,7 +943,11 @@
    <xsl:text>&#xa0;&#xa0;&#xa0;Fax</xsl:text>
    </th>
    <td width='60%'>
-   <xsl:value-of        select="../Fax"/>
+    <xsl:value-of  select="../../../../../../SpecificFax"/>
+    <xsl:if  test="not(../../../../../../SpecificFax)">
+    <i><xsl:value-of  select="../Fax"/>
+   </i>
+    </xsl:if>
    </td>
    </tr>
    </table>
@@ -868,10 +957,10 @@
    <xsl:text>&#xa0;&#xa0;&#xa0;Email</xsl:text>
    </th>
    <td width='60%'>
-   <xsl:value-of        select="../Email"/>
-   <xsl:if test="../Email/@Public">
+   <xsl:value-of  select="../../../../../../SpecificEmail"/>
+   <xsl:if test="../../../../../../SpecificEmail/@Public">
    <xsl:text>(Public=</xsl:text>
-   <xsl:value-of select="../Email/@Public"/>
+   <xsl:value-of select="../../../../../../SpecificEmail/@Public"/>
    <xsl:text>)</xsl:text>
    </xsl:if>
    </td>
@@ -884,13 +973,22 @@
    <xsl:text>&#xa0;&#xa0;&#xa0;URL</xsl:text>
    </th>
    <td width='60%'>
-   <xsl:value-of        select="../WebSite/@cdr:xref"/>
-   <xsl:text>&#xa0;</xsl:text><br />
-   <xsl:value-of        select="../WebSite"/>
+    <xsl:value-of  select="../../../../../../SpecificWebSite/@cdr:xref"/>
+    <xsl:text>&#xa0;&#xa0;</xsl:text><br />
+    <xsl:value-of  select="../../../../../../SpecificWebSite"/>
+    <xsl:if  test="not(../../../../../../SpecificWebSite)">
+   <i><xsl:value-of  select="../WebSite/@cdr:xref"/>
+    <xsl:text>&#xa0;&#xa0;</xsl:text><br />
+    <xsl:value-of  select="../WebSite"/>
+    </i>
+    </xsl:if>
    </td>
    </tr>
    </table>
+   </xsl:if>
+   <br />
    </xsl:for-each>
+   </xsl:if>
    </xsl:for-each>
 
 
