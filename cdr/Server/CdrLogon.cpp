@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLogon.cpp,v 1.6 2002-04-10 14:32:14 bkline Exp $
+ * $Id: CdrLogon.cpp,v 1.7 2002-06-07 13:54:06 bkline Exp $
  *
  * Opens a new CDR session.
  *
@@ -15,6 +15,9 @@
  *  </CdrLogonResp>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2002/04/10 14:32:14  bkline
+ * Added logging of failed login attempts.
+ *
  * Revision 1.5  2000/06/23 15:28:01  bkline
  * Fixed bug which was causing the size of the session.name column to be
  * exceeded.
@@ -57,7 +60,7 @@ cdr::String cdr::logon(cdr::Session& session,
     }
 
     // Look up the user in the database.
-    static const char selectQuery[] = "SELECT id, password "
+    static const char selectQuery[] = "SELECT id, name, password "
                                         "FROM usr "  
                                        "WHERE name = ?";
     cdr::db::PreparedStatement select = conn.prepareStatement(selectQuery);
@@ -68,8 +71,15 @@ cdr::String cdr::logon(cdr::Session& session,
                 L"name: " + userName + "; password: " + password);
         throw cdr::Exception(L"Invalid logon credentials");
     }
-    int id = rs.getInt(1);
-    cdr::String dbPassword = rs.getString(2);
+    int id                 = rs.getInt(1);
+    cdr::String dbName     = rs.getString(2);
+    cdr::String dbPassword = rs.getString(3);
+    if (userName != dbName) {
+        cdr::log::pThreadLog->Write(
+                L"Failed logon attempt (user name case mismatch)",
+                L"user typed: " + userName + "; name in database: " + dbName);
+        throw cdr::Exception(L"Invalid logon credentials");
+    }
     if (password != dbPassword) {
         cdr::log::pThreadLog->Write(L"Failed logon attempt (invalid password)",
                 L"name: " + userName + "; password: " + password);
@@ -80,7 +90,7 @@ cdr::String cdr::logon(cdr::Session& session,
     char idBuf[256];
     unsigned long now = time(0);
     unsigned long ticks = clock();
-        static char randomChars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    static char randomChars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     static size_t nRandomChars = sizeof randomChars - 1;
     srand(ticks);
     sprintf(idBuf, "%lX-%06lX-%03d-%c%c%c%c%c%c%c%c%c%c%c%c",
