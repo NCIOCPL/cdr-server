@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.3 2000-05-19 00:07:22 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.4 2000-05-23 18:22:50 mruben Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/05/19 00:07:22  bkline
+ * Added required attributes to <CdrDoc> element.  Fixed control section.
+ *
  * Revision 1.2  2000/05/17 12:55:55  bkline
  * Removed code to process columns which are no longer present in the
  * document table.
@@ -182,3 +185,63 @@ cdr::String fixString(const cdr::String& s)
     }
     return fs;
 }
+
+/**
+ * Processes CdrGetDoc command
+ *
+ * This is currently simply a passthrough to getDocString.  More work is needed
+ * to implement full functionality
+ *
+ */
+cdr::String cdr::getDoc(cdr::Session& session,
+                        const cdr::dom::Node& commandNode,
+                        cdr::db::Connection& dbConnection)
+{
+  cdr::String id;
+  cdr::String version = L"0";
+  cdr::String lock = "N";
+  cdr::String user = "";
+  
+  // extract command arguments
+  for (cdr::dom::Node child = commandNode.getFirstChild();
+       child != NULL;
+       child = child.getNextSibling())
+  {
+    if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE)
+    {
+      cdr::String name = child.getNodeName();
+      if (name == L"DocId")
+        id = cdr::dom::getTextContent(child);
+      else
+      if (name == L"DocVersion")
+      {
+        version = cdr::dom::getTextContent(child);
+        if (version != L"0" && version != L"Current" && version != L"")
+          throw cdr::Exception(L"CdrGetDoc for noncurrent not yet supported");
+      }
+      else
+      if (name == L"Lock")
+      {
+        lock = cdr::dom::getTextContent(child);
+        if (lock != L"N")
+          throw cdr::Exception(L"CdrGetDoc locking not yet supported: lock=/"
+                               + lock + L"/");
+      }
+      else
+      if (name == L"UserId")
+        user = cdr::dom::getTextContent(child);
+      if (name == L"DocOffset")
+        throw cdr::Exception(L"CdrGetDoc offset not yet supported");
+      if (name == L"DocMaxLength")
+        throw cdr::Exception(L"CdrGetDoc length not yet supported");
+    }
+  }
+  return L"<CdrGetDocResp>\n<DocId>" + id
+       + L"</DocId>\n<DocVersion>" + version
+       + L"</DocVersion>\n<Lock>" + lock
+       + L"</Lock><UserName>" + user
+       + L"</Username>\n"
+       + getDocString(id, dbConnection)
+       + L"</CdrGetDocResp>\n";
+}
+
