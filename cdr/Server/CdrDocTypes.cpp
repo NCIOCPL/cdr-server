@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDocTypes.cpp,v 1.8 2001-06-28 17:38:17 bkline Exp $
+ * $Id: CdrDocTypes.cpp,v 1.9 2001-11-06 21:40:32 bkline Exp $
  *
  * Support routines for CDR document types.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2001/06/28 17:38:17  bkline
+ * Added method getCssFiles().
+ *
  * Revision 1.7  2001/06/12 11:07:58  bkline
  * Added code to report linking elements to the caller of CdrGetDocType.
  *
@@ -56,7 +59,10 @@ cdr::String cdr::listDocTypes(Session&          session,
 {
     // Submit the query to the database
     cdr::db::Statement s = conn.createStatement();
-    cdr::db::ResultSet r = s.executeQuery("SELECT name FROM doc_type");
+    cdr::db::ResultSet r = s.executeQuery("   SELECT name         "
+                                          "     FROM doc_type     "
+                                          "    WHERE active = 'Y' "
+                                          " ORDER BY name         ");
     
     // Pull in the names from the result set.
     cdr::String response;
