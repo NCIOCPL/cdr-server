@@ -1,9 +1,12 @@
 /*
- * $Id: CdrRegEx.cpp,v 1.1 2000-05-03 15:19:14 bkline Exp $
+ * $Id: CdrRegEx.cpp,v 1.2 2002-03-03 14:43:34 bkline Exp $
  *
  * Implementation of CDR wrapper for regular expression handling.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/05/03 15:19:14  bkline
+ * Initial revision
+ *
  */
 
 #ifndef UNICODE
@@ -88,7 +91,9 @@ bool cdr::RegEx::match(const wchar_t* what)
 
 bool cdr::RegEx::match(const cdr::String& what)
 {
-    jm::wcmatch m;
+    //jm::wcmatch m;
+    jm::reg_match<std::basic_string<wchar_t>::const_iterator,
+                  jm::wregex::alloc_type> m;
     return jm::query_match(what, m, *this);
 }
 
