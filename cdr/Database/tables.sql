@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.98 2004-10-07 20:43:31 bkline Exp $
+ * $Id: tables.sql,v 1.99 2004-11-02 22:42:20 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.98  2004/10/07 20:43:31  bkline
+ * Added generic tables to support import of documents from external sources
+ * (based on the more special-purpose tables for CT.Gov imports).
+ *
  * Revision 1.97  2004/08/10 15:08:55  bkline
  * Added comment for new auth_action column.
  *
@@ -575,13 +579,13 @@ CREATE TABLE active_status
 GO
 
 /* 
- * Unit of storage managed by the Central Database Repository.  There will 
- * be optionally one foreign key reference to this table from either the 
- * url table or the doc_blob table, but not both.  The all_docs tables
- * contains all rows, regardless of status.  The document view excludes rows
- * which have been marked as deleted (active_status of 'D').
+ * Unit of storage managed by the Central Database Repository.  One row
+ * contains one XML document - though that document may be a small 
+ * metadata description of a larger multimedia or other blob.
  *
- * NOTE: the url table is no longer used.
+ * The all_docs tables contains all rows for all documents, regardless
+ * of their status.  The "document" view excludes those all_docs rows
+ * that have been marked as deleted (active_status of 'D').
  *
  *           id  automatically generated primary key for the document table
  *   val_status  foreign key reference into the doc_status table
@@ -629,6 +633,7 @@ GO
  * Selection by document type optimization.
  */
 CREATE INDEX doc_doc_type_idx ON all_docs(doc_type, active_status)
+GO
 
 /*
  * Index needed to make title searches for documents more efficient.
@@ -712,15 +717,76 @@ CREATE TABLE checkout
 GO
 
 /* 
- * Non-XML data for document. 
+ * Non-XML data for document.
  *
- *           id  identification of the document to which this data belongs
+ * Blobs and documents are partly independent.  A new blob, with a new
+ * id, may be associated with an existing document.  The new blob_id
+ * replaces the previous blob_id.  The old blob will still be associated
+ * with older versions of the XML document.  If there were no stored
+ * versions, then the new blob replaces the old one and the blob_id
+ * stays the same.
+ *
+ * However, a blob may only be associated with one current working
+ * document - its XML metada.  And a current working document may 
+ * only be associated with one blob.  Other documents may reference
+ * a blob by linking to its associated XML metadata.
+ *
+ *           id  unique id of this blob, referenced by
+ *                doc_blob_usage.blob_id and version_blob_usage.blob_id.
  *         data  binary image of the document's unstructured data
  */
 CREATE TABLE doc_blob
-         (id INTEGER NOT NULL REFERENCES all_docs,
-        data IMAGE   NOT NULL,
- PRIMARY KEY (id))
+         (id INTEGER IDENTITY PRIMARY KEY,
+        data IMAGE   NOT NULL)
+GO
+
+/*
+ * Associates a blob with the document that describes it.
+ *
+ * A blob can only be associated with one document, though it may be
+ * referenced by many.  A reference from a document to a blob consists
+ * of a linking element inside the document, linking to the doc_id in
+ * this table for the blob.
+ *
+ *      doc_id  id of the metadata document for this blob.
+ *     blob_id  id of the blob in the doc_blob table.
+ */
+CREATE TABLE doc_blob_usage
+       (doc_id INTEGER UNIQUE REFERENCES all_docs,
+       blob_id INTEGER UNIQUE REFERENCES doc_blob)
+GO
+/*
+ * Indexes for access by either identifier.
+ * Table may be small enough that this isn't helpful, but just in
+ * case it grows.
+ */
+CREATE INDEX doc_blob_doc_idx ON doc_blob_usage(doc_id)
+CREATE INDEX doc_blob_blob_idx ON doc_blob_usage(blob_id)
+GO
+
+/*
+ * Associates a blob with a version of a document that describes it.
+ * When a document associated with a blob (i.e., a blob metadata document)
+ * is versioned, we create an entry in this table indicating that the
+ * version references this particular blob.
+ * If the blob changes, a new doc_blob will be created and the doc_blob_usage
+ * table will refer to the new blob.  But the version_blob_usage entry
+ * will remain unchanged.  The old version still references the old blob.
+ *
+ *      doc_id  id of the metadata document for this blob.
+ * doc_version  version number.
+ *     blob_id  id of the blob in the doc_blob table.
+ */
+CREATE TABLE version_blob_usage
+       (doc_id INTEGER REFERENCES all_docs,
+   doc_version INTEGER,
+       blob_id INTEGER REFERENCES doc_blob)
+GO
+/*
+ * Indexes for access.
+ */
+CREATE INDEX ver_blob_doc_idx ON version_blob_usage(doc_id, doc_version)
+CREATE INDEX ver_blob_blob_idx ON version_blob_usage(blob_id)
 GO
 
 /* 
@@ -872,7 +938,6 @@ GO
  *               for unstructured documents this contains tagged textual
  *               information associated with the document (for example, the
  *               standard caption for an illustration)
- *         data  binary image of the documents unstructured data
  *      comment  optional free-text description of additional characteristics
  *               of the document
  */
@@ -888,7 +953,6 @@ CREATE TABLE doc_version
         doc_type INTEGER      NOT NULL REFERENCES doc_type,
            title VARCHAR(255) NOT NULL,
              xml NTEXT        NOT NULL,
-            data IMAGE            NULL,
          comment VARCHAR(255)     NULL,
      PRIMARY KEY (id, num))
 GO
