@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.62 2002-07-19 00:43:32 ameyer Exp $
+ * $Id: tables.sql,v 1.63 2002-07-19 20:43:20 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.62  2002/07/19 00:43:32  ameyer
+ * Changed status to string - more self documenting.
+ *
  * Revision 1.61  2002/07/18 23:34:45  ameyer
  * Added batch_job and batch_job_parm for non-publishing batch processing.
  *
@@ -1213,6 +1216,10 @@ GO
  *       doc_id  identification of document being processed.
  *  doc_version  part of foreign key into doc_version table.
  *      failure  set to 'Y' if document could not be published.
+ *     messages  optional description of any failures.
+ *      removed  flag indicating that instead of an export of a document,
+ *               this row refers to an instruction sent to Cancer.Gov
+ *               to remove the document from the web site.
  */
 CREATE TABLE pub_proc_doc
    (pub_proc INTEGER      NOT NULL  REFERENCES pub_proc,
@@ -1220,6 +1227,7 @@ CREATE TABLE pub_proc_doc
  doc_version INTEGER      NOT NULL,
      failure CHAR             NULL,
     messages NTEXT            NULL,
+     removed CHAR(1)          NULL DEFAULT 'N',
   CONSTRAINT pub_proc_doc_fk        PRIMARY KEY(pub_proc, doc_id, doc_version),
   CONSTRAINT pub_proc_doc_fk_docver FOREIGN KEY(doc_id, doc_version) 
                                     REFERENCES doc_version)
@@ -1456,6 +1464,7 @@ AS
                         ON action.id = audit_trail.action
                      WHERE audit_trail.document = d.id
                        AND action.name = 'MODIFY DOCUMENT')
+GO
 
 /*
  * Used by New Documents with Publication Status report.
@@ -1500,6 +1509,7 @@ LEFT OUTER JOIN doc_version v
                           WHERE id = d.id)
 LEFT OUTER JOIN usr vu
              ON vu.id = v.usr
+GO
 
 /*
  * Used for finding publishing jobs for licensees and Cancer.gov.
@@ -1513,6 +1523,7 @@ AS
      WHERE document.title = 'Primary'
        AND pub_proc.status = 'Success'
        AND pub_proc.completed IS NOT NULL
+GO
 
 CREATE VIEW primary_pub_doc
 AS
@@ -1520,4 +1531,17 @@ AS
       FROM pub_proc_doc
       JOIN primary_pub_job
         ON pub_proc_doc.pub_proc = primary_pub_job.id
+GO
 
+/*
+ * Table used to remember the set of documents which Cancer.Gov has.
+ *
+ *           id  primary key of document sent to Cancer.Gov.
+ *     pub_proc  identifies job which sent the document to Cancer.Gov.
+ *          xml  copy of the filtered document sent to Cancer.Gov.
+ */
+CREATE TABLE pub_proc_cg
+         (id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs,
+    pub_proc INTEGER NOT NULL REFERENCES pub_proc,
+         xml NTEXT   NOT NULL)
+GO
