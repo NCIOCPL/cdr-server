@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!--
-    $Id: GlossarySchema.xml,v 1.15 2003-04-23 14:32:07 bkline Exp $
+    $Id: GlossarySchema.xml,v 1.16 2003-08-14 18:01:10 bkline Exp $
 
     $Log: not supported by cvs2svn $
+    Revision 1.15  2003/04/23 14:32:07  bkline
+    Added two new values for TermSource.
+
     Revision 1.14  2003/04/09 19:06:37  bkline
     Made definition elements multiply occurring, and added optional
     Audience attribute to them.  Also added optional Dictionary
@@ -117,28 +120,34 @@
     <attribute       name            = 'xmlns:cdr'
                      type            = 'anyURI'
                      minOccurs       = '0'/>
-    <attribute       name            = 'Dictionary'
-                     type            = 'Exclude'
-                     minOccurs       = '0'/>
   </complexType>
 
-  <complexType       name            = 'GlossaryDefinition'
+  <complexType       name            = 'GlossaryDefinition'>
+    <sequence>
+      <element       name            = 'DefinitionText'
+                     type            = 'GlossaryDefinitionText'/>
+      <element       name            = 'Dictionary'
+                     type            = 'GlossaryDictionary'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'Audience'
+                     type            = 'GlossaryAudience'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'GlossaryDefinitionText'
                      mixed           = 'true'>
     <choice          minOccurs       = '0'
                      maxOccurs       = 'unbounded'>
       <group         ref             = 'PhraseElements'/>
       <group         ref             = 'CommonTextElements'/>
     </choice>
-    <attribute       name            = 'Audience'
-                     type            = 'HealthProfessional'
-                     minOccurs       = '0'/>
     <attribute       name            = 'cdr:id'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
-    <attribute       name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
   </complexType>
+
 
 <!--=================================================================-->
 <!--                         SIMPLE TYPES                            -->
@@ -177,15 +186,16 @@
     </restriction>
   </simpleType>
 
-  <simpleType        name            = 'Exclude'>
+  <simpleType        name            = 'GlossaryDictionary'>
     <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Exclude'/>
+      <enumeration   value           = 'Cancer.gov'/>
     </restriction>
   </simpleType>
 
-  <simpleType        name            = 'HealthProfessional'>
+  <simpleType        name            = 'GlossaryAudience'>
     <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'HealthProfessional'/>
+      <enumeration   value           = 'Health professional'/>
+      <enumeration   value           = 'Patient'/>
     </restriction>
   </simpleType>
 
