@@ -18,9 +18,12 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.10 2002-04-09 22:36:36 bkline Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.11 2002-05-07 19:31:29 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2002/04/09 22:36:36  bkline
+ * Fixed reversed-logic error in test for conformance to a custom rule.
+ *
  * Revision 1.9  2002/03/25 21:33:50  bkline
  * Fixed an uninitialized pointer bug in parseRule().
  *
@@ -213,7 +216,7 @@ static cdr::link::LinkChkTargContains *findOrMakeRuleTree (
                 s_parsedRule[s_parsedCount++] = ruleTree;
             }
         }
-        else 
+        else
             throw cdr::Exception (
                  L"Timeout waiting for mutex for link proc parse tree object");
     }
@@ -304,7 +307,8 @@ static void skipSpace (const char **stringpp) {
 /**
  * Get a tag from a Tag Rel Value string.
  *
- * @param  stringpp     Ptr to ptr to string.  Update to point past tag.
+ * @param  stringpp     Ptr to ptr to null terminated string.
+ *                      Update to point past tag.
  *
  * @return              Tag string for search of query_term table.
  * @throws              CdrException if no valid tag found.
@@ -340,6 +344,8 @@ static std::string parseTag (const char **stringpp)
         s_nmchars['-'] = true;
         s_nmchars['_'] = true;
         s_nmchars['/'] = true;  // Not a tag char, but legal separator
+
+        s_first_time = false;
     }
 
     // Initialize from passed ptr to ptr
@@ -398,7 +404,8 @@ static cdr::link::LinkChkRelator parseRelator (const char **stringpp)
 /**
  * Get a quote delimited value from a Tag Rel Value string.
  *
- * @param  stringpp     Ptr to ptr to string.  Update to point past value.
+ * @param  stringpp     Ptr to ptr to null terminated string.
+ *                      Update to point past quote delimited value.
  *
  * @return              Relator constant.
  * @throws              CdrException if no quote delimited string found.
@@ -461,7 +468,8 @@ static std::string parseValue (const char **stringpp)
 /**
  * Get a boolean operator connecting two or more tag/rel/value strings.
  *
- * @param  stringpp     Ptr to ptr to string.  Update to point past operator.
+ * @param  stringpp     Ptr to ptr to null terminated string.
+ *                      Update to point past operator.
  *
  * @return              Operator constant.
  * @throws              CdrException if no valid operator found.
@@ -470,20 +478,36 @@ static std::string parseValue (const char **stringpp)
 static cdr::link::LinkChkBoolOp parseBoolOp (const char **stringpp)
 {
     // Simple comparisons
-    if (**stringpp == '|') {
-        while (**stringpp == '|')
-            ++*stringpp;
-        return cdr::link::boolOr;
-    }
-    if (**stringpp == '&') {
-        while (**stringpp == '&')
-            ++*stringpp;
-        return cdr::link::boolAnd;
-    }
+    const char *p = *stringpp;
+    cdr::link::LinkChkBoolOp op;
 
-    // No match where one was required
-    throw cdr::Exception (L"System Error: Link check expression "
-                          L"missing boolean operator");
+    if (*p == '|') {
+        while (*p == '|')
+            ++p;
+        op = cdr::link::boolOr;
+    }
+    else if (*p == '&') {
+        while (*p == '&')
+            ++p;
+        op = cdr::link::boolAnd;
+    }
+    else if (!strnicmp (p, "and", 3)) {
+         p += 3;
+         op = cdr::link::boolAnd;
+    }
+    else if (!strnicmp (p, "or", 2)) {
+         p += 2;
+         op = cdr::link::boolOr;
+    }
+    else
+        // No match where one was required
+        throw cdr::Exception (L"System Error: Link check expression "
+                              L"missing boolean operator");
+
+    // Point past operator
+    *stringpp = p;
+
+    return op;
 }
 
 
@@ -542,11 +566,18 @@ static cdr::link::LinkChkPair *parseRule (const char **rulepp)
 
         // Open parens requires a descent
         if (**rulepp == '(') {
+            // Skip over the paren
+            ++*rulepp;
+
             // Go deeper to get the left node, might itself go deeper
             leftNode = parseRule (rulepp);
+
+            // Should now see the matching right paren
             if (**rulepp != ')')
                 throw cdr::Exception (L"System Error: Link check expression "
                                       L"syntax error");
+            // Skip over it
+            ++*rulepp;
         }
         else
             // There should be a tag/rel/value expression here
@@ -556,8 +587,12 @@ static cdr::link::LinkChkPair *parseRule (const char **rulepp)
 
         // There might only have been one expression, or their might
         //   be more than one, connected by boolean operators
-        // If only one, we're now at the end of the string
-        if (**rulepp) {
+        // We are done this invocation of parseRule if:
+        //   We reached the end of string, ending the entire parse, or
+        //   We reached a right paren, ending this subexpression
+        //     In that case we'll un-recurse
+        //     Caller will see the right paren and act on it
+        if (**rulepp && **rulepp != ')') {
 
             // There has to be a connector here, if not, an excecption
             boolConnector = parseBoolOp (rulepp);
@@ -569,8 +604,10 @@ static cdr::link::LinkChkPair *parseRule (const char **rulepp)
             //   parse it correctly if it's well formed.
             rightNode = parseRule (rulepp);
         }
-        // Continue until end of rule string
-    } while (**rulepp);
+        // Continue until end of rule subexpression or end of string
+    } while (**rulepp && **rulepp != ')');
+
+    skipSpace (rulepp);
 
     // If we got this far, no syntax errors
     return new cdr::link::LinkChkPair (leftNode, rightNode, boolConnector);
