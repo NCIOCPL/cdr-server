@@ -735,32 +735,49 @@
    <xsl:param                       name = "diagnosisID"/>
    <xsl:param                       name = "diagnosisDoc"/>
 
-   <xsl:if                          test = "$diagnosisDoc/Term/
-                                            TermRelationship/ParentTerm">
-    <xsl:if                         test = "$diagnosisDoc/Term/
-                                            TermType/TermTypeName = 
-                                            'Header term'">
-    <DiagnosisParent>
-     <xsl:attribute                 name = "ref">
-      <xsl:value-of               select = "$diagnosisDoc/Term/TermRelationship
-                                            ParentTerm/TermId/@cdr:ref"/>
-     </xsl:attribute>
-
-     <xsl:value-of                select = "$diagnosisDoc/Term/TermRelationship
-                                            ParentTerm/TermId"/>
-    </DiagnosisParent>
-    </xsl:if>
-
-
-  <!-- Once the parent term has been printed select the term to be
-       searched for the next level parent and call template again
-       =========================================================== -->
+  <!-- We need the Parent Term ID to be passed on for selecting the next
+       Term in the hirarchy
+       ================================================================= -->
     <xsl:variable                   name = "nextTermID"
                                   select = "$diagnosisDoc/Term/TermRelationship
                                              ParentTerm/TermId/@cdr:ref"/>
     <xsl:variable                   name = "nextTermDoc" 
                                   select = "document(concat
                                           ('cdrx:',$nextTermID, '/lastp'))"/>
+
+   <xsl:if                          test = "$diagnosisDoc/Term/
+                                            TermRelationship/ParentTerm">
+
+    <!-- The Parent Term is only printed if it is not of 
+         TermTypeName = Header term | Obsolete term
+         =============================================== -->
+    <xsl:if                         test = "not($nextTermDoc/Term/
+                                            TermType/TermTypeName = 
+                                            'Header term') and
+                                            not($nextTermDoc/Term/
+                                            TermType/TermTypeName = 
+                                            'Obsolete term')">
+     <DiagnosisParent>
+      <xsl:attribute                name = "ref">
+       <xsl:value-of              select = "$diagnosisDoc/Term/TermRelationship
+                                            ParentTerm/TermId/@cdr:ref"/>
+      </xsl:attribute>
+
+      <xsl:value-of               select = "$diagnosisDoc/Term/TermRelationship
+                                            ParentTerm/TermId"/>
+     </DiagnosisParent>
+    </xsl:if>
+
+
+  <!-- Once the parent term has been printed select the term to be
+       searched for the next level parent and call template again
+       =========================================================== -->
+    <!-- xsl:variable                   name = "nextTermID"
+                                  select = "$diagnosisDoc/Term/TermRelationship
+                                             ParentTerm/TermId/@cdr:ref"/>
+    <xsl:variable                   name = "nextTermDoc" 
+                                  select = "document(concat
+                                          ('cdrx:',$nextTermID, '/lastp'))"/ -->
 
     <xsl:call-template              name = "upcodeDiagnosis">
 
