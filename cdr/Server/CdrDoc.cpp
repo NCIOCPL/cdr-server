@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.12 2001-05-25 02:30:41 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.13 2001-06-12 19:53:27 ameyer Exp $
  *
  */
 
@@ -38,6 +38,8 @@ static void auditDoc (cdr::db::Connection&, int, int, cdr::String,
 static void addSingleQueryTerm (cdr::db::Connection&, int,
                                 cdr::String&, cdr::String&);
 
+static void delQueryTerms (cdr::db::Connection&, int);
+
 // Constructor for a CdrDoc
 // Extracts the various elements from the CdrDoc for database update
 cdr::CdrDoc::CdrDoc (
@@ -47,8 +49,15 @@ cdr::CdrDoc::CdrDoc (
     Comment (false),
     BlobData (false),
     ValDate (false),
+    parsed (false),
+    malformed (false),
     Id (0),
-    DocType (0) {
+    DocType (0),
+    ActiveStatus (L"A"),
+    Xml (L""),
+    filteredXml (L""),
+    Title (L"")
+{
 
     // Get doctype and id from CdrDoc attributes
     const cdr::dom::Element& docElement =
@@ -86,7 +95,7 @@ cdr::CdrDoc::CdrDoc (
     // Default values for control elements in the document table
     // All others are defaulted to NULL by cdr::String constructor
     ValStatus    = L"U";
-    Approved     = L"N";
+    ActiveStatus = L"A";
 
     // Pull out the parts of the document from the dom
     cdr::dom::Node child = docDom.getFirstChild ();
@@ -113,8 +122,13 @@ cdr::CdrDoc::CdrDoc (
                         else if (ctlTag == L"DocComment")
                             Comment = cdr::dom::getTextContent (ctlNode);
 
-                        else if (ctlTag == L"DocApproved")
-                            Approved = cdr::dom::getTextContent (ctlNode);
+                        else if (ctlTag == L"DocActiveStatus") {
+                            ActiveStatus = cdr::dom::getTextContent (ctlNode);
+                            if (ActiveStatus != L"A" && ActiveStatus != L"I")
+                                throw cdr::Exception(
+                                   L"CdrDoc: Unrecognized DocActiveStatus '" +
+                                   ActiveStatus + L"' - expecting 'A' or 'I'");
+                        }
 
                         // Everything else is ignored
                     }
@@ -154,6 +168,11 @@ cdr::CdrDoc::CdrDoc (
 
     // Check for absolutely required fields
     if (Title.size() == 0)
+        // XXXX CHECK THE doc_type table for a new column (not yet there)
+        // If present, it's the id of a filter to be used in constructing
+        //   the title from the document xml itself
+        // If not present, and no DocTitle passed, we have an error
+        // XXXX IMPLEMENT WHEN FILTERING IS READY
         throw cdr::Exception (L"CdrDoc: Missing required 'DocTitle' element");
     if (Xml.size() == 0)
         throw cdr::Exception (L"CdrDoc: Missing required 'Xml' element");
@@ -175,7 +194,7 @@ cdr::CdrDoc::CdrDoc (
     std::string query = "          SELECT d.val_status,"
                         "                 d.val_date,"
                         "                 d.title,"
-                        "                 d.approved,"
+                        "                 d.active_status,"
                         "                 d.doc_type,"
                         "                 d.xml,"
                         "                 d.comment,"
@@ -193,16 +212,24 @@ cdr::CdrDoc::CdrDoc (
     if (!rs.next())
         throw cdr::Exception(L"CdrDoc: Unable to load document " + TextId);
 
+    // Copy info into this object
     ValStatus   = rs.getString (1);
     ValDate     = rs.getString (2);
     Title       = cdr::entConvert (rs.getString (3));
-    Approved    = rs.getString (4);
+    ActiveStatus= rs.getString (4);
     DocType     = rs.getInt (5);
     Xml         = rs.getString (6);
     Comment     = cdr::entConvert (rs.getString (7));
     TextDocType = rs.getString (8);
     BlobData    = rs.getBytes (9);
     select.close();
+
+    // We haven't filtered this for insertion, deletion markup
+    filteredXml = L"";
+
+    // We have not parsed the xml yet and don't know of anything wrong with it
+    parsed    = false;
+    malformed = false;
 }
 
 
@@ -222,7 +249,7 @@ void cdr::CdrDoc::Store ()
             "INSERT INTO document ("
             "   val_status,"
             "   val_date,"
-            "   approved,"
+            "   active_status,"
             "   doc_type,"
             "   title,"
             "   xml,"
@@ -236,7 +263,7 @@ void cdr::CdrDoc::Store ()
             "UPDATE document "
             "  SET val_status = ?,"
             "      val_date = ?,"
-            "      approved = ?,"
+            "      active_status = ?,"
             "      doc_type = ?,"
             "      title = ?,"
             "      xml = ?,"
@@ -249,7 +276,7 @@ void cdr::CdrDoc::Store ()
     cdr::db::PreparedStatement docStmt = docDbConn.prepareStatement (sqlStmt);
     docStmt.setString (1, ValStatus);
     docStmt.setString (2, ValDate);
-    docStmt.setString (3, Approved);
+    docStmt.setString (3, ActiveStatus);
     docStmt.setInt    (4, DocType);
     docStmt.setString (5, Title);
     docStmt.setString (6, Xml);
@@ -530,7 +557,7 @@ static cdr::String CdrPutDoc (
 
         // Perform checkIn and (possibly) versioning
         cdr::checkIn (session, doc.getId(), dbConn,
-                      cmdPublishVersion ? L"A" : L"I",
+                      cmdPublishVersion ? L"Y" : L"N",
                       &cmdReason, vcAbandon);
 
         // If user wants to keep his lock on the document, we check it out
@@ -669,10 +696,7 @@ cdr::String cdr::delDoc (
 
         // Proceed with deletion
         // Begin by deleting all query terms pointing to this doc
-        std::string qQry = "DELETE query_term WHERE doc_id = ?";
-        cdr::db::PreparedStatement qSel = conn.prepareStatement (qQry);
-        qSel.setInt (1, docId);
-        cdr::db::ResultSet tRs = qSel.executeQuery();
+        delQueryTerms (conn, docId);
 
         // The document itself is not removed from the database, it
         //   is simply marked as deleted
@@ -703,7 +727,52 @@ cdr::String cdr::delDoc (
 
     // Terminate and return response
     return (resp + L"  </CdrDelDocResp>\n");
-}
+} // delDoc
+
+
+/**
+ * Determine whether the DocumentElement (top node of the parse
+ * tree is available, make it so if not.
+ */
+
+bool cdr::CdrDoc::parseAvailable ()
+{
+    cdr::String data;
+
+    // XXXX Invoke filter here to create filteredXml
+    if (filteredXml.size() == 0) {
+        ;
+    }
+
+    // Parse whatever is available
+    if (filteredXml.size() > 0)
+        data = filteredXml;
+    else if (Xml.size() > 0)
+        data = Xml;
+    else {
+        // Nothing to build a tree from
+        parseErrMsg = L"No XML in this document to parse";
+        return false;
+    }
+
+    // Build a parse tree
+    cdr::dom::Parser parser;
+    try {
+        parser.parse (data);
+        docElem = parser.getDocument().getDocumentElement();
+    }
+    catch (const cdr::dom::XMLException& e) {
+        parseErrMsg = e.getMessage();
+        return false;
+    }
+    catch (...) {
+        parseErrMsg = L"Unknown error parsing XML";
+        return false;
+    }
+
+    return true;
+
+} // parseAvailable
 
 
 /**
@@ -801,17 +870,11 @@ cdr::String cdr::reIndexDoc (
  */
 void cdr::CdrDoc::updateQueryTerms()
 {
-    // Step 0: sanity check.
+    // Sanity check.
     if (Id == 0 || DocType == 0)
         return;
 
-    // Step 1: clear out the existing rows.
-    cdr::db::Statement delStmt = docDbConn.createStatement();
-    char delQuery[80];
-    sprintf(delQuery, "DELETE query_term WHERE doc_id = %d", Id);
-    delStmt.executeUpdate(delQuery);
-
-    // Step 2: find out which paths get indexed.
+    // Find out which paths get indexed.
     cdr::db::Statement selStmt = docDbConn.createStatement();
     char selQuery[256];
     sprintf(selQuery, "SELECT path"
@@ -828,7 +891,7 @@ void cdr::CdrDoc::updateQueryTerms()
         }
     }
 
-    // Step 3: add rows for query terms.
+    // Add rows for query terms.
     if (!paths.empty()) {
         cdr::dom::Parser parser;
         parser.parse(Xml);
@@ -895,6 +958,7 @@ void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
 /**
  * Add a single query term + value to the database.
  *
+ *  @param conn         Connection string
  *  @param doc_id       Document id
  *  @param path         Absolute XPath path (element and attr ids) to this
  *                      value.
@@ -902,8 +966,8 @@ void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
  */
 
 static void addSingleQueryTerm (cdr::db::Connection& conn, int doc_id,
-                                cdr::String& path, cdr::String& value) {
-
+                                cdr::String& path, cdr::String& value)
+{
     // Add the absolute path to this term to the query table
     const char* insert = "INSERT INTO query_term(doc_id, path, value)"
                          "     VALUES(?,?,?)";
@@ -912,4 +976,21 @@ static void addSingleQueryTerm (cdr::db::Connection& conn, int doc_id,
     stmt.setString(2, path);
     stmt.setString(3, value);
     stmt.executeQuery();
+}
+
+/**
+ * Delete all query terms from the database.
+ *
+ * Called before updating them, or when a doc is deleted.
+ *
+ *  @param conn         Connection string
+ *  @param doc_id       Document id
+ */
+
+static void delQueryTerms (cdr::db::Connection& conn, int doc_id)
+{
+    cdr::db::Statement delStmt = conn.createStatement();
+    char delQuery[80];
+    sprintf(delQuery, "DELETE query_term WHERE doc_id = %d", doc_id);
+    delStmt.executeUpdate(delQuery);
 }
