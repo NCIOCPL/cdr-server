@@ -1,10 +1,13 @@
 
 /*
- * $Id: CdrGetUsr.cpp,v 1.5 2001-04-13 12:25:57 bkline Exp $
+ * $Id: CdrGetUsr.cpp,v 1.6 2002-11-21 18:59:15 ameyer Exp $
  *
  * Retrieves information about requested user.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2001/04/13 12:25:57  bkline
+ * Fixed typo in tag (UsrName -> UserName).
+ *
  * Revision 1.4  2000/12/28 13:27:17  bkline
  * Fixed typo in closing tag for CdrGetUsrResp.
  *
@@ -21,19 +24,16 @@
 #include "CdrCommand.h"
 #include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
+#include "CdrString.h"
 
 /**
  * Load the row from the usr table belonging to the specified user, as well as
  * the rows from the grp_usr table joined to the usr row.
  */
-cdr::String cdr::getUsr(cdr::Session& session, 
+cdr::String cdr::getUsr(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
-                        cdr::db::Connection& conn) 
+                        cdr::db::Connection& conn)
 {
-    // Make sure our user is authorized to retrieve group information.
-    if (!session.canDo(conn, L"GET USER", L""))
-        throw cdr::Exception(L"GET USER action not authorized for this user");
-
     // Extract the group name from the command.
     cdr::String usrName;
     cdr::dom::Node child = commandNode.getFirstChild();
@@ -72,6 +72,16 @@ cdr::String cdr::getUsr(cdr::Session& session,
     cdr::String email    = usrRs.getString(6);
     cdr::String phone    = usrRs.getString(7);
     cdr::String comment  = usrRs.getString(8);
+
+    // Make sure our user is authorized to retrieve this information.
+    // Any user can access his own info, but special authorization is
+    //   required to access other users' info.
+    // Note that user name info is case sensitive
+    cdr::String sessionUsr = session.getUserName();
+    if (uName != sessionUsr)
+        if (!session.canDo(conn, L"GET USER", L""))
+            throw cdr::Exception(
+                    L"GET USER action not authorized for this user");
 
     // Initialize a successful response.
     cdr::String response = cdr::String(L"  <CdrGetUsrResp>\n"
