@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.21 2002-04-04 19:06:12 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.22 2002-05-21 19:08:55 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2002/04/04 19:06:12  bkline
+ * Eliminated unused variable.  Fixed typo in comment.
+ *
  * Revision 1.20  2002/03/07 12:58:52  bkline
  * Added missing break statement in switch (message handler).
  *
@@ -94,6 +97,9 @@ using std::pair;
 using std::string;
 using std::vector;
 using std::wostringstream;
+
+static int getDocIdFromTitle(const cdr::String& title,
+                             cdr::db::Connection& connection);
 
 namespace
 {
@@ -265,21 +271,7 @@ namespace
       name.replace(idx, 11, doctype);
     }
 
-    string query = "SELECT id "
-                   "FROM document "
-                   "WHERE title=? "
-                   "GROUP BY id";
-
-    cdr::db::PreparedStatement select = connection.prepareStatement(query);
-    select.setString(1, name);
-    cdr::db::ResultSet rs = select.executeQuery();
-    if (!rs.next())
-      throw cdr::Exception(L"No document with title: " + name);
-
-    int id = rs.getInt(1);
-
-    if (rs.next())
-      throw cdr::Exception(L"Multiple documents with title: " + name);
+    int id = getDocIdFromTitle(name, connection);
 
     return getDocument(cdr::stringDocId(id), 0, connection, CdrFilterType);
   }
@@ -463,6 +455,19 @@ namespace
         {
           uid = spec;
           spec = L"";
+        }
+
+        // 21May2002 RMK: Added capability to resolve URI with DocTitle.
+        if (uid.find(L"name:") == 0)
+        {
+          cdr::String::size_type pos = uid.find(L"@@SLASH@@");
+          while (pos != uid.npos)
+          {
+            uid.replace(pos, 9, L"/");
+            pos = uid.find(L"@@SLASH@@");
+          }
+          int id = getDocIdFromTitle(uid.substr(5), connection);
+          uid = cdr::stringDocId(id);
         }
 
         if (!spec.empty())
@@ -744,6 +749,24 @@ cdr::String cdr::filterDocumentByScriptId (
   // Invoke existing function, passing the script
   return filterDocument (document, filterXml, connection, messages,
                          parms, doc_id);
+}
+
+int getDocIdFromTitle(const cdr::String& title,
+                      cdr::db::Connection& connection)
+{
+  const char* query = " SELECT id        "
+                      "   FROM document  "
+                      "  WHERE title = ? ";
+
+  cdr::db::PreparedStatement select = connection.prepareStatement(query);
+  select.setString(1, title);
+  cdr::db::ResultSet rs = select.executeQuery();
+  if (!rs.next())
+    throw cdr::Exception(L"No document with title", title);
+  int id = rs.getInt(1);
+  if (rs.next())
+    throw cdr::Exception(L"Multiple documents with title", title);
+  return id;
 }
 
 // Version that accepts filter document title
