@@ -1,9 +1,12 @@
 /*
- * $Id: xCdrCommand.cpp,v 1.6 2000-04-22 09:24:26 bkline Exp $
+ * $Id: xCdrCommand.cpp,v 1.7 2000-04-26 01:26:14 bkline Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/04/22 09:24:26  bkline
+ * Added user and group commands.
+ *
  * Revision 1.5  2000/04/21 13:57:11  bkline
  * Replaced stub for cdr::search().
  *
@@ -176,13 +179,13 @@ cdr::String cdr::delDoc(cdr::Session& session,
     return stub(L"DelDoc");
 }
 
+#if 0
 cdr::String cdr::validateDoc(cdr::Session& session, 
                              const cdr::dom::Node& commandNode,
                              cdr::db::Connection& dbConnection) {
     return stub(L"ValidateDoc");
 }
 
-#if 0
 cdr::String cdr::search(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
                         cdr::db::Connection& dbConnection) {
