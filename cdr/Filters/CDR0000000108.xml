@@ -405,7 +405,7 @@
        ============================================================== -->
   <xsl:template                 match = "GlossaryTermRef">
     <GlossaryTermRef>
-      <xsl:attribute        name = "href">
+      <xsl:attribute        name = "cdr:href">
        <xsl:value-of      select = "@cdr:href"/>
       </xsl:attribute>
       <xsl:apply-templates/>
@@ -692,19 +692,6 @@
    <xsl:param                       name = "termID"/>
    <xsl:param                       name = "termDoc"/>
 
-   <xsl:if                          test = "$termDoc/Term/
-                                            TermRelationship/ParentTerm">
-    <InterventionTypeParent>
-     <xsl:attribute                 name = "ref">
-      <xsl:value-of               select = "$termDoc/Term/TermRelationship
-                                            ParentTerm/TermId/@cdr:ref"/>
-     </xsl:attribute>
-
-     <xsl:value-of                select = "$termDoc/Term/TermRelationship
-                                            ParentTerm/TermId"/>
-    </InterventionTypeParent>
-
-
   <!-- Once the parent term has been printed select the term to be
        searched for the next level parent and call template again
        =========================================================== -->
@@ -715,8 +702,30 @@
                                   select = "document(concat
                                           ('cdrx:',$nextTermID, '/lastp'))"/>
 
-    <xsl:call-template              name = "upcodeTerm">
+   <xsl:if                          test = "$termDoc/Term/
+                                            TermRelationship/ParentTerm">
 
+    <!-- The Parent Term is only printed if it is not of 
+         TermTypeName = Header term | Obsolete term
+         =============================================== -->
+    <xsl:if                         test = "not($nextTermDoc/Term/
+                                            TermType/TermTypeName = 
+                                            'Header term') and
+                                            not($nextTermDoc/Term/
+                                            TermType/TermTypeName = 
+                                            'Obsolete term')">
+     <InterventionTypeParent>
+      <xsl:attribute                name = "ref">
+       <xsl:value-of              select = "$termDoc/Term/TermRelationship
+                                            ParentTerm/TermId/@cdr:ref"/>
+      </xsl:attribute>
+
+      <xsl:value-of               select = "$termDoc/Term/TermRelationship
+                                            ParentTerm/TermId"/>
+     </InterventionTypeParent>
+    </xsl:if>
+
+    <xsl:call-template              name = "upcodeTerm">
      <xsl:with-param                name = "termID"
                                   select = "$nextTermID"/>
      <xsl:with-param                name = "termDoc"
@@ -768,19 +777,7 @@
      </DiagnosisParent>
     </xsl:if>
 
-
-  <!-- Once the parent term has been printed select the term to be
-       searched for the next level parent and call template again
-       =========================================================== -->
-    <!-- xsl:variable                   name = "nextTermID"
-                                  select = "$diagnosisDoc/Term/TermRelationship
-                                             ParentTerm/TermId/@cdr:ref"/>
-    <xsl:variable                   name = "nextTermDoc" 
-                                  select = "document(concat
-                                          ('cdrx:',$nextTermID, '/lastp'))"/ -->
-
     <xsl:call-template              name = "upcodeDiagnosis">
-
      <xsl:with-param                name = "diagnosisID"
                                   select = "$nextTermID"/>
      <xsl:with-param                name = "diagnosisDoc"
@@ -800,19 +797,6 @@
    <xsl:param                       name = "conditionID"/>
    <xsl:param                       name = "conditionDoc"/>
 
-   <xsl:if                          test = "$conditionDoc/Term/
-                                            TermRelationship/ParentTerm">
-    <ConditionParent>
-     <xsl:attribute                 name = "ref">
-      <xsl:value-of               select = "$conditionDoc/Term/TermRelationship
-                                            ParentTerm/TermId/@cdr:ref"/>
-     </xsl:attribute>
-
-     <xsl:value-of                select = "$conditionDoc/Term/TermRelationship
-                                            ParentTerm/TermId"/>
-    </ConditionParent>
-
-
   <!-- Once the parent term has been printed select the term to be
        searched for the next level parent and call template again
        =========================================================== -->
@@ -823,8 +807,30 @@
                                   select = "document(concat
                                           ('cdrx:',$nextTermID, '/lastp'))"/>
 
-    <xsl:call-template              name = "upcodeCondition">
+   <xsl:if                          test = "$conditionDoc/Term/
+                                            TermRelationship/ParentTerm">
 
+    <!-- The Parent Term is only printed if it is not of 
+         TermTypeName = Header term | Obsolete term
+         =============================================== -->
+    <xsl:if                         test = "not($nextTermDoc/Term/
+                                            TermType/TermTypeName = 
+                                            'Header term') and
+                                            not($nextTermDoc/Term/
+                                            TermType/TermTypeName = 
+                                            'Obsolete term')">
+     <ConditionParent>
+      <xsl:attribute                name = "ref">
+       <xsl:value-of              select = "$conditionDoc/Term/TermRelationship
+                                            ParentTerm/TermId/@cdr:ref"/>
+      </xsl:attribute>
+
+      <xsl:value-of               select = "$conditionDoc/Term/TermRelationship
+                                            ParentTerm/TermId"/>
+     </ConditionParent>
+    </xsl:if>
+
+    <xsl:call-template              name = "upcodeCondition">
      <xsl:with-param                name = "conditionID"
                                   select = "$nextTermID"/>
      <xsl:with-param                name = "conditionDoc"
