@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.56 2002-04-04 19:04:47 bkline Exp $
+# $Id: Makefile,v 1.57 2002-06-12 20:24:35 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.56  2002/04/04 19:04:47  bkline
+# Turned debugging symbols back on for standard build.
+#
 # Revision 1.55  2002/04/04 01:06:56  bkline
 # Added CdrPublish module.
 #
@@ -197,11 +200,13 @@ CDR    =$(DRV)/cdr
 XML4C  =$(DRV)/usr/xml4c
 SABLOT =$(DRV)/usr/sablot
 REGEX  =$(DRV)/usr/regex
+VCVER  =6
+REVER  =vc$(VCVER)
 CDRINC =.
 INC    =-I$(XML4C)/include -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)
 CFLAGS =$(INC) -W3 -GX -MDd -GR -nologo -Zi #-D_NDEBUG
 LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
-        /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/vc6 /DEBUG
+        /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/$(REVER) /DEBUG
 CC     =cl
 BISON  =bison
 LN     =link
@@ -299,16 +304,16 @@ LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
 # Targets
 #--------------------------------------------------------------------------
 all: cvsupdate
-	$(MAKE) DRV=$(DRV) _all
+	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) _all
 
 cvsupdate:
 	$(CVSUPD)
 
 service: cvsupdate
-	$(MAKE) DRV=$(DRV) $(SERVICE)
+	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) $(SERVICE)
 
 install: cvsupdate
-	$(MAKE) DRV=$(DRV) _install
+	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) _install
 
 _all: init CdrServer.exe CdrTestClient.exe #CdrDocs $(SERVICE)
 
