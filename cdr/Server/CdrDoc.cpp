@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.42 2002-07-26 17:32:45 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.43 2002-08-01 17:41:27 bkline Exp $
  *
  */
 
@@ -48,6 +48,10 @@ static cdr::String createFragIdTransform (cdr::db::Connection&, int);
 
 static void rememberQueryTerm(int, cdr::String&, cdr::String&, wchar_t*,
                               cdr::QueryTermSet&);
+
+static void checkForDuplicateTitle(cdr::db::Connection&, int, 
+                                   const cdr::String&,
+                                   const cdr::String&);
 
 // String constants used as substitute titles
 #define MALFORMED_DOC_TITLE L"!Malformed document - no title can be generated"
@@ -691,6 +695,11 @@ static cdr::String CdrPutDoc (
                                  L"publishable version for this document");
     }
     SHOW_ELAPSED("permissions checked", incrementalTimer);
+
+    // Block creation of documents with duplicate titles for special document
+    // types.
+    if (doctype == L"Filter" || doctype == L"css"    || doctype == L"schema")
+        checkForDuplicateTitle(dbConn, doc.getId(), doctype, doc.getTitle());
 
     // Does document id attribute match expected action type?
     if (doc.getId() && newrec)
@@ -1988,4 +1997,42 @@ void cdr::CdrDoc::collectQueryTerms(
 
         child = child.getNextSibling();
     }
+}
+
+/*
+ * Guards against creation of documents with duplicate titles for special
+ * document types.
+ *
+ *  @param  conn        reference to database connection object.
+ *  @param  id          id of document being stored (0 for new document).
+ *  @param  docType     reference to string representation of document's type.
+ *  @param  title       reference to title string for document being stored.
+ *
+ *  @throws             cdr::Exception if database error encountered or
+ *                      attempt is made to store an illegal document for
+ *                      a type which does not allow duplicate titles (e.g.
+ *                      Filters and Schemas).
+ */
+void checkForDuplicateTitle(
+        cdr::db::Connection& conn, 
+        int id,
+        const cdr::String& docType,
+        const cdr::String& title)
+{
+    std::string query = "SELECT COUNT(*)  "
+                        "  FROM document  "
+                        " WHERE title = ? ";
+    if (id)
+        query += " AND id <> ?";
+    cdr::db::PreparedStatement s = conn.prepareStatement(query);
+    s.setString(1, title);
+    if (id)
+        s.setInt(2, id);
+    cdr::db::ResultSet r = s.executeQuery();
+    if (!r.next())
+        throw cdr::Exception(L"Internal error checking for duplicate title");
+    int count = r.getInt(1);
+    if (count > 0)
+        throw cdr::Exception(L"Duplicate title (" + title + L"); not allowed "
+                             L"for documents of type " + docType);
 }
