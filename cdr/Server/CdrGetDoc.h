@@ -1,9 +1,12 @@
 /*
- * $Id: CdrGetDoc.h,v 1.4 2000-10-17 21:22:10 ameyer Exp $
+ * $Id: CdrGetDoc.h,v 1.5 2000-10-27 02:34:12 ameyer Exp $
  *
  * Internal support functions for CDR document retrieval.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/10/17 21:22:10  ameyer
+ * Added overloaded getDocString for versioned doc.
+ *
  * Revision 1.3  2000/09/25 14:04:09  mruben
  * added getDocCtlString to get information from document table
  *
@@ -20,6 +23,7 @@
 
 #include "CdrString.h"
 #include "CdrDbConnection.h"
+#include "CdrVersion.h"
 
 /**@#-*/
 
@@ -39,8 +43,8 @@ namespace cdr {
      *  @return             wide-character String object containing XML
      *                      for the document.
      */
-    extern cdr::String getDocString(const cdr::String&      docId,
-                                    cdr::db::Connection&    conn);
+    extern cdr::String getDocString(const cdr::String&   docId,
+                                    cdr::db::Connection& conn);
 
     /**
      * Overloaded version of getDocString which pulls a previous version
@@ -52,13 +56,13 @@ namespace cdr {
      *  @param  docId       reference to string containing the document's ID.
      *  @param  conn        reference to an active connection to the CDR
      *                      database.
-     *  @param  versionNum  version number to retrieve.
+     *  @param  verDoc      ptr to struct filled out by version control.
      *  @return             wide-character String object containing XML
      *                      for the document.
      */
-    extern cdr::String getDocString(const cdr::String&      docId,
-                                    cdr::db::Connection&    conn,
-                                    int versionNum);
+    extern cdr::String getDocString(const cdr::String&    docId,
+                                    cdr::db::Connection&  conn,
+                                    struct cdr::CdrVerDoc *verDoc);
 
     /**@#-*/
 
