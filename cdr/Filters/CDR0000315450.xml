@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Sort OrganizationName for Postal Address - Person</DocTitle>
-<DocComment>Restored after refresh of CDR database on Mahler</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.9: Include Fax for Mailer (Bug 764)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -16,7 +16,6 @@
                           encoding = "UTF-8"/>
 
  <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
- <!-- xsl:include href = "cdr:name:Module: Vendor Cleanup Templates"/ -->
 
 
  <!-- *
@@ -24,12 +23,10 @@
  Root element.
  ==================================================================== -->
  <xsl:template               match = "/">
-  <xsl:apply-templates      select = "Protocol | Person"/>
+  <xsl:apply-templates      select = "Protocol |
+                                      Person   |
+                                      PDQBoardMemberInfo"/>
  </xsl:template>
-
- <!-- xsl:template               match = "*">
-  <xsl:apply-templates/>
- </xsl:template -->
 
 
  <!-- 
@@ -81,10 +78,16 @@
   of the organization name is undefined for those organizations that include 
   the parent name.  It could be - based on the OrderParentNameFirst 
   attribute - the first or last OrganizationName element.
-  Therefore, I'm making a copy of the organization name here before
-  the sort which can then be picked up by the following vendor filter.
+  Therefore, I'm making a copy of the organization name and the attributes
+  here before the sort which can then be picked up by the following vendor
+  filter.
   ======================================================================== -->
   <PersonOrganizationName>
+   <xsl:for-each           select = "OrganizationName[1]/@*">
+    <xsl:attribute           name = "{name()}">
+     <xsl:value-of         select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
    <xsl:value-of           select = "OrganizationName[1]"/>
   </PersonOrganizationName>
 
