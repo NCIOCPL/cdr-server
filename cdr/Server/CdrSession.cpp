@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSession.cpp,v 1.3 2000-04-21 13:59:00 bkline Exp $
+ * $Id: CdrSession.cpp,v 1.4 2000-04-22 09:30:22 bkline Exp $
  *
  * Session control information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/04/21 13:59:00  bkline
+ * Added canDo() method.
+ *
  * Revision 1.2  2000/04/17 03:10:21  bkline
  * Fixed typo in wide string constant.
  *
@@ -51,13 +54,13 @@ bool cdr::Session::canDo(db::Connection& conn,
                          const cdr::String& docType) const
 {
     cdr::db::Statement query(conn);
-    query.setInt(1, id);
+    query.setInt(1, uid);
     query.setString(2, action);
     query.setString(3, docType);
     cdr::db::ResultSet rs = query.executeQuery("SELECT COUNT(*)"
-                                               "  FROM grp_usr    gu"
-                                               "       grp_action ga"
-                                               "       action     a"
+                                               "  FROM grp_usr    gu,"
+                                               "       grp_action ga,"
+                                               "       action     a,"
                                                "       doc_type   t"
                                                " WHERE ga.action   = a.id"
                                                "   AND ga.doc_type = t.id"
