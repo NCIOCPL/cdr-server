@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.37 2003-07-08 18:50:23 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.38 2004-03-21 21:19:27 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.37  2003/07/08 18:50:23  bkline
+ * Fixed timing of capturing WSA error.
+ *
  * Revision 1.36  2003/05/23 01:24:42  ameyer
  * Added logging of "Unexpected exception" with command that generated it.
  *
@@ -125,6 +128,7 @@
 #include <string>
 #include <ctime>
 #include <process.h>
+#include <signal.h>
 
 // Project headers.
 #include "catchexp.h"
@@ -143,6 +147,7 @@ const unsigned int MAX_REQUEST_LENGTH = 25000000;
 
 // Local functions.
 static void             cleanup();
+static void __cdecl     controlC(int);
 static int              readRequest(int, std::string&, const cdr::String&);
 static void             sendResponse(int, const cdr::String&);
 static void             processCommands(int, const std::string&,
@@ -196,6 +201,7 @@ main(int ac, char **av)
         return EXIT_FAILURE;
     }
     atexit(cleanup);
+    signal(SIGINT, controlC);
     std::cout << "initialized...\n";
     log.Write("CdrServer", "Starting");
 
@@ -297,6 +303,15 @@ void cleanup()
 {
     log.Write("CdrServer", "Stopping");
     WSACleanup();
+}
+
+/**
+ * Catch Control-C.
+ */
+static void __cdecl controlC(int s)
+{
+    std::cerr << "Use ShutdownCdr command to shut down the CDR\n";
+    signal(SIGINT, controlC);
 }
 
 /**
