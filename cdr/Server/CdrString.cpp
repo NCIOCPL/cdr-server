@@ -1,7 +1,11 @@
 /*
- * $Id: CdrString.cpp,v 1.5 2000-05-04 12:44:27 bkline Exp $
+ * $Id: CdrString.cpp,v 1.6 2000-05-16 21:19:09 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/05/04 12:44:27  bkline
+ * Changed method for extracting a document ID to throw an exception if
+ * the string does match the expected pattern for a docId.
+ *
  * Revision 1.4  2000/05/03 15:20:00  bkline
  * Added getFloat() method.
  *
@@ -133,4 +137,18 @@ int cdr::String::extractDocId() const
         throw cdr::Exception(L"Invalid document ID string", *this);
     cdr::String numString = substr(3);
     return numString.getInt();
+}
+
+/**
+ * Packs the error messages contained in the caller's list into a single
+ * string suitable for embedding within the command response.
+ */
+cdr::String cdr::packErrors(const cdr::StringList& errors)
+{
+    cdr::String s = L"   <Errors>\n";
+    cdr::StringList::const_iterator i = errors.begin();
+    while (i != errors.end())
+        s += L"    <Err>" + *i++ + L"</Err>\n";
+    s += L"   </Errors>\n";
+    return s;
 }
