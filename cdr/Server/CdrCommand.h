@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.15 2001-04-05 19:50:56 ameyer Exp $
+ * $Id: CdrCommand.h,v 1.16 2001-04-08 22:48:24 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2001/04/05 19:50:56  ameyer
+ * Added reIndexDoc.
+ *
  * Revision 1.14  2001/01/17 21:51:28  bkline
  * Replaced getSchema with get/add/mod/delDocType.
  *
@@ -631,6 +634,22 @@ namespace cdr {
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
     extern String delDocType (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
+
+    /**
+     * Retrieves parents and children of a node in the terminology tree
+     * formed by the documents of type Term in the CDR repository.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String getTree    (Session&          session,
                               const dom::Node&  node,
                               db::Connection&   conn);
 
