@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.70 2002-09-12 20:03:39 bkline Exp $
+ * $Id: tables.sql,v 1.71 2002-11-01 05:10:52 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.70  2002/09/12 20:03:39  bkline
+ * Added first_pub and first_pub_knowable columns to all_docs table.
+ *
  * Revision 1.69  2002/08/29 12:16:45  bkline
  * Modified doc_info view.
  *
@@ -1292,7 +1295,7 @@ CREATE TABLE remailer_ids
         (job INTEGER      NOT NULL REFERENCES pub_proc,
          doc INTEGER      NOT NULL,
      tracker INTEGER      NOT NULL,
-   recipient INTEGER      NOT NULL,
+   recipient INTEGER      NULL,
   CONSTRAINT remailer_ids_doc_fk FOREIGN KEY (doc) 
                                  REFERENCES all_docs,
   CONSTRAINT remailer_ids_tracker_fk FOREIGN KEY (tracker)
