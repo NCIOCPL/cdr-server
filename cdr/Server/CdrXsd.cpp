@@ -1,5 +1,5 @@
 /*
- * $Id: CdrXsd.cpp,v 1.24 2002-02-05 22:19:58 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.25 2002-02-06 21:42:47 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
  * Revision 1.23  2002/02/01 20:47:54  bkline
@@ -1928,7 +1928,7 @@ void verifyElementSequence(
     if (isRequired(content) && (!match || firstChild != 0)) {
 
         // Can't find a match for this sequence of child elements.
-        if (firstChild == 0) {
+        if (childNode == 0) {
             cdr::String err = L"Expected child elements for empty "
                             + parentName
                             + L" element of type "
@@ -1941,10 +1941,10 @@ void verifyElementSequence(
                             + L" with child elements of "
                             + parentName
                             + L" element ("
-                            + getElementListString(firstChild)
+                            + getElementListString(childNode)
                             + L")";
             if (firstChild != 0)
-                err += L"; stopped at element " + firstChild.getNodeName();
+                err += L"; stopped at element " + childNode.getNodeName();
             else
                 err += L"; more elements required by content model";
             errors.push_back(err);
@@ -2157,42 +2157,18 @@ bool isRequired(const cdr::xsd::Node* schemaNode)
     if (g)
         return isRequired(g->getContent());
 
-    // Sequence is required if any component is required.
-    const cdr::xsd::Sequence* schemaSequence =
-        dynamic_cast<const cdr::xsd::Sequence*>(schemaNode);
-    if (schemaSequence) {
-        cdr::xsd::NodeEnum nodeEnum = schemaSequence->getNodes();
-        while (nodeEnum != schemaSequence->getListEnd()) {
-            if (isRequired(*nodeEnum++))
-                return true;
-        }
-        return false;
-    }
-
-    // Choice is required only if all components are required.
-    const cdr::xsd::Choice* schemaChoice =
-        dynamic_cast<const cdr::xsd::Choice*>(schemaNode);
-    if (schemaChoice) {
-        cdr::xsd::NodeEnum nodeEnum = schemaChoice->getNodes();
-        while (nodeEnum != schemaChoice->getListEnd()) {
-            if (!isRequired(*nodeEnum++))
-                return false;
-        }
-        return true;
-    }
-
-    // Element is simplest case.
-    const cdr::xsd::Element* schemaElement =
-        dynamic_cast<const cdr::xsd::Element*>(schemaNode);
+    // Must be one of the count-constrained schema nodes.
+    const cdr::xsd::CountConstrained* ccNode =
+        dynamic_cast<const cdr::xsd::CountConstrained*>(schemaNode);
 
     // Sanity check.
-    if (!schemaElement)
+    if (!ccNode)
         throw cdr::Exception(L"Internal error in isRequired()",
                              L"Schema node must represent an element, "
                              L"sequence, choice, or named group");
 
     // See if we are supposed to have at least one of these in the document.
-    return schemaElement->getMinOccs() > 0;
+    return ccNode->getMinOccs() > 0;
     
 }
 
@@ -2221,7 +2197,7 @@ bool matchSequence(
     cdr::xsd::NodeEnum nodeEnum = schemaSequence->getNodes();
     while (nodeEnum != schemaSequence->getListEnd()) {
 
-        // "No match" is OK if the schema doesn't require one of these.
+        // No match is OK if the schema doesn't require one of these.
         if (!matchSchemaNode(docNode, *nodeEnum)) {
             if (isRequired(*nodeEnum))
                 return false;
