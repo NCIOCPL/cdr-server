@@ -1,20 +1,26 @@
 /*
- * $Id: CdrDbResultSet.cpp,v 1.2 2000-04-17 21:26:06 bkline Exp $
+ * $Id: CdrDbResultSet.cpp,v 1.3 2000-04-22 22:15:04 bkline Exp $
  *
  * Implementation for ODBC result fetching wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/17 21:26:06  bkline
+ * Added nullability for ints and strings.
+ *
  * Revision 1.1  2000/04/15 12:21:38  bkline
  * Initial revision
- *
  */
 
 #include "CdrDbResultSet.h"
 
+/**
+ * Gathers information about the columns of the results of the current query
+ * in preparation for retrieving the results.
+ */
 cdr::db::ResultSet::ResultSet(cdr::db::Statement& s) : st(s)
 {
     SQLSMALLINT nCols;
-    SQLRETURN   rc = SQLNumResultCols(st.getStmt(), &nCols);
+    SQLRETURN   rc = SQLNumResultCols(st.hstmt, &nCols);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
         throw cdr::Exception(L"Database failure creating result set",
                              st.getErrorMessage(rc));
@@ -22,7 +28,7 @@ cdr::db::ResultSet::ResultSet(cdr::db::Statement& s) : st(s)
         Column* c= new Column;
         char name[1024];
         SQLSMALLINT cbName;
-        rc = SQLDescribeCol(st.getStmt(), (SQLSMALLINT)i, (SQLCHAR *)name, 
+        rc = SQLDescribeCol(st.hstmt, (SQLSMALLINT)i, (SQLCHAR *)name, 
                             sizeof name, &cbName, &c->type, &c->size, 
                             &c->digits, &c->nullable);
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
@@ -33,6 +39,9 @@ cdr::db::ResultSet::ResultSet(cdr::db::Statement& s) : st(s)
     }
 }
 
+/**
+ * Discards the column information for the query.
+ */
 cdr::db::ResultSet::~ResultSet()
 {
     for (size_t i = 0; i < columnVector.size(); ++i) {
@@ -41,9 +50,15 @@ cdr::db::ResultSet::~ResultSet()
     }
 }
 
+/**
+ * Returns true if there is another row to be fetched and prepares to extract
+ * the values.  A future enhancement may actually extract the values here, in
+ * order to support the getXXX() methods in any order, and multiple times for
+ * the same value.
+ */
 bool cdr::db::ResultSet::next()
 {
-    SQLRETURN rc = SQLFetch(st.getStmt());
+    SQLRETURN rc = SQLFetch(st.hstmt);
     if (rc == SQL_NO_DATA_FOUND)
         return false;
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
@@ -52,6 +67,9 @@ bool cdr::db::ResultSet::next()
     return true;
 }
 
+/**
+ * Extracts the string value for the <code>pos</code> of the result row.
+ */
 cdr::String cdr::db::ResultSet::getString(int pos)
 {
     if (pos > columnVector.size())
@@ -61,7 +79,7 @@ cdr::String cdr::db::ResultSet::getString(int pos)
     wchar_t* data = new wchar_t[c->size + 1];
     memset(data, 0, (c->size + 1) * sizeof(wchar_t));
     SDWORD cb_data = c->size * sizeof(wchar_t);
-    rc = SQLGetData(st.getStmt(), (UWORD)pos, SQL_C_WCHAR, (PTR)data,
+    rc = SQLGetData(st.hstmt, (UWORD)pos, SQL_C_WCHAR, (PTR)data,
                     cb_data, &cb_data);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
         throw cdr::Exception("Database failure extracting data",
@@ -71,12 +89,15 @@ cdr::String cdr::db::ResultSet::getString(int pos)
     return cdr::String(data);
 }
 
+/**
+ * Extracts the integer value for the <code>pos</code> of the result row.
+ */
 cdr::Int cdr::db::ResultSet::getInt(int pos)
 {
     SQLRETURN rc;
     int data;
     SDWORD cb_data;
-    rc = SQLGetData(st.getStmt(), (UWORD)pos, SQL_C_SLONG, (PTR)&data, 0,
+    rc = SQLGetData(st.hstmt, (UWORD)pos, SQL_C_SLONG, (PTR)&data, 0,
                     &cb_data);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
         throw cdr::Exception("Database failure extracting data",
