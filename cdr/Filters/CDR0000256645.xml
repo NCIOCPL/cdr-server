@@ -1,0 +1,74 @@
+<CdrDoc Type='Filter' Id='CDR0000256645'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">DocComment Add or Replace</DocTitle>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<!-- 
+ ==================================================================
+ Filter to add a comment to a CdrDoc document.
+
+ Typically invoked by the Python functions cdr.addDoc() and cdr.repDoc().
+
+ Deletes any existing /CdrDoc/CdrDocCtl/DocComment element and adds
+ a new one with the passed parameter.
+
+ The server functionality for CdrAddDoc and CdrRepDoc will replace
+ the comment column in the document table with the new comment.  If
+ a version is created, the new comment will also be added to the new
+ row in the version table.
+
+   Pass:
+    $newComment = Comment to add to the CdrDocCtl.
+
+ $Id: CDR0000256645.xml,v 1.1 2002-08-15 23:05:19 ameyer Exp $
+
+ $Log: not supported by cvs2svn $
+ ================================================================== -->
+
+<xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                              version = "1.0">
+
+ <xsl:output                   method = "xml"
+               cdata-section-elements = "CdrDocXml"
+                 omit-xml-declaration = "yes"/>
+
+ <!--
+ ================================================================
+ Passed in by the caller.
+ ================================================================ -->
+ <xsl:param                      name = "newComment"/>
+
+ <!--
+ ================================================================
+ Default rule, copying back out everything just as we got it.
+ ================================================================ -->
+ <xsl:template                  match = "@*|comment()|*|
+                                         processing-instruction()|text()">
+  <xsl:copy>
+   <xsl:apply-templates        select = "@*|comment()|*|
+                                         processing-instruction()|text()"/>
+  </xsl:copy>
+ </xsl:template>
+
+ <!--
+ ===================================================================
+ Delete any existing comment - just do nothing with it
+ =================================================================== -->
+ <xsl:template                  match = "/CdrDoc/CdrDocCtl/DocComment"/>
+
+ <!--
+ ===================================================================
+ Add a new comment
+ =================================================================== -->
+ <xsl:template                  match = "/CdrDoc/CdrDocCtl">
+  <CdrDocCtl>
+   <DocComment><xsl:value-of   select = "$newComment"/></DocComment>
+   <xsl:apply-templates        select = "@*|comment()|*|
+                                        processing-instruction()|text()"/>
+  </CdrDocCtl>
+   </xsl:template>
+  </xsl:transform>]]>
+</CdrDocXml>
+</CdrDoc>
