@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #
-# $Id: PushDevDocs.py,v 1.1 2002-09-07 14:12:49 bkline Exp $
+# $Id: PushDevDocs.py,v 1.2 2002-09-07 16:10:57 bkline Exp $
 #
 # Replaces copies of CDR control documents which have been preserved
 # from the development server, after a refresh of the database on
@@ -45,15 +45,15 @@ def findLocker(cursor, id):
 # Initialize parameters for the job.
 #----------------------------------------------------------------------
 if len(sys.argv) != 4:
-    sys.stderr.write("usage: PumpDevDocs uid pwd dev-machine\n")
-    sys.stderr.write(" e.g.: PumpDevDocs melvyn lead.pudding MAHLER\n")
+    sys.stderr.write("usage: PushDevDocs uid pwd dev-machine\n")
+    sys.stderr.write(" e.g.: PushDevDocs melvyn lead.pudding MAHLER\n")
     sys.exit(1)
 uid     = sys.argv[1]
 pwd     = sys.argv[2]
 server  = sys.argv[3]
 conn    = cdrdb.connect('CdrGuest', dataSource = server)
 cursor  = conn.cursor()
-logFile = open("PumpDevDocs.log", "w")
+logFile = open("PushDevDocs.log", "w")
 session = cdr.login(uid, pwd, host = server)
 reason  = 'preserving work on development server'
 
@@ -79,6 +79,9 @@ for name in glob.glob("RepDocs/*.xml"):
                 if resp:
                     log("Failure unlocking %s: %s" % (idString, resp), 1)
                     continue
+
+                # Note: this can fail if someone sneaks in a lock.
+                # That's extremely unlikely, and it will be logged.
                 doc = cdr.getDoc(session, idString, 'Y', host = server)
                 if doc.startswith("<Err"):
                     log("Failure locking %s: %s" % (idString, doc), 1)
