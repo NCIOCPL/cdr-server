@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.19 2003-05-13 17:45:19 bkline Exp $
+ * $Id: CdrDoc.h,v 1.20 2004-02-20 00:36:10 ameyer Exp $
  *
  */
 
@@ -223,11 +223,22 @@ namespace cdr {
             /**
              * Update the status of a protocol.
              *
+             * A custom routine for InScopeProtocols - not part of regular
+             * document processing.
+             *
              *  @param  validating      whether the user has requested
              *                          validation as part of the save
              *                          command.
              */
             void updateProtocolStatus(bool validating);
+
+            /**
+             * Sort protocol organization sites.
+             *
+             * A custom routine for InScopeProtocols - not part of regular
+             * document processing.
+             */
+            void sortProtocolSites();
 
             /**
              * Eliminate elements supplied by the template which the user
@@ -319,7 +330,7 @@ namespace cdr {
                 if (severity == VAL_MESSAGE_WARNING)
                     incrementWarningCount(1);
             }
-                
+
 
         private:
             // Values corresponding to document table data
