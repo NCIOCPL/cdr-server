@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.5 2001-03-13 22:15:09 mruben Exp $
+ * $Id: CdrFilter.cpp,v 1.6 2001-03-19 17:17:43 mruben Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2001/03/13 22:15:09  mruben
+ * added ability to use CdrDoc element for filter
+ *
  * Revision 1.4  2001/02/26 16:09:27  mruben
  * fixed error in exception safety
  *
@@ -46,6 +49,7 @@ namespace
 {
   // unique type used to get CdrDocCtl
   const wchar_t CdrDocType[] = L"";
+  string filter_messages;
   
   /***************************************************************************/
   /* get document from the repository.  Error if type not NULL and document  */
@@ -137,9 +141,38 @@ namespace
             msg << cdr::String(*(fields++)) << L"\n";
 
         throw cdr::Exception(msg.str());
-      }   
-    }
+      }
 
+      case MH_LEVEL_WARN:
+        if (fields != NULL)
+        {
+          char** p;
+          string msg;
+          for (p = fields; p != NULL && strncmp(*p, "msg:", 4) != 0; ++p)
+            ;
+          if (p != NULL)
+          {
+            static const char xsl_msgheader[] = "xsl:message (";
+            char* q = *p + 4;
+            if (strncmp(q, xsl_msgheader, sizeof xsl_msgheader - 1) == 0)
+            {
+              msg = string(q + sizeof xsl_msgheader - 1);
+              if (msg.length() != 0)
+                msg = msg.substr(0, msg.length() - 1);
+                
+              filter_messages += "<message>"
+                               + msg
+                               + "</message>\n";
+            }
+          }
+
+        }
+        break;
+        
+      case MH_LEVEL_INFO:
+        break;
+    }
+    
     return 0;
   }
   
@@ -403,13 +436,18 @@ cdr::String cdr::filter(cdr::Session& session,
        i != filters.end();
        ++i)
   {
+    filter_messages = "";
     if (processStrings(i->toUtf8(), doc, result, connection))
       throw cdr::Exception(L"error in XSLT processing");
 
     doc = result;
   }
+
+  result = "<Document><![CDATA[" + result + "]]></Document>\n";
+  if (filter_messages.length() != 0)
+    result += "<Messages>" + filter_messages + "</Messages>\n";
   
-  return L"<CdrFilterResp><Document><![CDATA["
+  return L"<CdrFilterResp>"
        + result
-       + L"]]></Document></CdrFilterResp>\n";
+       + "</CdrFilterResp>\n";
 }
