@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.57 2002-06-12 20:24:35 bkline Exp $
+# $Id: Makefile,v 1.58 2002-06-12 21:27:14 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.57  2002/06/12 20:24:35  bkline
+# Added option for Visual Studio 7.
+#
 # Revision 1.56  2002/04/04 19:04:47  bkline
 # Turned debugging symbols back on for standard build.
 #
@@ -212,7 +215,7 @@ BISON  =bison
 LN     =link
 CP     =cp -f
 CVSUPD =cvs update
-DOC    =$(DRV)/InetPub/wwwtest/cdr/
+DOC    =$(DRV)/InetPub/wwwroot/cdr/
 DOCS   =$(DOC)default.htm
 CDRLIB =$(CDR)/lib/cdr.lib
 CDRBIN =$(CDR)/bin
