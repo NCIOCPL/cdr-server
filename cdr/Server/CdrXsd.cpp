@@ -1,7 +1,12 @@
 /*
- * $Id: CdrXsd.cpp,v 1.9 2000-10-05 21:27:22 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.10 2000-12-28 13:28:12 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2000/10/05 21:27:22  bkline
+ * Moved most of the lower-level schema validation routines into this module;
+ * added more specific information to the error messages sent back when a
+ * base type name is omitted or the base type can't be found.
+ *
  * Revision 1.8  2000/10/04 18:36:39  bkline
  * Fixed bug in type name lookup.
  *
@@ -61,7 +66,7 @@ static void validateSimpleType(
 static void verifyNoText(
         cdr::dom::Element&              docElement,
         cdr::StringList&                errors);
-static void verifyElementList(
+static void verifyElementSequence(
         cdr::dom::Element&              docElement,
         const cdr::xsd::ComplexType&    parentType,
         cdr::xsd::Schema&               schema,
@@ -69,11 +74,13 @@ static void verifyElementList(
 static void verifyNoElements(
         cdr::dom::Element&              docElement,
         cdr::StringList&                errors);
+#if 0
 static void verifyElements(
         cdr::dom::Element&              docElement,
         const cdr::xsd::ComplexType&    type,
         cdr::xsd::Schema&               schema,
         cdr::StringList&                errors);
+#endif
 static void checkMaxInclusive(
         const cdr::String&              elemName,
         const cdr::String&              attrName,
@@ -153,7 +160,7 @@ cdr::xsd::Schema::Schema(const cdr::dom::Node& schemaElement)
                 if (topElement)
                     throw cdr::Exception(
                         L"Only one top-level element allowed in schema");
-                topElement = new cdr::xsd::Element(childNode);
+                topElement = new cdr::xsd::Elem(childNode);
             }
             else if (nodeName == cdr::xsd::COMPLEX_TYPE)
                 registerType(new cdr::xsd::ComplexType(*this, childNode));
@@ -200,7 +207,7 @@ void cdr::xsd::Schema::registerType(const cdr::xsd::Type* type)
 void cdr::xsd::Schema::registerElement(const cdr::String& name,
                                        const cdr::String& type)
 {
-    ElementTypeMap::const_iterator i = elements.find(name);
+    ElemTypeMap::const_iterator i = elements.find(name);
     if (i == elements.end())
         elements[name] = type;
     else {
@@ -233,7 +240,7 @@ const cdr::xsd::Type* cdr::xsd::Schema::lookupType(const cdr::String& n) const
  */
 cdr::String cdr::xsd::Schema::lookupElementType(const cdr::String& name) const
 {
-    ElementTypeMap::const_iterator i = elements.find(name);
+    ElemTypeMap::const_iterator i = elements.find(name);
     return i != elements.end() ? i->second : L"";
 }
 
@@ -263,7 +270,7 @@ cdr::xsd::Node::resolveType(const cdr::xsd::Schema& schema)
  * Builds a new schema element object from its XML node in the schema
  * document.
  */
-cdr::xsd::Element::Element(const cdr::dom::Node& dn)
+cdr::xsd::Elem::Elem(const cdr::dom::Node& dn)
 {
     maxOccs = minOccs = 1;
     cdr::dom::NamedNodeMap attrs = dn.getAttributes();
@@ -292,10 +299,10 @@ cdr::xsd::Element::Element(const cdr::dom::Node& dn)
 }
 
 /**
- * Builds a new schema element object from the xsd:attribute node in the 
+ * Builds a new schema attribute object from the xsd:attribute node in the 
  * schema document.
  */
-cdr::xsd::Attribute::Attribute(const cdr::dom::Node& dn)
+cdr::xsd::Attr::Attr(const cdr::dom::Node& dn)
 {
     optional = false;
     cdr::dom::NamedNodeMap attrs = dn.getAttributes();
@@ -316,6 +323,85 @@ cdr::xsd::Attribute::Attribute(const cdr::dom::Node& dn)
         throw cdr::Exception(L"Name missing for attribute");
     if (typeName.size() == 0)
         throw cdr::Exception(L"Type missing for attribute", name);
+}
+
+/**
+ * Builds a new schema choice object from its XML node in the schema
+ * document.
+ */
+cdr::xsd::ElemChoice::ElemChoice(cdr::xsd::Schema& schema,
+                                 const cdr::dom::Node& dn)
+{
+    maxOccs = minOccs = 1;
+    cdr::dom::NamedNodeMap attrs = dn.getAttributes();
+    int nAttrs = attrs.getLength();
+    for (int i = 0; i < nAttrs; ++i) {
+        cdr::dom::Node attr = attrs.item(i);
+        cdr::String attrName = attr.getNodeName();
+        cdr::String attrValue = attr.getNodeValue();
+        if (attrName == cdr::xsd::MIN_OCCURS)
+            minOccs = attrValue.getInt();
+        else if (attrName == cdr::xsd::MAX_OCCURS) {
+            if (attrValue == cdr::xsd::UNLIMITED)
+                maxOccs = INT_MAX;
+            else
+                maxOccs = attrValue.getInt();
+        }
+    }
+    cdr::dom::Node childNode = dn.getFirstChild();
+    while (childNode != 0) {
+        int nodeType = childNode.getNodeType();
+        if (nodeType == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String nodeName = childNode.getNodeName();
+            if (nodeName == cdr::xsd::ELEMENT) {
+                cdr::xsd::Elem* e = new cdr::xsd::Elem(childNode);
+                cdr::String elementName = e->getName();
+                cdr::String elementTypeName = e->getTypeName();
+                schema.registerElement(elementName, elementTypeName);
+                if (elemSet.find(elementName) != elemSet.end()) {
+                    delete e;
+                    throw cdr::Exception(L"Duplicate element in choice",
+                                         elementName);
+                }
+                elemSet[elementName] = e;
+            }
+        }
+        childNode = childNode.getNextSibling();
+    }
+    if (getElemCount() < 1)
+        throw cdr::Exception(L"Empty choice object");
+}
+
+/**
+ * Builds a new schema choice object for a single element.
+ */
+cdr::xsd::ElemChoice::ElemChoice(cdr::xsd::Elem* elem)
+{
+    maxOccs = minOccs = 1;
+    elemSet[elem->getName()] = elem;
+}
+
+/**
+ * Clean up the resources used by this element choice object.
+ */
+cdr::xsd::ElemChoice::~ElemChoice()
+{
+    for (ElemEnum e = getElements(); e != getElemEnd(); ++e)
+        delete e->second;
+}
+
+/**
+ * Looks up an element by name in this set of element choices.
+ *
+ *  @param  name        reference to string containing element's
+ *                      name.
+ *  @return             pointer to Elem object, if found;
+ *                      otherwise <code>NULL</code>.
+ */
+cdr::xsd::Elem* cdr::xsd::ElemChoice::find(const cdr::String& name) const
+{
+    ElemEnum e = elemSet.find(name);
+    return e == getElemEnd() ? 0 : e->second;
 }
 
 /**
@@ -469,20 +555,26 @@ cdr::xsd::ComplexType::ComplexType(cdr::xsd::Schema& schema,
         if (nodeType == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String nodeName = childNode.getNodeName();
             if (nodeName == cdr::xsd::ELEMENT) {
-                cdr::xsd::Element* e = new cdr::xsd::Element(childNode);
+                cdr::xsd::Elem* e = new cdr::xsd::Elem(childNode);
                 cdr::String elementName = e->getName();
                 cdr::String elementTypeName = e->getTypeName();
                 schema.registerElement(elementName, elementTypeName);
-                if (!hasElement(elementName))
-                    elemNames.insert(elementName);
-                elemList.push_back(e);
+                cdr::xsd::ElemChoice* c = new cdr::xsd::ElemChoice(e);
+                elemSeq.push_back(c);
             }
             else if (nodeName == cdr::xsd::ATTRIBUTE) {
-                cdr::xsd::Attribute* a = new cdr::xsd::Attribute(childNode);
+                cdr::xsd::Attr* a = new cdr::xsd::Attr(childNode);
                 cdr::String attrName = a->getName();
-                if (!hasAttribute(attrName))
-                    attrNames.insert(attrName);
-                attrList.push_back(a);
+                if (hasAttribute(attrName)) {
+                    delete a;
+                    throw cdr::Exception(L"Duplicate attribute", attrName);
+                }
+                attrSet[attrName] = a;
+            }
+            else if (nodeName == cdr::xsd::CHOICE) {
+                cdr::xsd::ElemChoice* c = new cdr::xsd::ElemChoice(schema, 
+                                                                   childNode);
+                elemSeq.push_back(c);
             }
         }
         childNode = childNode.getNextSibling();
@@ -491,31 +583,19 @@ cdr::xsd::ComplexType::ComplexType(cdr::xsd::Schema& schema,
         throw cdr::Exception(L"Name missing for complex type");
 }
 
-#if 0
-/**
- * Finds element, given its name.  Used for MIXED content type.
- */
-cdr::xsd::Element* 
-cdr::xsd::ComplexType::getElement(const cdr::String& name) const
-{
-    ElementMap::iterator i = elemMap.find(name);
-    return i == elemMap.end() ? 0 : i->second;
-}
-#endif
-
 /**
  * Cleans up the lists of elements and attributes which make up this type.
  */
 cdr::xsd::ComplexType::~ComplexType()
 {
-    for (cdr::xsd::ElementList::iterator eli = elemList.begin(); 
-         eli != elemList.end(); 
+    for (cdr::xsd::ElemSeq::iterator eli = elemSeq.begin(); 
+         eli != elemSeq.end(); 
          ++eli)
         delete *eli;
-    for (cdr::xsd::AttributeList::iterator ali = attrList.begin(); 
-         ali != attrList.end(); 
+    for (cdr::xsd::AttrSet::iterator ali = attrSet.begin(); 
+         ali != attrSet.end(); 
          ++ali)
-        delete *ali;
+        delete ali->second;
 }
 
 /**
@@ -538,7 +618,7 @@ void cdr::xsd::validateDocAgainstSchema(
     cdr::xsd::Schema schema(schemaElem);
 
     // Use the schema to validate the XML portion of the document
-    cdr::xsd::Element schemaElement = schema.getTopElement();
+    cdr::xsd::Elem schemaElement = schema.getTopElement();
     if (schemaElement.getName() != docElem.getNodeName()) {
         cdr::String err;
         err = cdr::String(L"Wrong element at top of document XML: ")
@@ -570,10 +650,10 @@ bool validateAttributes(
     cdr::String elemName = element.getNodeName();
     cdr::xsd::AttrEnum attrEnum = type.getAttributes();
     while (attrEnum != type.getAttrEnd()) {
-        cdr::xsd::Attribute* attr = *attrEnum++;
-        cdr::String attrName      = attr->getName();
-        cdr::String attrVal       = element.getAttribute(attrName.c_str());
-        if (attrName == L"cdr::link")
+        cdr::xsd::Attr* attr = (attrEnum++)->second;
+        cdr::String attrName = attr->getName();
+        cdr::String attrVal  = element.getAttribute(attrName.c_str());
+        if (attrName == L"cdr::ref")
             isDenormalized = true;
         if (attrVal.empty()) {
             if (!attr->isOptional()) {
@@ -671,13 +751,13 @@ void validateElement(
             break;
         case cdr::xsd::ComplexType::ELEMENT_ONLY:
             verifyNoText(docElement, errors);
-            verifyElementList(docElement, *complexType, schema, errors);
+            verifyElementSequence(docElement, *complexType, schema, errors);
             break;
         case cdr::xsd::ComplexType::TEXT_ONLY:
             verifyNoElements(docElement, errors);
             break;
         case cdr::xsd::ComplexType::MIXED:
-            verifyElements(docElement, *complexType, schema, errors);
+            verifyElementSequence(docElement, *complexType, schema, errors);
             break;
         }
 
@@ -1151,63 +1231,111 @@ void verifyNoText(
  * Verify that the child elements appear in the order prescribed, that they
  * meet the requirements for their individual types, and that the number of
  * occurrences of each meets the minOccurs and maxOccurs requirements.
+ * Logic for this routine is as follows:
+ * <pre>
+ * I. While there are more choice sets in the sequence for the complex type:
+ *    A. If the current element occurrence matches elem in current choice set:
+ *       1. For each occurrence of this element up to maxOcc for elem:
+ *          * Validate element occurrence
+ *       2. If fewer occurrences seen than required for elem:
+ *          * Report error
+ *       3. If we have seen as many occurrences for choice set as allowed:
+ *          * Move to next choice set
+ *   B. Otherwise (no match for current element occ in current choice set):
+ *       1. If fewer occurrences for choice set than required:
+ *          * Report error
+ *       2. Move to next choice set
+ * II. While we have more element occurrences left over:
+ *    A. Report unexpected element
+ *    B. If we can find type for element:
+ *       * Validate element
+ *    C. Otherwise:
+ *       * Report error
+ * </pre>
+ *
+ *  @param  docElement          reference to element whose child
+ *                              elements we are validating.
+ *  @param  parentType          reference to complex type information
+ *                              for this parent element.
+ *  @param  schema              reference to schema object (so we can
+ *                              look up type information for unexpected
+ *                              elements).
+ *  @param  errors              reference to list of error messages to
+ *                              be populated by this routine as appropriate.
  */
-void verifyElementList(
+void verifyElementSequence(
         cdr::dom::Element&              docElement,
         const cdr::xsd::ComplexType&    parentType,
         cdr::xsd::Schema&               schema,
         cdr::StringList&                errors)
 {
-    cdr::xsd::ElemEnum i = parentType.getElements();
-    cdr::dom::Node     n = docElement.getFirstChild();
-    cdr::String        parentName = docElement.getNodeName();
-    cdr::String        occName;
+    cdr::xsd::ChoiceEnum i = parentType.getElements();
+    cdr::dom::Node       n = docElement.getFirstChild();
+    cdr::String          parentName = docElement.getNodeName();
 
-    // Check each expected element for the type.
+    // Loop through each choice set in the sequence for the complex type.
     while (i != parentType.getElemEnd()) {
-        cdr::xsd::Element* e = *i++;
-        int nOccs = 0;
+        cdr::xsd::ElemChoice* choice = *i++;
+        int choiceOccs = 0;
 
-        // Loop to end of occurrences which match.
-        for (; n != 0; n = n.getNextSibling()) {
+        // Accept as many occurrences for this choice as are allowed.
+        while (choiceOccs < choice->getMaxOccs()) {
 
             // Skip nodes which aren't elements.
-            if (n.getNodeType() != cdr::dom::Node::ELEMENT_NODE)
-                continue;
-
-            // See if this occurrence matches what we're looking for.
-            occName = n.getNodeName();
-            if (occName != e->getName())
+            while (n != 0 && n.getNodeType() != cdr::dom::Node::ELEMENT_NODE)
+                n = n.getNextSibling();
+            if (n == 0)
                 break;
 
-            // Check for too many occurrences.
-            if (++nOccs > e->getMaxOccs()) {
-                cdr::String err = cdr::String(L"Too many occurrences "
-                                  L"of element ")
-                                + e->getName()
+            // See if this occurrence matches an element in the choice.
+            cdr::String elemName = n.getNodeName();
+            cdr::xsd::Elem* elem = choice->find(elemName);
+            if (!elem)
+                break;
+
+            // We have a match.  Accept as many of this element as allowed.
+            ++choiceOccs;
+            int elemOccs = 0; 
+            while (elemOccs++ < elem->getMaxOccs()) {
+
+                // Recursively check the element.
+                validateElement(static_cast<cdr::dom::Element&>(n),
+                                *elem->getType(schema), schema, errors);
+
+                // Move to the next element occurrence.
+                do {
+                    n = n.getNextSibling();
+                } while (n != 0 && 
+                         n.getNodeType() != cdr::dom::Node::ELEMENT_NODE);
+
+                // Do we have any more occurrences of this element?
+                if (n == 0 || elemName != n.getNodeName())
+                    break;
+            }
+
+            // Check to see if we got the minimum required for this element.
+            if (elemOccs < elem->getMinOccs()) {
+                cdr::String err = L"Too few occurrences of element "
+                                + elemName
                                 + L" within element "
                                 + parentName;
                 errors.push_back(err);
             }
-
-            // Recursively check the element.
-            validateElement(static_cast<cdr::dom::Element&>(n),
-                            *e->getType(schema), schema, errors);
         }
 
-        // Check for too few occurrences.
-        if (nOccs < e->getMinOccs()) {
-            cdr::String err;
-            if (nOccs == 0)
-                err = cdr::String(L"Missing required element ")
-                    + e->getName()
-                    + L" within element "
-                    + parentName;
-            else
-                err = cdr::String(L"Too few occurrences of element ")
-                    + e->getName()
-                    + L" within element "
-                    + parentName;
+        // Check to see if we got the minimum required for this choice.
+        if (choiceOccs < choice->getMinOccs()) {
+            cdr::String err = L"Missing expected occurrence(s) of ";
+            int iChoice = 0;
+            int nChoice = choice->getElemCount();
+            cdr::xsd::ElemEnum ee = choice->getElements();
+            while (iChoice++ < nChoice) {
+                err += (ee++)->first;
+                if (iChoice + 2 == nChoice)
+                    err += " or ";
+                else if (iChoice + 2 < nChoice)
+                    err += ", ";
+            }
             errors.push_back(err);
         }
     }
@@ -1221,7 +1349,7 @@ void verifyElementList(
             continue;
         }
 
-        occName = n.getNodeName();
+        cdr::String occName = n.getNodeName();
         cdr::String err = cdr::String(L"Unexpected element ")
                         + occName
                         + L" within element "
@@ -1273,6 +1401,7 @@ void verifyNoElements(
     }
 }
 
+#if 0
 /**
  * Verify elements in a Mixed-content element.  Sub-elements can occur in any
  * order, as long as they are defined for the parent element, and as long as
@@ -1316,3 +1445,4 @@ void verifyElements(
                             *childType, schema, errors);
     }
 }
+#endif
