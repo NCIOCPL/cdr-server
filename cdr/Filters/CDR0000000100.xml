@@ -34,7 +34,15 @@
 <xsl:for-each select="OrganizationParent/ParentOrganization">
   <xsl:if test="contains(@cdr:ref,'CDR')">
  <xsl:variable name="OrgID" select="@cdr:ref"/>
- <xsl:variable name="OrgInfo" select="document(concat('cdr:',$OrgID,'/last'))"/>
+ <xsl:variable name="OrgInfo" select="document(concat('cdrx:',$OrgID,'/last'))"/>
+ <xsl:if test="$OrgInfo=''">
+    <xsl:message              terminate = "yes">
+    <xsl:text>Cannot resolve link </xsl:text>
+    <xsl:value-of               select = "$OrgID"/>
+    <xsl:text>for Organization Parent Name.</xsl:text>
+    </xsl:message>
+    </xsl:if>
+
  <OrganizationParent><ParentOrganization><xsl:apply-templates select="$OrgInfo/Organization/OrganizationNameInformation/OfficialName/Name" mode="copy"/></ParentOrganization></OrganizationParent>
 </xsl:if>
 </xsl:for-each>
@@ -47,7 +55,15 @@
 <xsl:for-each select="OrganizationDetails/CIPSContactPerson">
   <xsl:if test="contains(@cdr:ref,'CDR')">
  <xsl:variable name="PerID" select="@cdr:ref"/>
- <xsl:variable name="PerInfo" select="document(concat('cdr:',$PerID,'/last'))"/>
+ <xsl:variable name="PerInfo" select="document(concat('cdrx:',$PerID,'/last'))"/>
+    <xsl:if test="$PerInfo=''">
+    <xsl:message              terminate = "yes">
+    <xsl:text>Cannot resolve link </xsl:text>
+    <xsl:value-of               select = "$PerID"/>
+    <xsl:text>for Organization Contact Person.</xsl:text>
+    </xsl:message>
+    </xsl:if>
+
  <CIPSContactPerson><xsl:apply-templates select="$PerInfo/Person/PersonNameInformation/GivenName" mode="copy"/>
 <xsl:apply-templates select="$PerInfo/Person/PersonNameInformation/SurName" mode="copy"/></CIPSContactPerson>
 </xsl:if>
@@ -85,7 +101,15 @@
           <xsl:if test="../@IncludeParentName">
           <OrganizationAddressNames>
           <xsl:variable name="ParentID" select="../../../OrganizationParent/ParentOrganization/@cdr:ref"/>
-<xsl:variable name="ParentDoc" select="document(concat('cdr:',$ParentID,'/last'))"/>
+<xsl:variable name="ParentDoc" select="document(concat('cdrx:',$ParentID,'/last'))"/>
+     <xsl:if test="$ParentDoc=''">
+    <xsl:message              terminate = "yes">
+    <xsl:text>Cannot resolve link </xsl:text>
+    <xsl:value-of               select = "$ParentID"/>
+    <xsl:text>for Parent Organization.</xsl:text>
+    </xsl:message>
+    </xsl:if>
+
            <OrganizationName><xsl:value-of select="../../../OrganizationNameInformation/OfficialName/Name"/>
       </OrganizationName>
       
@@ -112,7 +136,15 @@
 <xsl:for-each select="PostalAddress/PoliticalSubUnit_State"> 
 <xsl:if test="contains(@cdr:ref,'CDR')">
      <xsl:variable name="StateID" select="@cdr:ref"/>
-     <xsl:variable name="StateInfo" select="document(concat('cdr:',$StateID,'/lastp'))"/>
+     <xsl:variable name="StateInfo" select="document(concat('cdrx:',$StateID,'/lastp'))"/>
+      <xsl:if test="$StateInfo=''">
+    <xsl:message              terminate = "yes">
+    <xsl:text>Cannot resolve link </xsl:text>
+    <xsl:value-of               select = "$StateID"/>
+    <xsl:text>for Political SubUnit-State.</xsl:text>
+    </xsl:message>
+    </xsl:if>
+
 <PoliticalSubUnitRef><xsl:apply-templates select="$StateID"/></PoliticalSubUnitRef>
      <xsl:apply-templates     select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitShortName" mode="copy"/>
  <xsl:apply-templates select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName" mode="copy"/> 
@@ -121,7 +153,15 @@
 <xsl:for-each select="PostalAddress/Country">
 <xsl:if test="contains(@cdr:ref,'CDR')">
      <xsl:variable name="CtyID" select="@cdr:ref"/>
-     <xsl:variable name="CtyInfo" select="document(concat('cdr:',$CtyID,'/lastp'))"/>
+     <xsl:variable name="CtyInfo" select="document(concat('cdrx:',$CtyID,'/lastp'))"/>
+     <xsl:if test="$CtyInfo=''">
+    <xsl:message              terminate = "yes">
+    <xsl:text>Cannot resolve link </xsl:text>
+    <xsl:value-of               select = "$CtyID"/>
+    <xsl:text>for Country.</xsl:text>
+    </xsl:message>
+    </xsl:if>
+
 <CountryRef><xsl:apply-templates select="$CtyID"/></CountryRef>
      <xsl:apply-templates select="$CtyInfo/Country/CountryShortName" mode="copy"/>
  <xsl:apply-templates select="$CtyInfo/Country/CountryFullName" mode="copy"/> 
@@ -166,7 +206,15 @@
 <MainMemberOf>
  <xsl:if test="contains(@cdr:ref,'CDR')">
  <xsl:variable name="CoopGroupID" select="@cdr:ref"/>
- <xsl:variable name="CoopInfo" select="document(concat('cdr:',$CoopGroupID,'/last'))"/>
+ <xsl:variable name="CoopInfo" select="document(concat('cdrx:',$CoopGroupID,'/last'))"/>
+   <xsl:if test="$CoopInfo=''">
+    <xsl:message              terminate = "yes">
+    <xsl:text>Cannot resolve link </xsl:text>
+    <xsl:value-of               select = "$CoopID"/>
+    <xsl:text>for Cooperative Group.</xsl:text>
+    </xsl:message>
+    </xsl:if>
+
  <CooperativeGroup>
  <CoopMID><xsl:value-of select="@cdr:ref"/></CoopMID>
 <OfficialName><xsl:apply-templates select="$CoopInfo/Organization/OrganizationNameInformation/OfficialName/Name" mode="copy"/></OfficialName>
@@ -180,13 +228,29 @@
 <AffiliateMemberOf>
  <xsl:if test="contains(CooperativeGroup/@cdr:ref,'CDR')">
  <xsl:variable name="CoopGroupID" select="CooperativeGroup/@cdr:ref"/>
- <xsl:variable name="CoopInfo" select="document(concat('cdr:',$CoopGroupID,'/last'))"/>
+ <xsl:variable name="CoopInfo" select="document(concat('cdrx:',$CoopGroupID,'/last'))"/>
+  <xsl:if test="$CoopInfo=''">
+    <xsl:message              terminate = "yes">
+    <xsl:text>Cannot resolve link </xsl:text>
+    <xsl:value-of               select = "$CoopGroupID"/>
+    <xsl:text>Affiliate member of Cooperative Group.</xsl:text>
+    </xsl:message>
+    </xsl:if>
+
 <CooperativeGroup>
 <CoopAID><xsl:value-of select="CooperativeGroup/@cdr:ref"/></CoopAID>
 <xsl:apply-templates select="$CoopInfo/Organization/OrganizationNameInformation/OfficialName/Name" mode="copy"/></CooperativeGroup>
 <xsl:if test="contains(MainMember/@cdr:ref,'CDR')">
  <xsl:variable name="CopGroupID" select="MainMember/@cdr:ref"/>
- <xsl:variable name="CopInfo" select="document(concat('cdr:',$CopGroupID,'/last'))"/>
+ <xsl:variable name="CopInfo" select="document(concat('cdrx:',$CopGroupID,'/last'))"/>
+ <xsl:if test="$CopInfo=''">
+    <xsl:message              terminate = "yes">
+    <xsl:text>Cannot resolve link </xsl:text>
+    <xsl:value-of               select = "$CopGroupID"/>
+    <xsl:text>for Cooperative Group.</xsl:text>
+    </xsl:message>
+    </xsl:if>
+
 <MainMember><xsl:apply-templates select="$CopInfo/Organization/OrganizationNameInformation/OfficialName/Name" mode="copy"/></MainMember>
 </xsl:if>
 <xsl:apply-templates select="ProtocolParticipation" mode="copy"/>
@@ -198,14 +262,30 @@
 <xsl:for-each select="OrganizationAffiliations/MemberOfCCOP/CCOP">
 <xsl:if test="contains(@cdr:ref,'CDR')">
  <xsl:variable name="CCOPID" select="@cdr:ref"/>
- <xsl:variable name="CCOPInfo" select="document(concat('cdr:',$CCOPID,'/last'))"/>
+ <xsl:variable name="CCOPInfo" select="document(concat('cdrx:',$CCOPID,'/last'))"/>
+  <xsl:if test="$CCOPInfo=''">
+    <xsl:message              terminate = "yes">
+    <xsl:text>Cannot resolve link </xsl:text>
+    <xsl:value-of               select = "$CCOPID"/>
+    <xsl:text>for CCOP.</xsl:text>
+    </xsl:message>
+    </xsl:if>
+
 <MemberOfCCOP ref='{$CCOPID}'><CCOP><xsl:apply-templates select="$CCOPInfo/Organization/OrganizationNameInformation/OfficialName/Name" mode="copy"/></CCOP></MemberOfCCOP>
 </xsl:if>
 </xsl:for-each>
 <xsl:for-each select="OrganizationAffiliations/ResearchBaseFor">
 <xsl:if test="contains(@cdr:ref,'CDR')">
  <xsl:variable name="RbaseId" select="@cdr:ref"/>
- <xsl:variable name="RbaseInfo" select="document(concat('cdr:',$RbaseId,'/last'))"/>
+ <xsl:variable name="RbaseInfo" select="document(concat('cdrx:',$RbaseId,'/last'))"/>
+  <xsl:if test="$RbaseInfo=''">
+    <xsl:message              terminate = "yes">
+    <xsl:text>Cannot resolve link </xsl:text>
+    <xsl:value-of               select = "$RbaseID"/>
+    <xsl:text>for Research Base.</xsl:text>
+    </xsl:message>
+    </xsl:if>
+
 <ResearchBaseFor><xsl:apply-templates select="$RbaseInfo/Organization/OrganizationNameInformation/OfficialName/Name" mode="copy"/></ResearchBaseFor>
 </xsl:if>
 </xsl:for-each>
@@ -262,7 +342,15 @@
                  select="$ParentDoc/Organization/
                          OrganizationParent/ParentOrganization/@cdr:ref"/>
    <xsl:variable name="nextParentDoc" select="document(concat
-                                            ('cdr:',$nextParentID,'/last'))"/>
+                                            ('cdrx:',$nextParentID,'/last'))"/>
+    <xsl:if test="$nextParentDoc=''">
+    <xsl:message              terminate = "yes">
+    <xsl:text>Cannot resolve link </xsl:text>
+    <xsl:value-of               select = "$nextParentID"/>
+    <xsl:text>for Parent Name.</xsl:text>
+    </xsl:message>
+    </xsl:if>
+
 
     <xsl:call-template   name="upcode-parentname">
     <xsl:with-param      name="ParentID"
