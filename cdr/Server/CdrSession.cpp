@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSession.cpp,v 1.6 2000-10-30 17:41:00 mruben Exp $
+ * $Id: CdrSession.cpp,v 1.7 2002-06-18 20:34:08 ameyer Exp $
  *
  * Session control information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/10/30 17:41:00  mruben
+ * added canDo for document number
+ *
  * Revision 1.5  2000/05/03 15:25:41  bkline
  * Fixed database statement creation.
  *
@@ -22,6 +25,9 @@
  */
 
 #include "CdrSession.h"
+#include "CdrCommand.h"
+#include "CdrDom.h"
+#include "CdrString.h"
 #include "CdrDbConnection.h"
 #include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
@@ -57,7 +63,7 @@ void cdr::Session::setLastActivity(db::Connection& conn) const
     update.executeQuery();
 }
 
-bool cdr::Session::canDo(db::Connection& conn, 
+bool cdr::Session::canDo(db::Connection& conn,
                          const cdr::String& action,
                          const cdr::String& docType) const
 {
@@ -84,7 +90,7 @@ bool cdr::Session::canDo(db::Connection& conn,
     return count > 0;
 }
 
-bool cdr::Session::canDo(db::Connection& conn, 
+bool cdr::Session::canDo(db::Connection& conn,
                          const cdr::String& action,
                          int docId) const
 {
@@ -109,4 +115,53 @@ bool cdr::Session::canDo(db::Connection& conn,
         throw cdr::Exception(L"Database failure extracting result count");
     int count = rs.getInt(1);
     return count > 0;
+}
+
+
+/**
+ * Processes CdrCanDo command, reporting whether the current session/user
+ * is authorized to perform an action.
+ *
+ * Expected command format is:
+ *   <CdrCanDo>
+ *     <Action>Name_of_action</Action>
+ *     <DocType>Name_of_document_type</DocType>
+ *   </CdrCanDo>
+ *
+ * DocType is optional.  If not supplied, the default is L"", which should
+ * work for actions that are not doc type specific.
+ */
+
+cdr::String cdr::getCanDo (cdr::Session& session,
+                           const cdr::dom::Node& node,
+                           cdr::db::Connection& conn)
+{
+    cdr::dom::Node child;       // Child node in command
+    cdr::String cmdAction=L"",  // Action to be checked from command element
+                cmdDocType=L"", // DocType to be checked
+                result;         // Y=Action is allowed, N=not
+
+
+    // Parse command
+    child = node.getFirstChild();
+    while (child != 0) {
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String name = child.getNodeName();
+
+            if (name == L"Action")
+                cmdAction = cdr::dom::getTextContent (child);
+            else if (name == L"DocType")
+                cmdDocType = cdr::dom::getTextContent (child);
+        }
+    }
+
+    // Doc type is optional, but there has to be an action to check
+    if (cmdAction == L"")
+        throw cdr::Exception (L"getCanDo: No action specified to check");
+
+    // Check
+    result = (session.canDo (conn, cmdAction, cmdDocType)) ? L"Y" : L"N";
+
+    // Compose reply
+    return cdr::String(L"   <CanDo>" + result + L"</CanDo>");
 }

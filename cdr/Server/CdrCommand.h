@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.24 2002-05-03 20:35:45 bkline Exp $
+ * $Id: CdrCommand.h,v 1.25 2002-06-18 20:33:52 ameyer Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2002/05/03 20:35:45  bkline
+ * New CdrListVersions command added.
+ *
  * Revision 1.23  2002/04/04 01:05:21  bkline
  * Added cdr::publish().
  *
@@ -367,7 +370,7 @@ namespace cdr {
                             db::Connection&   conn);
 
     /**
-     * Delets an existing action from the CDR authentication module.
+     * Deletes an existing action from the CDR authentication module.
      *
      *  @param      session     contains information about the current user.
      *  @param      node        contains the XML for the command.
@@ -378,6 +381,22 @@ namespace cdr {
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
     extern String delAction(Session&          session,
+                            const dom::Node&  node,
+                            db::Connection&   conn);
+
+    /**
+     * Reports whether the current session has authorization to perform
+     * a particular action on a particular document type.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String getCanDo (Session&          session,
                             const dom::Node&  node,
                             db::Connection&   conn);
 
