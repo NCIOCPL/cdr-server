@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.17 2001-05-21 20:31:58 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.18 2001-09-19 18:48:22 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2001/05/21 20:31:58  bkline
+ * Fixed typo (missing right angle bracket for element closing tag).
+ *
  * Revision 1.16  2000/10/04 18:31:36  bkline
  * Added code to catch more exception types.
  *
@@ -90,6 +93,7 @@ static cdr::String      processCommand(cdr::Session&,
                                        const cdr::dom::Node&,
                                        cdr::db::Connection&,
                                        const cdr::String&);
+static cdr::String      getElapsedTime(DWORD);
 static void             sendErrorResponse(int, const cdr::String&,
                                           const cdr::String&);
 static DWORD __stdcall  dispatcher(LPVOID);
@@ -362,6 +366,7 @@ cdr::String processCommand(cdr::Session& session,
                            cdr::db::Connection& conn,
                            const cdr::String& when)
 {
+    DWORD start = GetTickCount();
     const cdr::dom::Element& cmdElement = static_cast<const cdr::dom::Element&>
         (cmdNode);
     cdr::String cmdId = cmdElement.getAttribute(L"CmdId");
@@ -371,6 +376,7 @@ cdr::String processCommand(cdr::Session& session,
     else
         rspTag = L" <CdrResponse Status='";
     cdr::dom::Node specificCmd = cmdNode.getFirstChild();
+    cdr::String elapsedTime;
     while (specificCmd != 0) {
         int type = specificCmd.getNodeType();
         if (type == cdr::dom::Node::ELEMENT_NODE) {
@@ -384,20 +390,27 @@ cdr::String processCommand(cdr::Session& session,
             cdr::log::pThreadLog->Write (L"processCommand", cmdText);
 
             cdr::Command cdrCommand = cdr::lookupCommand(cmdName);
-            if (!cdrCommand)
-                return cdr::String(rspTag + L"failure'>\n  <Errors>\n   "
+            if (!cdrCommand) {
+                elapsedTime = getElapsedTime(start);
+                return cdr::String(rspTag + L"failure' Elapsed='"
+                                          + elapsedTime
+                                          + L"'>\n  <Errors>\n   "
                                           + L"<Err>Unknown command: "
                                           + cmdName
                                           + L"</Err>\n  </Errors>\n"
                                           + L" </CdrResponse>\n");
+            }
             cdr::String cmdResponse;
             try {
                 /*
                  * Only way you can get in the door without a valid session
                  * is with a logon command.
                  */
-                if (cdrCommand != cdr::logon && !session.isOpen())
-                    return cdr::String(rspTag + L"failure'>\n  <"
+                if (cdrCommand != cdr::logon && !session.isOpen()) {
+                    elapsedTime = getElapsedTime(start);
+                    return cdr::String(rspTag + L"failure' Elapsed='"
+                                              + elapsedTime
+                                              + L"'>\n  <"
                                               + cmdName
                                               + L"Resp>\n"
                                               + L"   <Errors>\n    <Err>"
@@ -406,6 +419,7 @@ cdr::String processCommand(cdr::Session& session,
                                               + L"  </"
                                               + cmdName
                                               + L"Resp>\n </CdrResponse>\n");
+                }
 
                 // Optimistic assumption.
                 session.setStatus(L"success");
@@ -417,7 +431,10 @@ cdr::String processCommand(cdr::Session& session,
                     conn.rollback();
 
                 // Exception text already logged in exception constructor
-                return cdr::String(rspTag + L"failure'>\n  <"
+                elapsedTime = getElapsedTime(start);
+                return cdr::String(rspTag + L"failure' Elapsed='"
+                                          + elapsedTime
+                                          + L"'>\n  <"
                                           + cmdName
                                           + L"Resp>\n"
                                           + L"   <Errors>\n    <Err>"
@@ -432,8 +449,11 @@ cdr::String processCommand(cdr::Session& session,
                     conn.rollback();
                 wchar_t tBuf[40];
                 swprintf(tBuf, L"DOM Exception Code %d: ", de->code);
+                elapsedTime = getElapsedTime(start);
                 cdr::String result = 
-                       cdr::String(rspTag + L"failure'><"
+                       cdr::String(rspTag + L"failure' Elapsed='"
+                                          + elapsedTime
+                                          + L"'><"
                                           + cmdName 
                                           + L"Resp><Errors><Err>"
                                           + cdr::String(tBuf)
@@ -451,7 +471,10 @@ cdr::String processCommand(cdr::Session& session,
                 swprintf(tmpBuf, L" at line %d, Column %d",
                          spe.getLineNumber(), spe.getColumnNumber);
                 cdr::String locString = tmpBuf;
-                return cdr::String(rspTag + L"failure'><"
+                elapsedTime = getElapsedTime(start);
+                return cdr::String(rspTag + L"failure' Elapsed='"
+                                          + elapsedTime
+                                          + L"'><"
                                           + cmdName 
                                           + L"Resp><Errors>"
                                           + L"<Err>SAX Parse Exception: "
@@ -464,7 +487,10 @@ cdr::String processCommand(cdr::Session& session,
             catch (const cdr::dom::SAXException& se) {
                 if (!conn.getAutoCommit())
                     conn.rollback();
-                return cdr::String(rspTag + L"failure'><"
+                elapsedTime = getElapsedTime(start);
+                return cdr::String(rspTag + L"failure' Elapsed='"
+                                          + elapsedTime
+                                          + L"'><"
                                           + cmdName 
                                           + L"Resp><Errors><Err>SAX Exception: "
                                           + se.getMessage()
@@ -472,7 +498,10 @@ cdr::String processCommand(cdr::Session& session,
                                           + cmdName
                                           + L"Resp></CdrResponse>");
             }
+            elapsedTime = getElapsedTime(start);
             cdr::String response = rspTag + session.getStatus()
+                                          + L"' Elapsed='"
+                                          + elapsedTime
                                           + L"'>\n"
                                           + cmdResponse
                                           + L" </CdrResponse>\n";
@@ -486,7 +515,9 @@ cdr::String processCommand(cdr::Session& session,
         }
         specificCmd = specificCmd.getNextSibling();
     }
-    return cdr::String(rspTag + L"failure'>\n  <Errors>\n   "
+    return cdr::String(rspTag + L"failure' Elapsed='"
+                              + elapsedTime
+                              + L"'>\n  <Errors>\n   "
                               + L"<Err>Missing specific command element"
                               + L"</Err>\n  </Errors>\n"
                               + L" </CdrResponse>\n");
@@ -559,4 +590,16 @@ DWORD __stdcall sessionSweep(LPVOID arg) {
         }
     }
     return EXIT_SUCCESS;
+}
+
+/**
+ * Returns a string containing the number of seconds elapsed since the start.
+ */
+cdr::String getElapsedTime(DWORD start)
+{
+    DWORD now = GetTickCount();
+    DWORD millis = now - start; // OK if it wraps around.
+    wchar_t buf[80];
+    swprintf(buf, L"%lu.%03lu", millis / 1000L, millis % 1000L);
+    return buf;
 }
