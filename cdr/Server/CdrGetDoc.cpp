@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.15 2002-01-22 18:59:00 ameyer Exp $
+ * $Id: CdrGetDoc.cpp,v 1.16 2002-01-31 22:40:49 ameyer Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2002/01/22 18:59:00  ameyer
+ * Enhancements by Bob to handle DocCtl components in a standard way.
+ *
  * Revision 1.14  2001/11/06 21:42:10  bkline
  * Plugged in denormalization code.  Blocked it for Filter documents to
  * avoid a Sablotron bug.
@@ -205,6 +208,8 @@ cdr::String cdr::getDocString(
 
     // Create a string to return
     cdr::String cdrDoc = L"<CdrDoc Type='"
+                       + typName
+                       + L"' Id='"
                        + docIdString
                        + L"'>\n<CdrDocCtl>\n";
 
@@ -417,7 +422,7 @@ static cdr::String getCommonCtlString(int docId,
                                       int elements)
 {
   cdr::String cdrDoc;
-  
+
   if (elements & cdr::DocCtlComponents::DocCreate)
   {
     std::string query = "SELECT a.dt,"
