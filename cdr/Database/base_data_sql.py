@@ -1,10 +1,13 @@
 #----------------------------------------------------------------------
 #
-# $Id: base_data_sql.py,v 1.3 2001-12-19 20:46:52 bkline Exp $
+# $Id: base_data_sql.py,v 1.4 2001-12-21 23:15:27 bkline Exp $
 #
 # Generate SQL statements for loading the base CDR database records.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.3  2001/12/19 20:46:52  bkline
+# Added exit(0) to keep make happy.
+#
 # Revision 1.2  2001/12/19 20:34:30  bkline
 # Specified mmdb2 as data source.
 #
@@ -46,7 +49,7 @@ def quote(val):
     return "'" + str(val) + "'"
 
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the usr table.
+# Generate SQL queries for populating the usr table.
 #----------------------------------------------------------------------
 def load_usr():
     cursor = conn.cursor()
@@ -66,7 +69,7 @@ INSERT INTO usr(name, password, created, fullname, office, email, phone,
     cursor.close()
 
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the format table.
+# Generate SQL queries for populating the format table.
 #----------------------------------------------------------------------
 def load_format():
     cursor = conn.cursor()
@@ -79,7 +82,7 @@ def load_format():
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the doc_type table.
+# Generate SQL queries for populating the doc_type table.
 #----------------------------------------------------------------------
 def load_doc_type():
     cursor = conn.cursor()
@@ -103,7 +106,7 @@ INSERT INTO doc_type(name, format, created, versioning, active, comment)
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the action table.
+# Generate SQL queries for populating the action table.
 #----------------------------------------------------------------------
 def load_action():
     cursor = conn.cursor()
@@ -117,7 +120,7 @@ INSERT INTO action(name, doctype_specific, comment) VALUES (%s, %s, %s)""" % (
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the grp table.
+# Generate SQL queries for populating the grp table.
 #----------------------------------------------------------------------
 def load_grp():
     cursor = conn.cursor()
@@ -131,7 +134,7 @@ INSERT INTO grp(name, comment) VALUES (%s, %s)""" % (
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the doc_status table.
+# Generate SQL queries for populating the doc_status table.
 #----------------------------------------------------------------------
 def load_doc_status():
     cursor = conn.cursor()
@@ -144,7 +147,7 @@ INSERT INTO doc_status(id, name, comment) VALUES (%s, %s, %s)""" % (
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the active_status table.
+# Generate SQL queries for populating the active_status table.
 #----------------------------------------------------------------------
 def load_active_status():
     cursor = conn.cursor()
@@ -157,7 +160,7 @@ INSERT INTO active_status(id, name, comment) VALUES (%s, %s, %s)""" % (
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the grp_action table.
+# Generate SQL queries for populating the grp_action table.
 #----------------------------------------------------------------------
 def load_grp_action():
     cursor = conn.cursor()
@@ -176,7 +179,7 @@ INSERT INTO grp_action(grp, action, doc_type, comment)
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the grp_usr table.
+# Generate SQL queries for populating the grp_usr table.
 #----------------------------------------------------------------------
 def load_grp_usr():
     cursor = conn.cursor()
@@ -193,7 +196,7 @@ INSERT INTO grp_usr(grp, usr, comment)
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the link_type table.
+# Generate SQL queries for populating the link_type table.
 #----------------------------------------------------------------------
 def load_link_type():
     cursor = conn.cursor()
@@ -207,7 +210,7 @@ INSERT INTO link_type(name, comment) VALUES (%s, %s)""" % (
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the link_xml table.
+# Generate SQL queries for populating the link_xml table.
 #----------------------------------------------------------------------
 def load_link_xml():
     cursor = conn.cursor()
@@ -224,7 +227,7 @@ INSERT INTO link_xml(doc_type, element, link_id)
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the link_target table.
+# Generate SQL queries for populating the link_target table.
 #----------------------------------------------------------------------
 def load_link_target():
     cursor = conn.cursor()
@@ -241,7 +244,7 @@ INSERT INTO link_target(source_link_type, target_doc_type)
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the link_prop_type table.
+# Generate SQL queries for populating the link_prop_type table.
 #----------------------------------------------------------------------
 def load_link_prop_type():
     cursor = conn.cursor()
@@ -255,7 +258,7 @@ INSERT INTO link_prop_type(name, comment) VALUES (%s, %s)""" % (
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the link_properties table.
+# Generate SQL queries for populating the link_properties table.
 #----------------------------------------------------------------------
 def load_link_properties():
     cursor = conn.cursor()
@@ -274,7 +277,7 @@ INSERT INTO link_properties (link_id, property_id, value, comment)
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the query_term_rule table.
+# Generate SQL queries for populating the query_term_rule table.
 #----------------------------------------------------------------------
 def load_query_term_rule():
     cursor = conn.cursor()
@@ -288,7 +291,7 @@ INSERT INTO query_term_rule(name, rule_def) VALUES (%s, %s)""" % (
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the query_term_def table.
+# Generate SQL queries for populating the query_term_def table.
 #----------------------------------------------------------------------
 def load_query_term_def():
     cursor = conn.cursor()
@@ -308,7 +311,7 @@ INSERT INTO query_term_def (path, term_rule)
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the dev_task_status table.
+# Generate SQL queries for populating the dev_task_status table.
 #----------------------------------------------------------------------
 def load_dev_task_status():
     cursor = conn.cursor()
@@ -320,7 +323,7 @@ def load_dev_task_status():
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the issue_priority table.
+# Generate SQL queries for populating the issue_priority table.
 #----------------------------------------------------------------------
 def load_issue_priority():
     cursor = conn.cursor()
@@ -332,7 +335,7 @@ def load_issue_priority():
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the issue_user table.
+# Generate SQL queries for populating the issue_user table.
 #----------------------------------------------------------------------
 def load_issue_user():
     cursor = conn.cursor()
@@ -343,61 +346,69 @@ def load_issue_user():
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the dev_task table.
+# Generate SQL queries for populating the dev_task table.
 #----------------------------------------------------------------------
 def load_dev_task():
     cursor = conn.cursor()
     cursor.execute("""\
-SELECT description, assigned_to, status, status_date, category,
+SELECT id, description, assigned_to, status, status_date, category,
        est_complete, notes
   FROM dev_task""")
+    print "SET IDENTITY_INSERT dev_task ON\nGO"
     for row in cursor.fetchall():
         print """\
-INSERT INTO dev_task(description, assigned_to, status, status_date, category,
-                     est_complete, notes)
-     VALUES (%s, %s, %s, %s, %s, %s, %s)""" % (
+INSERT INTO dev_task(id, description, assigned_to, status, status_date,
+                     category, est_complete, notes)
+     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""" % (
             quote(row[0]), quote(row[1]), quote(row[2]), quote(row[3]),
-            quote(row[4]), quote(row[5]), quote(row[6]))
+            quote(row[4]), quote(row[5]), quote(row[6]), quote(row[7]))
     print "GO"
+    print "SET IDENTITY_INSERT dev_task OFF\nGO"
+    print "DBCC CHECKIDENT(dev_task, RESEED)\nGO"
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the issue table.
+# Generate SQL queries for populating the issue table.
 #----------------------------------------------------------------------
 def load_issue():
     cursor = conn.cursor()
     cursor.execute("""\
-SELECT logged, logged_by, priority, description, assigned, assigned_to,
+SELECT id, logged, logged_by, priority, description, assigned, assigned_to,
        resolved, resolved_by, notes
   FROM issue""")
+    print "SET IDENTITY_INSERT issue ON\nGO"
     for row in cursor.fetchall():
         print """\
-INSERT INTO issue(logged, logged_by, priority, description, assigned, 
+INSERT INTO issue(id, logged, logged_by, priority, description, assigned, 
                   assigned_to, resolved, resolved_by, notes)
-     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""" % (
+     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""" % (
             quote(row[0]), quote(row[1]), quote(row[2]), quote(row[3]),
             quote(row[4]), quote(row[5]), quote(row[6]), quote(row[7]),
-            quote(row[8]))
+            quote(row[8]), quote(row[9]))
     print "GO"
+    print "SET IDENTITY_INSERT issue OFF\nGO"
+    print "DBCC CHECKIDENT(issue, RESEED)\nGO"
     cursor.close()
     
 #----------------------------------------------------------------------
-# Generate SQL queryies for populating the report_task table.
+# Generate SQL queries for populating the report_task table.
 #----------------------------------------------------------------------
 def load_report_task():
     cursor = conn.cursor()
 
     # We'll put the dev_task values back in by hand if we want them.
-    cursor.execute("SELECT description, spec, sample FROM report_task")
+    cursor.execute("SELECT description, spec, sample, dev_task "
+                   "FROM report_task")
     for row in cursor.fetchall():
         print """\
-INSERT INTO report_task(description, spec, sample)
-     VALUES (%s, %s, %s)""" % (quote(row[0]), quote(row[1]), quote(row[2]))
+INSERT INTO report_task(description, spec, sample, dev_task)
+     VALUES (%s, %s, %s, %s)""" % (quote(row[0]), quote(row[1]), 
+                                   quote(row[2]), quote(row[3]))
     print "GO"
     cursor.close()
-    
+
 #----------------------------------------------------------------------
-# Generate SQL queryies for loading the css documents.
+# Generate SQL queries for loading the css documents.
 #----------------------------------------------------------------------
 def load_css_docs():
     cursor = conn.cursor()
@@ -426,7 +437,7 @@ INSERT INTO doc_blob(id, data)
     cursor.close()
 
 #----------------------------------------------------------------------
-# Generate SQL queryies for loading the Filter documents.
+# Generate SQL queries for loading the Filter documents.
 #----------------------------------------------------------------------
 def load_filter_docs():
     cursor = conn.cursor()
@@ -455,7 +466,7 @@ UPDATE doc_type SET title_filter = @@IDENTITY WHERE name = %s""" % (
     cursor.close()
 
 #----------------------------------------------------------------------
-# Generate SQL queryies for loading the PublishingSystem documents.
+# Generate SQL queries for loading the PublishingSystem documents.
 #----------------------------------------------------------------------
 def load_publishing_system_docs():
     cursor = conn.cursor()
@@ -478,7 +489,7 @@ INSERT INTO document(val_status, val_date, doc_type, title, xml,
     cursor.close()
 
 #----------------------------------------------------------------------
-# Generate SQL queryies for loading the schema documents.
+# Generate SQL queries for loading the schema documents.
 #----------------------------------------------------------------------
 def load_schema_docs():
     cursor = conn.cursor()
