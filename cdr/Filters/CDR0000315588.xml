@@ -527,6 +527,8 @@
  <xsl:template               match = "ProtocolRef | LOERef |
                                       SummaryRef  | GlossaryTermRef"
                               mode = "copy">
+  <xsl:variable               name = "docID"
+                            select = "@cdr:href | @href"/>
   <xsl:variable               name = "pubVersion"
                             select = "document(concat('cdrutil:/get-pv-num/',
                                                        @cdr:href | @href))"/>
@@ -534,10 +536,11 @@
   <xsl:choose>
    <xsl:when                  test = "$pubVersion = 0">
     <xsl:message         terminate = "no">
-     <xsl:text>&lt;LI&gt;</xsl:text>
+     <xsl:text>&lt;LI class="warning"&gt;</xsl:text>
      <xsl:value-of          select = "name()"/>
      <xsl:text> (</xsl:text>
-     <xsl:value-of          select = "@cdr:href | @href"/>
+     <xsl:value-of          select = "concat('CDR', number(
+                                        substring-after($docID, 'CDR')))"/>
      <xsl:text>)&lt;BR/&gt;</xsl:text>
      <xsl:text>Publishable Version of linked Document </xsl:text>
      <xsl:text>does not exist.&lt;BR/&gt;&lt;/LI&gt;</xsl:text>
