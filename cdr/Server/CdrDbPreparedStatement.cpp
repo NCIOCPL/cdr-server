@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbPreparedStatement.cpp,v 1.3 2000-10-23 14:09:31 mruben Exp $
+ * $Id: CdrDbPreparedStatement.cpp,v 1.4 2001-01-17 21:50:10 bkline Exp $
  *
  * Implementation of class for prepared CDR SQL queries.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/10/23 14:09:31  mruben
+ * added setBytes
+ *
  * Revision 1.2  2000/08/10 15:00:22  bkline
  * Fixed problem with string values exactly 2000 characters long.
  *
@@ -85,6 +88,28 @@ cdr::db::ResultSet cdr::db::PreparedStatement::executeQuery()
                                  getErrorMessage(rc));
     }
     return static_cast<cdr::db::Statement*>(this)->executeQuery(query.c_str());
+}
+
+/**
+ * Binds the registered positional parameters for the query and submits it to
+ * the database.  Returns the number of rows affected for an UPDATE, INSERT,
+ * or DELETE statement.  Other SQL statements (including DDL) can be submitted
+ * using this method, but if the query is not an UPDATE, INSERT, or DELETE
+ * statement the return value is undefined.
+ */
+int cdr::db::PreparedStatement::executeUpdate()
+{
+    SQLRETURN rc;
+    for (int i = 0; i < paramVector.size(); ++i) {
+        Parameter* p = paramVector[i];
+        rc = SQLBindParameter(hstmt, p->position, SQL_PARAM_INPUT, 
+                                     p->cType, p->sType, 
+                                     p->len, 0, p->value, 0, &p->cb);
+        if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+            throw cdr::Exception(L"Failure binding parameter",
+                                 getErrorMessage(rc));
+    }
+    return static_cast<cdr::db::Statement*>(this)->executeUpdate(query.c_str());
 }
 
 /**

@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbPreparedStatement.h,v 1.3 2000-10-05 18:16:31 mruben Exp $
+ * $Id: CdrDbPreparedStatement.h,v 1.4 2001-01-17 21:52:10 bkline Exp $
  *
  * Specialized Statement class for handling parameterized queries.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/10/05 18:16:31  mruben
+ * added support for Blob
+ *
  * Revision 1.2  2000/05/03 22:04:43  bkline
  * More ccdoc comments.
  *
@@ -55,6 +58,18 @@ namespace cdr {
              *                  any.
              */
             ResultSet   executeQuery();
+
+            /**
+             * Submits a SQL request to the CDR database and returns the
+             * number of rows affected for an UPDATE, INSERT, or DELETE 
+             * statement.  Other SQL statements (including DDL) can be 
+             * submitted using this method, but if the query is not an
+             * UPDATE, INSERT, or DELETE statement the return value is
+             * undefined.
+             *
+             *  @return         number of rows affected, if applicable.
+             */
+            int         executeUpdate();
 
             /**
              * Releases the parameter information for the current query.
