@@ -30,9 +30,20 @@
  Gather some additional parameter values and jump to the admin info.
  ========================================================================== -->
  <xsl:template                  match = "InScopeProtocol">
+  <xsl:variable                  name = "title">
+   <xsl:choose>
+    <xsl:when                    test = "ProtocolTitle[@Type = 'Original']">
+     <xsl:value-of             select = "ProtocolTitle[@Type = 'Original']"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of             select = "ProtocolTitle
+                                         [@Type = 'Professional']"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
   <xsl:apply-templates         select = "ProtocolAdminInfo">
    <xsl:with-param               name = "title"
-                               select = "ProtocolTitle[@Type = 'Original']"/>
+                               select = "$title"/>
    <xsl:with-param               name = "protId"
                                select = "ProtocolIDs/PrimaryID/IDString"/>
   </xsl:apply-templates>
@@ -81,12 +92,17 @@
                                                 $uri)"/>
    </xsl:message>
   </xsl:if>
+  <xsl:if                        test = "not(LeadOrgPersonnel
+                                        [PersonRole = 'Update person'])">
+   <xsl:message             terminate = "yes">
+    <xsl:value-of              select = "concat('Cannot find protocol update ',
+                                                'person for lead organization  ',
+                                                $leadOrgId)"/>
+   </xsl:message>
+  </xsl:if>
   <PUP>
    <xsl:apply-templates        select = "LeadOrgPersonnel
-                                        [PersonRole = 'Update person']">
-    <xsl:with-param              name = "isPup"
-                               select = "'yes'"/>
-   </xsl:apply-templates>
+                                        [PersonRole = 'Update person']"/>
   </PUP>
   <Protocol>
    <ProtocolTitle>
@@ -101,9 +117,12 @@
    <LeadOrg>
     <xsl:value-of              select = "$orgName"/>
    </LeadOrg>
-   <Personnel>
-    <xsl:apply-templates       select = "LeadOrgPersonnel"/>
-   </Personnel>
+   <xsl:for-each               select = "LeadOrgPersonnel
+                                        [PersonRole != 'Update person']">
+    <Personnel>
+     <xsl:apply-templates      select = "."/>
+    </Personnel>
+   </xsl:for-each>
    <xsl:apply-templates        select = "ProtocolSites"/>
   </Protocol>
  </xsl:template>
@@ -117,8 +136,6 @@
  and the person's role.
  ========================================================================== -->
  <xsl:template                  match = "LeadOrgPersonnel">
-  <xsl:param                     name = "isPup"
-                               select = "'no'"/>
   <xsl:variable                  name = "uri"
                                select = "concat('cdrx:', Person/@cdr:ref)"/>
   <xsl:variable                  name = "doc"
@@ -130,32 +147,18 @@
                                                 $uri)"/>
    </xsl:message>
   </xsl:if>
-  <xsl:variable                  name = "name">
+  <Name>
    <xsl:apply-templates        select = "$doc/Person/PersonNameInformation"/>
-  </xsl:variable>
-  <xsl:choose>
-   <xsl:when                     test = "$isPup = 'yes'">
-    <Name>
-     <xsl:value-of             select = "$name"/>
-    </Name>
-    <xsl:call-template           name = "pupLocation">
-     <xsl:with-param             name = "personDoc"
+  </Name>
+  <xsl:call-template             name = "getLocation">
+   <xsl:with-param               name = "personDoc"
                                select = "$doc"/>
-     <xsl:with-param             name = "personUri"
+   <xsl:with-param               name = "personUri"
                                select = "$uri"/>
-    </xsl:call-template>
-   </xsl:when>
-   <xsl:otherwise>
-    <LeadOrgPerson>
-     <Name>
-      <xsl:value-of            select = "$name"/>
-     </Name>
-     <Role>
-      <xsl:value-of            select = "PersonRole"/>
-     </Role>
-    </LeadOrgPerson>
-   </xsl:otherwise>
-  </xsl:choose>
+  </xsl:call-template>
+  <Role>
+   <xsl:value-of               select = "PersonRole"/>
+  </Role>
  </xsl:template>
 
  <!--
@@ -168,9 +171,9 @@
 
  <!--
  ==========================================================================
- Pull in the location information for the protocol update person.
+ Pull in the location information for a lead organization person.
  ========================================================================== -->
- <xsl:template                   name = "pupLocation">
+ <xsl:template                   name = "getLocation">
   <xsl:param                     name = "personUri"/>
   <xsl:param                     name = "personDoc"/>
   <xsl:if                        test = "not(contains($personUri, '#'))">
