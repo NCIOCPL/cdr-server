@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.6 2000-04-11 22:46:25 ameyer Exp $
+ * $Id: tables.sql,v 1.7 2000-04-13 22:09:05 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/04/11 22:46:25  ameyer
+ * Minor changes to link related tables.
+ *
  * Revision 1.5  2000/02/04 01:53:11  ameyer
  * Added link module related tables.
  *
@@ -243,7 +246,7 @@ CREATE TABLE document
      creator INTEGER NOT NULL REFERENCES usr,
   val_status CHAR NOT NULL DEFAULT 'U' REFERENCES doc_status,
     val_date DATETIME NULL,
-    approved CHAR NOT NULL DEFAULT 'N'
+    approved CHAR NOT NULL DEFAULT 'N',
     doc_type INTEGER NOT NULL REFERENCES doc_type,
        title VARCHAR(255) NOT NULL,
     modified DATETIME NULL,
@@ -419,7 +422,7 @@ CREATE TABLE doc_version
 CREATE TABLE version_label
          (id INTEGER IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
-     comment VARCHAR(255 NULL)
+     comment VARCHAR(255) NULL)
 
 /*
  * Associates a version label with a specific version of a single document.
@@ -540,9 +543,9 @@ CREATE TABLE link_prop_type (
  */
 CREATE TABLE link_prop (
       link_id INTEGER NOT NULL REFERENCES link_type,
-     property INTEGER NOT NULL REFERENCE link_prop_type,
+     property INTEGER NOT NULL REFERENCES link_prop_type,
         value VARCHAR(64),
-  PRIMARY KEY (link_type, property)
+  PRIMARY KEY (link_id, property)
 )
 
 /*
@@ -567,12 +570,12 @@ CREATE TABLE link_prop (
  *     val_time       date/time err_count set.
  */
 CREATE TABLE link_net (
-          link_type INTEGER NOT NULL REFERENCE link_type,
+          link_type INTEGER NOT NULL REFERENCES link_type,
          val_status CHAR NOT NULL CHECK (val_status IN ('P', 'F', 'N')),
-         source_doc INTEGER NOT NULL REFERENCES doc,
+         source_doc INTEGER NOT NULL REFERENCES document,
      source_doctype INTEGER NOT NULL REFERENCES doc_type,
         source_elem VARCHAR(32) NOT NULL,
-         target_doc INTEGER NULL REFERENCES doc,
+         target_doc INTEGER NULL REFERENCES document,
      target_doctype INTEGER REFERENCES doc_type NULL,
          target_fmt INTEGER NOT NULL REFERENCES format,
         target_frag VARCHAR(32) NULL,
@@ -593,7 +596,7 @@ CREATE TABLE link_net (
  *     fragment  value of id attribute in element.
  */
 CREATE TABLE link_fragment (
-         doc_id INTEGER NOT NULL REFERENCES doc,
+         doc_id INTEGER NOT NULL REFERENCES document,
            elem VARCHAR(32),
        fragment VARCHAR(32),
     PRIMARY KEY (doc_id, elem)
@@ -602,106 +605,3 @@ CREATE TABLE link_fragment (
 /*************************************************************
  *      End link related tables
  *************************************************************/
-
-/* 
- * Valid value rules.  Requirement 3.3.3.  Another approach might be
- * to have a "vv" attribute applied to the element, whose value
- * identifies the grp from the ctl table.  The advantage of the first
- * approach is the assistance from the DBMS in enforcing referential
- * integrity.  The advantage of the alternate approach is flexibility
- * (removing the assumption that any tag, regardless of position, is
- * controlled by the rule).
- *
- *           id  automatically generated primary key for the vv_rule table
- *         name  display string used to identify the rule for the user
- *          grp  identifies the horizontal slice of the ctl table whose
- *               values form the set of valid values for this data element
- *        dtype  document type to which this rule is applied
- *          tag  element in this document type to which the rule is applied
- */
-CREATE TABLE vv_rule
-         (id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL,
-         grp INTEGER NOT NULL REFERENCES ctl_grp,
-       dtype INTEGER NOT NULL REFERENCES doc_type,
-         tag VARCHAR(32) NOT NULL)
-
-/* 
- * Custom validation rules.  Requirement 3.3.5.  XXX We may add another column
- * which tells whether the rule is implemented in a stored procedure or in
- * C++.  Or we may implement them all as stored procedures, with external
- * hooks to C++ as necessary.  Or we may implement them all as C++, invoking
- * stored procedures as necessary.  Or we may use some fourth option which I
- * haven't even thought of yet. :->}
- *
- * XXX Need to investigate how XML processing instructions (PI) might play
- * a similar role, either replacing or augmenting these tables.
- *
- *           id  automatically generated primary key for the custom_rule table
- *         name  display string used to identify this rule to the user; for
- *               example, PATTERN MATCH
- *     severity  level of seriousness assigned to violations of this rule
- */
-CREATE TABLE custom_rule
-         (id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL UNIQUE,
-    severity INTEGER)
-
-
-/*
- * Each custom validation rule can be applied zero or more times to any given
- * document type.  Each application will be numbered beginning with 1.  This
- * number (the app column) determines the order in which the rule is invoked
- * for this document type.  Each application would logically have a different
- * set of parameters (see the rule_param table).
- *
- *           id  identification of the rule being applied to the doc type
- *        dtype  document type to which this rule is being applied
- *          app  identification of which application of the rule to this
- *               document type is represented by this row
- *       status  A (active) or D (disabled)
- */
-CREATE TABLE rule_map
-         (id INTEGER NOT NULL REFERENCES custom_rule,
-       dtype INTEGER NOT NULL REFERENCES doc_type,
-         app INTEGER NOT NULL,
-      status CHAR,
- PRIMARY KEY (id, dtype, app))
-
-/* 
- * Sequenced list of unnamed parameters for the custom validation rules.
- * Parameters are numbered sequentially beginning with 1.  The values of 
- * the parameters are stored as character data.
- *
- *           id  identification of the rule to which this parameter is passed
- *        dtype  document type to which the rule is being applied
- *          app  identifies which application of the rule to this document
- *               type is involved
- *          pos  position of the parameter
- *          val  value of the parameter passed to the validation rule
- */
-CREATE TABLE rule_param
-         (id INTEGER NOT NULL,
-       dtype INTEGER NOT NULL,
-         app INTEGER NOT NULL,
-         pos INTEGER NOT NULL,
-         val VARCHAR(255),
- FOREIGN KEY (id, dtype, app) REFERENCES rule_map,
- PRIMARY KEY (id, dtype, app, pos))
-
-/*
- * Tracking for directory mailings.  Form of name and address to which 
- * mailing was sent can be derived from the version of the directory
- * document to which this mailing is linked.  The status column reflects
- */
-CREATE TABLE dir_mailing
-      (docid INTEGER NOT NULL,
-        sent DATETIME NOT NULL,
- doc_version INTEGER NOT NULL,
-      status CHAR NOT NULL,
- FOREIGN KEY (docid, doc_version) REFERENCES doc_version,
- PRIMARY KEY (docid, sent))
-
-CREATE TABLE mail_action
-      (docid INTEGER NOT NULL,
-        sent DATETIME NOT NULL)
