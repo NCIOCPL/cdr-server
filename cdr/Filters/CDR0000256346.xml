@@ -268,69 +268,69 @@
                      Display a Subscript 
      ===================================================================== -->   
   <xsl:template match="Subscript">
-    <sub><xsl:apply-templates/></sub>
+   <sub><xsl:apply-templates/></sub>
   </xsl:template>
 
 <!-- ======================================================================
                      Display a Superscript 
      ===================================================================== -->
   <xsl:template match="Superscript">
-    <sup><xsl:apply-templates/></sup>
+   <sup><xsl:apply-templates/></sup>
   </xsl:template>
 
 <!-- ======================================================================
                      Display Strong 
      ===================================================================== -->
   <xsl:template match="Strong">
-    <b><xsl:apply-templates/></b>
+   <b><xsl:apply-templates/></b>
   </xsl:template>
 
 <!-- ======================================================================
        Display Emphasis, ScientificName, ForeignWord, GeneName
      ===================================================================== -->
-  <xsl:template                  match = "Emphasis | ScientificName | 
-                                           ForeignWord | GeneName">
-                                          
-    <i><xsl:apply-templates/></i>
+  <xsl:template                  match = "Emphasis | ScientificName |
+                                          ForeignWord | GeneName">
+   <i>
+   <xsl:apply-templates/>
+   </i>
   </xsl:template>
 
 <!-- ======================================================================
                          Display a note        
      ===================================================================== -->
   <xsl:template                  match = "Note">
-    <i>
+   <i>
     <xsl:text>&#xa0;[</xsl:text>
     <xsl:choose>
-      <xsl:when                   test = "/Summary/SummaryMetaData
-                                          /SummaryLanguage ='Spanish'">                   
-        <xsl:text>Nota: </xsl:text>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:text>Note: </xsl:text>
-      </xsl:otherwise>
+     <xsl:when                    test = "//SummaryLanguage ='Spanish'"> 
+      <xsl:text>Nota: </xsl:text>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>Note: </xsl:text>
+     </xsl:otherwise>
     </xsl:choose>
-    <xsl:value-of               select = "."/>
+     <xsl:value-of              select = "."/>
     <xsl:text>]</xsl:text>
-    </i>
+   </i>
   </xsl:template>
 
 <!-- ======================================================================
         Template handling ListTitle
      ===================================================================== -->  
   <xsl:template                  match = "ListTitle">    
-    <br />
-    <b><i>
-    <xsl:apply-templates /> 
-    </i></b>      
+   <br/>
+   <b><i>
+   <xsl:apply-templates /> 
+   </i></b>      
   </xsl:template>
 
 <!-- ======================================================================
         Template handling ListItem in OrderedList
      ===================================================================== -->  
-  <xsl:template                   name = "OrderedListItem">                                 
-    <xsl:param                    name = "style"/> 
-        
-    <li>      
+  <xsl:template                   name = "OrderedListItem">
+   <xsl:param                     name = "style"/> 
+
+   <li>      
       <!-- No attribute for Arabic; it is the default. -->
       <xsl:choose>
         <xsl:when                 test = "$style = 'UAlpha'">
@@ -362,7 +362,8 @@
 <!-- ======================================================================
         Template handling ListItem in ItemizedList
      ===================================================================== -->  
-  <xsl:template                   name = "ItemizedListItem">                                 
+  <xsl:template                   name = "ItemizedListItem">
+                                 
     <xsl:param                    name = "style"/> 
         
     <li> 
@@ -401,6 +402,188 @@
     <xsl:apply-templates />
     </h2>
   </xsl:template> 
+
+<!--=====================================================================
+         Display TOC Summary Title with Deletion and Insertion
+    ==================================================================== -->
+  <xsl:template                  match = "SummaryTitle"
+                                  mode = "TOC">
+    <h2>
+    <xsl:apply-templates />
+    </h2>
+  </xsl:template> 
+
+<!-- ===================================================================
+           Display summary titles in TOC.
+     =================================================================== -->
+    <xsl:template              match = "Title" 
+                                mode = "TOC">
+     <xsl:apply-templates/>
+    </xsl:template>
+
+<!-- ===================================================================
+           Display SummarySection in TOC.
+     =================================================================== -->
+    <xsl:template               name = "TocSummarySection">
+     <xsl:param                 name = "level"/> 
+
+     <dt>
+      <xsl:apply-templates    select = "Title"
+                                mode = "TOC"/>
+     </dt>
+   
+     <xsl:if                    test = "SummarySection and
+                                        $level &lt; 3">
+      <dl>
+      <xsl:for-each           select = "SummarySection">
+       <xsl:call-template       name = "TocSummarySection">
+        <xsl:with-param         name = "level"
+                              select = "$level + 1"/>
+       </xsl:call-template>
+      </xsl:for-each>
+      </dl>
+     </xsl:if>
+
+    </xsl:template>
+
+<!-- ===================================================================
+        Display a summary section title depending on how many 
+        SummarySection in its ancestors. We may have to use
+        a mode here to avoid unintended usage in documents that
+        are not summaries, but with Title.
+     =================================================================== -->
+    <xsl:template              match = "Title">
+     <xsl:variable              name = "ancestors"
+                              select = "ancestor::SummarySection"/>
+     <xsl:variable              name = "heading">
+      <xsl:choose>
+       <xsl:when                test = "count($ancestors) &lt; 4">
+        <xsl:value-of         select = "count($ancestors)+1"/>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:value-of         select = "4"/>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:variable>
+    
+     <xsl:text disable-output-escaping="yes">&lt;h</xsl:text>
+     <xsl:value-of            select = "$heading"/>
+     <xsl:text disable-output-escaping="yes">&gt;</xsl:text>    
+     <xsl:apply-templates/>
+     <xsl:text disable-output-escaping="yes">&lt;/h</xsl:text>
+     <xsl:value-of            select = "$heading"/> 
+     <xsl:text disable-output-escaping="yes">&gt;</xsl:text>   
+
+    </xsl:template>
+
+<!-- ============================================================
+       Display Paragraphs 
+     ============================================================== -->
+    <xsl:template              match = "Para">
+     <p>
+     <xsl:apply-templates/>
+     </p>
+    </xsl:template>
+
+<!--=====================================================================
+      Display tables in old format
+    ==================================================================== -->
+   <xsl:template               match = "TT">
+    <pre>
+    <xsl:apply-templates/>
+    </pre>
+   </xsl:template>
+
+<!-- =====================================================================
+       Create a link to another document or website 
+     ================================================================== -->
+    <xsl:template              match = "ExternalRef">
+     <xsl:variable              name = "nlink" 
+                              select = "@cdr:xref"/>
+     <a href="{$nlink}">
+     <xsl:apply-templates/>
+     </a>
+    </xsl:template>
+
+          
+<!-- ======================================================================
+       Display CitationLink
+     ===================================================================== -->
+    <xsl:template              match = "CitationLink">
+     <xsl:variable              name = "nextRef" 
+                              select = "position()+1"/>
+     <xsl:variable              name = "firstRef" 
+                              select = "position()-1"/>
+     <xsl:variable              name = "ref" 
+                              select = "."/>
+      
+     <xsl:if                    test = "name(../node()[$firstRef])
+                                        != 'CitationLink'">
+      <xsl:value-of           select = "'['"/>
+     </xsl:if>
+                    
+     <xsl:choose>
+      <xsl:when                 test = "@InsertionOrDeletion
+                                       = 'Deletion'">
+       <strike>
+        <xsl:value-of         select = "@refidx"/>
+       </strike>
+      </xsl:when> 
+      <xsl:when                 test = "@InsertionOrDeletion
+                                        = 'Insertion'">
+       <xsl:choose>
+        <xsl:when               test = "@RevisionLevel='proposed'">
+         <font color="FUCHSIA">
+          <xsl:value-of       select = "@refidx"/>
+         </font>
+        </xsl:when>
+        <xsl:otherwise>
+         <font color="RED">
+          <xsl:value-of       select = "@refidx"/>
+         </font>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:when> 
+      <xsl:otherwise>
+        <xsl:value-of         select = "@refidx"/>
+      </xsl:otherwise> 
+     </xsl:choose>  	    
+	    	
+     <xsl:if                    test = "name(../node()[$nextRef])
+                                        = 'CitationLink'">
+      <xsl:value-of           select = "','"/>
+     </xsl:if>            
+          
+     <xsl:if                    test = "name(../node()[$nextRef])
+                                        != 'CitationLink'">
+      <xsl:value-of           select = "']'"/>
+     </xsl:if>   
+      
+    </xsl:template>
+
+<!-- ===================================================================
+       Display references 
+     ================================================================== -->
+    <xsl:template              match = "ReferenceList">
+     <xsl:if                    test = "Reference">
+      <xsl:choose>
+       <xsl:when                test = "//SummaryLanguage='Spanish'">        
+        <h3>Referencias:</h3>
+       </xsl:when>
+       <xsl:otherwise>
+        <h3>References:</h3>        
+       </xsl:otherwise>     
+      </xsl:choose>
+      
+      <ol>
+      <xsl:for-each           select = "Reference">
+       <p><li>
+       <xsl:apply-templates select="."/>
+       </li></p>
+      </xsl:for-each>
+      </ol>
+     </xsl:if>
+    </xsl:template>
 
 </xsl:transform>]]>
 </CdrDocXml>
