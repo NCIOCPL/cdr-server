@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.95 2004-04-30 01:04:25 ameyer Exp $
+ * $Id: tables.sql,v 1.96 2004-08-10 15:04:29 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.95  2004/04/30 01:04:25  ameyer
+ * Added table filter_profile.
+ * Revised a comment clarifying non-use of url field in link_net.
+ *
  * Revision 1.94  2004/01/14 13:13:30  bkline
  * Added index on dt column of ctgov_download_stats table.
  *
@@ -757,6 +761,7 @@ GO
 CREATE TABLE external_map_usage
          (id INTEGER      IDENTITY PRIMARY KEY,
         name VARCHAR(32)  NOT NULL UNIQUE,
+ auth_action INTEGER      NOT NULL REFERENCES action,
      comment NVARCHAR(255)    NULL)
 GO
 
