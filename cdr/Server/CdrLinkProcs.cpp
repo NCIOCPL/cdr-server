@@ -18,9 +18,12 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.9 2002-03-25 21:33:50 bkline Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.10 2002-04-09 22:36:36 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2002/03/25 21:33:50  bkline
+ * Fixed an uninitialized pointer bug in parseRule().
+ *
  * Revision 1.8  2002/03/25 20:19:18  bkline
  * Fixed off-by-one loop error in code to parse tag in property string.
  *
@@ -598,16 +601,12 @@ bool cdr::link::LinkChkRelation::evalRelation (
     // Are we looking for equality or inequality?
     // We don't actually need to examine anything, all we need to know is ...
     // Was there a hit?
-    if (!rs.next()) {
-        if (relator == cdr::link::relEqual)
-            return true;
-        return false;
-    }
+    if (rs.next())
+        return relator == cdr::link::relEqual;
 
     // If got here, then no hit in query term table
-    if (relator == cdr::link::relEqual)
-        return false;
-    return true;
+    else
+        return relator != cdr::link::relEqual;
 }
 
 
