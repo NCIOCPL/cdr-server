@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.1 2000-05-17 12:51:39 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.2 2000-05-21 00:50:14 bkline Exp $
  *
  */
 
@@ -28,7 +28,12 @@ static cdr::String CdrPutDoc (cdr::Session& session,
 cdr::CdrDoc::CdrDoc (
     cdr::db::Connection& dbConn,
     cdr::dom::Node& docDom
-) : docDbConn (dbConn) {
+) : docDbConn (dbConn),
+    Comment(true), 
+    Blob(true),
+    ValDate(true),
+    Id(0),
+    DocType(0) {
 
     // Get doctype and id from CdrDoc attributes
     const cdr::dom::Element& docElement =
