@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbStatement.cpp,v 1.3 2000-04-21 13:55:03 bkline Exp $
+ * $Id: CdrDbStatement.cpp,v 1.4 2000-04-22 09:28:45 bkline Exp $
  *
  * Implementation for ODBC HSTMT wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/04/21 13:55:03  bkline
+ * Fixed bug in setString buffer initializations.
+ *
  * Revision 1.2  2000/04/17 21:24:48  bkline
  * Added nullability for ints and strings.  Fixed length byte for setString().
  *
@@ -32,7 +35,20 @@ cdr::db::Statement::~Statement()
         delete [] p->value;
         delete p;
     }
-    SQLFreeStmt(hstmt, SQL_DROP);
+    SQLRETURN rc = SQLFreeStmt(hstmt, SQL_DROP);
+    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO &&
+            rc != SQL_NO_DATA_FOUND)
+        throw cdr::Exception(L"Failure dropping database statement",
+                             getErrorMessage(rc));
+}
+
+void cdr::db::Statement::close()
+{
+    SQLRETURN rc = SQLFreeStmt(hstmt, SQL_CLOSE);
+    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO &&
+            rc != SQL_NO_DATA_FOUND)
+        throw cdr::Exception(L"Failure closing database statement",
+                             getErrorMessage(rc));
 }
 
 cdr::db::ResultSet cdr::db::Statement::executeQuery(const char* query)
@@ -48,7 +64,8 @@ cdr::db::ResultSet cdr::db::Statement::executeQuery(const char* query)
                                  getErrorMessage(rc));
     }
     rc = SQLExecDirect(hstmt, (SQLCHAR *)query, SQL_NTS);
-    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO &&
+            rc != SQL_NO_DATA_FOUND)
         throw cdr::Exception(L"Failure executing database query",
                              getErrorMessage(rc));
     return cdr::db::ResultSet(*this);
@@ -61,7 +78,7 @@ void cdr::db::Statement::setString(int pos, const cdr::String& val)
     p->cType     = SQL_C_WCHAR;
     p->sType     = val.size() > 2000 ? SQL_WLONGVARCHAR : SQL_WVARCHAR;
     if (val.isNull()) {
-        p->len   = 0;
+        p->len   = 1; // Required by ODBC even for NULL data!
         p->value = 0;
         p->cb    = SQL_NULL_DATA;
     }
@@ -81,7 +98,7 @@ void cdr::db::Statement::setString(int pos, const std::string& val, bool null)
     p->cType     = SQL_C_CHAR;
     p->sType     = SQL_VARCHAR;
     if (null) {
-        p->len   = 0;
+        p->len   = 1; // Required by ODBC even for NULL data!
         p->value = 0;
         p->cb    = SQL_NULL_DATA;
     }
