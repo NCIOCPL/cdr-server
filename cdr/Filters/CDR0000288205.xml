@@ -1,0 +1,169 @@
+<CdrDoc Type='Filter' Id='CDR0000288205'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Global Change: Insert Participating Org</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+
+<!-- 
+ ==================================================================
+
+ Global Change: Insert Participating Org   XXXXXXXXXXX
+
+ This filter has to add a new participating organization to an 
+ InScopeProtocol.
+ The filter is typically invoked on all protocols with a particular
+ lead organization after a new organization joins the group led by 
+ that lead org.
+
+ So three mandatory values are passed in:
+
+ 1. A cdr document ID to match against the OrgSiteID/@cdr:ref (orgId).
+
+ 2. An existing value of OrgSiteStatus to find (oldStatus).
+
+ 3. A new value for OrgSiteStatus to replace the existing one when
+    a match is found (newStatus).
+
+ Additionally, if multiple Lead Organizations exist, it is now possible 
+ to specify the Lead Org, under which the org status should be changed.
+ It is also possible to specify that the status should only be changed
+ under a specified Lead Org for a particular SpecificPerson.  However, 
+ this functionallity fails if a SpecificPerson is NOT the only person
+ under that specified organization.
+ If no leadOrgId is provided but a personId the value of the personId 
+ will be ignored.
+ 
+ The two additional optional values are passed in as:
+ 
+ 4. A lead organization ID matching LeadOrganizationID/@cdr:ref 
+    (leadOrgId)
+
+ 5. An ID for the person matching Person/@cdr:ref (personId).
+ ================================================================== -->
+<xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                            xmlns:cdr = "cips.nci.nih.gov/cdr"
+                              version = "1.0">
+
+ <xsl:output                   method = "xml" 
+                 omit-xml-declaration = "no"/>
+
+ <!--
+ ================================================================
+ Passed in by the caller.
+ Parameter 1, 2, and 3 are mandatory.
+  ================================================================ -->
+ <!-- xsl:param                      name = "leadOrgID"/>
+ <xsl:param                      name = "newOrgSiteID"/>
+ <xsl:param                      name = "newPersonID"/>
+ <xsl:param                      name = "setRole"/>
+ <xsl:param                      name = "setSpecificPhone"/ -->
+ <xsl:variable                   name = "leadOrgID"
+                               select = "'CDR0000027328'"/>
+ <xsl:variable                   name = "newOrgSiteID"
+                               select = "'CDR8888827316'"/>
+ <xsl:variable                   name = "newPersonID"
+                               select = "'CDR7777777777'"/>
+ <!-- xsl:variable                   name = "setRole"
+                               select = "'Kasper'"/>
+ <xsl:variable                   name = "setSpecificPhone"
+                               select = "'1-800-EAT-MEAT'" -->
+ <xsl:variable                   name = "setRole"/>
+ <xsl:variable                   name = "setSpecificPhone"/>
+
+
+ <!--
+ ===================================================================
+ Template to change the Organization status.
+ =================================================================== -->
+ <xsl:template                  match = "/InScopeProtocol/ProtocolAdminInfo
+                                         /ProtocolLeadOrg
+                                         /ProtocolSites">
+  <ProtocolSites>
+  <xsl:choose>
+  <xsl:when                      test = "../LeadOrganizationID
+                                         /@cdr:ref = $leadOrgID">
+    <xsl:apply-templates   select = "@*|comment()|*|
+                                     processing-instruction()|text()"/>
+
+    <!-- Insert the new Site Information
+         =============================== -->
+    <OrgSite>
+     <OrgSiteID  cdr:ref="{$newOrgSiteID}"/> <!-- Organization entered by Usr-->
+     <OrgSiteStatus>                         <!-- Status = Status of LeadOrg -->
+      <xsl:value-of                 select = "../LeadOrgProtocolStatuses
+                                              /CurrentOrgStatus/StatusName"/>
+     </OrgSiteStatus>
+     <OrgSiteContact>
+      <SpecificPerson>
+       <Person  cdr:ref="{$newPersonID}"/>   <!-- Person Entered by User -->
+
+       <!-- Role User entry is optional.  Default = Principle Investigator -->
+       <!-- What to do if invalid Role has been entered????                -->
+       <xsl:choose>
+       <xsl:when                      test = "$setRole">
+        <Role>
+         <xsl:value-of              select = "$setRole"/>
+        </Role>
+       </xsl:when>
+       <xsl:otherwise>
+        <Role>Principal Investigator</Role>
+       </xsl:otherwise>
+      </xsl:choose>
+
+      </SpecificPerson>
+      <xsl:if                         test = "$setSpecificPhone">
+       <SpecificPhone>
+        <xsl:value-of               select = "$setSpecificPhone"/>
+       </SpecificPhone>
+      </xsl:if>
+     </OrgSiteContact>
+    </OrgSite>
+  </xsl:when>
+  <xsl:otherwise>
+    <xsl:apply-templates   select = "@*|comment()|*|
+                                     processing-instruction()|text()"/>
+  </xsl:otherwise>
+  </xsl:choose>
+  </ProtocolSites>
+
+
+
+  <!-- Pick the Org ID of the new site (if it exists) without the 
+       Fragment identifier
+       ========================================================== -->
+  <!-- xsl:variable                  name = "newOrgLink"
+                               select = "ProtocolSites/OrgSite
+                                         /OrgSiteID/@cdr:ref"/>
+  <xsl:variable                  name = "thisOrgId">
+   <xsl:choose>
+    <xsl:when                    test = "contains($newOrgLink, '#')">
+     <xsl:value-of             select = "substring-before($newOrgLink, '#')"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of             select = "$newOrgLink"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable -->
+
+
+ </xsl:template>
+
+ <!--
+ ================================================================
+ Default rule, copying back out everything just as we got it.
+ ================================================================ -->
+ <xsl:template                  match = "@*|comment()|*|
+                                         processing-instruction()|text()">
+  <xsl:copy>
+   <xsl:apply-templates        select = "@*|comment()|*|
+                                         processing-instruction()|text()"/>
+  </xsl:copy>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
