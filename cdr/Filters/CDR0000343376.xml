@@ -37,6 +37,11 @@
  <xsl:template                   match = "PersonLocations">
   <xsl:copy>
   <xsl:variable                   name = "contactFID"
+                                select = "PrivatePractice/
+                                          PrivatePracticeLocation/@cdr:id |
+                                          Home/@cdr:id"/>
+<!-- 
+  <xsl:variable                   name = "contactFID"
                                 select = "OtherPracticeLocation/@cdr:id     |
                                           PrivatePractice/
                                           PrivatePracticeLocation/@cdr:id |
@@ -47,6 +52,7 @@
                                             [@cdr:id = $contactFID]/
                                           OrganizationLocation/
                                           Organization/@cdr:ref, '#')"/>
+-->
 
   <xsl:for-each                 select = "PrivatePractice/
                                           PrivatePracticeLocation
@@ -64,6 +70,9 @@
    </xsl:element>
   </xsl:for-each>
 
+  <xsl:apply-templates          select = "OtherPracticeLocation"/>
+
+<!-- 
   <xsl:for-each                 select = "OtherPracticeLocation">
    <OtherPracticeLocation>
     <xsl:for-each               select = "@*">
@@ -77,11 +86,15 @@
                                           Organization/
                                           OrganizationName"/>
      </OrganizationName>
+
+   111 <xsl:value-of             select = "$contactFID"/>
+<xsl:value-of             select = "$orgAddressFID"/> 111
+
    <xsl:call-template             name = "getPostalAddress">
     <xsl:with-param               name = "orgAddressFID"
                                 select = "$orgAddressFID"/>
    </xsl:call-template>
-   <xsl:call-template             name = "getPersonOrgPhone">
+   222<xsl:call-template             name = "getPersonOrgPhone">
     <xsl:with-param               name = "orgAddressFID"
                                 select = "$orgAddressFID"/>
    </xsl:call-template>
@@ -116,11 +129,75 @@
    </xsl:for-each>
    </OtherPracticeLocation>
   </xsl:for-each>
+-->
 
   <xsl:copy-of                  select = "CIPSContact"/>
   </xsl:copy>
  </xsl:template>
 
+
+ <!--
+ =======================================================================
+ Template for OtherPracticeLocation
+ ======================================================================= -->
+ <xsl:template                   match = "OtherPracticeLocation">
+  <xsl:variable                   name = "orgAddressFID"
+                                select = "substring-after(
+                                          OrganizationLocation/
+                                          Organization/@cdr:ref, '#')"/>
+  <OtherPracticeLocation>
+   <xsl:for-each                select = "@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+
+   <OrganizationLocation>
+    <OrganizationName> 
+     <xsl:value-of              select = "OrganizationLocation/
+                                          Organization/
+                                          OrganizationName"/>
+    </OrganizationName>
+
+    <xsl:call-template            name = "getPostalAddress">
+     <xsl:with-param              name = "orgAddressFID"
+                                select = "$orgAddressFID"/>
+    </xsl:call-template>
+    <xsl:call-template            name = "getPersonOrgPhone">
+     <xsl:with-param              name = "orgAddressFID"
+                                select = "$orgAddressFID"/>
+    </xsl:call-template>
+    <xsl:call-template            name = "getPersonOrgTollFreePhone">
+     <xsl:with-param              name = "orgAddressFID"
+                                select = "$orgAddressFID"/>
+    </xsl:call-template>
+    <xsl:call-template            name = "getPersonOrgFax">
+     <xsl:with-param              name = "orgAddressFID"
+                                select = "$orgAddressFID"/>
+    </xsl:call-template>
+    <xsl:call-template            name = "getPersonOrgEmail">
+     <xsl:with-param              name = "orgAddressFID"
+                                select = "$orgAddressFID"/>
+    </xsl:call-template>
+    <xsl:call-template            name = "getPersonOrgWebSite">
+     <xsl:with-param              name = "orgAddressFID"
+                                select = "$orgAddressFID"/>
+    </xsl:call-template>
+   </OrganizationLocation>
+
+   <xsl:copy-of                 select = "PersonTitle"/>
+   <xsl:copy-of                 select = "PersonRole"/>
+
+   <xsl:for-each                select = "ComplexAffiliation">
+    <ComplexAffiliation>
+     <xsl:copy-of               select = "Organization/
+                                          Organization/
+                                          OrganizationName"/>
+     <xsl:copy-of               select = "RoleAtAffiliatedOrganization"/>
+    </ComplexAffiliation>
+   </xsl:for-each>
+  </OtherPracticeLocation>
+ </xsl:template>
 </xsl:transform>
 ]]>
 </CdrDocXml>
