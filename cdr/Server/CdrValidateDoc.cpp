@@ -1,10 +1,13 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.6 2000-05-17 12:50:49 bkline Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.7 2000-10-05 14:40:33 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/05/17 12:50:49  bkline
+ * Replaced code to create Errors element with call to cdr::packErrors().
+ *
  * Revision 1.5  2000/05/03 15:20:38  bkline
  * Reworked to expose document validation to other modules.  Fixed use
  * of prepared db statements.
@@ -38,6 +41,7 @@
 #include "CdrXsd.h"
 #include "CdrRegEx.h"
 #include "CdrGetDoc.h"
+#include "CdrLink.h"
 #include "CdrValidateDoc.h"
 
 // Local functions.
@@ -55,7 +59,7 @@ static void validateElement(
         cdr::xsd::Schema&               schema,
         cdr::StringList&                errors);
 static bool validateAttributes(
-        cdr::dom::Element&              element, 
+        cdr::dom::Element&              element,
         const cdr::xsd::ComplexType&    type,
         cdr::xsd::Schema&               schema,
         cdr::StringList&                errors);
@@ -82,71 +86,71 @@ static void verifyElements(
         cdr::xsd::Schema&               schema,
         cdr::StringList&                errors);
 static void checkMaxInclusive(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
         const cdr::String&              value,
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void checkMinInclusive(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
         const cdr::String&              value,
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void validateTimeInstant(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
-        const cdr::String&              val, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void validateUri(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
-        const cdr::String&              val, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void validateBinary(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
-        const cdr::String&              val, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void validateInteger(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
-        const cdr::String&              val, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void validateDecimal(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
-        const cdr::String&              val, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void validateTime(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
-        const cdr::String&              val, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
 static void validateDate(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
-        const cdr::String&              val, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
         const cdr::xsd::SimpleType&     type,
-        cdr::StringList&                errors); 
+        cdr::StringList&                errors);
 static bool matchPattern(
-        const wchar_t*                  pattern, 
+        const wchar_t*                  pattern,
         const cdr::String&              value);
 static bool matchPattern(
-        const cdr::String&              pattern, 
+        const cdr::String&              pattern,
         const cdr::String&              value);
 
 /**
  * Validates a CDR document, using the following steps.
  * <PRE>
  *  <OL>
- *   <LI> Get the document to be validated (from the database or directly 
+ *   <LI> Get the document to be validated (from the database or directly
  *        from the command, depending on the variant invoked)</LI>
  *   <LI> Parse the document</LI>
  *   <LI> Extract the document type</LI>
@@ -162,14 +166,20 @@ static bool matchPattern(
  * however.
  */
 cdr::String cdr::validateDoc(
-        cdr::Session&                   session, 
+        cdr::Session&                   session,
         const cdr::dom::Node&           commandNode,
-        cdr::db::Connection&            conn) 
+        cdr::db::Connection&            conn)
 {
-    // Make sure the user is authorized to validate this document.
+    cdr::CdrDoc    *docObj;         // Pointer to doc object to validate
+    cdr::String    docTypeString;   // String form of doc type name
+    cdr::String    validationTypes; // E.g., "Schema Links"
+    cdr::ValidRule validRule;       // Do we update the DB or just validate?
+
+    // Get document type and check user authorization to validate it
     const cdr::dom::Element& commandElement =
         static_cast<const cdr::dom::Element&>(commandNode);
-    cdr::String docTypeString = commandElement.getAttribute(L"DocType");
+    validationTypes = commandElement.getAttribute(L"ValidationTypes");
+    docTypeString   = commandElement.getAttribute(L"DocType");
     if (docTypeString.empty())
         throw cdr::Exception(L"DocType attribute missing from "
                            L"CdrValidateDoc command element");
@@ -181,87 +191,154 @@ cdr::String cdr::validateDoc(
     }
 
     // Extract the document or its ID from the command.
-    cdr::dom::Node  docNode;
-    cdr::String     docIdString;
-    cdr::dom::Node  child = commandNode.getFirstChild();
+    cdr::dom::Node docNode;
+    cdr::String    docIdString;
+    cdr::dom::Node child = commandNode.getFirstChild();
     while (child != 0) {
         if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String name = child.getNodeName();
-            if (name == L"CdrDoc")
+            if (name == L"CdrDoc") {
+
+                // Document is right here
+                // Create an object for it
                 docNode = child;
-            else if (name == L"DocId")
-                docIdString = cdr::dom::getTextContent(child);
-            else
-                throw cdr::Exception(L"Unexpected element", name);
+                docObj = new cdr::CdrDoc (conn, docNode);
+
+                // This version assumes that doc is passed in solely
+                //   for validation.
+                // It may not even be in the database at all.
+                // So we won't try to update any stored validation status.
+                validRule = ValidateOnly;
+            }
+
+            else if (name == L"DocId") {
+
+                // Document is in the database
+                // Get ID for it
+                docIdString = cdr::dom::getTextContent (child);
+
+                // Construct object from the database
+                docObj = new cdr::CdrDoc (conn, docIdString.extractDocId());
+
+                // Make sure the caller is telling the truth about the DocType.
+                if (docTypeString != docObj->getTextDocType()) {
+                    delete docObj;
+                    throw cdr::Exception(
+                       L"Command specifies incorrect DocType", docTypeString);
+                }
+
+                // If doc is in the database, we assume we want to
+                //  update the stored validation status, unless told
+                //  otherwise.
+                cdr::dom::Element& elem =
+                    static_cast<cdr::dom::Element&>(child);
+                cdr::String validateOnlyAttr =
+                    elem.getAttribute(L"ValidateOnly");
+                if (validateOnlyAttr == L"Y")
+                    validRule = ValidateOnly;
+                else
+                    validRule = UpdateUnconditionally;
+            }
         }
         child = child.getNextSibling();
     }
 
     // Make sure we got what we need.
-    bool updateDocStatus = false;
     int  docId = 0;
     if (docIdString.empty() && docNode == 0)
         throw cdr::Exception(L"Command requires DocId or CdrDoc element");
     if (docNode != 0 && !docIdString.empty())
         throw cdr::Exception(L"Both DocId and CdrDoc specified");
-    if (docNode == 0) {
-        cdr::String docString = cdr::getDocString(docIdString, conn);
-        cdr::dom::Parser parser;
-        parser.parse(docString);
-        docNode = parser.getDocument().getDocumentElement();
-        updateDocStatus = true;
 
-        // Make sure the caller is telling the truth about the DocType.
-        cdr::String realDocType;
-        cdr::dom::Node docCtlNode = docNode.getFirstChild();
-        while (docCtlNode != 0) {
-            if (docCtlNode.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
-                cdr::String name = docCtlNode.getNodeName();
-                if (name == L"CdrDocCtl") {
-                    cdr::dom::Node n = docCtlNode.getFirstChild();
-                    while (n != 0) {
-                        if (n.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
-                            cdr::String name = n.getNodeName();
-                            if (name == L"DocType")
-                                realDocType = cdr::dom::getTextContent(n);
-                            else if (name == L"DocId")
-                                docId = 
-                                    cdr::dom::getTextContent(n).extractDocId();
-                            if (docId != 0 && !realDocType.empty())
-                                break;
-                        }
-                        n = n.getNextSibling();
-                    }
-                    break;
-                }
-            }
-            docCtlNode = docCtlNode.getNextSibling();
-        }
-        if (realDocType.empty())
-            throw cdr::Exception(L"Unable to extract document type from "
-                                 L"document");
-        if (realDocType != docTypeString)
-            throw cdr::Exception(L"Command specifies incorrect DocType",
-                                 docTypeString);
+    // Execute validation
+    cdr::String returnString = cdr::execValidateDoc (*docObj, validRule,
+                                                     validationTypes);
+
+    // Delete temporary object and return results
+    delete docObj;
+    return returnString;
+}
+
+
+/**
+ * Front end function to all validation.
+ * Called by validateDoc to perform validation on behalf of a client.
+ * Also called by CdrPutDoc when adding or replacing a document in
+ *   the database.
+ *
+ * @param  docObj           Reference to CdrDoc object to validate
+ * @param  errList          Reference to list of strings for error msgs
+ * @param  dbUpdate         Instructions pertaining to database update
+ *                              ValidateOnly - Do not update status/link info.
+ *                              UpdateIfValid - Update info if doc valid.
+ *                              UpdateUnconditionally - Update status/link
+ *
+ * @return                  Validation status
+ */
+
+cdr::String cdr::execValidateDoc (
+    cdr::CdrDoc&         docObj,
+    cdr::ValidRule       validRule,
+    const cdr::String&   validationTypes
+) {
+    bool              parseOK = false;
+    cdr::String       docTypeString = docObj.getTextDocType();
+    cdr::StringList   errList;
+
+
+cdr::log::WriteFile (L"DEBUG XML", docObj.getXml());
+    // Parse the xml text and grab the top element.
+    cdr::dom::Parser parser;
+    try {
+        parser.parse (docObj.getXml());
+        parseOK = true;
+    }
+    catch (const cdr::dom::XMLException& de) {
+        errList.push_back (L"Parsing error in XML: "
+                          + cdr::String (de.getMessage()));
+    }
+    catch (...) {
+        errList.push_back (L"Unable to parse XML: ");
     }
 
-    // Validate the document against the schema.
-    cdr::StringList errors;
-    cdr::validateDocAgainstSchema(docNode, docTypeString, conn,
-                                  errors,updateDocStatus);
+    if (parseOK) {
+        cdr::dom::Document document = parser.getDocument();
+        if (document == 0)
+            throw cdr::Exception(L"CdrDocXml element for document not found");
+
+        cdr::dom::Element docXml  = document.getDocumentElement();
+        cdr::dom::Node    docNode = docXml;
+
+        // Validate the document against the schema if appropriate.
+        if (validationTypes.empty()
+        ||   validationTypes.find(L"Schema") != validationTypes.npos) {
+            cdr::validateDocAgainstSchema (docXml, docTypeString,
+                                           docObj.getConn(), errList);
+
+            // If there were schema errors and we aren't supposed to update
+            //   the database in the event of errors, reset the flag to
+            //   prevent updates
+            if (validRule == cdr::UpdateIfValid && errList.size() > 0)
+                validRule = cdr::ValidateOnly;
+        }
+
+        // Validate links if appropriate
+        if (validationTypes.empty()
+        ||   validationTypes.find(L"Links") != validationTypes.npos)
+            cdr::link::CdrSetLinks (docXml, docObj.getConn(), docObj.getId(),
+                                    docTypeString, validRule, errList);
+    }
 
     // Note the outcome of the validation.
-    const wchar_t* status = errors.size() > 0 ? L"I" : L"V";
-    if (updateDocStatus) {
-        setDocStatus(conn, docId, status);
-
-        // Validate the links if appropriate XXX NOT YET IMPLEMENTED
-        //validateLinks(docElement, session, docIdString.getDocId());
-    }
+    const wchar_t* status = errList.size() > 0 ? L"I" : L"V";
+    if (validRule == cdr::UpdateUnconditionally ||
+            (validRule == cdr::UpdateIfValid && errList.size() == 0))
+        setDocStatus (docObj.getConn(), docObj.getId(), status);
 
     // Report the outcome.
-    return makeResponse(docIdString, status, errors);
+    return makeResponse (docObj.getTextId(), status, errList);
 }
+
 
 /**
  * Checks document against the schema for its document type, reporting any
@@ -269,56 +346,20 @@ cdr::String cdr::validateDoc(
  * responsible for ensuring that the docTypeName is correct for this
  * document.
  *
- *  @param  docNode             DOM node for CdrDoc element
+ *  @param  docElem             top level element for CdrDoc element
  *  @param  docTypeName         string for name of document's type
  *  @param  conn                reference to CDR database connection object
  *  @param  errors              vector of strings to be populated by this
  *                              function
- *  @param  updateDocStatus     if <code>true</code> update the doc_status
- *                              column of the document table
  *
  *  @exception  cdr::Exception  if database or parsing error encountered
  */
 void cdr::validateDocAgainstSchema(
-        const cdr::dom::Node&           docNode,
+        cdr::dom::Element&              docElem,
         const cdr::String&              docTypeName,
         cdr::db::Connection&            conn,
-        cdr::StringList&                errors,
-        bool                            updateDocStatus)
+        cdr::StringList&                errors)
 {
-    // Pull the XML out of the wrapper.
-    bool foundDocument = false;
-    cdr::dom::Element docXmlElement;
-    cdr::dom::Node child = docNode.getFirstChild();
-    while (child != 0) {
-        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
-            cdr::String name = child.getNodeName();
-            if (name == L"CdrDocXml") {
-
-                // Look for the CDATA section.
-                cdr::dom::Node cdata = child.getFirstChild();
-                while (cdata != 0) {
-                    if (cdata.getNodeType() ==
-                            cdr::dom::Node::CDATA_SECTION_NODE) {
-
-                        // Parse the CDATA section and grab the top element.
-                        cdr::dom::Parser parser;
-                        parser.parse(cdata.getNodeValue());
-                        cdr::dom::Document document = parser.getDocument();
-                        docXmlElement = document.getDocumentElement();
-                        foundDocument = true;
-                        break;
-                    }
-                    cdata = cdata.getNextSibling();
-                }
-                break;
-            }
-        }
-        child = child.getNextSibling();
-    }
-    if (!foundDocument)
-        throw cdr::Exception(L"CdrDocXml element for document not found");
-
     // Go get the schema for the document's type.
     std::string query = "SELECT xml_schema FROM doc_type WHERE name = ?";
     cdr::db::PreparedStatement select = conn.prepareStatement(query);
@@ -327,6 +368,9 @@ void cdr::validateDocAgainstSchema(
     if (!rs.next())
         throw cdr::Exception(L"Unknown document type", docTypeName);
     cdr::String schemaString = rs.getString(1);
+    if (schemaString.empty())
+        throw cdr::Exception (L"No schema available for doc type"
+                              + docTypeName);
 
     // Parse the schema
     cdr::dom::Parser parser;
@@ -335,7 +379,7 @@ void cdr::validateDocAgainstSchema(
 
     // Use the schema to validate the XML portion of the document
     cdr::xsd::Element schemaElement = schema.getTopElement();
-    if (schemaElement.getName() != docXmlElement.getNodeName()) {
+    if (schemaElement.getName() != docElem.getNodeName()) {
         cdr::String err;
         err = cdr::String(L"Wrong element at top of document XML: ")
             + L" (expected "
@@ -344,7 +388,7 @@ void cdr::validateDocAgainstSchema(
         throw cdr::Exception(err.c_str());
     }
     const cdr::xsd::Type& elementType = *schemaElement.getType(schema);
-    validateElement(docXmlElement, elementType, schema, errors);
+    validateElement (docElem, elementType, schema, errors);
 }
 
 /**
@@ -370,8 +414,8 @@ cdr::String makeResponse(cdr::String&     docId,
  * Records the new status of the document in the database.
  */
 void setDocStatus(
-        cdr::db::Connection&            conn, 
-        int                             id, 
+        cdr::db::Connection&            conn,
+        int                             id,
         const wchar_t*                  status)
 {
     std::string query = "UPDATE document"
@@ -380,7 +424,7 @@ void setDocStatus(
                         " WHERE id = ?";
     cdr::db::PreparedStatement update = conn.prepareStatement(query);
     update.setString(1, status);
-    update.setInt(2, id); 
+    update.setInt(2, id);
     update.executeQuery();
 }
 
@@ -393,13 +437,14 @@ void setDocStatus(
  *  @return     <code>true</code> if element is denormalized.
  */
 bool validateAttributes(
-        cdr::dom::Element&              element, 
+        cdr::dom::Element&              element,
         const cdr::xsd::ComplexType&    type,
         cdr::xsd::Schema&               schema,
-        cdr::StringList&                errors) 
+        cdr::StringList&                errors)
 {
     // Look for attributes expected for this element type.
     bool isDenormalized = false;
+    cdr::String elemName = element.getNodeName();
     cdr::xsd::AttrEnum attrEnum = type.getAttributes();
     while (attrEnum != type.getAttrEnd()) {
         cdr::xsd::Attribute* attr = *attrEnum++;
@@ -412,7 +457,7 @@ bool validateAttributes(
                 cdr::String err = cdr::String(L"Missing required attribute ")
                                 + attr->getName()
                                 + L" in element "
-                                + cdr::String(element.getNodeName());
+                                + elemName;
                 errors.push_back(err);
             }
         }
@@ -423,6 +468,8 @@ bool validateAttributes(
             if (!attrType) {
                 cdr::String err = cdr::String(L"Attribute ")
                                 + attrName
+                                + L" in element "
+                                + elemName
                                 + L" has not been assigned a type";
                 errors.push_back(err);
                 continue;
@@ -434,6 +481,8 @@ bool validateAttributes(
             if (!simpleType) {
                 cdr::String err = cdr::String(L"Attribute ")
                                 + attrName
+                                + L" in element "
+                                + elemName
                                 + L" does not have a simple type";
                 errors.push_back(err);
             }
@@ -458,7 +507,7 @@ bool validateAttributes(
                             + L"='"
                             + cdr::String(attr.getNodeValue())
                             + L"' in element "
-                            + cdr::String(element.getNodeName());
+                            + elemName;
             errors.push_back(err);
         }
     }
@@ -480,14 +529,14 @@ void validateElement(
     simpleType  = dynamic_cast<const cdr::xsd::SimpleType*>(&type);
     complexType = dynamic_cast<const cdr::xsd::ComplexType*>(&type);
     if (simpleType)
-        validateSimpleType(docElement.getNodeName(), 
+        validateSimpleType(docElement.getNodeName(),
                            L"",
                            cdr::dom::getTextContent(docElement),
                            *simpleType,
                            errors);
     else {
-        bool denormalized = validateAttributes(docElement, 
-                                               *complexType, 
+        bool denormalized = validateAttributes(docElement,
+                                               *complexType,
                                                schema,
                                                errors);
         if (denormalized)
@@ -513,22 +562,22 @@ void validateElement(
 }
 
 /**
- * Determines whether the specified <code>value</code> matches the regular 
+ * Determines whether the specified <code>value</code> matches the regular
  * expression represented by <code>pattern</code>.
  */
 bool matchPattern(
-        const cdr::String&              pattern, 
+        const cdr::String&              pattern,
         const cdr::String&              value)
 {
     return matchPattern(pattern.c_str(), value);
 }
 
 /**
- * Determines whether the specified <code>value</code> matches the regular 
+ * Determines whether the specified <code>value</code> matches the regular
  * expression represented by <code>pattern</code>.
  */
 bool matchPattern(
-        const wchar_t*                  pattern, 
+        const wchar_t*                  pattern,
         const cdr::String&              value)
 {
     cdr::RegEx re(pattern);
@@ -541,7 +590,7 @@ bool matchPattern(
  * text value, suitable for concatenating to error message.
  */
 cdr::String identifyTextValue(
-        const cdr::String&              elemName, 
+        const cdr::String&              elemName,
         const cdr::String&              attrName)
 {
     if (attrName.empty())
@@ -556,12 +605,12 @@ cdr::String identifyTextValue(
  * Reports any errors found with a date value.
  */
 void validateDate(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
-        const cdr::String&              val, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
         const cdr::xsd::SimpleType&     t,
-        cdr::StringList&                errors) 
-{ 
+        cdr::StringList&                errors)
+{
     static const wchar_t pattern[] = L"^\\d\\d\\d\\d-\\d\\d-\\d\\d$";
     if (!matchPattern(pattern, val)) {
         cdr::String err = cdr::String(L"Invalid date value: '")
@@ -575,12 +624,12 @@ void validateDate(
  * Reports any errors found with a time value.
  */
 void validateTime(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
-        const cdr::String&              val, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
         const cdr::xsd::SimpleType&     t,
-        cdr::StringList&                errors) 
-{ 
+        cdr::StringList&                errors)
+{
     static const wchar_t pattern[] =
         L"^\\d\\d:\\d\\d((:\\d\\d)(\\.\\d+)?)?( ?[-+]\\d{1,2}:\\d{2})?$";
     if (!matchPattern(pattern, val)) {
@@ -595,12 +644,12 @@ void validateTime(
  * Reports any errors found with a decimal value.
  */
 void validateDecimal(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
-        const cdr::String&              val, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
         const cdr::xsd::SimpleType&     t,
-        cdr::StringList&                errors) 
-{ 
+        cdr::StringList&                errors)
+{
     static const wchar_t pattern[] = L"^[-+]?\\d+(\\.\\d*)?|\\d*\\.\\d+$";
     if (!matchPattern(pattern, val)) {
         cdr::String err = cdr::String(L"Invalid decimal value: '")
@@ -666,12 +715,12 @@ void validateDecimal(
  * Reports any errors found with an integer value.
  */
 void validateInteger(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
-        const cdr::String&              val, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
         const cdr::xsd::SimpleType&     t,
-        cdr::StringList&                errors) 
-{ 
+        cdr::StringList&                errors)
+{
     static const wchar_t pattern[] = L"^[-+]?\\d+$";
     if (!matchPattern(pattern, val)) {
         cdr::String err = cdr::String(L"Invalid integer value: '")
@@ -716,17 +765,17 @@ void validateInteger(
  * @see section 4 of RFC 2396.
  */
 void validateUri(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
-        const cdr::String&              val, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
         const cdr::xsd::SimpleType&     t,
-        cdr::StringList&                errors) 
-{ 
+        cdr::StringList&                errors)
+{
     /*
-     * The pattern is from RFC 2396, with parentheses only needed for 
+     * The pattern is from RFC 2396, with parentheses only needed for
      * extracting subexpressions removed.
      */
-    const wchar_t* rfcPattern = 
+    const wchar_t* rfcPattern =
         L"^([^:/?#]+:)?(//[^/?#]*)?[^?#]*(\?[^#]*)?(#.*)?$";
 
     /*
@@ -748,12 +797,12 @@ void validateUri(
  * Reports any errors found with a binary value.
  */
 void validateBinary(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
-        const cdr::String&              val, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
         const cdr::xsd::SimpleType&     t,
-        cdr::StringList&                errors) 
-{ 
+        cdr::StringList&                errors)
+{
     // @see RFC 2045; ignoring 76-character/line limit.
     static const wchar_t base64Pattern[] = L"([A-Za-z0-9+/\\s]*=?=?";
     static const wchar_t hexPattern[] = L"^([0-9a-fA-F]{2}|\\s)*$";
@@ -780,12 +829,12 @@ void validateBinary(
  * Reports any errors found with a date/time value.
  */
 void validateTimeInstant(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
-        const cdr::String&              val, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
+        const cdr::String&              val,
         const cdr::xsd::SimpleType&     t,
-        cdr::StringList&                errors) 
-{ 
+        cdr::StringList&                errors)
+{
     static const wchar_t pattern[] =
         L"^\\d\\d\\d\\d-\\d\\d-\\d\\dT"
         L"\\d\\d:\\d\\d((:\\d\\d)(\\.\\d+)?)?( ?[-+]\\d{1,2}:\\d{2})?$";
@@ -801,11 +850,11 @@ void validateTimeInstant(
  * Determines whether the value is less than any minimum specified.
  */
 void checkMinInclusive(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
         const cdr::String&              value,
         const cdr::xsd::SimpleType&     t,
-        cdr::StringList&                errors) 
+        cdr::StringList&                errors)
 {
     if (t.getMinInclusive().size() > 0) {
         switch (t.getBuiltinType()) {
@@ -835,11 +884,11 @@ void checkMinInclusive(
  * Determines whether the value is greater than any maximum specified.
  */
 void checkMaxInclusive(
-        const cdr::String&              elemName, 
-        const cdr::String&              attrName, 
+        const cdr::String&              elemName,
+        const cdr::String&              attrName,
         const cdr::String&              value,
         const cdr::xsd::SimpleType&     t,
-        cdr::StringList&                errors) 
+        cdr::StringList&                errors)
 {
     if (t.getMaxInclusive().size() > 0) {
         switch (t.getBuiltinType()) {
@@ -998,7 +1047,7 @@ void verifyElementList(
 
         // Loop to end of occurrences which match.
         for (; n != 0; n = n.getNextSibling()) {
-            
+
             // Skip nodes which aren't elements.
             if (n.getNodeType() != cdr::dom::Node::ELEMENT_NODE)
                 continue;
@@ -1019,7 +1068,7 @@ void verifyElementList(
             }
 
             // Recursively check the element.
-            validateElement(static_cast<cdr::dom::Element&>(n), 
+            validateElement(static_cast<cdr::dom::Element&>(n),
                             *e->getType(schema), schema, errors);
         }
 
@@ -1063,16 +1112,19 @@ void verifyElementList(
                             + occName;
             errors.push_back(err);
         }
-        const cdr::xsd::Type* type = schema.lookupType(typeName);
-        if (!type) {
-            cdr::String err = cdr::String(L"Unable to find type ")
-                            + typeName
-                            + L" for element "
-                            + occName;
-            errors.push_back(err);
+        else {
+            const cdr::xsd::Type* type = schema.lookupType(typeName);
+            if (!type) {
+                cdr::String err = cdr::String(L"Unable to find type ")
+                                + typeName
+                                + L" for element "
+                                + occName;
+                errors.push_back(err);
+            }
+            else
+                validateElement(static_cast<cdr::dom::Element&>(n),
+                                *type, schema, errors);
         }
-        validateElement(static_cast<cdr::dom::Element&>(n), 
-                        *type, schema, errors);
         n = n.getNextSibling();
     }
 }
@@ -1112,7 +1164,7 @@ void verifyElements(
     cdr::String parentName = docElement.getNodeName();
     cdr::dom::Node child = docElement.getFirstChild();
     for ( ; child != 0; child = child.getNextSibling()) {
-        if (child.getNodeType() != cdr::dom::Node::ELEMENT_NODE) 
+        if (child.getNodeType() != cdr::dom::Node::ELEMENT_NODE)
             continue;
         cdr::String name     = child.getNodeName();
         cdr::String typeName = schema.lookupElementType(name);
@@ -1136,7 +1188,8 @@ void verifyElements(
                             + parentName;
             errors.push_back(err);
         }
-        validateElement(static_cast<cdr::dom::Element&>(child), 
-                        *childType, schema, errors);
+        if (childType)
+            validateElement(static_cast<cdr::dom::Element&>(child),
+                            *childType, schema, errors);
     }
 }
