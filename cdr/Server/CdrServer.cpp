@@ -1,9 +1,13 @@
 /*
- * $Id: CdrServer.cpp,v 1.25 2002-03-06 20:33:28 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.26 2002-03-07 12:58:22 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2002/03/06 20:33:28  bkline
+ * Made catch argument a reference instead of an object.  Removed redundant
+ * heap trace information.
+ *
  * Revision 1.24  2002/02/27 23:33:09  bkline
  * Added test of buffer allocation for new client message.
  *
@@ -179,18 +183,23 @@ main(int ac, char **av)
     std::cout << "listening...\n";
 
 #ifndef SINGLE_THREAD_DEBUGGING
+    std::cout << "sweeping for expired sessions...\n";
     if (_beginthread(sessionSweep, 0, (void*)0) == -1) {
         std::cerr << "CreateThread: " << GetLastError() << '\n';
         logTopLevelFailure(L"listen", (unsigned long)WSAGetLastError());
         return EXIT_FAILURE;
     }
+#else
+    std::cout << "running single-threaded for debugging...\n";
 #endif
 
     while (!timeToShutdown) {
+        MEM_START();
         int rc = handleNextClient(sock);
         if (rc != EXIT_SUCCESS)
             return rc;
         SHOW_HEAP_USED("Bottom of main processing loop");
+        MEM_REPORT();
     }
     return EXIT_SUCCESS;
 }
@@ -249,7 +258,7 @@ void realDispatcher(void* arg) {
                                               cdr::db::pwd);
     cdr::String now = conn.getDateTimeString();
     now[10] = L'T';
-    //std::wcerr << L"NOW=" << now << L"\n";
+    std::wcout << L"NOW=" << now << L"\n";
 
     // Create thread specific log pointer
     // Done early in thread creation so anything in the thread can
@@ -457,7 +466,7 @@ cdr::String processCommand(cdr::Session& session,
         int type = specificCmd.getNodeType();
         if (type == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String cmdName = specificCmd.getNodeName();
-            //std::wcerr << L"Received command: " << cmdName << L"\n";
+            std::wcout << L"processing command: " << cmdName << L"...\n";
 
             // Log info about the command
             cdr::String cmdText = L"Cmd: " + cmdName + L"  User: "
