@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.22 2001-12-14 15:15:30 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.23 2002-02-01 20:47:54 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2001/12/14 15:15:30  bkline
+ * Added missing call to register content object for SimpleContent.
+ *
  * Revision 1.21  2001/11/25 04:53:51  bkline
  * Added code to recognize readonly attribute as valid anywhere.
  *
@@ -6928,6 +6931,15 @@ void cdr::xsd::Schema::getValidValueSets(ValidValueSets& sets) const
                 sets[elemName] = &enumSet;
         }
         else if (complexType) {
+            const cdr::xsd::SimpleContent* sc =
+                dynamic_cast<const cdr::xsd::SimpleContent*>
+                (complexType->getContent());
+            if (sc) {
+                simpleType = sc->getSimpleType();
+                const cdr::StringSet& enumSet = simpleType->getEnumSet();
+                if (!enumSet.empty())
+                    sets[elemName] = &enumSet;
+            }
             for (AttrEnum e = complexType->getAttributes(); 
                     e != complexType->getAttrEnd(); ++e) {
                 cdr::String attrName         = e->first;
