@@ -25,6 +25,22 @@
                        Link to glossaryTermRefs 
      ====================================================================== -->
     <xsl:template              match = "GlossaryTermRef | LOERef">
+     <xsl:choose>
+     <xsl:when                  test = "Deletion">
+      <a>
+      <xsl:attribute            name = "href">
+       <xsl:value-of          select = "concat('/cgi-bin/cdr/Filter.py?',
+                                               'DocId=', @cdr:href,
+                                               '&amp;Filter=name:Glossary',
+                                               '+Term+Display+for+Patient',
+                                               '+Summaries')"/>
+      </xsl:attribute>
+      <strike>
+      <xsl:value-of           select = "."/>
+      </strike>
+     </a>
+    </xsl:when>
+    <xsl:otherwise>
      <a>
       <xsl:attribute            name = "href">
        <xsl:value-of          select = "concat('/cgi-bin/cdr/Filter.py?',
@@ -35,7 +51,9 @@
       </xsl:attribute>
       <xsl:value-of           select = "."/>
      </a>
-    </xsl:template>
+     </xsl:otherwise>
+     </xsl:choose>
+      </xsl:template>
 
 <!-- =====================================================================
                 Display Itemized Lists for KeyPoints
@@ -73,7 +91,8 @@
      <!-- Handle ListItem now. -->
      <ul>
      <xsl:for-each            select = "ListItem"> 
-      <xsl:call-template        name = "ItemizedListItem"/>
+     <xsl:call-template        name = "ItemizedListItem"/>
+    
     
       <!-- Take care of extra attributes. -->
       <xsl:if                   test = "position() != last() and
@@ -87,8 +106,9 @@
 <!-- =====================================================================
                        Display an ordered list 
      ===================================================================== -->
-    <xsl:template              match = "OrderedList">     
-   
+    <xsl:template              match = "OrderedList">   
+      
+       
      <xsl:apply-templates     select = "ListTitle"/>     
 
      <!-- Handle ListItem now. -->
@@ -117,15 +137,15 @@
       <li>      
        <xsl:apply-templates />
       </li>
-     
+      
       <!-- Take care of extra attribute compact. -->
       <xsl:if                   test = "position() != last() and
                                         ../@Compact = 'No'">
-       <br />        
+       <br /><br />        
       </xsl:if>   
      </xsl:for-each>
      </ol>
-    </xsl:template>        
+     </xsl:template>        
  
 <!-- =====================================================================
                      Display a Subscript 
@@ -189,7 +209,7 @@
         Template handling ListItem in ItemizedList
      ===================================================================== -->  
     <xsl:template               name = "ItemizedListItem">
-    
+          
      <li> 
      <xsl:attribute             name = "type">
       <xsl:choose>
@@ -206,7 +226,7 @@
      </xsl:attribute>
      <xsl:apply-templates />
      </li>
-    </xsl:template>
+     </xsl:template>
 
 <!-- =====================================================================
          Display TOC Summary Title with Deletion and Insertion
@@ -222,8 +242,8 @@
            Display summary titles in TOC.
      ===================================================================== -->
     <xsl:template              match = "Title" 
-                                mode = "TOC">
-     <xsl:apply-templates/>
+                               mode = "TOC">
+    <xsl:apply-templates/>
     </xsl:template>
 
 <!-- =====================================================================
@@ -236,17 +256,19 @@
       <li>
       <xsl:apply-templates    select = "Title"
                                 mode = "TOC"/>
-      </li>
+     </li>
      </xsl:if>                   
    
      <xsl:if                    test = "SummarySection and
                                         $level &lt; 3">
       <ul Class="lnone">
       <xsl:for-each           select = "SummarySection">
-       <xsl:call-template       name = "TocSummarySection">
+      <xsl:if                 test   =  "not(Title/Deletion)">
+      <xsl:call-template       name = "TocSummarySection">
         <xsl:with-param         name = "level"
                               select = "$level + 1"/>
-       </xsl:call-template>
+      </xsl:call-template>
+       </xsl:if>
       </xsl:for-each>
       </ul>
      </xsl:if>
@@ -260,7 +282,9 @@
         are not summaries, but with Title.
      ===================================================================== -->
     <xsl:template              match = "Title">
-     <xsl:variable              name = "ancestors"
+    <xsl:if                    test  ="not(../../SummaryMetaData/
+                                       SummaryAudience='Patients')">
+    <xsl:variable              name = "ancestors"
                               select = "ancestor::SummarySection"/>
      <xsl:variable              name = "heading">
       <xsl:choose>
@@ -279,9 +303,9 @@
      <xsl:apply-templates/>
      <xsl:text disable-output-escaping="yes">&lt;/h</xsl:text>
      <xsl:value-of            select = "$heading"/> 
-     <xsl:text disable-output-escaping="yes">&gt;</xsl:text>   
-
-    </xsl:template>
+     <xsl:text disable-output-escaping="yes">&gt;</xsl:text>  
+     </xsl:if> 
+     </xsl:template>
 
 <!-- =====================================================================
        Display Paragraphs 
@@ -335,6 +359,9 @@
       </ol>
      </xsl:if>
     </xsl:template>
+
+  
+                                    
 
 </xsl:transform>]]>
 </CdrDocXml>
