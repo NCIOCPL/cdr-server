@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.37 2002-06-28 19:39:10 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.38 2002-07-03 12:54:44 bkline Exp $
  *
  */
 
@@ -575,7 +575,7 @@ static cdr::String CdrPutDoc (
 
                         // Turn back on the specifically requested ones
                         validationTypes = attr.getNodeValue();
-                        if (validationTypes.find (L"Schema") !=
+                        if (validationTypes.find (L"schema") !=
                                 validationTypes.npos)
                             cmdSchemaVal = true;
                         if (validationTypes.find (L"Links") !=
@@ -627,13 +627,58 @@ static cdr::String CdrPutDoc (
         throw cdr::Exception(L"CdrPutDoc: No 'CdrDoc' element in transaction");
     cdr::CdrDoc doc (dbConn, docNode);
 
-    // Check user authorization
+    // Check user authorizations
     cdr::String action = newrec ? L"ADD DOCUMENT" : L"MODIFY DOCUMENT";
     cdr::String doctype = doc.getTextDocType();
     if (!session.canDo (dbConn, action, doctype))
         throw cdr::Exception (L"CdrPutDoc: User '" + session.getUserName() +
                               L"' not authorized to '" + action +
                               L"' with docs of type '" + doctype + L"'");
+
+    // Make sure user is authorized for the desired active status.
+    if (!newrec) {
+        static const char* const query = "SELECT active_status "
+                                         "  FROM document      "
+                                         " WHERE id = ?        ";
+        cdr::db::PreparedStatement st = dbConn.prepareStatement(query);
+        st.setInt(1, doc.getId());
+        cdr::db::ResultSet rs = st.executeQuery();
+        if (!rs.next())
+            throw cdr::Exception(L"Failure retrieving document status "
+                                 L"from database");
+        cdr::String dbActStat = rs.getString(1);
+        if (dbActStat != doc.getActiveStatus() 
+                && !session.canDo(dbConn, L"PUBLISH DOCUMENT", doctype))
+            if (dbActStat == L"A")
+                throw cdr::Exception(L"User not authorized to block "
+                                     L"publication for this document");
+            else
+                throw cdr::Exception(L"User not authorized to remove "
+                                     L"publication block for this document");
+    }
+    else if (doc.getActiveStatus() != L"A"
+            && !session.canDo(dbConn, L"PUBLISH DOCUMENT", doctype))
+        throw cdr::Exception(L"User not authorized to block publication "
+                             L"for this document");
+
+    // Make sure user is authorized to create the first publishable version.
+    if (cmdPublishVersion) {
+        static const char* const query = "SELECT COUNT(*)         "
+                                         "  FROM doc_version      "
+                                         " WHERE id = ?           "
+                                         "   AND publishable = 'Y'";
+        cdr::db::PreparedStatement st = dbConn.prepareStatement(query);
+        st.setInt(1, doc.getId());
+        cdr::db::ResultSet rs = st.executeQuery();
+        if (!rs.next())
+            throw cdr::Exception(L"Failure determining publishable version "
+                                 L"count for document");
+        int nPublishableVersions = rs.getInt(1);
+        if (!nPublishableVersions
+                && !session.canDo(dbConn, L"PUBLISH DOCUMENT", doctype))
+            throw cdr::Exception(L"User not authorized to create the first "
+                                 L"publishable version for this document");
+    }
 
     // Does document id attribute match expected action type?
     if (doc.getId() && newrec)
@@ -1418,7 +1463,7 @@ void cdr::CdrDoc::stripXmetalPis(bool validating)
     // Don't touch certain doc types
     if (TextDocType == L"Filter" ||
         TextDocType == L"css"    ||
-        TextDocType == L"Schema")
+        TextDocType == L"schema")
         return;
 
     cdr::FilterParmVector pv;
