@@ -1,15 +1,22 @@
 
 /*
- * $Id: CdrModUsr.cpp,v 1.1 2000-04-22 09:24:57 bkline Exp $
+ * $Id: CdrModUsr.cpp,v 1.2 2000-04-23 01:25:07 bkline Exp $
  *
  * Modifies the attributes and group assignments for an existing CDR user.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/22 09:24:57  bkline
+ * Initial revision
  */
 
 #include "CdrCommand.h"
 #include "CdrDbResultSet.h"
 
+/**
+ * Updates the appropriate row in the usr table, then drops all rows in the
+ * grp_usr table joined to that row, and replaces them with a fresh set from
+ * the command.
+ */
 cdr::String cdr::modUsr(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
                         cdr::db::Connection& dbConnection) 
