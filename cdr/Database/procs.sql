@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.5 2001-10-12 22:22:01 bkline Exp $
+ * $Id: procs.sql,v 1.6 2001-12-19 20:09:47 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2001/10/12 22:22:01  bkline
+ * Added prot_init_mailer_docs.
+ *
  * Revision 1.4  2001/09/04 20:30:28  bkline
  * Changed MemberOfCooperativeGroup to MemberOfCooperativeGroups to reflect
  * switch made by Ark.
@@ -23,10 +26,29 @@
  */
 IF EXISTS (SELECT *
              FROM sysobjects
-            WHERE name = 'sp_find_address'
+            WHERE name = 'cdr_get_term_tree'
               AND type = 'P')
     DROP PROCEDURE cdr_get_term_tree
 GO
+IF EXISTS (SELECT *
+             FROM sysobjects
+            WHERE name = 'get_participating_orgs'
+              AND type = 'P')
+    DROP PROCEDURE get_participating_orgs
+GO
+IF EXISTS (SELECT *
+             FROM sysobjects
+            WHERE name = 'prot_init_mailer_docs'
+              AND type = 'P')
+    DROP PROCEDURE prot_init_mailer_docs
+GO
+IF EXISTS (SELECT *
+             FROM sysobjects
+            WHERE name = 'cdr_get_tree_context'
+              AND type = 'P')
+    DROP PROCEDURE cdr_get_tree_context
+GO
+
 
 /**
  * Finds all the parents and children of a Term document in the CDR.  Two
@@ -53,7 +75,7 @@ AS
      */
     SELECT child, parent
       INTO #term_parents
-      FROM term_parents
+      FROM /* term_parents */ term_kids
     CREATE INDEX idx_tpc ON #term_parents(child)
     CREATE INDEX idx_tpp ON #term_parents(parent)
 
@@ -104,6 +126,7 @@ AS
     /*
      * Continue gathering children until we find no more.
      */
+/*
     SELECT @nrows = @@ROWCOUNT
     WHILE @nrows > 0
     BEGIN
@@ -115,6 +138,7 @@ AS
                                           FROM #children)
         SELECT @nrows = @@ROWCOUNT
     END
+*/
 
     /*
      * Generate the first result set, containing all the child-parent
@@ -150,7 +174,6 @@ GO
  * Finds participating organizations and their principal investigators
  * for a protocol, given the ID of the lead organization.
  */
-DROP PROCEDURE get_participating_orgs
 CREATE PROCEDURE get_participating_orgs
     @lead_org INTEGER
 AS
@@ -225,6 +248,7 @@ AS
                     #po.path,
                     pi.title,
                     pi.id
+GO
 
 /*
  * Needed because of a bug in Microsoft's ADO, which chokes on the
@@ -258,4 +282,65 @@ AS
                        FROM audit_trail a
                       WHERE a.document = d.doc_id) > @start_date
            GROUP BY d.doc_id
+GO
 
+CREATE PROCEDURE cdr_get_tree_context
+    @doc_id INT
+AS
+    DECLARE @nrows INT
+    CREATE TABLE #parents(child INT, parent INT)
+    CREATE INDEX idx_pc ON #parents(child)
+    CREATE INDEX idx_pp ON #parents(parent)
+    CREATE TABLE #children(child INT, parent INT)
+    CREATE INDEX idx_cc ON #children(child)
+    CREATE INDEX idx_cp ON #children(parent)
+    INSERT INTO #parents(child, parent)
+         SELECT child, parent
+           FROM term_parents
+          WHERE child = @doc_id
+    SELECT @nrows = @@ROWCOUNT
+    WHILE @nrows > 0
+    BEGIN
+            INSERT INTO #parents(child, parent)
+        SELECT DISTINCT tp.child, tp.parent
+                   FROM term_parents tp, #parents p
+                  WHERE tp.child = p.parent
+                    AND p.parent NOT IN (SELECT child
+                                           FROM #parents)
+        SELECT @nrows = @@ROWCOUNT
+    END
+    INSERT INTO #children(child, parent)
+         SELECT child, parent
+           FROM term_parents
+          WHERE parent = @doc_id
+    SELECT @nrows = @@ROWCOUNT
+    WHILE @nrows > 0
+    BEGIN
+            INSERT INTO #children(child, parent)
+        SELECT DISTINCT tp.child, tp.parent
+                   FROM term_parents tp, #children c
+                  WHERE tp.parent = c.child
+                    AND c.child NOT IN (SELECT parent
+                                          FROM #children)
+        SELECT @nrows = @@ROWCOUNT
+    END
+    SELECT DISTINCT * FROM #parents
+    UNION
+    SELECT * FROM #children
+    DROP TABLE #parents
+    DROP TABLE #children
+
+GO
+
+CREATE TRIGGER dev_task_trigger ON dev_task
+FOR UPDATE, INSERT
+AS
+    IF UPDATE(status)
+    BEGIN
+        UPDATE dev_task
+          SET dev_task.status_date = GETDATE()
+         FROM inserted, dev_task
+        WHERE dev_task.id = inserted.id
+    END
+
+GO
