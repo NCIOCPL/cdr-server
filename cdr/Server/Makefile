@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.36 2001-10-26 20:13:46 bkline Exp $
+# $Id: Makefile,v 1.37 2001-11-08 23:00:20 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.36  2001/10/26 20:13:46  bkline
+# Added /LIBPATH:$(REGEX)/lib to LFLAGS.
+#
 # Revision 1.35  2001/09/25 14:22:02  ameyer
 # Added CdrFilter.h, CdrMergeProt.obj (by someone else).
 #
@@ -155,6 +158,7 @@ HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrInt.h \
         $(CDRINC)/CdrLink.h \
         $(CDRINC)/CdrLinkProcs.h \
+        $(CDRINC)/CdrLock.h \
         $(CDRINC)/CdrLog.h \
         $(CDRINC)/CdrParserInput.h \
         $(CDRINC)/CdrRegEx.h \
