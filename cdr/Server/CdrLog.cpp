@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLog.cpp,v 1.6 2002-03-04 21:22:57 bkline Exp $
+ * $Id: CdrLog.cpp,v 1.7 2002-03-06 21:57:16 bkline Exp $
  *
  * Implementation of writing info to the log table in the database.
  * If that can't be done, takes an alternative action to write to file.
@@ -7,6 +7,9 @@
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2002/03/04 21:22:57  bkline
+ * Added missing call to localtime().
+ *
  * Revision 1.5  2002/03/04 20:51:18  bkline
  * Added workaround for memory leak caused by bug in MS CRT.
  *
@@ -133,7 +136,7 @@ void cdr::log::Log::Write (
                                                    cdr::db::uid, cdr::db::pwd);
         this->Write (MsgSrc, Msg, dbConn);
     }
-    catch (cdr::Exception e) {
+    catch (cdr::Exception& e) {
         // Failed to connect or failed to write
         // Use alternative instead
         WriteFile (L"CdrLog DB Write Failed", e.what());
@@ -193,7 +196,7 @@ void cdr::log::Log::Write (
     try {
         insert.executeQuery ();
     }
-    catch (cdr::Exception e) {
+    catch (cdr::Exception& e) {
         // Couldn't write.  Use exception reporting instead
         // Don't re-throw exception.  Would probably cause a loop.
         WriteFile (MsgSrc, Msg);

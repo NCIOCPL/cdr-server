@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSearch.cpp,v 1.7 2001-09-19 18:48:55 bkline Exp $
+ * $Id: CdrSearch.cpp,v 1.8 2002-03-06 21:57:46 bkline Exp $
  *
  * Queries the CDR to create subset list of documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2001/09/19 18:48:55  bkline
+ * Changed search results list order from DocId to DocTitle.
+ *
  * Revision 1.6  2001/05/21 20:31:41  bkline
  * Added commands for query term definition support.
  *
@@ -78,7 +81,7 @@ cdr::String cdr::search(cdr::Session& session,
     try {
         CdrSearchparse(static_cast<void*>(&qp));
     }
-    catch (cdr::Exception e) { 
+    catch (cdr::Exception& e) { 
         std::wcout << L"LAST TOKEN: " << input.getLastTok() << std::endl;
         throw;
     }
