@@ -15,6 +15,36 @@
                          xmlns:cdr="cips.nci.nih.gov/cdr">
    
  <xsl:output method="html"/>
+ 
+ <!-- Defining standard HTML Attribute Sets -->
+ <xsl:attribute-set               name = "table">
+  <xsl:attribute                  name = "border">0</xsl:attribute>
+  <xsl:attribute                  name = "width">100%</xsl:attribute>
+  <xsl:attribute                  name = "cellspacing">0</xsl:attribute>
+  <xsl:attribute                  name = "cellpadding">0</xsl:attribute>
+ </xsl:attribute-set>
+
+ <xsl:attribute-set               name = "cell1of2">
+  <xsl:attribute                  name = "width">40%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
+
+ <xsl:attribute-set               name = "cell2of2">
+  <xsl:attribute                  name = "width">60%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
+
+ <xsl:attribute-set               name = "mcell1of2">
+  <xsl:attribute                  name = "width">30%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
+
+ <xsl:attribute-set               name = "mcell2of2">
+  <xsl:attribute                  name = "width">70%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
+
+ 
 
  <!-- ==========================================================
                     Generate the report title and date 
@@ -39,91 +69,100 @@
     <xsl:template match="Protocol">
     <BODY>
   
-  <b><font size='4'><center>Protocol Citations QC Report</center></font></b>
+  <b><font size='4'><center>Protocol Citations<br /> QC Report</center></font></b>
   <b><font size='3'><center><xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/></center></font></b><br /><br />
 
 
 <!-- ====================================================================
       Display CDR ID, Protocol ID ( Primary and Others )
      ==================================================================== -->
- <table>
- <tr>
- <th align='left'>
- <b><font size='3'>DocID </font></b> 
-  </th>
-  <td>
-  <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-  </xsl:text>
-  </td>
-  <td>
-<xsl:value-of              select="@id"/>
- </td>
- </tr>
- </table>
-<b><font size='3'>&#xa0;Protocol ID</font></b>
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
- <table>
+    <b>
+    <font size='4'>
+    <xsl:value-of               select = "concat('CDR', 
+                                           number(
+                                           substring-after(@id, 'CDR')))"/>
+    </font>
+    </b>
+    <br /><br />  
+  <table   xsl:use-attribute-sets = "table">
   <tr>
-  <th align='left'>
+  <th  align='left'   xsl:use-attribute-sets =   "cell1of2">
+  <u><b><font size='4'>Protocol ID</font></b></u>
+  </th>
+  </tr>
+  </table>
+  <table  xsl:use-attribute-sets = "table"> 
+  <tr>
+  <th align='left' xsl:use-attribute-sets =   "cell1of2">
   <b>
   <font size='3'>Primary ID
   </font>
   </b>
  </th>
-  <td>
-  <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-            
-  </xsl:text>
-  </td>
-  <td>
+ <td xsl:use-attribute-sets =   "cell2of2">
   <xsl:value-of          select="ProtocolIDs/PrimaryID/IDString"/>
  </td>
  </tr>
  </table>
- <b>
- <font size='3'>Other IDs
- </font>
- </b>
-  
-  <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-            &#xa0;&#xa0;&#xa0;
-  </xsl:text>
-  
+  <table xsl:use-attribute-sets = "table">
+  <tr>
+  <th align='left' xsl:use-attribute-sets =   "cell1of2">
+  <b>
+  <font size='3'>Other IDs
+  </font>
+  </b>
+  </th>
+  <td xsl:use-attribute-sets =   "cell2of2">
   <xsl:for-each select="ProtocolIDs/OtherID">
   <xsl:value-of select="IDString"/>
-  <xsl:if test="position()!=last()">,</xsl:if>
+  <xsl:if test="position()!=last()">,&#xa0;</xsl:if>
   </xsl:for-each>
-  
-   <br /><br />
-
+  </td>
+  </tr>
+  </table>
+   <br/>
+   
 <!-- ==============================================================
                        Display Protocol Titles
      =============================================================== -->
-
-<b><font size='4'>Original Protocol Title</font></b><br />
-  <xsl:apply-templates           select="ProtocolTitle[@Audience=
-                                         'Original']"/>
-   <br /><br />
-  
-<b><font size='4'>Professional Title</font></b><br />
-  <xsl:apply-templates          select="ProtocolTitle[@Audience=
-                                        'Professional']"/>
-  <br /><br />
+ <table xsl:use-attribute-sets =   "table">
+ <tr>
+ <th align='left' xsl:use-attribute-sets = "cell1of2">
+ <b><font size='4'>Original Protocol Title</font></b>
+ </th>
+  <td>
+ <xsl:apply-templates            select="ProtocolTitle[@Audience=
+                                            'Original']"/>
+  </td>
+  </tr>
+  </table>
+  <br />
+   <table xsl:use-attribute-sets =  "table">
+   <tr>
+   <th align='left' xsl:use-attribute-sets =   "cell1of2">
+ 
+   <b><font size='4'>Professional Title</font></b>
+   </th>
+   <td xsl:use-attribute-sets =   "cell2of2">
+    <xsl:apply-templates                   select="ProtocolTitle[@Audience=
+                                                  'Professional']"/>
+   </td>
+   </tr>
+   </table>
+    
+     <br />
 
 <!-- ================================================================
                     Display Protocol Chairman
      ================================================================ -->
+       <table xsl:use-attribute-sets =   "table">
+      <tr>
+      <th align='left' xsl:use-attribute-sets =   "cell1of2">
        <b>
        <font size='4'>Protocol Chairman
         </font>
         </b>
-        <xsl:text>&#xa0;&#xa0;&#xa0;
-        </xsl:text>
-
+       </th>
         
         <xsl:for-each                select="ProtocolAdminInfo/
                                              ProtocolLeadOrg/LeadOrgPersonnel/
@@ -132,11 +171,15 @@
 
 
    <xsl:if test="../../../LeadOrgRole='Primary'">
+   <td xsl:use-attribute-sets =   "cell2of2">
    <xsl:value-of select="SurName"/>,
    <xsl:value-of select="GivenName"/>
+   </td>
    </xsl:if>
    </xsl:for-each>
-   <hr />
+   </tr>
+   </table>
+    <hr />
 
 <!-- ==============================================================
                 Display Published Results/Format Citation 
@@ -145,25 +188,46 @@
 <b><i><font size='4'>Published Results</font></i></b><br /><br />
 
 <xsl:for-each select="PublishedResults">
-
-<b>
-<font size='3'>Citation ID</font>
-</b>
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-           &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-           &#xa0;
-  </xsl:text>
-  <xsl:value-of select="@ref"/>
-  <br /><br />
+ <table xsl:use-attribute-sets =   "table">
+ <tr>
+ <th align='left' xsl:use-attribute-sets =   "cell1of2">
+ <b>
+ <font size='3'>Citation ID</font>
+ </b>
+ </th>
+ <td  xsl:use-attribute-sets =   "cell2of2">
+  <xsl:value-of select="concat('CDR', 
+                                           number(
+                                           substring-after(@ref, 'CDR')))"/>
+    
+  </td>
+  </tr>
+  </table>
+  
   <xsl:if test="@PMID">
+  <table xsl:use-attribute-sets =   "table">
+  <tr>
+  <th align='left' xsl:use-attribute-sets =   "cell1of2">
   <b><font size='3'>PUBMED ID</font></b>
-  <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-           &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-  </xsl:text>
-  <xsl:value-of           select="@PMID"/><br /><br />
+  </th>
+  <td xsl:use-attribute-sets =   "cell2of2">
+  <xsl:value-of           select="@PMID"/>
+  </td>
+  </tr>
+  </table>
   </xsl:if>
-  <b><font size='3'>Citation</font></b><br />
+  <table xsl:use-attribute-sets =   "table">
+  <tr>
+  <th align='left' xsl:use-attribute-sets =   "cell1of2">
+  <b><font size='3'>Citation
+  </font>
+  </b>
+  </th>
+  <td  align ='left' xsl:use-attribute-sets =   "cell2of2">
   <xsl:value-of               select="."/>
+  </td>
+  </tr>
+  </table>
    <br /><br />
     <hr />
    </xsl:for-each>
