@@ -1,0 +1,147 @@
+<CdrDoc Type='Filter' Id='CDR0000339579'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Global Change: Delete Terminology Link from Protocol</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+
+ <!-- ===============================================================
+ Delete a term from an InScopeProtocol document as a result of
+ a global terminology change request.
+
+ The term can be in one of (as of this writing) exactly 6 particular fields.
+ If the list of eligible fields changes, this filter must be modified
+ accordingly.
+
+ It is legal to request the deletion of a term that is not, in fact, in
+ the document.  This can happen legitimately if the caller requested 
+ deletion of this term and other actions, and one of the other action
+ requests is satisfied by this document but this particular term to delete
+ is not.
+                                        Author: Alan Meyer
+                                          Date: August, 2003
+ ================================================================ -->
+<xsl:transform       xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                     xmlns:cdr = "cips.nci.nih.gov/cdr"
+                       version = "1.0">
+
+ <xsl:output            method = "xml"/>
+ <!-- ===============================================================
+ Passed parameters:
+    deleteElement    - Name of element to delete.
+                       Filter assumes that this name is unique among the set
+                        of elements that can be deleted.
+    deleteTermID     - CDR Doc ID of term to be deleted, e.g., "CDR0000012345"
+    interventionType - When deleting an InterventionNameLink, the user
+                        must supply the ID of the associated InterventionType.
+                       This parameter is not used with any other deleteElement.
+    studyCategory    - When deleting sub-elements of a StudyCategory, we
+                        need to know which one to process.
+ ================================================================ -->
+ <xsl:param               name = "deleteElement"/>
+ <xsl:param               name = "deleteTermID"/>
+ <xsl:param               name = "interventionType"/>
+ <xsl:param               name = "studyCategory"/>
+
+
+ <xsl:template           match = "/">
+  <xsl:apply-templates/>
+ </xsl:template>
+
+ <!-- ===============================================================
+ Default rule, copy all document elements to output.
+ ================================================================ -->
+ <xsl:template            match = "@*|comment()|*|
+                                   processing-instruction()|text()">
+  <xsl:copy>
+   <xsl:apply-templates  select = "@*|comment()|*|
+                                   processing-instruction()|text()"/>
+  </xsl:copy>
+ </xsl:template>
+
+ <!-- ===============================================================
+  These elements either match our deletion criteria or not
+  If they don't match, copy them
+  Else don't copy, i.e. delete
+ ================================================================ -->
+ <xsl:template  match = "Eligibility/Diagnosis |
+                Eligibility/ExclusionCriteria |
+                ProtocolDetail/Gene |
+                ProtocolDetail/Condition">
+  <xsl:if                  test = "name()!=$deleteElement or
+                                   @cdr:ref!=$deleteTermID">
+   <xsl:copy-of          select = "."/>
+  </xsl:if>
+ </xsl:template>
+
+ <!-- ===============================================================
+  If the deletion is qualified by a particular StudyCategory, just
+  copy any other StudyCategory elements.  It's only the qualified
+  one we need to examine.
+ ================================================================ -->
+ <xsl:template            match = "ProtocolDetail/StudyCategory">
+  <xsl:choose>
+   <xsl:when               test = "$studyCategory">
+    <xsl:choose>
+     <xsl:when             test = "current() != $studyCategory">
+      <xsl:copy-of       select = "."/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:apply-templates/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:apply-templates/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+ <!-- ===============================================================
+ Intervention is the parent of the required InterventionType and the
+   optional InterventionNameLink.
+ If deleting an InterventionType, we have to delete the parent too.
+ Else copy it to output.
+ ================================================================ -->
+ <xsl:template            match = "ProtocolDetail/StudyCategory/Intervention">
+   <xsl:if                 test = "$deleteElement!='InterventionType' or
+                                   InterventionType/@cdr:ref!=$deleteTermID">
+    <xsl:copy>
+     <xsl:apply-templates/>
+    </xsl:copy>
+   </xsl:if>
+ </xsl:template>
+
+
+ <!-- ===============================================================
+ InterventionNameLink goes away:
+        If the user deleted it
+   AND  Passed InterventionType matches the sibling for this name link.
+
+  Note: InterventionNameLink also goes away if entire Intervention is
+        deleted by previous template.
+ ================================================================ -->
+ <xsl:template        match = "ProtocolDetail/StudyCategory/
+                                   Intervention/InterventionNameLink">
+  <xsl:choose>
+   <!-- Deleting sibling InterventionType, don't copy this NameLink -->
+   <xsl:when           test = "./InterventionType/@cdr:ref=$deleteTermID"/>
+
+   <!-- Deleting this specific NameLink - but must match passed Type -->
+   <xsl:when           test = "name()=$deleteElement and
+                              @cdr:ref=$deleteTermID and
+                              ../InterventionType/@cdr:ref=$interventionType"/>
+
+   <!-- Else it's copied to output -->
+   <xsl:otherwise>
+    <xsl:copy-of          select = "."/>
+   </xsl:otherwise>
+  </xsl:choose>
+
+ </xsl:template>
+
+</xsl:transform>]]>
+</CdrDocXml>
+</CdrDoc>
