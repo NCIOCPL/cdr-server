@@ -97,6 +97,11 @@
   <xsl:attribute              name = "ProtocolID">
    <xsl:value-of            select = "@cdr:ref"/>
   </xsl:attribute>
+  <xsl:if                     test = "@InsertionOrDeletion">
+   <xsl:attribute             name = "InsertionOrDeletion">
+    <xsl:value-of           select = "@InsertionOrDeletion"/>
+   </xsl:attribute>
+  </xsl:if>   
 
  <!-- 
  Format the LeadOrgPersonnel name
@@ -210,8 +215,24 @@
 
      <xsl:for-each          select = "Author[CollectiveName]">
       <xsl:if                 test = "position() &lt; 4">
+
+       <!-- 
+       In case a collective name already ends in a period the
+       final period has to be suppressed
+       ====================================================== -->
        <xsl:value-of        select = "CollectiveName"/>
-       <xsl:text>.</xsl:text>
+       <xsl:choose>
+        <xsl:when             test = "substring(
+                                       normalize-space(CollectiveName), 
+                                       string-length(
+                                         normalize-space(CollectiveName)), 1) 
+                                                                         = '.'">
+         <xsl:text></xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:text>.</xsl:text>
+        </xsl:otherwise>
+       </xsl:choose>
 
        <!-- 
        Separate AuthorNames by comma
