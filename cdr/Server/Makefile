@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.77 2004-07-08 00:32:38 bkline Exp $
+# $Id: Makefile,v 1.78 2004-08-11 17:48:15 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.77  2004/07/08 00:32:38  bkline
+# Added CdrGetGlossaryMap command; added cdr.lib to 'make clean' target.
+#
 # Revision 1.76  2004/05/14 02:21:24  ameyer
 # Added CdrCache.h / .cpp
 #
@@ -373,6 +376,7 @@ OBJS   =CdrCommand.obj \
         CdrGetTree.obj \
         CdrMergeProt.obj \
         CdrPublish.obj \
+        CdrExternalMap.obj \
         CdrGlossaryMap.obj
 
 
