@@ -67,11 +67,11 @@
  <xsl:param                      name = "leadOrgId"/>
  <xsl:param                      name = "personId"/>
 <!--  Leave this section for testing
- <xsl:param                      name = "orgId"     select = "'CDR0000027454'"/>
- <xsl:param                      name = "oldStatus" select = "'Active'"/>
- <xsl:param                      name = "newStatus" select = "'Closed'"/>
- <xsl:param                      name = "leadOrgId" select = "''"/>
- <xsl:param                      name = "personId"  select = "''"/>
+ <xsl:param                      name = "orgId"     select = "'CDR0000029635'"/>
+ <xsl:param                      name = "oldStatus" select = "'Approved-not yet active'"/>
+ <xsl:param                      name = "newStatus" select = "'XXXClosedXXX'"/>
+ <xsl:param                      name = "leadOrgId" select = "'CDR0000035676'"/>
+ <xsl:param                      name = "personId"  select = "'CDR0000025323'"/>
 -->
  <!--
  ================================================================
@@ -151,24 +151,32 @@
          <xsl:for-each         select = "../OrgSiteContact/
                                          SpecificPerson">
           <xsl:choose>
-           <xsl:when             test = "last() != 1 and
+           <xsl:when             test = "last() != 1 
+                                         and
                                          substring-before(
                                            concat(Person/@cdr:ref,'#'),'#')
-                                         = $personId and 
-                                         $thisLeadOrgId = $leadOrgId">
+                                           = $personId 
+                                         and 
+                                         $thisLeadOrgId = $leadOrgId
+                                         and
+                                         $thisOrgId = $orgId">
             <xsl:message    terminate = "yes">
              <xsl:text>Multiple contact persons for this OrgSite: </xsl:text> 
-              <xsl:value-of select = "$orgId"/><xsl:text>.</xsl:text>
+              <xsl:value-of    select = "$orgId"/><xsl:text>.</xsl:text>
              <xsl:text>  Change was not made.</xsl:text>
             </xsl:message>
            </xsl:when>
            <!-- (b) Print changed status element if variables match 
                     and exactly one investigator is listed          -->
-           <xsl:when             test = "last() = 1 and
-                                         substring-before(concat(
-                                           Person/@cdr:ref,'#'),'#')
-                                         = $personId and 
-                                         $thisLeadOrgId = $leadOrgId">
+           <xsl:when             test = "last() = 1 
+                                         and
+                                         substring-before(
+                                           concat(Person/@cdr:ref,'#'),'#')
+                                           = $personId 
+                                         and 
+                                         $thisLeadOrgId = $leadOrgId
+                                         and
+                                         $thisOrgId = $orgId">
             <OrgSiteStatus>
              <xsl:choose>
               <xsl:when          test = "$keepStatus = $oldStatus">
