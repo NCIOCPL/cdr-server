@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.59 2004-11-05 05:21:10 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.60 2005-02-24 14:09:21 bkline Exp $
  *
  */
 
@@ -2246,10 +2246,12 @@ cdr::String cdr::mailerCleanup(Session&         session,
                                const dom::Node& ,
                                db::Connection&  conn)
 {
+    // The test 'doc_id > 390000' is an optimization to skip legacy mailers.
     const char* query =
         " SELECT DISTINCT doc_id                                 "
         "            FROM query_term                             "
         "           WHERE path = '/Mailer/JobId'                 "
+        "             AND doc_id > 390000                        "
         "             AND int_val IN (SELECT id                  "
         "                               FROM pub_proc            "
         "                              WHERE status = 'Failure') ";
