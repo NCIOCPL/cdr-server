@@ -1,9 +1,13 @@
 /*
- * $Id: CdrFilter.cpp,v 1.29 2002-09-29 01:43:20 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.30 2002-10-03 02:56:08 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2002/09/29 01:43:20  bkline
+ * Fixed bug in code to extract CDATA section (wasn't checking for missing
+ * node).
+ *
  * Revision 1.28  2002/09/07 18:14:53  bkline
  * Turned on const char** casts for Sablotron again.
  *
@@ -102,6 +106,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <map>
+#include <winsock.h>
 
 #include "sablot.h"
 
@@ -123,6 +129,7 @@ static int getDocIdFromTitle(const cdr::String& title,
                              cdr::db::Connection& connection);
 static cdr::String getDocTitle(const cdr::String& id,
                              cdr::db::Connection& connection);
+static cdr::String getPrettyUrl(const cdr::String& guid);
 
 namespace
 {
@@ -582,6 +589,12 @@ namespace
         strftime(buf, sizeof buf, format, localtime(&tod));
         u.doc = string("<Date>") + buf + "</Date>";
       }
+      // RMK 2002-09-02: added function to get a pretty URL from Cancer.gov.
+      else if (function == "pretty-url")
+      {
+        u.doc = string("<PrettyUrl>") + getPrettyUrl(parms).toUtf8() + 
+                      "</PrettyUrl>";
+      }
       else
         return 1;
     }
@@ -990,4 +1003,258 @@ cdr::String cdr::filter(cdr::Session& session,
   return L"<CdrFilterResp>"
        + result
        + L"</CdrFilterResp>\n";
+}
+
+/**
+ * Open a socket on the specified port to the specified host.
+ *
+ *  @param  host        string for the host; can be dotted-decimal or 
+ *                      DNS name.
+ *  @param  port        integer for the port to which we are to connect.
+ *  @returns            port number if successful; -1 on failure.
+ */
+int openSocket(const char* host, int port)
+{
+    long                address;
+    struct sockaddr_in  addr;
+    struct hostent *    ph;
+    int                 sock;
+
+    // Handle dotted-decimal IP address.
+    if (isdigit(host[0])) {
+        if ((address = inet_addr(host)) == -1)
+            return -1;
+        addr.sin_addr.s_addr = address;
+        addr.sin_family = AF_INET;
+    }
+    else {
+        // Lookup the host by its DNS name.
+        ph = gethostbyname(host);
+        if (!ph)
+            return -1;
+        addr.sin_family = ph->h_addrtype;
+        memcpy(&addr.sin_addr, ph->h_addr, ph->h_length);
+    }
+
+    // Plug in the port.
+    addr.sin_port = htons(port);
+
+    // Create a TCP/IP socket.
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0)
+        return -1;
+
+    // Connect to the host.
+    if (connect(sock, (struct sockaddr *)&addr, sizeof addr) < 0) {
+        closesocket(sock);
+        return -1;
+    }
+    return sock;
+}
+
+/*
+ * Object representing the headers for an HTTP response.
+ */
+struct HttpHeaders {
+    int code;
+    typedef std::map<std::string, std::string> HeaderMap;
+    HeaderMap headerMap;
+
+    /**
+     * Extract the code representing the status of the response,
+     * and each of the header lines.
+     */
+    HttpHeaders(const std::string& lines) : code(-1) {
+
+        // Extract the status code from the first line.
+        size_t eol = lines.find("\r\n");
+        if (eol == lines.npos)
+            return;
+        size_t i = 0;
+        while (i < eol && !isspace(lines[i]))
+            ++i;
+        while (i < eol && isspace(lines[i]))
+            ++i;
+        code = atoi(lines.c_str() + i);
+        size_t pos = eol + 2;
+
+        // Loop through each of the remaining lines.
+        eol = lines.find("\r\n", pos);
+        while (eol != lines.npos) {
+
+            // Find the name of the header.
+            size_t nameStart = pos;
+            while (nameStart < eol && isspace(lines[nameStart]))
+                ++nameStart;
+            size_t nameEnd = nameStart;
+            while (nameEnd < eol && !strchr(" \t:", lines[nameEnd]))
+                ++nameEnd;
+            std::string name = lines.substr(nameStart, nameEnd - nameStart);
+
+            // Lowercase the name (they're case-insensitive).
+            for (size_t i = 0; i < name.size(); ++i)
+                name[i] = tolower(name[i]);
+
+            // Move to the beginning of the value.
+            size_t valStart = nameEnd;
+            while (valStart < eol && strchr(" \t:", lines[valStart]))
+                ++valStart;
+            std::string value = lines.substr(valStart, eol - valStart);
+
+            // Store the header in the map and skip to the next line.
+            headerMap[name] = value;
+            pos = eol + 2;
+            eol = lines.find("\r\n", pos);
+        }
+    }
+
+    /**
+     * Find the content-length header and return the integer form of its
+     * value.
+     *
+     *  @returns        number of bytes in the body of the response,
+     *                  or 0 if the content-length header can't be
+     *                  found.
+     */
+    int getContentLength() const {
+        std::string contentLength = "content-length";
+        if (headerMap.find(contentLength) != headerMap.end()) {
+            std::string headerValue = headerMap.find(contentLength)->second;
+            return atoi(headerValue.c_str());
+        }
+        return 0;
+    }
+};
+
+/**
+ * Send a soap request to the specified host, and return the response XML.
+ *
+ *  @param  host            c-style string naming the host.
+ *  @param  action          value for the HTTP SOAPAction header.
+ *  @param  request         XML document containing the SOAP request.
+ *  @param  path            portion of the URL following the host; e.g.:
+ *                          "/PrettyURL/GetPrettyURL.asmx".
+ *  @param  port            integer for the port on which the socket
+ *                          should be opened; default is 80 (http).
+ *  @return                 string for XML document containing the SOAP
+ *                          server's response.
+ */
+cdr::String sendSoapRequest(
+        const char* host, 
+        const cdr::String& action, 
+        const cdr::String& request, 
+        const cdr::String& path, 
+        int port = 80)
+{
+    // Build the request.
+    std::string r = request.toUtf8(); 
+    int len = r.size();
+    int sock = openSocket(host, port);
+    std::string headers = 
+        "POST " + path.toUtf8() + " HTTP/1.1\r\n"
+        "Host: " + std::string(host) + "\r\n"
+        "Accept-Encoding: identity\r\n"
+        "Content-Length: " + cdr::String::toString(len).toUtf8() + "\r\n"
+        "SOAPAction: " + action.toUtf8() + "\r\n"
+        "Content-Type: text/xml; charset=utf-8\r\n\r\n";
+    std::string message = headers + r;
+
+    // Send the request to the server.
+	//std::cout << "*** REQUEST ***\n" << message;
+    if (send(sock, message.c_str(), message.size(), 0) < 0) {
+        closesocket(sock);
+        return L"";
+    }
+
+    // Collect the response.
+    std::string response;
+    char buf[8192];
+    int n = recv(sock, buf, sizeof buf, 0);
+    while (n > 0) {
+        response += std::string(buf, n);
+
+        // See if we have a complete set of headers.
+        size_t hdrEnd = response.find("\r\n\r\n");
+        while (hdrEnd != response.npos) {
+            HttpHeaders headers = HttpHeaders(response.substr(0, hdrEnd + 2));
+            response = response.substr(hdrEnd + 4);
+
+            // Code 200 means we have the successful response.
+            if (headers.code == 200) {
+                int contentLength = headers.getContentLength();
+                while (response.size() < (size_t)contentLength) {
+                    n = recv(sock, buf, sizeof buf, 0);
+                    if (n > 0)
+                        response += std::string(buf, n);
+                    if (n < 1) {
+                        closesocket(sock);
+                        return L"";
+                    }
+                }
+                closesocket(sock);
+                return response;
+            }
+
+            // Code 100 means continue.
+            else if (headers.code == 100)
+                hdrEnd = response.find("\r\n\r\n");
+
+            // Everything else if a failure code.
+            else {
+                closesocket(sock);
+                return L"";
+            }
+        }
+		n = recv(sock, buf, sizeof buf, 0);
+    }
+        
+    // Didn't get the response we're were looking for.
+    closesocket(sock);
+    return L"";
+}
+
+/**
+ * Asks Cancer.gov for the URL which corresponds to a GUID which they
+ * gave the user as a more stable identifier (but too ugly to use in
+ * a URL).
+ *
+ *  @param      guid    reference to string we want to trade in for the url;
+ *                      e.g., 2af98ad7-51eb-46a4-8c74-111b6215c496
+ *  @returns            an http url if successful, or an empty string;
+ *                      Lakshmi doesn't want the filter module to stop
+ *                      if we fail, so unfortunately the user won't know
+ *                      why a failure occurred if it did.
+ */
+cdr::String getPrettyUrl(const cdr::String& guid)
+{
+    try {
+        const char* host    = "stage.cancer.gov";
+        cdr::String path    = "/PrettyURL/GetPrettyURL.asmx"; 
+        cdr::String action  = "http://cancer.gov/GetPrettyURL/ReturnPrettyURL";
+        cdr::String request = 
+    L"<?xml version='1.0' encoding='utf-8'?>"
+    L"<soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'"
+    L"               xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'"
+    L"               xmlns:xsd='http://www.w3.org/2001/XMLSchema'>"
+    L" <soap:Body>"
+    L"  <ReturnPrettyURL xmlns='http://cancer.gov/GetPrettyURL/'>"
+    L"   <viewID>" + guid + L"</viewID>"
+    L"   <objectID/>"
+    L"  </ReturnPrettyURL>"
+    L" </soap:Body>"
+    L"</soap:Envelope>";
+        cdr::String response = sendSoapRequest(host, action, request, path);
+        cdr::String openTag = L"&lt;url&gt;";
+        cdr::String closeTag = L"&lt;/url&gt;";
+        size_t pos = response.find(openTag);
+        if (pos == response.npos) return L"";
+        pos += openTag.size();
+        size_t end = response.find(closeTag, pos);
+        if (end == response.npos) return L"";
+        return response.substr(pos, end - pos);
+
+    }
+    catch (...) {
+        return L"";
+    }
 }
