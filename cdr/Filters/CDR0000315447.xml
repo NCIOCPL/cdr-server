@@ -1,0 +1,182 @@
+<CdrDoc Type='Filter' Id='CDR0000315447'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Module: Vendor Address Templates</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+ 
+<xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                         xmlns:cdr = "cips.nci.nih.gov/cdr"
+           exclude-result-prefixes = "cdr"
+                           version = "1.0">
+
+ <xsl:output                method = "xml" 
+              omit-xml-declaration = "no"
+                          encoding = "UTF-8"/>
+
+ <!-- 
+ =====================================================================
+ Filter to enforce the business rules for selecting the proper address
+ for the vendor and QC output.
+ ===================================================================== -->
+ <!--
+ ====================================================================
+ Postal Address
+ ==================================================================== -->
+ <xsl:template               match = "SpecificPostalAddress |
+                                      PostalAddress">
+  <xsl:element                name = "PostalAddress">
+   <xsl:apply-templates     select = "Street"
+                              mode = "copy"/>
+   <xsl:apply-templates     select = "City"
+                              mode = "copy"/>
+   <xsl:apply-templates     select = "CitySuffix"
+                              mode = "copy"/>
+   <xsl:apply-templates     select = "PoliticalSubUnit_State"/>
+   <xsl:apply-templates     select = "Country"/>
+   <xsl:apply-templates     select = "PostalCode_ZIP"
+                              mode = "copy"/>
+   <xsl:apply-templates     select = "Country/PostalCodePosition"
+                              mode = "copy"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ Copy Contact Information for Private Practice and Home location
+ ==================================================================== --> 
+ <xsl:template               match = "Home | 
+                                      PrivatePracticeLocation">
+  <xsl:element                name = "{name()}">
+   <xsl:attribute             name = "id">
+    <xsl:value-of           select = "@cdr:id"/>
+   </xsl:attribute>
+   <xsl:call-template         name = "getHomePrivatePractice"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ Copy PostalAddress information for Home and PrivatePracticeLocation 
+ This template is called by the Home, PrivatePractice template and
+ Protocol denormalization filter.
+ ==================================================================== --> 
+ <xsl:template                    name = "getHomePrivatePractice">
+   <xsl:if                        test = "../../../Status/
+                                          CurrentStatus = 'Inactive' 
+                                          or ../PreviousLocaton">
+    <xsl:attribute                name = "Status">
+     <xsl:text>Inactive--Contact Information may not be current</xsl:text>
+    </xsl:attribute>
+   </xsl:if>
+
+   <xsl:apply-templates         select = "PostalAddress | Phone |
+                                          TollFreePhone |
+                                          Email         | WebSite"/>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Assemble the state element.  This template collapses two element
+ layers into one, combining the 'ref' attribute from the parent
+ PoliticalSubUnit_State element with the text content of the child
+ PoliticalSubUnitFullName element, using a new PoliticalSubUnitName
+ name for the combo element.
+ ==================================================================== -->
+ <xsl:template               match = "PoliticalSubUnit_State">
+  <PoliticalSubUnitName>
+   <xsl:attribute             name = "ref">
+    <xsl:value-of           select = "@cdr:ref"/>
+   </xsl:attribute>
+   <xsl:value-of            select = "PoliticalSubUnitFullName"/>
+  </PoliticalSubUnitName>
+  <PoliticalSubUnitShortName>
+   <xsl:attribute             name = "ref">
+    <xsl:value-of           select = "@cdr:ref"/>
+   </xsl:attribute>
+   <xsl:value-of            select = "PoliticalSubUnitShortName"/>
+  </PoliticalSubUnitShortName>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Put together the Country element.
+ ==================================================================== -->
+ <xsl:template               match = "Country">
+  <CountryName>
+   <xsl:attribute             name = "ref">
+    <xsl:value-of           select = "@cdr:ref"/>
+   </xsl:attribute>
+   <xsl:value-of            select = "CountryFullName"/>
+  </CountryName>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Picking up the Specific Postal Address from Person Record or from 
+ Organization record.
+ ==================================================================== -->
+ <xsl:template                 name = "getPostalAddress">
+  <xsl:param                   name = "orgAddressFID"/>
+
+  <xsl:choose>
+   <xsl:when                   test = "SpecificPostalAddress">
+    <xsl:apply-templates     select = "SpecificPostalAddress"/>
+   </xsl:when>
+   <xsl:when                   test = "OrganizationLocation/
+                                       Organization/OrganizationLocations/
+                                       OrganizationLocation/
+                                       Location[@cdr:id = $orgAddressFID]/
+                                       PostalAddress">
+    <xsl:apply-templates     select = "OrganizationLocation/
+                                       Organization/OrganizationLocations/
+                                       OrganizationLocation/
+                                       Location[@cdr:id = $orgAddressFID]/
+                                       PostalAddress"/>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:template>     
+
+
+ <!-- *
+ ====================================================================
+ Collect the parent names for the address block display
+ ==================================================================== -->
+ <xsl:template               name = "getParentName">
+  <OrganizationName>
+   <xsl:value-of           select = "Organization/OrganizationNameInformation/
+                                     OfficialName/Name"/>
+  </OrganizationName>
+  
+  <xsl:for-each            select = "Organization/ParentOrganization">
+   <xsl:call-template        name = "getParentName"/>
+  </xsl:for-each>
+
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Template rule used to do XML to XML transformations which
+ copies any attribute node, or node that is child of of something 
+ ================================================================== -->
+ <!-- xsl:template              match = "@*|node()"
+                             mode = "copy">
+  <xsl:copy>
+   <xsl:apply-templates    select = "@*|node()"
+                             mode = "copy"/>
+  </xsl:copy> 
+ </xsl:template -->
+
+
+
+</xsl:transform>]]>
+</CdrDocXml>
+</CdrDoc>
