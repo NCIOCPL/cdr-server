@@ -1,10 +1,14 @@
 /*
- * $Id: CdrPublish.cpp,v 1.3 2002-04-17 19:19:44 bkline Exp $
+ * $Id: CdrPublish.cpp,v 1.4 2002-08-27 02:38:23 bkline Exp $
  *
  * Commands to create a new publishing job and retrieve status for an 
  * existing publishing job.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/04/17 19:19:44  bkline
+ * Fixed query to get latest eligible version of control document.  Added
+ * check for duplicate control document title.
+ *
  * Revision 1.2  2002/04/04 20:00:22  bkline
  * Added code to block queueing two jobs of the same type.
  *
@@ -566,18 +570,24 @@ void insertDocument(
         cdr::db::Connection& conn)
 {
     // Verify or select the document version to be published.
-    const char* query = userDocVersion < 1 ? " SELECT MAX(num)          "
-                                             "   FROM doc_version       "
-                                             "  WHERE id = ?            "
-                                             "    AND publishable = 'Y' "
-                                             "    AND val_status = 'V'  "
-                                             "    AND dt <= ?           "
-                                           : " SELECT num               "
-                                             "   FROM doc_version       "
-                                             "  WHERE id = ?            "
-                                             "    AND publishable = 'Y' "
-                                             "    AND val_status = 'V'  "
-                                             "    AND num = ?           ";
+    const char* query = userDocVersion < 1 ? " SELECT MAX(v.num)            "
+                                             "   FROM doc_version v         "
+                                             "   JOIN document d            "
+                                             "     ON d.id = v.id           "
+                                             "  WHERE v.id = ?              "
+                                             "    AND v.publishable = 'Y'   "
+                                             "    AND v.val_status = 'V'    "
+                                             "    AND d.active_status = 'A' "
+                                             "    AND v.dt <= ?             "
+                                           : " SELECT v.num                 "
+                                             "   FROM v.doc_version         "
+                                             "   JOIN document d            "
+                                             "     ON d.id = v.id           "
+                                             "  WHERE v.id = ?              "
+                                             "    AND v.publishable = 'Y'   "
+                                             "    AND v.val_status = 'V'    "
+                                             "    AND d.active_status = 'A' "
+                                             "    AND v.num = ?             ";
     cdr::db::PreparedStatement select = conn.prepareStatement(query);
     select.setInt(1, docId);
     if (userDocVersion < 1)
@@ -585,7 +595,10 @@ void insertDocument(
     else
         select.setInt(2, userDocVersion);
     cdr::db::ResultSet rs = select.executeQuery();
-    if (!rs.next()) {
+    cdr::Int docVersion(true);
+    if (rs.next())
+        docVersion = rs.getInt(1);
+    if (docVersion.isNull() || docVersion < 1) {
         if (userDocVersion < 1)
             throw cdr::Exception(L"No publishable version found for document ",
                                  cdr::stringDocId(docId));
@@ -595,7 +608,6 @@ void insertDocument(
                                  L" not publishable for document ",
                                  cdr::stringDocId(docId));
     }
-    int docVersion = rs.getInt(1);
 
     // Insert the row into the pub_proc_doc table.
     cdr::db::PreparedStatement insert = conn.prepareStatement(
