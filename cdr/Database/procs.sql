@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.2 2001-04-08 19:20:53 bkline Exp $
+ * $Id: procs.sql,v 1.3 2001-09-04 19:38:06 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2001/04/08 19:20:53  bkline
+ * Added statement terminators.
+ *
  * Revision 1.1  2001/04/08 19:08:34  bkline
  * Initial revision
  */
@@ -135,3 +138,83 @@ AS
     DROP TABLE #children
     DROP TABLE #term_parents
 GO
+
+/*
+ * Finds participating organizations and their principal investigators
+ * for a protocol, given the ID of the lead organization.
+ */
+DROP PROCEDURE get_participating_orgs
+CREATE PROCEDURE get_participating_orgs
+    @lead_org INTEGER
+AS
+
+    SELECT DISTINCT doc_id AS id, path
+               INTO #po
+               FROM query_term
+              WHERE int_val = @lead_org
+                AND path = '/Organization' +
+                           '/OrganizationAffiliations' +
+                           '/MemberOfAdHocGroup/@cdr:ref'
+
+        INSERT INTO #po(id, path)
+    SELECT DISTINCT qt1.doc_id, qt1.path
+               FROM query_term qt1
+               JOIN query_term qt2
+                 ON qt1.doc_id  = qt2.doc_id
+              WHERE qt1.int_val = @lead_org
+                AND qt2.value   = 'Yes'
+                AND qt1.path LIKE '/Organization' +
+                                  '/OrganizationAffiliations' +
+                                  '/MemberOfCooperativeGroup' +
+                                  '/%MemberOf' +
+                                  '/CooperativeGroup/@cdr:ref'
+                AND qt2.path LIKE '/Organization' +
+                                  '/OrganizationAffiliations' +
+                                  '/MemberOfCooperativeGroup' +
+                                  '/%MemberOf' +
+                                  '/ProtocolParticipation'
+                AND LEFT(qt1.node_loc, 12) =
+                    LEFT(qt2.node_loc, 12)
+
+    SELECT DISTINCT #po.id as po, d.id, d.title
+               INTO #pi
+               FROM document d
+               JOIN query_term po
+                 ON po.doc_id = d.id
+               JOIN #po
+                 ON #po.id = po.int_val
+               JOIN query_term lo
+                 ON lo.doc_id = po.doc_id
+                AND LEFT(lo.node_loc, 8) = LEFT(po.node_loc, 8)
+               JOIN query_term role
+                 ON role.doc_id = po.doc_id
+                AND LEFT(role.node_loc, 12) = 
+                    LEFT(lo.node_loc, 12)
+              WHERE po.path    = '/Person' +
+                                 '/PersonLocations' +
+                                 '/OtherPracticeLocation' +
+                                 '/OrganizationLocation/@cdr:ref'
+                AND lo.path    = '/Person' +
+                                 '/PersonLocations' +
+                                 '/OtherPracticeLocation' +
+                                 '/ComplexAffiliation' +
+                                 '/Organization/@cdr:ref'
+                AND role.path  = '/Person' +
+                                 '/PersonLocations' +
+                                 '/OtherPracticeLocation' +
+                                 '/ComplexAffiliation' +
+                                 '/RoleAtAffiliatedOrganization'
+                AND role.value = 'Principal Investigator'
+                AND lo.int_val = @lead_org
+
+             SELECT po.id, po.title, #po.path, pi.id, pi.title
+               FROM document po
+               JOIN #po
+                 ON #po.id = po.id
+    LEFT OUTER JOIN #pi pi
+                 ON pi.po = po.id
+           ORDER BY po.title,
+                    po.id,
+                    #po.path,
+                    pi.title,
+                    pi.id
