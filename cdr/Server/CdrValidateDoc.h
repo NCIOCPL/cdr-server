@@ -1,9 +1,13 @@
 /*
- * $Id: CdrValidateDoc.h,v 1.2 2000-10-05 15:19:57 ameyer Exp $
+ * $Id: CdrValidateDoc.h,v 1.3 2000-10-05 21:23:27 bkline Exp $
  *
  * Support routines for CDR document validation.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/10/05 15:19:57  ameyer
+ * Changes to validation flags.
+ * New prototypes to handle validation of CdrDoc object.
+ *
  * Revision 1.1  2000/05/03 15:42:00  bkline
  * Initial revision
  *
@@ -81,13 +85,11 @@ namespace cdr {
      * document, and that the current user is authorized to invoke the
      * document validation.
      *
-     *  @param  docElem             Top level element for CdrDoc element
+     *  @param  docElem             top level element for CdrDoc
      *  @param  docTypeName         string for name of document's type
      *  @param  dbConnection        reference to CDR database connection object
      *  @param  errors              vector of strings to be populated by this
      *                              function
-     *  @param  updateDocStatus     if <code>true</code> update the doc_status
-     *                              column of the document table
      *
      *  @exception  cdr::Exception  if database error encountered
      */
