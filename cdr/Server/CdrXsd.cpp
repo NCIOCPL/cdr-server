@@ -1,7 +1,12 @@
 /*
- * $Id: CdrXsd.cpp,v 1.5 2000-04-26 01:29:23 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.6 2000-05-03 15:22:08 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/04/26 01:29:23  bkline
+ * Added more lookup support, for finding a element's type when the element
+ * is encountered in an unexpected place (so we can validate it anyway) and
+ * for determining which elements are allowed in a MIXED content element.
+ *
  * Revision 1.4  2000/04/16 22:45:15  bkline
  * Added #pragma to disable annoying warnings about truncated debugging
  * information.
@@ -188,6 +193,7 @@ cdr::xsd::Element::Element(const cdr::dom::Node& dn)
  */
 cdr::xsd::Attribute::Attribute(const cdr::dom::Node& dn)
 {
+    optional = false;
     cdr::dom::NamedNodeMap attrs = dn.getAttributes();
     int nAttrs = attrs.getLength();
     for (int i = 0; i < nAttrs; ++i) {
@@ -363,8 +369,13 @@ cdr::xsd::ComplexType::ComplexType(cdr::xsd::Schema& schema,
                     elemNames.insert(elementName);
                 elemList.push_back(e);
             }
-            else if (nodeName == cdr::xsd::ATTRIBUTE)
-                attrList.push_back(new cdr::xsd::Attribute(childNode));
+            else if (nodeName == cdr::xsd::ATTRIBUTE) {
+                cdr::xsd::Attribute* a = new cdr::xsd::Attribute(childNode);
+                cdr::String attrName = a->getName();
+                if (!hasAttribute(attrName))
+                    attrNames.insert(attrName);
+                attrList.push_back(a);
+            }
         }
         childNode = childNode.getNextSibling();
     }
