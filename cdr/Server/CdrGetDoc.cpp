@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.8 2001-03-02 13:58:39 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.9 2001-03-13 22:15:09 mruben Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2001/03/02 13:58:39  bkline
+ * Moved the body for fixString() to cdr::entConvert() in CdrString.cpp.
+ *
  * Revision 1.7  2000/10/30 17:41:47  mruben
  * modified interface to version control functions
  *
@@ -53,7 +56,8 @@ static cdr::String readOnlyWrap(const cdr::String text, const cdr::String tag);
  */
 cdr::String cdr::getDocString(
         const cdr::String&    docIdString,
-        cdr::db::Connection&  conn)
+        cdr::db::Connection&  conn,
+        bool usecdata)
 {
     // Go get the document information.
     int docId = docIdString.extractDocId();
@@ -107,7 +111,7 @@ cdr::String cdr::getDocString(
     cdrDoc += L"</CdrDocCtl>\n";
 
     // Plug in the body of the document.
-    cdrDoc += makeDocXml (xml);
+    cdrDoc += usecdata ? makeDocXml (xml) : xml;
 
     // If there's a blob, add it, too.
     if (!blob.isNull())
@@ -128,7 +132,8 @@ cdr::String cdr::getDocString(
 cdr::String cdr::getDocString(
         const cdr::String&    docIdString,
         cdr::db::Connection&  conn,
-        struct cdr::CdrVerDoc *docVer
+        struct cdr::CdrVerDoc *docVer,
+        bool usecdata
 ) {
     // Extract doc id from string
     int docId = docIdString.extractDocId();
@@ -182,7 +187,8 @@ cdr::String cdr::getDocString(
 
     // That's all we've got from the doc control
     // Add an end tag for it and fetch xml and blob
-    cdrDoc += L"</DocCtl>\n" + makeDocXml (docVer->xml);
+    cdrDoc += L"</DocCtl>\n";
+    cdrDoc += usecdata ? makeDocXml (docVer->xml) : docVer->xml;
     if (!docVer->data.isNull())
         cdrDoc += makeDocBlob (docVer->data);
 

@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.4 2001-02-26 16:09:27 mruben Exp $
+ * $Id: CdrFilter.cpp,v 1.5 2001-03-13 22:15:09 mruben Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2001/02/26 16:09:27  mruben
+ * fixed error in exception safety
+ *
  * Revision 1.3  2000/09/25 14:00:14  mruben
  * added cdrx protocol for XSLT URIs
  *
@@ -41,6 +44,9 @@ using std::wostringstream;
 
 namespace
 {
+  // unique type used to get CdrDocCtl
+  const wchar_t CdrDocType[] = L"";
+  
   /***************************************************************************/
   /* get document from the repository.  Error if type not NULL and document  */
   /* does not have this type                                                 */
@@ -49,8 +55,12 @@ namespace
                           cdr::db::Connection& connection,
                           const wchar_t* type = NULL)
   {
-    cdr::dom::Parser parser;
+    if (type == CdrDocType)
+      return cdr::getDocString(ui, connection, false);
+    
     cdr::String docstring(cdr::getDocString(ui, connection));
+    
+    cdr::dom::Parser parser;
     parser.parse(docstring);
     cdr::dom::Document doc = parser.getDocument();
     for (cdr::dom::Node node = doc.getFirstChild().getFirstChild();
@@ -93,16 +103,14 @@ namespace
   {
     cdr::dom::NamedNodeMap attributes = docspec.getAttributes();
     cdr::dom::Node href = attributes.getNamedItem("href");
-    if (href == NULL)
-    {
-      cdr::dom::Node f = docspec.getFirstChild();
-      if (f.getNodeType() == cdr::dom::Node::CDATA_SECTION_NODE)
-        return f.getNodeValue();
+    if (href != NULL)
+      return getDocument(href.getNodeValue(), connection, type);
 
+    cdr::dom::Node f = docspec.getFirstChild();
+    if (f.getNodeType() != cdr::dom::Node::CDATA_SECTION_NODE)
       throw cdr::Exception(L"Invalid filter specification");
-    }
 
-    return getDocument(href.getNodeValue(), connection, type);
+    return f.getNodeValue();
   }
 
   /***************************************************************************/
@@ -352,15 +360,13 @@ namespace
       throw;
     }
   }
-  
-  enum FilterType { xslt, formatter };
 }
 
 cdr::String cdr::filter(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
                         cdr::db::Connection& connection)
 {
-  vector<pair<cdr::String, FilterType> > filters;
+  vector<cdr::String> filters;
   cdr::String document;
   
   // extract filters and document from the command
@@ -372,38 +378,32 @@ cdr::String cdr::filter(cdr::Session& session,
     {
       cdr::String name = child.getNodeName();
       if (name == L"Filter")
-      {
-        cdr::dom::NamedNodeMap attributes = child.getAttributes();
-        FilterType filter_type = xslt;
-        cdr::dom::Node type = attributes.getNamedItem("type");
-        if (type != NULL)
-        {
-          cdr::String type_string = type.getNodeValue();
-          if (type_string == L"formatter")
-            filter_type = formatter;
-          else
-          if (type_string != "xslt")
-            throw cdr::Exception(L"error in filter processing: unknown type: "
-                                 + type_string);
-        }
-        filters.push_back(pair<cdr::String, FilterType>
-                                       (getDocument(child, connection),
-                                        filter_type));
-      }
+        filters.push_back(getDocument(child, connection));
       else
       if (name == L"Document")
-        document = getDocument(child, connection);
+      {
+        const wchar_t* type = NULL;
+        cdr::dom::NamedNodeMap attributes = child.getAttributes();
+        cdr::dom::Node ctl = attributes.getNamedItem("ctl");
+        if (ctl != NULL)
+        {
+          cdr::String val = ctl.getNodeValue();
+          if (val == L"y")
+            type = CdrDocType;
+        }
+
+        document = getDocument(child, connection, type);
+      }
     }
   }
 
   string doc(document.toUtf8());
   string result(doc);
-  for (std::vector<pair<cdr::String, FilterType> >::iterator
-         i = filters.begin();
+  for (std::vector<cdr::String>::iterator i = filters.begin();
        i != filters.end();
        ++i)
   {
-    if (processStrings(i->first.toUtf8(), doc, result, connection))
+    if (processStrings(i->toUtf8(), doc, result, connection))
       throw cdr::Exception(L"error in XSLT processing");
 
     doc = result;
@@ -411,5 +411,5 @@ cdr::String cdr::filter(cdr::Session& session,
   
   return L"<CdrFilterResp><Document><![CDATA["
        + result
-       + L"]]</Document></CdrFilterResp>\n";
+       + L"]]></Document></CdrFilterResp>\n";
 }
