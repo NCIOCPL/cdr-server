@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.5 2002-02-01 22:43:15 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.6 2002-02-14 17:59:09 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2002/02/01 22:43:15  bkline
+ * Modified logic in LeadOrgPicklist class to avoid duplicates.
+ *
  * Revision 1.4  2001/09/19 18:46:07  bkline
  * Added reports to support Protocol customization.
  *
@@ -491,6 +494,8 @@ namespace
     size_t tagClose = report.find(L">", startTag);
     if (tagClose == cdr::String::npos)
       throw cdr::Exception(L"Unable to find end of ReportBody tag", report);
+    if (report[tagClose - 1] == wchar_t('/'))
+        throw cdr::Exception(L"Unable to find address fragment");
     size_t endTag = report.find(L"</ReportBody>", tagClose);
     if (endTag == cdr::String::npos)
       throw cdr::Exception(L"Unable to find ReportBody closing tag", report);
