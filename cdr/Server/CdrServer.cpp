@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.1 2000-04-13 17:08:44 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.2 2000-04-15 14:12:07 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/13 17:08:44  bkline
+ * Initial revision
+ *
  */
 
 // System headers.
@@ -26,12 +29,12 @@ const int   CDR_QUEUE_SIZE = 10;
 
 // Local functions.
 static void             cleanup() { WSACleanup(); }
-static size_t           readRequest(int, std::string&);
+static int              readRequest(int, std::string&);
 static void             sendResponse(int, const cdr::String&);
 static void             processCommands(int, const std::string&);
 static cdr::String      processCommand(cdr::Session&, 
                                        const cdr::dom::Node&,
-                                       cdr::DbConnection *);
+                                       cdr::db::Connection&);
 static void             sendErrorResponse(int, const cdr::String&);
 static DWORD __stdcall  dispatcher(LPVOID);
 
@@ -81,7 +84,6 @@ main(int ac, char **av)
             perror("accept");
             return EXIT_FAILURE;
         }
-        std::cout << "accepted connection...\n";
         if (!CreateThread(0, 0, dispatcher, (LPVOID)fd, 0, 0)) {
             std::cerr << "CreateThread: " << GetLastError() << '\n';
             return EXIT_FAILURE;
@@ -111,18 +113,28 @@ DWORD __stdcall dispatcher(LPVOID arg) {
  * prefix must be sent in network byte order (most significant bytes
  * first).
  */
-size_t readRequest(int fd, std::string& request) {
+int readRequest(int fd, std::string& request) {
 
     // Determine the length of the command buffer.
     unsigned long length;
     char lengthBytes[4];
     size_t totalRead = 0;
+    bool canSleep = true;
     while (totalRead < sizeof lengthBytes) {
         int n = recv(fd, lengthBytes + totalRead, 
                      sizeof lengthBytes - totalRead, 0);
-        if (n < 0) {
+        if (n < 0)
             return -1;
+        if (n == 0) {
+            if (canSleep) {
+                Sleep(500);
+                canSleep = false;
+            }
+            else
+                return 0;
         }
+        else
+            canSleep = true;
         totalRead += n;
     }
     memcpy(&length, lengthBytes, sizeof length);
@@ -134,18 +146,31 @@ size_t readRequest(int fd, std::string& request) {
 
     // Keep reading until we have all the bytes.
     totalRead = 0;
+    canSleep = true;
     while (totalRead < length) {
         size_t bytesLeft = length - totalRead;
-        size_t nRead = recv(fd, buf + totalRead, length, 0);
+        int nRead = recv(fd, buf + totalRead, bytesLeft, 0);
         if (nRead < 0) {
             sendErrorResponse(fd, "Failure reading command buffer");
             return 0;
         }
+        if (nRead == 0) {
+            if (canSleep) {
+                Sleep(500);
+                canSleep = false;
+            }
+            else  {
+                sendErrorResponse(fd, "Failure reading command buffer");
+                return 0;
+            }
+        }
+        else
+            canSleep = true;
         totalRead += nRead;
     }
-    request = buf;
+    request = std::string(buf, totalRead);
     delete [] buf;
-    return request.size();
+    return totalRead;
 }
 
 /**
@@ -174,7 +199,7 @@ void processCommands(int fd, const std::string& buf)
             return;
         }
         cdr::Session session;
-        cdr::DbConnection *conn = 0;
+        cdr::db::Connection conn;
         cdr::String response = L"<CdrResponseSet>\n";
         cdr::dom::Node n = docElement.getFirstChild();
         while (n != 0) {
@@ -220,14 +245,14 @@ void sendErrorResponse(int fd, const cdr::String& errMsg)
  */
 cdr::String processCommand(cdr::Session& session, 
                            const cdr::dom::Node& cmdNode,
-                           cdr::DbConnection* conn)
+                           cdr::db::Connection& conn)
 {
     const cdr::dom::Element& cmdElement = static_cast<const cdr::dom::Element&>
         (cmdNode);
     cdr::String cmdId = cmdElement.getAttribute(L"CmdId");
     cdr::String rspTag;
     if (cmdId.size() > 0)
-        rspTag = L" <CdrResponse CmdId='" + cmdId + L">\n";
+        rspTag = L" <CdrResponse CmdId='" + cmdId + L"'>\n";
     else
         rspTag = L" <CdrResponse>\n";
     cdr::dom::Node specificCmd = cmdNode.getFirstChild();
@@ -242,7 +267,21 @@ cdr::String processCommand(cdr::Session& session,
                                           + cmdName
                                           + L"</Error>\n  </Errors>\n"
                                           + L" </CdrResponse>\n");
-            cdr::String cmdResponse = cdrCommand(session, specificCmd, conn);
+            cdr::String cmdResponse;
+            try {
+                cmdResponse = cdrCommand(session, specificCmd, conn);
+            }
+            catch (cdr::Exception e) {
+                return cdr::String(rspTag + L"  <"
+                                          + cmdName
+                                          + L"Resp>\n"
+                                          + L"   <Errors>\n   <Error>"
+                                          + e.getString()
+                                          + L"</Error>\n   </Errors>\n"
+                                          + L"  </"
+                                          + cmdName
+                                          + L"Resp>\n </CdrResponse>\n");
+            }
             cdr::String response = rspTag + cmdResponse + L" </CdrResponse>\n";
             return response;
         }
