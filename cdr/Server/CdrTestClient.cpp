@@ -1,5 +1,5 @@
 /*
- * $Id: CdrTestClient.cpp,v 1.6 2001-05-03 18:43:11 bkline Exp $
+ * $Id: CdrTestClient.cpp,v 1.7 2004-03-17 20:58:28 bkline Exp $
  *
  * Test client (C++ version) for sending commands to CDR server.
  *
@@ -16,6 +16,9 @@
  * The encoding for the XML must be UTF-8.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2001/05/03 18:43:11  bkline
+ * Used binary mode for file I/O.
+ *
  * Revision 1.5  2001/01/18 14:57:05  bkline
  * Removed unused count variable.
  *
@@ -79,7 +82,7 @@ main(int ac, char **av)
         requests = readFile(is);
     }
     else {
-        setmode(fileno(stdout), O_BINARY);
+        setmode(fileno(stdin), O_BINARY);
         requests = readFile(std::cin);
     }
 
