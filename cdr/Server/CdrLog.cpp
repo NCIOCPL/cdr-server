@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLog.cpp,v 1.2 2000-10-05 17:23:21 ameyer Exp $
+ * $Id: CdrLog.cpp,v 1.3 2001-10-29 15:44:12 bkline Exp $
  *
  * Implementation of writing info to the log table in the database.
  * If that can't be done, takes an alternative action to write to file.
@@ -7,6 +7,11 @@
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/10/05 17:23:21  ameyer
+ * Replaced AlternateWrite with WriteFile, an externally callable
+ * method that allows the caller to write to an OS file instead of
+ * to the database.
+ *
  * Revision 1.1  2000/06/15 22:32:24  ameyer
  * Initial revision
  *
@@ -14,6 +19,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 #include <wchar.h>
 #include <time.h>
 #include "CdrString.h"
@@ -193,11 +199,10 @@ void cdr::log::Log::Write (
  * WriteFile ()
  *   Writes to ordinary os file, if it can't be logged to db.
  *   But can also be called directly.
- */
-
-/* XXXX - BUG - XXXX
- * Can I write a wide string to a file with fwprintf?
- * Result ain't right.
+ *
+ *  RMK (2001-10-29): replaced stdio output with ofstream output, to
+ *                    avoid limitation on string length imposed by ANSI
+ *                    standard for fwprintf.
  */
 
 void cdr::log::WriteFile (
@@ -218,19 +223,19 @@ void cdr::log::WriteFile (
     // Try to log the message whether or not we got exclusive access
     // When writing to a file, we don't truncate the data - don't
     //   have the database string limits on output
-    FILE  *fp;
-    if ((fp = fopen (Fname.c_str(), "a")) != NULL) {
+    std::wofstream os(Fname.c_str(), std::ios::app);
+    if (os) {
 
         // Datetime, source, message
-        fwprintf (fp, L"---%s>>>%s:\n%s\n", wct,
-                  MsgSrc.c_str(), Msg.c_str());
-
-        fclose (fp);
+        os << L"---" << wct 
+           << L">>>" << MsgSrc.c_str() 
+           << L":\n" << Msg.c_str() << std::endl;
     }
     else {
         // Last resort is stderr
-        fwprintf (stderr, L"---%s>>>%s:\n%s\n", wct,
-                  MsgSrc.c_str(), Msg.c_str());
+        std::wcerr << L"---" << wct 
+                   << L">>>" << MsgSrc.c_str() 
+                   << L":\n" << Msg.c_str() << std::endl;
     }
 
 
