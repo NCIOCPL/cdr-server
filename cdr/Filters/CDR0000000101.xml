@@ -3,6 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Denormalization Filter (1/1): Terminology</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!-- ==================================================================
@@ -53,16 +54,8 @@
 <xsl:for-each select="SemanticType">
 <xsl:variable name="Ref" select="@cdr:ref"/>
  <xsl:variable name="SemTypeID" select="@cdr:ref"/>
- <xsl:variable name="SemTypeInfo" select="document(concat('cdrx:',$SemTypeID,'/lastp'))"/>
-    <xsl:if test="$SemTypeInfo=''">
-    <xsl:message              terminate = "yes">
-    <xsl:text>Cannot resolve link </xsl:text>
-    <xsl:value-of               select = "$SemTypeID"/>
-    <xsl:text> for Semantic Type.</xsl:text>
-    </xsl:message>
-    </xsl:if>
-
-<SemanticType ref="{$Ref}"><xsl:value-of select="$SemTypeInfo/Term/PreferredName"/></SemanticType>
+ <xsl:variable name="SemTypeInfo" select="document(concat('cdr:',$SemTypeID,'/lastp'))"/>
+ <SemanticType ref="{$Ref}"><xsl:value-of select="$SemTypeInfo/Term/PreferredName"/></SemanticType>
 </xsl:for-each>
 <!-- copy term relationship data elements -->
 <xsl:if test="TermRelationship">
@@ -72,15 +65,8 @@
  <ParentTerm>
  <xsl:apply-templates select="@cdr:ref" mode="copy"/>
  <xsl:variable name="TermID" select="@cdr:ref"/>
- <xsl:variable name="TermInfo" select="document(concat('cdrx:',$TermID,'/lastp'))"/>
-   <xsl:if test="$TermInfo=''">
-    <xsl:message              terminate = "yes">
-    <xsl:text>Cannot resolve link </xsl:text>
-    <xsl:value-of               select = "$TermID"/>
-    <xsl:text>for Term Relationship.</xsl:text>
-    </xsl:message>
-    </xsl:if>
-
+ <xsl:variable name="TermInfo" select="document(concat('cdr:',$TermID,'/lastp'))"/>
+  
  <xsl:apply-templates select="$TermInfo/Term/PreferredName" mode="copy"/>
  <xsl:apply-templates select="$TermInfo/Term/PdqKey" mode="copy"/>
  <xsl:apply-templates select="../ParentType" mode="copy"/>
@@ -92,15 +78,8 @@
   <RelatedTerm>
   <xsl:apply-templates select="@cdr:ref" mode="copy"/>
   <xsl:variable name="TermID" select="@cdr:ref"/>
- <xsl:variable name="TermInfo" select="document(concat('cdrx:',$TermID,'/lastp'))"/>
-   <xsl:if test="$TermInfo=''">
-    <xsl:message              terminate = "yes">
-    <xsl:text>Cannot resolve link </xsl:text>
-    <xsl:value-of               select = "$TermID"/>
-    <xsl:text> for Related Term.</xsl:text>
-    </xsl:message>
-    </xsl:if>
-
+ <xsl:variable name="TermInfo" select="document(concat('cdr:',$TermID,'/lastp'))"/>
+   
  <xsl:apply-templates select="$TermInfo/Term/PreferredName" mode="copy"/>
  <xsl:apply-templates select="$TermInfo/Term/PdqKey" mode="copy"/>
  <xsl:apply-templates select="../RelationshipType" mode="copy"/>
