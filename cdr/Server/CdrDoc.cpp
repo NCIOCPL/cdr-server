@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.51 2003-01-10 01:00:10 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.52 2003-02-10 14:04:20 bkline Exp $
  *
  */
 
@@ -52,6 +52,9 @@ static void rememberQueryTerm(int, cdr::String&, cdr::String&, wchar_t*,
 static void checkForDuplicateTitle(cdr::db::Connection&, int,
                                    const cdr::String&,
                                    const cdr::String&);
+
+static int deleteDoc(cdr::Session&, int, bool, const cdr::String&,
+                     cdr::StringList&, cdr::db::Connection&);
 
 // String constants used as substitute titles
 #define MALFORMED_DOC_TITLE L"!Malformed document - no title can be generated"
@@ -913,34 +916,101 @@ static cdr::String CdrPutDoc (
 
 
 /**
+ * Internal function for deleting a document.  Used by the CdrDelDoc command,
+ * as well as by the CdrMailerCleanup command.
+ */
+int deleteDoc (
+    cdr::Session&        session,
+    int                  docId,
+    bool                 validate,
+    const cdr::String&   reason,
+    cdr::StringList&     errList,
+    cdr::db::Connection& conn
+) {
+    // From now on, do everything or nothing
+    // setAutoCommit() checks state first, so it won't end an existing
+    //   transaction
+    bool autoCommitted = conn.getAutoCommit();
+    conn.setAutoCommit(false);
+
+    // Has anyone got this document checked out?
+    // If not, that's okay.  We don't require a check-out in order to
+    //   delete a document - as long as no one else has it checked out.
+    // However if it is checked out we'll check it in.  Won't allow
+    //   a deleted document to stay checked out.
+    int outUserId;
+    int userId = session.getUserId();
+    if (cdr::isCheckedOut(docId, conn, &outUserId)) {
+        if (outUserId != userId)
+            throw cdr::Exception (L"Document " + cdr::stringDocId(docId) +
+                                  L" is checked out by another user");
+
+        // If it's checked out, we'll check it in
+        // No version is created in version control
+        cdr::checkIn (session, docId, conn, L"I", &reason, true, false);
+    }
+
+    // Update the link net to delete links from this document
+    // If validation was requested, we tell CdrDelLinks to abort if
+    //   there are any links _to_ this document
+    cdr::ValidRule vRule = validate ? cdr::UpdateIfValid :
+                                      cdr::UpdateUnconditionally;
+
+    int errCount = cdr::link::CdrDelLinks (conn, docId, vRule, errList);
+
+    if (errCount == 0 || vRule == cdr::UpdateUnconditionally) {
+
+        // Proceed with deletion
+        // Begin by deleting all query terms pointing to this doc
+        delQueryTerms (conn, docId);
+
+        // The document itself is not removed from the database, it
+        //   is simply marked as deleted
+        // Note that if document is already deleted, we silently do
+        //   nothing
+        std::string dQry = "UPDATE document "
+                           "   SET active_status = 'D' "
+                           " WHERE id = ?";
+        cdr::db::PreparedStatement dSel = conn.prepareStatement (dQry);
+        dSel.setInt (1, docId);
+        cdr::db::ResultSet dRs = dSel.executeQuery();
+
+        // Record what we've done
+        auditDoc (conn, docId, userId, L"DELETE DOCUMENT",
+                  L"CdrDelDoc", reason);
+    }
+
+    // Restore autocommit status if required
+    conn.setAutoCommit(autoCommitted);
+
+    // Tell how many errors we encountered.
+    return errCount;
+}
+
+
+/**
  * Delete a document.
  *
  * See CdrDoc.h for details.
  */
-
 cdr::String cdr::delDoc (
     cdr::Session& session,
     const cdr::dom::Node& cmdNode,
     cdr::db::Connection& conn
 ) {
-    cdr::String cmdReason,      // Reason to associate with new version
+    cdr::String cmdReason,      // Reason to associate with document deletion
                 docIdStr,       // Doc id in string form
                 docTypeStr;     // Doc type in string form
     int         docId,          // Doc id as unadorned integer
                 docType,        // Document type
-                userId,         // User invoking this command
-                outUserId,      // User with the doc checked out, if it is
                 errCount;       // Number of link releated errors
-    bool        autoCommitted,  // True=Not inside SQL transaction at start
-                cmdValidate;    // True=Validate that nothing links to doc
+    bool        cmdValidate;    // True=Validate that nothing links to doc
     cdr::dom::Node child,       // Child node in command
                    docNode;     // Node containing CdrDoc
-    cdr::ValidRule vRule;       // Validation request to CdrDelLinks
     cdr::StringList errList;    // List of errors from CdrDelLinks
 
 
     // Default values, may be replace by elements in command
-    // Default reason is NULL created by cdr::String contructor
     cmdValidate = true;
     cmdReason   = L"";
     docId       = -1;
@@ -994,59 +1064,9 @@ cdr::String cdr::delDoc (
     if (cmdReason.length() == 0)
         cmdReason = L"Document deleted.  No reason recorded.";
 
-    // From now on, do everything or nothing
-    // setAutoCommit() checks state first, so it won't end an existing
-    //   transaction
-    autoCommitted = conn.getAutoCommit();
-    conn.setAutoCommit(false);
-
-    // Has anyone got this document checked out?
-    // If not, that's okay.  We don't require a check-out in order to
-    //   delete a document - as long as no one else has it checked out.
-    // However if it is checked out we'll check it in.  Won't allow
-    //   a deleted document to stay checked out.
-    userId = session.getUserId();
-    if (isCheckedOut(docId, conn, &outUserId)) {
-        if (outUserId != userId)
-            throw cdr::Exception (L"Document " + docIdStr + L" is checked out"
-                                  L" by another user");
-
-        // If it's checked out, we'll check it in
-        // No version is created in version control
-        checkIn (session, docId, conn, L"I", &cmdReason, true, false);
-    }
-
-    // Update the link net to delete links from this document
-    // If validation was requested, we tell CdrDelLinks to abort if
-    //   there are any links _to_ this document
-    vRule = cmdValidate ? UpdateIfValid : UpdateUnconditionally;
-
-    errCount = cdr::link::CdrDelLinks (conn, docId, vRule, errList);
-
-    if (errCount == 0 || vRule == UpdateUnconditionally) {
-
-        // Proceed with deletion
-        // Begin by deleting all query terms pointing to this doc
-        delQueryTerms (conn, docId);
-
-        // The document itself is not removed from the database, it
-        //   is simply marked as deleted
-        // Note that if document is already deleted, we silently do
-        //   nothing
-        std::string dQry = "UPDATE document "
-                           "   SET active_status = 'D' "
-                           " WHERE id = ?";
-        cdr::db::PreparedStatement dSel = conn.prepareStatement (dQry);
-        dSel.setInt (1, docId);
-        cdr::db::ResultSet dRs = dSel.executeQuery();
-
-        // Record what we've done
-        auditDoc (conn, docId, userId, L"DELETE DOCUMENT",
-                  L"CdrDelDoc", cmdReason);
-    }
-
-    // Restore autocommit status if required
-    conn.setAutoCommit(autoCommitted);
+    // Perform the deletion.
+    errCount = deleteDoc(session, docId, cmdValidate, cmdReason, errList,
+                         conn);
 
     // Prepare response
     cdr::String resp = L"  <CdrDelDocResp>\n"
@@ -2093,4 +2113,58 @@ void checkForDuplicateTitle(
     if (count > 0)
         throw cdr::Exception(L"Duplicate title (" + title + L"); not allowed "
                              L"for documents of type " + docType);
+}
+
+/**
+ * Delete mailer tracking documents left behind by failed mailer jobs.
+ *
+ * Note: The original version looks for tracking documents connected with
+ *       any failed mailer job.  We may choose to optimize this query
+ *       by remembering the last time this cleanup was run, or the highest
+ *       mailer job number for which we last deleted tracking documents.
+ *       Don't add this optimization unless clearly called for by performance
+ *       measurements.
+ */
+cdr::String cdr::mailerCleanup(Session&         session,
+                               const dom::Node& ,
+                               db::Connection&  conn)
+{
+    const char* query =
+        " SELECT DISTINCT doc_id                                 "
+        "            FROM query_term                             "
+        "           WHERE path = '/Mailer/JobId'                 "
+        "             AND int_val IN (SELECT id                  "
+        "                               FROM pub_proc            "
+        "                              WHERE status = 'Failure') ";
+
+    db::Statement s = conn.createStatement();
+    db::ResultSet r = s.executeQuery(query);
+    String reason   = L"Deleting tracking document for failed mailer job";
+    StringList errs;
+    int nErrs = 0;
+    std::wostringstream os;
+    std::vector<int> docIds;
+    os << L"<CdrMailerCleanupResp>";
+    while (r.next()) {
+        int id = r.getInt(1);
+        docIds.push_back(id);
+    }
+    s.close();
+    for (size_t i = 0; i < docIds.size(); ++i) {
+        int id = docIds[i];
+        try {
+            nErrs += deleteDoc(session, id, false, reason, errs, conn);
+            os << L"<DeletedDoc>" << stringDocId(id) << L"</DeletedDoc>";
+            conn.commit();
+        }
+        catch (const Exception& e) {
+            ++nErrs;
+            errs.push_back(e.what());
+            conn.rollback();
+        }
+    }
+    if (nErrs)
+        os << packErrors(errs);
+    os << L"</CdrMailerCleanupResp>";
+    return os.str();
 }

@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.29 2003-01-28 23:45:53 ameyer Exp $
+ * $Id: CdrCommand.h,v 1.30 2003-02-10 14:04:20 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2003/01/28 23:45:53  ameyer
+ * Added sysValue command.
+ *
  * Revision 1.28  2002/11/14 13:23:58  bkline
  * Changed CdrFilter command to use filter sets.  Added CdrDelFilterSet
  * command.
@@ -1156,6 +1159,21 @@ namespace cdr {
     extern String publish    (Session&          session,
                               const dom::Node&  node,
                               db::Connection&   conn);
+
+    /**
+     * Deletes mailer tracking documents for failed mailer jobs.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String mailerCleanup(Session&          session,
+                                const dom::Node&  node,
+                                db::Connection&   conn);
 
     /**
      * Converts a DOM node to its String representation
