@@ -341,7 +341,7 @@
 
 
  <!-- 
- ==============================================================
+ ==================================================================
  Template for displaying ProtocolRelatedLink section.
  In addition to displaying the RelatedProtocols and RelatedWebsites
  elements a new element RelatedProtocolsForQC is introduced to
@@ -349,7 +349,11 @@
  professional title for a related protocol.
  This new element is being filtered out again by the protocol
  vendor filter.
- ============================================================== -->
+ If no publishable version of the protocol exists, the new 
+ element will hold an error message notifying the editor.
+ Similarily, an error message will be displayed in the output
+ if not professional title exists for the related linked document
+ ================================================================== -->
  <xsl:template                  match = "ProtocolRelatedLinks">
   <xsl:element                   name = "ProtocolRelatedLinks">
 
@@ -369,41 +373,63 @@
        <xsl:variable             name = "relProtRef"
                                select = "@cdr:ref"/>
        <xsl:variable             name = "prot_uri"
-                               select = "concat('cdr:', $relProtRef,
-                                                '/last')"/>
+                               select = "concat('cdrx:', $relProtRef,
+                                                '/lastp')"/>
        <xsl:variable             name = "protocolDoc"
                                select = "document($prot_uri)"/>
 
-  <!-- Stop processing if the link cannot be resolved. 
-        This doesn't work for me, VE                    ==>
-  <xsl:if                         test = "not($protocolDoc)">
-   <xsl:message              terminate = "no">
-    <xsl:text>Cannot resolve link </xsl:text>
-    <xsl:value-of               select = "$prot_uri"/>
-    <xsl:text> for versioned protocol document.</xsl:text>
-   </xsl:message> 
-  </xsl:if -->
-
-       <xsl:value-of           select = "$protocolDoc/InScopeProtocol/
-                                          ProtocolIDs/PrimaryID/IDString"/>
-       <xsl:if                   test = "$protocolDoc/InScopeProtocol/
-                                          ProtocolIDs/OtherID">
-        <xsl:for-each          select = "$protocolDoc/InScopeProtocol/
-                                          ProtocolIDs/OtherID/IDString">
-         <xsl:text>; </xsl:text>
-         <xsl:value-of         select = "."/>
-        </xsl:for-each>
+  <!-- Don't stop processing if the link cannot be resolved. 
+       Note:  The message is never displayed with the terminate=No attribute -->
+       <xsl:if                   test = "not($protocolDoc = 'InScopeProtocol')">
+        <xsl:message        terminate = "no">
+         <xsl:text>&lt;b&gt;*** Error:   Publishable Protocol </xsl:text>
+         <xsl:text>document </xsl:text>
+         <xsl:value-of         select = "substring-after(
+                                          substring-before($prot_uri, '/'), 
+                                                                      ':')"/>
+         <xsl:text> does not exist.&lt;/b&gt;</xsl:text>
+        </xsl:message> 
        </xsl:if>
-       <xsl:text>; </xsl:text>
+
+       <!-- Display either the protocol information or an error message if 
+            the protocol couldn't be denormalized.                         -->
        <xsl:choose>
-       <xsl:when                 test = "$protocolDoc/InScopeProtocol/
+        <xsl:when                test = "$protocolDoc/InScopeProtocol">
+         <xsl:value-of         select = "$protocolDoc/InScopeProtocol/
+                                          ProtocolIDs/PrimaryID/IDString"/>
+         <xsl:if                 test = "$protocolDoc/InScopeProtocol/
+                                          ProtocolIDs/OtherID">
+          <xsl:for-each        select = "$protocolDoc/InScopeProtocol/
+                                          ProtocolIDs/OtherID/IDString">
+           <xsl:text>; </xsl:text>
+           <xsl:value-of       select = "."/>
+          </xsl:for-each>
+         </xsl:if>
+         <xsl:text>; </xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:text>***ERROR: Publishable document </xsl:text>
+         <xsl:value-of         select = "substring-after(
+                                          substring-before($prot_uri, '/'), 
+                                                                      ':')"/>
+         <xsl:text> for protocol </xsl:text>
+         <xsl:value-of         select = "."/>
+         <xsl:text> does not exist.</xsl:text>
+        </xsl:otherwise>
+       </xsl:choose>
+
+       <!-- Display either the professional title or an error message if  
+            the title doesn't exist.                                     -->
+       <xsl:choose>
+        <xsl:when                test = "$protocolDoc/InScopeProtocol/
                                           ProtocolTitle[@Type='Professional']">
-        <xsl:value-of          select = "$protocolDoc/InScopeProtocol/
+         <xsl:value-of         select = "$protocolDoc/InScopeProtocol/
                                           ProtocolTitle[@Type='Professional']"/>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:text>*** Protocol professional title does not exist. ***</xsl:text>
-       </xsl:otherwise>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:text> ***ERROR: Protocol professional title does not exist.
+         </xsl:text>
+        </xsl:otherwise>
        </xsl:choose>
 
       </RelatedProtocolsForQC>
