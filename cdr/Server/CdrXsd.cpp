@@ -1,7 +1,11 @@
 /*
- * $Id: CdrXsd.cpp,v 1.38 2003-08-04 17:03:26 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.39 2003-09-16 15:00:04 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.38  2003/08/04 17:03:26  bkline
+ * Fixed breakage caused by upgrade to latest version of Microsoft's
+ * C++ compiler.
+ *
  * Revision 1.37  2003/02/24 14:26:51  bkline
  * Fixed a logic bug in verifyElementSequence(); added debug logging to
  * this part of the code.  Left the logging in (but turned off) because
@@ -473,7 +477,8 @@ cdr::String cdr::xsd::RuleSet::getXslt() const
                    << L"   </xsl:call-template>\n"
                    << L"  </xsl:if>\n";
             }
-            os << L" </xsl:template>\n\n";
+            os << L"  <xsl:apply-templates/>\n"
+               << L" </xsl:template>\n\n";
         }
         os << L" <xsl:template name='packError'>\n"
            << L"  <xsl:param name='msg'/>\n"
