@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.31 2002-08-10 20:18:46 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.32 2002-08-12 15:48:11 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2002/08/10 20:18:46  bkline
+ * More thread logging.
+ *
  * Revision 1.30  2002/08/10 19:28:22  bkline
  * Guest session support; better hacker protection; message logging.
  *
@@ -202,7 +205,7 @@ main(int ac, char **av)
 #ifndef SINGLE_THREAD_DEBUGGING
     std::cout << "sweeping for expired sessions...\n";
     if (_beginthread(sessionSweep, 0, (void*)0) == -1) {
-        std::cerr << "CreateThread: " << GetLastError() << '\n';
+        std::cerr << "_beginthread: " << GetLastError() << '\n';
         logTopLevelFailure(L"listen", (unsigned long)WSAGetLastError());
         return EXIT_FAILURE;
     }
@@ -245,12 +248,16 @@ int handleNextClient(int sock)
         return EXIT_FAILURE;
     }
 #ifndef SINGLE_THREAD_DEBUGGING
-    if (_beginthread(dispatcher, 0, (void*)fd) == -1) {
-        DWORD err = GetLastError();
-        std::cerr << "CreateThread: " << err << '\n';
-        logTopLevelFailure(L"CreateThread", err);
-        closesocket(fd);
-        return EXIT_FAILURE;
+    int tries = 5;
+    while (_beginthread(dispatcher, 0, (void*)fd) == -1) {
+        DWORD err = errno; // GetLastError();
+        std::cerr << "_beginthread: " << err << '\n';
+        if (tries-- <= 0) {
+            logTopLevelFailure(L"_beginthread", err);
+            closesocket(fd);
+            return EXIT_FAILURE;
+        }
+        Sleep(1000);
     }
 #else
     // Use this version (and turn off the invocation of the session cleanup
