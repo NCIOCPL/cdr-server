@@ -1,10 +1,15 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.44 2002-01-25 01:45:22 bkline Exp $
+# $Id: Makefile,v 1.45 2002-01-25 15:10:01 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.44  2002/01/25 01:45:22  bkline
+# Fixed rule for CdrTestClient to avoid problems with cl command-line
+# option syntax, which gets confused by Unix path separators, which GNU
+# make prefers.
+#
 # Revision 1.43  2002/01/25 00:35:29  ameyer
 # Added cvs update to the init target.
 # Modified CP macro to use MS copy silently.
@@ -269,7 +274,7 @@ install: CdrServer.exe CdrDocs
 # Initialization, saving two generations of old errors
 #--------------------------------------------------------------------------
 init:
-	cvs update
+	$(CVSUPD)
 	-$(CP) errs.1 errs.2
 	-$(CP) errs errs.1
 	-rm -f errs
@@ -327,7 +332,6 @@ $(CDRLIB): $(LIBOBJS)
 #--------------------------------------------------------------------------
 BISON_SIMPLE=$(DRV)/etc/bison.cdrtest
 CdrSearch_tab.obj: CdrSearch_tab.c $(HDRS)
-	$(CVSUPD)
 	$(CC) $(CFLAGS) -c -TP CdrSearch_tab.c >> errs
 
 CdrSearch_tab.c: CdrSearch.y $(HDRS)
@@ -348,11 +352,9 @@ $(DOCS): $(HDRS)
 # Generic rules for object files
 #--------------------------------------------------------------------------
 .c.obj:
-	$(CVSUPD)
 	$(CC) -c $(CFLAGS) $*.c >> errs
 
 .cpp.obj:
-	$(CVSUPD)
 	$(CC) -c $(CFLAGS) $*.cpp >> errs
 
 
