@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGlossaryMap.cpp,v 1.1 2004-07-08 00:32:38 bkline Exp $
+ * $Id: CdrGlossaryMap.cpp,v 1.2 2004-09-09 18:43:26 bkline Exp $
  *
  * Returns a document identifying which glossary terms should be used
  * for marking up phrases found in a CDR document.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2004/07/08 00:32:38  bkline
+ * Added CdrGetGlossaryMap command; added cdr.lib to 'make clean' target.
+ *
  */
 
 #include <set>
@@ -20,6 +23,7 @@
 
 static void mapPreferredTerms(cdr::StringSet& phrases, 
                               std::map<int, cdr::StringList>& mappings,
+                              std::map<int, cdr::String>& names,
                               cdr::db::Connection& conn);
 static void mapExternalPhrases(cdr::StringSet& phrases, 
                               std::map<int, cdr::StringList>& mappings,
@@ -55,9 +59,10 @@ cdr::String cdr::getGlossaryMap(cdr::Session&,
 
     // Collect the phrases which belong to each term.
     std::map<int, StringList> mappings;
+    std::map<int, String>     names;
 
     // Find the term's preferred terms first (these take precedence).
-    mapPreferredTerms(phrases, mappings, connection);
+    mapPreferredTerms(phrases, mappings, names, connection);
 
     // Collect all the other phrases we can map.
     mapExternalPhrases(phrases, mappings, connection);
@@ -65,7 +70,11 @@ cdr::String cdr::getGlossaryMap(cdr::Session&,
     // Fill out the response document.
     std::map<int, StringList>::const_iterator term = mappings.begin();
     while (term != mappings.end()) {
-        response << L"<Term id='" << term->first << "'>";
+        String name = L"[No Term Name Found]";
+        if (names.find(term->first) != names.end())
+            name = names[term->first];
+        response << L"<Term id='" << term->first << L"'>";
+        response << L"<Name>" << cdr::entConvert(name) << L"</Name>";
         StringList::const_iterator phrase = term->second.begin();
         while (phrase != term->second.end()) {
             response << L"<Phrase>" << cdr::entConvert(*phrase)
@@ -86,6 +95,7 @@ cdr::String cdr::getGlossaryMap(cdr::Session&,
  */
 void mapPreferredTerms(cdr::StringSet& phrases, 
                        std::map<int, cdr::StringList>& mappings,
+                       std::map<int, cdr::String>& names,
                        cdr::db::Connection& conn)
 {
     cdr::db::Statement stmt = conn.createStatement();
@@ -96,6 +106,7 @@ void mapPreferredTerms(cdr::StringSet& phrases,
     while (rs.next()) {
         int         id   = rs.getInt(1);
         cdr::String name = rs.getString(2);
+        names[id]        = name;
         addPhrase(phrases, mappings, id, name);
     }
     stmt.close();
