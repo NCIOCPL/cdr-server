@@ -72,6 +72,8 @@
                               mode = "copy"/>
    <xsl:apply-templates     select = "ProtocolTitle[@Type='Patient']"
                               mode = "copy"/>
+   <xsl:apply-templates     select = "ProtocolTitle[@Type='Original']"
+                              mode = "copy"/>
  
    <xsl:apply-templates     select = "ProtocolAbstract"/>
    <xsl:apply-templates     select = "ProtocolDetail"/>
@@ -79,6 +81,8 @@
    <xsl:apply-templates     select = "ProtocolRelatedLinks"/>
    <xsl:apply-templates     select = "PublishedResults"/>
    <xsl:apply-templates     select = "ProtocolPhase"
+                              mode = "copy"/>
+   <xsl:apply-templates     select = "ProtocolDesign"
                               mode = "copy"/>
 
    <xsl:apply-templates     select = "ProtocolSpecialCategory"/>
@@ -500,10 +504,13 @@
                               mode = "copy"/>
 
    <!-- Only display the LeadOrg if the Status is not Withdrawn       -->
-   <xsl:apply-templates     select = "ProtocolLeadOrg
+   <!-- 2003-06-26 RMK: No longer true; implement this logic downstream -->
+   <xsl:apply-templates     select = "ProtocolLeadOrg"/>
+   <!--
                                         [LeadOrgProtocolStatuses/
                                          CurrentOrgStatus/
                                          StatusName != 'Withdrawn']"/>
+   -->
 
    <!-- Only display the ProtocolSites for Active Protocols           -->
    <xsl:if                    test = "(/InScopeProtocol/ProtocolAdminInfo/
@@ -573,8 +580,13 @@
 
    <!-- 
    LeadOrgPersonnel with Public=No attribute is not to be published
+   [2003-06-26 RMK: no longer true; needed for protocol abstract
+    mailers, so this logic must be applied further downstream.]
    ================================================================ -->
-      <xsl:apply-templates   select = "LeadOrgPersonnel[not(@Public)]"/>
+      <xsl:apply-templates   select = "LeadOrgPersonnel"/>
+      <!--
+                                       [not(@Public)]"/>
+        -->
 
   </xsl:element>
  </xsl:template>
@@ -588,11 +600,16 @@
 
  The Person is only to be displayed if the person's only role is not
  that of an Update person
+
+ [RMK 2003-06-26: Need all lead org personnel for protocol abstract
+  mailers; implement this logic further downstream.]
  ==================================================================== -->
  <xsl:template               match = "LeadOrgPersonnel">
+  <!--
   <xsl:if                     test = "not(PersonRole='Update person') or
                                          (PersonRole='Update person'
                                           and count(PersonRole) &gt; 1)">
+  -->
    <LeadOrgPersonnel>
     <xsl:if                    test = "@cdr:id = ../MailAbstractTo">
      <xsl:attribute            name = "MailAbstractTo">
@@ -601,7 +618,9 @@
     </xsl:if>
     <xsl:apply-templates     select = "Person"/>
    </LeadOrgPersonnel>
+  <!--
   </xsl:if>
+  -->
  </xsl:template>
 
  <!--
@@ -661,14 +680,20 @@
    as PersonRole element.
    Note: The PersonRole of Update Person is CIPS internal information
          and not intended for the vendors
+   [RMK 2003-06-26: Need all roles for the protocol abstract mailers;
+    apply this logic further downstream.]
    ================================================================== -->
    <xsl:choose>
     <xsl:when                 test = "$myScope = 'Person'">
      <xsl:for-each          select = "../PersonRole">
+      <!--
       <xsl:if                 test = "not(.='Update person')">
+      -->
        <xsl:apply-templates select = "."
                               mode = "copy"/>
+      <!--
       </xsl:if>
+      -->
      </xsl:for-each>
     </xsl:when>
     <xsl:when                 test = "$myScope = 'PrivatePracticePerson'">
