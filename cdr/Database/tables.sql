@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.40 2001-10-11 17:32:28 bkline Exp $
+ * $Id: tables.sql,v 1.41 2001-10-19 14:19:56 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.40  2001/10/11 17:32:28  bkline
+ * Added ready_for_review table.  Replaced pub_event and published_doc
+ * tables with views.
+ *
  * Revision 1.39  2001/09/28 17:00:43  bkline
  * Added messages column to pub_proc_doc tables; changed pub_system column
  * of pub_proc table to foreign key into all_docs table.
@@ -945,6 +949,10 @@ CREATE TABLE issue
  *       status  one of "in process," waiting user approval," "fail," or 
  *               "succeed."
  *     messages  messages generated during processing.
+ *     external  flag indicating whether the publishing event took place
+ *               outside the CDR (such as historical publications imported
+ *               from the PDQ Oracle tables); further details in the messages
+ *               column when appropriate.
  */
 CREATE TABLE pub_proc
          (id INTEGER IDENTITY PRIMARY KEY,
@@ -955,7 +963,8 @@ CREATE TABLE pub_proc
      started DATETIME     NOT NULL,
    completed DATETIME         NULL,
       status VARCHAR(32)  NOT NULL,
-    messages NTEXT)
+    messages NTEXT            NULL,
+    external CHAR(1)          NULL DEFAULT 'N')
 
 /*
  * Table used to record parameters used for processing a publication event.
