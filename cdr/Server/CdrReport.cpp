@@ -1,9 +1,13 @@
 /*
- * $Id: CdrReport.cpp,v 1.17 2004-10-19 22:02:33 venglisc Exp $
+ * $Id: CdrReport.cpp,v 1.18 2004-11-03 19:00:07 venglisc Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2004/10/19 22:02:33  venglisc
+ * Modified SQL query for creating the Menu Hierarchy Report by eliminating
+ * display of terms with MenuStatus of Offline. (Bug 1363)
+ *
  * Revision 1.16  2003/04/15 21:01:22  bkline
  * Added parameter for MenuType in menu tree hierarchy report.
  *
@@ -762,7 +766,10 @@ namespace
         "                b.value   AS menu_type,                              "
         "                c.value   AS menu_status,                            "
         "                d.value   AS display_name,                           "
-        "                e.int_val AS parent                                  "
+        "                e.int_val AS parent,                                 "
+	"           CASE WHEN f.value is NULL THEN a.value                    "
+	"                                     ELSE f.value                    "
+	"            END           AS sort_string                             "
         "           FROM query_term a                                         "
         "           JOIN query_term b                                         "
         "             ON b.doc_id = a.doc_id                                  "
@@ -778,6 +785,10 @@ namespace
         "            AND e.path = '/Term/MenuInformation/MenuItem'            "
         "                       + '/MenuParent/@cdr:ref'                      "
         "            AND LEFT(e.node_loc, 8) = LEFT(b.node_loc, 8)            "
+	"LEFT OUTER JOIN query_term f                                         "
+	"             ON f.doc_id = a.doc_id                                  "
+	"            AND f.path = '/Term/MenuInformation/MenuItem/@SortOrder' "
+        "            AND LEFT(f.node_loc, 8) = LEFT(b.node_loc, 8)            "
         "          WHERE a.path = '/Term/PreferredName'                       "
         "            AND b.path = '/Term/MenuInformation/MenuItem/MenuType'   "
         "            AND c.path = '/Term/MenuInformation/MenuItem/MenuStatus' "
@@ -800,6 +811,7 @@ namespace
       cdr::String menuStatus  = cdr::entConvert(rs.getString(4));
       cdr::String displayName = rs.getString(5);
       cdr::Int    parentId    = rs.getInt(6);
+      cdr::String sortString   = cdr::entConvert(rs.getString(7));
       result << L"<MenuItem><TermId>"
              << docId
              << L"</TermId><TermName>"
@@ -817,6 +829,9 @@ namespace
           result << L"<ParentId>"
                  << parentId
                  << L"</ParentId>";
+      result << L"<SortString>"
+             << sortString
+	     << L"</SortString>";
       result << L"</MenuItem>\n";
     }
     result << L"]]></ReportBody>\n";
