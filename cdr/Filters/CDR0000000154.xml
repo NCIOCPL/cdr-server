@@ -3,12 +3,15 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Miscellaneous Document Report Filter</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
   <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                  version="1.0"
                  xmlns:cdr="cips.nci.nih.gov/cdr">
     <xsl:import    href = "cdr:name:InLine Markup Formatter"/>
+    <xsl:include   href = "cdr:name:Table Formatter"/>
+     
  
    <xsl:output method="html"/>
    
@@ -110,49 +113,6 @@
 
           
 
-<!-- ====================================================================
-                    Display a table-new format
-      =================================================================== -->
-             <xsl:template match="Table">
-             <xsl:if test="Title">
-                 <br />
-             <b><xsl:apply-templates select="Title"/></b><br />
-              </xsl:if>
-              <table border='1' valign='top' cellspacing='0' cellpadding='0' width='90%'>
-              <!-- <xsl:attribute name='border'>1</xsl:attribute>-->
-              <xsl:for-each select="TGroup/THead/Row">
-              <tr>
-              <xsl:for-each select="entry">
-              <th><xsl:apply-templates/></th>
-              </xsl:for-each>
-              </tr>
-              </xsl:for-each>
-              <xsl:for-each select="TGroup/TBody/Row">
-              <tr>
-              <xsl:for-each select='entry'>
-              <xsl:variable name="cols" select="../../..@Cols"/>
-              <xsl:if test="not(@NameEnd)"> 
-              <td><xsl:apply-templates select="."/></td>
-              </xsl:if>
-              <xsl:if test="@NameEnd"> 
-              
-             <td colspan='{$cols}' width='80%'><xsl:apply-templates select="."/></td>
-            </xsl:if>
-       
-            </xsl:for-each>
-            </tr>
-            </xsl:for-each>
-            <xsl:for-each select="TGroup/TFoot/Row">
-              <tr>
-              <xsl:for-each select="entry">
-               <xsl:variable name="cols" select="../../..@Cols"/>
-              <td colspan='{$cols}' width='60%'><xsl:apply-templates/></td>
-              </xsl:for-each>
-              </tr>
-              </xsl:for-each>
-      
-            </table>
-            </xsl:template>
 
 
  <!-- ====================================================================
@@ -164,6 +124,32 @@
           <xsl:variable name="nlink" select="@cdr:xref"/>
           <a href="{$nlink}"><xsl:apply-templates/></a>
           </xsl:template>
+
+   <!--=====================================================================
+         Display an ordered list 
+    ==================================================================== -->
+  <xsl:template                  match = "OrderedList">
+    <xsl:variable                 name = "redline">
+      <xsl:text>Redline</xsl:text>
+    </xsl:variable>
+    <xsl:call-template            name = "OrderedList">
+      <xsl:with-param             name = "markup"        
+                                select = "$redline"/>
+    </xsl:call-template>
+  </xsl:template>
+
+<!--=====================================================================
+                Display an Itemized List
+    ==================================================================== -->
+  <xsl:template                  match = "ItemizedList">
+    <xsl:variable                 name = "redline">
+      <xsl:text>Redline</xsl:text>
+    </xsl:variable>
+    <xsl:call-template            name = "ItemizedList">
+      <xsl:with-param             name = "markup"        
+                                select = "$redline"/>
+    </xsl:call-template>
+  </xsl:template>
 
         
 
