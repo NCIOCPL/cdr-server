@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.cpp,v 1.24 2001-05-14 18:07:46 bkline Exp $
+ * $Id: CdrCommand.cpp,v 1.25 2001-05-16 15:44:10 bkline Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2001/05/14 18:07:46  bkline
+ * Added CdrGetLinkType.
+ *
  * Revision 1.23  2001/04/24 23:42:40  ameyer
  * Added link administration transaction processing.
  *
@@ -131,6 +134,7 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
         CommandMap(L"CdrListLinkTypes", cdr::listLinkTypes),
         CommandMap(L"CdrListLinkProps", cdr::listLinkProps),
         CommandMap(L"CdrListDocTypes",  cdr::listDocTypes),
+        CommandMap(L"CdrListSchemaDocs",cdr::listSchemaDocs),
         CommandMap(L"CdrAddDocType",    cdr::addDocType),
         CommandMap(L"CdrModDocType",    cdr::modDocType),
         CommandMap(L"CdrDelDocType",    cdr::delDocType),
