@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.30 2003-02-10 14:04:20 bkline Exp $
+ * $Id: CdrCommand.h,v 1.31 2004-05-14 02:06:16 ameyer Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2003/02/10 14:04:20  bkline
+ * Added new command CdrMailerCleanup.
+ *
  * Revision 1.29  2003/01/28 23:45:53  ameyer
  * Added sysValue command.
  *
@@ -1186,6 +1189,25 @@ namespace cdr {
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
     extern String DOMtoString(const dom::Node&, bool contents_only = false);
+
+    /**
+     * Start or stop cacheing in the CDR server to optimize publishing
+     * and/or possibly other services.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        empty element with 'on' or 'off' attributes.
+     *                           on="term" starts term denormalization cacheing
+     *                           on="pub" starts all publication cacheing
+     *                           on="all" starts all cacheing
+     *                           off= ... same values.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 "</CdrCacheingResp>".
+     *  @exception  cdr::Exception if invalid or missing attributes.
+     */
+    extern String cacheInit    (Session&          session,
+                                const dom::Node&  node,
+                                db::Connection&   conn);
 
     /**
      * Shuts down the CDR Server.
