@@ -1,7 +1,10 @@
 /*
- * $Id: cdrdata.sql,v 1.3 2000-04-21 19:49:25 bkline Exp $
+ * $Id: cdrdata.sql,v 1.4 2000-04-26 01:44:17 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/04/21 19:49:25  bkline
+ * Added data for testing group actions.
+ *
  * Revision 1.2  2000/04/17 21:34:02  bkline
  * Data mods to test CdrCheckAuth command.
  *
@@ -28,6 +31,7 @@ INSERT INTO doc_type(name, format, created, versioning, dtd, xml_schema)
 VALUES('', 2, GETDATE(), 'N', '', '')
 INSERT INTO doc_type(name, format, created, versioning, dtd, xml_schema)
 VALUES('Person', 1, GETDATE(), 'Y',
+       '<xsd:schema xmlns:xsd="http://www.w3.org/1999/XMLSchema">\n' +
        '<!ELEMENT Person     (FirstName, LastName)>\n' +
        '<!ELEMENT FirstName  (#PCDATA)>\n' +
        '<!ELEMENT LastName   (#PCDATA)>\n',
@@ -35,17 +39,20 @@ VALUES('Person', 1, GETDATE(), 'Y',
        '<xsd:complexType name="Person">\n' +
        '    <xsd:element name="FirstName" type="xsd:string"/>\n' +
        '    <xsd:element name="LastName"  type="xsd:string"/>\n' +
-       '</xsd:complexType>')
+       '</xsd:complexType>\n' +
+       '</xsd:schema>')
 INSERT INTO doc_type(name, format, created, versioning, dtd, xml_schema)
 VALUES('Org', 2, GETDATE(), 'Y',
        '<!ELEMENT Org        (Name, Address)>\n' +
        '<!ELEMENT Name       (#PCDATA)>\n' +
        '<!ELEMENT Address    (#PCDATA)>\n',
+       '<xsd:schema xmlns:xsd="http://www.w3.org/1999/XMLSchema">\n' +
        '<xsd:element     name="Org"       type="Org"/>\n' +
        '<xsd:complexType name="Org">\n' +
        '    <xsd:element name="Name"      type="xsd:string"/>\n' +
        '    <xsd:element name="Address"   type="xsd:string"/>\n' +
-       '</xsd:complexType>')
+       '</xsd:complexType>\n' +
+       '</xsd:schema>')
 go
 
 INSERT INTO doc_status(id, name) VALUES('U', 'UNVALIDATED')
@@ -85,6 +92,10 @@ INSERT INTO action(name) VALUES('MODIFY USER')
 INSERT INTO action(name) VALUES('ADD GROUP')
 INSERT INTO action(name) VALUES('MODIFY GROUP')
 INSERT INTO action(name) VALUES('DELETE GROUP')
+INSERT INTO action(name) VALUES('GET GROUP')
+INSERT INTO action(name) VALUES('LIST GROUPS')
+INSERT INTO action(name) VALUES('GET USER')
+INSERT INTO action(name) VALUES('VALIDATE DOCUMENT')
 go
 
 INSERT INTO grp(name) VALUES('TRAINEES')
@@ -109,6 +120,10 @@ INSERT INTO grp_action(grp, action, doc_type) VALUES(3, 8, 1)
 INSERT INTO grp_action(grp, action, doc_type) VALUES(3, 9, 1)
 INSERT INTO grp_action(grp, action, doc_type) VALUES(3, 10, 1)
 INSERT INTO grp_action(grp, action, doc_type) VALUES(3, 11, 1)
+INSERT INTO grp_action(grp, action, doc_type) VALUES(3, 12, 1)
+INSERT INTO grp_action(grp, action, doc_type) VALUES(3, 13, 1)
+INSERT INTO grp_action(grp, action, doc_type) VALUES(3, 14, 1)
+INSERT INTO grp_action(grp, action, doc_type) VALUES(3, 15, 2)
 INSERT INTO grp_action(grp, action, doc_type) VALUES(4, 1, 3)
 INSERT INTO grp_action(grp, action, doc_type) VALUES(4, 2, 3)
 INSERT INTO grp_action(grp, action, doc_type) VALUES(4, 3, 3)
