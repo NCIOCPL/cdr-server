@@ -1,7 +1,11 @@
 /*
- * $Id: CdrXsd.cpp,v 1.14 2001-06-12 11:06:54 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.15 2001-06-12 22:38:03 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2001/06/12 11:06:54  bkline
+ * Added readonly attribute declaration for DocId, DocTitle, and top-level
+ * document element.
+ *
  * Revision 1.13  2001/05/16 15:49:35  bkline
  * Fixed bogus mismatch error report; added more context information to
  * mismatched content error report; fixed reversed logic test bug;
@@ -6533,7 +6537,7 @@ void cdr::xsd::Schema::writeDtdElement(cdr::xsd::Element& elem,
                     os << L" #REQUIRED";
             }
             if (isTopElement && !haveReadonlyAttr)
-                os << L" readonly CDATA";
+                os << L" readonly CDATA #IMPLIED";
             os << L">\n";
         }
 
