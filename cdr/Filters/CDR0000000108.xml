@@ -25,7 +25,7 @@
 
  <xsl:output                    method = "xml" 
                   omit-xml-declaration = "no"
-                              encoding = "UTF-8"/>
+                              encoding = "UTF-8"/> 
 
  <xsl:include                     href = "cdr:name:Module: Citation Formatting"/>
 
@@ -127,16 +127,20 @@
    <ProtocolAbstract>
     <Professional>
      <Objectives>
-      <xsl:apply-templates      select = "$pa_hp/Objectives"/>
+      <xsl:apply-templates      select = "$pa_hp/Objectives"
+                                  mode = "copy"/>
      </Objectives>
      <Outline>
-      <xsl:apply-templates      select = "$pa_hp/Outline"/>
+      <xsl:apply-templates      select = "$pa_hp/Outline"
+                                  mode = "copy"/>
      </Outline>
      <EntryCriteria>
-      <xsl:apply-templates      select = "$pa_hp/EntryCriteria"/>
+      <xsl:apply-templates      select = "$pa_hp/EntryCriteria"
+                                  mode = "copy"/>
      </EntryCriteria>
      <ProjectedAccrual>
-      <xsl:apply-templates      select = "$pa_hp/ProjectedAccrual"/>
+      <xsl:apply-templates      select = "$pa_hp/ProjectedAccrual"
+                                  mode = "copy"/>
      </ProjectedAccrual>
 
      <xsl:apply-templates       select = "$pa_hp/EnteredBy" 
@@ -288,9 +292,9 @@
                                           Rationale       |
                                           Purpose         |
                                           EligibilityText | 
-                                          TreatmentIntervention">
+                                          TreatmentIntervention"
+                                  mode = "copy">
   <xsl:apply-templates            mode = "copy"/>
-  <!-- xsl:call-template              name = "glossaryDef"/ -->
  </xsl:template>
 
 
@@ -459,32 +463,6 @@
   </ExternalRef>
  </xsl:template>
 
- <!-- 
- ==============================================================
- Template for extracting Glossary Term definitions for Patient
- Abstract section
- ============================================================== -->
- <xsl:template                    name = "glossaryDef">
-  <xsl:for-each                 select = ".//GlossaryTermRef">
-   <xsl:if                        test = "contains(@cdr:href,'CDR')">
-    <xsl:variable                 name = "GlossID" 
-                                select = "@cdr:href"/>
-    <xsl:variable                 name = "GlossInfo" 
-                                select = "document
-                                          (concat
-                                          ('cdr:',$GlossID, '/lastp'))"/>
-    <GlossaryTerm>
-     <xsl:apply-templates       select = "$GlossInfo/GlossaryTerm/TermName" 
-                                  mode = "copy"/>
-     <xsl:apply-templates       select = "$GlossInfo/GlossaryTerm/
-                                         TermPronunciation" 
-                                  mode = "copy"/>
-     <xsl:apply-templates       select = "$GlossInfo/GlossaryTerm/
-                                           TermDefinition"/>
-    </GlossaryTerm>
-   </xsl:if>
-  </xsl:for-each>
- </xsl:template>
 
  <!-- 
  ==============================================================
@@ -492,11 +470,13 @@
  subsections DiseaseCharacterictic, PatientCharacteristic, 
  and PriorConcurrentTherapy, GeneralEligibilityCriteria
  ============================================================== -->
- <xsl:template                   match = "EntryCriteria">
+ <xsl:template                   match = "EntryCriteria"
+                                  mode = "copy">
    <xsl:apply-templates         select = "DiseaseCharacteristics | 
                                           PatientCharacteristics |
                                           PriorConcurrentTherapy |
-                                          GeneralEligibilityCriteria"/>
+                                          GeneralEligibilityCriteria"
+                                  mode = "copy"/>
  </xsl:template>
 
 
@@ -506,9 +486,10 @@
  <xsl:template                   match = "DiseaseCharacteristics |
                                           PatientCharacteristics |
                                           PriorConcurrentTherapy | 
-                                          GeneralEligibilityCriteria">
+                                          GeneralEligibilityCriteria"
+                                  mode = "copy">
   <xsl:element                    name = "{name()}">
-   <xsl:apply-templates/>
+   <xsl:apply-templates           mode = "copy"/>
   </xsl:element>
  </xsl:template>
 
@@ -1657,63 +1638,6 @@
   </Para>
  </xsl:template>
 
- <!--
- =========================================================================
- ========================================================================= -->
- <xsl:template                   match = "ItemizedList">
-  <ItemizedList>
-   <xsl:if                        test = "./@cdr:id">
-    <xsl:attribute                name = "id">
-     <xsl:value-of              select = "./@cdr:id"/>
-    </xsl:attribute>
-   </xsl:if>
-   <xsl:if                        test = "./@Compact">
-    <xsl:attribute                name = "Compact">
-     <xsl:value-of              select = "./@Compact"/>
-    </xsl:attribute>
-   </xsl:if>
-   <xsl:if                        test = "./@Style">
-    <xsl:attribute                name = "Style">
-     <xsl:value-of              select = "./@Style"/>
-    </xsl:attribute>
-   </xsl:if>
-   <xsl:apply-templates         select = "ListTitle"
-                                  mode = "copy"/>
-   <xsl:apply-templates         select = "ListItem"/>
-  </ItemizedList>
- </xsl:template>
-
- <!--
- =========================================================================
- ========================================================================= -->
- <xsl:template                   match = "ItemizedList"
-                                  mode = "copy">
-  <ItemizedList>
-   <xsl:if                        test = "./@cdr:id">
-    <xsl:attribute                name = "id">
-     <xsl:value-of              select = "./@cdr:id"/>
-    </xsl:attribute>
-   </xsl:if>
-   <xsl:if                        test = "./@Compact">
-    <xsl:attribute                name = "Compact">
-     <xsl:value-of              select = "./@Compact"/>
-    </xsl:attribute>
-   </xsl:if>
-   <xsl:if                        test = "./@Style">
-    <xsl:attribute                name = "Style">
-     <xsl:value-of              select = "./@Style"/>
-    </xsl:attribute>
-   </xsl:if>
-   <xsl:apply-templates         select = "ListTitle"
-                                  mode = "copy"/>
-   <xsl:apply-templates         select = "ListItem"/>
-  </ItemizedList>
- </xsl:template>
- <xsl:template                   match = "ListItem">
-  <xsl:copy>
-   <xsl:apply-templates/>
-  </xsl:copy>
- </xsl:template>
 
 
  <!--
