@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.12 2002-09-08 12:27:21 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.13 2003-01-02 13:28:59 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2002/09/08 12:27:21  bkline
+ * Added PublishLinkedDocs code (not finished or enabled yet).
+ *
  * Revision 1.11  2002/08/01 19:17:15  bkline
  * Removed debugging output.
  *
@@ -331,6 +334,10 @@ namespace
                    "                     DATEADD(month, ?, "
                    "                             DATEADD(year, ?, "
                    "                                     GETDATE()))) "
+                   "  AND c.dt_out < DATEADD(day, ?, "
+                   "                     DATEADD(month, ?, "
+                   "                             DATEADD(year, ?, "
+                   "                                     GETDATE()))) "
                    "  AND a.dt = (SELECT MAX(aa.dt) FROM audit_trail aa "
                    "              WHERE aa.document = a.document) "
                    "ORDER BY c.id ASC";
@@ -339,6 +346,9 @@ namespace
     select.setInt(1, day);
     select.setInt(2, month);
     select.setInt(3, year);
+    select.setInt(4, day);
+    select.setInt(5, month);
+    select.setInt(6, year);
     
     cdr::db::ResultSet rs = select.executeQuery();
 
@@ -357,7 +367,7 @@ namespace
                 L"<DocId>" << cdr::stringDocId(id) << L"</DocId>\n"
                 L"<DocType>" << dtype << L"</DocType>\n"
                 L"<CheckedOutTo>" << name << L"</CheckedOutTo>\n"
-                L"<WhenCheckedOut>" << dt << L"</WhenCheckedOut>\n"
+                L"<WhenCheckedOut>" << dt_out << L"</WhenCheckedOut>\n"
                 L"<LastActivity>\n"
                 L"<ActionType>" << aname << L"</ActionType>\n"
                 L"<ActionWhen>" << dt << L"</ActionWhen>\n"
