@@ -1,0 +1,164 @@
+<CdrDoc Type='Filter' Id='CDR0000343792'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Person at Org - Org Location</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0">
+
+ <xsl:output                    method = "xml"/>
+
+ <!-- 
+ ===================================================================
+ Drop down to the OrganizationLocations element.
+ =================================================================== -->
+ <xsl:template                   match = "/">
+  <xsl:apply-templates          select = "Organization/
+                                          OrganizationLocations"/>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Process each of the Location children.
+ =================================================================== -->
+ <xsl:template                   match = "OrganizationLocations">
+  <xsl:variable                   name = "cipsContactId"
+                                select = "CIPSContact"/>
+  <Locations>
+   <xsl:for-each                select = "OrganizationLocation">
+    <xsl:call-template            name = "getLocation">
+     <xsl:with-param              name = "cipsContactId"
+                                select = "$cipsContactId"/>
+    </xsl:call-template>
+   </xsl:for-each>
+  </Locations>
+ </xsl:template>
+
+
+ <!-- ===================================================================
+      Extract the address (as HTML) and the fragment ID (if any).
+      =================================================================== -->
+ <xsl:template                  name = "getLocation">
+  <xsl:param                    name = "cipsContactId"/>
+  <Location>
+   <table                     border = "0"
+                               width = "100%"
+                         cellspacing = "0"
+                         cellpadding = "0">
+    <xsl:if                     test = "@cdr:id = $cipsContactId">
+     <tr>
+      <td>
+       <b>CIPS Contact Location</b>
+      </td>
+     </tr>
+    </xsl:if>
+    <xsl:apply-templates      select = "PostalAddress"/>
+    <xsl:apply-templates      select = "Phone"/>
+    <xsl:apply-templates      select = "TollFreePhone"/>
+    <xsl:apply-templates      select = "Fax"/>
+    <xsl:apply-templates      select = "Email"/>
+    <xsl:apply-templates      select = "WebSite"/>
+   </table>
+   <xsl:if                      test = "@cdr:id">
+    <FragmentId>
+     <xsl:value-of            select = "@cdr:id"/>
+    </FragmentId>
+   </xsl:if>
+  </Location>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Assemble the postal address as HTML.
+ =================================================================== -->
+ <xsl:template                   match = "PostalAddress">
+  <xsl:for-each                 select = "../OrganizationName">
+   <tr>
+    <td>
+     <xsl:value-of              select = "."/>
+    </td>
+   </tr>
+  </xsl:for-each>
+  <xsl:for-each                 select = "Street">
+   <tr>
+    <td>
+     <xsl:value-of              select = "."/>
+    </td>
+   </tr>
+  </xsl:for-each>
+  <xsl:variable                   name = "city">
+   <xsl:if                        test = "City">
+    <xsl:value-of               select = "City"/>
+    <xsl:if                       test = "CitySuffix">
+     <xsl:text> </xsl:text>
+     <xsl:value-of              select = "CitySuffix"/>
+    </xsl:if>
+   </xsl:if>
+  </xsl:variable>
+  <xsl:variable                   name = "state">
+   <xsl:value-of                select = "PoliticalSubUnitShortName"/>
+  </xsl:variable>
+  <xsl:variable                   name = "cityLine">
+   <xsl:value-of                select = "$city"/>
+   <xsl:if                        test = "$city and $state">
+    <xsl:text>, </xsl:text>
+   </xsl:if>
+   <xsl:value-of                select = "$state"/>
+   <xsl:if                        test = "$state and PostalCode_ZIP">
+    <xsl:text> </xsl:text>
+   </xsl:if>
+   <xsl:value-of                select = "PostalCode_ZIP"/>
+  </xsl:variable>
+  <xsl:if                         test = "$cityLine">
+   <tr>
+    <td>
+      <xsl:value-of             select = "$cityLine"/>
+    </td>
+   </tr>
+  </xsl:if>
+  <tr>
+   <td>
+    <xsl:value-of               select = "CountryName"/>
+    <br/><br/>
+   </td>
+  </tr>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Assemble the miscellaneous data elements as HTML.
+ =================================================================== -->
+ <xsl:template                 match = "Phone|
+                                        TollFreePhone|
+                                        Fax|
+                                        Email|
+                                        WebSite">
+  <tr>
+   <td width="35%">
+     <xsl:value-of           select = "name()"/>
+     <xsl:text>:&#160;&#160;</xsl:text>
+   </td>
+   <td width="65%">
+     <xsl:choose>
+      <xsl:when                test = "name() = 'WebSite'">
+       <xsl:value-of         select = "@cdr:xref"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of         select = "."/>
+      </xsl:otherwise>
+     </xsl:choose>
+   </td>
+  </tr>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
