@@ -1,9 +1,13 @@
 /*
- * $Id: CdrDocTypes.cpp,v 1.5 2001-05-16 15:45:07 bkline Exp $
+ * $Id: CdrDocTypes.cpp,v 1.6 2001-05-21 20:48:29 bkline Exp $
  *
  * Support routines for CDR document types.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2001/05/16 15:45:07  bkline
+ * Added listSchemaDocs() command; modified commands to reflect shift
+ * of schema documents from doc_type table to document table.
+ *
  * Revision 1.4  2001/04/13 12:23:14  bkline
  * Fixed authorization check for GET DOCTYPE and MODIFY DOCTYPE, which
  * are document-type specific.
@@ -43,11 +47,6 @@ cdr::String cdr::listDocTypes(Session&          session,
                               const dom::Node&  node,
                               db::Connection&   conn)
 {
-    // Make sure the user is authorized to retrieve the document types.
-    if (!session.canDo(conn, L"LIST DOCTYPES", L""))
-        throw cdr::Exception(
-                L"LIST DOCTYPES action not authorized for this user");
-
     // Submit the query to the database
     cdr::db::Statement s = conn.createStatement();
     cdr::db::ResultSet r = s.executeQuery("SELECT name FROM doc_type");
@@ -131,11 +130,6 @@ cdr::String cdr::getDocType(Session&          session,
     if (docTypeString.empty())
         throw cdr::Exception(L"Type attribute missing from CdrGetDocType "
                              L"command element");
-
-    // Make sure the user is authorized to retrieve the doctype's information.
-    if (!session.canDo(conn, L"GET DOCTYPE", docTypeString))
-        throw cdr::Exception(
-                L"GET DOCTYPE action not authorized for this user/doctype");
 
     // Load the document type information.
     std::string query = "          SELECT f.name,             "
