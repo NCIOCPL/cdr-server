@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbStatement.h,v 1.7 2000-05-03 23:50:42 bkline Exp $
+ * $Id: CdrDbStatement.h,v 1.8 2000-05-04 00:04:08 bkline Exp $
  *
  * Wrapper for ODBC HSTMT.  Modeled after JDBC interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2000/05/03 23:50:42  bkline
+ * More ccdoc comments.
+ *
  * Revision 1.6  2000/05/03 15:40:45  bkline
  * Fixed creation of db Statements.
  *
@@ -129,8 +132,6 @@ namespace cdr {
              * Reference count used to prevent premature release of statement
              * resources.  Only the <code>refCount</code> field of the
              * original object is used.
-             *
-             *  @see pRefCount
              */
             int         refCount;
 
