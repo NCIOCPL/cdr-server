@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.16 2001-04-08 22:48:24 bkline Exp $
+ * $Id: CdrCommand.h,v 1.17 2001-04-13 12:19:16 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2001/04/08 22:48:24  bkline
+ * Added getTree() function.
+ *
  * Revision 1.15  2001/04/05 19:50:56  ameyer
  * Added reIndexDoc.
  *
@@ -279,6 +282,81 @@ namespace cdr {
     extern String listUsrs   (Session&          session,
                               const dom::Node&  node,
                               db::Connection&   conn);
+
+    /**
+     * Retrieves a list of the actions subject to access control in the CDR.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String listActions(Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
+
+    /**
+     * Retrieves an existing action from the CDR authentication module.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String getAction(Session&          session,
+                            const dom::Node&  node,
+                            db::Connection&   conn);
+
+    /**
+     * Adds a new action to the CDR authentication module.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String addAction(Session&          session,
+                            const dom::Node&  node,
+                            db::Connection&   conn);
+
+    /**
+     * Modifies an existing action in the CDR authentication module.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String repAction(Session&          session,
+                            const dom::Node&  node,
+                            db::Connection&   conn);
+
+    /**
+     * Delets an existing action from the CDR authentication module.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String delAction(Session&          session,
+                            const dom::Node&  node,
+                            db::Connection&   conn);
 
     /**
      * Adds a new document to the CDR.
