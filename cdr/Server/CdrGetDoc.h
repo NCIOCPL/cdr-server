@@ -1,9 +1,12 @@
 /*
- * $Id: CdrGetDoc.h,v 1.7 2001-04-05 23:58:50 ameyer Exp $
+ * $Id: CdrGetDoc.h,v 1.8 2002-01-08 18:18:19 mruben Exp $
  *
  * Internal support functions for CDR document retrieval.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2001/04/05 23:58:50  ameyer
+ * Added default value to last arg on overloaded getDocString().
+ *
  * Revision 1.6  2001/03/13 22:05:54  mruben
  * modified to support filtering on CdrDoc
  *
@@ -47,12 +50,14 @@ namespace cdr {
      *  @param  conn        reference to an active connection to the CDR
      *                      database.
      *  @param  usecdata    if true, document is returned as CDATA.
+     *  @param  denormalize if true, link denormalization filter is applied.
      *  @return             wide-character String object containing XML
      *                      for the document.
      */
     extern cdr::String getDocString(const cdr::String&   docId,
                                     cdr::db::Connection& conn,
-                                    bool usecdata = true);
+                                    bool usecdata = true,
+                                    bool denormalize = true);
 
     /**
      * Overloaded version of getDocString which pulls a previous version
@@ -66,13 +71,37 @@ namespace cdr {
      *                      database.
      *  @param  verDoc      ptr to struct filled out by version control.
      *  @param  usecdata    if true, document is returned as CDATA.
+     *  @param  denormalize if true, link denormalization filter is applied.
      *  @return             wide-character String object containing XML
      *                      for the document.
      */
     extern cdr::String getDocString(const cdr::String&    docId,
                                     cdr::db::Connection&  conn,
                                     struct cdr::CdrVerDoc *verDoc,
-                                    bool usecdata = true);
+                                    bool usecdata = true,
+                                    bool denormalize = true);
+
+    /**
+     * Overloaded version of getDocString which pulls a previous version
+     * of the document from the version control system instead of the
+     * document table using version number.
+     *
+     * Not all control elements will be the same.
+     *
+     *  @param  docId       reference to string containing the document's ID.
+     *  @param  conn        reference to an active connection to the CDR
+     *                      database.
+     *  @param  version     version number
+     *  @param  usecdata    if true, document is returned as CDATA.
+     *  @param  denormalize if true, link denormalization filter is applied.
+     *  @return             wide-character String object containing XML
+     *                      for the document.
+     */
+    extern cdr::String getDocString(const cdr::String&    docId,
+                                    cdr::db::Connection&  conn,
+                                    int version,
+                                    bool usecdata = true,
+                                    bool denormalize = true);
 
     /**@#-*/
 
@@ -84,10 +113,11 @@ namespace cdr {
        * The components of CdrCtl
        */
       enum { all = 0xffff,
-             DocValStatus = 0x0001,
-             DocValDate =   0x0002,
-             DocTitle =     0x0004,
-             DocComment =   0x0008
+             DocValStatus        = 0x0001,
+             DocValDate          = 0x0002,
+             DocTitle            = 0x0004,
+             DocComment          = 0x0008,
+             DocActiveStatus     = 0x0010
       };
     }
 
@@ -98,11 +128,29 @@ namespace cdr {
      *  @param  docId       reference to string containing the document's ID.
      *  @param  conn        reference to an active connection to the CDR
      *                      database.
-     *  @param  select      bit mask selecting components to include
+     *  @param  elements    bit mask selecting components to include
      *  @return             wide-character String object containing XML
      *                      for the document.
      */
     extern cdr::String getDocCtlString(const cdr::String&      docId,
+                                       cdr::db::Connection&    conn,
+                                       int elements
+                                           = cdr::DocCtlComponents::all);
+
+    /**
+     * Pulls the control components of a CDR document from the database
+     * and constructs a serializable XML version of it.
+     *
+     *  @param  docId       reference to string containing the document's ID.
+     *  @param  version     int version number of document
+     *  @param  conn        reference to an active connection to the CDR
+     *                      database.
+     *  @param  elements    bit mask selecting components to include
+     *  @return             wide-character String object containing XML
+     *                      for the document.
+     */
+    extern cdr::String getDocCtlString(const cdr::String&      docId,
+                                       int                     version,
                                        cdr::db::Connection&    conn,
                                        int elements
                                            = cdr::DocCtlComponents::all);
