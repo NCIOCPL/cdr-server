@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.23 2002-06-20 20:17:33 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.24 2002-06-28 20:41:10 ameyer Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2002/06/20 20:17:33  bkline
+ * Put entConvert back because the bug is in DLL.
+ *
  * Revision 1.22  2002/06/19 23:23:44  pzhang
  * Forgot other two instances of entConvert of title.
  *
@@ -193,7 +196,7 @@ cdr::String cdr::getDocString(
 cdr::String cdr::getDocString(
         const cdr::String&    docIdString,
         cdr::db::Connection&  conn,
-        struct cdr::CdrVerDoc *docVer,
+        const struct cdr::CdrVerDoc *docVer,
         bool usecdata,
         bool denormalize
 ) {
@@ -261,7 +264,7 @@ cdr::String cdr::getDocString(
     // That's all we've got from the doc control
     // Add an end tag for it and fetch xml and blob
     cdrDoc += L"</CdrDocCtl>\n";
-    cdrDoc += usecdata ? makeDocXml (docVer->xml) : docVer->xml;
+    cdrDoc += usecdata ? makeDocXml (xml) : xml;
     if (!docVer->data.isNull())
         cdrDoc += makeDocBlob (docVer->data);
 
