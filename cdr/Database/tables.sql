@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.38 2001-09-21 13:44:08 bkline Exp $
+ * $Id: tables.sql,v 1.39 2001-09-28 17:00:43 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.38  2001/09/21 13:44:08  bkline
+ * Changed all "REFERENCES document" to "REFERENCES all_doc".
+ *
  * Revision 1.37  2001/09/20 18:08:24  ameyer
  * Changed title_filter to integer foreign key referencing all_docs(id).
  *
@@ -966,7 +969,7 @@ CREATE TABLE published_doc
  */
 CREATE TABLE pub_proc
          (id INTEGER IDENTITY PRIMARY KEY,
-  pub_system VARCHAR(255) NOT NULL,
+  pub_system INTEGER      NOT NULL REFERENCES all_docs,
   pub_subset VARCHAR(255) NOT NULL,
          usr INTEGER      NOT NULL REFERENCES usr,
   output_dir VARCHAR(255) NOT NULL,
@@ -1001,6 +1004,7 @@ CREATE TABLE pub_proc_doc
    (pub_proc INTEGER      NOT NULL  REFERENCES pub_proc,
       doc_id INTEGER      NOT NULL,
  doc_version INTEGER      NOT NULL,
+    messages NTEXT            NULL,
   CONSTRAINT pub_proc_doc_fk        PRIMARY KEY(pub_proc, doc_id, doc_version),
   CONSTRAINT pub_proc_doc_fk_docver FOREIGN KEY(doc_id, doc_version) 
                                     REFERENCES doc_version)
