@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.27 2004-05-12 02:45:50 ameyer Exp $
+ * $Id: CdrString.h,v 1.28 2004-11-05 05:57:36 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2004/05/12 02:45:50  ameyer
+ * Added trimWhiteSpace().
+ *
  * Revision 1.26  2004/03/23 16:26:48  bkline
  * Upgraded to version 5.4.0 of xml4c (but still using deprecated APIs).
  *
@@ -466,6 +469,15 @@ namespace cdr {
     bool ynCheck (cdr::String ynString, bool defaultVal,
                   cdr::String forceMsg = L"");
 
+    /**
+     * Compute a hash value for a byte stream.
+     *
+     *  @param  bytes       Pointer to 8 bit bytes.
+     *  @param  len         Length in bytes (not UTF-16 chars!)
+     *  @return             32 bit hash value
+     *                      0 if zero length byte stream.
+     */
+    unsigned long hashBytes(const unsigned char *bytes, size_t len);
 }
 
 #endif
