@@ -5,24 +5,26 @@
 <DocTitle readonly="yes">Denormalization Filter (1/1): Political SubUnit </DocTitle>
 <DocComment>CVS-V1.7: Fixing cdr:ref attribute</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
-<!-- =====================================================================
-        Filter to Denormalize Political SubUnit XML
-     ===================================================================== -->
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!-- 
+=====================================================================
+Filter to Denormalize Political SubUnit XML
+===================================================================== -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
 
-  <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                 version="1.0"
-                 xmlns:cdr="cips.nci.nih.gov/cdr">
-    <xsl:output method="xml" omit-xml-declaration="no"/>
+ <xsl:output                    method = "xml" 
+                  omit-xml-declaration = "no"/>
 
  <!-- 
  =================================================================
  Copy control information and generate current date
  ================================================================= -->
-  <xsl:template                   match = "PoliticalSubUnit">
+  <xsl:template                  match = "PoliticalSubUnit">
    <xsl:copy>
-   <xsl:apply-templates          select = "document('cdrutil:/docid')"/>
-   <xsl:apply-templates          select = "document('cdrx:/*/CdrCtl')"/>
+   <xsl:apply-templates         select = "document('cdrutil:/docid')"/>
+   <xsl:apply-templates         select = "document('cdrx:/*/CdrCtl')"/>
 
    <xsl:apply-templates/>
 
@@ -34,24 +36,24 @@
  =================================================================
  Template to denormalize Country link
  ================================================================= -->
- <xsl:template                    match = "Country">
-  <xsl:variable                    name = "countryId" 
-                                 select = "@cdr:ref"/>
-  <xsl:variable                    name = "countryDoc" 
-                                 select = "document(concat('cdr:', $countryId,
-                                                           '/lastp'))"/>
+ <xsl:template                   match = "Country">
+  <xsl:variable                   name = "countryId" 
+                                select = "@cdr:ref"/>
+  <xsl:variable                   name = "countryDoc" 
+                                select = "document(concat('cdr:', $countryId,
+                                                          '/lastp'))"/>
   <Country>
-   <xsl:for-each                 select = "@*">
-    <xsl:attribute                 name = "{name()}">
-     <xsl:value-of               select = "."/>
+   <xsl:for-each                select = "@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
     </xsl:attribute>
    </xsl:for-each>
-   <xsl:apply-templates          select = "$countryDoc/Country/
-                                                       CountryFullName |
-                                           $countryDoc/Country/
-                                                       Continent       |
-                                           $countryDoc/Country/
-                                                       PostalCodePosition"/>
+   <xsl:apply-templates         select = "$countryDoc/Country/
+                                                      CountryFullName |
+                                          $countryDoc/Country/
+                                                      Continent       |
+                                          $countryDoc/Country/
+                                                      PostalCodePosition"/>
   </Country>
  </xsl:template> 
 
@@ -61,9 +63,9 @@
  Template rule used to do XML to XML transformations which
  copies any attribute node, or node that is child of of something 
  ================================================================== -->
- <xsl:template                    match = "@*|node()">
+ <xsl:template                   match = "@*|node()">
   <xsl:copy>
-   <xsl:apply-templates          select = "@*|node()"/>
+   <xsl:apply-templates         select = "@*|node()"/>
   </xsl:copy> 
  </xsl:template>
 
