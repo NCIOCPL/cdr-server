@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.43 2001-11-02 20:43:10 bkline Exp $
+ * $Id: tables.sql,v 1.44 2001-12-06 03:00:36 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.43  2001/11/02 20:43:10  bkline
+ * Added 'active' column to doc_type table.
+ *
  * Revision 1.42  2001/10/22 11:54:33  bkline
  * Added email column to put_proc.
  *
@@ -145,11 +148,16 @@
  * Initial revision
  */
 
+USE cdr
+GO
+
 /* 
  * Common data elements (requirement 2.1.6).  All data tags beginning with
  * 'Z' must appear in this table, effectively creating a reserved namespace
  * for controlled data elements used throughout the system, to ensure that
  * the instances of the elements can be found.
+ *
+ * NOTE: Not currently used.
  *
  * Consider placing this functionality in a text-format control file. - AM
  *
@@ -161,12 +169,15 @@
  *               this element
  */
 CREATE TABLE common
-        (tag VARCHAR(32) PRIMARY KEY,
+        (tag VARCHAR(32)  PRIMARY KEY,
  description VARCHAR(255) NOT NULL,
-         dtd NVARCHAR(255) NULL)
+         dtd NVARCHAR(255)    NULL)
+GO
 
 /* 
  * Valid categories for control values.
+ *
+ * NOTE: Not currently used.
  *
  *           id  primary key for the control group table
  *         name  label used to identify all control values in a given group;
@@ -177,10 +188,13 @@ CREATE TABLE common
 CREATE TABLE ctl_grp
          (id INTEGER IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
-     comment VARCHAR(255) NULL)
+     comment VARCHAR(255)    NULL)
+GO
 
 /* 
  * Named and typed values used to control various run-time settings.
+ *
+ * NOTE: Not currently used.
  *
  *          grp  identifies which control group this value belongs to
  *         name  mnemonic label for value; e.g., US
@@ -188,11 +202,12 @@ CREATE TABLE ctl_grp
  *      comment  optional text description of the use of this value
  */
 CREATE TABLE ctl
-        (grp INTEGER NOT NULL REFERENCES ctl_grp,
+        (grp INTEGER     NOT NULL REFERENCES ctl_grp,
         name VARCHAR(32) NOT NULL,
-         val NVARCHAR(255) NULL,
-     comment VARCHAR(255) NULL,
+         val NVARCHAR(255)   NULL,
+     comment VARCHAR(255)    NULL,
  PRIMARY KEY (grp, name))
+GO
 
 /* 
  * Users authorized to work with the CDR.  Note that connection information is
@@ -213,16 +228,21 @@ CREATE TABLE ctl
  *               for this user account
  */
 CREATE TABLE usr
-         (id INTEGER IDENTITY PRIMARY KEY,
+         (id INTEGER     IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
     password VARCHAR(32) NOT NULL,
-     created DATETIME NOT NULL,
-    fullname VARCHAR(100) NULL,
-      office VARCHAR(100) NULL,
-       email VARCHAR(128) NULL,
-       phone VARCHAR(20) NULL,
-     expired DATETIME NULL,
-     comment VARCHAR(255) NULL)
+     created DATETIME    NOT NULL,
+    fullname VARCHAR(100)    NULL,
+      office VARCHAR(100)    NULL,
+       email VARCHAR(128)    NULL,
+       phone VARCHAR(20)     NULL,
+     expired DATETIME        NULL,
+     comment VARCHAR(255)    NULL)
+GO
+GRANT SELECT ON usr TO CdrGuest
+GO
+GRANT SELECT ON usr TO CdrPublishing
+GO
 
 /*
  * Sessions created on behalf of individual users.
@@ -238,13 +258,18 @@ CREATE TABLE usr
  *      comment  optional free-text notes about the session
  */
 CREATE TABLE session
-         (id INTEGER IDENTITY PRIMARY KEY,
+         (id INTEGER     IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
-         usr INTEGER NOT NULL REFERENCES usr,
-   initiated DATETIME NOT NULL,
-    last_act DATETIME NOT NULL,
-       ended DATETIME NULL,
-     comment VARCHAR(255) NULL)
+         usr INTEGER     NOT NULL REFERENCES usr,
+   initiated DATETIME    NOT NULL,
+    last_act DATETIME    NOT NULL,
+       ended DATETIME        NULL,
+     comment VARCHAR(255)    NULL)
+GO
+GRANT SELECT ON session TO CdrGuest
+GO
+GRANT SELECT ON session TO CdrPublishing
+GO
 
 /* 
  * Tells whether the document type is in XML, or in some other format, such
@@ -255,9 +280,15 @@ CREATE TABLE session
  *      comment  optional free-text description of this format
  */
 CREATE TABLE format
-         (id INTEGER IDENTITY PRIMARY KEY,
+         (id INTEGER     IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
-     comment VARCHAR(255) NULL)
+     comment VARCHAR(255)    NULL)
+GO
+GRANT SELECT ON format TO CdrGuest
+GO
+GRANT SELECT ON format TO CdrPublishing
+GO
+
 /* 
  * Every document stored in the repository must have a type represented by a
  * row in this table.
@@ -288,34 +319,48 @@ CREATE TABLE format
  *       active  'Y' for document types currently in use; otherwise 'N'.
  *      comment  optional free-text description of additional characteristics
  *               of documents of this type.
+ *
+ * NOTE: We can't declare some of the FOREIGN KEY constraints until later in
+ *       the script, when we have defined the all_docs table.
  */
 CREATE TABLE doc_type
-         (id INTEGER IDENTITY PRIMARY KEY,
+         (id INTEGER     IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
-      format INTEGER NOT NULL REFERENCES format,
-     created DATETIME NOT NULL,
-  versioning CHAR NOT NULL DEFAULT 'Y',
-         dtd NTEXT NOT NULL,
-  xml_schema INTEGER REFERENCES all_docs,
- schema_date DATETIME NOT NULL DEFAULT GETDATE(),
-         css NTEXT NOT NULL,
-title_filter INT REFERENCES ALL_DOCS (ID) NULL,
-      active CHAR NOT NULL DEFAULT 'Y'
-     comment VARCHAR(255) NULL)
+      format INTEGER     NOT NULL REFERENCES format,
+     created DATETIME    NOT NULL,
+  versioning CHAR        NOT NULL DEFAULT 'Y',
+  xml_schema INTEGER         NULL,
+ schema_date DATETIME    NOT NULL DEFAULT GETDATE(),
+title_filter INT             NULL,
+      active CHAR        NOT NULL DEFAULT 'Y',
+     comment VARCHAR(255)    NULL)
+GO
+GRANT SELECT ON doc_type TO CdrGuest
+GO
+GRANT SELECT ON doc_type TO CdrPublishing
+GO
 
 /* 
  * Functions (a.k.a "actions") which can be performed on documents.
  *
- *           id  automatically generated primary key for the action table
- *         name  display name used to identify the action for the user;
- *               e.g., ADD DOCUMENT
- *      comment  optional free-text description of additional characteristics
- *               for this function
+ *               id  automatically generated primary key for the action table
+ *             name  display name used to identify the action for the user;
+ *                   e.g., ADD DOCUMENT
+ * doctype_specific  whether permissions are assigned separately for each
+ *                   document type for this action
+ *          comment  optional free-text description of additional 
+ *                   characteristics for this function
  */
-CREATE TABLE action
-         (id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL UNIQUE,
-     comment VARCHAR(255) NULL)
+    CREATE TABLE action
+             (id INTEGER IDENTITY PRIMARY KEY,
+            name VARCHAR(32)  NOT NULL UNIQUE,
+doctype_specific CHAR(1)      DEFAULT 'N',
+         comment VARCHAR(255) NULL)
+GO
+GRANT SELECT ON action TO CdrGuest
+GO
+GRANT SELECT ON action TO CdrPublishing
+GO
 
 /* 
  * Groups used to assign permissions; users can belong to more than one. 
@@ -329,9 +374,14 @@ CREATE TABLE action
  *               group should be restricted to two or three individuals."
  */
 CREATE TABLE grp
-         (id INTEGER IDENTITY PRIMARY KEY,
+         (id INTEGER     IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
-     comment VARCHAR(255) NULL)
+     comment VARCHAR(255)    NULL)
+GO
+GRANT SELECT ON grp TO CdrGuest
+GO
+GRANT SELECT ON grp TO CdrPublishing
+GO
 
 /* 
  * Set of legal status codes for documents in the repository. 
@@ -345,9 +395,14 @@ CREATE TABLE grp
  *               status
  */
 CREATE TABLE doc_status
-         (id CHAR PRIMARY KEY,
+         (id CHAR        PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
-     comment VARCHAR(255) NULL)
+     comment VARCHAR(255)    NULL)
+GO
+GRANT SELECT ON doc_status TO CdrGuest
+GO
+GRANT SELECT ON doc_status TO CdrPublishing
+GO
 
 /*
  * Set of legal values for the active_status column in the document table.
@@ -364,6 +419,11 @@ CREATE TABLE active_status
          (id CHAR PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
      comment VARCHAR(255) NULL)
+GO
+GRANT SELECT ON active_status TO CdrGuest
+GO
+GRANT SELECT ON active_status TO CdrPublishing
+GO
 
 /* 
  * Unit of storage managed by the Central Database Repository.  There will 
@@ -371,6 +431,8 @@ CREATE TABLE active_status
  * url table or the doc_blob table, but not both.  The all_docs tables
  * contains all rows, regardless of status.  The document view excludes rows
  * which have been marked as deleted (active_status of 'D').
+ *
+ * NOTE: the url table is no longer used.
  *
  *           id  automatically generated primary key for the document table
  *   val_status  foreign key reference into the doc_status table
@@ -393,32 +455,62 @@ CREATE TABLE active_status
  */
 CREATE TABLE all_docs
            (id INTEGER IDENTITY PRIMARY KEY,
-    val_status CHAR NOT NULL DEFAULT 'U' REFERENCES doc_status,
-      val_date DATETIME NULL,
-      doc_type INTEGER NOT NULL REFERENCES doc_type,
-         title VARCHAR(255) NOT NULL,
-           xml NTEXT NOT NULL,
-       comment VARCHAR(255) NULL,
- active_status CHAR NOT NULL REFERENCES active_status DEFAULT 'A',
-  last_frag_id INTEGER DEFAULT 0)
+    val_status CHAR          NOT NULL DEFAULT 'U' REFERENCES doc_status,
+      val_date DATETIME          NULL,
+      doc_type INTEGER       NOT NULL REFERENCES doc_type,
+         title NVARCHAR(255) NOT NULL,
+           xml NTEXT         NOT NULL,
+       comment NVARCHAR(255)     NULL,
+ active_status CHAR          NOT NULL DEFAULT 'A' REFERENCES active_status,
+  last_frag_id INTEGER       NOT NULL DEFAULT 0)
+GO
 
-CREATE VIEW document AS SELECT * FROM all_docs WHERE active_status != 'D'
+/*
+ * Index needed to make title searches for documents more efficient.
+ */
+CREATE INDEX doc_title_idx ON all_docs(title)
+GO
 
 /*
  * Index needed to support a view of the document table which brings all
  * active documents together, or all deleted documents.
  */
-CREATE UNIQUE INDEX doc_status_idx ON document (active_status, id)
+CREATE INDEX doc_status_idx ON all_docs(active_status, id)
+GO
+GRANT SELECT ON all_docs TO CdrGuest
+GO
+GRANT SELECT ON all_docs TO CdrPublishing
+GO
+
+/*
+ * Couldn't do this until now, because the all_docs table hadn't been
+ * defined yet.
+ */
+ALTER TABLE doc_type 
+        ADD CONSTRAINT fk_doc_type__xml_schema 
+FOREIGN KEY (xml_schema)
+ REFERENCES all_docs
+GO
+ALTER TABLE doc_type 
+        ADD CONSTRAINT fk_doc_type__title_filter
+FOREIGN KEY (title_filter)
+ REFERENCES all_docs
+GO
+
+CREATE VIEW document AS SELECT * FROM all_docs WHERE active_status != 'D'
+GO
 
 /*
  * View of the document table containing only active documents.
  */
 CREATE VIEW active_doc AS SELECT * FROM document WHERE active_status = 'A'
+GO
 
 /*
  * View of the document table containing only deleted documents.
  */
 CREATE VIEW deleted_doc AS SELECT * FROM document WHERE active_status = 'D'
+GO
 
 /*
  * Flag for documents which have been marked as ready for pre-publication
@@ -428,6 +520,12 @@ CREATE VIEW deleted_doc AS SELECT * FROM document WHERE active_status = 'D'
  */
 CREATE TABLE ready_for_review
      (doc_id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs)
+GO
+GRANT SELECT ON ready_for_review TO CdrGuest
+GO
+GRANT SELECT ON ready_for_review TO CdrPublishing
+GO
+
 /* 
  * Record of a document's having been checked out.  Retained even after it has
  * been checked back in.  Note that queued requests to check a document out
@@ -447,13 +545,18 @@ CREATE TABLE ready_for_review
  *               out
  */
 CREATE TABLE checkout
-         (id INTEGER NOT NULL REFERENCES all_docs,
+         (id INTEGER  NOT NULL REFERENCES all_docs,
       dt_out DATETIME NOT NULL,
-         usr INTEGER NOT NULL REFERENCES usr,
-       dt_in DATETIME NULL,
-     version INTEGER NULL,
+         usr INTEGER  NOT NULL REFERENCES usr,
+       dt_in DATETIME     NULL,
+     version INTEGER      NULL,
      comment VARCHAR(255) NULL,
  PRIMARY KEY (id, dt_out))
+GO
+GRANT SELECT ON checkout TO CdrGuest
+GO
+GRANT SELECT, UPDATE, INSERT ON checkout TO CdrPublishing
+GO
 
 /* 
  * Non-XML data for document. 
@@ -463,8 +566,13 @@ CREATE TABLE checkout
  */
 CREATE TABLE doc_blob
          (id INTEGER NOT NULL REFERENCES all_docs,
-        data IMAGE NOT NULL,
+        data IMAGE   NOT NULL,
  PRIMARY KEY (id))
+GO
+GRANT SELECT ON doc_blob TO CdrGuest
+GO
+GRANT SELECT ON doc_blob TO CdrPublishing
+GO
 
 /* 
  * Names document attributes associated with a particular document. 
@@ -477,6 +585,8 @@ CREATE TABLE doc_blob
  * Either use this table, or a parallel table which carries the values of
  * records used for validating referential integrity (for example, thesaurus
  * records).
+ *
+ * NOTE: Not currently used.
  *
  *           id  identification of the document to which this attribute
  *               pertains
@@ -494,9 +604,12 @@ CREATE TABLE doc_attr
          val NVARCHAR(255) NULL,
      comment VARCHAR(255) NULL,
  PRIMARY KEY (id, name, num))
+GO
 
 /* 
  * Support for external document ID categories; e.g., MEDLINE. 
+ *
+ * NOTE: Not currently used.
  *
  *     category  automatically generated primary key for the id_category table
  *         name  display name for the category of identifier; e.g. 'MEDLINE'
@@ -504,12 +617,15 @@ CREATE TABLE doc_attr
  *               of this category of external identifier
  */
 CREATE TABLE id_category
-   (category INTEGER IDENTITY PRIMARY KEY,
+   (category INTEGER     IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
-     comment VARCHAR(255) NULL)
+     comment VARCHAR(255)    NULL)
+GO
 
 /* 
  * Document identifiers other than our own unique IDs. 
+ *
+ * NOTE: Not currently used.
  *
  *     document  identifies the document to which this external identifier
  *               applies
@@ -517,10 +633,11 @@ CREATE TABLE id_category
  *           id  value of the external identifier; e.g., '99446448'
  */
 CREATE TABLE external_id
-   (document INTEGER NOT NULL REFERENCES all_docs,
-      id_cat INTEGER NOT NULL REFERENCES id_category,
+   (document INTEGER     NOT NULL REFERENCES all_docs,
+      id_cat INTEGER     NOT NULL REFERENCES id_category,
           id VARCHAR(32) NOT NULL,
  PRIMARY KEY (id_cat, id))
+GO
 
 /* 
  * Actions performed on documents which modified the data.  Requirement 4.1.3.
@@ -535,13 +652,18 @@ CREATE TABLE external_id
  *      comment  optional free-form text explanation of the changes
  */
 CREATE TABLE audit_trail
-   (document INTEGER NOT NULL REFERENCES all_docs,
-          dt DATETIME NOT NULL,
-         usr INTEGER NOT NULL REFERENCES usr,
-      action INTEGER NOT NULL REFERENCES action,
-     program VARCHAR(32) NULL,
-     comment VARCHAR(255) NULL,
+   (document INTEGER      NOT NULL REFERENCES all_docs,
+          dt DATETIME     NOT NULL,
+         usr INTEGER      NOT NULL REFERENCES usr,
+      action INTEGER      NOT NULL REFERENCES action,
+     program VARCHAR(32)      NULL,
+     comment VARCHAR(255)     NULL,
  PRIMARY KEY (document, dt))
+GO
+GRANT SELECT ON audit_trail TO CdrGuest
+GO
+GRANT SELECT ON audit_trail TO CdrPublishing
+GO
 
 /*
  * Information logged for debugging.
@@ -558,11 +680,18 @@ CREATE TABLE audit_trail
  * We're using 3800 in case we have to add something else later.
  */
 CREATE TABLE debug_log
-         (id INTEGER IDENTITY PRIMARY KEY,
-      thread INTEGER NOT NULL,
-    recorded DATETIME NOT NULL,
-      source NVARCHAR(64) NOT NULL,
+         (id INTEGER        IDENTITY PRIMARY KEY,
+      thread INTEGER        NOT NULL,
+    recorded DATETIME       NOT NULL,
+      source NVARCHAR(64)   NOT NULL,
          msg NVARCHAR(3800) NOT NULL)
+GO
+CREATE INDEX debug_log_recorded_idx ON debug_log(recorded)
+GO
+GRANT SELECT ON debug_log TO CdrGuest
+GO
+GRANT SELECT, INSERT ON debug_log TO CdrPublishing
+GO
 
 /* 
  * Version control.  XXX - will we use version control for documents whose
@@ -594,20 +723,25 @@ CREATE TABLE debug_log
  *               of the document
  */
 CREATE TABLE doc_version
-             (id INTEGER NOT NULL REFERENCES all_docs,
-             num INTEGER NOT NULL,
-              dt DATETIME NOT NULL,
-      updated_dt DATETIME NOT NULL,
-             usr INTEGER NOT NULL REFERENCES usr,
-      val_status CHAR NOT NULL REFERENCES doc_status,
-        val_date DATETIME NULL,
-     publishable CHAR NOT NULL,
-        doc_type INTEGER NOT NULL REFERENCES doc_type,
+             (id INTEGER      NOT NULL REFERENCES all_docs,
+             num INTEGER      NOT NULL,
+              dt DATETIME     NOT NULL,
+      updated_dt DATETIME     NOT NULL,
+             usr INTEGER      NOT NULL REFERENCES usr,
+      val_status CHAR         NOT NULL REFERENCES doc_status,
+        val_date DATETIME         NULL,
+     publishable CHAR         NOT NULL,
+        doc_type INTEGER      NOT NULL REFERENCES doc_type,
            title VARCHAR(255) NOT NULL,
-             xml NTEXT NOT NULL,
-            data IMAGE NULL,
-         comment VARCHAR(255) NULL,
+             xml NTEXT        NOT NULL,
+            data IMAGE            NULL,
+         comment VARCHAR(255)     NULL,
      PRIMARY KEY (id, num))
+GO
+GRANT SELECT ON doc_version TO CdrGuest
+GO
+GRANT SELECT ON doc_version TO CdrPublishing
+GO
 
 /*
  * Marks a version for later retrieval by name.  Note that a single version of
@@ -625,9 +759,14 @@ CREATE TABLE doc_version
  *               label
  */
 CREATE TABLE version_label
-         (id INTEGER IDENTITY PRIMARY KEY,
+         (id INTEGER     IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
-     comment VARCHAR(255) NULL)
+     comment VARCHAR(255)    NULL)
+GO
+GRANT SELECT ON version_label TO CdrGuest
+GO
+GRANT SELECT ON version_label TO CdrPublishing
+GO
 
 /*
  * Associates a version label with a specific version of a single document.
@@ -642,6 +781,11 @@ CREATE TABLE doc_version_label
     document INTEGER NOT NULL REFERENCES all_docs,
          num INTEGER NOT NULL,
  PRIMARY KEY (label, document))
+GO
+GRANT SELECT ON doc_version_label TO CdrGuest
+GO
+GRANT SELECT ON doc_version_label TO CdrPublishing
+GO
   
 /* 
  * Permission for a document-type specific action, assigned to a group.
@@ -654,11 +798,16 @@ CREATE TABLE doc_version_label
  *               assignment of this permission to the group
  */
 CREATE TABLE grp_action
-        (grp INTEGER NOT NULL REFERENCES grp,
-      action INTEGER NOT NULL REFERENCES action,
-    doc_type INTEGER NOT NULL REFERENCES doc_type,
+        (grp INTEGER  NOT NULL REFERENCES grp,
+      action INTEGER  NOT NULL REFERENCES action,
+    doc_type INTEGER  NOT NULL REFERENCES doc_type,
      comment VARCHAR(255) NULL,
  PRIMARY KEY (grp, action, doc_type))
+GO
+GRANT SELECT ON grp_action TO CdrGuest
+GO
+GRANT SELECT ON grp_action TO CdrPublishing
+GO
 
 /* 
  * Membership of groups.
@@ -669,10 +818,15 @@ CREATE TABLE grp_action
  *               in this group
  */
 CREATE TABLE grp_usr
-        (grp INTEGER NOT NULL REFERENCES grp,
-         usr INTEGER NOT NULL REFERENCES usr,
+        (grp INTEGER  NOT NULL REFERENCES grp,
+         usr INTEGER  NOT NULL REFERENCES usr,
      comment VARCHAR(255) NULL,
  PRIMARY KEY (grp, usr))
+GO
+GRANT SELECT ON grp_usr TO CdrGuest
+GO
+GRANT SELECT ON grp_usr TO CdrPublishing
+GO
 
 
 /*************************************************************
@@ -691,10 +845,15 @@ CREATE TABLE grp_usr
  *     comment  Optional free text notes
  */
 CREATE TABLE link_type (
-          id INTEGER IDENTITY PRIMARY KEY,
+          id INTEGER     IDENTITY PRIMARY KEY,
         name VARCHAR(32) UNIQUE NOT NULL,
-     comment VARCHAR(255) NULL
+     comment VARCHAR(255)           NULL
 )
+GO
+GRANT SELECT ON link_type TO CdrGuest
+GO
+GRANT SELECT ON link_type TO CdrPublishing
+GO
 
 /*
  * Link source control.
@@ -709,11 +868,16 @@ CREATE TABLE link_type (
  *     link_id   Foreign key references link_type table.
  */
 CREATE TABLE link_xml (
-      doc_type INTEGER NOT NULL REFERENCES doc_type,
-       element VARCHAR(32) NOT NULL,
-       link_id INTEGER NOT NULL REFERENCES link_type,
+      doc_type INTEGER      NOT NULL REFERENCES doc_type,
+       element VARCHAR(32)  NOT NULL,
+       link_id INTEGER      NOT NULL REFERENCES link_type,
    PRIMARY KEY (doc_type, element)
 )
+GO
+GRANT SELECT ON link_xml TO CdrGuest
+GO
+GRANT SELECT ON link_xml TO CdrPublishing
+GO
 
 /*
  * Link target control
@@ -729,6 +893,11 @@ CREATE TABLE link_target (
     source_link_type  INTEGER NOT NULL REFERENCES link_type,
      target_doc_type  INTEGER NOT NULL REFERENCES doc_type
 )
+GO
+GRANT SELECT ON link_target TO CdrGuest
+GO
+GRANT SELECT ON link_target TO CdrPublishing
+GO
 
 /*
  * Valid link property types.
@@ -744,10 +913,15 @@ CREATE TABLE link_target (
  *     comment  Optional free text notes
  */
 CREATE TABLE link_prop_type (
-          id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32) UNIQUE,
-     comment VARCHAR(255) NULL
+          id INTEGER      IDENTITY PRIMARY KEY,
+        name VARCHAR(32)  NOT NULL UNIQUE,
+     comment VARCHAR(255)     NULL
 )
+GO
+GRANT SELECT ON link_prop_type TO CdrGuest
+GO
+GRANT SELECT ON link_prop_type TO CdrPublishing
+GO
 
 /*
  * Properties of links.
@@ -764,11 +938,16 @@ CREATE TABLE link_prop_type (
  *      (we have a whole megillah for checking this.)
  */
 CREATE TABLE link_properties (
-      link_id INTEGER NOT NULL REFERENCES link_type,
-  property_id INTEGER NOT NULL REFERENCES link_prop_type,
-        value VARCHAR(1024) NULL,
-      comment VARCHAR(256) NULL
+      link_id INTEGER       NOT NULL REFERENCES link_type,
+  property_id INTEGER       NOT NULL REFERENCES link_prop_type,
+        value VARCHAR(1024)     NULL,
+      comment VARCHAR(256)      NULL
 )
+GO
+GRANT SELECT ON link_properties TO CdrGuest
+GO
+GRANT SELECT ON link_properties TO CdrPublishing
+GO
 
 /*
  * Link network.
@@ -787,13 +966,18 @@ CREATE TABLE link_properties (
  *     url            Alternative to target id + fragment for non CDR targets.
  */
 CREATE TABLE link_net (
-          link_type INTEGER NOT NULL REFERENCES link_type,
-         source_doc INTEGER NOT NULL REFERENCES all_docs,
+          link_type INTEGER     NOT NULL REFERENCES link_type,
+         source_doc INTEGER     NOT NULL REFERENCES all_docs,
         source_elem VARCHAR(32) NOT NULL,
-         target_doc INTEGER NULL REFERENCES all_docs,
-        target_frag VARCHAR(32) NULL,
-                url VARCHAR(256) NULL,
+         target_doc INTEGER         NULL REFERENCES all_docs,
+        target_frag VARCHAR(32)     NULL,
+                url VARCHAR(256)    NULL
 )
+GO
+GRANT SELECT ON link_net TO CdrGuest
+GO
+GRANT SELECT ON link_net TO CdrPublishing
+GO
 
 /*
  * Document fragment link targets found in the system.
@@ -807,10 +991,15 @@ CREATE TABLE link_net (
  *     fragment  Value of id attribute in element.
  */
 CREATE TABLE link_fragment (
-         doc_id INTEGER NOT NULL REFERENCES all_docs,
-       fragment VARCHAR(64),
+         doc_id INTEGER     NOT NULL REFERENCES all_docs,
+       fragment VARCHAR(64) NOT NULL,
     PRIMARY KEY (doc_id, fragment)
 )
+GO
+GRANT SELECT ON link_fragment TO CdrGuest
+GO
+GRANT SELECT ON link_fragment TO CdrPublishing
+GO
 
 /*************************************************************
  *      End link related tables
@@ -832,11 +1021,24 @@ CREATE TABLE link_fragment (
  *               table represent sibling under the same parent.
  */
 CREATE TABLE query_term
-     (doc_id INTEGER NOT NULL REFERENCES all_docs,
-        path VARCHAR(512) NOT NULL,
-       value NVARCHAR(255) NOT NULL,
-     int_val INTEGER NULL,
-    node_loc VARCHAR 160 NOT NULL)
+     (doc_id INTEGER       NOT NULL REFERENCES all_docs,
+        path VARCHAR(512)  NOT NULL,
+       value VARCHAR(800)  NOT NULL,
+     int_val INTEGER           NULL,
+    node_loc VARCHAR(160)  NOT NULL)
+GO
+CREATE INDEX ix_query_term1 ON query_term(value, doc_id)
+GO
+CREATE INDEX ix_query_term2 ON query_term(path, doc_id)
+GO
+CREATE INDEX ix_query_term3 ON query_term(doc_id, node_loc)
+GO
+CREATE INDEX ix_query_term4 ON query_term(int_val, doc_id)
+GO
+GRANT SELECT ON query_term TO CdrGuest
+GO
+GRANT SELECT ON query_term TO CdrPublishing
+GO
 
 /*
  * Allows for future customization of the query support mechanism, using more
@@ -850,9 +1052,14 @@ CREATE TABLE query_term
  *               element.
  */
 CREATE TABLE query_term_rule
-         (id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL,
+         (id INTEGER       IDENTITY PRIMARY KEY,
+        name VARCHAR(32)   NOT NULL,
     rule_def VARCHAR(2000) NOT NULL)
+GO
+GRANT SELECT ON query_term_rule TO CdrGuest
+GO
+GRANT SELECT ON query_term_rule TO CdrPublishing
+GO
 
 /*
  * Identifies elements which are to be indexed for querying.
@@ -863,7 +1070,12 @@ CREATE TABLE query_term_rule
  */
 CREATE TABLE query_term_def
        (path VARCHAR(512) NOT NULL,
-   term_rule INTEGER NULL REFERENCES query_term_rule)
+   term_rule INTEGER          NULL REFERENCES query_term_rule)
+GO
+GRANT SELECT ON query_term_def TO CdrGuest
+GO
+GRANT SELECT ON query_term_def TO CdrPublishing
+GO
 
 /*
  * Contains child-parent document ID pairs for Term document hierarchical
@@ -874,6 +1086,7 @@ CREATE VIEW term_parents
                             CAST(SUBSTRING(value, 4, 10) AS INT) as parent
                        FROM query_term
                       WHERE path = '/Term/TermParent/@cdr:ref'
+GO
 
 /*
  * More efficient view of previous view.
@@ -885,7 +1098,9 @@ CREATE VIEW term_kids
                        FROM query_term q,
                             document d
                       WHERE d.id = q.doc_id
-                        AND q.path = '/Term/TermParent/@cdr:ref'
+                        AND q.path = /* '/Term/TermParent/@cdr:ref' */
+                            '/Term/TermRelationship/ParentTerm/TermId/@cdr:ref'
+GO
 
 /*
  * This version tells which nodes are leaves.
@@ -903,18 +1118,50 @@ CREATE VIEW term_children
                         AND q2.path = '/Term/TermParent/@cdr:ref'
                         AND q2.int_val =* q1.doc_id
                    GROUP BY q1.int_val, q1.doc_id, d.title
+GO
+
+/*
+ * Table controlling values of dev_task.status.
+ */
+CREATE TABLE dev_task_status
+     (status VARCHAR(20) NOT NULL PRIMARY KEY)
+GO
+GRANT SELECT ON dev_task_status TO CdrGuest
+GO
+
+/*
+ * Table for tracking CDR development tasks.
+ */
+CREATE TABLE dev_task
+         (id INTEGER     IDENTITY PRIMARY KEY,
+ description TEXT        NOT NULL,
+ assigned_to VARCHAR(30)     NULL,
+      status VARCHAR(20) NOT NULL REFERENCES dev_task_status,
+ status_date DATETIME    NOT NULL DEFAULT GETDATE(),
+    category VARCHAR(32)     NULL,
+est_complete DATETIME        NULL,
+       notes TEXT            NULL)
+GO
+GRANT SELECT ON dev_task TO CdrGuest
+GO
 
 /*
  * Table for valid values in issue.priority column.
  */
 CREATE TABLE issue_priority
     (priority VARCHAR(20) PRIMARY KEY)
+GO
+GRANT SELECT ON issue_priority TO CdrGuest
+GO
 
 /*
  * Table for valid values in user columns of issue table.
  */
 CREATE TABLE issue_user
        (name VARCHAR(30) PRIMARY KEY)
+GO
+GRANT SELECT ON issue_user TO CdrGuest
+GO
 
 /*
  * Table for tracking development issues for the CDR project (bugs, change
@@ -943,6 +1190,23 @@ CREATE TABLE issue
     resolved DATETIME        NULL,
  resolved_by VARCHAR(30)     NULL REFERENCES issue_user,
        notes TEXT            NULL)
+GO
+GRANT SELECT ON issue TO CdrGuest
+GO
+
+/*
+ * Table used to track development tasks for CDR reports.
+ *
+ *  description  brief textual identification of report
+ *         spec  location of specification document (if any)
+ *       sample  location of sample report document (if any)
+ *     dev_task  foreign key reference to dev_task table
+ */
+CREATE TABLE report_task
+(description VARCHAR(255) NOT NULL PRIMARY KEY,
+        spec VARCHAR(255)     NULL,
+      sample VARCHAR(255)     NULL,
+    dev_task INT              NULL REFERENCES dev_task)
 
 /*
  * Table used to track processing of publication events.
@@ -974,6 +1238,11 @@ CREATE TABLE pub_proc
     messages NTEXT            NULL,
        email VARCHAR(255)     NULL,
     external CHAR(1)          NULL DEFAULT 'N')
+GO
+GRANT SELECT ON pub_proc TO CdrGuest
+GO
+GRANT SELECT, UPDATE, INSERT ON pub_proc TO CdrPublishing
+GO
 
 /*
  * Table used to record parameters used for processing a publication event.
@@ -989,6 +1258,11 @@ CREATE TABLE pub_proc_parm
    parm_name VARCHAR(32)  NOT NULL,
   parm_value NVARCHAR(255)    NULL,
   CONSTRAINT pub_proc_parm_pk      PRIMARY KEY(pub_proc, id))
+GO
+GRANT SELECT ON pub_proc_parm TO CdrGuest
+GO
+GRANT SELECT, UPDATE, INSERT ON pub_proc_parm TO CdrPublishing
+GO
 
 /*
  * Table used to record processing of a document for a publication event.
@@ -1005,6 +1279,11 @@ CREATE TABLE pub_proc_doc
   CONSTRAINT pub_proc_doc_fk        PRIMARY KEY(pub_proc, doc_id, doc_version),
   CONSTRAINT pub_proc_doc_fk_docver FOREIGN KEY(doc_id, doc_version) 
                                     REFERENCES doc_version)
+GO
+GRANT SELECT ON pub_proc_doc TO CdrGuest
+GO
+GRANT SELECT, UPDATE, INSERT ON pub_proc_doc TO CdrPublishing
+GO
 
 /*
  * View for completed publication events.
@@ -1013,6 +1292,8 @@ CREATE VIEW pub_event
          AS SELECT *
               FROM pub_proc
              WHERE completed IS NOT NULL
+GO
+
 /*
  * View of documents which have been successfully published.
  */
@@ -1020,3 +1301,96 @@ CREATE VIEW published_doc
          AS SELECT pub_proc_doc.*
               FROM pub_proc_doc, pub_event
              WHERE pub_event.status = 'Success'
+GO
+
+/*
+ * View of documents control system behavior.
+ */
+CREATE VIEW control_docs
+         AS SELECT document.*
+              FROM document
+              JOIN doc_type
+                ON doc_type.id = document.doc_type
+             WHERE doc_type.name IN ('css', 
+                                     'Filter', 
+                                     'PublishingSystem', 
+                                     'schema')
+GO
+
+/*
+ * Convenience view for determining the creation date of a document.
+ */
+CREATE VIEW creation_date
+AS
+    SELECT d.id, MIN(a.dt) AS dt
+      FROM document d
+      JOIN audit_trail a
+        ON d.id = a.document
+  GROUP BY d.id
+GO
+
+/*
+ * Alternate definition of same view (different view column names).
+ */
+CREATE VIEW doc_created          
+AS 
+    SELECT document AS doc_id, MIN(dt) AS created
+      FROM audit_trail           
+  GROUP BY document
+GO
+
+/*
+ * Convenience view for interesting document information.
+ */
+CREATE VIEW doc_header
+AS
+  SELECT d.id AS DocId,
+         t.name AS DocType,
+         d.title AS DocTitle
+   FROM  document d,
+         doc_type t
+  WHERE  d.doc_type = t.id
+GO
+
+/*
+ * View used to determine when it's appropriate to send update mailers.
+ */
+CREATE VIEW last_doc_publication
+         AS SELECT published_doc.doc_id,
+                   pub_event.pub_subset,
+                   MAX(pub_event.completed) as dt
+              FROM published_doc
+              JOIN pub_event
+                ON pub_event.id = published_doc.pub_proc
+          GROUP BY pub_event.pub_subset, published_doc.doc_id
+GO
+
+/*
+ * Terminology tree display support.
+ */
+CREATE VIEW orphan_terms 
+AS 
+    SELECT DISTINCT d.title            
+               FROM document d,
+                    query_term q           
+              WHERE d.id = q.doc_id
+                AND q.path = '/Term/TermPrimaryType'             
+                AND q.value <> 'glossary term'  
+                AND NOT EXISTS (SELECT *                    
+                                  FROM query_term q2
+                                 WHERE q2.doc_id = d.id                     
+                                   AND q2.path = '/Term/TermParent/@cdr:ref')
+GO
+
+/*
+ * More terminology tree display support.
+ */
+CREATE VIEW TermsWithParents 
+AS 
+    SELECT d.id, d.xml   
+      FROM document d,
+           doc_type t  
+     WHERE d.doc_type = t.id    
+       AND t.name     = 'Term'    
+       AND d.xml LIKE '%<TermParent%'
+GO
