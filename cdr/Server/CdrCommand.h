@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.14 2001-01-17 21:51:28 bkline Exp $
+ * $Id: CdrCommand.h,v 1.15 2001-04-05 19:50:56 ameyer Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2001/01/17 21:51:28  bkline
+ * Replaced getSchema with get/add/mod/delDocType.
+ *
  * Revision 1.13  2000/12/28 13:30:36  bkline
  * Added getSchema function.
  *
@@ -327,7 +330,7 @@ namespace cdr {
      * <P>
      * Validates the document using the following steps.
      *  <OL>
-     *   <LI> Get the document to be validated (from the database or directly 
+     *   <LI> Get the document to be validated (from the database or directly
      *        from the command, depending on the variant invoked)</LI>
      *   <LI> Parse the document</LI>
      *   <LI> Extract the document type</LI>
@@ -489,6 +492,22 @@ namespace cdr {
     extern String unlabelDocument (Session&          session,
                                  const dom::Node&  node,
                                  db::Connection&   conn);
+
+    /**
+     * Re-index a document by updating the query_term table.
+     * Used if indexing requirements change.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String reIndexDoc (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
 
     /**
      * Produces a canned CDR report.
