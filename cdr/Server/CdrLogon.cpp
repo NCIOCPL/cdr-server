@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLogon.cpp,v 1.4 2000-05-03 15:25:41 bkline Exp $
+ * $Id: CdrLogon.cpp,v 1.5 2000-06-23 15:28:01 bkline Exp $
  *
  * Opens a new CDR session.
  *
@@ -15,6 +15,9 @@
  *  </CdrLogonResp>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/05/03 15:25:41  bkline
+ * Fixed database statement creation.
+ *
  * Revision 1.3  2000/04/16 21:43:26  bkline
  * Modified composition of sessionId slightly.  Added call to lookupSession.
  *
@@ -70,8 +73,8 @@ cdr::String cdr::logon(cdr::Session& session,
         static char randomChars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     static size_t nRandomChars = sizeof randomChars - 1;
     srand(ticks);
-    sprintf(idBuf, "%lX-%lX-%03d-%c%c%c%c%c%c%c%c%c%c%c%c",
-        now, ticks, id, 
+    sprintf(idBuf, "%lX-%06lX-%03d-%c%c%c%c%c%c%c%c%c%c%c%c",
+        now, ticks & 0xFFFFFF, id % 1000, 
         randomChars[rand() % nRandomChars],
         randomChars[rand() % nRandomChars],
         randomChars[rand() % nRandomChars],
