@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.27 2001-05-15 16:05:06 ameyer Exp $
+ * $Id: tables.sql,v 1.28 2001-06-05 17:47:22 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2001/05/15 16:05:06  ameyer
+ * Fixed wrong constraints on link tables.
+ *
  * Revision 1.26  2001/04/13 00:31:20  ameyer
  * Retored link_prop_type table.
  * Modified link_properties (renamed from link_prop) to use it.
@@ -290,6 +293,22 @@ CREATE TABLE doc_status
         name VARCHAR(32) NOT NULL UNIQUE,
      comment VARCHAR(255) NULL)
 
+/*
+ * Set of legal values for the active_status column in the document table.
+ *
+ *           id  primary key for the active_status table; e.g., A
+ *         name  display name shown to the user for this document status;
+ *               e.g., "Active", "Publishable", "Deleted"
+ *      comment  optional free-text description of the characteristics of this
+ *               status code, such as the conditions under which it should
+ *               be applied, or the actions triggered by (or prevented) by the
+ *               status
+ */
+CREATE TABLE active_status
+         (id CHAR PRIMARY KEY,
+        name VARCHAR(32) NOT NULL UNIQUE,
+     comment VARCHAR(255) NULL)
+
 /* 
  * Unit of storage managed by the Central Database Repository.  There will 
  * be optionally one foreign key reference to this table from either the 
@@ -321,7 +340,7 @@ CREATE TABLE document
          title VARCHAR(255) NOT NULL,
            xml NTEXT NOT NULL,
        comment VARCHAR(255) NULL,
- active_status CHAR NOT NULL DEFAULT 'A')
+ active_status CHAR NOT NULL REFERENCES active_status DEFAULT 'A')
 
 /*
  * Index needed to support a view of the document table which brings all
@@ -489,8 +508,11 @@ CREATE TABLE debug_log
  *               starts with 1
  *           dt  date/time the document was checked in
  *          usr  identifies the user account that checked in the document
+ *   val_status  copied from document table
+ *     val_date  copied from document table
  *   updated_dt  date/time the document last updated
  *     doc_type  foreign key reference into the doc_type table
+ *  publishable  'Y'=this version can be published, 'N'=can't publish
  *        title  required string containing title for document; Titles will
  *               not be required to be unique
  *          xml  for structured documents, this is the data for the document;
@@ -509,8 +531,7 @@ CREATE TABLE doc_version
              usr INTEGER NOT NULL REFERENCES usr,
       val_status CHAR NOT NULL REFERENCES doc_status,
         val_date DATETIME NULL,
-        approved CHAR NOT NULL,
-   active_status CHAR NOT NULL,
+     publishable CHAR NOT NULL,
         doc_type INTEGER NOT NULL REFERENCES doc_type,
            title VARCHAR(255) NOT NULL,
              xml NTEXT NOT NULL,
