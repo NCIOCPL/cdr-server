@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.79 2004-11-05 06:05:16 ameyer Exp $
+# $Id: Makefile,v 1.80 2005-03-04 03:00:43 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.79  2004/11/05 06:05:16  ameyer
+# Added CdrBlobExtern.h.
+#
 # Revision 1.78  2004/08/11 17:48:15  bkline
 # Adding new command CdrAddExternalMapping.
 #
@@ -271,13 +274,15 @@
 
 DRV    =d:
 CDR    =$(DRV)/cdr
-XML4C  =$(DRV)/usr/xml4c
+XERCES =$(DRV)/usr/xerces-c-src_2_6_0
+XERLIB =$(DRV)/usr/xerces-c-src_2_6_0/Build/Win32/VC7/Debug/xerces-c_2D
+XERINC =$(DRV)/usr/xerces-c-src_2_6_0/src
 SABLOT =$(DRV)/usr/sablot
 REGEX  =$(DRV)/usr/regex
 VCVER  =7
 REVER  =vc$(VCVER)
 CDRINC =.
-INC    =-I$(XML4C)/include -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)
+INC    =-I$(XERINC) -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)
 CC     =cl
 BISON  =bison
 LN     =link
@@ -293,7 +298,7 @@ CFLAGS =$(INC) -W3 -GX -EHa -MD -GR -nologo
 LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
         /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/$(REVER)
 CDRLIB =cdr.lib
-LIBS   =$(CDRLIB) xml4c_5.lib sablot.lib wsock32.lib odbc32.lib user32.lib 
+LIBS   =$(CDRLIB) $(XERLIB).lib sablot.lib wsock32.lib odbc32.lib user32.lib 
 SVCFLGS=-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT \
         -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MT
 !IF "$(DBG)" == ""
