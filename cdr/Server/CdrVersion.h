@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.h,v 1.2 2000-10-31 15:48:15 mruben Exp $
+ * $Id: CdrVersion.h,v 1.3 2000-12-07 16:02:08 ameyer Exp $
  *
  * Internal support functions for CDR verison control
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/10/31 15:48:15  mruben
+ * changed interface to include session
+ *
  * Revision 1.1  2000/10/26 15:31:41  mruben
  * Initial revision
  *
@@ -190,6 +193,19 @@ namespace cdr {
                     cdr::db::Connection&    conn,
                     int*                    usr = 0,
                     cdr::String*            dt_out = 0);
+
+    /**
+     * Checks if versioning is supported for this document
+     *
+     *  @param  docId       int document ID.
+     *  @param  conn        reference to an active connection to the CDR
+     *                      database.
+     *
+     *  @return             true if versioning is allowed.
+     *
+     */
+  bool allowVersion(int                     docId,
+                    cdr::db::Connection&    conn);
 }
 
 #endif
