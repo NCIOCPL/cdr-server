@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.27 2002-07-12 18:09:26 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.28 2002-08-09 11:46:50 bkline Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2002/07/12 18:09:26  bkline
+ * Fixed FirstPub tags.
+ *
  * Revision 1.26  2002/07/03 12:55:59  bkline
  * Added code to get first publication info.
  *
@@ -257,14 +260,15 @@ cdr::String cdr::getDocString(
 
     // Individual elements of control info
     // These are not all the same as in the document table
-    cdrDoc += readOnlyWrap (docVer->title, L"DocTitle")
+    cdrDoc += readOnlyWrap (cdr::entConvert(docVer->title), L"DocTitle")
            +  tagWrap (versionStr, L"DocVersion", verAttrs)
            +  readOnlyWrap (docVer->updated_dt, L"DocModified")
            +  readOnlyWrap (usrName, L"DocModifier");
 
     // Comment is optional
     if (docVer->comment.size() > 0)
-        cdrDoc += readOnlyWrap (docVer->comment, L"DocComment");
+        cdrDoc += readOnlyWrap (cdr::entConvert(docVer->comment), 
+                                L"DocComment");
 
     // Denormalize the links if requested.
     cdr::String xml = docVer->xml;
