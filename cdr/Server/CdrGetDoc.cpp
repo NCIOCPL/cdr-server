@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.29 2002-09-16 22:06:15 pzhang Exp $
+ * $Id: CdrGetDoc.cpp,v 1.30 2002-10-17 17:37:01 bkline Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2002/09/16 22:06:15  pzhang
+ * Updated FirstPub logic; picked value from first_pub in all_docs.
+ *
  * Revision 1.28  2002/08/09 11:46:50  bkline
  * Added entConvert() for retrieval of specific doc versions.
  *
@@ -109,6 +112,7 @@
 #include "CdrFilter.h"
 
 // Local functions.
+static bool        isReadyForReview(int, cdr::db::Connection&);
 static cdr::String fixString(const cdr::String& s);
 static cdr::String makeDocXml(const cdr::String& xml);
 static cdr::String makeDocBlob(const cdr::Blob& blob);
@@ -184,6 +188,8 @@ cdr::String cdr::getDocString(
     cdrDoc += readOnlyWrap (title, L"DocTitle");
     if (!comment.isNull() && comment.length() > 0)
         cdrDoc += tagWrap (comment, L"DocComment");
+    bool readyForReview = isReadyForReview(docId, conn);
+    cdrDoc += readOnlyWrap (readyForReview ? L"Y" : L"N", L"ReadyForReview");
     cdrDoc += L"</CdrDocCtl>\n";
 
     // Denormalize the links if requested.
@@ -263,10 +269,12 @@ cdr::String cdr::getDocString(
 
     // Individual elements of control info
     // These are not all the same as in the document table
+    bool readyForReview = isReadyForReview(docId, conn);
     cdrDoc += readOnlyWrap (cdr::entConvert(docVer->title), L"DocTitle")
            +  tagWrap (versionStr, L"DocVersion", verAttrs)
            +  readOnlyWrap (docVer->updated_dt, L"DocModified")
-           +  readOnlyWrap (usrName, L"DocModifier");
+           +  readOnlyWrap (usrName, L"DocModifier")
+           +  readOnlyWrap (readyForReview ? L"Y" : L"N", L"ReadyForReview");
 
     // Comment is optional
     if (docVer->comment.size() > 0)
@@ -374,8 +382,11 @@ cdr::String cdr::getDocCtlString(
     std::string query = "          SELECT d.val_status,"
                         "                 d.val_date,"
                         "                 d.title,"
-                        "                 d.comment"
+                        "                 d.comment,"
+                        "                 r.doc_id"
                         "            FROM document d"
+                        " LEFT OUTER JOIN ready_for_review r"
+                        "              ON r.doc_id = d.id"
                         "           WHERE d.id = ?";
     cdr::db::PreparedStatement select = conn.prepareStatement(query);
     select.setInt(1, docId);
@@ -386,6 +397,7 @@ cdr::String cdr::getDocCtlString(
     cdr::String     valDate   = rs.getString(2);
     cdr::String     title     = cdr::entConvert(rs.getString(3));
     cdr::String     comment   = cdr::entConvert(rs.getString(4));
+    cdr::Int        rrId      = rs.getInt(5);
     select.close();
 
     // Build the CdrDoc string.
@@ -400,6 +412,8 @@ cdr::String cdr::getDocCtlString(
     cdrDoc += cdr::String(L"<DocTitle>") + title + L"</DocTitle>";
     if (!comment.isNull() && comment.length() > 0)
         cdrDoc += cdr::String(L"<DocComment>") + comment + L"</DocComment>";
+    cdr::String rrString = rrId.isNull() ? L"N" : L"Y";
+    cdrDoc += L"<ReadyForReview>" + rrString + L"</ReadyForReview>";
 
     return L"<CdrDocCtl>" + cdrDoc
          + getCommonCtlString(docId, conn, elements)
@@ -812,4 +826,20 @@ cdr::String cdr::getDoc(cdr::Session& session,
 
   // Add xml termination for all
   return (docStr + L"</CdrGetDocResp>\n");
+}
+
+/**
+ * Find out if the document has been marked as ready for pre-publication
+ * review.
+ */
+bool isReadyForReview(int id, cdr::db::Connection& conn)
+{
+      std::string query = 
+          "SELECT doc_id FROM ready_for_review WHERE doc_id = ?";
+      cdr::db::PreparedStatement stmt = conn.prepareStatement(query);
+      stmt.setInt(1, id);
+      cdr::db::ResultSet rs = stmt.executeQuery();
+      if (rs.next())
+          return true;
+      return false;
 }
