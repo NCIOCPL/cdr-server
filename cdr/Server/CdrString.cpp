@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.4 2000-05-03 15:20:00 bkline Exp $
+ * $Id: CdrString.cpp,v 1.5 2000-05-04 12:44:27 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/05/03 15:20:00  bkline
+ * Added getFloat() method.
+ *
  * Revision 1.3  2000/04/26 01:28:01  bkline
  * Added extractDocId() method.
  *
@@ -15,6 +18,8 @@
 
 #include <sstream>
 #include "CdrString.h"
+#include "CdrRegEx.h"
+#include "CdrException.h"
 
 /**
  * Creates UTF-8 version of string.  Ignores UCS code points beyond 0xFFFF.
@@ -123,9 +128,9 @@ double cdr::String::getFloat() const
  */
 int cdr::String::extractDocId() const
 {
-    int i = 0;
-    while (i < size() && !isdigit((*this)[i]))
-        ++i;
-    cdr::String numString = substr(i);
+    cdr::RegEx pattern(L"CDR\\d+");
+    if (!pattern.match(*this))
+        throw cdr::Exception(L"Invalid document ID string", *this);
+    cdr::String numString = substr(3);
     return numString.getInt();
 }
