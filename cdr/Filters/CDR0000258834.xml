@@ -9,10 +9,48 @@
 <xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                               version = "1.0">
  <xsl:output                   method = "text"/>
+ <xsl:param                      name = "useLatexMarkup"
+                               select = "'N'"/>
  <xsl:template                  match = "/">
-  <xsl:value-of                select = "InScopeProtocol/ProtocolTitle
+  <xsl:choose>
+   <xsl:when                     test = "$useLatexMarkup = 'Y'">
+    <xsl:apply-templates       select = "InScopeProtocol/ProtocolTitle
                                          [@Type='Professional']"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:value-of              select = "InScopeProtocol/ProtocolTitle
+                                         [@Type='Professional']"/>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
+
+ <xsl:template                  match = "Emphasis|GlossaryTermRef|GeneName|
+                                         SummaryRef|SummaryFragmentRef|
+                                         ExternalRef|ProtocolLink|DrugName|
+                                         ForeignWord|ScientificName">
+  <xsl:text>@@EMPH@@</xsl:text>
+  <xsl:value-of                select = "."/>
+  <xsl:text>@@CLOSEBR@@</xsl:text>
+ </xsl:template>
+
+ <xsl:template                  match = "Strong">
+  <xsl:text>@@BOLD@@</xsl:text>
+  <xsl:value-of                select = "."/>
+  <xsl:text>@@CLOSEBR@@</xsl:text>
+ </xsl:template>
+
+ <xsl:template                  match = "Superscript">
+  <xsl:text>@@SUPER@@</xsl:text>
+  <xsl:value-of                select = "."/>
+  <xsl:text>@@CLOSEBR@@</xsl:text>
+ </xsl:template>
+
+ <xsl:template                  match = "Subscript">
+  <xsl:text>@@SUB@@</xsl:text>
+  <xsl:value-of                select = "."/>
+  <xsl:text>@@CLOSEBR@@</xsl:text>
+ </xsl:template>
+
 </xsl:transform>
 ]]>
 </CdrDocXml>
