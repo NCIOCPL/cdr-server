@@ -63,7 +63,7 @@
 
 <xsl:template match="Summary">
 
-<!--<xsl:if test="SummaryMetaData/SummaryAudience='Health professionals'">--><BODY>
+ <BODY>
  <xsl:for-each select="SummaryTitle">
  <h2><xsl:value-of select="."/></h2>
  </xsl:for-each>
@@ -71,21 +71,22 @@
 <!-- ==================================================================
           Display a Contents List of Summary Section Titles 
           10/06/2002 - Modified code to remove 4th level titles (CB) 
+           10/08/2002 - took breaks out at end of titles.
      =================================================================== -->
 
 
 <dl>
 <xsl:for-each select="SummarySection">
-<dt><xsl:value-of select="Title"/></dt><br />
+<dt><xsl:value-of select="Title"/></dt>
 <xsl:choose>
 <xsl:when test="descendant::SummarySection">
 <dl>
 <xsl:for-each select="./SummarySection">
 <xsl:if test="not(SummarySection/SummarySection/SummarySection/SummarySection/Title)">
-<dt><xsl:value-of select="Title"/></dt><br />
+<dt><xsl:value-of select="Title"/></dt>
 <dl>
 <xsl:for-each select="./SummarySection">
-<dt><xsl:value-of select="Title"/></dt><br />
+<dt><xsl:value-of select="Title"/></dt>
 </xsl:for-each>
 </dl>
 </xsl:if>
@@ -106,8 +107,9 @@
 <!-- ======================================================================
     templates to handle summary section anchors,list formats, and paragraphs
      that can occur in any order in the summaries 
-     10/06/2002 - Added templates for inserted titles to preserve the format
+     10/06/2002(CB) - Added templates for inserted titles to preserve the format
                   for newly inserted titles (CB)
+      10/09/2002 (CB) Removed italics from third level titles
      ====================================================================== -->
 
 <!-- Display a summary section title and include anchor --> 
@@ -130,17 +132,24 @@
 <h3><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h3>
 </xsl:template>
 
+<xsl:template match="SummarySection/SummarySection/SummarySection/Title">
+<h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4>
+</xsl:template>
 
 
-<xsl:template match="SummarySection/SummarySection/SummarySection/Title | SummarySection/SummarySection/SummarySection/SummarySection/Title">
+
+<xsl:template match="SummarySection/SummarySection/SummarySection/SummarySection/Title">
 <i><h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4></i>
 </xsl:template>
 
- <xsl:template match="SummarySection/SummarySection/SummarySection/Insertion/Title | SummarySection/SummarySection/SummarySection/SummarySection/Insertion/Title">
-<i><h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4></i>
+ <xsl:template match="SummarySection/SummarySection/SummarySection/Insertion/Title">
+<h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4>
 </xsl:template>
                        
-           
+ <xsl:template match=" SummarySection/SummarySection/SummarySection/SummarySection/Insertion/Title">
+<i><h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4></i>
+</xsl:template>
+          
 	    
 
 
@@ -218,7 +227,7 @@
        This template deletes data elements not used in the display 
      ==================================================================== -->
 
-<xsl:template match="PdqKey | PDQBoard | SectionType |Diagnosis | SummaryLanguage| SummaryType |SummaryAudience | SummaryTitle |MainTopics | SecondaryTopics | DocId| DateLastModified"/>
+<xsl:template match="PdqKey | PDQBoard | SectionType |Diagnosis | SummaryLanguage| SummaryType |SummaryAudience | SummaryTitle |MainTopics | SecondaryTopics | DocId| DateLastModified | PatientVersionOf | TranslationOf"/>
 
 <!-- ============================================================
                           Display Paragraphs 
@@ -237,11 +246,11 @@
                 <font color="#FF0000"><xsl:apply-templates/></font>
                  </xsl:template>
    
-       <!-- Added 10/07/2002 to display inserted text in table header (CB)-->
+       <!-- Added 10/07/2002 to display inserted text in table header (CB)
 
                 <xsl:template match="Entry/Insertion">
                 <font color="#FF0000"><xsl:apply-templates/></font>
-                 </xsl:template>
+                 </xsl:template>-->
 
          
 <!-- ==================================================================
@@ -285,19 +294,12 @@
                               Display tables -old format
     ==================================================================== -->
 
-<xsl:template match="Para/TT">
-<pre><xsl:apply-templates/></pre>
-</xsl:template>
+                 <xsl:template match="Para/TT">
+                 <pre><xsl:apply-templates/></pre>
+                 </xsl:template>
 
                     
-       <!-- =====================================================
-                 Prevent display of PatientVersionOf data element
-            ======================================================= -->  
-
-           <xsl:template match="PatientVersionOf">
-           </xsl:template>
-                
-            
+       
       
             
         
