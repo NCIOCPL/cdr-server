@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.7 2000-05-03 21:57:57 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.8 2000-10-04 18:36:39 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2000/05/03 21:57:57  bkline
+ * Fixed overlong line length.
+ *
  * Revision 1.6  2000/05/03 15:22:08  bkline
  * Added lookup hash for attributes.
  *
@@ -105,13 +108,13 @@ void cdr::xsd::Schema::registerElement(const cdr::String& name,
         elements[name] = type;
     else {
         const cdr::String& oldName = i->second;
-        if (name != oldName) {
+        if (type != oldName) {
             std::wstring err = std::wstring(L"Redefinition of element ")
                              + name
                              + L" from type "
                              + oldName
                              + L" to "
-                             + name;
+                             + type;
             throw cdr::Exception(err.c_str());
         }
     }
@@ -368,7 +371,8 @@ cdr::xsd::ComplexType::ComplexType(cdr::xsd::Schema& schema,
             if (nodeName == cdr::xsd::ELEMENT) {
                 cdr::xsd::Element* e = new cdr::xsd::Element(childNode);
                 cdr::String elementName = e->getName();
-                schema.registerElement(elementName, e->getTypeName());
+                cdr::String elementTypeName = e->getTypeName();
+                schema.registerElement(elementName, elementTypeName);
                 if (!hasElement(elementName))
                     elemNames.insert(elementName);
                 elemList.push_back(e);
