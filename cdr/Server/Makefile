@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.28 2000-12-28 13:29:54 bkline Exp $
+# $Id: Makefile,v 1.29 2001-01-08 16:57:08 mruben Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.28  2000/12/28 13:29:54  bkline
+# Added CdrGetSchema.obj.
+#
 # Revision 1.27  2000/10/24 13:13:16  mruben
 # added support for CdrReport
 #
@@ -180,7 +183,7 @@ OBJS   =CdrCommand.obj \
         CdrShutdown.obj \
         CdrDOMtoString.obj
 
-LIBS   =cdr.lib xerces-c_1.lib sablot.lib xmlparse.lib xmltok.lib \
+LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
         wsock32.lib odbc32.lib user32.lib 
 
 #--------------------------------------------------------------------------
