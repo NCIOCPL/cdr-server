@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.13 2002-03-15 21:53:11 bkline Exp $
+ * $Id: CdrDoc.h,v 1.14 2002-04-12 01:50:06 bkline Exp $
  *
  */
 
@@ -182,6 +182,17 @@ namespace cdr {
              *                          command.
              */
             void updateProtocolStatus(bool validating);
+
+            /**
+             * Eliminate elements supplied by the template which the user 
+             * has decided not to use.  See the XSL/T script itself for 
+             * documentation of the logic.
+             *
+             *  @param  validating      whether the user has requested
+             *                          validation as part of the save
+             *                          command.
+             */
+            void stripXmetalPis(bool validating);
 
             // Accessors
             int getId()                    {return Id;}

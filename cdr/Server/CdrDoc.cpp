@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.33 2002-03-28 22:19:03 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.34 2002-04-12 01:50:06 bkline Exp $
  *
  */
 
@@ -1401,7 +1401,43 @@ void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
 void cdr::CdrDoc::preProcess(bool validating)
 {
     updateProtocolStatus(validating);
+    stripXmetalPis(validating);
     genFragmentIds();
+}
+
+// Eliminate elements supplied by the template which the user has decided
+// not to use.  See the XSL/T script itself for documentation of the logic.
+void cdr::CdrDoc::stripXmetalPis(bool validating)
+{
+    // Only do this when the user has requested validation during a save.
+    if (!validating)
+        return;
+
+    cdr::FilterParmVector pv;
+    cdr::String newXml;
+    cdr::String errorStr;
+    try {
+        newXml = cdr::filterDocumentByScriptTitle(Xml,
+                                                  L"Strip XMetaL PIs",
+                                                  docDbConn, &errorStr, &pv);
+
+        // Save the transformation for later steps.
+        Xml = newXml;
+
+        // If there is a stored parse tree for the document
+        //   make sure it is not re-used since document may have changed
+        parsed = false;
+        revisedXml = "";
+
+        // Save any warnings.
+        if (!errorStr.empty())
+            errList.push_back(L"CdrDoc::stripXmetalPis: " + errorStr);
+    }
+    catch (cdr::Exception& e) {
+        errList.push_back(
+                L"Failure stripping XMetaL processing instructions: " +
+                cdr::String(e.what()));
+    }
 }
 
 // Generate unique fragment identifiers for all elements which can have a
@@ -1430,6 +1466,11 @@ void cdr::CdrDoc::genFragmentIds ()
         try {
             newXml = cdr::filterDocument (Xml, xslt, docDbConn,
                                           &filterMsgs);
+
+            // If there is a stored parse tree for the document
+            //   make sure it is not re-used since document may have changed
+            parsed = false;
+            revisedXml = "";
         }
         catch (cdr::Exception& e) {
             // Add an error to the doc object
@@ -1620,6 +1661,7 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
         // If there is a stored parse tree for the document
         //   make sure it is not re-used since document may have changed
         parsed = false;
+        revisedXml = "";
     }
     catch (cdr::Exception& e) {
         errList.push_back(L"Failure setting protocol status: " +
