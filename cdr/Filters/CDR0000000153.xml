@@ -167,110 +167,8 @@
 			
 	</xsl:template>
 
-        <!-- ======================================================================
-                           display footnotes
-     =================================================================== 
 
-             <xsl:template match="ProtocolLink">
-            <xsl:variable name="nextRef" select="position()+1"/>
-            <xsl:variable name="firstRef" select="position()-1"/>
-            <xsl:variable name="ref" select="."/>
-            <xsl:if test="name(../node()[$firstRef])!='ProtocolLink'">
-	    <xsl:value-of select="'['"/>
-	    </xsl:if>
-                      
-           
-	    <xsl:value-of select="@refidx"/>
-
-	    
-	    	
-	     <xsl:if test="name(../node()[$nextRef])='ProtocolLink'">
-	    <xsl:value-of select="','"/>
-	    </xsl:if>
-            
-           
-           <xsl:if test="name(../node()[$nextRef])!='ProtocolLink'">
-	    <xsl:value-of select="']'"/>
-	    </xsl:if>
-
-			
-	</xsl:template>-->
-
- <!-- ============================================================ 
-                         Display a note
-      ============================================================
-
-                    <xsl:template match="Note">
-                    <i><xsl:text>Note:</xsl:text></i>
-                    <i><xsl:value-of select="."/></i>
-                    </xsl:template>-->
-
-
-
-  <!-- ====================================================================
-                    Display a table-new format
-      =================================================================== -->
-
-<!-- <xsl:template match="Table">
- <xsl:if test="Title">
-  <h3><xsl:apply-templates select="Title"/></h3>
- </xsl:if>
-  <table border='1' cellspacing='0' cellpadding='0'>-->
-  
-   <!--<xsl:if test="@Frame='all'">
-    <xsl:attribute name='border'>1</xsl:attribute>
-   </xsl:if>
-   <xsl:for-each select="TGroup/THead/Row">
-    <tr>
-        <xsl:for-each select='entry'>
-      <th><xsl:apply-templates/></th>
-     </xsl:for-each>
-    </tr>
-   </xsl:for-each>
-   <xsl:for-each select="TGroup/TBody/Row">
-      <tr>
-       <xsl:for-each select='entry'>
-       <xsl:variable name="tcols" select="substring(@NameEnd,4,1)"/>
-       <xsl:variable name="strt" select="substring(@NameSt,4,1)"/>
-
-       <xsl:variable name="cols" select="../../..@Cols"/>
-       <xsl:variable name="rows" select="@MoreRows"/>
-       <xsl:variable name="valign" select="@Valign"/>
-              <xsl:if test="not(@NameEnd)"> 
-             
-             <xsl:if test="@MoreRows">
-               <td rowspan='{$rows}'  valign="{$valign}" width="100%"><xsl:apply-templates select="."/></td>
-              </xsl:if>
-             <xsl:if test="not(@MoreRows)">
-              <td colspan="{$strt}" valign="{$valign}" width="100%"><xsl:apply-templates select="."/></td>
-              </xsl:if>
-             
-              </xsl:if>-->
-             <!-- <xsl:if test="not(@MoreRows)">
-              <td rowspan="{$rows}"><xsl:apply-templates select="."/></td>
-              </xsl:if>-->
-              
-          <!--    <xsl:if test="@NameEnd"> 
-        <td colspan='{$strt}' valign='{$valign}' ><xsl:apply-templates select="."/></td>
-            </xsl:if>-->
-  
-    <!-- <td><xsl:apply-templates/></td>-->
-  <!--   </xsl:for-each>
-    
-    </tr>
-   </xsl:for-each>
-   <xsl:for-each select="TGroup/TFoot/Row">
-              <tr>
-              <xsl:for-each select="entry">
-               <xsl:variable name="cols" select="../../..@Cols"/>
-              <td colspan='{$cols}' width='60%'><xsl:apply-templates/></td>
-              </xsl:for-each>
-              </tr>
-              </xsl:for-each>
-
-  </table>
-   </xsl:template>-->
-           
+         
         
         
 
@@ -339,11 +237,23 @@
         <b><u><xsl:apply-templates/></u></b>
         </xsl:template>
 
-       <xsl:template match="Insertion/Para | Insertion/ItemizedList/ListItem | OrderedList/ListItem">
+       <xsl:template match="Insertion/Para | Insertion/ItemizedList/ListItem | Insertion/OrderedList/ListItem">
        <b><u><xsl:apply-templates/></u></b>
        </xsl:template>
 
-                    
+      <xsl:template match="Entry/Insertion">
+        <b><u><xsl:apply-templates/></u></b>
+        </xsl:template>
+  
+   
+ <!-- Added new template for Insertion tags before a new title to produce 
+      a line break before displaying inserted paragraph -->
+
+      <xsl:template match="Insertion/Title">
+       <b><u><xsl:apply-templates/></u></b>
+       <br />
+      </xsl:template>
+                     
 
 
 <!-- =================================================================== 
@@ -356,7 +266,14 @@
                   <a href="{$nlink}"><xsl:apply-templates/></a>
                   </xsl:template>
 
+ <!-- ==============================================================
+            Do not display deletions- Added 10/07/2002 CB
+     =========================================================== -->
 
+       <xsl:template match="Deletion">
+       </xsl:template>
+
+     
 <!-- ======================================================================
                             Display tables 
       =================================================================== -->
