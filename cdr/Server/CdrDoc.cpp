@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.22 2001-10-22 20:37:05 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.23 2001-10-30 22:38:24 ameyer Exp $
  *
  */
 
@@ -507,6 +507,7 @@ static cdr::String CdrPutDoc (
     cmdPublishVersion = false;
     cmdValidate       = true;
     cmdCheckIn        = false;
+    cmdEcho           = false;
 
     // Default reason is NULL created by cdr::String contructor
     cmdReason   = L"";
@@ -543,6 +544,10 @@ static cdr::String CdrPutDoc (
             else if (name == L"Validate")
                 cmdValidate = cdr::ynCheck (cdr::dom::getTextContent (child),
                                            false, L"Validate");
+
+            else if (name == L"Echo")
+                cmdEcho = cdr::ynCheck (cdr::dom::getTextContent (child),
+                                           false, L"Echo");
 
             else if (name == L"Reason")
                 cmdReason = cdr::dom::getTextContent (child);
@@ -706,7 +711,13 @@ static cdr::String CdrPutDoc (
     cdr::String rtag = newrec ? L"Add" : L"Rep";
     cdr::String resp = cdr::String (L"  <Cdr") + rtag + L"DocResp>\n"
                      + L"   <DocId>" + doc.getTextId() + L"</DocId>\n"
-                     + doc.getErrString() + L"  </Cdr" + rtag + L"DocResp>\n";
+                     + doc.getErrString();
+    if (cmdEcho) {
+        ; // XXXX Include possibly modified doc
+        // Something with doc.getTitle() and doc.getXml()
+    }
+
+    resp += L"  </Cdr" + rtag + L"DocResp>\n";
     return resp;
 
 } // CdrPutDoc
