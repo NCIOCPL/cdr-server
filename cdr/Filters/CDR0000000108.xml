@@ -1115,11 +1115,18 @@
   <xsl:param                      name = "specificPhone"/>
   <xsl:param                      name = "specificContact"/> 
 
+  <!-- Don't extract Phone or TollFreePhone from person if
+       ProtocolSpecificContact contains either phone info,
+       per Lakshmi's instruction of 12/17/2002. -->
+  <xsl:variable                   name = "hidePersonPhone" 
+                                select = "$specificContact/Phone |
+                                          $specificContact/TollFreePhone"/>
+
   <xsl:apply-templates          select = "PostalAddress"/>
 
   <!-- Phone element gets special treatment. -->
   <xsl:choose>
-   <xsl:when                      test = "$specificContact/Phone">
+   <xsl:when                      test = "$hidePersonPhone">
     <xsl:apply-templates        select = "$specificContact/Phone"/>
    </xsl:when>
    <xsl:when                      test = "$specificPhone">
@@ -1132,7 +1139,7 @@
   </xsl:choose>
 
   <xsl:choose>
-   <xsl:when                      test = "$specificContact/TollFreePhone">
+   <xsl:when                      test = "$hidePersonPhone">
     <xsl:apply-templates        select = "$specificContact/TollFreePhone"/>
    </xsl:when>   
    <xsl:otherwise>
@@ -1206,6 +1213,13 @@
                                 select = "$orgDoc/Organization/
                                            OrganizationNameInformation/
                                            OfficialName"/>
+
+  <!-- Don't extract Phone or TollFreePhone from person if
+       ProtocolSpecificContact contains either phone info,
+       per Lakshmi's instruction of 12/17/2002. -->
+  <xsl:variable                   name = "hidePersonPhone" 
+                                select = "$specificContact/Phone |
+                                          $specificContact/TollFreePhone"/>
 
   <OrganizationLocation>
    <xsl:attribute                 name = "id">
@@ -1298,7 +1312,7 @@
   </xsl:choose>
 
   <xsl:choose>
-   <xsl:when                      test = "$specificContact/Phone">
+   <xsl:when                      test = "$hidePersonPhone">
     <xsl:apply-templates        select = "$specificContact/Phone"/>
    </xsl:when>
    <xsl:when                      test = "$specificPhone">
@@ -1316,7 +1330,7 @@
   </xsl:choose>
 
   <xsl:choose>
-   <xsl:when                      test = "$specificContact/TollFreePhone">
+   <xsl:when                      test = "$hidePersonPhone">
     <xsl:apply-templates        select = "$specificContact/TollFreePhone"/>
    </xsl:when>
    <xsl:when                      test = "SpecificTollFreePhone">
