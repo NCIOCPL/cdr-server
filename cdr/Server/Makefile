@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.19 2000-05-19 00:14:25 bkline Exp $
+# $Id: Makefile,v 1.20 2000-05-21 00:51:33 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.19  2000/05/19 00:14:25  bkline
+# Cosmetic edit.
+#
 # Revision 1.18  2000/05/17 13:54:46  ameyer
 # Added CdrDoc
 #
@@ -135,6 +138,7 @@ OBJS   =CdrCommand.obj \
         CdrSearch_tab.obj \
         CdrGetDoc.obj \
         CdrFilter.obj \
+        CdrShutdown.obj \
         CdrDOMtoString.obj
 
 LIBS   =cdr.lib xerces-c_1.lib sablot.lib xmlparse.lib xmltok.lib \
@@ -189,7 +193,7 @@ BISON_SIMPLE=/etc/bison.cdrtest
 CdrSearch_tab.obj: CdrSearch_tab.c $(HDRS)
 	$(CC) $(CFLAGS) -c -TP CdrSearch_tab.c >> errs
 
-CdrSearch_tab.c: CdrSearch.y $(HDRS) $(CDRINC)/CdrSearch.h
+CdrSearch_tab.c: CdrSearch.y $(HDRS)
 	bison -p CdrSearch CdrSearch.y
 
 #--------------------------------------------------------------------------
