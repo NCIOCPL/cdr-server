@@ -208,9 +208,10 @@
 <xsl:apply-templates select="../../CIPSContact" mode="copy"/>
 </xsl:if>
 <xsl:if test="contains(@cdr:ref,'CDR')">
- <xsl:variable name="OrgID" select="@cdr:ref"/>
-<!-- <xsl:variable name="OrgInfo" select="document(concat('cdrx:',$OrgID,'/last'))"/>-->
- <xsl:variable name="OrgInfo" select="document(concat('cdr:',$OrgID,'/last'))"/>
+ <xsl:variable name="OrgID" select="substring-before(@cdr:ref,'#')"/>
+<xsl:variable name="OrgID2" select="substring-after(@cdr:ref,'#')"/>
+<!--<xsl:value-of select="$OrgID2"/>-->
+<xsl:variable name="OrgInfo" select="document(concat('cdrx:',$OrgID,'/last'))"/>
 <xsl:variable name="Stat" select="$OrgInfo/Organization/Status/CurrentStatus"/>
 <Status><xsl:value-of select="$Stat"/></Status>
 <xsl:if test="../@PreviousLocation">
@@ -225,32 +226,26 @@
 </xsl:if>
 
 <xsl:if test="not(../SpecificPostalAddress)">
-<xsl:variable name="cipsC" select="$OrgInfo/Organization/OrganizationLocations/CIPSContact"/>
-<xsl:if test="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/@cdr:id=$cipsC">
+<xsl:variable name="orgid" select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/@cdr:id"/>
+<xsl:if test="$OrgID2=$orgid">
 <SpecificPostalAddress>
-<xsl:for-each select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/Street">
-<Street><xsl:value-of  select="."/></Street>
-</xsl:for-each>
+<Street><xsl:value-of select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/Street"/></Street>
 <City><xsl:value-of  select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/City"/></City>
-<xsl:if test="CitySuffix">
-<CitySuffix><xsl:value-of select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/CitySuffix"/></CitySuffix>
-</xsl:if>
+<CitySuffix><xsl:value-of  select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/CitySuffix"/></CitySuffix>
 <xsl:if test="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/PoliticalSubUnit_State">
-<xsl:variable name="StateID" select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/PoliticalSubUnit_State/@cdr:ref"/>
+<PoliticalSubUnitRef><xsl:value-of select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/PoliticalSubUnit_State/@cdr:ref"/></PoliticalSubUnitRef>
+<xsl:variable name="StateID" select="PostalAddress/PoliticalSubUnit_State/@cdr:ref"/>
 <xsl:variable name="StateInfo" select="document(concat('cdrx:',$StateID,'/lastp'))"/>
-<PoliticalSubUnitRef><xsl:value-of select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/PoliticalSubUnit_State/@cdr:ref"/>></PoliticalSubUnitRef>
 <PoliticalSubUnitShortName>
 <xsl:value-of     select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitShortName"/></PoliticalSubUnitShortName>
 <PoliticalSubUnitFullName><xsl:value-of select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName"/></PoliticalSubUnitFullName> 
 </xsl:if>
-
 <xsl:variable name="CtyID" select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/Country/@cdr:ref"/> 
  <xsl:variable name="CtyInfo" select="document(concat('cdrx:',$CtyID,'/lastp'))"/>
 <CountryRef><xsl:value-of select="$CtyID"/></CountryRef>
 <CountryShortName><xsl:value-of select="$CtyInfo/Country/CountryShortName"/></CountryShortName>
 <CountryFullName><xsl:value-of select="$CtyInfo/Country/CountryFullName"/></CountryFullName>
 <PostalCodePosition><xsl:value-of select="$CtyInfo/Country/PostalCodePosition"/></PostalCodePosition>
-
 <xsl:variable name="ZIP" select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/PostalCode_ZIP"/> 
 <PostalCode_ZIP><xsl:value-of select="$ZIP"/></PostalCode_ZIP>
 </SpecificPostalAddress>
@@ -269,7 +264,6 @@
 <xsl:apply-templates select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/Email" mode="copy"/>
 </xsl:if>
 <!--<xsl:apply-templates select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/WebSite" mode="copy"/>-->
-
 </xsl:if>
 <xsl:if test="../SpecificPostalAddress">
 <SpecificPostalAddress>
