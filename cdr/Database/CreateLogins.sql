@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.12 2002-11-01 15:37:54 pzhang Exp $
+ * $Id: CreateLogins.sql,v 1.13 2002-11-08 15:38:40 pzhang Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2002/11/01 15:37:54  pzhang
+ * Denied CdrGuest to select usr table.
+ *
  * Revision 1.11  2002/11/01 05:20:39  ameyer
  * Granted delete rights on remailer_ids to CdrPublishing.  Allows process
  * to cleanup table rows used only during intermediate processing.
@@ -122,6 +125,8 @@ GO
  * Grant specific rights to the other two new users.
  */
 
+GRANT SELECT ON usr TO CdrGuest
+GO
 GRANT SELECT ON usr TO CdrPublishing
 GO
 GRANT SELECT ON session TO CdrGuest
