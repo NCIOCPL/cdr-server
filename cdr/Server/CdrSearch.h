@@ -1,10 +1,13 @@
 /*
- * $Id: CdrSearch.h,v 1.6 2000-08-10 15:45:25 bkline Exp $
+ * $Id: CdrSearch.h,v 1.7 2000-10-04 18:22:42 bkline Exp $
  *
  * Interface for CDR search implementation.  Used by implementation of search
  * command and by the query parser.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/08/10 15:45:25  bkline
+ * Added new OpType BEGINS.
+ *
  * Revision 1.5  2000/05/04 12:39:43  bkline
  * More ccdoc comments.
  *
@@ -237,7 +240,7 @@ namespace cdr {
          *  @return             new <code>String</code> object for SQL
          *                      query to be submitted to the CDR database.
          */
-        String      getSql();
+        String      getSql(int maxDocs = 0);
 
     private:
 
