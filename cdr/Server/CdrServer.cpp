@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.29 2002-07-11 18:56:19 ameyer Exp $
+ * $Id: CdrServer.cpp,v 1.30 2002-08-10 19:28:22 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2002/07/11 18:56:19  ameyer
+ * Added directory path for exception catcher crash log.
+ *
  * Revision 1.28  2002/06/16 03:02:43  bkline
  * Sidestep 'helpful' attacks from NIH network administration.
  *
@@ -205,12 +208,18 @@ main(int ac, char **av)
 #endif
 
     while (!timeToShutdown) {
-        MEM_START();
-        int rc = handleNextClient(sock);
-        if (rc != EXIT_SUCCESS)
-            return rc;
-        SHOW_HEAP_USED("Bottom of main processing loop");
-        MEM_REPORT();
+        try {
+            MEM_START();
+            int rc = handleNextClient(sock);
+            if (rc != EXIT_SUCCESS)
+                return rc;
+            SHOW_HEAP_USED("Bottom of main processing loop");
+            MEM_REPORT();
+        }
+        catch (...) {
+            logTopLevelFailure(L"main processing loop exception",
+                    GetLastError());
+        }
     }
     return EXIT_SUCCESS;
 }
@@ -282,11 +291,16 @@ void realDispatcher(void* arg) {
     std::string request;
     int nBytes;
     int response = 0;
-    while ((nBytes = readRequest(fd, request, now)) > 0) {
+    try {
+        while ((nBytes = readRequest(fd, request, now)) > 0) {
 #ifdef _DEBUG
-        std::cout << "received request with " << nBytes << " bytes...\n";
+            std::cout << "received request with " << nBytes << " bytes...\n";
 #endif
-        processCommands(fd, request, conn, now);
+            processCommands(fd, request, conn, now);
+        }
+    }
+    catch (...) {
+        cdr::log::pThreadLog->Write (L"realDispatcher", L"Exception caught");
     }
 
     // Thread is about to go, done with thread specific log
@@ -303,6 +317,32 @@ void __cdecl dispatcher(void* arg) {
     _endthread();
 }
 
+size_t readBytes(int fd, size_t requested, char* buf)
+{
+    // Keep reading until we have all the bytes, an error occurs, or we give
+    // up after getting no bytes, sleeping for awhile, and then trying again.
+    size_t totalRead = 0;
+    bool canSleep = true;
+    while (totalRead < requested) {
+        size_t bytesLeft = requested - totalRead;
+        int nRead = recv(fd, buf + totalRead, bytesLeft, 0);
+        if (nRead < 0)
+            return 0;
+        if (nRead == 0) {
+            if (canSleep) {
+                Sleep(500);
+                canSleep = false;
+            }
+            else 
+                return totalRead;
+        }
+        else
+            canSleep = true;
+        totalRead += nRead;
+    }
+    return totalRead;
+}
+
 /**
  * Reads the 4-byte count of bytes in the command transmission,
  * then reads those bytes into the caller's string object.  Length
@@ -314,73 +354,77 @@ int readRequest(int fd, std::string& request, const cdr::String& when) {
     // Determine the length of the command buffer.
     unsigned long length;
     char lengthBytes[4];
-    size_t totalRead = 0;
-    bool canSleep = true;
-    while (totalRead < sizeof lengthBytes) {
-        int n = recv(fd, lengthBytes + totalRead,
-                     sizeof lengthBytes - totalRead, 0);
-        //std::cerr << "Return from recv: " << n << std::endl;
-        if (n < 0)
-            return -1;
-        if (n == 0) {
-            if (canSleep) {
-                Sleep(500);
-                canSleep = false;
-            }
-            else
-                return 0;
-        }
-        else
-            canSleep = true;
-        totalRead += n;
-    }
+    size_t totalRead = readBytes(fd, sizeof lengthBytes, lengthBytes);
+    if (totalRead != sizeof lengthBytes)
+        return 0;
     memcpy(&length, lengthBytes, sizeof length);
     length = ntohl(length);
-    //std::cerr << "Client tells me he is sending " << length << " bytes.\n";
+    std::cout << "getting " << length << " bytes\n";
 
     // Avoid bogus requests from attackers (the only attacks we have had
     // so far are from NIH network administration software).
-    if (length > MAX_REQUEST_LENGTH)
-        return 0;
-
-    // Allocate a working buffer.
-    char *buf = new char[length + 1];
-    if (!buf) {
-        char tmp[256];
-        sprintf(tmp, "Failure allocating %lu bytes", length);
-        sendErrorResponse(fd, tmp, when);
+    if (length > MAX_REQUEST_LENGTH || length == 0) {
+        cdr::log::pThreadLog->Write (L"readRequest", 
+                L"refusing " +
+                cdr::String::toString(length) +
+                L"-byte request");
         return 0;
     }
-    memset(buf, 0, length + 1);
 
-    // Keep reading until we have all the bytes.
-    totalRead = 0;
-    canSleep = true;
-    while (totalRead < length) {
-        size_t bytesLeft = length - totalRead;
-        int nRead = recv(fd, buf + totalRead, bytesLeft, 0);
-        if (nRead < 0) {
-            sendErrorResponse(fd, "Failure reading command buffer", when);
+    // Check the first bytes for expected substring.
+    char firstBytes[4097];
+    memset(firstBytes, 0, sizeof firstBytes);
+    size_t nFirstBytes = sizeof firstBytes - 1;
+    if (nFirstBytes > length)
+        nFirstBytes = length;
+    totalRead = readBytes(fd, nFirstBytes, firstBytes);
+    if (totalRead < nFirstBytes)
+        return 0;
+    if (!strstr(firstBytes, "<CdrCommandSet")) {
+        cdr::log::pThreadLog->Write (L"readRequest", 
+                L"refusing bogus request string: " + cdr::String(firstBytes));
+        return 0;
+    }
+
+    // See if we need to read any more.
+    if (totalRead == length)
+        request = std::string(firstBytes, totalRead);
+    else {
+
+        // Allocate a working buffer.
+        char *buf = new char[length + 1];
+        if (!buf) {
+            char tmp[256];
+            sprintf(tmp, "Failure allocating %lu bytes", length);
+            sendErrorResponse(fd, tmp, when);
             return 0;
         }
-        if (nRead == 0) {
-            if (canSleep) {
-                Sleep(500);
-                canSleep = false;
-            }
-            else  {
-                sendErrorResponse(fd, "Failure reading command buffer", when);
-                return 0;
-            }
-        }
-        else
-            canSleep = true;
-        totalRead += nRead;
+        memset(buf, 0, length + 1);
+        memcpy(buf, firstBytes, totalRead);
+        totalRead += readBytes(fd, length - totalRead, buf + totalRead);
+        if (totalRead == length)
+            request = std::string(buf, totalRead);
+        delete [] buf;
+        if (totalRead != length)
+            return 0;
     }
-    request = std::string(buf, totalRead);
-    delete [] buf;
     return totalRead;
 }
+
+#ifdef _DEBUG
+void logCommand(cdr::db::Connection& conn, const std::string& buf)
+{
+    try {
+        cdr::db::PreparedStatement s = conn.prepareStatement(
+                " INSERT INTO command_log (thread, received, command) "
+                "      VALUES (?, GETDATE(), ?)                       ");
+        s.setInt(1, cdr::log::pThreadLog->GetId());
+        s.setString(2, buf);
+        s.executeUpdate();
+    }
+    catch (...) {}
+}
+#endif
 
 /**
  * Parses command set buffer, extracts each command and has it
@@ -391,6 +435,9 @@ void processCommands(int fd, const std::string& buf,
                      cdr::db::Connection& conn,
                      const cdr::String& when)
 {
+#ifdef _DEBUG
+    logCommand(conn, buf);
+#endif
     try {
         cdr::dom::Parser parser;
         parser.parse(buf);
@@ -667,6 +714,7 @@ void __cdecl sessionSweep(void* arg) {
     const char* query = "UPDATE session"
                         "   SET ended = GETDATE()"
                         " WHERE ended IS NULL"
+                        "   AND name <> 'guest'"
                         "   AND DATEDIFF(hour, last_act, GETDATE()) > 24";
     int counter = 0;
     cdr::log::Log log;
