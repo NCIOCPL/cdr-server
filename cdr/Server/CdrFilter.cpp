@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.28 2002-09-07 18:14:53 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.29 2002-09-29 01:43:20 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2002/09/07 18:14:53  bkline
+ * Turned on const char** casts for Sablotron again.
+ *
  * Revision 1.27  2002/09/04 22:01:58  bkline
  * Backing out upgrade to Sablotron 0.95 to avoid bug.
  *
@@ -335,7 +338,7 @@ namespace
     }
 
     cdr::dom::Node f = docspec.getFirstChild();
-    if (f.getNodeType() != cdr::dom::Node::CDATA_SECTION_NODE)
+    if (f == NULL || f.getNodeType() != cdr::dom::Node::CDATA_SECTION_NODE)
       throw cdr::Exception(L"Invalid filter specification");
 
     return f.getNodeValue();
