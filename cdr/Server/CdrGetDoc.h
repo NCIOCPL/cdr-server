@@ -1,9 +1,12 @@
 /*
- * $Id: CdrGetDoc.h,v 1.9 2002-01-23 18:24:12 mruben Exp $
+ * $Id: CdrGetDoc.h,v 1.10 2002-06-28 20:40:44 ameyer Exp $
  *
  * Internal support functions for CDR document retrieval.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2002/01/23 18:24:12  mruben
+ * added new optional components for CdrDocCtl
+ *
  * Revision 1.8  2002/01/08 18:18:19  mruben
  * added support for denormalization and getting control information
  *
@@ -80,7 +83,7 @@ namespace cdr {
      */
     extern cdr::String getDocString(const cdr::String&    docId,
                                     cdr::db::Connection&  conn,
-                                    struct cdr::CdrVerDoc *verDoc,
+                                    const struct cdr::CdrVerDoc *verDoc,
                                     bool usecdata = true,
                                     bool denormalize = true);
 
