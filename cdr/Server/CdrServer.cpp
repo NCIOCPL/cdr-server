@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.20 2001-12-14 15:18:14 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.21 2001-12-14 18:28:46 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2001/12/14 15:18:14  bkline
+ * Made code friendlier for optional heap debugging.
+ *
  * Revision 1.18  2001/09/19 18:48:22  bkline
  * Added support for timing processing time for commands.
  *
@@ -118,7 +121,12 @@ main(int ac, char **av)
     WSAData             wsadata;
     int                 sock;
     struct sockaddr_in  addr;
-    short               port = ac > 1 ? atoi(av[1]) : CDR_PORT;
+    short               port = CDR_PORT;
+    
+    if (ac > 1) {
+        port = atoi(av[1]);
+        SET_HEAP_DEBUGGING(true);
+    }
 
     // In case of catastrophe, don't hang up on console
     if (!getenv ("NOCATCHCRASH"))
@@ -428,9 +436,7 @@ cdr::String processCommand(cdr::Session& session,
             cdr::String cmdText = L"Cmd: " + cmdName + L"  User: "
                                 + session.getUserName();
 
-            SHOW_HEAP_USED("Before call to cdr::log::Log::Write()");
             cdr::log::pThreadLog->Write (L"processCommand", cmdText);
-            SHOW_HEAP_USED("After call to cdr::log::Log::Write()");
 
             cdr::Command cdrCommand = cdr::lookupCommand(cmdName);
             if (!cdrCommand) {
@@ -551,10 +557,8 @@ cdr::String processCommand(cdr::Session& session,
             if (cmdName == L"CdrShutdown")
                 timeToShutdown = true;
 
-            SHOW_HEAP_USED("Before call to cdr::log::Log::Write()");
             cdr::log::pThreadLog->Write (L"processCommand result",
                                          session.getStatus());
-            SHOW_HEAP_USED("After call to cdr::log::Log::Write()");
 
             return response;
         }
