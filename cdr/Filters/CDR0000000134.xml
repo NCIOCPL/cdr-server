@@ -50,26 +50,20 @@
 <xsl:for-each select="OtherName">
 <OtherName>
 <OtherTermName><xsl:value-of   select="OtherTermName"/></OtherTermName>
-<OtherNameType><xsl:value-of select="OtherNameType"/></OtherNameType>
+<OtherNameType><xsl:value-of   select="OtherNameType"/></OtherNameType>
 </OtherName>
 </xsl:for-each>
 </xsl:if>
-
-<!-- =====================================================================
-     Copy SourceInformation, VocabularySource, DefinitionSource
-     ===================================================================== -->
-
-<xsl:if test="SourceInformation">
-<xsl:apply-templates   select="SourceInformation" mode="copy"/>
+<xsl:if test="Definition">
+<xsl:for-each select="Definition">
+<Definition>
+<DefinitionText><xsl:value-of  select="DefinitionText"/></DefinitionText>
+<DefinitionType><xsl:value-of  select="DefinitionType"/></DefinitionType>
+</Definition>
+</xsl:for-each>
 </xsl:if>
 
-<xsl:if test="VocabularySource">
-<xsl:apply-templates   select="VocabularySource" mode="copy"/>
-</xsl:if>
-
-<xsl:if test="DefinitionSource">
-<xsl:apply-templates   select="DefinitionSource" mode="copy"/>
-</xsl:if>
+      
 
 <!-- ===================================================================
                     Copy TermType,SemanticTypeText
@@ -134,10 +128,11 @@
                 </TermRelationship>
                 </xsl:if>
 
-          <xsl:if test="MenuInformation">
+        <!-- not to be implemented until June release of data 
+          <xsl:if test="MenuInformation !=''">
           <MenuInformation>
           <xsl:for-each select="MenuInformation/MenuItem">
-          <MenuTerm>
+          <MenuItem>
           <xsl:if test="@SortOrder">
           <xsl:attribute name="SortOrder">
           <xsl:value-of select="@SortOrder"/>
@@ -145,18 +140,20 @@
           </xsl:if>
           <xsl:apply-templates select="MenuType" mode="copy"/>
          <xsl:if test="MenuParent/@cdr:ref">
+         <xsl:for-each select="MenuParent">
          <MenuParent>
          <xsl:attribute name="ref">
-          <xsl:value-of select="MenuParent/@cdr:ref"/>
+          <xsl:value-of select="@cdr:ref"/>
           </xsl:attribute>
-          <xsl:apply-templates select="MenuParent/DisplayName"/>
+          <xsl:apply-templates select="DisplayName"/>
           </MenuParent>
+          </xsl:for-each>
           </xsl:if>
           <xsl:apply-templates select="DisplayName" mode="copy"/>
-          </MenuTerm>
+          </MenuItem>
           </xsl:for-each>
           </MenuInformation>
-          </xsl:if>
+          </xsl:if>-->
                
 <!-- ===================================================================
             Copy Date First Published and Date Last Modified
