@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.64 2002-07-30 18:36:24 ameyer Exp $
+ * $Id: tables.sql,v 1.65 2002-07-30 19:43:27 pzhang Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.64  2002/07/30 18:36:24  ameyer
+ * Modified batch_job table slightly for wider, varchar job name.
+ *
  * Revision 1.63  2002/07/19 20:43:20  bkline
  * Added pub_proc_cg table; added 'removed' column to pub_proc_doc.
  *
@@ -1547,4 +1550,32 @@ CREATE TABLE pub_proc_cg
          (id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs,
     pub_proc INTEGER NOT NULL REFERENCES pub_proc,
          xml NTEXT   NOT NULL)
+GO
+
+/*
+ * Table used to hold working information on transactions to
+ * Cancer.Gov. The information will be permanently stored to 
+ * pub_proc_cg and pub_proc_doc after transactions to Cancer.Gov 
+ * are completed. The information will be deleted after they are 
+ * updated successfully to pub_proc_cg and pub_proc_doc.
+ * 
+ * This table rather than a temporary table is created to guarantee
+ * the state of pub_proc_doc and pub_proc_cg can be kept in sync 
+ * with Cancer.Gov.
+ *
+ *           id  primary key of document sent to Cancer.Gov.
+ *          num  earliest version of a document to be deleted.
+ *       cg_job  job which sent the document to Cancer.Gov.
+ *   vendor_job  job which produced the filtered documents.
+ *     doc_type  document type name of the document.
+ *          xml  copy of the filtered document sent to Cancer.Gov;
+ *               NULL denotes deleted document.
+ */
+CREATE TABLE pub_proc_cg_work
+         (id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs,
+         num INTEGER NULL,
+  vendor_job INTEGER NOT NULL REFERENCES pub_proc,
+      cg_job INTEGER NOT NULL REFERENCES pub_proc,
+    doc_type VARCHAR(32) NOT NULL,
+         xml NTEXT NULL)
 GO
