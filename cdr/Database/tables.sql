@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.10 2000-04-21 22:16:11 bkline Exp $
+ * $Id: tables.sql,v 1.11 2000-05-08 13:31:49 nanci Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2000/04/21 22:16:11  bkline
+ * Added UNIQUE constraint to name columns.
+ *
  * Revision 1.9  2000/04/15 22:59:59  bkline
  * Made session.name UNIQUE.
  *
@@ -238,11 +241,11 @@ CREATE TABLE doc_status
  *               document to the repository
  *   val_status  foreign key reference into the doc_status table
  *     val_date  date validation processing was last performed on document
- *     approved  approved for publication/release ('Y' or 'N')
+ *     approved  approved for publication/release ('Y' or 'N')- other changes
+ *               due to workflow analysis
  *     doc_type  foreign key reference into the doc_type table
- *        title  required string containing title for document; TBD is
- *               whether titles will be required to be unique, if only by
- *               artificially adding some distinguishing suffix when necessary
+ *        title  required string containing title for document; Titles will
+ *               not be required to be unique
  *     modified  date/time the document's data was last changed
  *     modifier  user responsible for last change to document
  *          xml  for structured documents, this is the data for the document;
@@ -334,7 +337,7 @@ CREATE TABLE doc_blob
  *          val  value for this attribute instance; e.g., 'Technical'
  *      comment  optional free-text notes concerning this attribute value
  */
-CREATE TABLE attr
+CREATE TABLE doc_attr
          (id INTEGER NOT NULL REFERENCES document,
         name VARCHAR(32) NOT NULL,
          num INTEGER NOT NULL,
