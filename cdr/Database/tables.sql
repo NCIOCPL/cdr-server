@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.74 2002-11-14 20:18:08 pzhang Exp $
+ * $Id: tables.sql,v 1.75 2002-12-19 17:15:27 pzhang Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.74  2002/11/14 20:18:08  pzhang
+ * Made num in pub_proc_cg_work as required to support CG's
+ * request for doc version.
+ *
  * Revision 1.73  2002/11/11 17:18:36  bkline
  * Made filter_set.name UNIQUE.
  *
@@ -1487,6 +1491,7 @@ GO
 CREATE VIEW doc_info AS
              SELECT d.id        doc_id,
                     d.title     doc_title,
+                    d.active_status doc_status, 
                     t.name      doc_type,
                     u1.fullname created_by,
                     a1.dt       created_date,
