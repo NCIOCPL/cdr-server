@@ -1,11 +1,14 @@
 /*
- * $Id: CdrLog.h,v 1.3 2002-07-11 18:55:27 ameyer Exp $
+ * $Id: CdrLog.h,v 1.4 2002-08-10 19:27:24 bkline Exp $
  *
  * Write log strings to log database or file.
  *
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/07/11 18:55:27  ameyer
+ * Added directory prefix for default logfile name.
+ *
  * Revision 1.2  2000/10/05 15:21:40  ameyer
  * Added WriteFile for logging to OS file instead of database.
  *
@@ -100,6 +103,13 @@ namespace cdr {
              */
             void Write (const cdr::String MsgSrc, const cdr::String Msg,
                         cdr::db::Connection& dbConn);
+
+            /**
+             * Tell which id we're using for logging this thread.
+             *
+             *  @return     integer used to identify logging for this thread.
+             */
+            int GetId() const { return LogId; }
 
         private:
             /**
