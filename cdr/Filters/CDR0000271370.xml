@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ===========================================================================
- $Id: CDR0000271370.xml,v 1.21 2005-01-10 14:53:50 venglisc Exp $
+ $Id: CDR0000271370.xml,v 1.22 2005-01-10 23:25:33 venglisc Exp $
 
  Filter including misc Vendor filter templates.
 
@@ -144,26 +144,97 @@
     </xsl:otherwise>
    </xsl:choose>
 
-   <!-- Optional Attributes -->
-   <xsl:if                        test = "@cdr:id">
-    <xsl:attribute                name = "id">
-     <xsl:value-of              select = "@cdr:id"/>
-    </xsl:attribute>
-   </xsl:if>
-
    <!--
    The language attribute is being added only if the Media document
    specifies a different language then that of the document type
    i.e. if an image with English labels is being displayed in a 
         Spanish summary
    By default, the MediaLanguage element will not be specified.
+
+   The above decision has been revised per request from Cancer.gov.
+   The language attribute will always be displayed.
    =================================================================== -->
-   <xsl:if                        test = "$docLanguage != MediaID/
+   <!-- xsl:if                        test = "$docLanguage != MediaID/
                                                           Media/
                                                           MediaContent/
-                                                          MediaLanguage">
+                                                          MediaLanguage" -->
     <xsl:attribute                name = "language">
      <xsl:value-of              select = "$docLanguage"/>
+    </xsl:attribute>
+   <!-- /xsl:if -->
+
+   <!--
+   Per request from Cancer.gov the thumb attribute will always be set to
+   a default of thumb=Yes if it has not been specified.
+   Additionally, we were asked to set thumb=No if the specified size of 
+   the image is equal or greater then the actual size of the image so 
+   that making the image clickable wouldn't result in a larger image size.
+   ======================================================================= -->
+   <xsl:choose>
+    <xsl:when                     test = "@thumb = 'No'">
+     <xsl:attribute               name = "thumb">
+      <xsl:value-of             select = "@thumb"/>
+     </xsl:attribute>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:variable                name = "displaySize">
+      <xsl:choose>
+       <xsl:when                  test = "@size = 'full'">
+        <xsl:text>571</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "@size = 'half'">
+        <xsl:text>274</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "@size = 'third'">
+        <xsl:text>179</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "@size = 'quarter'">
+        <xsl:text>131</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "@size = 'fifth'">
+        <xsl:text>103</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "@size = 'sixth'">
+        <xsl:text>84</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "@size = 'as-is'">
+        <xsl:text>99999</xsl:text>
+       </xsl:when>
+       <xsl:otherwise>
+       <!--
+       If no size attribute has been specified the default size is
+          - summaries is half=274
+       ============================================================ -->
+        <xsl:if                   test = "/Summary">
+         <xsl:text>274</xsl:text>
+        </xsl:if>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:variable>
+
+     <xsl:choose>
+      <xsl:when                   test = "MediaID/Media/
+                                          PhysicalMedia/
+                                          ImageData/
+                                          ImageDimensions/
+                                          WidthPixels &lt; $displaySize">
+       <xsl:attribute             name = "thumb">
+        <xsl:value-of           select = "'No'"/>
+       </xsl:attribute>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:attribute             name = "thumb">
+        <xsl:value-of           select = "'Yes'"/>
+       </xsl:attribute>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:otherwise>
+   </xsl:choose>
+
+   <!-- Optional Attributes -->
+   <xsl:if                        test = "@cdr:id">
+    <xsl:attribute                name = "id">
+     <xsl:value-of              select = "@cdr:id"/>
     </xsl:attribute>
    </xsl:if>
 
