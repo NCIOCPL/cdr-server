@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.12 2002-06-04 20:05:48 bkline Exp $
+ * $Id: procs.sql,v 1.13 2002-06-07 20:06:35 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2002/06/04 20:05:48  bkline
+ * Added cdr_coop_group_report stored procedure.
+ *
  * Revision 1.11  2002/06/03 22:11:58  bkline
  * Added missing frag_id for principal investigators.
  *
@@ -83,6 +86,12 @@ IF EXISTS (SELECT *
             WHERE name = 'cdr_coop_group_report'
               AND type = 'P')
     DROP PROCEDURE cdr_coop_group_report
+GO
+IF EXISTS (SELECT *
+             FROM sysobjects
+            WHERE name = 'cdr_get_count_of_links_to_persons'
+              AND type = 'P')
+    DROP PROCEDURE cdr_get_count_of_links_to_persons
 GO
 
 
@@ -551,4 +560,41 @@ AS
      */
     DROP TABLE #am
     DROP TABLE #mm
+GO
+
+/*
+ * Pull out count of protocol and summary documents linking to a 
+ * specified Person document (used by the Person QC report).
+ */
+CREATE PROCEDURE cdr_get_count_of_links_to_persons
+    @docId INTEGER
+AS
+
+    SELECT COUNT(person.doc_id), status.value
+      FROM query_term person
+      JOIN query_term status
+        ON status.doc_id = person.doc_id
+     WHERE person.path IN ('/InScopeProtocol/ProtocolAdminInfo' +
+                           '/ProtocolLeadOrg/LeadOrgPersonnel/Person/@cdr:ref',
+                           '/InScopeProtocol/ProtocolAdminInfo' +
+                           '/ProtocolLeadOrg/ProtocolSites/OrgSite' +
+                           '/OrgSiteContact/SpecificPerson/Person/@cdr:ref',
+                           '/InScopeProtocol/ProtocolAdminInfo' +
+                           '/ProtocolLeadOrg/ProtocolSites' +
+                           '/PrivatePracticeSite' +
+                           '/PrivatePracticeSiteID/@cdr:ref')
+       AND status.path   = '/InScopeProtocol/ProtocolAdminInfo'
+                         + '/CurrentProtocolStatus'
+       AND person.int_val = @docId
+  GROUP BY status.value
+
+    SELECT COUNT(person.doc_id), audience.value
+      FROM query_term person
+      JOIN query_term audience
+        ON audience.doc_id = person.doc_id
+     WHERE person.path     = '/Summary/SummaryMetaData'
+                           + '/PDQBoard/BoardMember/@cdr:ref'
+       AND audience.path   = '/Summary/SummaryMetaData/SummaryAudience'
+       AND person.int_val  = @docId
+  GROUP BY audience.value
 GO
