@@ -71,10 +71,16 @@
                                                    SummaryType='Treatment'">
               <xsl:choose>
                <xsl:when                   test = "contains(
-                                 SummaryMetaData/PDQBoard/Board, 'Pediatric')">
+                                                   SummaryMetaData/PDQBoard/
+                                                   Board, 'Pediatric')">
                 <xsl:variable              name = "miscDoc" 
                                          select = "document
-                                                   ('cdrx:CDR0000000372')"/>
+                                                   (concat('cdr:name:',
+                                                   'About PDQ;Treatment;', 
+                                                   'Patients;About ',
+                                                   'PDQ-Pediatric treatment ',
+                                                   'patient summary'))"/>
+
                 <xsl:apply-templates     select = "$miscDoc/
                                                    MiscellaneousDocument/
                                                    MiscellaneousDocumentText">
@@ -272,10 +278,14 @@
      <ProfessionalDisclaimer>
       <xsl:variable                        name = "profDisclaimer" 
                                          select = "document
-                                                   ('cdrx:CDR0000256337')"/>
-       <xsl:apply-templates              select = "$profDisclaimer/
+                                                   (concat('cdr:name:',
+                                                    'Miscellaneous Document ', 
+                                                    ' - Empty Template;',
+                                                    'About PDQ-Adult treatment',
+                                                    ' patient summary'))"/>
+       <!-- xsl:apply-templates              select = "$profDisclaimer/XXXXXXXX
                                                    MiscellaneousDocument/
-                                                   MiscellaneousDocumentText"/>
+                                                   MiscellaneousDocumentText"/-->
      </ProfessionalDisclaimer>
     </Summary>
   </xsl:template>
@@ -323,7 +333,14 @@
           </xsl:if>
           <xsl:if                 test = "./@CancerLitID">
             <xsl:attribute        name = "CancerlitID">
-              <xsl:value-of     select = "./@CancerLitID"/>
+              <xsl:choose>
+               <xsl:when          test = "contains(./@CancerLitID, 'ICDB/')">
+                <xsl:value-of   select = "substring(./@CancerLitID, 6)"/>
+               </xsl:when>
+               <xsl:otherwise>
+                <xsl:value-of   select = "./@CancerLitID"/>
+               </xsl:otherwise>
+              </xsl:choose>
             </xsl:attribute>
           </xsl:if>
           <xsl:if                 test = "./@ProtocolID">
@@ -344,7 +361,7 @@
      MiscellaneousDocumentText Template
      ================================================================== -->  <xsl:template                    match = "MiscellaneousDocumentText">
     <xsl:param                    name = "miscDocId"/>
-    <xsl:apply-templates        select = "Section"/>
+    <xsl:apply-templates/>
 <!-- XXXX Need to include passing of docID to section template XXX -->
 </xsl:template>
 
@@ -624,7 +641,7 @@
       <xsl:attribute          name = "refidx">
         <xsl:value-of       select = "./@refidx"/>
       </xsl:attribute>
-      <xsl:value-of         select = "."/>
+      <!--xsl:value-of         select = "."/-->
     </Reference>
   </xsl:template>
 
