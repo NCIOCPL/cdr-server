@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.83 2003-08-22 16:34:12 bkline Exp $
+ * $Id: tables.sql,v 1.84 2003-09-29 15:25:13 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.83  2003/08/22 16:34:12  bkline
+ * Fixed definition of published_doc view.
+ *
  * Revision 1.82  2003/06/25 13:34:40  bkline
  * Fixed typo in modification to docs_with_pub_status (missing comma).
  *
@@ -707,36 +710,40 @@ CREATE TABLE doc_attr
 GO
 
 /* 
- * Support for external document ID categories; e.g., MEDLINE. 
+ * Names of sets of external values which correspond to CDR documents.
  *
- * NOTE: Not currently used.
- *
- *     category  automatically generated primary key for the id_category table
- *         name  display name for the category of identifier; e.g. 'MEDLINE'
+ *           id  automatically generated primary key for the table
+ *         name  display name for the category of identifier; e.g.
+ *               'CTGov Sponsor'
  *      comment  optional free-text explanation of the usage/characteristics
  *               of this category of external identifier
  */
-CREATE TABLE id_category
-   (category INTEGER     IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL UNIQUE,
-     comment VARCHAR(255)    NULL)
+CREATE TABLE external_map_usage
+   (category INTEGER      IDENTITY PRIMARY KEY,
+        name VARCHAR(32)  NOT NULL UNIQUE,
+     comment NVARCHAR(255)    NULL)
 GO
 
 /* 
- * Document identifiers other than our own unique IDs. 
+ * Map of values used by external systems to identify entities (such as
+ * persons or organizations) which correspond to CDR documents.  This
+ * table provides virtual lookup tables for mapping (for example) the
+ * strings used by ClinicalTrials.gov at NLM to identify agencies or
+ * sponsors.
  *
- * NOTE: Not currently used.
- *
- *     document  identifies the document to which this external identifier
- *               applies
- *       id_cat  category of this external identifier
- *           id  value of the external identifier; e.g., '99446448'
+ *        usage  category of this external identifier
+ *        value  value of the external identifier
+ *       doc_id  identifies the document which this external value matches
+ *          usr  identifies user who created or modified this entry
+ *     last_mod  date/time the entry was created or modified
  */
-CREATE TABLE external_id
-   (document INTEGER     NOT NULL REFERENCES all_docs,
-      id_cat INTEGER     NOT NULL REFERENCES id_category,
-          id VARCHAR(32) NOT NULL,
- PRIMARY KEY (id_cat, id))
+CREATE TABLE external_map
+      (usage INTEGER       NOT NULL REFERENCES external_map_usage,
+       value NVARCHAR(256) NOT NULL,
+      doc_id INTEGER       NOT NULL REFERENCES all_docs,
+         usr INTEGER       NOT NULL REFERENCES usr,
+    last_mod DATETIME      NOT NULL,
+ PRIMARY KEY (usage, value))
 GO
 
 /* 
