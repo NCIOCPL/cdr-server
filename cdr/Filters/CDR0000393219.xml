@@ -1,0 +1,290 @@
+<CdrDoc Type='Filter' Id='CDR0000393219'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Module: Emailer Common</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+
+ <!--
+ ===========================================================================
+ Get personal address address information; used by the electronic mailers.
+ =========================================================================== -->
+<xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                           xmlns:cdr = "cips.nci.nih.gov/cdr"
+                             version = "1.0"
+             exclude-result-prefixes = "cdr">
+
+ <!--
+ ===========================================================================
+ Get the name elements.
+ =========================================================================== -->
+ <xsl:template                 match = "PersonNameInformation">
+  <PersonNameInformation>
+   <xsl:apply-templates       select = "GivenName | MiddleInitial |
+                                        SurName | ProfessionalSuffix"/>
+  </PersonNameInformation>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ The interface can only handle standard professional suffixes.
+ =========================================================================== -->
+ <xsl:template                 match = "ProfessionalSuffix">
+  <xsl:for-each               select = "StandardProfessionalSuffix">
+   <ProfessionalSuffix>
+    <xsl:value-of             select = "."/>
+   </ProfessionalSuffix>
+  </xsl:for-each>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Just get the location which matches the fragment ID.  According to Lakshmi,
+ we should only use PrivatePractice or OtherPracticeLocation elements.
+ 2003-03-03: Sheri doesn't like this approach (see issue #610).  Adding
+ home addresses at her request.
+ =========================================================================== -->
+ <xsl:template                 match = "PersonLocations">
+  <xsl:param                    name = "fragmentId"/>
+  <ContactDetail>
+   <xsl:apply-templates       select = "PrivatePractice/
+                                        PrivatePracticeLocation
+                                        [@cdr:id = $fragmentId]"/>
+   <xsl:apply-templates       select = "OtherPracticeLocation
+                                        [@cdr:id = $fragmentId]"/>
+   <xsl:apply-templates       select = "Home[@cdr:id = $fragmentId]"/>
+  </ContactDetail>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Handle the easy case: a private practice or home location.
+ =========================================================================== -->
+ <xsl:template                 match = "PrivatePracticeLocation | Home">
+  <xsl:apply-templates        select = "PostalAddress"/>
+  <xsl:variable                 name = "phone">
+   <xsl:call-template           name = "getOnePhoneNumber"/>
+  </xsl:variable>
+  <xsl:if                       test = "$phone != ''">
+   <Phone>
+    <xsl:value-of             select = "$phone"/>
+   </Phone>
+  </xsl:if>
+  <xsl:if                       test = "normalize-space(Fax) != ''">
+   <Fax>
+    <xsl:value-of             select = "normalize-space(Fax)"/>
+   </Fax>
+  </xsl:if>
+  <xsl:if                       test = "normalize-space(Email) != ''">
+   <Email>
+    <xsl:value-of             select = "normalize-space(Email)"/>
+   </Email>
+  </xsl:if>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Pull out the elements of the postal address that we need.
+ =========================================================================== -->
+ <xsl:template                 match = "PostalAddress | SpecificPostalAddress">
+  <PostalAddress>
+   <xsl:apply-templates       select = "Street | City |
+                                        PoliticalSubUnit_State |
+                                        PostalCode_ZIP | Country"/>
+  </PostalAddress>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Get phone or toll-free phone, whichever is available first.
+ =========================================================================== -->
+ <xsl:template                  name = "getOnePhoneNumber">
+  <xsl:choose>
+   <xsl:when                    test = "normalize-space(Phone) != ''">
+    <xsl:value-of             select = "normalize-space(Phone)"/>
+   </xsl:when>
+   <xsl:when                    test = "normalize-space(TollFreePhone) != ''">
+    <xsl:value-of             select = "normalize-space(TollFreePhone)"/>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Other practice locations are considerably trickier.
+ =========================================================================== -->
+ <xsl:template                 match = "OtherPracticeLocation">
+  <xsl:variable                 name = "fragLink"
+                              select = "OrganizationLocation/@cdr:ref"/>
+  <xsl:variable                 name = "fragId"
+                              select = "substring-after($fragLink, '#')"/>
+  <xsl:variable                 name = "orgId"
+                              select = "substring-before($fragLink, '#')"/>
+  <xsl:variable                 name = "orgUri"
+                              select = "concat('cdrx:', $fragLink, '/last')"/>
+  <xsl:variable                 name = "org"
+                              select = "document($orgUri)"/>
+  <xsl:variable                 name = "orgName"
+                              select = "$org/Organization/
+                                        OrganizationNameInformation/
+                                        OfficialName/Name"/>
+  <xsl:variable                 name = "orgLoc"
+                              select = "$org/Organization/
+                                        OrganizationLocations/
+                                        OrganizationLocation
+                                        [Location/@cdr:id = $fragId]"/>
+  <xsl:if                       test = "normalize-space(PersonTitle) != ''">
+   <Title>
+    <xsl:value-of             select = "PersonTitle"/>
+   </Title>
+  </xsl:if>
+  <Organization                   id = "{$orgId}">
+   <xsl:value-of              select = "$orgName"/>
+  </Organization>
+  <xsl:choose>
+   <xsl:when                    test = "SpecificPostalAddress">
+    <xsl:apply-templates      select = "SpecificPostalAddress"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:apply-templates      select = "$orgLoc/Location/PostalAddress"/>
+   </xsl:otherwise>
+  </xsl:choose>
+  <xsl:variable                 name = "phone">
+   <xsl:choose>
+    <xsl:when                   test = "normalize-space(SpecificPhone) != ''">
+     <xsl:value-of            select = "normalize-space(SpecificPhone)"/>
+    </xsl:when>
+    <xsl:when                   test = "normalize-space(
+                                        SpecificTollFreePhone) != ''">
+     <xsl:value-of            select = "normalize-space(
+                                        SpecificTollFreePhone)"/>
+    </xsl:when>
+    <xsl:when                   test = "normalize-space(
+                                        $orgLoc/Location/Phone) != ''">
+     <xsl:value-of            select = "normalize-space(
+                                        $orgLoc/Location/Phone)"/>
+    </xsl:when>
+    <xsl:when                   test = "normalize-space(
+                                        $orgLoc/Location/TollFreePhone) != ''">
+     <xsl:value-of            select = "normalize-space(
+                                        $orgLoc/Location/TollFreePhone)"/>
+    </xsl:when>
+   </xsl:choose>
+  </xsl:variable>
+  <xsl:variable                 name = "fax">
+   <xsl:choose>
+    <xsl:when                   test = "normalize-space(SpecificFax) != ''">
+     <xsl:value-of            select = "normalize-space(SpecificFax)"/>
+    </xsl:when>
+    <xsl:when                   test = "normalize-space(
+                                        $orgLoc/Location/Fax) != ''">
+     <xsl:value-of            select = "normalize-space(
+                                        $orgLoc/Location/Fax)"/>
+    </xsl:when>
+   </xsl:choose>
+  </xsl:variable>
+  <xsl:variable                 name = "email">
+   <xsl:choose>
+    <xsl:when                   test = "normalize-space(SpecificEmail) != ''">
+     <xsl:value-of            select = "normalize-space(SpecificEmail)"/>
+    </xsl:when>
+    <xsl:when                   test = "normalize-space(
+                                        $orgLoc/Location/Email) != ''">
+     <xsl:value-of            select = "normalize-space(
+                                        $orgLoc/Location/Email)"/>
+    </xsl:when>
+   </xsl:choose>
+  </xsl:variable>
+  <xsl:if                       test = "$phone != ''">
+   <Phone>
+    <xsl:value-of             select = "$phone"/>
+   </Phone>
+  </xsl:if>
+  <xsl:if                       test = "$fax != ''">
+   <Fax>
+    <xsl:value-of             select = "$fax"/>
+   </Fax>
+  </xsl:if>
+  <xsl:if                       test = "$email != ''">
+   <Email>
+    <xsl:value-of             select = "$email"/>
+   </Email>
+  </xsl:if>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Get the country name from the country document.
+ =========================================================================== -->
+ <xsl:template                 match = "Country">
+  <xsl:variable                 name = "docId"
+                              select = "@cdr:ref"/>
+  <xsl:variable                 name = "uri"
+                              select = "concat('cdrx:', $docId)"/>
+  <xsl:variable                 name = "doc"
+                              select = "document($uri)"/>
+  <xsl:variable                 name = "name">
+   <xsl:choose>
+    <xsl:when                   test = "$doc/Country/CountryFullName">
+     <xsl:value-of            select = "$doc/Country/CountryFullName"/>
+    </xsl:when>
+    <xsl:when                   test = "$doc/Country/CountryShortName">
+     <xsl:value-of            select = "$doc/Country/CountryShortName"/>
+    </xsl:when>
+   </xsl:choose>
+  </xsl:variable>
+  <xsl:if                       test = "$name != ''">
+   <Country                       id = "{$docId}">
+    <xsl:value-of             select = "$name"/>
+   </Country>
+  </xsl:if>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Ditto for the state.
+ =========================================================================== -->
+ <xsl:template                 match = "PoliticalSubUnit_State">
+  <xsl:variable                 name = "docId"
+                              select = "@cdr:ref"/>
+  <xsl:variable                 name = "uri"
+                              select = "concat('cdrx:', $docId)"/>
+  <xsl:variable                 name = "doc"
+                              select = "document($uri)"/>
+  <xsl:variable                 name = "name">
+   <xsl:choose>
+    <xsl:when                   test = "$doc/PoliticalSubUnit
+                                            /PoliticalSubUnitFullName">
+     <xsl:value-of            select = "$doc/PoliticalSubUnit
+                                            /PoliticalSubUnitFullName"/>
+    </xsl:when>
+    <xsl:when                   test = "$doc/PoliticalSubUnit
+                                            /PoliticalSubUnitShortName">
+     <xsl:value-of            select = "$doc/PoliticalSubUnit
+                                            /PoliticalSubUnitShortName"/>
+    </xsl:when>
+   </xsl:choose>
+  </xsl:variable>
+  <xsl:if                       test = "$name != ''">
+   <PoliticalSubUnit_State        id = "{$docId}">
+    <xsl:value-of             select = "$name"/>
+   </PoliticalSubUnit_State>
+  </xsl:if>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Copy simple text elements.
+ =========================================================================== -->
+ <xsl:template                 match = "*">
+  <xsl:element                  name = "{name()}">
+   <xsl:value-of              select = "."/>
+  </xsl:element>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
