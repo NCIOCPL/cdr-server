@@ -1,7 +1,14 @@
 /*
- * $Id: CdrXsd.cpp,v 1.25 2002-02-06 21:42:47 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.26 2002-02-14 18:56:05 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2002/02/06 21:42:47  bkline
+ * Backed out attempt to fix validation bug.
+ *
+ * Revision 1.24  2002/02/05 22:19:58  bkline
+ * Fixed validator to handle sequences/choices whose children aren't 
+ * required.
+ *
  * Revision 1.23  2002/02/01 20:47:54  bkline
  * Added code to get enumerated VVs for TEXT content.
  *
