@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.h,v 1.11 2001-01-17 21:53:37 bkline Exp $
+ * $Id: CdrXsd.h,v 1.12 2001-05-03 18:46:59 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2001/01/17 21:53:37  bkline
+ * Added general support for groups, sequences, choices & includes.
+ *
  * Revision 1.10  2000/12/28 13:32:33  bkline
  * Added support for choice.
  *
@@ -46,6 +49,7 @@
 // Project headers
 #include "CdrString.h"
 #include "CdrException.h"
+#include "CdrDbConnection.h"
 #include "CdrDom.h"
 
 /**@#-*/
@@ -89,6 +93,54 @@ namespace cdr {
          *          XML Schema Part 1: Structures</A>
          */
         const wchar_t* const ELEMENT       = L"element";
+
+        /**
+         * Tag for key-specification element in Schema document.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         */
+        const wchar_t* const KEY           = L"key";
+
+        /**
+         * Tag for keyref-specification element in Schema document.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         */
+        const wchar_t* const KEYREF        = L"keyref";
+
+        /**
+         * Tag for restriction-specification element in Schema document.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         */
+        const wchar_t* const RESTRICTION   = L"restriction";
+
+        /**
+         * Tag for extension-specification element in Schema document.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         */
+        const wchar_t* const EXTENSION     = L"extension";
+
+        /**
+         * Tag for selector-specification element in Schema document.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         */
+        const wchar_t* const SELECTOR      = L"selector";
+
+        /**
+         * Tag for field-specification element in Schema document.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         */
+        const wchar_t* const FIELD         = L"field";
 
         /**
          * Tag for choice-specification element in Schema document.
@@ -148,6 +200,14 @@ namespace cdr {
          */
         const wchar_t* const SIMPLE_TYPE   = L"simpleType";
         
+        /**
+         * Tag for Schema element specifying a text-only complex type.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         */
+        const wchar_t* const SIMPLE_CONTENT= L"simpleContent";
+
         /**
          * Tag for Schema element adding a constraing on the minimum length of
          * valid data values.
@@ -266,8 +326,31 @@ namespace cdr {
          *          XML Schema Part 1: Structures</A>
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
+         *  @note   XXX Remove after compatibility period.
          */
         const wchar_t* const BINARY        = L"binary";
+        
+        /**
+         * Value for <code>base</code> attribute, indicating derivation of a
+         * user-defined simple type from the built-in hexBinary type.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
+         *          XML Schema Part 2: Datatypes</A>
+         */
+        const wchar_t* const HEXBIN        = L"hexBinary";
+        
+        /**
+         * Value for <code>base</code> attribute, indicating derivation of a
+         * user-defined simple type from the built-in base64Binary type.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
+         *          XML Schema Part 2: Datatypes</A>
+         */
+        const wchar_t* const BASE64BIN     = L"base64Binary";
         
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
@@ -281,15 +364,29 @@ namespace cdr {
         const wchar_t* const URI           = L"uri";
         
         /**
-         * Value for <code>base</code> attribute, indicating derivation of a
-         * user-defined simple type from the built-in TimeInstant type.
+         * Obsolete value for <code>base</code> attribute, indicating 
+         * derivation of a user-defined simple type from the built-in 
+         * TimeInstant type.
          *
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
          *          XML Schema Part 1: Structures</A>
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
+         *  @note   XXX Remove after compatibility period.
          */
         const wchar_t* const TIME_INSTANT  = L"timeInstant";
+
+        /**
+         * Value for <code>base</code> attribute, indicating derivation of a
+         * user-defined simple type from the built-in dataTime type.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
+         *          XML Schema Part 2: Datatypes</A>
+         *  @note   XXX Remove after compatibility period.
+         */
+        const wchar_t* const DATE_TIME     = L"dateTime";
 
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
@@ -347,7 +444,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const PRECISION     = L"precision";
+        const wchar_t* const PRECISION     = L"totalDigits";
 
         /**
          * Tag for the element used to specify the allowable number of
@@ -359,7 +456,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
          */
-        const wchar_t* const SCALE         = L"scale";
+        const wchar_t* const SCALE         = L"fractionDigits";
 
         /**
          * Tag for the element used to specify the encoding allowed (Hex or
@@ -369,6 +466,7 @@ namespace cdr {
          *          XML Schema Part 1: Structures</A>
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
+         *  @note   XXX Remove after compatibility period.
          */
         const wchar_t* const ENCODING      = L"encoding";
 
@@ -393,6 +491,29 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const TYPE          = L"type";
+
+        /**
+         * Name of the attribute which specifies the location of a
+         * <code>key</code> or <code>keyref</code> in a <code>selector</code>
+         * or <code>field</code> element.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
+         *          XML Schema Part 2: Datatypes</A>
+         */
+        const wchar_t* const XPATH         = L"xpath";
+
+        /**
+         * Name of the attribute which specifies the <code>key</code> to which
+         * a <code>keyref</code> refers.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
+         *          XML Schema Part 2: Datatypes</A>
+         */
+        const wchar_t* const REFER         = L"refer";
 
         /**
          * Name of the attribute which specifies the value for a constraint
@@ -431,6 +552,7 @@ namespace cdr {
          *
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
          *          XML Schema Part 1: Structures</A>
+         *  @note   XXX Remove after compatibility period.
          */
         const wchar_t* const CONTENT       = L"content";
 
@@ -479,7 +601,7 @@ namespace cdr {
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
          *          XML Schema Part 1: Structures</A>
          */
-        const wchar_t* const UNLIMITED     = L"*";
+        const wchar_t* const UNLIMITED     = L"unbounded";
 
         /**
          * Value of the <code>encoding</code> attribute specifying hex
@@ -489,6 +611,7 @@ namespace cdr {
          *          XML Schema Part 1: Structures</A>
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
+         *  @note   XXX Remove after compatibility period.
          */
         const wchar_t* const HEX           = L"hex";
 
@@ -500,6 +623,7 @@ namespace cdr {
          *          XML Schema Part 1: Structures</A>
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-2">
          *          XML Schema Part 2: Datatypes</A>
+         *  @note   XXX Remove after compatibility period.
          */
         const wchar_t* const BASE64        = L"base64";
 
@@ -511,6 +635,8 @@ namespace cdr {
         class Attribute;
         class Node;
         class Group;
+        class Key;
+        class KeyRef;
 
         /**
          * Aliases for container types.  Provided for convenience (and as a
@@ -520,6 +646,123 @@ namespace cdr {
         typedef NodeList::const_iterator                NodeEnum;
         typedef std::map<cdr::String, Attribute*>       AttrSet;
         typedef AttrSet::const_iterator                 AttrEnum;
+        typedef StringList::const_iterator              StringEnum;
+        typedef std::list<Key*>                         KeyList;
+        typedef std::list<KeyRef*>                      KeyRefList;
+
+        /**
+         * Common base class for <code>Key</code> and <code>KeyRef</code>
+         * classes.
+         */
+        class KeyOrKeyRef {
+
+        public:
+
+            /**
+             * Accessor method for <code>Key</code>'s or <code>KeyRef</code>'s 
+             * name.
+             *
+             *  @return         string containing name of this key or keyref.
+             */
+            cdr::String getName() const { return name; }
+
+            /**
+             * Accessor method for name of <code>Key</code>'s or
+             * <code>KeyRef</code>'s parent element.
+             *
+             *  @return         string containing name of this key or keyref's
+             *                  parent element.
+             */
+            cdr::String getParent() const { return parent; }
+
+            /**
+             * Accessor method for <code>Key</code> or <code>KeyRef</code>'s 
+             * selector.
+             *
+             *  @return         string containing selector for this key or 
+             *                  keyref.
+             */
+            cdr::String getSelector() const { return selector; }
+
+            /**
+             * Accessor method for <code>Key</code> or <code>KeyRef</code>'s 
+             * list of fields.
+             *
+             *  @return         string containing name of this key or keyref.
+             */
+            StringEnum getFields() const { return fields.begin(); }
+
+            /**
+             * Accessor method for value which terminates an enumeration loop
+             * through the list of fields for this key or keyref.
+             *
+             *  @return     enumerator indicating that the end of the list
+             *              of fields has been passed.
+             */
+            StringEnum getFieldsEnd() const { return fields.end(); }
+
+        protected:
+
+            cdr::String name;
+            cdr::String parent;
+            cdr::String selector;
+            StringList  fields;
+        };
+
+        /**
+         * An object of type <code>Key</code> holds the information used to
+         * find the attributes in the document type which uniquely identify
+         * elements in documents of this type and which can be referred to by
+         * keyref attributes.  Note that the selectors for keys and keyrefs in
+         * this implementation are restricted to naming the child element of
+         * the parent in which the key or keyref is defined, and the fields
+         * must identify an attribute of that child element.  We will pick up
+         * much more generality for free when we replace this implementation
+         * with a third-party implementation.
+         */
+        class   Key : public KeyOrKeyRef {
+
+        public:
+
+            /**
+             * Builds a key object indicating the path and attribute used 
+             * to hold the keys for a schema.
+             */
+            Key(const cdr::dom::Node& node, const cdr::String& parent);
+
+        };
+
+        /**
+         * An object of type <code>KeyRef</code> holds the information used to
+         * find the attributes in the document type which refer to keyed
+         * elements in documents of this type.  Note that in this
+         * implementation this information is used solely to identify ID and
+         * IDREF attributes in the DTD generated from the Schema.  No attempt
+         * is made to validate key-keyref relationship during schema
+         * validation.
+         */
+        class   KeyRef : public KeyOrKeyRef {
+
+        public:
+
+            /**
+             * Builds a keyref object indicating the path and attribute used 
+             * to hold the keys for a schema.
+             */
+            KeyRef(const cdr::dom::Node& node, const cdr::String& parent);
+
+            /**
+             * Accessor method for name of <code>Key</code> to which this
+             * <code>KeyRef</code> refers.
+             *
+             *  @return         string containing name of this key reference.
+             */
+            cdr::String getRefer() const { return refer; }
+
+        private:
+
+            cdr::String refer;
+        };
 
         /**
          * An object of type <code>Schema</code> represents the types
@@ -535,7 +778,7 @@ namespace cdr {
              * to be applied to CDR documents of the type represented by this
              * schema.
              */
-            Schema(const cdr::dom::Node& node);
+            Schema(const cdr::dom::Node& node, cdr::db::Connection* conn = 0);
 
             /**
              * Releases resources allocated for a schema validation object.
@@ -597,6 +840,34 @@ namespace cdr {
              */
             void                registerObject(Node* node);
 
+            /**
+             * Remeber a key defined by the schema.
+             *
+             *  @param  k       address of <code>Key</code> object to
+             *                  remember.
+             */
+            void                addKey(Key* k) { keyList.push_back(k); }
+
+            /**
+             * Remeber a keyref defined by the schema.
+             *
+             *  @param  k       address of <code>KeyRef</code> object to
+             *                  remember.
+             */
+            void                addKeyRef(KeyRef* r) 
+                                { keyRefList.push_back(r); }
+
+            /**
+             * Generates a DTD for the schema.
+             *
+             *  @param  schemaFilename
+             *                  name of the file from which the schema
+             *                  was parsed (top-level file only); used
+             *                  solely for comment at the top of the DTD.
+             *  @return         string containing the DTD.
+             */
+            cdr::String         makeDtd(const cdr::String& schemaFilename);
+
         private:
 
             /**
@@ -642,6 +913,16 @@ namespace cdr {
             Element*            topElement;
 
             /**
+             * List of all keys found in the schema.
+             */
+            KeyList             keyList;
+
+            /**
+             * List of all keyrefs found in the schema.
+             */
+            KeyRefList          keyRefList;
+
+            /**
              * Registers the built-in Schema types supported by this
              * implementation.
              */
@@ -663,19 +944,80 @@ namespace cdr {
              * Loads an included schema document and recursively calls
              * parseSchema.
              */
-            void                includeSchema(const cdr::dom::Node&);
+            void                includeSchema(const cdr::dom::Node&,
+                                              cdr::db::Connection*);
 
             /**
              * Extracts schema information from XML document.  Called
              * recursively by constructor for included schema documents.
              */
-            void                parseSchema(const cdr::dom::Node&);
+            void                parseSchema(const cdr::dom::Node&,
+                                            cdr::db::Connection*);
 
             /**
              * Replace GroupRef pointers with pointers to the Group objects
              * being referenced.
              */
             void                resolveGroupRefs();
+
+            /**
+             * Attaches ID types to attributes identified as keys by the
+             * schema.
+             */
+            void                resolveKeys();
+
+            /**
+             * Attaches IDREF types to attributes identified as keyrefs by the
+             * schema.
+             */
+            void                resolveKeyRefs();
+
+            /**
+             * Common processing used by <code>resolveKeys()</code> and
+             * <code>resolveKeyRefs()</code>.
+             *
+             *  @param  k       address of Key or KeyRef object.
+             *  @param  type    "ID" or "IDREF"
+             */
+            void                resolveKeyOrKeyRef(KeyOrKeyRef* key, 
+                                                   const cdr::String& type);
+            /**
+             * Writes a DTD element definition to the specified stream.
+             *
+             *  @param  element reference to <code>Element</code> object
+             *                  to be defined.
+             *  @param  os      reference to stream to which definition
+             *                  is to be written.
+             *  @param  isTopElement
+             *                  <code>true</code> if element is the
+             *                  top-level element for the document type.
+             */
+            void                writeDtdElement(Element& element,
+                                                std::wostream& os,
+                                                bool isTopElement = false);
+
+            /**
+             * Writes the DTD declarations for child elements to the specified
+             * stream.
+             *
+             *  @param  declaredElems
+             *                  list of DTD elements which have already been
+             *                  declared.
+             *  @param  n       address of <code>Node</code> representing
+             *                  an element or group of elements to be
+             *                  declared.
+             *  @param  os      reference to stream to which declarations
+             *                  are to be written.
+             */
+            void declareDtdChildElements(cdr::StringSet& declaredElems,
+                                         const Node* n,
+                                         std::wostream& os);
+
+            /**
+             * Directory to be used for locating included schema subdocuments
+             * when the filesystem is being used.
+             */
+            static const std::string   schemaDir;
         };
 
         /**
@@ -897,12 +1239,35 @@ namespace cdr {
              */
             bool            isOptional() const { return optional; }
 
+            /**
+             * Accessor method for retrieving the string to be used in a DTD
+             * to identify the attribute's type (CDATA, ID, IDREF).
+             *
+             *  @return             CDATA, ID or IDREF
+             */
+            cdr::String     getDtdType() const { return dtdType; }
+
+            /**
+             * Method to set the dtdType based on a key or keyref element in
+             * the schema.
+             *
+             *  @param  type        CDATA, ID or IDREF (string)
+             */
+            void            setDtdType(const cdr::String& type) // const
+                            { dtdType = type; }
+
         private:
 
             /**
              * Flag recording whether this element can be omitted.
              */
             bool            optional;
+
+            /**
+             * String used to identify the attribute type in a DTD
+             * (CDATA, ID, or IDREF currently supported).
+             */
+            cdr::String     dtdType;
         };
 
         /**
@@ -1209,9 +1574,11 @@ namespace cdr {
 
             /**
              * Token representing the ultimate base for a simple type.
+             * XXX remove BINARY and TIME_INSTANT after compatibility period.
              */
             enum BuiltinType { STRING, DATE, TIME, DECIMAL, INTEGER,
-                               URI, BINARY, TIME_INSTANT, NMTOKEN };
+                               URI, BINARY, TIME_INSTANT, DATE_TIME, NMTOKEN,
+                               HEXBIN, BASE64BIN };
 
             /**
              * Accessor method for the name of the base type for this
@@ -1412,6 +1779,53 @@ namespace cdr {
         };
 
         /**
+         * Content of a text-only element with attributes.  During the initial
+         * pass of parsing the schema, we store the type name taken from the
+         * 'base' attribute.  When we've gathtered together all the types, we
+         * then resolve this name to the simple type to which it refers.
+         */
+        class SimpleContent : public NamedNode {
+
+        public:
+
+            /**
+             * Starts out by just knowing the simple type's name.
+             *
+             *  @param  n           name of the simple type for the text
+             *                      content of elements of this type.
+             *  @param  s           address of the schema (we'll need
+             *                      this to look up the simple type).
+             */
+            SimpleContent(const cdr::String& n, const Schema* s) 
+                         { name = n; schema = s; }
+
+            /**
+             * Accessor method to obtain the type used to constrain the text
+             * content of elements of this type.
+             *
+             *  @return             address of <code>SimpleType</code>
+             */
+            const SimpleType*   getSimpleType() const { return resolveType(); }
+
+        private:
+
+            /**
+             * The first time this method is invoked it performs a lookup from
+             * the name of the simple type to find the address of the simple
+             * type's object, cacheing the result in <code>simpleType</code>
+             * for future calls.
+             */
+            const SimpleType*   resolveType() const {
+                if (!simpleType) simpleType = 
+                    dynamic_cast<const SimpleType*>(schema->lookupType(name));
+                return simpleType;
+            }
+
+            const SimpleType mutable* simpleType;
+            const Schema*       schema;
+        };
+
+        /**
          * Complex schema type.
          */
         class ComplexType : public Type {
@@ -1453,8 +1867,9 @@ namespace cdr {
              * Accessor method for the elements contained in this complex
              * type.
              *
-             *  @return     address of object for the sequence, choice, or
-             *              group which makes up the content for this type.
+             *  @return     address of object for the sequence, choice,
+             *              group, or simple text type which makes up the 
+             *              content for this type.
              */
             const Node*     getContent() const { return content; }
 
@@ -1490,7 +1905,7 @@ namespace cdr {
              * Accessor method for determining whether an particular
              * <code>Attribute</code> is defined for this complex type.
              *
-             *  @param      string containing the name of the
+             *  @param name string containing the name of the
              *              <code>Attribute</code>
              *  @return     <code>true</code> if the specified attribute
              *              has been defined for this complex type.
@@ -1503,6 +1918,17 @@ namespace cdr {
              * being referenced.
              */
             void            resolveGroupRefs(const Schema&);
+
+            /**
+             * Replaces the string used by a DTD to identify the type of an
+             * attribute.
+             *
+             *  @param  attrName        name of the attribute whose DTD type
+             *                          is to be set.
+             *  @param  typeName        new DTD type name for the attribute.
+             */
+            void            setAttrDtdType(const cdr::String& attrName,
+                                           const cdr::String& typeName) const;
 
         private:
 
