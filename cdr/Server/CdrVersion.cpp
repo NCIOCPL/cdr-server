@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.12 2001-12-14 18:28:38 mruben Exp $
+ * $Id: CdrVersion.cpp,v 1.13 2002-04-20 05:04:44 bkline Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2001/12/14 18:28:38  mruben
+ * removed some testing for checkout when checking in
+ *
  * Revision 1.11  2001/06/21 23:58:03  ameyer
  * Removed extra question mark from INSERT statement.
  *
@@ -223,6 +226,35 @@ int cdr::checkIn(cdr::Session& session, int docId,
     insert.setString(11, doc_comment);
     insert.setString(12, publishable);
     insert.executeQuery();
+  }
+
+  // Track unlock actions.
+  else
+  {
+    const char* const insert = " INSERT INTO audit_trail     "
+                               " (                           "
+                               "             document,       "
+                               "             dt,             "
+                               "             usr,            "
+                               "             action,         "
+                               "             program,        "
+                               "             comment         "
+                               " )                           "
+                               "      SELECT ?,              "
+                               "             GETDATE(),      "
+                               "             ?,              "
+                               "             id,             "
+                               "             'CdrCheckIn',   "
+                               "             ?               "
+                               "        FROM action          "
+                               "       WHERE name = 'UNLOCK' ";
+
+    cdr::db::PreparedStatement ps = conn.prepareStatement(insert);
+    cdr::String nullString(true);
+    ps.setInt   (1, docId);
+    ps.setInt   (2, usr);
+    ps.setString(3, comment ? *comment : nullString);
+    ps.executeUpdate();
   }
 
   conn.setAutoCommit(autocommitted);
