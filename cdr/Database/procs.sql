@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.11 2002-06-03 22:11:58 bkline Exp $
+ * $Id: procs.sql,v 1.12 2002-06-04 20:05:48 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2002/06/03 22:11:58  bkline
+ * Added missing frag_id for principal investigators.
+ *
  * Revision 1.10  2002/03/20 14:02:38  bkline
  * Added DROP statement for cdr_newly_published_trials procedure.
  *
@@ -75,7 +78,12 @@ IF EXISTS (SELECT *
               AND type = 'P')
     DROP PROCEDURE cdr_newly_published_trials
 GO
-
+IF EXISTS (SELECT *
+             FROM sysobjects
+            WHERE name = 'cdr_coop_group_report'
+              AND type = 'P')
+    DROP PROCEDURE cdr_coop_group_report
+GO
 
 
 /**
@@ -426,4 +434,121 @@ AS
         ORDER BY cat.value,
                  id.value,
                  stat.value
+GO
+
+/*
+ * ADODB won't let us get to the temporary tables created for a single
+ * connection, so we have to wrap up the queries for this report
+ * in a stored procedure.
+ */
+CREATE PROCEDURE cdr_coop_group_report
+    @docId INTEGER
+AS
+    /*
+     * Get the main member organizations.
+     */
+    SELECT DISTINCT mm_d.id,
+                    mm_d.title
+               INTO #mm
+               FROM document mm_d
+               JOIN query_term mm
+                 ON mm.doc_id = mm_d.id
+              WHERE mm.path = '/Organization/OrganizationAffiliations' 
+                            + '/MemberOfCooperativeGroups'
+                            + '/MainMemberOf/CooperativeGroup/@cdr:ref'
+                AND mm.int_val = @docId
+    SELECT * FROM #mm ORDER BY title, id
+
+    /*
+     * Get the principal investigators for the main member organizations.
+     */
+    SELECT DISTINCT mm.id,
+                    pi_d.id,
+                    pi_d.title
+               FROM document pi_d
+               JOIN query_term pi
+                 ON pi.doc_id = pi_d.id
+               JOIN #mm mm
+                 ON mm.id = pi.int_val
+               JOIN query_term role
+                 ON role.doc_id = pi_d.id
+               JOIN query_term ca
+                 ON ca.doc_id  = pi_d.id
+              WHERE pi.path    = '/Person/PersonLocations'
+                               + '/OtherPracticeLocation'
+                               + '/OrganizationLocation/@cdr:ref'
+                AND ca.path    = '/Person/PersonLocations'
+                               + '/OtherPracticeLocation'
+                               + '/ComplexAffiliation/Organization/@cdr:ref'
+                AND role.path  = '/Person/PersonLocations'
+                               + '/OtherPracticeLocation'
+                               + '/ComplexAffiliation'
+                               + '/RoleAtAffiliatedOrganization'
+                AND role.value = 'Principal Investigator'
+                AND ca.int_val = @docId
+                AND LEFT(pi.node_loc, 8) = LEFT(ca.node_loc, 8)
+                AND LEFT(ca.node_loc, 12) = LEFT(role.node_loc, 12)
+           ORDER BY pi_d.title, pi_d.id
+
+    /*
+     * Get the affiliate members of the group.
+     */
+    SELECT DISTINCT mm.id AS mm_id,
+                    am_d.id,
+                    am_d.title
+               INTO #am
+               FROM document am_d
+               JOIN query_term coop
+                 ON coop.doc_id = am_d.id
+                AND coop.path = '/Organization/OrganizationAffiliations'
+                              + '/MemberOfCooperativeGroups/AffiliateMemberOf'
+                              + '/CooperativeGroup/@cdr:ref'
+    LEFT OUTER JOIN query_term am
+                 ON am.doc_id = am_d.id
+                AND am.path   = '/Organization/OrganizationAffiliations'
+                              + '/MemberOfCooperativeGroups/AffiliateMemberOf'
+                              + '/MainMember/@cdr:ref'
+    LEFT OUTER JOIN #mm mm
+                 ON mm.id = am.int_val
+                AND LEFT(am.node_loc, 12) = LEFT(coop.node_loc, 12)
+              WHERE coop.int_val = @docId
+    SELECT * FROM #am ORDER BY title, id
+
+    /*
+     * Get the principal investigators for the affiliate member organizations.
+     */
+    SELECT DISTINCT am.mm_id,
+                    am.id,
+                    pi_d.id,
+                    pi_d.title
+               FROM document pi_d
+               JOIN query_term pi
+                 ON pi.doc_id = pi_d.id
+               JOIN #am am
+                 ON am.id = pi.int_val
+               JOIN query_term role
+                 ON role.doc_id = pi_d.id
+               JOIN query_term ca
+                 ON ca.doc_id = pi_d.id
+              WHERE pi.path    = '/Person/PersonLocations'
+                               + '/OtherPracticeLocation'
+                               + '/OrganizationLocation/@cdr:ref'
+                AND ca.path    = '/Person/PersonLocations'
+                               + '/OtherPracticeLocation'
+                               + '/ComplexAffiliation/Organization/@cdr:ref'
+                AND role.path  = '/Person/PersonLocations'
+                               + '/OtherPracticeLocation'
+                               + '/ComplexAffiliation'
+                               + '/RoleAtAffiliatedOrganization'
+                AND role.value = 'Principal Investigator'
+                AND ca.int_val = @docId
+                AND LEFT(pi.node_loc, 8) = LEFT(ca.node_loc, 8)
+                AND LEFT(ca.node_loc, 12) = LEFT(role.node_loc, 12)
+           ORDER BY pi_d.title, pi_d.id
+
+    /*
+     * Clean up after ourselves.
+     */
+    DROP TABLE #am
+    DROP TABLE #mm
 GO
