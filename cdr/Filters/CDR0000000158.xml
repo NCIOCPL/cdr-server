@@ -16,6 +16,7 @@
      
  <xsl:output                  method = "html"
                               indent = "no"/>
+ <xsl:param                   name="DisplayGlossaryTermList"/>
 
  <xsl:template                 match = "/">
   <HTML>
@@ -33,6 +34,14 @@
             dt {font-size: 12pt}
             dd {font-size: 12pt}
             li.lnone {list-style-type: none}
+            ul.lnone {list-style: none}
+
+            ol.a { list-style: lower-alpha; }
+            ol.A { list-style: upper-alpha; }
+            ol.i { list-style: lower-roman; }
+            ol.I { list-style: upper-roman; }
+            ol.d { list-style: decimal; }
+
          </STYLE>
   </HEAD>
   <BASEFONT FACE='Arial, Helvetica, sans-serif'/>
@@ -59,19 +68,24 @@
        </h3>
       </xsl:for-each>
 
-      <dl>
+      <xsl:if                    test = "SummarySection"> 
+       <ul Class="lnone">
        <xsl:for-each          select = "SummarySection">
         <xsl:call-template      name = "TocSummarySection">
          <xsl:with-param        name = "level"
                               select = "1"/>
         </xsl:call-template>  
        </xsl:for-each>
-      </dl>
+       </ul>
+      </xsl:if>
       <hr/>
       <xsl:apply-templates/>
-      </BODY>
+            
+     </BODY>
      </xsl:if>  
     </xsl:template>
+
+   
 
 <!-- =====================================================================
        Display KeyPoints 
@@ -139,12 +153,74 @@
      ========================================================= -->         
     <xsl:template              match = "KeyPoint">
      <b>
-     <xsl:apply-templates/>
+                               <xsl:apply-templates/>
      </b>
-     <xsl:if test="../SummarySection">
+     <xsl:if                   test="../SummarySection">
       <br /><br />
      </xsl:if>
     </xsl:template>
+
+  <!-- ================================================================
+
+            Display a Table of Glossary Terms
+       ============================================================= -->
+
+      <xsl:template               match="GlossaryTerms">
+      <!--<xsl:variable               name="DisplayGlossaryTermList" 
+                                        select="'Y'"/>-->
+      <xsl:if                     test="$DisplayGlossaryTermList='Y'">
+      <!-- <xsl:if                     test="position()=1">-->
+        <hr />
+        <b>
+        <h1>
+       <xsl:text>
+            Table of Glossary Terms
+       </xsl:text>
+        </h1>
+        </b>
+         <br /><br />
+     <!--   </xsl:if>-->
+        
+      <table border='1'> 
+           <tr>
+           <th>
+           <b>
+           <xsl:text>Term Text</xsl:text>
+           </b>
+            </th>
+
+           <th>
+           <b>
+           <xsl:text>Term Name</xsl:text>
+           </b>
+            </th>
+            <th>
+           <b>
+           <xsl:text>Term Definition</xsl:text>
+           </b>
+           </th>
+           </tr>
+           
+      <xsl:for-each               select="GlossaryTerm">
+          <tr>
+          <td>
+          <xsl:value-of           select="GlossaryTermRef"/>
+          </td>
+          <td>
+          <xsl:value-of           select="TermName"/>
+          </td>
+           <td>
+          <xsl:value-of           select="TermDefinition"/>
+           </td>
+           </tr>
+          </xsl:for-each>
+          </table>
+          </xsl:if>
+           
+          </xsl:template>
+
+          
+            
 
 </xsl:transform>]]>
 </CdrDocXml>
