@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.cpp,v 1.4 2000-05-09 21:07:48 bkline Exp $
+ * $Id: CdrDom.cpp,v 1.5 2000-10-04 18:26:40 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/05/09 21:07:48  bkline
+ * Added error handler.
+ *
  * Revision 1.3  2000/04/26 01:30:38  bkline
  * Added second parse() method, for taking a cdr::String directly.
  *
@@ -22,19 +25,26 @@
 namespace cdr {
     namespace dom {
         class ErrorHandler : public ::ErrorHandler {
+        public:
             void warning(const SAXParseException& e) {
                 // Substitute logging when in place.
-                cdr::String err = cdr::String(e.getMessage());
-                std::wcerr << L"*** DOM WARNING: " << err << std::endl;
+                std::wcerr << L"*** DOM WARNING: " << getMessage(e) 
+                           << std::endl;
             }
             void error(const SAXParseException& e) {
-                throw cdr::Exception(L"DOM ERROR", cdr::String(e.getMessage()));
+                throw cdr::Exception(L"DOM ERROR", getMessage(e));
             }
             void fatalError(const SAXParseException& e) {
-                throw cdr::Exception(L"FATAL DOM ERROR",
-                                     cdr::String(e.getMessage()));
+                throw cdr::Exception(L"FATAL DOM ERROR", getMessage(e));
             }
             void resetErrors() {}
+        private:
+            cdr::String getMessage(const SAXParseException& e) {
+                wchar_t extra[80];
+                swprintf(extra, L" [at line %d, column %d]",
+                         e.getLineNumber(), e.getColumnNumber());
+                return cdr::String(e.getMessage()) + extra;
+            }
         };
     }
 }
@@ -60,6 +70,8 @@ cdr::dom::Parser::~Parser()
 void cdr::dom::Parser::parse(const std::string& xml)
     throw(cdr::dom::DOMException)
 {
+    // Used to track down a bug in xml4c RMK 2000-09-07
+    //std::cerr << "XML=[" << xml << "]" << std::endl;
     MemBufInputSource s((const XMLByte* const)xml.c_str(), xml.size(), "MEM");
     ((::DOMParser *)this)->parse(s);
 }
