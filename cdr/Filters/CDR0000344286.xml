@@ -2,7 +2,7 @@
 <CdrDocCtl>
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Module: HP InScopeProtocol Details-Old</DocTitle>
+<DocTitle readonly="yes">Module: HP InScopeProtocol Details</DocTitle>
 <ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
@@ -18,6 +18,7 @@
   
 
     <xsl:template       match="ProtocolDetail">
+    <hr />
     <b><font size='4'>Protocol Details</font>
     </b>
     <table width='90%' cellpadding='0' cellspacing='0'>
@@ -30,14 +31,17 @@
    <xsl:value-of          select="StudyType"/>
    </td>
    </tr>
-   <tr>
+   </table>
+    <table width='90%' cellpadding='0' cellspacing='0'>
+    <xsl:for-each            select="StudyCategory">
+    <tr>
    <th align='left' width='40%' valign='top'>
    <b>
    <xsl:text>Information Category Type</xsl:text>
    </b>
    </th>
-   <td width='60%'>
-   <xsl:value-of            select="StudyCategory/StudyCategoryType"/>
+      <td width='60%'>
+   <xsl:value-of            select="StudyCategoryType"/>
    </td>
    </tr>
    <tr>
@@ -45,32 +49,23 @@
    <b><xsl:text>Information Category Name</xsl:text></b>
    </th>
    <td width='60%'>
-   <xsl:value-of           select="StudyCategory/StudyCategoryName"/>
+   <xsl:value-of           select="StudyCategoryName"/>
    </td>
    </tr>
-   </table>
-    <xsl:for-each               select="StudyCategory/StudyFocus">
-    <table width='90%' cellpadding='0' cellspacing='0'>
    <tr>
    <th align='left' width='40%' valign='top'>
-   <xsl:if                    test="not(preceding-sibling::StudyFocus)">
    <b>
    <xsl:text>Study Focus
    </xsl:text>
   </b>
-  </xsl:if>
   </th>
 
   <td width='60%'>
-  <xsl:value-of               select="."/>
+  <xsl:value-of               select="StudyFocus"/>
   </td>
   </tr>
-  </table>
-  </xsl:for-each>
- 
- 
-   <xsl:for-each               select="StudyCategory/Intervention">
-   <table width='90%' cellpadding='0' cellspacing='0'>
+  
+
    <tr>
    <th align='left' width='40%' valign='top'>
    <b><xsl:text>Intervention Type 
@@ -78,76 +73,102 @@
    </b>
    </th>
    <td width='60%'>
-   <xsl:value-of               select="InterventionType/
-                                      Term/PreferredName"/>
+   <xsl:value-of               select="Intervention/InterventionType/
+                                       Term/PreferredName"/>
    </td>
    </tr>
-  </table>
-   
-  <table width='90%' cellpadding='0' cellspacing='0'>
    <tr>
    <th align='left' width='40%' valign='top'>
    <b><xsl:text>Intervention Name 
    </xsl:text>
    </b>
    </th>
-   </tr>
-   </table>
+   <td>
    <table width='90%' cellpadding='0' cellspacing='0'>
-   <xsl:for-each       select="InterventionNameLink/Term/PreferredName">
-   <xsl:sort           select ="."/>
    <tr>
    <td width='60%'>
-   <xsl:value-of       select="."/>
-   </td>
-   </tr>
-   </xsl:for-each>
-   </table>
-   </xsl:for-each>
-   <br />
-   <b>
-   <font size='4'>
+   <ul class='term'>
+    
+   <xsl:for-each        select="Intervention/
+                                InterventionNameLink/Term/
+                                PreferredName">
+    <xsl:sort                 select="."/>
+    <li>
+    <xsl:value-of             select="translate(.,'/','-')"/>
+    </li>
+    </xsl:for-each>
+    </ul>
+    </td>
+    </tr>
+    </table>
+    </td>
+    <!--</ul>-->
+    </tr>
+    </xsl:for-each>
+    </table>
+    <b>
+   <font size='3'>
    <xsl:text>Comment</xsl:text>
    </font>
    </b>
    <br />
    <xsl:for-each      select="StudyCategory/Comment">
    <xsl:value-of      select="."/>
-   <br />
-   <br />
    </xsl:for-each>
+   <xsl:if           test="StudyCategory/Comment">
+   <br />
+   <br />
+   </xsl:if>
+      
    <table width='90%' cellpadding='0' cellspacing='0'>
-    <tr>
-    <th align='left' width='40%' valign='top'>
-    <b><xsl:text>Condition 
-    </xsl:text>
-    </b>
-    </th>
-    </tr>
-    </table>
-   
-    <xsl:for-each select="Condition/Term/PreferredName">
-    <xsl:sort select="."/>
-    <xsl:value-of select="."/><br />
-    </xsl:for-each>
-    <br />
-
+   <tr>
+   <td align='left' width='40%' valign='top'>
+   <b>
+   <font size='3'>Condition
+   </font>
+   </b>
+   </td>
+    <td>
+  <xsl:for-each select="Condition/Term/PreferredName">
     <table width='90%' cellpadding='0' cellspacing='0'>
     <tr>
-    <th align='left' width='40%' valign='top'>
+    <td width='60%'>  
+    <xsl:sort                 select="."/>
+    <xsl:value-of             select="."/>
+    </td>
+    </tr>
+    </table>
+   </xsl:for-each>
+   </td>
+   </tr>
+   </table>
+   <br />     
+
+    
+
+    <table width='90%' cellpadding='0' cellspacing='0'>
+     <tr>
+     <td align='left' width='40%' valign='top'>
      <b><xsl:text>Gene 
      </xsl:text>
      </b>
-     </th>
-     </tr>
-    </table>
-   
+     </td>
+     <td>
     <xsl:for-each        select="Gene">
-    <xsl:value-of        select="Term/PreferredName"/><br />
+     <table width='90%' cellpadding='0' cellspacing='0'>
+    <tr>
+    <td width='60%'>
+    <xsl:value-of             select="Term/PreferredName"/>
+    </td>
+    </tr>
+    </table>
     </xsl:for-each>
+    </td>
+    </tr>
+    </table>
     <br />
-
-  <table width='90%' cellpadding='0' cellspacing='0'>
+ 
+   <table width='90%' cellpadding='0' cellspacing='0'>
    <tr>
    <td width='40%'>
    <b><font size='3'>Entered By</font>
@@ -229,16 +250,37 @@
   <xsl:apply-templates      select="AgeText"/>
   </td>
  </tr> 
-  </table>  
-  <b>
-  <font size='3'>Diagnosis</font>
-  </b>
-  <br />
-  <xsl:for-each             select="Diagnosis/Term/PreferredName">
-  <xsl:sort                 select="."/>
-  <xsl:value-of             select="."/>
-   <br />
+  </table> 
+  
+  
+  <table cellpadding='0' cellspacing='0' width='90%'>
+   <tr>
+   <th align='left' width='40%' valign='top'>
+   <b>
+   <font size='3'>Diagnosis
+   </font>
+   </b>
+   </th>
+   <td>
+   <table cellpadding='0' cellspacing='0' width='90%'>
+   <tr>
+   <td width='60%'>
+   <ul class='term'>
+   <xsl:for-each             select="Diagnosis/Term/PreferredName">
+     <li>
+   <xsl:sort                 select="."/>
+   <xsl:value-of             select="."/>
+     </li>
    </xsl:for-each>
+     </ul>
+     </td>
+     </tr>
+     </table>
+     </td>
+     </tr>
+    
+   </table>
+      
    <b>
    <font size='3'>
    <xsl:text>Comment</xsl:text>
@@ -246,28 +288,38 @@
    </b>
     <br />
    <xsl:value-of          select="Comment"/>
+   <xsl:if                test="Comment">
    <br />
    <br />
-   
-  <b><font size='3'>Exclusion Criteria</font></b><br />
-
- <xsl:for-each             select="ExclusionCriteria/Term/PreferredName">
-  <xsl:sort                select="."/>
-
-  <xsl:value-of           select="."/><br />
-  </xsl:for-each>
-   <br />
- 
-   <xsl:if                test="not(../ProtocolRelatedLinks)">
-  <b><font size='4'>Related Protocols</font></b>
-  <br /><br />
-  </xsl:if>
- 
-  <xsl:if                  test="not(../PublishedResults)">
-  <b><font size='4'>Published Results</font></b>
-  <br /><br />
-  </xsl:if>
- </xsl:template>
+   </xsl:if>
+      
+   <table cellpadding='0' cellspacing='0' width='90%'>
+   <tr>
+   <td align='left' width='40%' valign='top'>
+   <b>
+   <font size='3'>Exclusion Criteria
+   </font>
+   </b>
+   </td>
+   <td>
+   <table width='90%' cellpadding='0' cellspacing='0' >
+    <tr>
+    <td width='60%'> 
+    <ul class='term'>
+    <xsl:for-each             select="ExclusionCriteria/Term/PreferredName">
+    <xsl:sort                select="."/>
+     <li>
+     <xsl:value-of             select="."/>
+     </li>
+    </xsl:for-each>
+     </ul>
+     </td>
+     </tr>
+     </table>
+     </td>
+     </tr>
+    </table>
+   </xsl:template>
 
 <!-- ===============================================================
               Display Published Results
@@ -277,10 +329,12 @@
           <xsl:if           test="not(preceding-sibling::PublishedResults)">
            <br />
           <b><font size='4'>Published Results</font></b>
-           <br /><br />
+           <br />
+           <br />
           </xsl:if>
          <xsl:apply-templates select="." mode="copy"/>
-          <br /><br />
+          <br />
+          <br />
          </xsl:template>
 
 
@@ -326,12 +380,12 @@
               Display Protocol-Related Links
      ================================================================ -->
   
-         <xsl:template             match = "ProtocolRelatedLinks">
+       <xsl:template             match = "ProtocolRelatedLinks">
          <b><font size='4'>Related Protocols
          </font>
          </b>
          <br />
-          <xsl:for-each              select="RelatedProtocols/InScopeProtocol">
+         <xsl:for-each              select="RelatedProtocols/InScopeProtocol">
           <xsl:value-of              select="ProtocolIDs/PrimaryID/IDString"/>;
           <xsl:if                    test ="ProtocolIDs/OtherID/IDString">
           <xsl:value-of              select="ProtocolIDs/OtherID/IDString"/>;
@@ -393,11 +447,9 @@
          </b>
          <br />
         <xsl:value-of              select="."/>
-        <!--<xsl:if                    test = "Comment">-->
-         <br />
-       <!-- </xsl:if>-->
-        </xsl:for-each>
-        </xsl:template>
-       </xsl:transform>]]>
+        <br />
+       </xsl:for-each>
+    </xsl:template>
+    </xsl:transform>]]>
 </CdrDocXml>
 </CdrDoc>
