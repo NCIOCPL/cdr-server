@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLog.cpp,v 1.7 2002-03-06 21:57:16 bkline Exp $
+ * $Id: CdrLog.cpp,v 1.8 2002-03-28 22:19:53 ameyer Exp $
  *
  * Implementation of writing info to the log table in the database.
  * If that can't be done, takes an alternative action to write to file.
@@ -7,6 +7,9 @@
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2002/03/06 21:57:16  bkline
+ * Catching reference to cdr::Exception instead of object.
+ *
  * Revision 1.6  2002/03/04 21:22:57  bkline
  * Added missing call to localtime().
  *
@@ -196,7 +199,7 @@ void cdr::log::Log::Write (
     try {
         insert.executeQuery ();
     }
-    catch (cdr::Exception& e) {
+    catch (cdr::Exception&) {
         // Couldn't write.  Use exception reporting instead
         // Don't re-throw exception.  Would probably cause a loop.
         WriteFile (MsgSrc, Msg);
@@ -247,14 +250,14 @@ void cdr::log::WriteFile (
     if (os) {
 
         // Datetime, source, message
-        os << L"---" << timeStr.c_str() 
-           << L">>>" << MsgSrc.c_str() 
+        os << L"---" << timeStr.c_str()
+           << L">>>" << MsgSrc.c_str()
            << L":\n" << Msg.c_str() << std::endl;
     }
     else {
         // Last resort is stderr
-        std::wcerr << L"---" << timeStr.c_str() 
-                   << L">>>" << MsgSrc.c_str() 
+        std::wcerr << L"---" << timeStr.c_str()
+                   << L">>>" << MsgSrc.c_str()
                    << L":\n" << Msg.c_str() << std::endl;
     }
 
