@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml  version = "1.0"?>
 <!--
  ================================================================
-     $Id: CDR0000000150.xml,v 1.80 2004-07-09 22:09:10 venglisc Exp $
+     $Id: CDR0000000150.xml,v 1.81 2004-08-16 20:14:39 venglisc Exp $
 
      Denormalization Filter: InScopeProtocol
 
@@ -474,18 +474,38 @@
  Only the RelatedProtocols and RelatedWebsites elements are valid.
  Also, ensure that the ProtocolRelatedLinks element is not copied to 
  the output tree if none of the protocols are publishable.
+ Note:  
+ If the Publishable attribute exists it is set to "No".  By default, 
+ when it does not exist it means "Publishable = Yes".
  ==================================================================== -->
  <xsl:template               match = "ProtocolRelatedLinks">
-  <xsl:if                     test = "RelatedProtocols | RelatedWebsites">
-   <xsl:if                    test = "count(RelatedProtocols/
-                                      InScopeProtocol) &gt;
-                                      count(RelatedProtocols/
-                                      InScopeProtocol/@Publishable)">
-    <xsl:element              name = "{name()}">
-     <xsl:apply-templates   select = "RelatedProtocols | RelatedWebsites"/>
+  <xsl:choose>
+   <xsl:when                      test = "RelatedWebsites">
+    <xsl:element                  name = "{name()}">
+     <xsl:choose>
+      <xsl:when                   test = "count(RelatedProtocols/
+                                            InScopeProtocol) &gt;
+                                            count(RelatedProtocols/
+                                            InScopeProtocol/@Publishable)">
+       <xsl:apply-templates     select = "RelatedProtocols | RelatedWebsites"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:apply-templates     select = "RelatedWebsites"/>
+      </xsl:otherwise>
+     </xsl:choose>
     </xsl:element>
-   </xsl:if>
-  </xsl:if>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:if                       test = "count(RelatedProtocols/
+                                            InScopeProtocol) &gt;
+                                            count(RelatedProtocols/
+                                            InScopeProtocol/@Publishable)">
+     <xsl:element                 name = "{name()}">
+      <xsl:apply-templates      select = "RelatedProtocols"/>
+     </xsl:element>
+    </xsl:if>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
