@@ -1,5 +1,5 @@
 /*
- * $Id: CdrCommand.cpp,v 1.22 2001-04-17 23:50:01 ameyer Exp $
+ * $Id: CdrCommand.cpp,v 1.23 2001-04-24 23:42:40 ameyer Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
@@ -122,6 +122,10 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
         CommandMap(L"CdrReport",        cdr::report),
         CommandMap(L"CdrFilter",        cdr::filter),
         CommandMap(L"CdrGetLinks",      cdr::getLinks),
+        CommandMap(L"CdrAddLinkType",   cdr::putLinkType),
+        CommandMap(L"CdrModLinkType",   cdr::putLinkType),
+        CommandMap(L"CdrListLinkTypes", cdr::listLinkTypes),
+        CommandMap(L"CdrListLinkProps", cdr::listLinkProps),
         CommandMap(L"CdrListDocTypes",  cdr::listDocTypes),
         CommandMap(L"CdrAddDocType",    cdr::addDocType),
         CommandMap(L"CdrModDocType",    cdr::modDocType),
