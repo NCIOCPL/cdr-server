@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.cpp,v 1.19 2001-04-05 19:26:43 ameyer Exp $
+ * $Id: CdrCommand.cpp,v 1.20 2001-04-08 22:45:01 bkline Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2001/04/05 19:26:43  ameyer
+ * Added CommandMap for CdrReindexDoc.
+ *
  * Revision 1.18  2001/02/26 16:09:53  mruben
  * expanded information saved for version
  *
@@ -112,6 +115,7 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
         CommandMap(L"CdrModDocType",    cdr::modDocType),
         CommandMap(L"CdrDelDocType",    cdr::delDocType),
         CommandMap(L"CdrGetDocType",    cdr::getDocType),
+        CommandMap(L"CdrGetTree",       cdr::getTree),
         CommandMap(L"CdrShutdown",      cdr::shutdown)
     };
     for (size_t i = 0; i < sizeof map / sizeof *map; ++i) {
