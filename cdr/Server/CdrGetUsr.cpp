@@ -1,10 +1,13 @@
 
 /*
- * $Id: CdrGetUsr.cpp,v 1.3 2000-05-03 15:25:41 bkline Exp $
+ * $Id: CdrGetUsr.cpp,v 1.4 2000-12-28 13:27:17 bkline Exp $
  *
  * Retrieves information about requested user.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/05/03 15:25:41  bkline
+ * Fixed database statement creation.
+ *
  * Revision 1.2  2000/04/23 01:19:58  bkline
  * Added function-level comment header.
  *
@@ -109,5 +112,5 @@ cdr::String cdr::getUsr(cdr::Session& session,
         response += L"   <Comment>" + comment + L"</Comment>\n";
 
     // Report success.
-    return response + L"  </CdrGetUsr>\n";
+    return response + L"  </CdrGetUsrResp>\n";
 }
