@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.cpp,v 1.10 2000-05-21 00:48:23 bkline Exp $
+ * $Id: CdrCommand.cpp,v 1.11 2000-05-23 15:55:55 mruben Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2000/05/21 00:48:23  bkline
+ * Added CdrShutdown command.
+ *
  * Revision 1.9  2000/05/17 13:01:59  bkline
  * Added code to addDoc stub to verify that document is well-formed, including
  * that in the CDATA section.
@@ -239,7 +242,6 @@ cdr::String cdr::search(cdr::Session& session,
                         cdr::db::Connection& dbConnection) {
     return stub(L"Search");
 }
-#endif
 
 cdr::String cdr::getDoc(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
@@ -247,6 +249,7 @@ cdr::String cdr::getDoc(cdr::Session& session,
     return stub(L"GetDoc");
 }
 
+#endif
 cdr::String cdr::checkOut(cdr::Session& session,
                           const cdr::dom::Node& commandNode,
                           cdr::db::Connection& dbConnection) {
