@@ -44,6 +44,22 @@ Filter to create the vendor Terminology XML
    <xsl:attribute                 name = "LegacyPDQID">
     <xsl:value-of               select = "PdqKey"/>
    </xsl:attribute>
+   <xsl:if                        test = "OtherName/
+                                           SourceInformation/
+                                           VocabularySource/
+                                           SourceCode = 'NCI Thesaurus'
+                                          and
+                                          OtherName/
+                                           SourceInformation/
+                                           VocabularySource/
+                                           SourceTermType = 'PreferredTerm'">
+    <xsl:attribute                name = "NCIThesaurusConceptID">
+     <xsl:value-of              select = "OtherName/
+                                          SourceInformation/
+                                          VocabularySource/
+                                          SourceTermId"/>
+    </xsl:attribute>
+   </xsl:if>
 
    <xsl:apply-templates         select = "PreferredName" 
                                   mode = "copy"/>
@@ -84,30 +100,45 @@ Filter to create the vendor Terminology XML
 
  <!--
  ===================================================================
+ Template to display the OtherName elements.
+ Only display the other name if it is not identical to the Preferred
+ Name.
  =================================================================== -->
  <xsl:template                   match = "OtherName">
-  <OtherName>
-   <OtherTermName>
-    <xsl:value-of               select = "OtherTermName"/>
-   </OtherTermName>
-   <OtherNameType>
-    <xsl:value-of               select = "OtherNameType"/>
-   </OtherNameType>
-  </OtherName>
+  <xsl:if                         test = "OtherTermName != 
+                                          ../PreferredName">
+   <OtherName>
+    <OtherTermName>
+     <xsl:value-of              select = "OtherTermName"/>
+    </OtherTermName>
+    <OtherNameType>
+     <xsl:value-of              select = "OtherNameType"/>
+    </OtherNameType>
+   </OtherName>
+  </xsl:if>
  </xsl:template>
 
 
  <!--
  ===================================================================
+ Template to display the Definition node but only if the 
+ ReviewStatus is "Reviewed".
  =================================================================== -->
  <xsl:template                   match = "Definition">
-  <Definition>
-   <xsl:apply-templates         select = "DefinitionText" 
-                                  mode = "copy"/>
-   <DefinitionType>
-    <xsl:value-of               select = "DefinitionType"/>
-   </DefinitionType>
-  </Definition>
+  <xsl:if                         test = "ReviewStatus = 'Reviewed'">
+   <Definition>
+    <DefinitionText>
+     <xsl:apply-templates       select = "DefinitionText"/>
+     <xsl:text> (</xsl:text>
+     <xsl:value-of              select = "DefinitionSource/
+                                          DefinitionSourceName"/>
+     <xsl:text>)</xsl:text>
+    </DefinitionText>
+    <DefinitionType>
+     <xsl:value-of              select = "DefinitionType"/>
+    </DefinitionType>
+   </Definition>
+  </xsl:if>
  </xsl:template>
 
 
