@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.15 2001-05-16 20:39:01 bkline Exp $
+ * $Id: CdrString.cpp,v 1.16 2001-06-06 12:25:08 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2001/05/16 20:39:01  bkline
+ * Removed inefficiencies in utf8ToUtf16().
+ *
  * Revision 1.14  2001/04/05 22:34:02  ameyer
  * Added ynCheck() utility.
  *
@@ -49,7 +52,9 @@
 
 #include <sstream>
 #include <iostream>
+#include <cwchar>
 #include "CdrString.h"
+#include "CdrBlob.h"
 #include "CdrRegEx.h"
 #include "CdrException.h"
 
@@ -290,4 +295,200 @@ bool cdr::ynCheck (cdr::String ynString, bool defaultVal, cdr::String forceMsg)
         throw cdr::Exception (L"Must specify 'Y' or 'N' in " + forceMsg);
 
     return defaultVal;
+}
+
+/**
+ * Construct a Blob object from it's encoded string version.
+ */
+cdr::Blob::Blob(const cdr::String& base64)
+{
+    // Keep this outside the try block so we can delete it in the catch.
+    unsigned char* buf = 0;
+    
+    try {
+
+        // This will give us a buffer (not too much) larger than necessary.
+        size_t nBytes = base64.size();
+        unsigned char* p = buf = new unsigned char[nBytes];
+
+        // Walk through the encoded string.
+        const wchar_t* table = getDecodingTable();
+        cdr::String::const_iterator i = base64.begin();
+        wchar_t c = 0;
+        int state = 0;
+        while (i != base64.end()) {
+            c = *i++;
+            if (iswspace(c))
+                continue;
+            else if (c == getPadChar())
+                break;
+            else if (c < 0 || c >= getDecodingTableSize()) {
+                wchar_t err[80];
+                wsprintf(err, L"Invalid base-64 character: %u", c);
+                throw cdr::Exception(err);
+            }
+            wchar_t bits = table[c];
+            if (bits == invalidBits()) {
+                wchar_t err[80];
+                wsprintf(err, L"Invalid base-64 character: %u", c);
+                throw cdr::Exception(err);
+            }
+            switch (state) {
+                case 0:
+                    *p    =  bits << 2;
+                    ++state;
+                    break;
+                case 1:
+                    *p++ |=  bits >> 4;
+                    *p    = (bits & 0x0F) << 4;
+                    ++state;
+                    break;
+                case 2:
+                    *p++ |=  bits >> 2;
+                    *p    = (bits & 0x03) << 6;
+                    ++state;
+                    break;
+                case 3:
+                    *p++ |=  bits;
+                    state = 0;
+                    break;
+            }
+        }
+
+        // Verify that we have no invalid trailing garbage.
+        if (c == getPadChar()) {
+
+            // States 0 and 1 are invalid if we got a padding character.
+            if (state < 2)
+                throw cdr::Exception(L"Invalid number of significant "
+                                     L"characters in base-64 encoding", 
+                                     base64);
+
+            // For state 2 there should be two padding characters; get the
+            // other one.
+            if (state == 2) {
+                c = 0;
+                while (i != base64.end()) {
+                    c = *i++;
+                    if (c == getPadChar())
+                        break;
+                    if (iswspace(c))
+                        continue;
+                    throw cdr::Exception(L"Invalid character following "
+                            L"padding character in base-64 encoding", base64);
+                }
+                if (c != getPadChar())
+                    throw cdr::Exception(L"Invalid number of significant "
+                                         L"characters in base-64 encoding", 
+                                         base64);
+            }
+
+            // Everything else should be whitespace.
+            while (i != base64.end()) {
+                c = *i++;
+                if (!iswspace(c))
+                    throw cdr::Exception(L"Invalid character following "
+                            L"padding character in base-64 encoding", base64);
+            }
+
+            // Check for invalid trailing bits.
+            if (*p)
+                throw cdr::Exception(L"Some hacker is trying to slip in "
+                        L"some extra bits at the end of a base-64 encoded "
+                        L"value", base64);
+        }
+
+        // No padding: we should have come out on an even 4-character boundary.
+        else if (state != 0)
+            throw cdr::Exception(L"Invalid number of significant "
+                                 L"characters in base-64 encoding", 
+                                 base64);
+
+        // All done.
+        assign(buf, p - buf);
+        delete [] buf;
+    }
+    catch (...) {
+        delete [] buf;
+        throw;
+    }
+}
+
+/**
+ * Encode the Blob object's content as a base-64 string.
+ */
+cdr::String cdr::Blob::encode() const
+{
+    wchar_t *buf = 0;
+    try {
+        size_t nBytes = size();
+        size_t nChars = (nBytes /  3 + 1) * 4   // encoding bloat
+                      + (nBytes / 57 + 1) * 2;  // line breaks
+        buf = new wchar_t[nChars];
+        size_t i = 0;
+        wchar_t* p = buf;
+        size_t charsInLine = 0;
+        const unsigned char* bits = data();
+        const wchar_t* codes = getEncodingTable();
+        while (i < nBytes) {
+            switch (nBytes - i) {
+            case 1:
+                p[0] = codes[(bits[i + 0] >> 2)                    & 0x3F];
+                p[1] = codes[(bits[i + 0] << 4)                    & 0x3F];
+                p[2] = getPadChar();
+                p[3] = getPadChar();
+                break;
+            case 2:
+                p[0] = codes[(bits[i + 0] >> 2)                    & 0x3F];
+                p[1] = codes[(bits[i + 0] << 4 | bits[i + 1] >> 4) & 0x3F];
+                p[2] = codes[(bits[i + 1] << 2)                    & 0x3F];
+                p[3] = getPadChar();
+                break;
+            default:
+                p[0] = codes[(bits[i + 0] >> 2)                    & 0x3F];
+                p[1] = codes[(bits[i + 0] << 4 | bits[i + 1] >> 4) & 0x3F];
+                p[2] = codes[(bits[i + 1] << 2 | bits[i + 2] >> 6) & 0x3F];
+                p[3] = codes[(bits[i + 2])                         & 0x3F];
+                break;
+            }
+            i += 3;
+            p += 4;
+            charsInLine += 4;
+            if (charsInLine >= 76) {
+                *p++ = L'\r';
+                *p++ = L'\n';
+                charsInLine = 0;
+            }
+        }
+        if (charsInLine) {
+            *p++ = L'\r';
+            *p++ = L'\n';
+        }
+
+        // Release buffer and return as string
+        cdr::String retval = cdr::String(buf, p - buf);
+        delete [] buf;
+        return retval;
+    }
+    catch (...) {
+        delete [] buf;
+        throw;
+    }
+}
+
+/**
+ * Access method for base-64 decoding table.
+ */
+const wchar_t* cdr::Blob::getDecodingTable()
+{
+    static cdr::String tableString;
+    static const wchar_t* decodingTable = 0;
+    if (!decodingTable) {
+        const wchar_t* codes = getEncodingTable();
+        tableString.resize(getDecodingTableSize(), invalidBits());
+        for (wchar_t i = 0; codes[i]; ++i)
+            tableString[codes[i]] = i;
+        decodingTable = tableString.data();
+    }
+    return decodingTable;
 }
