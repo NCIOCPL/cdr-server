@@ -1,0 +1,211 @@
+<CdrDoc Type='Filter' Id='CDR0000315588'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Module: Vendor Cleanup Templates</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                         xmlns:cdr = "cips.nci.nih.gov/cdr"
+           exclude-result-prefixes = "cdr"
+                           version = "1.0">
+
+  <xsl:output               method = "xml" 
+              omit-xml-declaration = "no"
+                          encoding = "UTF-8"/>
+
+
+ <!-- *
+ ====================================================================
+ Assemble the PersonNameInformation for a person.
+ (Eliminating the StandardProfessionalSuffix element)
+ ==================================================================== -->
+ <xsl:template               match = "PersonNameInformation">
+   <PersonNameInformation>
+    <xsl:apply-templates    select = "GivenName"
+                              mode = "copy"/>
+    <xsl:apply-templates    select = "MiddleInitial"
+                              mode = "copy"/>
+    <xsl:apply-templates    select = "SurName"
+                              mode = "copy"/>
+    <xsl:apply-templates    select = "Prefix"
+                              mode = "copy"/>
+    <xsl:apply-templates    select = "GenerationSuffix"
+                              mode = "copy"/>
+
+    <!-- 
+    If the ProfessionalSuffix element is prepared for the vendor output
+    it's created from the Standard/Custom-ProfessionalSuffix elements
+    (when clause).
+    However, if the ProfessionalSuffic element is only to be copied -
+    because it's the second pass of this filter module - the element 
+    only needs to be copied as is (otherwise clause).
+    ==================================================================== -->
+    <xsl:choose>
+     <xsl:when                test = "ProfessionalSuffix/
+                                        StandardProfessionalSuffix |
+                                      ProfessionalSuffix/
+                                        CustomProfessionalSuffix">
+      <ProfessionalSuffix>
+       <xsl:for-each        select = "ProfessionalSuffix/
+                                        StandardProfessionalSuffix |
+                                      ProfessionalSuffix/
+                                        CustomProfessionalSuffix">
+        <!-- Clean up the periods of the Custom Prof Suffix  -->
+        <xsl:choose>
+         <xsl:when            test = "name() = 'CustomProfessionalSuffix'">
+          <xsl:value-of     select = "translate(node(), '.', '')"/>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:value-of     select = "."/>
+         </xsl:otherwise>
+        </xsl:choose>
+        <xsl:if               test = "position() != last()">
+         <xsl:text>, </xsl:text>
+        </xsl:if>
+       </xsl:for-each>
+      </ProfessionalSuffix>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:apply-templates  select = "ProfessionalSuffix"
+                              mode = "copy"/>
+     </xsl:otherwise>
+    </xsl:choose>
+
+    <xsl:apply-templates    select = "NameFormat"
+                              mode = "copy"/>
+   </PersonNameInformation>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Drop the cdr namespace in cdr:id with mode = "copy".
+ ==================================================================== -->
+ <xsl:template               match = "@cdr:id"
+                              mode = "copy">
+   <xsl:attribute             name = "id">
+    <xsl:value-of           select = "."/>
+   </xsl:attribute>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Drop the cdr namespace in cdr:ref with mode = "copy".
+ ==================================================================== -->
+ <xsl:template               match = "@cdr:ref"
+                              mode = "copy">
+   <xsl:attribute             name = "ref">
+    <xsl:value-of           select = "."/>
+   </xsl:attribute>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Drop the cdr namespace in cdr:xref with mode = "copy".
+ ==================================================================== -->
+ <xsl:template               match = "@cdr:xref"
+                              mode = "copy">
+   <xsl:attribute             name = "xref">
+    <xsl:value-of           select = "."/>
+   </xsl:attribute>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Drop the cdr namespace in cdr:ref with mode = "copy".
+ ==================================================================== -->
+ <xsl:template               match = "@PreviousLocation"
+                              mode = "copy">
+   <xsl:attribute             name = "status">
+    <xsl:value-of           select = "'Inactive--Contact information may not be current'"/>
+   </xsl:attribute>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Drop the PdqKey attribute with mode = "copy".
+ ==================================================================== -->
+ <xsl:template               match = "@PdqKey"
+                              mode = "copy">
+ </xsl:template>
+
+ <!-- 
+ =====================================================================
+ Suppress nodes with or without copy mode that are not to be displayed
+ in vendor output.
+ ===================================================================== -->
+ <xsl:template               match = "Comment | PdqKey | Fax |
+                                      PoliticalSubUnitShortName |
+                                      DocId | CdrDocCtl |
+                                      OrganizationDetails"/>  
+  
+ <xsl:template               match = "Comment | PdqKey | Fax |
+                                      PoliticalSubUnitShortName |
+                                      CIPSContact"
+                              mode = "copy"/>
+
+
+ <!--
+ ====================================================================
+ Drop the Email element with attribute Public = 'No'.
+ Note:  Since the QC report needs the e-mail address displayed it is
+        being filtered out at the last step creating the vendor 
+        output.
+ ==================================================================== -->
+ <xsl:template               match = "Email"
+                              mode = "copy">
+  <xsl:if                     test = "not(@Public)">
+   <xsl:copy-of             select = "."/>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template               match = "Email">
+  <xsl:if                     test = "not(@Public)">
+   <xsl:copy-of             select = "."/>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Identify if a ProtocolRef element points to a non-publishable
+ document.  If it does remove the element tags and display a warning
+ message.
+ ==================================================================== -->
+ <xsl:template               match = "ProtocolRef | LOERef |
+                                      SummaryRef  | GlossaryTermRef"
+                              mode = "copy">
+  <xsl:variable               name = "pubVersion"
+                            select = "document(concat('cdrutil:/get-pv-num/',
+                                                       @cdr:href))"/>
+  <xsl:choose>
+   <xsl:when                  test = "$pubVersion = 0">
+    <xsl:message         terminate = "no">
+     <xsl:text>Publishable Version of document </xsl:text>
+     <xsl:value-of         select = "@cdr:href"/>
+     <xsl:text> does not exist.&lt;BR/&gt;</xsl:text>
+    </xsl:message> 
+    <xsl:value-of           select = "."/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:element              name = "{name()}">
+     <xsl:attribute           name = "href">
+      <xsl:value-of         select = "@cdr:href"/>
+     </xsl:attribute>
+     <xsl:apply-templates     mode = "copy"/>
+    </xsl:element>
+   </xsl:otherwise>
+  </xsl:choose>
+
+ </xsl:template>
+
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
