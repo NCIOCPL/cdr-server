@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbStatement.cpp,v 1.7 2000-05-21 00:48:59 bkline Exp $
+ * $Id: CdrDbStatement.cpp,v 1.8 2000-12-28 13:26:28 bkline Exp $
  *
  * Implementation for ODBC HSTMT wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2000/05/21 00:48:59  bkline
+ * Added executeUpdate() method.
+ *
  * Revision 1.6  2000/05/03 15:25:41  bkline
  * Fixed database statement creation.
  *
@@ -34,7 +37,7 @@
  * Allocates a statement handle for the current database connection.
  */
 cdr::db::Statement::Statement(Connection& c) 
-    : conn(c), refCount(1), pRefCount(&refCount)
+    : conn(c), pRefCount(new int(1))
 {
     hstmt = SQL_NULL_HSTMT;
     SQLRETURN rc;
@@ -70,6 +73,7 @@ cdr::db::Statement::~Statement()
             rc != SQL_NO_DATA_FOUND)
         throw cdr::Exception(L"Failure dropping database statement",
                              getErrorMessage(rc));
+    delete pRefCount;
 }
 
 /**
