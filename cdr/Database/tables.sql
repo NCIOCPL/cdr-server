@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.96 2004-08-10 15:04:29 bkline Exp $
+ * $Id: tables.sql,v 1.97 2004-08-10 15:08:55 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.96  2004/08/10 15:04:29  bkline
+ * Added auth_action column to external_map_usage table.
+ *
  * Revision 1.95  2004/04/30 01:04:25  ameyer
  * Added table filter_profile.
  * Revised a comment clarifying non-use of url field in link_net.
@@ -755,6 +758,12 @@ GO
  *           id  automatically generated primary key for the table
  *         name  display name for the category of identifier; e.g.
  *               'CTGov Sponsor'
+ *  auth_action  used to control authorization for editing rows in
+ *               the external_map table; only a user who is a member
+ *               of at least one group with the permission identified
+ *               by this column for the usage of a row in the external_map
+ *               table are allowed to modify that row; this is enforced
+ *               by the CGI script, not within the CDR server
  *      comment  optional free-text explanation of the usage/characteristics
  *               of this category of external identifier
  */
