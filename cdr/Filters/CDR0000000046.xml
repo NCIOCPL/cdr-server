@@ -14,7 +14,7 @@
      each summary section for vendor publishing
      ==================================================================== -->
 <!-- Written by Cheryl Burg 8-2-2001 -->
-<!-- Modified to make changes to reference formats 6/26-6/28/2002-->
+<!-- Modified to make changes to reference formats 6/26-7/30/2002-->
 <!-- =====================================================================
      Select data elements to be copied and add tags when an incomplete
      node is copied 
@@ -227,10 +227,14 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
 <xsl:variable name="Tnodes" select="count($CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Author)"/>
 <!--<xsl:value-of select="$Tnodes"/>-->
 <xsl:choose>
-
+<xsl:when test="CollectiveName">
+<xsl:value-of select="CollectiveName"/>
+<xsl:text>: </xsl:text>
+</xsl:when>
 <!--<xsl:when test="position()=last()=1">
 <xsl:value-of select="concat(LastName,' ',Initials)"/>.&#xa0;<xsl:text/>
 </xsl:when>-->
+
 
 <xsl:when test="position() &lt; 4 ">
 <xsl:value-of select="concat(LastName,' ',Initials)"/>
@@ -304,8 +308,14 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
   <xsl:text>&#xa0;</xsl:text>
   <xsl:value-of select="substring($PerInfo/Person/PersonNameInformation/GivenName,1,1)"/>
  <xsl:variable name="Gname" select="substring-after($PerInfo/Person/PersonNameInformation/GivenName,' ')"/>
- <xsl:value-of select="translate($Gname,'.',',')"/>
-<xsl:text>&#xa0;&#xa0;</xsl:text>
+<xsl:if test="not(contains($Gname,'.'))">
+<xsl:value-of select="substring($Gname,1,1)"/>,
+</xsl:if>
+<xsl:if test="contains($Gname,'.')">
+ <xsl:value-of select="translate($Gname,'.','')"/>,
+</xsl:if>
+<xsl:text>&#xa0;</xsl:text>
+
   </xsl:if>
   </xsl:if>
   </xsl:if>
@@ -313,8 +323,13 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
 
 <xsl:for-each select="$ProtInfo/InScopeProtocol/ProtocolAdminInfo/ProtocolLeadOrg/LeadOrganizationID">
 <xsl:if test="../LeadOrgRole='Primary'">
- <xsl:value-of select="."/>:
+<xsl:if test="contains(@cdr:ref,'CDR')">
+  <xsl:variable name="OrgID" select="@cdr:ref"/>
+  <xsl:variable name="OrgInfo" select="document(concat('cdrx:',$OrgID,'/last'))"/>
+<xsl:value-of select="$OrgInfo/Organization/OrganizationNameInformation/OfficialName/Name"/>:
 </xsl:if>
+</xsl:if>
+
 </xsl:for-each>
 <!--<xsl:if test="PersonRole='Protocol chair'">
 <xsl:value-of select="."/>-->
@@ -341,9 +356,9 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
 <xsl:value-of select="."/>,
 </xsl:for-each>
 <xsl:for-each select="$ProtInfo/InScopeProtocol/ProtocolAdminInfo/CurrentProtocolStatus">
-<xsl:value-of select="."/>,
+<xsl:value-of select="."/>.
 </xsl:for-each>
-<xsl:for-each select="$ProtInfo/InScopeProtocol/ProtocolAdminInfo/ProtocolLeadOrg/LeadOrgProtocolStatuses/CurrentOrgStatus/StatusDate">
+<!--<xsl:for-each select="$ProtInfo/InScopeProtocol/ProtocolAdminInfo/ProtocolLeadOrg/LeadOrgProtocolStatuses/CurrentOrgStatus/StatusDate">
 <xsl:if test="../../../LeadOrgRole='Primary'">
 <xsl:value-of select="substring(.,6,2)"/>
 <xsl:text>/</xsl:text>
@@ -351,7 +366,7 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
 <xsl:text>/</xsl:text>
 <xsl:value-of select="substring(.,1,4)"/>.
 </xsl:if>
-</xsl:for-each>
+</xsl:for-each>-->
 </xsl:if>
 </xsl:if>
 </xsl:copy>
