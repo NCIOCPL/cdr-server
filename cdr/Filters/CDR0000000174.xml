@@ -6,10 +6,15 @@
 <ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
-<!-- 
-================================================================
-Filter to create a Person Content QC Report 
-================================================================ -->
+<!--
+=================================================================
+     $Id: CDR0000000174.xml,v 1.5 2004-06-02 22:30:22 venglisc Exp $
+
+     Filter to create a Person Content QC Report 
+                           Written by Volker Englisch, 2004-04-09
+
+     $Log: not supported by cvs2svn $
+================================================================= -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr">
@@ -46,10 +51,20 @@ Filter to create a Person Content QC Report
 
  <xsl:variable                    name = "docID"
                                 select = "document('cdrutil:/docid')"/>
+ <xsl:variable                    name = "contactID"
+                                select = "/PDQBoardMemberInfo/
+                                           BoardMemberContact/
+                                           PersonContactID"/>
+ <xsl:variable                    name = "cipsContactID"
+                                select = "/PDQBoardMemberInfo/
+                                           BoardMemberName/
+                                           Person/
+                                           PersonLocations/
+                                           CIPSContact"/>
+
  <!-- 
  ===============================================================
  Main Template
- Filter written by C.Burg - 4/26/2002
  =============================================================== -->
  <xsl:template                   match = "/">
   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
@@ -280,6 +295,10 @@ Filter to create a Person Content QC Report
       <br/><br/>
      </td>
     </tr>
+      <!--
+       Note:  This section will only display properly when run via
+              XMetaL (through the QcReport.py script)
+      ============================================================ -->
       @@SUMMARY_MAILER_SENT@@
    </table>
    <p/>
@@ -346,7 +365,7 @@ Filter to create a Person Content QC Report
    <b>
     <font size='4'>Location Information</font>
    </b>
-   <p/>
+   <br/>
    <xsl:apply-templates         select = "../../BoardMemberContact"/>
    <xsl:apply-templates         select = "PersonLocations"/>
  </xsl:template>
@@ -430,7 +449,7 @@ Filter to create a Person Content QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = "Phone"/>
      <xsl:if                      test = "Phone != ''">
-      <xsl:apply-templates       select = "Phone/@Public"/>
+      <xsl:apply-templates      select = "Phone/@Public"/>
      </xsl:if>
     </td>
    </tr>
@@ -684,149 +703,13 @@ Filter to create a Person Content QC Report
  </xsl:template>
 
 
- <!--
- =========================================================================
- Template to display Physician Details information
- ========================================================================= -->
-<!--
- <xsl:template                   match = "PhysicianDetails">
-  <xsl:for-each                 select = "PhysicianSpecialtyInformation">
-   
-    <xsl:for-each               select = "BoardCertifiedSpecialty">
-   <table       xsl:use-attribute-sets = "table">
-     <tr>
-      <td       xsl:use-attribute-sets = "cell1of2">
-       <b>Specialty</b>
-      </td>
-      <td       xsl:use-attribute-sets = "cell2of2">
-       <xsl:value-of            select = "BoardCertifiedSpecialtyName"/>
-      </td>
-     </tr>
-     <tr>
-      <td       xsl:use-attribute-sets = "cell1of2">
-       <b>Board Certification</b>
-      </td>
-      <td       xsl:use-attribute-sets = "cell2of2">
-       <xsl:value-of            select = "Certified"/>
-      </td>
-     </tr>
-     <tr>
-      <td       xsl:use-attribute-sets = "cell1of2">
-       <b>Verification</b>
-      </td>
-      <td       xsl:use-attribute-sets = "cell2of2">
-       <xsl:value-of            select = "Verified"/>
-      </td> 
-     </tr>
-   </table>
-   <br/>
-    </xsl:for-each>
-   <p>
-   <table       xsl:use-attribute-sets = "table">
-    <tr>
-     <td       xsl:use-attribute-sets = "cell1of2">
-      <b>Other Specialty</b>
-     </td>
-     <td       xsl:use-attribute-sets = "cell2of2">
-      <table   xsl:use-attribute-sets = "table">
-       <xsl:for-each           select = "OtherSpecialty">
-        <tr>
-         <td   xsl:use-attribute-sets = "cell2of2">
-          <xsl:value-of        select = "."/>
-         </td>
-        </tr>
-       </xsl:for-each>
-      </table>
-     </td>
-    </tr>
-   </table>
-   </p>
-  </xsl:for-each>
-
-  <xsl:apply-templates         select = "PhysicianMembershipInformation"/>
-   <table      xsl:use-attribute-sets = "table">
-    <tr>
-     <td       xsl:use-attribute-sets = "cell1of2">
-      <b>Comment</b>
-     </td>
-     <td       xsl:use-attribute-sets = "cell2of2">
-      <xsl:apply-templates     select = "Comment"/>
-     </td>
-    </tr>
-   </table>
-  <p/>
-
- </xsl:template>
--->
-
- <!-- 
- ===================================================================
- Display Membership Information
- =================================================================== -->
-<!-- 
- <xsl:template                  match = "PhysicianMembershipInformation">
-  <table       xsl:use-attribute-sets = "table">
-   <tr>
-    <td        xsl:use-attribute-sets = "cell1of2">
-     <b>Membership Information</b>
-    </td>
-   </tr>
-   <tr>
-    <td        xsl:use-attribute-sets = "cell1of2">
-     <b><u>Cooperative Group(s)</u></b>
-    </td>
-    <td        xsl:use-attribute-sets = "cell2of2">
-     <ul>
-      <xsl:for-each            select = "MemberOfCooperativeGroup/
-                                         CooperativeGroup/
-                                         Organization/
-                                         OrganizationName">
-       <li>
-        <xsl:choose>
-         <xsl:when              test = "../../../@GroupChair">
-          <xsl:value-of      select = "."/>
-          <xsl:text> (Group Chair)</xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:value-of      select = "."/>
-         </xsl:otherwise>
-        </xsl:choose>
-       </li>
-      </xsl:for-each> 
-     </ul>
-    </td>
-   </tr>
-  </table>
-  <p>
-  <table       xsl:use-attribute-sets = "table">
-   <tr>
-    <td        xsl:use-attribute-sets = "cell1of2">
-     <b><u>Medical Societies</u></b>
-    </td>
-    <td        xsl:use-attribute-sets = "cell2of2">
-     <ul>
-      <xsl:for-each            select = "MemberOfMedicalSociety">
-       <li>
-        <xsl:value-of          select = "."/>
-       </li>
-      </xsl:for-each> 
-     </ul>
-    </td>
-   </tr>
-  </table>
-  </p>
- </xsl:template>
--->
-
-
  <!-- 
  =====================================================================
  Template to display the Person Locations
  ===================================================================== -->
- <xsl:template                  match = "BoardMemberContact">
-
-  <xsl:apply-templates        select = "PersonContactID"/>
-  <xsl:apply-templates        select = "SpecificBoardMemberContact"/>
+ <xsl:template                   match = "BoardMemberContact">
+  <xsl:apply-templates          select = "PersonContactID"/>
+  <xsl:apply-templates          select = "SpecificBoardMemberContact"/>
  </xsl:template>
 
 
@@ -834,15 +717,14 @@ Filter to create a Person Content QC Report
  =====================================================================
  Template to display the Person Locations
  ===================================================================== -->
- <xsl:template                  match = "PersonContactID">
-
-  <table      xsl:use-attribute-sets = "table">
+ <xsl:template                   match = "PersonContactID">
+  <table        xsl:use-attribute-sets = "table">
    <tr>
-    <td       xsl:use-attribute-sets = "cell1of2">
+    <td         xsl:use-attribute-sets = "cell1of2">
      <b>Person Contact ID</b>
     </td>
-    <td       xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of            select = "."/>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "."/>
     </td>
    </tr>
   </table>
@@ -853,8 +735,28 @@ Filter to create a Person Content QC Report
  <!-- 
  =====================================================================
  Template to display the Person Locations
+ Display first the CIPS Contact address followed by the Specific
+ Contact information.
  ===================================================================== -->
- <xsl:template                  match = "SpecificBoardMemberContact">
+ <xsl:template                   match = "SpecificBoardMemberContact">
+  <xsl:apply-templates          select = "/PDQBoardMemberInfo/
+                                           BoardMemberName/
+                                           Person/
+                                           PersonLocations/
+                                           Home
+                                            [@cdr:id = $cipsContactID] |
+                                          /PDQBoardMemberInfo/
+                                           BoardMemberName/
+                                           Person/
+                                           PersonLocations/
+                                           PrivatePracticeLocation
+                                            [@cdr:id = $cipsContactID] |
+                                          /PDQBoardMemberInfo/
+                                           BoardMemberName/
+                                           Person/
+                                           PersonLocations/
+                                           OtherPracticeLocation
+                                            [@cdr:id = $cipsContactID]"/>
   <b>
    <font size='3'>Specific Board Member Location</font>
   </b>
@@ -867,54 +769,65 @@ Filter to create a Person Content QC Report
 
   <xsl:for-each                 select = "PostalAddress">
    <xsl:choose>
-   <xsl:when                      test = "@Public">
-    <table cellpadding="0" cellspacing="0">
-     <tr>
-      <td>
-   <xsl:choose>
-    <xsl:when                     test = "@native">
-     <i>
-      <xsl:call-template              name = "listAddress"/>
-     </i>
+    <xsl:when                     test = "@Public">
+     <table cellpadding="0" cellspacing="0">
+      <tr>
+       <td>
+        <xsl:choose>
+         <xsl:when                test = "@native">
+          <i>
+           <xsl:call-template     name = "listAddress"/>
+          </i>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:call-template      name = "listAddress"/>
+         </xsl:otherwise>
+        </xsl:choose>
+       </td>
+       <td valign="center">
+        <font size="10">&#125;</font>
+       </td>
+       <td valign="center">
+        <b>
+         <xsl:text> (Public = No)</xsl:text>
+        </b>
+       </td>
+      </tr>
+     </table>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:call-template              name = "listAddress"/>
+     <xsl:choose>
+      <xsl:when                   test = "@native">
+       <i>
+        <xsl:call-template        name = "listAddress"/>
+       </i>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:call-template         name = "listAddress"/>
+      </xsl:otherwise>
+     </xsl:choose>
     </xsl:otherwise>
    </xsl:choose>
-      </td><td valign="center"><font size="10">&#125;</font></td>
-      <td valign="center"><b><xsl:text> (Public = No)</xsl:text></b></td>
-     </tr>
-    </table>
-   </xsl:when>
-   <xsl:otherwise>
-   <xsl:choose>
-    <xsl:when                      test = "@native">
-     <i>
-      <xsl:call-template              name = "listAddress"/>
-     </i>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:call-template              name = "listAddress"/>
-    </xsl:otherwise>
-   </xsl:choose>
-   </xsl:otherwise>
-   </xsl:choose>
-   <xsl:call-template           name = "listPhone"/>
+   <xsl:call-template             name = "listPhone"/>
   </xsl:for-each>
 
-  <br/>
  </xsl:template>
 
 
  <!-- 
  =====================================================================
  Template to display the Person Locations
+ Only the board related contact information is to be displayed as 
+ specified by the PersonContactID fragment ID.
  ===================================================================== -->
- <xsl:template                  match = "PersonLocations">
+ <xsl:template                   match = "PersonLocations">
 
-  <xsl:apply-templates        select = "Home"/>
-  <xsl:apply-templates        select = "PrivatePracticeLocation"/>
-  <xsl:apply-templates        select = "OtherPracticeLocation"/>
+  <xsl:apply-templates          select = "Home
+                                           [@cdr:id = $contactID]"/>
+  <xsl:apply-templates          select = "PrivatePracticeLocation
+                                           [@cdr:id = $contactID]"/>
+  <xsl:apply-templates          select = "OtherPracticeLocation
+                                           [@cdr:id = $contactID]"/>
  </xsl:template>
 
 
@@ -923,11 +836,11 @@ Filter to create a Person Content QC Report
  Display Person Location Information for Private Practice and 
  Home Location
  ===================================================================== -->
- <xsl:template                    match = "Home                    | 
+ <xsl:template                   match = "Home                    | 
                                           PrivatePracticeLocation"> 
   <b>
    <xsl:choose>
-    <xsl:when                      test = "name() = 'Home'">
+    <xsl:when                     test = "name() = 'Home'">
      <font size='3'>Home</font>
     </xsl:when>
     <xsl:otherwise>
@@ -936,53 +849,59 @@ Filter to create a Person Content QC Report
    </xsl:choose>
   </b>
 
-  <xsl:if                          test = "../CIPSContact = @cdr:id">
+  <xsl:if                         test = "../CIPSContact = @cdr:id">
    <b><font size="3"> - CIPS Contact</font></b>
   </xsl:if>
-  <xsl:if                          test = "@PreviousLocation = 'Yes'">
+  <xsl:if                         test = "@PreviousLocation = 'Yes'">
    <b>
     <font size="3"> - Previous Location</font>
    </b>
   </xsl:if>
   <br/>
 
-  <xsl:for-each                  select = "PostalAddress">
+  <xsl:for-each                 select = "PostalAddress">
    <xsl:choose>
-   <xsl:when                       test = "@Public">
-    <table cellpadding="0" cellspacing="0">
-     <tr>
-      <td>
-   <xsl:choose>
-    <xsl:when                      test = "@native">
-     <i>
-      <xsl:call-template              name = "listAddress"/>
-     </i>
+    <xsl:when                     test = "@Public">
+     <table cellpadding="0" cellspacing="0">
+      <tr>
+       <td>
+        <xsl:choose>
+         <xsl:when                test = "@native">
+          <i>
+           <xsl:call-template     name = "listAddress"/>
+          </i>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:call-template      name = "listAddress"/>
+         </xsl:otherwise>
+        </xsl:choose>
+       </td>
+       <td valign="center">
+        <font size="10">&#125;</font>
+       </td>
+       <td valign="center">
+        <b>
+         <xsl:text> (Public = No)</xsl:text>
+        </b>
+       </td>
+      </tr>
+     </table>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:call-template              name = "listAddress"/>
+     <xsl:choose>
+      <xsl:when                   test = "@native">
+       <i>
+        <xsl:call-template        name = "listAddress"/>
+       </i>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:call-template         name = "listAddress"/>
+      </xsl:otherwise>
+     </xsl:choose>
     </xsl:otherwise>
    </xsl:choose>
-      </td><td valign="center"><font size="10">&#125;</font></td>
-      <td valign="center"><b><xsl:text> (Public = No)</xsl:text></b></td>
-     </tr>
-    </table>
-   </xsl:when>
-   <xsl:otherwise>
-   <xsl:choose>
-    <xsl:when                      test = "@native">
-     <i>
-      <xsl:call-template              name = "listAddress"/>
-     </i>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:call-template              name = "listAddress"/>
-    </xsl:otherwise>
-   </xsl:choose>
-   </xsl:otherwise>
-   </xsl:choose>
-   <xsl:call-template              name = "listPhone"/>
+   <xsl:call-template             name = "listPhone"/>
   </xsl:for-each>
-  <br />
  </xsl:template>
 
 
@@ -990,17 +909,17 @@ Filter to create a Person Content QC Report
  =====================================================================
  Display Person Location Information for Other Practice Location 
  ===================================================================== -->
- <xsl:template                 match = "OtherPracticeLocation">
+ <xsl:template                   match = "OtherPracticeLocation">
   <b>
    <font size='3'>Other Practice Location</font>
   </b>
  
-  <xsl:if                       test = "../CIPSContact = @cdr:id">
+  <xsl:if                         test = "../CIPSContact = @cdr:id">
    <b>
     <font size="3"> - CIPS Contact</font>
    </b>
   </xsl:if>
-  <xsl:if                       test = "@PreviousLocation = 'Yes'">
+  <xsl:if                         test = "@PreviousLocation = 'Yes'">
    <b>
     <font size="3"> - Previous Location</font>
    </b>
@@ -1008,61 +927,61 @@ Filter to create a Person Content QC Report
   <br/>
 
   <!-- Display the Person Title if available -->
-  <xsl:if                     test = "PersonTitle">
-   <xsl:value-of            select = "PersonTitle"/>
+  <xsl:if                         test = "PersonTitle">
+   <xsl:value-of                select = "PersonTitle"/>
    <br/>
   </xsl:if>
 
-  <xsl:for-each             select = "OrganizationLocation/OrganizationName">
-   <xsl:value-of            select = "."/>
+  <xsl:for-each                 select = "OrganizationLocation/
+                                          OrganizationName">
+   <xsl:value-of                select = "."/>
    <br />
   </xsl:for-each>
 
-  <xsl:for-each               select = "OrganizationLocation/
-                                        PostalAddress">
+  <xsl:for-each                 select = "OrganizationLocation/
+                                          PostalAddress">
    <xsl:choose>
-   <xsl:when                       test = "@Public">
-    <table cellpadding="0" cellspacing="0">
-     <tr>
-      <td>
-   <xsl:choose>
-    <xsl:when                      test = "@native">
-     <i>
-      <xsl:call-template              name = "listAddress"/>
-     </i>
+    <xsl:when                     test = "@Public">
+     <table cellpadding="0" cellspacing="0">
+      <tr>
+       <td>
+        <xsl:choose>
+         <xsl:when                test = "@native">
+          <i>
+           <xsl:call-template     name = "listAddress"/>
+          </i>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:call-template      name = "listAddress"/>
+         </xsl:otherwise>
+        </xsl:choose>
+       </td>
+       <td valign="center">
+        <font size="10">&#125;</font>
+       </td>
+       <td valign="center">
+        <b>
+         <xsl:text> (Public = No)</xsl:text>
+        </b>
+       </td>
+      </tr>
+     </table>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:call-template              name = "listAddress"/>
+     <xsl:choose>
+      <xsl:when                   test = "@native">
+       <i>
+        <xsl:call-template        name = "listAddress"/>
+       </i>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:call-template         name = "listAddress"/>
+      </xsl:otherwise>
+     </xsl:choose>
     </xsl:otherwise>
    </xsl:choose>
-      </td><td valign="center"><font size="10">&#125;</font></td>
-      <td valign="center"><b><xsl:text> (Public = No)</xsl:text></b></td>
-     </tr>
-    </table>
-   </xsl:when>
-   <xsl:otherwise>
-   <xsl:choose>
-    <xsl:when                      test = "@native">
-     <i>
-      <xsl:call-template              name = "listAddress"/>
-     </i>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:call-template              name = "listAddress"/>
-    </xsl:otherwise>
-   </xsl:choose>
-   </xsl:otherwise>
-   </xsl:choose>
-   <xsl:call-template           name = "listPhone"/>
+   <xsl:call-template             name = "listPhone"/>
   </xsl:for-each>
-
-  <xsl:if                       test = "ComplexAffiliation">
-   <b>
-    <font size='3'>Complex Affiliation</font>
-   </b>
-   <xsl:apply-templates       select = "ComplexAffiliation"/>
-  </xsl:if>
-  <br/>
  </xsl:template>
 
 
@@ -1070,66 +989,39 @@ Filter to create a Person Content QC Report
  ========================================================================
  Template to display the Dated Action
  ======================================================================== -->
- <xsl:template                 match = "DatedAction">
+ <xsl:template                   match = "DatedAction">
   <b>
    <font size='4'>Dated Action(s)</font>
   </b>
   <br />
 
-  <table      xsl:use-attribute-sets = "table">
+  <table        xsl:use-attribute-sets = "table">
    <tr>
-    <td       xsl:use-attribute-sets = "cell1of2">
+    <td         xsl:use-attribute-sets = "cell1of2">
      <b>Action Description</b>
     </td>
-    <td       xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of            select = "ActionDescription"/>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "ActionDescription"/>
     </td>
    </tr>
    <tr>
-    <td       xsl:use-attribute-sets = "cell1of2">
+    <td         xsl:use-attribute-sets = "cell1of2">
      <b>Action Date</b>
     </td>
-    <td       xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of            select = "ActionDate"/>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "ActionDate"/>
     </td>
    </tr>
    <tr>
-    <td       xsl:use-attribute-sets = "cell1of2">
+    <td         xsl:use-attribute-sets = "cell1of2">
      <b>Comment</b>
     </td>
-    <td       xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of            select = "Comment"/>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Comment"/>
     </td>
    </tr>
   </table>
   <p/>
- </xsl:template>
-
-
- <!--
- ========================================================================
- Template to display the Complex Affiliation
- ======================================================================== -->
- <xsl:template                 match = "ComplexAffiliation">
-  <br/>
-  <table      xsl:use-attribute-sets = "table">
-   <tr>
-    <td       xsl:use-attribute-sets = "cell1of2">
-     <b>Organization</b>
-    </td>
-    <td       xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of            select = "OrganizationName"/>
-    </td>
-   </tr>
-   <tr>
-    <td       xsl:use-attribute-sets = "cell1of2">
-     <b>Role</b>
-    </td>
-    <td       xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of            select = "RoleAtAffiliatedOrganization"/>
-    </td>
-   </tr>
-  </table>
  </xsl:template>
 
 
@@ -1148,48 +1040,48 @@ Filter to create a Person Content QC Report
  ========================================================================
  Named Template to display the Address
  ======================================================================== -->
- <xsl:template                  name = "listAddress">
-  <xsl:for-each               select = "Street">
-   <xsl:value-of              select = "."/>
+ <xsl:template                    name = "listAddress">
+  <xsl:for-each                 select = "Street">
+   <xsl:value-of                select = "."/>
    <br/>
   </xsl:for-each>
   <xsl:choose>
-   <xsl:when                    test = "PostalCodePosition = 'before City'">
-    <xsl:value-of             select = "PostalCode_ZIP"/>
+   <xsl:when                      test = "PostalCodePosition = 'before City'">
+    <xsl:value-of               select = "PostalCode_ZIP"/>
     <xsl:text> </xsl:text>
-    <xsl:value-of             select = "City"/>
-    <xsl:if                     test = "CitySuffix">
+    <xsl:value-of               select = "City"/>
+    <xsl:if                       test = "CitySuffix">
      <xsl:text> </xsl:text>
-     <xsl:value-of            select = "CitySuffix"/>
+     <xsl:value-of              select = "CitySuffix"/>
     </xsl:if>
    </xsl:when>
-   <xsl:when                    test = "PostalCodePosition = 'after City'">
-    <xsl:value-of             select = "City"/>
-    <xsl:if                     test = "CitySuffix">
+   <xsl:when                      test = "PostalCodePosition = 'after City'">
+    <xsl:value-of               select = "City"/>
+    <xsl:if                       test = "CitySuffix">
      <xsl:text> </xsl:text>
-     <xsl:value-of            select = "CitySuffix"/>
+     <xsl:value-of              select = "CitySuffix"/>
     </xsl:if>
     <xsl:text> </xsl:text>
-    <xsl:value-of             select = "PostalCode_ZIP"/>
+    <xsl:value-of               select = "PostalCode_ZIP"/>
    </xsl:when>
    <!-- 
    This section is for US addresses
    =================================================================== -->
-   <xsl:when                    test = "PostalCodePosition = 
-                                         'after PoliticalSubUnit_State'">
-    <xsl:value-of             select = "City"/>
-    <xsl:if                     test = "CitySuffix">
+   <xsl:when                      test = "PostalCodePosition = 
+                                           'after PoliticalSubUnit_State'">
+    <xsl:value-of               select = "City"/>
+    <xsl:if                       test = "CitySuffix">
      <xsl:text> </xsl:text>
-     <xsl:value-of            select = "CitySuffix"/>
+     <xsl:value-of              select = "CitySuffix"/>
     </xsl:if>
     <xsl:text>, </xsl:text>
-    <xsl:value-of             select = "PoliticalSubUnitShortName"/>
+    <xsl:value-of               select = "PoliticalSubUnitShortName"/>
     <xsl:text> </xsl:text>
-    <xsl:value-of             select = "PostalCode_ZIP"/>
+    <xsl:value-of               select = "PostalCode_ZIP"/>
    </xsl:when>
   </xsl:choose>
   <br/>
-  <xsl:value-of               select = "CountryName"/>
+  <xsl:value-of                 select = "CountryName"/>
   <br/>
  </xsl:template>
 
@@ -1198,15 +1090,15 @@ Filter to create a Person Content QC Report
  ========================================================================
  Named Template to display the Phone, Fax, WebSite, Role information
  ======================================================================== -->
- <xsl:template                  name = "listPhone">
+ <xsl:template                    name = "listPhone">
   <!--
   Display the Phone, Fax, Email, etc. in a table format
   ========================================================== -->
-  <table      xsl:use-attribute-sets = "table">
+  <table        xsl:use-attribute-sets = "table">
    <tr> 
-    <td       xsl:use-attribute-sets = "cell1of2">
+    <td         xsl:use-attribute-sets = "cell1of2">
      <xsl:choose>
-      <xsl:when                 test = "../Phone/@native">
+      <xsl:when                   test = "../Phone/@native">
        <i><xsl:text>Phone</xsl:text></i>
       </xsl:when>
       <xsl:otherwise>
@@ -1214,12 +1106,12 @@ Filter to create a Person Content QC Report
       </xsl:otherwise>
      </xsl:choose>
     </td>
-    <td       xsl:use-attribute-sets = "cell2of2">
+    <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:choose>
-      <xsl:when                 test = "../Phone/@native">
+      <xsl:when                   test = "../Phone/@native">
        <i>
-        <xsl:value-of         select = "../Phone"/>
-        <xsl:if                test = "../Phone/@Public">
+        <xsl:value-of           select = "../Phone"/>
+        <xsl:if                   test = "../Phone/@Public">
          <b>
           <xsl:text> (Public = No)</xsl:text>
          </b>
@@ -1227,8 +1119,8 @@ Filter to create a Person Content QC Report
        </i>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:value-of          select = "../Phone"/>
-       <xsl:if                  test = "../Phone/@Public">
+       <xsl:value-of            select = "../Phone"/>
+       <xsl:if                    test = "../Phone/@Public">
         <b>
          <xsl:text> (Public = No)</xsl:text>
         </b>
@@ -1237,12 +1129,12 @@ Filter to create a Person Content QC Report
      </xsl:choose>
     </td>
    </tr>
-   <xsl:if                      test = "name(..) !=
+   <xsl:if                        test = "name(..) !=
                                                'SpecificBoardMemberContact'">
     <tr>
      <td>
       <xsl:choose>
-       <xsl:when                test = "../TollFreePhone/@native">
+       <xsl:when                  test = "../TollFreePhone/@native">
         <i><xsl:text>TollFreePhone</xsl:text></i>
        </xsl:when>
        <xsl:otherwise>
@@ -1250,24 +1142,24 @@ Filter to create a Person Content QC Report
        </xsl:otherwise>
       </xsl:choose>
      </td>
-     <td      xsl:use-attribute-sets = "cell2of2">
+     <td        xsl:use-attribute-sets = "cell2of2">
       <xsl:choose>
-       <xsl:when                test = "../TollFreePhone/@native">
+       <xsl:when                  test = "../TollFreePhone/@native">
         <i>
-         <xsl:value-of        select = "../TollFreePhone"/>
+         <xsl:value-of          select = "../TollFreePhone"/>
         </i>
        </xsl:when>
        <xsl:otherwise>
-         <xsl:value-of        select = "../TollFreePhone"/>
+         <xsl:value-of          select = "../TollFreePhone"/>
        </xsl:otherwise>
       </xsl:choose>
      </td>
     </tr>
    </xsl:if>
    <tr>
-    <td       xsl:use-attribute-sets = "cell1of2">
+    <td         xsl:use-attribute-sets = "cell1of2">
      <xsl:choose>
-      <xsl:when                 test = "../Fax/@native">
+      <xsl:when                   test = "../Fax/@native">
        <i>
         <xsl:text>Fax</xsl:text>
        </i>
@@ -1321,25 +1213,25 @@ Filter to create a Person Content QC Report
      </td>
      <xsl:choose>
       <xsl:when                   test = "../WebSite">
-       <td    xsl:use-attribute-sets = "cell2of2">
+       <td      xsl:use-attribute-sets = "cell2of2">
         <xsl:choose>
-         <xsl:when              test = "../WebSite/@native">
+         <xsl:when                test = "../WebSite/@native">
           <i>
-           <xsl:call-template      name = "listWebSite">
-            <xsl:with-param        name = "webSite"
-                              select = "../WebSite/@xref"/>
+           <xsl:call-template     name = "listWebSite">
+            <xsl:with-param       name = "webSite"
+                                select = "../WebSite/@xref"/>
            </xsl:call-template>
            <br/>
-           <xsl:value-of         select = "../WebSite"/>
+           <xsl:value-of        select = "../WebSite"/>
           </i>
          </xsl:when>
          <xsl:otherwise>
-           <xsl:call-template      name = "listWebSite">
-            <xsl:with-param        name = "webSite"
-                              select = "../WebSite/@xref"/>
+           <xsl:call-template     name = "listWebSite">
+            <xsl:with-param       name = "webSite"
+                                select = "../WebSite/@xref"/>
            </xsl:call-template>
            <br/>
-           <xsl:value-of         select = "../WebSite"/>
+           <xsl:value-of        select = "../WebSite"/>
          </xsl:otherwise>
         </xsl:choose>
        </td>
@@ -1347,17 +1239,17 @@ Filter to create a Person Content QC Report
      </xsl:choose>
     </tr>
    </xsl:if>
-    <xsl:if                        test = "../../PersonRole">
+    <xsl:if                       test = "../../PersonRole">
      <tr>
-      <td        xsl:use-attribute-sets = "cell1of2">
+      <td       xsl:use-attribute-sets = "cell1of2">
        <xsl:text>Person Role</xsl:text>
       </td>
-      <td        xsl:use-attribute-sets = "cell2of2">
-       <table    xsl:use-attribute-sets = "table">
-        <xsl:for-each            select = "../../PersonRole">
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <table   xsl:use-attribute-sets = "table">
+        <xsl:for-each           select = "../../PersonRole">
          <tr>
-          <td    xsl:use-attribute-sets = "cell1of2">
-           <xsl:value-of         select = "."/>
+          <td   xsl:use-attribute-sets = "cell1of2">
+           <xsl:value-of        select = "."/>
           </td>
          </tr>
         </xsl:for-each>
@@ -1383,7 +1275,7 @@ Filter to create a Person Content QC Report
    <xsl:value-of                select = "."/>
   </xsl:element>
   <xsl:if                         test = ". != ''">
-   <xsl:apply-templates          select = "@Public"/>
+   <xsl:apply-templates         select = "@Public"/>
   </xsl:if>
  </xsl:template>
 
@@ -1392,26 +1284,26 @@ Filter to create a Person Content QC Report
  ========================================================================
  Named Template to display the Website information
  ======================================================================== -->
- <xsl:template                 name = "listWebSite">
-  <xsl:param                   name = "webSite"/>
+ <xsl:template                   name = "listWebSite">
+  <xsl:param                     name = "webSite"/>
 
-  <xsl:element         name = "a">
-   <xsl:attribute      name = "href">
+  <xsl:element                   name = "a">
+   <xsl:attribute                name = "href">
     <xsl:choose>
-     <xsl:when         test = "contains($webSite, 'http://')">
-      <xsl:value-of  select = "$webSite"/>
+     <xsl:when                   test = "contains($webSite, 'http://')">
+      <xsl:value-of            select = "$webSite"/>
      </xsl:when>
      <xsl:otherwise>
       <xsl:text>http://</xsl:text>
-      <xsl:value-of  select = "substring-after($webSite, 'http://')"/>
+      <xsl:value-of            select = "substring-after($webSite, 'http://')"/>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:attribute>
-   <xsl:attribute      name = "target">
+   <xsl:attribute                name = "target">
     <xsl:text>new</xsl:text>
    </xsl:attribute>
 
-   <xsl:value-of    select = "$webSite"/>
+   <xsl:value-of               select = "$webSite"/>
   </xsl:element>
 
  </xsl:template>
