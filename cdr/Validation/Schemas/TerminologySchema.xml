@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- $Id: TerminologySchema.xml,v 1.1 2001-06-22 17:21:53 ArkD Exp $ 
+     $Log: not supported by cvs2svn $
+-->
+<schema xmlns="http://www.w3.org/2000/08/XMLSchema">
+<!--****************************************************************************-->
+<annotation>
+<documentation>This schema is for Terminology</documentation>
+</annotation>
+<!--****************************************************************************-->
+<!--                     COMMON CDR SCHEMA COMPONENTS                           -->
+<!--****************************************************************************-->
+<include schemaLocation="CdrCommonSchema.xml"/>
+<!--****************************************************************************-->
+<!--                      TOP-LEVEL DOCUMENT ELEMENT                            -->
+<!--****************************************************************************-->
+<element name="Terminology"	type="Terminology"/>
+
+<!--****************************************************************************-->
+<!--                           DOCUMENT TYPE                                    -->
+<!--****************************************************************************-->
+<complexType name="Terminology">
+<sequence>
+<element name="PreferredTerm" type="string"/>
+<element name="OtherNames" type="OtherNames" minOccurs="0" maxOccurs="*"/>
+<element name="Definition" type="Definition" minOccurs="0" maxOccurs="*"/>
+<element name="TermType" type="TermType"/>
+<element name="SemanticType" type="TerminologyLink"/>
+<!--if TermType value is not Semantic Type, then SemanticType 
+should be required (forced outside schema-->
+<element name="TermRelationship" type="TermRelationship" minOccurs='0'/>
+<element name="TermStatus" type="TermStatus"/>
+<element name="Comment" type="string" minOccurs="0"/>
+</sequence>
+</complexType>
+
+<!--****************************************************************************-->
+<!--                         OTHER COMPLEX TYPES                                -->
+<!--****************************************************************************-->
+<complexType name="OtherNames">
+<sequence>
+<element name="OtherName" type="string"/>
+<element name="OtherNameType" type="OtherNameType" maxOccurs="*"/>
+<element name="SourceInformation" type="SourceInformation" minOccurs="0"/>
+<element name="ReviewStatus" type="ReviewStatus" minOccurs="0"/>
+<element name="Comment" type="string" minOccurs="0"/>
+</sequence>
+</complexType>
+
+<complexType name="SourceInformation">
+<choice>
+<element name="ReferenceSource" type="string"/>
+<element name="VocabularySource" type="VocabularySource" maxOccurs="*"/>
+</choice>
+</complexType>
+
+<complexType name="VocabularySource">
+<sequence>
+<element name="SourceCode" type="SourceCode"/>
+<element name="SourceTerm" type="SourceTerm"/>
+<element name="SourceTermId" type="string"/>
+</sequence>
+</complexType>
+
+<complexType name="Definition">
+<sequence>
+<element name="DefinitionText" type="ParaLevel"/>
+<element name="DefinitionType" type="DefinitionType"/>
+<element name="DefinitionSource" type="DefinitionSource" maxOccurs="*"/>
+<element name="Comment" type="string" minOccurs="0"/>
+</sequence>
+</complexType>
+
+<complexType name="DefinitionSource">
+<sequence>
+<element name="DefinitionSourceName" type="string"/>
+<element name="DefinedTermId" type="string" minOccurs='0'/>
+</sequence>
+</complexType>
+
+<complexType name="TermType">
+<sequence>
+<element name="TermTypeName" type="TermTypeName"/>
+</sequence>
+<attribute name='Legacy' type='YesNo' maxOccurs='*'/>
+</complexType>
+
+<complexType name="TermRelationship">
+<sequence>
+<element name="TermParent" type="TermParent" minOccurs='0' maxOccurs='*'/>
+<element name="TermChild" type="TermChild" minOccurs='0' maxOccurs='*'/>
+<element name="TermRelated" type="TermRelated" minOccurs='0' maxOccurs='*'/>
+</sequence>
+</complexType>
+
+<complexType name="TermParent">
+<sequence>
+<element name="TermId" type="TerminologyLink"/>
+<element name="ParentType" type="ParentType"/>
+<element name="Comment" type="string" minOccurs='0'/>
+</sequence>
+</complexType>
+
+<complexType name="TermChild">
+<sequence>
+<element name="TermId" type="TerminologyLink"/>
+<element name="ChildType" type="ChildType"/>
+<element name="Comment" type="string" minOccurs='0'/>
+</sequence>
+</complexType>
+
+<complexType name="TermRelated">
+<sequence>
+<element name="TermId" type="TerminologyLink"/>
+<element name="RelationshipType" type="RelationshipType"/>
+<element name="Comment" type="string" minOccurs='0'/>
+</sequence>
+</complexType>
+
+<!--****************************************************************************-->
+<!--                             SIMPLE TYPES                                   -->
+<!--****************************************************************************-->
+<simpleType name="OtherNameType" base="string">
+<enumeration value="Acronym"/>
+<enumeration value="Lexical variant"/>
+<enumeration value="Abbreviation"/>
+<enumeration value="Synonim"/>
+<enumeration value="Common usage"/>
+<enumeration value="Related string"/>
+<enumeration value="Broader"/>
+<enumeration value="Subtype"/>
+<enumeration value="Spanish"/>
+<enumeration value="US brand name"/>
+<enumeration value="Foreign brand name"/>
+</simpleType>
+
+<simpleType name="SourceCode" base="string">
+<enumeration value="MTH"/>
+<enumeration value="MDR33"/>
+<enumeration value="PDQ2001"/>
+</simpleType>
+
+<simpleType name="SourceTerm" base="string">
+<enumeration value="PT"/>
+<enumeration value="LT"/>
+</simpleType>
+
+<simpleType name="ReviewStatus" base="string">
+<enumeration value="Unreviewed"/>
+<enumeration value="Reviewed"/>
+<enumeration value="Problematic"/>
+</simpleType>
+
+<simpleType name="DefinitionType" base="string">
+<enumeration value="Health Professional Definition"/>
+</simpleType>
+
+<simpleType name="TermTypeName" base="string">
+<enumeration value="Header Term"/>
+<enumeration value="Obsolete Term"/>
+<enumeration value="Index Term"/>
+<enumeration value="Protocol selection Criteria"/>
+<enumeration value="Semantic Type"/>
+</simpleType>
+
+<simpleType name="ParentType" base="string">
+<enumeration value="ISA"/>
+<enumeration value="inverse ISA"/>
+</simpleType>
+
+<simpleType name="ChildType" base="string">
+<enumeration value="stage"/>
+<enumeration value="cellular type"/>
+<enumeration value="grade"/>
+<enumeration value="sub-type"/>
+</simpleType>
+
+<simpleType name="RelationshipType" base="string">
+<enumeration value="Related Genes"/>
+</simpleType>
+
+<simpleType name="TermStatus" base="string">
+<enumeration value="Unreviewed"/>
+<enumeration value="Reviewed-retain"/>
+<enumeration value="Reviewed-offline"/>
+<enumeration value="Reviewed-problematic"/>
+</simpleType>
+
+<!--****************************************************************************-->
+</schema>
