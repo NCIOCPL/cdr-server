@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.h,v 1.13 2005-03-04 02:52:00 ameyer Exp $
+ * $Id: CdrDom.h,v 1.14 2005-03-29 15:27:43 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/03/04 02:52:00  ameyer
+ * Converted from xml4c to Xerces DOM parser.  Significant changes.
+ *
  * Revision 1.12  2004/03/23 16:26:47  bkline
  * Upgraded to version 5.4.0 of xml4c (but still using deprecated APIs).
  *
@@ -60,6 +63,7 @@
 
 /**@#-*/
 
+// Used only in special debugging builds of the software
 extern void domLog(const char *);
 extern void domLog(const char *, const cdr::String&);
 
