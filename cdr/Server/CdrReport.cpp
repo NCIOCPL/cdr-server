@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.7 2002-03-12 20:42:44 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.8 2002-03-14 13:32:22 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2002/03/12 20:42:44  bkline
+ * Added report for dated actions.
+ *
  * Revision 1.6  2002/02/14 17:59:09  bkline
  * Added code to recognize empty-element tag syntax.
  *
@@ -617,7 +620,8 @@ namespace
     cdr::String filterXml = getNamedFilter(L"Dated Actions", dbConnection);
 
     // Get a list of documents of this type which have dated actions.
-    string query = "SELECT DISTINCT q.doc_id             "
+    string query = "SELECT DISTINCT q.doc_id,            "
+                   "                d.title              "
                    "           FROM query_term q         "
                    "           JOIN document d           "
                    "             ON d.id = q.doc_id      "
@@ -629,16 +633,36 @@ namespace
     cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
     select.setString(1, docType);
     cdr::db::ResultSet rs = select.executeQuery();
-
     cdr::FilterParmVector parms;
     wostringstream result;
     result << L"<ReportBody><![CDATA[\n"
               L"<ReportName>" << getName() << L"</ReportName>\n";
+
+    // Have to collect these and close the query so filter module can get the
+    // documents.  Ideally, we'd like to put together a local struct
+    // definition to package id+title pairs together, but the C++ language (or
+    // at least Microsoft's implementation of it) does not allow for types
+    // without external linkage as template arguments.
+    std::vector<int> ids;
+    std::vector<cdr::String> titles;
     while (rs.next())
     {
-      int id = rs.getInt(1);
-      cdr::String docXml = getDocumentXml(id, dbConnection);
-      result << cdr::filterDocument(docXml, filterXml, dbConnection, 0, &parms);
+      ids.push_back(rs.getInt(1));
+      titles.push_back(rs.getString(2));
+    }
+    select.close();
+    std::vector<int>::iterator idIter = ids.begin();
+    std::vector<cdr::String>::const_iterator titleIter = titles.begin();
+    while (idIter != ids.end())
+    {
+      cdr::String docXml = getDocumentXml(*idIter, dbConnection);
+      result << L"<ReportRow><DocId>"
+             << cdr::stringDocId(*idIter++)
+             << L"</DocId><DocTitle>"
+             << *titleIter++
+             << L"</DocTitle>"
+             << cdr::filterDocument(docXml, filterXml, dbConnection, 0, &parms)
+             << L"</ReportRow>";
     }
 
     result << L"]]></ReportBody>\n";
