@@ -1,10 +1,15 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.12 2001-06-15 02:30:04 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.13 2001-06-20 00:54:51 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2001/06/15 02:30:04  ameyer
+ * Now using a common parse of the document instead of performing a new one.
+ * Returning a proper error message if document is malformed.
+ * Updating val_status accordingly to 'M'.
+ *
  * Revision 1.11  2001/05/16 15:46:11  bkline
  * Adjusted query to get the top-level schema document from the
  * document table instead of the doc_type table, where it used
@@ -64,13 +69,13 @@
 
 // Local functions.
 static cdr::String makeResponse(
-        cdr::String&                    docIdString,
-        const wchar_t*                  status,
-        cdr::StringList&                errors);
+        const cdr::String&     docIdString,
+        const cdr::String&     status,
+        const cdr::StringList& errors);
 static void setDocStatus(
-        cdr::db::Connection&            conn,
-        int                             docId,
-        const wchar_t*                  status);
+        cdr::db::Connection&   conn,
+        int                    docId,
+        const wchar_t*         status);
 
 /**
  * Validates a CDR document, using the following steps.
@@ -97,10 +102,11 @@ cdr::String cdr::validateDoc(
         cdr::db::Connection&            conn)
 {
     cdr::CdrDoc    *docObj = NULL;  // Pointer to doc object to validate
+    cdr::String    docIdString;     // String form of doc type name
     cdr::String    docTypeString;   // String form of doc type name
     cdr::String    validationTypes; // E.g., "Schema Links"
     cdr::ValidRule validRule;       // Do we update the DB or just validate?
-    cdr::String    returnString;    // Returned errors
+    cdr::String    valStatus;       // V)alid, I)valid, M)alformed
 
     // Get document type and check user authorization to validate it
     const cdr::dom::Element& commandElement =
@@ -120,7 +126,6 @@ cdr::String cdr::validateDoc(
     try {
         // Extract the document or its ID from the command.
         cdr::dom::Node docNode;
-        cdr::String    docIdString;
         cdr::dom::Node child = commandNode.getFirstChild();
         while (child != 0) {
             if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
@@ -179,8 +184,7 @@ cdr::String cdr::validateDoc(
             throw cdr::Exception(L"Both DocId and CdrDoc specified");
 
         // Execute validation
-        returnString = cdr::execValidateDoc (*docObj, validRule,
-                                             validationTypes);
+        valStatus = cdr::execValidateDoc (*docObj, validRule, validationTypes);
     }
 
     // Cleanup from any exception, anywhere in or beneath us
@@ -194,26 +198,22 @@ cdr::String cdr::validateDoc(
     }
 
     // Delete temporary object and return results
+    // Note references to errList and textId should preserve contents
+    //   of these strings beyond docObj destruction
+    docIdString                = docObj->getTextId();
+    cdr::StringList docErrList = docObj->getErrList();
     delete docObj;
-    return returnString;
+    return makeResponse (docIdString, valStatus, docErrList);
 }
 
 
-/**
+/*
  * Front end function to all validation.
  * Called by validateDoc to perform validation on behalf of a client.
  * Also called by CdrPutDoc when adding or replacing a document in
  *   the database.
  *
- * @param  docObj           Reference to CdrDoc object to validate
- * @param  validRule        Instructions pertaining to database update
- *                              ValidateOnly - Do not update status/link info.
- *                              UpdateIfValid - Update info if doc valid.
- *                              UpdateUnconditionally - Update status/link
- * @param  validationTypes  String containing list of all types of validation
- *                          to perform.
- *
- * @return                  Packed error list string.
+ * See CdrValidateDoc.h
  */
 
 cdr::String cdr::execValidateDoc (
@@ -223,8 +223,9 @@ cdr::String cdr::execValidateDoc (
 ) {
     bool              parseOK = false;
     cdr::String       docTypeString = docObj.getTextDocType();
-    cdr::StringList   errList;
 
+    // Will append to the error list from the document object
+    cdr::StringList& errList = docObj.getErrList();
 
     // Get a parse tree for the XML
     if (docObj.parseAvailable()) {
@@ -251,8 +252,8 @@ cdr::String cdr::execValidateDoc (
     }
 
     else
-        errList.push_back (L"Document malformed.  Validation not performed.  "
-                           + docObj.getParseErrMsg());
+        // Add this to the error messages.  Parse error msg already there
+        errList.push_back (L"Document malformed.  Validation not performed");
 
     // Note the outcome of the validation.
     const wchar_t* status = errList.size() > 0 ? L"I" : L"V";
@@ -260,8 +261,8 @@ cdr::String cdr::execValidateDoc (
             (validRule == cdr::UpdateIfValid && errList.size() == 0))
         setDocStatus (docObj.getConn(), docObj.getId(), status);
 
-    // Report the outcome.
-    return makeResponse (docObj.getTextId(), status, errList);
+    // Report the outcome
+    return status;
 }
 
 
@@ -313,9 +314,9 @@ void cdr::validateDocAgainstSchema(
  * Sends a response buffer to the client reporting the outcome of the
  * document validation process.
  */
-cdr::String makeResponse(cdr::String&     docId,
-                         const wchar_t*   status,
-                         cdr::StringList& errors)
+cdr::String makeResponse(const cdr::String&     docId,
+                         const cdr::String&     status,
+                         const cdr::StringList& errors)
 {
     cdr::String response = L"  <CdrValidateDocResp>\n"
                            L"   <DocId>"
