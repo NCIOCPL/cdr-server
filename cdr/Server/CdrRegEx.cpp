@@ -1,9 +1,12 @@
 /*
- * $Id: CdrRegEx.cpp,v 1.2 2002-03-03 14:43:34 bkline Exp $
+ * $Id: CdrRegEx.cpp,v 1.3 2002-03-07 18:15:53 bkline Exp $
  *
  * Implementation of CDR wrapper for regular expression handling.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2002/03/03 14:43:34  bkline
+ * Eliminated incompatibility with MSC++ 7.0.
+ *
  * Revision 1.1  2000/05/03 15:19:14  bkline
  * Initial revision
  *
@@ -43,9 +46,9 @@ cdr::String cdr::RegEx::getPattern() const
 
 void cdr::RegEx::set(const wchar_t* pattern)
 {
-    unsigned flags = jm::regbase::normal | jm::regbase::use_except;
+    unsigned flags = boost::regbase::normal | boost::regbase::use_except;
     if (caseFlag)
-        flags |= jm::regbase::icase;
+        flags |= boost::regbase::icase;
     try {
         set_expression(pattern, flags);
     }
@@ -59,9 +62,9 @@ void cdr::RegEx::set(const wchar_t* pattern)
 
 void cdr::RegEx::set(const cdr::String& pattern)
 {
-    unsigned flags = jm::regbase::normal | jm::regbase::use_except;
+    unsigned flags = boost::regbase::normal | boost::regbase::use_except;
     if (caseFlag)
-        flags |= jm::regbase::icase;
+        flags |= boost::regbase::icase;
     try {
         set_expression(pattern, flags);
     }
@@ -85,16 +88,16 @@ void cdr::RegEx::set(const std::string& pattern)
 
 bool cdr::RegEx::match(const wchar_t* what)
 {
-    jm::wcmatch m;
-    return jm::query_match(what, m, *this);
+    boost::wcmatch m;
+    return boost::regex_match(what, m, *this);
 }
 
 bool cdr::RegEx::match(const cdr::String& what)
 {
-    //jm::wcmatch m;
-    jm::reg_match<std::basic_string<wchar_t>::const_iterator,
-                  jm::wregex::alloc_type> m;
-    return jm::query_match(what, m, *this);
+    boost::wcmatch m;
+    //boost::regex_match<std::basic_string<wchar_t>::const_iterator,
+    //              boost::wregex::alloc_type> m;
+    return boost::regex_match(what, m, *this);
 }
 
 bool cdr::RegEx::match(const char* what)

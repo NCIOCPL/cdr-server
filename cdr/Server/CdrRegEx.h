@@ -1,9 +1,12 @@
 /*
- * $Id: CdrRegEx.h,v 1.2 2000-05-04 11:52:35 bkline Exp $
+ * $Id: CdrRegEx.h,v 1.3 2002-03-07 18:15:54 bkline Exp $
  *
  * CDR wrapper for regular expression processing.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/05/04 11:52:35  bkline
+ * More ccdoc comments.
+ *
  * Revision 1.1  2000/05/03 15:41:36  bkline
  * Initial revision
  *
@@ -17,7 +20,7 @@
 #define CDR_UNICODE_DEFINED_
 #endif
 
-#include <regex>
+#include <boost/regex.hpp>
 #include "CdrString.h"
 
 /**@#-*/
@@ -42,7 +45,7 @@ namespace cdr {
      * present in other packages I've seen (including Henry Spencer's), which
      * is I suspect why he's using the platform-specific calls.
      */
-    class RegEx : private JM::wregex {
+    class RegEx : private boost::wregex {
 
     public:
 
