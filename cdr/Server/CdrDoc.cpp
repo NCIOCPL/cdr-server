@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.18 2001-07-17 20:19:01 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.19 2001-07-31 23:59:26 ameyer Exp $
  *
  */
 
@@ -27,7 +27,7 @@
 #include "CdrLink.h"
 #include "CdrValidateDoc.h"
 
-// XXX For debugging
+// XXXX For debugging
 #include <iostream>
 
 static cdr::String CdrPutDoc (cdr::Session&, const cdr::dom::Node&,
@@ -36,8 +36,8 @@ static cdr::String CdrPutDoc (cdr::Session&, const cdr::dom::Node&,
 static void auditDoc (cdr::db::Connection&, int, int, cdr::String,
                       cdr::String, cdr::String);
 
-static void addSingleQueryTerm (cdr::db::Connection&, int,
-                                cdr::String&, cdr::String&);
+static void addSingleQueryTerm (cdr::db::Connection&, int, cdr::String&,
+                                cdr::String&, wchar_t *);
 
 static void delQueryTerms (cdr::db::Connection&, int);
 
@@ -1087,7 +1087,24 @@ void cdr::CdrDoc::updateQueryTerms()
         // Find or create a parse of the document
         if (parseAvailable()) {
             cdr::dom::Node node = getDocumentElement();
-            addQueryTerms(cdr::String(L""), node.getNodeName(), node, paths);
+
+            // Create a buffer for ordinal position paths
+            // We construct hex strings here to represent the ordinal
+            //   position of each element in the tree leading to a node
+            // This enables us to find occurrences of a node which
+            //   have a common ancestor at any desired level, e.g., to
+            //   find element A and B only when they are siblings of
+            //   each other, as opposed A as a subelement of one parent
+            //   and B as a subelement of another.
+            wchar_t ordPosPath[MAX_INDEX_ELEMENT_DEPTH * INDEX_POS_WIDTH + 1];
+            ordPosPath[0] = (wchar_t) '\0';
+
+            // Add query terms for the entire document tree
+            // Indexing of ordinal position paths will begin at the level
+            //   below the document node.  Since we start at the document
+            //   node, we pass a depth of -1 here.
+            addQueryTerms(cdr::String(L""), node.getNodeName(), node, paths,
+                          ordPosPath, -1);
         }
     }
 }
@@ -1097,7 +1114,9 @@ void cdr::CdrDoc::updateQueryTerms()
 void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
                                 const cdr::String& nodeName,
                                 const cdr::dom::Node& node,
-                                const StringSet& paths)
+                                const StringSet& paths,
+                                wchar_t *ordPosPathp,
+                                int depth)
 {
     // Create full paths to check in the path lookup table
     cdr::String fullPath = parentPath + L"/" + nodeName;
@@ -1109,7 +1128,7 @@ void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
 
         // Add the absolute path to the content to the query table
         cdr::String value = cdr::dom::getTextContent(node);
-        addSingleQueryTerm (docDbConn, Id, fullPath, value);
+        addSingleQueryTerm (docDbConn, Id, fullPath, value, ordPosPathp);
     }
 
     // Attributes of the node might also be indexed.
@@ -1130,18 +1149,33 @@ void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
             if (paths.find(fullAttrPath) != paths.end() ||
                 paths.find(wildAttrPath) != paths.end()) {
                     cdr::String value = aNode.getNodeValue();
-                    addSingleQueryTerm (docDbConn, Id, fullAttrPath, value);
+                    addSingleQueryTerm (docDbConn, Id, fullAttrPath, value,
+                                        ordPosPathp);
             }
         }
     }
 
     // Recursively add terms for sub-elements.
     cdr::dom::Node child = node.getFirstChild();
+
+    // Sub-elements are numbered in the ordinal position path beginning at 0
+    int ordPos = 0;
+
+    // They are at a level one deeper than the passed level
+    ++depth;
+
     while (child != 0) {
 
         // If child is an element
-        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE)
-            addQueryTerms (fullPath, child.getNodeName(), child, paths);
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+
+            // Construct the ordinal position path
+            swprintf (ordPosPathp + (depth * INDEX_POS_WIDTH), L"%0*X",
+                      INDEX_POS_WIDTH, ordPos);
+            addQueryTerms (fullPath, child.getNodeName(), child, paths,
+                           ordPosPathp, depth);
+            ++ordPos;
+        }
 
         child = child.getNextSibling();
     }
@@ -1158,7 +1192,8 @@ void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
  */
 
 static void addSingleQueryTerm (cdr::db::Connection& conn, int doc_id,
-                                cdr::String& path, cdr::String& value)
+                                cdr::String& path, cdr::String& value,
+                                wchar_t *ordPosPathp)
 {
     // If the value has any numerics in it, index them as numerics
     const wchar_t *p = value.c_str();
@@ -1176,20 +1211,22 @@ static void addSingleQueryTerm (cdr::db::Connection& conn, int doc_id,
     }
 
     // Add the absolute path to this term to the query table
-    const char* insert = "INSERT INTO query_term(doc_id, path, value, int_val)"
-                         "     VALUES(?,?,?,?)";
+    const char* insert = "INSERT INTO query_term"
+                         "  (doc_id, path, node_loc, value, int_val)"
+                         "VALUES(?,?,?,?,?)";
     cdr::db::PreparedStatement stmt = conn.prepareStatement(insert);
     stmt.setInt(1, doc_id);
     stmt.setString(2, path);
-    stmt.setString(3, value);
+    stmt.setString(3, ordPosPathp);
+    stmt.setString(4, value);
 
     // Actual integer value or null if no numerics in value
     if (null) {
         cdr::Int nullInt (null);
-        stmt.setInt(4, nullInt);
+        stmt.setInt(5, nullInt);
     }
     else
-        stmt.setInt(4, intVal);
+        stmt.setInt(5, intVal);
 
     stmt.executeQuery();
 }

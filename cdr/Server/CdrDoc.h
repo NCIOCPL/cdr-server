@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.8 2001-06-22 00:30:23 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.9 2001-08-01 00:00:10 ameyer Exp $
  *
  */
 
@@ -32,6 +32,23 @@ namespace cdr {
      * revsions for default validation.
      */
     const int DEFAULT_REVISION_LEVEL = 3;
+
+    /**
+     * Maximum number of hierarchical levels for which we are willing
+     * to index fields in a document.
+     *
+     * If we reach this level something is seriously wrong.
+     */
+    const int MAX_INDEX_ELEMENT_DEPTH = 40;
+
+    /**
+     * Width of the hex representation of the ordinal position of an
+     * element among it's siblings.  For example, for width 4:
+     *   Element  0 = "0000"
+     *   Element 17 = "0011"
+     *     etc.
+     */
+    const int INDEX_POS_WIDTH = 4;
 
     /**
      * Class for manipulating CDR documents - adding, replacing and deleting.
@@ -180,34 +197,26 @@ namespace cdr {
              * Adds a row to the query_term table for the current node if
              * appropriate and recursively does the same for all sub-elements.
              *
-             *  @param  path        reference to string representing path for
+             *  @param  path        Reference to string representing path for
              *                      current node; e.g., "/Person/PersonStatus".
-             *  @param  node        reference to current node of document's
+             *  @param  node        Reference to current node of document's
              *                      DOM tree.
-             *  @param  paths       reference to set of paths to be indexed.
+             *  @param  paths       Reference to set of paths to be indexed.
+             *  @param  nodeName    Name of the element to be indexed.
+             *  @param  ordPosPathp Pointer to a hex character representation
+             *                      of the ordinal position of each element
+             *                      in the DOM tree down to and including the
+             *                      element to be indexed.
+             *  @param  depth       Number of signficant levels in the
+             *                      ordPosPathp.
              */
             void addQueryTerms(const cdr::String& path,
+                               const cdr::String& nodeName,
                                const cdr::dom::Node& node,
-                               const StringSet& paths);
+                               const StringSet& paths,
+                               wchar_t *ordPosPathp,
+                               int   depth);
 
-            /**
-             * Add a row to the query_term table for the current node
-             * if appropriate, and recursively do the same for all
-             * sub-elements.
-             *
-             *  @param  parentPath  Reference to string representing
-             *                      path for parent of current node;
-             *                      e.g., "/Person/PersonStatus".
-             *                      Null string if there is no parent.
-             *  @param  nodeName    Name of current element or attribute.
-             *  @param  node        Reference to current node of
-             *                      document's DOM tree.
-             *  @param  paths       Reference to set of paths to be indexed.
-             */
-            void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
-                                            const cdr::String& nodeName,
-                                            const cdr::dom::Node& node,
-                                            const StringSet& paths);
 
             /**
              * Generate a title for a document using an XSLT filter, if
