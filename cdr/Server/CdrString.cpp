@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.12 2001-03-01 23:28:38 ameyer Exp $
+ * $Id: CdrString.cpp,v 1.13 2001-03-02 13:59:26 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2001/03/01 23:28:38  ameyer
+ * Fixed bug, not updating s_first_time.
+ *
  * Revision 1.11  2000/10/25 19:06:01  mruben
  * added functions to put dates in correct format
  *
@@ -39,6 +42,7 @@
  */
 
 #include <sstream>
+#include <iostream>
 #include "CdrString.h"
 #include "CdrRegEx.h"
 #include "CdrException.h"
@@ -124,50 +128,43 @@ void cdr::String::utf8ToUtf16(const char* s)
 
 
 /**
- * Convert reserved XML characters to character entities in a string
+ * Convert reserved XML characters to character entities in a string.
+ *
+ *  @param  inStr           reference to original string, possibly containing
+ *                          reserved XML characters, such as & or <.
+ *  @return                 copy of string with reserved characters replaced
+ *                          as appropriate; note that in the common case in
+ *                          which no replacements are needed the runtime
+ *                          library will optimize away the copy of the
+ *                          original string using reference counting.
  */
 
 cdr::String cdr::entConvert (
     const cdr::String& inStr
 ) {
-    const int max_entities=256;         // Number of Unicode chars we check
-    cdr::String outStr;                 // Output string
-    const wchar_t *wp,                  // Ptr to char in inStr
-            *last_outp;                 // Last point copied from inStr
-    wchar_t *entities[max_entities];    // Table of pointers to strings
-    int     c;                          // Single char from input stream
+    // Ampersand MUST be first element in this table!
+    static struct { wchar_t ch; wchar_t* ent; } eTable[] = {
+        { L'&', L"&amp;" },
+        { L'<', L"&lt;"  },
+        { L'>', L"&gt;"  }
+    };
 
-    static bool s_first_time = true;
+    // If we make no changes no memory allocations or copying will happen.
+    cdr::String outStr = inStr;
+    if (outStr.isNull())
+        return outStr;
 
-    // Initialize table on first call
-    if (s_first_time) {
-
-        // Initialize entities table to null pointers
-        memset (entities, 0, sizeof(entities));
-
-        // Install the entities we check for
-        // If any have bit values greater than max_entities this won't work
-        entities['<'] = L"&lt;";
-        entities['>'] = L"&gt;";
-        entities['&'] = L"&amp;";
-
-        s_first_time = false;
-    }
-
-    // Convert string
-    wp        = inStr.c_str();
-    last_outp = wp;
-
-    while ((c = (int) *wp) != 0) {
-        if (c < max_entities && entities[c]) {
-            outStr += cdr::String (last_outp, wp - last_outp) + entities[c];
-            last_outp = wp + 1;
+    // Replace each reserved character with its entity equivalent.
+    for (int i = 0; i < sizeof eTable / sizeof *eTable; ++i) {
+        wchar_t                ch  = eTable[i].ch;
+        wchar_t*               ent = eTable[i].ent;
+        cdr::String::size_type len = wcslen(ent);
+        cdr::String::size_type pos = outStr.find(ch);
+        while (pos != outStr.npos) {
+            outStr.replace(pos, 1, ent);
+            pos = outStr.find(ch, pos + len);
         }
-        ++wp;
     }
-
-    // Get all remaining bytes - may be entire string
-    outStr += cdr::String (last_outp, wp - last_outp);
 
     return outStr;
 }
