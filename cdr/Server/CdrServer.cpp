@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.9 2000-06-01 18:49:57 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.10 2000-06-02 20:56:01 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2000/06/01 18:49:57  bkline
+ * Removed some debugging output.
+ *
  * Revision 1.8  2000/05/21 00:52:15  bkline
  * Added CdrShutdown command support and sweep for stale sessions.
  *
@@ -420,7 +423,7 @@ DWORD __stdcall sessionSweep(LPVOID arg) {
                 cdr::String now = conn.getDateTimeString();
                 now[10] = L'T';
                 std::wcerr << L"*** CLEARED " << rows 
-                    << L"INACTIVE SESSIONS AT " << now << L"\n";
+                    << L" INACTIVE SESSIONS AT " << now << L"\n";
             }
         }
         Sleep(5000);
