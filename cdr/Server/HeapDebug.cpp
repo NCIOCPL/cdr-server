@@ -1,9 +1,12 @@
 /*
- * $Id: HeapDebug.cpp,v 1.5 2002-03-06 21:58:32 bkline Exp $
+ * $Id: HeapDebug.cpp,v 1.6 2002-03-07 12:57:17 bkline Exp $
  *
  * Instrumentation for tracking down dynamic memory leaks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2002/03/06 21:58:32  bkline
+ * Tracking all heap block types, not just normal blocks.
+ *
  * Revision 1.4  2002/03/04 21:22:38  bkline
  * Added code to report on more types of heap memory.
  *
@@ -28,6 +31,7 @@
 #include <stdlib.h>
 #include <crtdbg.h>
 #include <iostream>
+#include <windows.h>
 
 static bool heapDebugging = false;
 void setHeapDebugging(bool flag) { heapDebugging = flag; }
@@ -75,10 +79,11 @@ long heapUsed()
 void showHeapUsed(const char *where)
 {
     if (heapDebugging) {
+        //Sleep(3000);
         //std::cerr << where << ": " << heapUsed() << std::endl;
         _CrtMemState cms;
         _CrtMemCheckpoint(&cms);
-        std::cerr << where << ": " << (long)cms.lSizes[_NORMAL_BLOCK]
+        std::cout << where << ": " << (long)cms.lSizes[_NORMAL_BLOCK]
                            <<  "+" << (long)cms.lSizes[_CRT_BLOCK]
                            <<  "+" << (long)cms.lSizes[_IGNORE_BLOCK]
                            <<  "+" << (long)cms.lSizes[_CLIENT_BLOCK]
@@ -88,4 +93,9 @@ void showHeapUsed(const char *where)
                                       (long)cms.lSizes[_CLIENT_BLOCK]
                                    << std::endl;
     }
+}
+
+void dumpHeapLeaks() 
+{
+    _CrtDumpMemoryLeaks();
 }
