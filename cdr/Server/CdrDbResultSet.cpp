@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.cpp,v 1.5 2000-05-03 15:25:41 bkline Exp $
+ * $Id: CdrDbResultSet.cpp,v 1.6 2000-05-04 12:48:13 bkline Exp $
  *
  * Implementation for ODBC result fetching wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/05/03 15:25:41  bkline
+ * Fixed database statement creation.
+ *
  * Revision 1.4  2000/04/26 01:24:05  bkline
  * Fixed BLOB retrieval.
  *
@@ -24,7 +27,8 @@
  * Gathers information about the columns of the results of the current query
  * in preparation for retrieving the results.
  */
-cdr::db::ResultSet::ResultSet(cdr::db::Statement& s) : st(s)
+cdr::db::ResultSet::ResultSet(cdr::db::Statement& s) 
+    : st(s), refCount(1), pRefCount(&refCount)
 {
     SQLSMALLINT nCols;
     SQLRETURN   rc = SQLNumResultCols(st.hstmt, &nCols);
@@ -47,10 +51,22 @@ cdr::db::ResultSet::ResultSet(cdr::db::Statement& s) : st(s)
 }
 
 /**
+ * Copy constructor.  Uses reference counting to avoid deep copying.  Doesn't
+ * seem to matter, as the compiler appears to have optimized these away.
+ */
+cdr::db::ResultSet::ResultSet(const ResultSet& rs) 
+    : st(rs.st), columnVector(rs.columnVector), pRefCount(rs.pRefCount)
+{
+    ++*pRefCount;
+}
+
+/**
  * Discards the column information for the query.
  */
 cdr::db::ResultSet::~ResultSet()
 {
+    if (--*pRefCount > 0)
+        return;
     for (size_t i = 0; i < columnVector.size(); ++i) {
         Column* c = columnVector[i];
         delete c;
