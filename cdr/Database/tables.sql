@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.90 2004-01-12 21:19:20 bkline Exp $
+ * $Id: tables.sql,v 1.91 2004-01-13 21:41:19 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.90  2004/01/12 21:19:20  bkline
+ * Added column 'dropped' to ctgov_import.
+ *
  * Revision 1.89  2003/12/06 15:54:43  bkline
  * Added identity column as new primary key for external_map.
  *
@@ -1849,3 +1852,25 @@ needs_review CHAR(1)         NULL,
  pub_version CHAR(1)         NULL,
   CONSTRAINT ctgov_import_event_pk PRIMARY KEY(job, nlm_id))
 GO
+
+/*
+ * Remembers statistics from download jobs for trials from ClinicalTrials.gov.
+ *
+ *           dt  date/time of download job (primary key)
+ * total_trials  number of cancer trials that meet query criteria
+ *   new_trials  new active and approved-not yet active trials
+ *    unchanged  skipped trials since no changes from previous download
+ *      pdq_cdr  skipped trials from PDQ/CDR
+ *   duplicates  skipped duplicate trials
+ * out_of_scope  Skipped out of scope trials
+ *       closed  Skipped closed and completed trials
+ */
+CREATE TABLE ctgov_download_stats
+         (dt DATETIME NOT NULL PRIMARY KEY,
+total_trials INTEGER  NOT NULL,
+  new_trials INTEGER  NOT NULL,
+   unchanged INTEGER  NOT NULL,
+     pdq_cdr INTEGER  NOT NULL,
+  duplicates INTEGER  NOT NULL,
+out_of_scope INTEGER  NOT NULL,
+      closed INTEGER  NOT NULL)
