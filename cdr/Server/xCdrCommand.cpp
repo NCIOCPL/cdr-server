@@ -1,9 +1,12 @@
 /*
- * $Id: xCdrCommand.cpp,v 1.5 2000-04-21 13:57:11 bkline Exp $
+ * $Id: xCdrCommand.cpp,v 1.6 2000-04-22 09:24:26 bkline Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/04/21 13:57:11  bkline
+ * Replaced stub for cdr::search().
+ *
  * Revision 1.4  2000/04/17 21:25:28  bkline
  * Replaced stub for cdr::checkAuth() function.
  *
@@ -93,7 +96,6 @@ cdr::String cdr::checkAuth(cdr::Session& session,
                            cdr::db::Connection& dbConnection) {
     return stub(L"CheckAuth");
 }
-#endif
 
 cdr::String cdr::addGrp(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
@@ -154,6 +156,7 @@ cdr::String cdr::listUsrs(cdr::Session& session,
                           cdr::db::Connection& dbConnection) {
     return stub(L"ListUsrs");
 }
+#endif
 
 cdr::String cdr::addDoc(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
