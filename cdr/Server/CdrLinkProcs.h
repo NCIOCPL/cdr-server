@@ -6,10 +6,25 @@
  *                                      @author Alan Meyer
  *                                      @date February 2001
  *
- * $Id: CdrLinkProcs.h,v 1.1 2001-04-06 00:08:29 ameyer Exp $
+ * $Id: CdrLinkProcs.h,v 1.2 2001-09-25 15:06:34 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2001/04/06 00:08:29  ameyer
+ * Initial revision
+ *
  */
+
+// #ifndef CDR_LINK_PROCS_
+// #define CDR_LINK_PROCS_
+
+/**@#-*/
+
+namespace cdr {
+  namespace link {
+
+/**@#+*/
+
+/** @pkg cdr */
 
 /**
  * Classes for parsing, storing, and executing a rule for checking
@@ -133,6 +148,44 @@ class LinkChkNode {
          */
         virtual LinkChkNodeType getNodeType () = 0;
 
+        /**
+         * Create a SQL WHERE clause for a pick list from a parse tree.
+         *
+         * The SQL generated here is contains potentially complex conditions
+         * to use in searching the query_term table for linked documents
+         * that qualify for inclusion in the pick list.
+         *
+         * The generated SQL is not complete.  It is the caller's
+         * responsibility to generate everything up to the WHERE clause,
+         * to create his own WHERE clause with primary search information
+         * (e.g., a pattern string for the titles of the documents he
+         * wants), and then to append this clause to his own using " AND "
+         * as appropriate.
+         *
+         * <pre>
+         * Example SQL to generate:
+         *
+         *   Part before the makeWhere:
+         *     SELECT d.id, d.title FROM document d, doc_type t,
+         *       query_term q
+         *     WHERE d.title like 'br%' AND d.doc_type=t.id AND
+         *       t.name='Term' AND q.doc_id=d.id AND
+         *
+         *   Part added by makeWhere:
+         *     (q.path='/Term/TermPrimaryType' AND q.value='diagnosis')
+         *
+         * The call to generate this might look like:
+         *   topNode.makeWhere (sql, L"q.path", L"q.value");
+         * </pre>
+         *
+         *  @param sql              String to receive clause.  Data is
+         *                          appended to it.
+         *  @param tagColumn        Column name to search for tag.
+         *  @param valColumn        Column name to search for value.
+         */
+        void makeWhere (std::string& sql,
+                        std::string& tagColumn,
+                        std::string& valColumn);
 };
 
 
@@ -158,6 +211,13 @@ class LinkChkRelation : public LinkChkNode {
          * Report this as a relator node
          */
         LinkChkNodeType getNodeType() { return typeRel; }
+
+        /**
+         * Accessors
+         */
+        std::string    getTag()     { return tag;     }
+        LinkChkRelator getRelator() { return relator; }
+        std::string    getValue()   { return value;   }
 
         /**
          * Evaluate a single relation expression.
@@ -216,6 +276,13 @@ class LinkChkPair : public LinkChkNode {
          * Report this as an expression pair node.
          */
         LinkChkNodeType getNodeType() { return typePair; }
+
+        /**
+         * Accessors
+         */
+        LinkChkNode*  getLNode()     { return lNode;     }
+        LinkChkNode*  getRNode()     { return rNode;     }
+        LinkChkBoolOp getConnector() { return connector; }
 
         /**
          * Evaluate a complete parse tree.
@@ -291,3 +358,8 @@ class LinkChkTargContains {
             return (treeTop->evalRule (dbConn, docId));
         }
 };
+
+  } // namespaces
+}
+
+// #endif // CDR_LINK_PROCS_
