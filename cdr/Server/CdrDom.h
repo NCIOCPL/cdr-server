@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.h,v 1.9 2000-10-05 21:22:29 bkline Exp $
+ * $Id: CdrDom.h,v 1.10 2001-10-17 13:52:19 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2000/10/05 21:22:29  bkline
+ * Added parseFile(const char*) method.
+ *
  * Revision 1.8  2000/10/04 18:21:58  bkline
  * Expanded the exception types.
  *
@@ -32,6 +35,7 @@
 
 // System headers.
 #include <string>
+#include <iostream>
 
 // Interface to IBM/Apache XML parsers.
 #include <util/PlatformUtils.hpp>
@@ -177,5 +181,15 @@ namespace cdr {
         extern cdr::String getTextContent(const Node& node);
     }
 }
+
+/**
+ * Another convenience method that everyone wishes were in
+ * the standard interface.
+ *
+ *  @param  stream      reference to stream for serialization.
+ *  @param  node        reference to DOM node to be serialized.
+ *  @return             reference to stream used for serialization.
+ */
+extern std::wostream& operator<<(std::wostream&, const cdr::dom::Node&);
 
 #endif
