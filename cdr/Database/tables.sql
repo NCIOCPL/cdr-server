@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.99 2004-11-02 22:42:20 ameyer Exp $
+ * $Id: tables.sql,v 1.100 2005-01-22 16:04:15 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.99  2004/11/02 22:42:20  ameyer
+ * Changes for new blob handling.
+ *
  * Revision 1.98  2004/10/07 20:43:31  bkline
  * Added generic tables to support import of documents from external sources
  * (based on the more special-purpose tables for CT.Gov imports).
@@ -2002,6 +2005,18 @@ CREATE TABLE filter_profile
         (id INTEGER,
      millis INTEGER,
          dt DATETIME)
+GO
+
+/*
+ * Records jobs used to push documents to Cancer.gov, so we can remember
+ * whether and when we sent any protocols from the job to NLM.
+ *
+ *  pub_proc  Identifies job by ID
+ *  exported  Records time CTGov export was run for this job.
+ */
+CREATE TABLE ctgov_export
+   (pub_proc INTEGER PRIMARY KEY REFERENCES pub_proc,
+    exported DATETIME NULL)
 GO
 
 /*
