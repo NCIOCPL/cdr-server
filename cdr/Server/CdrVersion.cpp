@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.11 2001-06-21 23:58:03 ameyer Exp $
+ * $Id: CdrVersion.cpp,v 1.12 2001-12-14 18:28:38 mruben Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2001/06/21 23:58:03  ameyer
+ * Removed extra question mark from INSERT statement.
+ *
  * Revision 1.10  2001/06/05 20:48:02  mruben
  * changed to maintain publishable flag on version
  *
@@ -161,10 +164,8 @@ int cdr::checkIn(cdr::Session& session, int docId,
   {
     if (!allowVersion(docId, conn))
       throw cdr::Exception("Version control  not allowed for document type");
-    if (version > 0)
-      throw cdr::Exception(L"Document not checked out");
-    if (!session.canDo(conn, "MODIFY DOCUMENT", docId))
-      throw cdr::Exception(L"User not authorized to modify document");
+    
+    throw cdr::Exception(L"Document not checked out");
   }
 
 
