@@ -1,0 +1,90 @@
+<CdrDoc Type='Filter' Id='CDR0000331948'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Organization Protocol Review Report Filter 1</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<xsl:transform            xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                          xmlns:cdr = "cips.nci.nih.gov/cdr"
+                            version = "1.0">
+
+ <!-- $Id: CDR0000331948.xml,v 1.1 2003-09-02 15:08:45 bkline Exp $ -->
+
+ <!-- 
+ ======================================================================
+ Use stock code for assembling address display lines.
+ ====================================================================== -->
+ <xsl:import                   href = "cdr:/name:Contact Detail Formatter"/>
+
+ <!-- 
+ ======================================================================
+ Top node of source document.
+ ====================================================================== -->
+ <xsl:template                match = "/">
+  <xsl:apply-templates       select = "Organization"/>
+ </xsl:template>
+
+ <!-- 
+ ======================================================================
+ Top element of source document.
+ ====================================================================== -->
+ <xsl:template                match = "Organization">
+  <Organization>
+   <OrgName>
+    <xsl:value-of            select = "OrganizationNameInformation/
+                                       OfficialName/Name"/>
+   </OrgName>
+   <xsl:apply-templates      select = "OrganizationLocations"/>
+  </Organization>
+ </xsl:template>
+
+ <!-- 
+ ======================================================================
+ Separate CIPS contact from other locations.
+ ====================================================================== -->
+ <xsl:template                match = "OrganizationLocations">
+  <xsl:variable                name = "cipsContact"
+                             select = "CIPSContact"/>
+  <xsl:if                      test = "OrganizationLocation/Location
+                                       [@cdr:id = $cipsContact]">
+   <CipsContact>
+    <xsl:apply-templates     select = "OrganizationLocation/Location
+                                       [@cdr:id = $cipsContact]"/>
+   </CipsContact>
+  </xsl:if>
+  <xsl:for-each              select = "OrganizationLocation/Location
+                                       [not(@cdr:id = $cipsContact)]">
+   <OtherLocation>
+    <xsl:apply-templates     select = "."/>
+   </OtherLocation>
+  </xsl:for-each>
+ </xsl:template>
+
+ <!-- 
+ ======================================================================
+ Assemble information for one of the organization's locations.
+ ====================================================================== -->
+ <xsl:template                match = "Location">
+  <PostalAddress>
+   <xsl:apply-templates      select = "PostalAddress"/>
+  </PostalAddress>
+  <Phone>
+   <xsl:value-of             select = "Phone"/>
+  </Phone>
+  <TollFreePhone>
+   <xsl:value-of             select = "TollFreePhone"/>
+  </TollFreePhone>
+  <Fax>
+   <xsl:value-of             select = "Fax"/>
+  </Fax>
+  <WebSite>
+   <xsl:value-of             select = "WebSite/@cdr:xref"/>
+  </WebSite>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
