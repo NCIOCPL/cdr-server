@@ -20,7 +20,7 @@
 
 <!-- 
  ==================================================================
- $Id: CDR0000269013.xml,v 1.3 2002-11-14 19:12:06 venglisc Exp $
+ $Id: CDR0000269013.xml,v 1.4 2002-11-15 16:31:02 venglisc Exp $
 
  $Log: not supported by cvs2svn $
  ================================================================== -->
@@ -54,7 +54,7 @@
  =================================================================== -->
  <xsl:template                  match = "ProtocolSites">
     <xsl:copy>
-    <!-- This syntax is comparing the text notes only!!! -->
+    <!-- This syntax is comparing the text nodes only!!! -->
      <xsl:apply-templates      select = "ProtocolSite
                                          [not(.=preceding::ProtocolSite)]">
        <xsl:sort               select = "."/>
@@ -84,13 +84,9 @@
  The duplicates are being trimmed in the second filter of this process.
  =================================================================== -->
  <xsl:template                  match = "ProtocolSite">
-  <!-- xsl:choose>
-   <xsl:when                     test = "contains(@ref, '#')" -->
     <xsl:variable                name = "siteID"   
                                select = "substring-before
                                          (concat(@ref, '#'), '#')"/>
-    <!-- xsl:variable                name = "siteIDfrag"   
-                               select = "@ref"/ -->
   <ProtocolSite>
    <xsl:attribute                name = "ref">
     <xsl:value-of              select = "$siteID"/>
@@ -101,20 +97,16 @@
    </xsl:attribute>
 
    <xsl:copy-of                select = "SiteName"/>
-
-   <xsl:for-each               select = "/Protocol/ProtocolAdminInfo
-                                         /ProtocolSites
+   <xsl:for-each               select = "ProtocolSites
                                          /ProtocolSite[
                                            substring(@ref, 1, 13)=$siteID]
                                          /ProtPerson[
                                            not(.=preceding::ProtPerson)] |
-                                         /Protocol/ProtocolAdminInfo
-                                         /ProtocolSites
+                                         ProtocolSites
                                          /ProtocolSite[@ref=$siteID]
                                          /ProtPerson[
                                            not(.=preceding::ProtPerson)]">
     <xsl:sort                  select = "."/>
-    <xsl:apply-templates       select = "."/>
    </xsl:for-each>
   </ProtocolSite>
  </xsl:template>
