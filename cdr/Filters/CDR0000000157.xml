@@ -669,18 +669,32 @@
 
 <!-- ==============================================================
      Template for extracting Summary Ref Definition
-     Note:  The SummaryFragmentRef and SummaryLOERef elements do 
+     Note:  The SummaryFragmentRef and LOEFragmentRef elements do 
             not exist in the vendor DTD.  These elements are 
-            therefore mapped to the SummaryRef element instead.
+            therefore mapped to the SummaryRef/LOERef elements 
+            instead.
      ============================================================== -->
-<xsl:template                    match = "SummaryRef | SummaryFragmentRef
-                                                     | SummaryLOERef">
-  <SummaryRef>
-    <xsl:attribute                name = "href">
-     <xsl:value-of              select = "@cdr:href"/>
-    </xsl:attribute>
-    <xsl:apply-templates/>
-  </SummaryRef>
+<xsl:template                    match = "SummaryRef | SummaryFragmentRef |
+                                          LOERef     | LOEFragmentRef">
+  <xsl:choose>
+   <xsl:when                      test = "(name() = 'SummaryRef') or
+                                          (name() = 'SummaryFragmentRef')">
+    <SummaryRef>
+     <xsl:attribute                name = "href">
+      <xsl:value-of              select = "@cdr:href"/>
+     </xsl:attribute>
+     <xsl:apply-templates/>
+    </SummaryRef>
+   </xsl:when>
+   <xsl:otherwise>
+    <LOERef>
+     <xsl:attribute                name = "href">
+      <xsl:value-of              select = "@cdr:href"/>
+     </xsl:attribute>
+     <xsl:apply-templates/>
+    </LOERef>
+   </xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 
