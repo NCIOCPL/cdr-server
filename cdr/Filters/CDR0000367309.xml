@@ -1,0 +1,60 @@
+<CdrDoc Type='Filter' Id='CDR0000367309'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">DocTitle for PDQBoardMemberInfo</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<xsl:transform            xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                            version = "1.0"
+                          xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+ <xsl:output                 method = "text"/>
+
+  
+ <xsl:template                match = "/">
+  <xsl:apply-templates       select = "PDQBoardMemberInfo/BoardMemberName"/>
+ </xsl:template>
+
+ <xsl:template                match = "BoardMemberName">
+  <xsl:variable                name = "id"
+                             select = "@cdr:ref"/>
+  <xsl:variable                name = "uri"
+                             select = "concat('cdrx:', $id)"/>
+  <xsl:variable                name = "doc"
+                             select = "document($uri)"/>
+  <xsl:variable                name = "name">
+   <xsl:apply-templates      select = "$doc/Person/PersonNameInformation"/>
+  </xsl:variable>
+  <xsl:choose>
+   <xsl:when                   test = "$name = ''">
+    <xsl:text>[No name found for board member]</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:value-of            select = "$name"/>
+    <xsl:text> (board membership information)</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+ <xsl:template                match = "PersonNameInformation">
+  <xsl:variable                name = "surname"
+                             select = "normalize-space(SurName)"/>
+  <xsl:variable                name = "forename"
+                             select = "normalize-space(GivenName)"/>
+  <xsl:if                      test = "$surname != ''">
+   <xsl:value-of             select = "$surname"/>
+   <xsl:if                     test = "$forename != ''">
+    <xsl:text>, </xsl:text>
+   </xsl:if>
+  </xsl:if>
+  <xsl:if                      test = "$forename != ''">
+   <xsl:value-of             select = "$forename"/>
+  </xsl:if>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
