@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbConnection.cpp,v 1.6 2000-06-01 18:48:58 bkline Exp $
+ * $Id: CdrDbConnection.cpp,v 1.7 2001-12-14 15:19:10 bkline Exp $
  *
  * Implementation for ODBC connection wrapper.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/06/01 18:48:58  bkline
+ * Removed some debugging output.
+ *
  * Revision 1.5  2000/05/21 00:48:59  bkline
  * Replaced public constructor with ServerDriver::getConnection().
  *
@@ -25,6 +28,13 @@
 #include "CdrDbConnection.h"
 #include "CdrDbResultSet.h"
 #include "CdrException.h"
+#include "CdrLock.h"
+
+// XXX For debugging memory leaks.
+#ifdef HEAPDEBUG
+static int activeConnections;
+static const char* const ActiveConnectionsMutex = "ActiveConnectionsMutex";
+#endif
 
 /**
  * ODBC environment handle shared by all CDR connections.
@@ -74,6 +84,15 @@ cdr::db::Connection::Connection(const SQLCHAR* dsn,
                              getErrorMessage(rc, henv, hdbc, 0));
     }
     setAutoCommit(true);
+#ifdef HEAPDEBUG
+    HANDLE mutex = CreateMutex(0, false, ActiveConnectionsMutex);
+    if (mutex != 0) {
+        cdr::Lock lock(mutex, 1000);
+        if (lock.m) {
+            ++activeConnections;
+        }
+    }
+#endif
 }
 
 /**
@@ -127,6 +146,18 @@ void cdr::db::Connection::close()
     if (isClosed())
         throw cdr::Exception(
                 L"Connection::close(): Connection already closed.");
+#ifdef HEAPDEBUG
+    HANDLE mutex = CreateMutex(0, false, ActiveConnectionsMutex);
+    if (mutex != 0) {
+        cdr::Lock lock(mutex, 1000);
+        if (lock.m) {
+            if (activeConnections < 1)
+                throw cdr::Exception(
+                    L"Connection::close(): No connections open.");
+            --activeConnections;
+        }
+    }
+#endif
     SQLDisconnect(hdbc);
     SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
     master->hdbc = SQL_NULL_HDBC;
