@@ -1,9 +1,13 @@
 /*
- * $Id: CdrFilter.cpp,v 1.32 2002-11-14 13:23:58 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.33 2002-11-19 22:43:32 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2002/11/14 13:23:58  bkline
+ * Changed CdrFilter command to use filter sets.  Added CdrDelFilterSet
+ * command.
+ *
  * Revision 1.31  2002/11/12 11:44:37  bkline
  * Added filter set support.
  *
@@ -543,10 +547,19 @@ namespace
 
         int version = 0;
         if (version_str == L"last")
+        {
           version = cdr::getVersionNumber(uid.extractDocId(), connection);
+          if (version < 1)
+            throw cdr::Exception(L"No version found for document", uid);
+        }
         else if (version_str == L"lastp")
+        {
           version = cdr::getLatestPublishableVersion(uid.extractDocId(), 
                                                      connection);
+          if (version < 1)
+            throw cdr::Exception(L"No publishable version found for document", 
+                                 uid);
+        }
         else if (!version_str.empty())
           version = version_str.getInt();
 
