@@ -1,0 +1,68 @@
+<CdrDoc Type='Filter' Id='CDR0000320534'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Remove Parent OrganizationName for Person</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<xsl:transform         xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                         version = "1.0"
+                       xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+ <xsl:include  href = "cdr:name:Module: Global Filter Templates"/>
+
+ <xsl:output              method = "xml" 
+            omit-xml-declaration = "no"/>
+
+
+ <xsl:template             match = "*">
+  <xsl:copy>
+   <xsl:apply-templates     mode = "copy"/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!-- 
+ ==========================================================================
+ The previous filter in this filter set flattens the hierarchy of the 
+ organization and parent names and list - if available - all parent names
+ along with the organization itself.
+ This template removes all of the parent names from the address block and 
+ only leaves parent names listed if the IncludeParentName attribute has 
+ been specified.
+ The first OrganizationName is the organization itself and will always have
+ to be displayed.  All succeeding OrganizationNames are actually parents.
+ ========================================================================== -->
+ <xsl:template             match = "OrganizationName"
+                            mode = "copy">
+  <xsl:choose>
+  <xsl:when                 test = "position() = 1">
+   <OrganizationName>
+    <xsl:for-each         select = "@*">
+     <xsl:attribute         name = "{name()}">
+      <xsl:value-of       select = "."/>
+     </xsl:attribute>
+    </xsl:for-each>
+    <xsl:value-of         select = "."/>
+   </OrganizationName>
+  </xsl:when>
+  <xsl:when                 test = "position() != 1  and
+                                    ../OrganizationName[1]/@IncludeParentName">
+   <OrganizationName>
+    <xsl:for-each         select = "@*">
+     <xsl:attribute         name = "{name()}">
+      <xsl:value-of       select = "."/>
+     </xsl:attribute>
+    </xsl:for-each>
+    <xsl:value-of         select = "."/>
+   </OrganizationName>
+  </xsl:when>
+  </xsl:choose>
+ </xsl:template>
+
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
