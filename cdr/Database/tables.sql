@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.34 2001-08-07 21:09:59 ameyer Exp $
+ * $Id: tables.sql,v 1.35 2001-08-22 22:02:56 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2001/08/07 21:09:59  ameyer
+ * Added last_frag_id to all_docs.
+ *
  * Revision 1.33  2001/07/28 11:58:38  bkline
  * Added node_loc column to query_term table.
  *
@@ -344,8 +347,6 @@ CREATE TABLE active_status
  *           id  automatically generated primary key for the document table
  *   val_status  foreign key reference into the doc_status table
  *     val_date  date validation processing was last performed on document
- *     approved  approved for publication/release ('Y' or 'N')- other changes
- *               due to workflow analysis
  *     doc_type  foreign key reference into the doc_type table
  *        title  required string containing title for document; Titles will
  *               not be required to be unique
@@ -366,7 +367,6 @@ CREATE TABLE all_docs
            (id INTEGER IDENTITY PRIMARY KEY,
     val_status CHAR NOT NULL DEFAULT 'U' REFERENCES doc_status,
       val_date DATETIME NULL,
-      approved CHAR NOT NULL DEFAULT 'N',
       doc_type INTEGER NOT NULL REFERENCES doc_type,
          title VARCHAR(255) NOT NULL,
            xml NTEXT NOT NULL,
@@ -867,3 +867,43 @@ CREATE VIEW term_children
                         AND q2.path = '/Term/TermParent/@cdr:ref'
                         AND q2.int_val =* q1.doc_id
                    GROUP BY q1.int_val, q1.doc_id, d.title
+
+/*
+ * Table for valid values in issue.priority column.
+ */
+CREATE TABLE issue_priority
+    (priority VARCHAR(20) PRIMARY KEY)
+
+/*
+ * Table for valid values in user columns of issue table.
+ */
+CREATE TABLE issue_user
+       (name VARCHAR(30) PRIMARY KEY)
+
+/*
+ * Table for tracking development issues for the CDR project (bugs, change
+ * requests, etc.).
+ *
+ *           id  primary key for the issue.
+ *       logged  date/time the issue was logged.
+ *    logged_by  name of the project member who logged the issue.
+ *     priority  level of urgency with which issue should be addressed.
+ *  description  free text description of the problem or request.
+ *     assigned  date/time the issue was assigned to a project team member.
+ *  assigned_to  name of project member to whom the issue was assigned.
+ *     resolved  date/time the issue was closed.
+ *  resolved_by  name of project member who resolved the issue.
+ *        notes  additional information about the issue, including information
+ *               about how the issue was resolved.
+ */
+CREATE TABLE issue
+         (id INTEGER IDENTITY PRIMARY KEY,
+      logged DATETIME    NOT NULL,
+   logged_by VARCHAR(30) NOT NULL REFERENCES issue_user,
+    priority VARCHAR(20) NOT NULL REFERENCES issue_priority,
+ description TEXT        NOT NULL,
+    assigned DATETIME        NULL,
+ assigned_to VARCHAR(30)     NULL REFERENCES issue_user,
+    resolved DATETIME        NULL,
+ resolved_by VARCHAR(30)     NULL REFERENCES issue_user,
+       notes TEXT            NULL)
