@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.66 2002-08-07 18:03:08 pzhang Exp $
+ * $Id: tables.sql,v 1.67 2002-08-12 20:30:46 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.66  2002/08/07 18:03:08  pzhang
+ * Added 'subdir' column to pub_proc_doc.
+ *
  * Revision 1.65  2002/07/30 19:43:27  pzhang
  * Added pub_proc_cg_work table.
  *
@@ -1582,4 +1585,20 @@ CREATE TABLE pub_proc_cg_work
       cg_job INTEGER NOT NULL REFERENCES pub_proc,
     doc_type VARCHAR(32) NOT NULL,
          xml NTEXT NULL)
+GO
+
+/*
+ * Debugging table for tracking commands.
+ *  
+ *       thread  logging ID used to identify this thread since the process
+ *               started.
+ *     received  date/time the command set was received by the server.
+ *      command  full XML string (UTF-8 encoded) for the CdrCommandSet.
+ */
+CREATE TABLE command_log
+     (thread INTEGER NOT NULL,
+    received DATETIME NOT NULL,
+     command TEXT NOT NULL,
+  CONSTRAINT command_log_pk PRIMARY KEY(thread, received))
+CREATE INDEX command_log_time ON command_log(received)
 GO
