@@ -63,32 +63,52 @@ Filter to create Health Professional Summary Report
  Display summary title
  ================================================================== -->
  <xsl:template                   match = "Summary">
-  <BODY>
-   <xsl:apply-templates         select = "SummaryTitle" 
+  <!-- 
+  Do not run this report if this is a newly reformatted patient 
+  summary.  The Patient Summary QC report will need to be used
+  instead
+  ============================================================= -->
+  <xsl:choose>
+   <xsl:when                      test = "//SummaryAudience='Patients'
+                                          and
+                                          //KeyPoint">
+    <BODY>
+     <h2>ERROR:</h2>
+     <h3>Redline/Strikeout QC Report not valid for reformatted patient 
+         summaries</h3>
+    </BODY>
+   </xsl:when>
+   <xsl:otherwise>
+    <BODY>
+     <xsl:apply-templates       select = "SummaryTitle" 
                                   mode = "TOC"/>  
 
-   <!-- 
-   ==================================================================
-   Display a Contents List of Summary Section Titles 
-   10/06/2002 - Modified code to remove 4th level titles (CB) 
-   10/08/2002 - took breaks out at end of titles.
-   =================================================================== -->
-   <ul Class="lnone">
-    <xsl:for-each              select = "SummarySection">
-     <xsl:call-template          name = "TocSummarySection">
-      <xsl:with-param            name = "level"
-                               select = "1"/>
-     </xsl:call-template>  
-    </xsl:for-each>
-   </ul>
+     <!-- 
+     ==================================================================
+     Display a Contents List of Summary Section Titles 
+     10/06/2002 - Modified code to remove 4th level titles (CB) 
+     10/08/2002 - took breaks out at end of titles.
+     =================================================================== -->
+     <ul Class="lnone">
+      <xsl:for-each             select = "SummarySection">
+       <xsl:call-template         name = "TocSummarySection">
+        <xsl:with-param           name = "level"
+                                select = "1"/>
+       </xsl:call-template>  
+      </xsl:for-each>
+     </ul>
 
-   <xsl:apply-templates/>
+     <xsl:apply-templates/>
 
-  </BODY>
+    </BODY>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
+
 
  <!-- Remove the CdrDocCtl elements from the HTML output -->
  <xsl:template                  match = "CdrDocCtl"/>
+
 
  <!-- 
  ======================================================================
