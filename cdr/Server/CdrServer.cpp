@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.18 2001-09-19 18:48:22 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.19 2001-12-14 15:03:20 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2001/09/19 18:48:22  bkline
+ * Added support for timing processing time for commands.
+ *
  * Revision 1.17  2001/05/21 20:31:58  bkline
  * Fixed typo (missing right angle bracket for element closing tag).
  *
@@ -68,6 +71,7 @@
 #include <cstdlib>
 #include <string>
 #include <ctime>
+#include <process.h>
 
 // Project headers.
 #include "catchexp.h"
@@ -96,8 +100,8 @@ static cdr::String      processCommand(cdr::Session&,
 static cdr::String      getElapsedTime(DWORD);
 static void             sendErrorResponse(int, const cdr::String&,
                                           const cdr::String&);
-static DWORD __stdcall  dispatcher(LPVOID);
-static DWORD __stdcall  sessionSweep(LPVOID);
+static void __cdecl     dispatcher(void*);
+static void __cdecl     sessionSweep(void*);
 
 static bool             timeToShutdown = false;
 static cdr::log::Log    log;
@@ -111,6 +115,7 @@ main(int ac, char **av)
     WSAData             wsadata;
     int                 sock;
     struct sockaddr_in  addr;
+    short               port = ac > 1 ? atoi(av[1]) : CDR_PORT;
 
     // In case of catastrophe, don't hang up on console
     if (!getenv ("NOCATCHCRASH"))
@@ -131,7 +136,7 @@ main(int ac, char **av)
     }
     std::cout << "socket created...\n";
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(CDR_PORT);
+    addr.sin_port = htons(port);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(sock, (struct sockaddr *)&addr, sizeof addr) == SOCKET_ERROR) {
         perror("bind");
@@ -144,10 +149,11 @@ main(int ac, char **av)
     }
     std::cout << "listening...\n";
 
-    if (!CreateThread(0, 0, sessionSweep, (LPVOID)0, 0, 0)) {
+    if (_beginthread(sessionSweep, 0, (void*)0) == -1) {
         std::cerr << "CreateThread: " << GetLastError() << '\n';
         return EXIT_FAILURE;
     }
+
     while (!timeToShutdown) {
         struct sockaddr_in client_addr;
         int len = sizeof client_addr;
@@ -159,7 +165,7 @@ main(int ac, char **av)
             perror("accept");
             return EXIT_FAILURE;
         }
-        if (!CreateThread(0, 0, dispatcher, (LPVOID)fd, 0, 0)) {
+        if (_beginthread(dispatcher, 0, (void*)fd) == -1) {
             std::cerr << "CreateThread: " << GetLastError() << '\n';
             return EXIT_FAILURE;
         }
@@ -180,7 +186,7 @@ void cleanup()
  * Implements thread processing to handle a new connection.  Capable
  * of handling multiple command sets for the connection.
  */
-DWORD __stdcall dispatcher(LPVOID arg) {
+void __cdecl dispatcher(void* arg) {
     cdr::db::Connection conn =
         cdr::db::DriverManager::getConnection(cdr::db::url,
                                               cdr::db::uid,
@@ -205,8 +211,7 @@ DWORD __stdcall dispatcher(LPVOID arg) {
 
     // Thread is about to go, done with thread specific log
     delete cdr::log::pThreadLog;
-
-    return EXIT_SUCCESS;
+    _endthread();
 }
 
 /**
@@ -541,9 +546,10 @@ void sendResponse(int fd, const cdr::String& response)
  * Cleans up stale sessions (those which have been inactive for 24 hours or
  * longer).
  */
-DWORD __stdcall sessionSweep(LPVOID arg) {
+void __cdecl sessionSweep(void* arg) {
 
-    const char* query = "DELETE SESSION"
+    const char* query = "UPDATE session"
+		                "   SET ended = GETDATE()"
                         " WHERE ended IS NULL"
                         "   AND DATEDIFF(hour, last_act, GETDATE()) > 24";
     int counter = 0;
@@ -589,7 +595,7 @@ DWORD __stdcall sessionSweep(LPVOID arg) {
             log.Write("sessionSweep", "unknown exception");
         }
     }
-    return EXIT_SUCCESS;
+    _endthread();
 }
 
 /**
