@@ -13,10 +13,12 @@
   <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                  version="1.0"
                  xmlns:cdr="cips.nci.nih.gov/cdr">
+   <xsl:import    href = "cdr:name:InLine Markup Formatter"/>
    <xsl:output method="html"/>
    <xsl:template match="/">
    <!--Filter written by C.Burg - 6/12/2001 -->
-  
+    <!-- Modified to correct format of citations imbedded in text 6-24-2002 -->
+    <!-- fixed bug in TOC  7/10/2002 -->
    <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
     <HTML>
     <HEAD>
@@ -34,6 +36,7 @@
            li {font size: medium}
            pre {font size: medium}
            H3  {font size: medium}-->
+           li.lnone {list-style-type: none}
      </STYLE>
      <!--
      <LINK REL='stylesheet' 
@@ -59,41 +62,6 @@
           Display a Contents List of Summary Section Titles 
      =================================================================== -->
 
-<!--<h2>Table of Contents</h2>
-
-<dl>
-<xsl:for-each select="SummarySection" >
-<dt><a href="#{translate(Title,' ','')}"><xsl:value-of select="Title"/></a></dt><br />
-<xsl:choose>
-<xsl:when test="descendant::SummarySection">
-<xsl:for-each select="SummarySection">
-<dt><a href="#{translate(Title,' ','')}"><xsl:value-of select="Title"/></a></dt><br />
-</xsl:for-each>
-</xsl:when>
-<xsl:otherwise>
-</xsl:otherwise>
-</xsl:choose>
-<dl>
-<xsl:for-each select="SummarySection" >
-<xsl:value-of select="Title"/><br />
-<xsl:choose>
-<xsl:when test="SummarySection/SummarySection">
-<xsl:for-each select="SummarySection">
-<xsl:value-of select="Title"/><br />
-</xsl:for-each>
-</xsl:when>
-<xsl:otherwise>
-</xsl:otherwise>
-</xsl:choose>
-<xsl:if test="descendant::SummarySection">
- <dl>
-<xsl:for-each select="descendant::SummarySection/SummarySection">
-<xsl:value-of select="Title"/><br />
-</xsl:for-each>
-</dl>
-</xsl:if>
-</xsl:for-each>
-</dl>-->
 
 <dl>
 <xsl:for-each select="SummarySection">
@@ -101,7 +69,7 @@
 <xsl:choose>
 <xsl:when test="descendant::SummarySection">
 <dl>
-<xsl:for-each select="SummarySection">
+<xsl:for-each select=".//SummarySection">
 <dt><xsl:value-of select="Title"/></dt><br />
 </xsl:for-each>
 </dl>
@@ -109,20 +77,13 @@
 <xsl:otherwise>
 </xsl:otherwise>
 </xsl:choose>
-<xsl:if test="descendant::SummarySection/SummarySection">
-<dl>
-<xsl:for-each select="SummarySection/SummarySection">
-<dt><xsl:value-of select="Title"/></dt><br />
 </xsl:for-each>
 </dl>
-</xsl:if>
-</xsl:for-each>
-</dl>
-
 <xsl:apply-templates/>
 </BODY>
-<!--</xsl:if>-->
 </xsl:template>
+
+ 
 
 <!-- ======================================================================
     templates to handle summary section anchors,list formats, and paragraphs
@@ -134,53 +95,6 @@
 <xsl:template match="SummarySection/Title | SummarySection/SummarySection/Title">
 <h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4>
 </xsl:template>
-
-<!--======================================================================
-                       Display an ordered list 
-    ===================================================================== -->
-<xsl:template match="OrderedList[@Style='Arabic']/ListItem">
-<ol>
-<li><xsl:apply-templates/></li><br />
-</ol>
-</xsl:template>
-
-<!--======================================================================
-                       Display an ordered list Style-UAlpha
-    ===================================================================== -->
-<xsl:template match="OrderedList[@Style='UAlpha']/ListItem">
-<ol>
-<li type='A'><xsl:apply-templates/></li><br />
-</ol>
-</xsl:template>
-
-<!--======================================================================
-                       Display an ordered list Style-UAlpha
-    ===================================================================== -->
-<xsl:template match="OrderedList[@Style='LAlpha']/ListItem">
-<ol>
-<li type='a'><xsl:apply-templates/></li><br />
-</ol>
-</xsl:template>
-
-<!--======================================================================
-                       Display an ordered list Style-URoman
-    ===================================================================== -->
-<xsl:template match="OrderedList[@Style='URoman']/ListItem">
-<ol>
-<li type='I'><xsl:apply-templates/></li><br />
-</ol>
-</xsl:template>
-
-<!--======================================================================
-                       Display an ordered list Style-LRoman
-    ===================================================================== -->
-<xsl:template match="OrderedList[@Style='LRoman']/ListItem">
-<ol>
-<li type='i'><xsl:apply-templates/></li><br />
-</ol>
-</xsl:template>
-
-
 
 
 <!-- ======================================================================
@@ -274,44 +188,6 @@
 </xsl:if>
 </xsl:template>
 
-<!-- ====================================================================
-                Display an itemized list 
-     =================================================================== -->
-
-<xsl:template match="ItemizedList[@Style='simple']/ListItem">
-<dl>
-<dd><xsl:apply-templates/></dd><br />
-</dl>
-</xsl:template>
-
-<!-- ====================================================================
-                Display an itemized list Style=Compact     =================================================================== -->
-
-<xsl:template match="ItemizedList/ListItem">
-<dl>
-<dd><xsl:apply-templates/></dd><br />
-</dl>
-</xsl:template>
-
-
-<!-- ====================================================================
-                Display an itemized list Style-bullet
-     =================================================================== -->
-<xsl:template match="ItemizedList[@Style='bullet']/ListItem">
-<ul>
-<li><xsl:apply-templates/></li><br />
-</ul>
-</xsl:template>
-
-<!-- ====================================================================
-                Display an itemized list Style-dash
-     =================================================================== -->
-<xsl:template match="ItemizedList[@Style='dash']/ListItem"> 
-<ul>
-<li type='square'><xsl:apply-templates/></li><br />
-</ul>
-</xsl:template>
-
 
 
 <!-- =======================================================================
@@ -345,68 +221,6 @@
               <strike><xsl:apply-templates/></strike>
               </xsl:template>
 
-<!-- ==================================================================
-                     Display a Subscript 
-     =================================================================== -->
-
-              <xsl:template match="Subscript">
-              <sub><xsl:apply-templates/></sub>
-              </xsl:template>
-
-<!-- ==================================================================
-                     Display a Superscript 
-     =================================================================== -->
-
-              <xsl:template match="Superscript">
-              <sup><xsl:apply-templates/></sup>
-              </xsl:template>
-
-<!-- ==================================================================
-                     Display Strong 
-     =================================================================== -->
-
-              <xsl:template match="Strong">
-              <b><xsl:apply-templates/></b>
-              </xsl:template>
-
-<!-- ==================================================================
-                     Display Emphasis 
-     =================================================================== -->
-
-              <xsl:template match="Emphasis">
-              <i><xsl:apply-templates/></i>
-              </xsl:template>
-<!-- ==================================================================
-                     Display DrugName
-     =================================================================== -->
-
-              <xsl:template match="DrugName">
-              <i><xsl:apply-templates/></i>
-              </xsl:template>
-
-
-<!-- ==================================================================
-                     Display Scientific Name 
-     =================================================================== -->
-
-              <xsl:template match="ScientificName">
-              <i><xsl:apply-templates/></i>
-              </xsl:template>
-<!-- ==================================================================
-                     Display Foreign Word 
-     =================================================================== -->
-
-              <xsl:template match="ForeignWord">
-              <i><xsl:apply-templates/></i>
-              </xsl:template>
-
-<!-- ==================================================================
-                     Display Gene Name 
-     =================================================================== -->
-
-              <xsl:template match="GeneName">
-              <i><xsl:apply-templates/></i>
-              </xsl:template>
 
 
 
