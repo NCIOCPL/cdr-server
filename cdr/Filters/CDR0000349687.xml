@@ -7,11 +7,16 @@
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
-   $Id: CDR0000349687.xml,v 1.2 2003-12-23 18:19:37 bkline Exp $
+
+   $Id: CDR0000349687.xml,v 1.3 2004-04-19 14:01:59 bkline Exp $
 
    $Log: not supported by cvs2svn $
+   Revision 1.2  2003/12/23 18:19:37  bkline
+   Added restrictions to what we pick up from the PersonNameInformation 
+   block in a linked Person document.
+
    Revision 1.1  2003/12/14 19:16:19  bkline
-   Final version for promotion to production system.  
+   Final version for promotion to production system.
 
   -->
 
@@ -59,32 +64,54 @@
 
  <!-- *
  ==============================================================
- Template for organization links.
+ Template for organization or person links.
  ============================================================== -->
  <xsl:template                  match = "LeadSponsor |
                                          Collaborator |
                                          Facility/Name">
   <xsl:choose>
-   <xsl:when                     test = "@cdr:ref != ''"> 
-    <xsl:call-template           name = "getOrganization">
-     <xsl:with-param             name = "includeCIPSContact"
+   <xsl:when                     test = "@cdr:ref != ''">
+    <xsl:variable                name = "uri"
+                               select = "concat('cdrx:', @cdr:ref, '/last')"/>
+    <xsl:variable                name = "doc"
+                               select = "document($uri)"/>
+    <xsl:choose>
+     <xsl:when                   test = "$doc/Organization">
+      <xsl:call-template         name = "getOrganization">
+       <xsl:with-param           name = "includeCIPSContact"
                                select = "'Y'"/>
-    </xsl:call-template>
+      </xsl:call-template>
+     </xsl:when>
+     <xsl:when                   test = "$doc/Person/PersonNameInformation">
+      <xsl:element               name = "{name()}">
+       <Person                cdr:ref = "{@cdr:ref}">
+        <xsl:copy-of           select = "$doc/Person/PersonNameInformation"/>
+       </Person>
+      </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:call-template         name = "unlinkedOrg"/>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:when>
    <xsl:otherwise>
-    <xsl:element                 name = "{name()}">
-     <Organization>
-      <OrganizationNameInformation>
-       <OfficialName>
-        <Name>
-         <xsl:value-of         select = "."/>
-        </Name>
-       </OfficialName>
-      </OrganizationNameInformation>
-     </Organization>
-    </xsl:element>
+    <xsl:call-template           name = "unlinkedOrg"/>
    </xsl:otherwise>
   </xsl:choose>
+ </xsl:template>
+
+ <xsl:template                   name = "unlinkedOrg">
+  <xsl:element                   name = "{name()}">
+   <Organization>
+    <OrganizationNameInformation>
+     <OfficialName>
+      <Name>
+       <xsl:value-of           select = "."/>
+      </Name>
+     </OfficialName>
+    </OrganizationNameInformation>
+   </Organization>
+  </xsl:element>
  </xsl:template>
 
  <!-- *
