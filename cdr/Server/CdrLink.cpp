@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.14 2002-02-15 06:46:13 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.15 2002-02-19 15:44:18 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2002/02/15 06:46:13  ameyer
+ * Bug fix in routines to update link types.
+ *
  * Revision 1.13  2002/02/12 21:29:10  ameyer
  * Fixed error message.
  *
@@ -1126,8 +1129,6 @@ static void addLinkSource (
         throw cdr::Exception (L"Missing required SrcField field "
                               L"in LinkSource");
 
-std::wcout << L"Adding DocType=" << srcDocType << " elem=" << srcField << L" id=" << typeId << L"\n";
-
     // Failures here shouldn't happen through the
     //  admin interface, so I won't bother to catch
     //  and analyze any exceptions.
@@ -1212,6 +1213,7 @@ static void addLinkProperty (
     pstmt.setString (3, comment);
     pstmt.setString (4, linkProp);
     pstmt.executeQuery();
+    pstmt.close();
 
 } // addLinkProperty()
 
@@ -1244,6 +1246,7 @@ static void addLinkTarget (
     pstmt.setInt (1, typeId);
     pstmt.setString (2, targName);
     pstmt.executeQuery();
+    pstmt.close();
 
 } // addLinkTarget()
 
