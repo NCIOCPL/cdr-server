@@ -1,0 +1,124 @@
+<CdrDoc Type='Filter' Id='CDR0000343376'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Copy XML for Person 2</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<xsl:transform         xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                         version = "1.0"
+                       xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+ <xsl:include  href = "cdr:name:Module: Global Filter Templates"/>
+ <xsl:include  href = "cdr:name:Module: Vendor Phone Templates"/>
+ <xsl:include  href = "cdr:name:Module: Vendor Address Templates"/>
+
+ <xsl:output              method = "xml" 
+            omit-xml-declaration = "no"/>
+
+
+ <!-- 
+ ==========================================================================
+ ========================================================================== -->
+ <xsl:template             match = "*">
+  <xsl:copy>
+   <xsl:apply-templates/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!-- 
+ ==========================================================================
+ ========================================================================== -->
+ <xsl:template             match = "PersonLocations">
+  <xsl:copy>
+  <xsl:variable             name = "contactFID"
+                          select = "OtherPracticeLocation/@cdr:id     |
+                                    PrivatePractice/
+                                      PrivatePracticeLocation/@cdr:id |
+                                    Home/@cdr:id"/>
+  <xsl:variable             name = "orgAddressFID"
+                          select = "substring-after(
+                                     OtherPracticeLocation
+                                      [@cdr:id = $contactFID]/
+                                     OrganizationLocation/
+                                     Organization/@cdr:ref, '#')"/>
+
+  <xsl:for-each           select = "PrivatePractice/
+                                      PrivatePracticeLocation
+                                       [@cdr:id = $contactFID] |
+                                      Home
+                                       [@cdr:id = $contactFID]">
+   <xsl:element             name = "{name()}">
+    <xsl:for-each         select = "@*">
+     <xsl:attribute         name = "{name()}">
+      <xsl:value-of       select = "."/>
+     </xsl:attribute>
+    </xsl:for-each>
+
+    <xsl:call-template       name = "getHomePrivatePractice"/>
+   </xsl:element>
+  </xsl:for-each>
+
+  <xsl:for-each           select = "OtherPracticeLocation">
+   <OtherPracticeLocation>
+    <xsl:for-each         select = "@*">
+     <xsl:attribute         name = "{name()}">
+      <xsl:value-of       select = "."/>
+     </xsl:attribute>
+    </xsl:for-each>
+    <OrganizationLocation>
+     <OrganizationName> 
+      <xsl:value-of       select = "OrganizationLocation/
+                                    Organization/
+                                    OrganizationName"/>
+     </OrganizationName>
+   <xsl:call-template       name = "getPostalAddress">
+    <xsl:with-param         name = "orgAddressFID"
+                          select = "$orgAddressFID"/>
+   </xsl:call-template>
+   <xsl:call-template       name = "getPersonOrgPhone">
+    <xsl:with-param         name = "orgAddressFID"
+                          select = "$orgAddressFID"/>
+   </xsl:call-template>
+   <xsl:call-template       name = "getPersonOrgTollFreePhone">
+    <xsl:with-param         name = "orgAddressFID"
+                          select = "$orgAddressFID"/>
+   </xsl:call-template>
+   <xsl:call-template       name = "getPersonOrgFax">
+    <xsl:with-param         name = "orgAddressFID"
+                          select = "$orgAddressFID"/>
+   </xsl:call-template>
+   <xsl:call-template       name = "getPersonOrgEmail">
+    <xsl:with-param         name = "orgAddressFID"
+                          select = "$orgAddressFID"/>
+   </xsl:call-template>
+   <xsl:call-template       name = "getPersonOrgWebSite">
+    <xsl:with-param         name = "orgAddressFID"
+                          select = "$orgAddressFID"/>
+   </xsl:call-template>
+   </OrganizationLocation>
+
+   <xsl:copy-of           select = "PersonTitle"/>
+   <xsl:copy-of           select = "PersonRole"/>
+
+   <xsl:for-each          select = "ComplexAffiliation">
+    <ComplexAffiliation>
+     <xsl:copy-of        select = "Organization/
+                                    Organization/
+                                    OrganizationName"/>
+     <xsl:copy-of          select = "RoleAtAffiliatedOrganization"/>
+    </ComplexAffiliation>
+   </xsl:for-each>
+   </OtherPracticeLocation>
+  </xsl:for-each>
+
+  <xsl:copy-of            select = "CIPSContact"/>
+  </xsl:copy>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
