@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.36 2002-11-25 21:17:32 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.37 2003-02-24 14:26:51 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.36  2002/11/25 21:17:32  bkline
+ * Finished custom validation support.
+ *
  * Revision 1.35  2002/11/22 14:07:25  bkline
  * Fixed bug in custom validation code.  Blocked new code.
  *
@@ -135,6 +138,8 @@
 #include <climits>
 #include <iostream>
 #include <ctime>
+#include <fstream>
+#include <wchar.h>
 #include <sstream>
 
 // Project headers.
@@ -275,8 +280,26 @@ static void outputMixedContentToDtd(
         const cdr::xsd::Node* node, 
         cdr::StringSet& elements,
         std::wostream& os);
+static int countChildElements(
+        cdr::dom::Element& docElement);
 
 const std::string cdr::xsd::Schema::schemaDir = setSchemaDir();
+
+// #define DBG_SCHEMA_VAL 1
+#ifdef DBG_SCHEMA_VAL
+static std::wofstream schemaValLog("d:/cdr/log/SchemaDebug.log");
+static void showDocNodes(const wchar_t* prefix, cdr::dom::Node n) {
+    wchar_t* sep = L"";
+    schemaValLog << prefix;
+    while (n != 0) {
+        cdr::String name = n.getNodeName();
+        schemaValLog << sep << name.c_str();
+        sep = L", ";
+        n = n.getNextSibling();
+    }
+    schemaValLog << L"\n";
+}
+#endif
 
 /**
  * Extracts document constraint information from the schema document,
@@ -2158,6 +2181,22 @@ void verifyNoText(
 }
 
 /**
+ * Find out how many of the child nodes for this element are elements
+ * themselves.
+ */
+int countChildElements(cdr::dom::Element& docElement)
+{
+    cdr::dom::Node child = docElement.getFirstChild();
+    int count = 0;
+    while (child != 0) {
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE)
+            ++count;
+        child = child.getNextSibling();
+    }
+    return count;
+}
+    
+/**
  * Verify that the child elements appear in the order prescribed, that they
  * meet the requirements for their individual types, and that the number of
  * occurrences of each meets the minOccurs and maxOccurs requirements.
@@ -2189,59 +2228,70 @@ void verifyElementSequence(
         cdr::StringList&                errors)
 {
     // Extract the pieces we need in order to find a match for the content.
-    const cdr::xsd::Node* content    = parentType.getContent();
-    cdr::dom::Node        firstChild = docElement.getFirstChild();
-    cdr::String           parentName = docElement.getNodeName();
+    const cdr::xsd::Node* content       = parentType.getContent();
+    cdr::dom::Node        firstChild    = docElement.getFirstChild();
+    cdr::dom::Node        child         = firstChild;
+    cdr::String           parentName    = docElement.getNodeName();
+    int                   numChildElems = countChildElements(docElement);
+    bool                  elemsRequired = isRequired(content);
 
-    // Keep a local copy for verifying the individual child elements.
-    cdr::dom::Node childNode = firstChild;
-
-    // Recursively look for a match.
-    bool match = matchSchemaNode(firstChild, content);
-
-    // Move past any leftover nodes which aren't elements.
-    while (firstChild != 0 && firstChild.getNodeType() !=
-            cdr::dom::Node::ELEMENT_NODE)
-        firstChild = firstChild.getNextSibling();
- 
-    // Report mismatch; leftover elements mean no match.
-    if (isRequired(content) && (!match || firstChild != 0)) {
-
-        // Can't find a match for this sequence of child elements.
-        if (childNode == 0) {
+    // If we have no child elements then there isn't much to do.
+    if (numChildElems == 0) {
+        if (elemsRequired) {
             cdr::String err = L"Expected child elements for empty "
                             + parentName
                             + L" element of type "
                             + parentType.getName();
             errors.push_back(err);
         }
-        else {
-            cdr::String err = L"No match found in content model for type "
-                            + parentType.getName()
-                            + L" with child elements of "
-                            + parentName
-                            + L" element ("
-                            + getElementListString(childNode)
-                            + L")";
-            if (firstChild != 0)
-                err += L"; stopped at element " + childNode.getNodeName();
-            else
-                err += L"; more elements required by content model";
-            errors.push_back(err);
-        }
+        return;
+    }
+    
+    // Recursively look for a match.
+    bool match = matchSchemaNode(child, content);
+
+    // Move past any leftover nodes which aren't elements.
+#ifdef DBG_SCHEMA_VAL
+    showDocNodes(L"verifyElementSequence (before skip): ", child);
+#endif
+    while (child != 0 && child.getNodeType() !=
+		cdr::dom::Node::ELEMENT_NODE) 
+	{
+        child = child.getNextSibling();
+	}
+#ifdef DBG_SCHEMA_VAL
+    showDocNodes(L"verifyElementSequence (after skip): ", child);
+#endif
+ 
+    // Report mismatch; leftover elements (child != 0) also means mismatch.
+    if (!match || child != 0) {
+
+        cdr::String err = L"No match found in content model for type "
+            + parentType.getName()
+            + L" with child elements of "
+            + parentName
+            + L" element ("
+            + getElementListString(firstChild)
+            + L")";
+        if (child != 0)
+            err += L"; stopped at element " + child.getNodeName();
+        else
+            err += L"; more elements required by content model";
+        errors.push_back(err);
     }
 
     // Verify the individual child elements.
-    while (childNode != 0) {
+    child = firstChild;
+    while (child != 0) {
 
         // Skip nodes which aren't elements.
-        if (childNode.getNodeType() != cdr::dom::Node::ELEMENT_NODE) {
-            childNode = childNode.getNextSibling();
+        if (child.getNodeType() != cdr::dom::Node::ELEMENT_NODE) {
+            child = child.getNextSibling();
             continue;
         }
 
         // Find the element's name and type so we can validate it.
-        cdr::String elemName = childNode.getNodeName();
+        cdr::String elemName = child.getNodeName();
         cdr::String typeName = schema.lookupElementType(elemName);
         if (typeName.empty()) {
             cdr::String err = cdr::String(L"Unable to find type for element ")
@@ -2258,10 +2308,10 @@ void verifyElementSequence(
                 errors.push_back(err);
             }
             else
-                validateElement(static_cast<cdr::dom::Element&>(childNode),
+                validateElement(static_cast<cdr::dom::Element&>(child),
                                 *type, schema, errors);
         }
-        childNode = childNode.getNextSibling();
+        child = child.getNextSibling();
     }
 }
 
@@ -2320,7 +2370,13 @@ bool matchSchemaNode(
     // Match as many occurrences as the schema model allows.
     bool match = true;
     while (match && docNode != 0 && docOccs < maxOccs) {
+#ifdef DBG_SCHEMA_VAL
+        showDocNodes(L"matchSchemaNode() before matchCCSNode: ", docNode);
+#endif
         match = matchCountConstrainedSchemaNode(docNode, node);
+#ifdef DBG_SCHEMA_VAL
+        showDocNodes(L"matchSchemaNode() before matchCCSNode: ", docNode);
+#endif
         if (match)
             ++docOccs;
     }
@@ -2331,6 +2387,12 @@ bool matchSchemaNode(
 
     // Update the caller's picture of where we are in the document.
     nextChild = docNode;
+#ifdef DBG_SCHEMA_VAL
+    showDocNodes(L"matchSchemaNode() updating caller's position: ", nextChild);
+    schemaValLog << L"matchSchemaNode() returning "
+                 << (docOccs > 0 ? L"true" : L"false")
+                 << L"\n";
+#endif
 
     // Tell the caller that we found a match.
     return docOccs > 0;
@@ -2360,8 +2422,16 @@ bool matchCountConstrainedSchemaNode(
 {
     // Is this schema node for an element?
     const cdr::xsd::Element* e = dynamic_cast<const cdr::xsd::Element*>(node);
-    if (e)
-        return matchElement(nextChild, e);
+    if (e) {
+        bool result = matchElement(nextChild, e);
+#ifdef DBG_SCHEMA_VAL
+        wchar_t* prefix = result ?
+            L"matchCountConstrainedSchemaNode() returning true: " :
+            L"matchCountConstrainedSchemaNode() returning false: ";
+        showDocNodes(prefix, nextChild);
+#endif
+        return result;
+    }
 
     // Is this schema node for a sequence?
     const cdr::xsd::Sequence* s = dynamic_cast<const cdr::xsd::Sequence*>(node);
@@ -2399,20 +2469,33 @@ bool matchElement(
     cdr::dom::Node docNode = nextChild;
 
     // Skip past non-element nodes in the document.
+#ifdef DBG_SCHEMA_VAL
+    showDocNodes(L"matchElement() (before skip): ", docNode);
+#endif
     while (docNode != 0) {
         if (docNode.getNodeType() != cdr::dom::Node::ELEMENT_NODE)
             docNode = docNode.getNextSibling();
         else
             break;
     }
+#ifdef DBG_SCHEMA_VAL
+    showDocNodes(L"matchElement() (after skip): ", docNode);
+#endif
     
     // See if this document element matches what we're looking for.
     if (docNode == 0)
         return false;
     cdr::String docElementName = docNode.getNodeName();
     cdr::String schemaElementName = schemaElement->getName();
-    if (docElementName != schemaElementName)
+#ifdef DBG_SCHEMA_VAL
+    if (schemaElementName == L"PdqKey")
+        schemaValLog << L"breakpoint\n";
+    schemaValLog << L"matchElement(): doc has " << docElementName.c_str()
+                 << L"; schema has " << schemaElementName.c_str() << L"\n";
+#endif
+    if (docElementName != schemaElementName) {
         return false;
+    }
 
     // Move to the next node in the document.
     nextChild = docNode.getNextSibling();
@@ -2510,8 +2593,12 @@ bool matchSequence(
 
         // No match is OK if the schema doesn't require one of these.
         if (!matchSchemaNode(docNode, *nodeEnum)) {
-            if (isRequired(*nodeEnum))
+            if (isRequired(*nodeEnum)) {
+#ifdef DBG_SCHEMA_VAL
+                showDocNodes(L"matchSequence() returning false: ", docNode);
+#endif
                 return false;
+            }
         }
         ++nodeEnum;
     }
@@ -2520,6 +2607,9 @@ bool matchSequence(
     nextChild = docNode;
 
     // Tell the caller we found a match.
+#ifdef DBG_SCHEMA_VAL
+    showDocNodes(L"matchSequence() returning true: ", nextChild);
+#endif
     return true;
 }
 
@@ -2548,13 +2638,22 @@ bool matchChoice(
     // Check each node in the schema choice for a match.
     cdr::xsd::NodeEnum nodeEnum = schemaChoice->getNodes();
     while (nodeEnum != schemaChoice->getListEnd()) {
+#ifdef DBG_SCHEMA_VAL
+        showDocNodes(L"matchChoice() calling matchSchemaNode()\n", nextChild);
+#endif
         if (matchSchemaNode(docNode, *nodeEnum++)) {
             nextChild = docNode;
+#ifdef DBG_SCHEMA_VAL
+            showDocNodes(L"matchChoice() returning true\n", nextChild);
+#endif
             return true;
         }
     }
 
     // No match found.
+#ifdef DBG_SCHEMA_VAL
+    showDocNodes(L"matchChoice() returning false\n", nextChild);
+#endif
     return false;
 }
 
