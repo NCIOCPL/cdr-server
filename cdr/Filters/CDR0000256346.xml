@@ -119,13 +119,13 @@
         <xsl:text>A</xsl:text>
        </xsl:when>
        <xsl:when                test = "@Style = 'LAlpha'">
-        <xsl:text>a</xsl:text>
+        <xsl:text>little-alpha</xsl:text>
        </xsl:when>
        <xsl:when                test = "@Style = 'URoman'">
         <xsl:text>I</xsl:text>
        </xsl:when>
        <xsl:when                test = "@Style = 'LRoman'">
-        <xsl:text>i</xsl:text>
+        <xsl:text>little-roman</xsl:text>
        </xsl:when>
        <xsl:otherwise>
         <xsl:text>d</xsl:text>
@@ -134,18 +134,19 @@
      </xsl:attribute>
 
      <xsl:for-each            select = "ListItem">
-      <li>      
-       <xsl:apply-templates />
+      <li>  
+           <xsl:apply-templates/>
       </li>
       
       <!-- Take care of extra attribute compact. -->
       <xsl:if                   test = "position() != last() and
                                         ../@Compact = 'No'">
-       <br /><br />        
-      </xsl:if>   
-     </xsl:for-each>
-     </ol>
-     </xsl:template>        
+      
+       <br /><br />  
+       </xsl:if>
+       </xsl:for-each>
+       </ol>
+       </xsl:template>        
  
 <!-- =====================================================================
                      Display a Subscript 
@@ -179,21 +180,312 @@
 <!-- =====================================================================
                          Display a note        
      ===================================================================== -->
-    <xsl:template              match = "Note">
+    <xsl:template              match = "Note" mode="R">
+    <xsl:choose>
+     <xsl:when                 test  = "Insertion/@RevisionLevel='approved'">
+     <i>
+     <font color="RED">
+      <xsl:text>&#xa0;[</xsl:text>
+      </font>
+     </i>
+     </xsl:when>
+      <xsl:when                 test  = "Insertion/@RevisionLevel='proposed'">
+      <i>
+     <font color="FUCHSIA">
+      <xsl:text>&#xa0;[</xsl:text>
+     </font>
+     </i>
+     </xsl:when>
+     <xsl:when                 test  = "Deletion/@RevisionLevel='approved'">
+     <strike>
      <i>
      <xsl:text>&#xa0;[</xsl:text>
-     <xsl:choose>
-      <xsl:when                 test = "//SummaryLanguage ='Spanish'"> 
-       <xsl:text>Nota: </xsl:text>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:text>Note: </xsl:text>
-      </xsl:otherwise>
-     </xsl:choose>
-     <xsl:value-of            select = "."/>
-     <xsl:text>]</xsl:text>
      </i>
-    </xsl:template>
+     </strike>
+    </xsl:when>
+     <xsl:when                 test  = "Deletion/@RevisionLevel='proposed'">
+     <strike>
+      <i>
+     <font color="FUCHSIA">
+     <xsl:text>&#xa0;[</xsl:text>
+     </font>
+     </i>
+     </strike>
+     </xsl:when>
+     <xsl:otherwise>
+      <i>
+      <xsl:text>&#xa0;[</xsl:text>
+      </i>
+     </xsl:otherwise>
+     </xsl:choose>
+     <xsl:choose>
+     <xsl:when                 test = "//SummaryLanguage ='Spanish'"> 
+     <xsl:choose>
+     <xsl:when                 test  = "Insertion/@RevisionLevel='approved'">
+     <i>
+     <font color="RED">
+     <xsl:text>Nota: </xsl:text>
+     </font>
+      </i>
+     </xsl:when>
+      <xsl:when                 test  = "Insertion/@RevisionLevel='proposed'">
+      <i>
+     <font color="FUCHSIA">
+     <xsl:text>Nota: </xsl:text>
+     </font>
+     </i>
+     </xsl:when>
+     <xsl:when                 test  = "Deletion/@RevisionLevel='approved'">
+     <strike>
+     <i>
+     <xsl:text>Nota: </xsl:text>
+     </i>
+     </strike>
+     </xsl:when>
+     <xsl:when                 test  = "Deletion/@RevisionLevel='proposed'">
+     <strike>
+     <i>
+     <font color="FUCHSIA">
+     <xsl:text>Nota: </xsl:text>
+     </font>
+     </i>
+     </strike>
+     </xsl:when>
+     <xsl:otherwise>
+      <i>
+     <xsl:text>Nota: </xsl:text>
+      </i>
+     </xsl:otherwise>
+     </xsl:choose>
+     </xsl:when>
+     <xsl:otherwise>
+     <xsl:choose>
+     <xsl:when                 test  = "Insertion/@RevisionLevel='approved'">
+     <i>
+     <font color="RED">
+     <xsl:text>Note: </xsl:text>
+     </font>
+     </i>
+     </xsl:when>
+      <xsl:when                 test  = "Insertion/@RevisionLevel='proposed'">
+      <i>
+     <font color="FUCHSIA">
+     <xsl:text>Note: </xsl:text>
+     </font>
+     </i>
+     </xsl:when>
+     <xsl:when                 test  = "Deletion/@RevisionLevel='approved'">
+     <strike>
+     <i>
+     <xsl:text>Note: </xsl:text>
+     </i>
+     </strike>
+     </xsl:when>
+     <xsl:when                 test  = "Deletion/@RevisionLevel='proposed'">
+     <strike>
+     <i>
+     <font color="FUCHSIA">
+     <xsl:text>Note: </xsl:text>
+     </font>
+     </i>
+     </strike>
+     </xsl:when>
+     <xsl:otherwise>
+     <i>
+     <xsl:text>Note: </xsl:text>
+     </i>
+     </xsl:otherwise>
+     </xsl:choose>
+     </xsl:otherwise>
+     </xsl:choose>
+      <i>
+     <xsl:apply-templates/>
+      </i>
+     <xsl:choose>
+     <xsl:when                 test  = "Insertion/@RevisionLevel='approved'">
+     <i>
+     <font color="RED">
+      <xsl:text>&#xa0;]</xsl:text>
+      </font>
+     </i>
+     </xsl:when>
+      <xsl:when                 test  = "Insertion/@RevisionLevel='proposed'">
+      <i>
+     <font color="FUCHSIA">
+      <xsl:text>&#xa0;]</xsl:text>
+     </font>
+     </i>
+     </xsl:when>
+     <xsl:when                 test  = "Deletion/@RevisionLevel='approved'">
+     <strike>
+     <i>
+     <xsl:text>&#xa0;]</xsl:text>
+     </i>
+     </strike>
+     </xsl:when>
+     <xsl:when                 test  = "Deletion/@RevisionLevel='proposed'">
+     <strike>
+     <i>
+     <font color="FUCHSIA">
+     <xsl:text>&#xa0;]</xsl:text>
+     </font>
+     </i>
+     </strike>
+     </xsl:when>
+     <xsl:otherwise>
+      <i>
+      <xsl:text>&#xa0;]</xsl:text>
+      </i>
+     </xsl:otherwise>
+     </xsl:choose>
+     </xsl:template>
+
+  <!-- =====================================================================
+                         Display a note        
+     ===================================================================== -->
+    <xsl:template              match = "Note" mode="B">
+    <xsl:choose>
+     <xsl:when                 test  =  "Insertion/@RevisionLevel='approved'">
+     <b>
+     <u>
+     <i>
+     <xsl:text>&#xa0;[</xsl:text>
+     </i>
+     </u>
+     </b>
+     </xsl:when>
+     <xsl:when                 test  = "Insertion/@RevisionLevel='proposed'">
+     <b>
+     <i>
+     <xsl:text>&#xa0;[</xsl:text>
+     </i>
+     </b>
+     </xsl:when>
+     <xsl:when                 test  = "Deletion/@RevisionLevel='proposed'">
+     <strike>
+     <xsl:text>&#xa0;[</xsl:text>
+     </strike>
+     </xsl:when>
+     <xsl:when                 test  = "Deletion/@RevisionLevel='approved'">
+     </xsl:when>
+     <xsl:otherwise>
+     <i>
+     <xsl:text>&#xa0;[</xsl:text>
+      </i>
+     </xsl:otherwise>
+     </xsl:choose>
+     <xsl:choose>
+     <xsl:when                 test = "//SummaryLanguage ='Spanish'"> 
+     <xsl:choose>
+     <xsl:when                 test  = "Insertion/@RevisionLevel='approved'">
+     <b>
+     <u>
+     <i>
+     <xsl:text>Nota: </xsl:text>
+     </i>
+     </u>
+     </b>
+     </xsl:when>
+     <xsl:when                 test  = "Insertion/@RevisionLevel='proposed'">
+     <b>
+     <i>
+     <xsl:text>Nota: </xsl:text>
+     </i>
+     </b>
+     </xsl:when>
+     <xsl:when                 test  = "Deletion/@RevisionLevel='proposed'">
+     <strike>
+      <i>
+     <xsl:text>Nota: </xsl:text>
+     </i>
+     </strike>
+     </xsl:when>
+     <xsl:otherwise>
+     <i>
+     <xsl:text>Nota: </xsl:text>
+     </i>
+     </xsl:otherwise>
+     </xsl:choose>
+     </xsl:when>
+     <xsl:otherwise>
+     <xsl:choose>
+     <xsl:when                 test  = "Insertion/@RevisionLevel='approved'">
+     <b>
+     <u>
+     <i>
+     <xsl:text>Note: </xsl:text>
+     </i>
+     </u>
+     </b>
+     </xsl:when>
+     <xsl:when                 test  = "Insertion/@RevisionLevel='proposed'">
+     <b>
+     <i>
+     <xsl:text>Note: </xsl:text>
+     </i>
+     </b>
+     </xsl:when>
+     <xsl:when                 test  = "Deletion/@RevisionLevel='approved'">
+     <!--<strike>
+      <i>
+     <xsl:text>Note: </xsl:text>
+      </i>
+    </strike>-->
+     </xsl:when>
+     <xsl:when                 test  = "Deletion/@RevisionLevel='proposed'">
+     <strike>
+     <i>
+     <xsl:text>Note: </xsl:text>
+     </i>
+     </strike>
+     </xsl:when>
+     <xsl:otherwise>
+      <i>
+     <xsl:text>Note: </xsl:text>
+     </i>
+     </xsl:otherwise>
+     </xsl:choose>
+     </xsl:otherwise>
+     </xsl:choose>
+     <i>
+     <xsl:apply-templates/>
+     </i>
+     <xsl:choose>
+     <xsl:when                 test  =  "Insertion/@RevisionLevel='approved'">
+     <b>
+     <u>
+     <i>
+     <xsl:text>&#xa0;]</xsl:text>
+     </i>
+     </u>
+     </b>
+     </xsl:when>
+     <xsl:when                 test  = "Insertion/@RevisionLevel='proposed'">
+     <b>
+     <i>
+     <xsl:text>&#xa0;]</xsl:text>
+     </i>
+     </b>
+     </xsl:when>
+     <xsl:when                 test  = "Deletion/@RevisionLevel='proposed'">
+     <strike>
+     <i>
+     <xsl:text>&#xa0;]</xsl:text>
+     </i>
+     </strike>
+     </xsl:when>
+      <xsl:when                 test  = "Deletion/@RevisionLevel='approved'">
+     </xsl:when>
+     <xsl:otherwise>
+      <i>
+     <xsl:text>&#xa0;]</xsl:text>
+     </i>
+     </xsl:otherwise>
+     </xsl:choose>
+     </xsl:template>
+
+
+
 
 <!-- ======================================================================
         Template handling ListTitle
@@ -211,10 +503,10 @@
     <xsl:template               name = "ItemizedListItem">
           
      <li> 
-     <xsl:attribute             name = "type">
+     <xsl:attribute             name = "class">
       <xsl:choose>
        <xsl:when                test = "../@Style = 'bullet'">        
-        <xsl:text>disc</xsl:text>    
+       <xsl:text>disc</xsl:text>   
        </xsl:when>
        <xsl:when                test = "../@Style = 'dash'">
         <xsl:text>square</xsl:text>      
@@ -310,11 +602,11 @@
 <!-- =====================================================================
        Display Paragraphs 
      ===================================================================== -->
-    <xsl:template              match = "Para">
+     <xsl:template              match = "Para">
      <p>
      <xsl:apply-templates/>
      </p>
-    </xsl:template>
+     </xsl:template>
 
 <!-- =====================================================================
       Display tables in old format
@@ -364,13 +656,21 @@
                            Display Comments -Redline/Strikeout       
           ============================================================= -->
 
-              <xsl:template          match="Comment" mode="RS">
+ 
+                                                                                             <xsl:template          match= "Comment" mode="RS">
+              <b>
               <i>
               <font color="FUCHSIA">
+              <xsl:text>[Comment: </xsl:text>
               <xsl:apply-templates/>
+              <xsl:text>]</xsl:text>
               </font>
               </i>
+              </b>
               </xsl:template>
+
+
+      
 
      <!-- ================================================================
                        Display Comments -Bold/UnderLine
@@ -380,7 +680,9 @@
               <xsl:template          match="Comment" mode="BU">
                 <i>
                 <b>
+                <xsl:text>[Comment: </xsl:text>
                 <xsl:apply-templates/>
+                <xsl:text>]</xsl:text>
                 </b>
                 </i>
                 </xsl:template>
