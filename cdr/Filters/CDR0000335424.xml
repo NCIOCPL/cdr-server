@@ -3,14 +3,18 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Denormalization Filter: Summary</DocTitle>
-<DocComment>CVS-V1.20</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.1: New Summary Denormalization (Bug 767)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
-<!-- Written by Volker Englisch, 2003-08-12 -->
-<!-- 
- =====================================================================
- Filter to denormalize summary data.
- ===================================================================== -->
+<!--
+ ================================================================
+     $Id: CDR0000335424.xml,v 1.2 2004-05-21 15:47:00 venglisc Exp $
+
+     Filter to denormalize summary data.
+        Written by Volker Englisch, 2003-08-12
+
+     $Log: not supported by cvs2svn $
+ ================================================================ -->
 <xsl:transform                xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                 version = "1.0"
                               xmlns:cdr = "cips.nci.nih.gov/cdr">
@@ -29,8 +33,30 @@
    <xsl:apply-templates          select = "document('cdrx:/*/CdrCtl')"/>
 
    <xsl:apply-templates/>
-
   </xsl:copy>
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ Test if a SummarySection is empty (no children, only white space)
+
+ Such an element may appear if a complete SummarySection has been
+ marked with the proposed insertion element and therefore all 
+ content gets stripped but the SummarySection tags itself are left
+ untouched.
+ ================================================================= -->
+ <xsl:template                   match = "SummarySection">
+  <xsl:choose>
+   <xsl:when                      test = "normalize-space(.)">
+    <xsl:copy>
+     <xsl:apply-templates       select = "node() | @*"/>
+    </xsl:copy>
+   </xsl:when>
+   <xsl:otherwise>
+    <!-- Do Nothing:  SummarySection is empty!  -->
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
