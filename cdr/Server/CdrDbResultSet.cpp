@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.cpp,v 1.6 2000-05-04 12:48:13 bkline Exp $
+ * $Id: CdrDbResultSet.cpp,v 1.7 2000-12-28 13:24:55 bkline Exp $
  *
  * Implementation for ODBC result fetching wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/05/04 12:48:13  bkline
+ * Implemented reference counting.
+ *
  * Revision 1.5  2000/05/03 15:25:41  bkline
  * Fixed database statement creation.
  *
@@ -22,14 +25,19 @@
 
 #include "CdrDbResultSet.h"
 #include "CdrException.h"
+#include <iostream> // XXX for debugging
 
 /**
  * Gathers information about the columns of the results of the current query
  * in preparation for retrieving the results.
  */
-cdr::db::ResultSet::ResultSet(cdr::db::Statement& s) 
-    : st(s), refCount(1), pRefCount(&refCount)
+cdr::db::ResultSet::ResultSet(cdr::db::Statement& s)
+    : st(s), pRefCount(new int(1))
 {
+#if DEBUG
+    std::cout << "ResultSet constructor; *pRefCount=" << *pRefCount << '\n';
+    std::cout << "st.hstmt=" << st.hstmt << '\n';
+#endif
     SQLSMALLINT nCols;
     SQLRETURN   rc = SQLNumResultCols(st.hstmt, &nCols);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
@@ -39,8 +47,8 @@ cdr::db::ResultSet::ResultSet(cdr::db::Statement& s)
         Column* c= new Column;
         char name[1024];
         SQLSMALLINT cbName;
-        rc = SQLDescribeCol(st.hstmt, (SQLSMALLINT)i, (SQLCHAR *)name, 
-                            sizeof name, &cbName, &c->type, &c->size, 
+        rc = SQLDescribeCol(st.hstmt, (SQLSMALLINT)i, (SQLCHAR *)name,
+                            sizeof name, &cbName, &c->type, &c->size,
                             &c->digits, &c->nullable);
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
             throw cdr::Exception(L"Database failure fetching column info",
@@ -54,10 +62,15 @@ cdr::db::ResultSet::ResultSet(cdr::db::Statement& s)
  * Copy constructor.  Uses reference counting to avoid deep copying.  Doesn't
  * seem to matter, as the compiler appears to have optimized these away.
  */
-cdr::db::ResultSet::ResultSet(const ResultSet& rs) 
+cdr::db::ResultSet::ResultSet(const ResultSet& rs)
     : st(rs.st), columnVector(rs.columnVector), pRefCount(rs.pRefCount)
 {
     ++*pRefCount;
+#if DEBUG
+    std::cout << "ResultSet copy constructor; *pRefCount="
+              << *pRefCount << '\n';
+    std::cout << "st.hstmt=" << st.hstmt << '\n';
+#endif
 }
 
 /**
@@ -65,12 +78,17 @@ cdr::db::ResultSet::ResultSet(const ResultSet& rs)
  */
 cdr::db::ResultSet::~ResultSet()
 {
+#if DEBUG
+    std::cout << "Top of ResultSet destructor; *pRefCount="
+              << *pRefCount << '\n';
+#endif
     if (--*pRefCount > 0)
         return;
     for (size_t i = 0; i < columnVector.size(); ++i) {
         Column* c = columnVector[i];
         delete c;
     }
+    delete pRefCount;
 }
 
 /**
@@ -81,12 +99,26 @@ cdr::db::ResultSet::~ResultSet()
  */
 bool cdr::db::ResultSet::next()
 {
+#if DEBUG
+    std::cout << "Top of ResultSet::next()\n";
+    std::cout << "st.hstmt=" << st.hstmt << '\n';
+#endif
     SQLRETURN rc = SQLFetch(st.hstmt);
-    if (rc == SQL_NO_DATA_FOUND)
+#if DEBUG
+    std::cout << "Back from SQLFetch()\n";
+#endif
+    if (rc == SQL_NO_DATA_FOUND) {
+#if DEBUG
+        std::cout << "Returning 'true' from ResultSet::next()\n";
+#endif
         return false;
+    }
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
         throw cdr::Exception(L"Database failure fetching data",
                              st.getErrorMessage(rc));
+#if DEBUG
+    std::cout << "Returning 'true' from ResultSet::next()\n";
+#endif
     return true;
 }
 
