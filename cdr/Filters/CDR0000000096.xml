@@ -34,6 +34,8 @@ Filter to create a Person Content QC Report
   <xsl:attribute                  name = "valign">top</xsl:attribute>
  </xsl:attribute-set>
 
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
  <!-- 
  ===============================================================
  Main Template
@@ -43,14 +45,17 @@ Filter to create a Person Content QC Report
   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
   <HTML>
    <HEAD>
-    <xsl:variable                 name = "cdrmydoc" 
+    <xsl:variable                 name = "cdrdocs" 
                                 select = "document('cdrx:/*/CdrCtl')"/>
 
     <TITLE>
-     <xsl:value-of              select = "document('cdrutil:/docid')"/>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
      <xsl:text>: </xsl:text>
-     <xsl:value-of              select = "substring-before
-                                          ($cdrmydoc/CdrDocCtl/DocTitle,';')"/>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/> 
     </TITLE>
     <STYLE type='text/css'>
      ul {margin-left: 16 ; padding-left: 0;}
@@ -95,7 +100,9 @@ Filter to create a Person Content QC Report
    ==================================================================== -->
    <b>
     <font size='4'>
-     <xsl:value-of              select = "document('cdrutil:/docid')"/>
+    <xsl:value-of               select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
     </font>
    </b>
    <p/>
@@ -176,8 +183,6 @@ Filter to create a Person Content QC Report
    </b>
    <p/>
    <xsl:apply-templates         select = "PersonLocations"/>
-
-<!-- XXX -->
 
   <!--- 
   ===================================================================
@@ -343,34 +348,37 @@ Filter to create a Person Content QC Report
      </b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:if                      test = "Prefix">
-      <xsl:apply-templates      select = "Prefix"/>
-      <xsl:text> </xsl:text>
-     </xsl:if>
-     <xsl:apply-templates       select = "GivenName"/>
-     <xsl:text> </xsl:text>
-     <xsl:apply-templates       select = "MiddleInitial"/>
-     <xsl:text> </xsl:text>
- 
-     <!-- check for Professional suffix and display -->
-     <xsl:choose>
-      <xsl:when                   test = "ProfessionalSuffix">
-       <xsl:apply-templates     select = "SurName"/>
-       <xsl:text>,</xsl:text>
-       <xsl:apply-templates     select = "GenerationSuffix"/>
+     <b>
+      <xsl:if                     test = "Prefix">
+       <xsl:apply-templates     select = "Prefix"/>
        <xsl:text> </xsl:text>
-       <xsl:for-each            select = "ProfessionalSuffix">
-        <xsl:value-of           select = "."/>
-        <xsl:if                   test = "position() !=last()">
-         <xsl:text>, </xsl:text>
-        </xsl:if>
-       </xsl:for-each>
-      </xsl:when>
-      <xsl:otherwise>
-      <!-- Display surname if no Suffix is present -->
-       <xsl:apply-templates     select = "SurName"/>
-      </xsl:otherwise>
-     </xsl:choose>
+      </xsl:if>
+      <xsl:apply-templates      select = "GivenName"/>
+      <xsl:text> </xsl:text>
+      <xsl:apply-templates      select = "MiddleInitial"/>
+      <xsl:text> </xsl:text>
+ 
+      <!-- check for Professional suffix and display -->
+      <xsl:choose>
+       <xsl:when                  test = "ProfessionalSuffix">
+        <xsl:apply-templates    select = "SurName"/>
+        <xsl:text>,</xsl:text>
+        <xsl:apply-templates    select = "GenerationSuffix"/>
+        <xsl:text> </xsl:text>
+        <xsl:for-each           select = "ProfessionalSuffix">
+         <xsl:value-of          select = "."/>
+         <xsl:if                  test = "position() !=last()">
+          <xsl:text>, </xsl:text>
+         </xsl:if>
+        </xsl:for-each>
+       </xsl:when>
+       <xsl:otherwise>
+       <!-- Display surname if no Suffix is present -->
+        <xsl:apply-templates    select = "SurName"/>
+       </xsl:otherwise>
+      </xsl:choose>
+      <br/><br/>
+     </b>
     </td>
    </tr>
    <tr>
@@ -405,6 +413,7 @@ Filter to create a Person Content QC Report
 
  <!-- 
  =======================================================================
+ Template to display Board Membership Information
  ======================================================================= -->
  <xsl:template                   match = "PDQBoardMembershipDetails">
   <table        xsl:use-attribute-sets = "table">
@@ -429,10 +438,11 @@ Filter to create a Person Content QC Report
 
  <!-- 
  =========================================================================
+ Template to display Board Names
  ========================================================================= -->
  <xsl:template                    match = "PDQEditorialBoard |
-                                          PDQAdvisoryBoard  |
-                                          PDQVoluntaryProtocolReviewBoard">
+                                           PDQAdvisoryBoard  |
+                                           PDQVoluntaryProtocolReviewBoard">
   <li>
    <xsl:value-of                 select = "Organization/
                                            OrganizationName"/>
@@ -442,6 +452,7 @@ Filter to create a Person Content QC Report
 
  <!--
  =========================================================================
+ Template to display Physician Details information
  ========================================================================= -->
  <xsl:template                   match = "PhysicianDetails">
   <xsl:for-each                 select = "PhysicianSpecialtyInformation">
@@ -573,6 +584,7 @@ Filter to create a Person Content QC Report
 
  <!-- 
  =====================================================================
+ Template to display Administrative Information
  ===================================================================== -->
  <xsl:template                  match = "AdministrativeInformation">
   <table       xsl:use-attribute-sets = "table">
@@ -615,6 +627,7 @@ Filter to create a Person Content QC Report
 
  <!-- 
  =====================================================================
+ Template to display the Person Locations
  ===================================================================== -->
  <xsl:template                  match = "PersonLocations">
 
@@ -713,13 +726,9 @@ Filter to create a Person Content QC Report
   </xsl:if>
   <br/>
 
-  <!-- Display the Person Title and PersonRole if available -->
+  <!-- Display the Person Title if available -->
   <xsl:if                     test = "PersonTitle">
    <xsl:value-of            select = "PersonTitle"/>
-   <br/>
-  </xsl:if>
-  <xsl:if                     test = "PersonRole">
-   <xsl:value-of            select = "PersonRole"/>
    <br/>
   </xsl:if>
 
@@ -778,6 +787,7 @@ Filter to create a Person Content QC Report
 
  <!--
  ========================================================================
+ Template to display the Complex Affiliation
  ======================================================================== -->
  <xsl:template                 match = "ComplexAffiliation">
   <br/>
@@ -804,6 +814,7 @@ Filter to create a Person Content QC Report
 
  <!--
  ========================================================================
+ Named Template to display the Address
  ======================================================================== -->
  <xsl:template                  name = "listAddress">
   <xsl:for-each               select = "Street">
@@ -848,12 +859,12 @@ Filter to create a Person Content QC Report
   <br/>
   <xsl:value-of               select = "CountryName"/>
   <br/>
-  <br/>
  </xsl:template>
 
 
  <!--
  ========================================================================
+ Named Template to display the Phone, Fax, WebSite, Role information
  ======================================================================== -->
  <xsl:template                  name = "listPhone">
   <!--
@@ -1002,12 +1013,33 @@ Filter to create a Person Content QC Report
       </xsl:when>
      </xsl:choose>
     </tr>
+    <xsl:if                        test = "../../PersonRole">
+     <tr>
+      <td        xsl:use-attribute-sets = "cell1of2">
+       <xsl:text>Person Role:</xsl:text>
+      </td>
+      <td        xsl:use-attribute-sets = "cell2of2">
+       <table    xsl:use-attribute-sets = "table">
+        <xsl:for-each            select = "../../PersonRole">
+         <tr>
+          <td    xsl:use-attribute-sets = "cell1of2">
+           <xsl:value-of         select = "."/>
+          </td>
+         </tr>
+        </xsl:for-each>
+       </table>
+      </td>
+     </tr>
+    </xsl:if>
+   <br/>
   </table>
+  <p/>
  </xsl:template>
 
 
  <!--
  ========================================================================
+ Named Template to display the Email information
  ======================================================================== -->
  <xsl:template                 name = "listEmail">
   <xsl:param                   name = "email"/>
@@ -1025,6 +1057,7 @@ Filter to create a Person Content QC Report
 
  <!--
  ========================================================================
+ Named Template to display the Website information
  ======================================================================== -->
  <xsl:template                 name = "listWebSite">
   <xsl:param                   name = "webSite"/>
