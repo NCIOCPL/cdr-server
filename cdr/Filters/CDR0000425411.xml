@@ -80,6 +80,7 @@
   <!-- If it's our organization to delete -->
   <xsl:choose>
    <xsl:when               test = "OrgSiteID/@cdr:ref=$orgSiteId">
+
     <xsl:choose>
 
       <!-- Copy if lead org ID and no match -->
@@ -89,7 +90,24 @@
         <xsl:copy-of     select = "."/>
       </xsl:when>
 
-      <!-- Copy if principal investigator and no match -->
+      <!-- If principal investigator matches but there's more than one PI 
+           for this OrgSite -->
+      <xsl:when            test = "$piId and count(
+                                        OrgSiteContact/SpecificPerson
+                                        [Role='Principal investigator']) > 1
+                                    and
+                                        OrgSiteContact/SpecificPerson/
+                                        Person[substring(@cdr:ref, 1, $piLen)
+                                               = $piId]">
+        <!-- Abort transformation and warn user -->
+        <xsl:message  terminate = 'yes'>
+          More than one principal investigator for this OrgSite
+        </xsl:message>
+      </xsl:when>
+
+      <!-- Copy if principal investigator and no match.
+           To get here, there must only be one PI for this OrgSite,
+           or else there's more than one but none of them match our PI -->
       <xsl:when            test = "$piId and not(
                                      substring(OrgSiteContact/SpecificPerson/
                                              Person/@cdr:ref, 1, $piLen) =
