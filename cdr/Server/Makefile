@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.70 2003-08-14 18:20:02 bkline Exp $
+# $Id: Makefile,v 1.71 2004-03-22 14:27:24 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.70  2003/08/14 18:20:02  bkline
+# Moved more modules into cdr.lib (to resolve dependencies).
+#
 # Revision 1.69  2003/01/31 00:05:46  ameyer
 # Added CdrSysValue.h / .cpp.
 #
@@ -256,24 +259,22 @@ DOCS   =$(DOC)default.htm
 CDRBIN =$(CDR)/bin
 CDRSVR =$(CDRBIN)/CdrServer.exe
 SERVICE=$(CDRBIN)/CdrService.exe
-!IF "$(DBG)" == ""
-CFLAGS =$(INC) -W3 -GX -MD -GR -nologo -O2 -D_NDEBUG
+CFLAGS =$(INC) -W3 -GX -MD -GR -nologo
 LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
         /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/$(REVER)
+LIBS   =xerces-c_1.lib sablot.lib wsock32.lib odbc32.lib user32.lib 
+SVCFLGS=-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT \
+        -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MT
+!IF "$(DBG)" == ""
+CFLAGS =$(CFLAGS) -O2 -D_NDEBUG
 CDRLIB =$(CDR)/lib/cdr.lib
-SVC_CFLAGS =-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT \
-            -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MT
-LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
-        wsock32.lib odbc32.lib user32.lib 
+LIBS   =cdr.lib $(LIBS)
 !ELSE
-CFLAGS =$(INC) -W3 -GX -MD -GR -nologo -Zi -D_DEBUG #-DSINGLE_THREAD_DEBUGGING
-LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
-        /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/$(REVER) /DEBUG
+CFLAGS =$(CFLAGS) -Zi
+LFLAGS =$(LFLAGS) /DEBUG
 CDRLIB =$(CDR)/lib/cdrd.lib
-SVC_CFLAGS =-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT -DDEBUG \
-            -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MT
-LIBS   =cdrd.lib xerces-c_1.lib sablot.lib \
-        wsock32.lib odbc32.lib user32.lib 
+SVCFLGS=-DDEBUG $(SVCFLGS)
+LIBS   =cdrd.lib $(LIBS)
 !ENDIF
 HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrCommand.h \
@@ -400,10 +401,10 @@ $(SERVICE): CdrService.obj service.obj
 	$(CC) -MT -Fe$(SERVICE) CdrService.obj service.obj advapi32.lib
 
 CdrService.obj: CdrService.c service.h
-	$(CC) -c $(SVC_CFLAGS) CdrService.c
+	$(CC) -c $(SVCFLGS) CdrService.c
 
 service.obj: service.c service.h
-	$(CC) -c $(SVC_CFLAGS) service.c
+	$(CC) -c $(SVCFLGS) service.c
 
 #--------------------------------------------------------------------------
 # Rule for building test client.

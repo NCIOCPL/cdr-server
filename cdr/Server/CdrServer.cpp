@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.38 2004-03-21 21:19:27 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.39 2004-03-22 14:27:24 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.38  2004/03/21 21:19:27  bkline
+ * Added signal handler for Control-C.
+ *
  * Revision 1.37  2003/07/08 18:50:23  bkline
  * Fixed timing of capturing WSA error.
  *
@@ -325,7 +328,7 @@ void realDispatcher(void* arg) {
                                               cdr::db::pwd);
     cdr::String now = conn.getDateTimeString();
     now[10] = L'T';
-#ifdef _DEBUG
+#ifndef _NDEBUG
     std::wcout << L"NOW=" << now << L"\n";
 #endif
 
@@ -342,7 +345,7 @@ void realDispatcher(void* arg) {
     int response = 0;
     try {
         while ((nBytes = readRequest(fd, request, now)) > 0) {
-#ifdef _DEBUG
+#ifndef _NDEBUG
             std::cout << "received request with " << nBytes << " bytes...\n";
 #endif
             processCommands(fd, request, conn, now);
@@ -582,7 +585,7 @@ cdr::String processCommand(cdr::Session& session,
         int type = specificCmd.getNodeType();
         if (type == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String cmdName = specificCmd.getNodeName();
-#ifdef _DEBUG
+#ifndef _NDEBUG
             std::wcout << L"processing command: " << cmdName << L"...\n";
 #endif
 

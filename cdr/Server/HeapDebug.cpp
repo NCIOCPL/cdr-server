@@ -1,9 +1,12 @@
 /*
- * $Id: HeapDebug.cpp,v 1.6 2002-03-07 12:57:17 bkline Exp $
+ * $Id: HeapDebug.cpp,v 1.7 2004-03-22 14:27:24 bkline Exp $
  *
  * Instrumentation for tracking down dynamic memory leaks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2002/03/07 12:57:17  bkline
+ * Added dumpHeapLeaks() and more conditional macros.
+ *
  * Revision 1.5  2002/03/06 21:58:32  bkline
  * Tracking all heap block types, not just normal blocks.
  *
@@ -24,6 +27,9 @@
 #include "HeapDebug.h"
 #ifndef _DEBUG
 #define _DEBUG 1
+#endif
+#ifdef  _NDEBUG
+#undef  _NDEBUG
 #endif
 #ifndef _CRTDBG_MAP_ALLOC
 #define _CRTDBG_MAP_ALLOC
