@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.21 2003-03-14 02:01:40 bkline Exp $
+ * $Id: CdrString.cpp,v 1.22 2004-05-12 02:46:04 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2003/03/14 02:01:40  bkline
+ * Fixed garbage returns from cdr::String::getInt().
+ *
  * Revision 1.20  2002/11/25 21:15:48  bkline
  * Added optional doQuotes boolean argument to entConvert() function.
  *
@@ -165,7 +168,7 @@ void cdr::String::utf8ToUtf16(const char* s)
  *                          library will optimize away the copy of the
  *                          original string using reference counting.
  */
-cdr::String cdr::entConvert(const String& inStr, bool doQuotes) 
+cdr::String cdr::entConvert(const String& inStr, bool doQuotes)
 {
     // Ampersand MUST be first element in this table!
     static struct { wchar_t ch; wchar_t* ent; } eTable[] = {
@@ -233,6 +236,62 @@ cdr::String cdr::normalizeWhiteSpace (
     cdr::String outStr = (cdr::String) bufp;
     delete[] bufp;
 
+    return outStr;
+}
+
+
+/**
+ * Trim leading and trailing whitespace.
+ */
+cdr::String cdr::trimWhiteSpace (
+    const cdr::String& inStr,
+    const bool leading,
+    const bool trailing
+) {
+    const wchar_t *srcp,            // Pointer to start of source string
+                  *endp;            // Pointer to end of source
+    wchar_t       *destp,           // Pointer into dest buffer
+                  *bufp;            // Buffer for output
+
+
+    // Point to start and end (last non-null char) of source string
+    srcp = inStr.c_str();
+    endp = srcp + wcslen(srcp) - 1;
+
+    // If we trim leading ws, point past initial whitespace
+    if (leading) {
+        while (*srcp) {
+            if (!iswspace(*srcp))
+                break;
+            ++srcp;
+        }
+    }
+
+    // If we trim the end, move pointer back if needed
+    if (trailing) {
+        while (endp >= srcp) {
+            if (!iswspace(*endp))
+                break;
+            --endp;
+        }
+    }
+
+    // Output buffer, big enough for string + last char + null terminator
+    // Add to destp before subtracting srcp, else could be negative size
+    // Buffer will always be at least one char wide, even if passed
+    //   inStr was empty
+    destp = bufp = new wchar_t[(size_t) ((endp + 2) - srcp)];
+
+    // Copy - could be more efficient with different cdr::String
+    //   constructor, but no big deal
+    // This works even if string is all whitespace
+    while (srcp <= endp)
+        *destp++ = *srcp++;
+    *destp = (wchar_t) '\0';
+
+    // Return copy of string
+    cdr::String outStr = (cdr::String) bufp;
+    delete[] bufp;
     return outStr;
 }
 

@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.26 2004-03-23 16:26:48 bkline Exp $
+ * $Id: CdrString.h,v 1.27 2004-05-12 02:45:50 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2004/03/23 16:26:48  bkline
+ * Upgraded to version 5.4.0 of xml4c (but still using deprecated APIs).
+ *
  * Revision 1.25  2003/08/04 17:03:26  bkline
  * Fixed breakage caused by upgrade to latest version of Microsoft's
  * C++ compiler.
@@ -241,7 +244,7 @@ namespace cdr {
          * but they don't work with a standards-compliant compiler.
          */
 #if defined(_MSC_VER) && _MSC_VER < 1310
-        
+
         /**
          * Compares another cdr::String to this one.  Case is significant for
          * the purposes of this comparison.
@@ -393,6 +396,18 @@ namespace cdr {
      *  @return             copy of string, with space normalized.
      */
     extern String normalizeWhiteSpace (const String&);
+
+    /**
+     * Trim all whitespace characters from the beginning and/or end
+     * of a string.
+     * Uses iswspace to define what is whitespace.
+     *
+     *  @param inStr        reference to string to normalize.
+     *  @param leading      True=trim leading whitespace, default.
+     *  @param trailing     True=trim trailing whitespace, default.
+     *  @return             copy of string, with space normalized.
+     */
+    extern String trimWhiteSpace (const String&, bool=true, bool=true);
 
     /**
      * Wrap an xml tag around a string, returning the wrapped string.
