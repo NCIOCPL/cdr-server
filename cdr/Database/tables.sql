@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.32 2001-07-26 23:09:07 ameyer Exp $
+ * $Id: tables.sql,v 1.33 2001-07-28 11:58:38 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2001/07/26 23:09:07  ameyer
+ * Updated description of xml_schema column to show change from schema
+ * in place to schema referenced in the document table/view.
+ *
  * Revision 1.31  2001/07/15 22:45:22  bkline
  * Added int_val to query_term table.
  *
@@ -775,12 +779,20 @@ CREATE TABLE link_fragment (
  *       doc_id  ID of document being indexed.
  *         path  location of element in document.
  *        value  searchable element data.
+ *      int_val  integer for first string of decimal digits in value.
+ *     node_loc  string of 4-character hex numbers representing position
+ *               of elements in path; doc-level node is assumed to be one;
+ *               first node after document node is represented by the first
+ *               four hex digits, the next node by the next four digits, etc.
+ *               This column is used to determine which rows in the query_term
+ *               table represent sibling under the same parent.
  */
 CREATE TABLE query_term
      (doc_id INTEGER NOT NULL REFERENCES document,
         path VARCHAR(512) NOT NULL,
        value NVARCHAR(255) NOT NULL,
-     int_val INTEGER NULL)
+     int_val INTEGER NULL,
+    node_loc VARCHAR 160 NOT NULL)
 
 /*
  * Allows for future customization of the query support mechanism, using more
