@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.17 2002-06-26 02:22:33 ameyer Exp $
+ * $Id: CdrVersion.cpp,v 1.18 2002-09-25 13:55:18 pzhang Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2002/06/26 02:22:33  ameyer
+ * Added lastVersions().
+ *
  * Revision 1.16  2002/06/07 13:52:09  bkline
  * Added support for last publishable linked document retrieval.
  *
@@ -519,6 +522,7 @@ int cdr::getLatestPublishableVersion(int docId, cdr::db::Connection& conn,
                  "   AND v.num = (SELECT MAX(num)          "
                  "                  FROM doc_version       "
                  "                 WHERE id = v.id         "
+                 "                   AND val_status = 'V'  "
                  "                   AND publishable = 'Y')";
   cdr::db::PreparedStatement select = conn.prepareStatement(query);
   select.setInt(1, docId);
