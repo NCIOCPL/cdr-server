@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.13 2000-06-09 04:01:22 ameyer Exp $
+ * $Id: CdrString.h,v 1.14 2000-07-11 22:42:03 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2000/06/09 04:01:22  ameyer
+ * Added toString template function.
+ *
  * Revision 1.12  2000/05/16 21:19:26  bkline
  * Added packErrors() function.
  *
@@ -293,6 +296,15 @@ namespace cdr {
     typedef std::set<String>             StringSet;
     typedef std::vector<String>          StringVector;
     typedef std::list<String>            StringList;
+
+    /**
+     * Convert an integer to a CDR doc id, with 'CDR' prefix and
+     * zero padding.
+     *
+     *  @param  id          integer form of a document id.
+     *  @return             string form of the doc id.
+     */
+    extern String stringDocId (const int);
 
     /**
      * Packs the error messages contained in the caller's list into a

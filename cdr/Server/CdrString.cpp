@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.6 2000-05-16 21:19:09 bkline Exp $
+ * $Id: CdrString.cpp,v 1.7 2000-07-11 22:41:24 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/05/16 21:19:09  bkline
+ * Added packErrors() method.
+ *
  * Revision 1.5  2000/05/04 12:44:27  bkline
  * Changed method for extracting a document ID to throw an exception if
  * the string does match the expected pattern for a docId.
@@ -65,7 +68,7 @@ std::string cdr::String::toUtf8() const
 }
 
 /**
- * Converts string from UTF-8 to UTF-16 (common support for two 
+ * Converts string from UTF-8 to UTF-16 (common support for two
  * constructors).  Ignores values beyond U+FFFF.
  */
 void cdr::String::utf8ToUtf16(const char* s)
@@ -137,6 +140,19 @@ int cdr::String::extractDocId() const
         throw cdr::Exception(L"Invalid document ID string", *this);
     cdr::String numString = substr(3);
     return numString.getInt();
+}
+
+/**
+ * Convert an integer to a CDR doc id, with 'CDR' prefix and
+ * zero padding.
+ */
+cdr::String cdr::stringDocId(const int id)
+{
+    wchar_t buf[20];
+
+    swprintf (buf, L"CDR%010d", id);
+    cdr::String s(buf);
+    return s;
 }
 
 /**
