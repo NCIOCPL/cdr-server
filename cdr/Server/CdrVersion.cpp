@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.1 2000-10-23 14:08:34 mruben Exp $
+ * $Id: CdrVersion.cpp,v 1.2 2000-10-25 19:06:34 mruben Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/10/23 14:08:34  mruben
+ * Initial revision
+ *
  *
  */
 
@@ -139,10 +142,11 @@ int cdr::checkIn(int docId,  cdr::db::Connection& conn, int usr,
                    "LEFT OUTER JOIN doc_blob b ON b.id = d.id "
                    "WHERE d.id = ? "
                    "  AND a.dt = (SELECT MAX(dt) "
-                   "FROM audit_trail "
-                   "WHERE a.document = d.id)";
+                   "              FROM audit_trail aa"
+                   "              WHERE aa.document = ?)";
     cdr::db::PreparedStatement select = conn.prepareStatement(query);
     select.setInt(1, docId);
+    select.setInt(2, docId);
     cdr::db::ResultSet rs = select.executeQuery();
     if (!rs.next())
       throw cdr::Exception(L"Error getting document data");
@@ -268,7 +272,7 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn, int num,
     verdoc->document = docId;
     verdoc->num = num;
     verdoc->dt = rs.getString(1);
-    verdoc->updated_dt = rs.getString(2);
+    verdoc->updated_dt = cdr::toXmlDate(rs.getString(2));
     verdoc->usr = rs.getInt(3);
     verdoc->doc_type = rs.getInt(4);
     verdoc->title = rs.getString(5);
@@ -304,7 +308,7 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn,
     verdoc->document = docId;
     verdoc->num = rs.getInt(1);;
     verdoc->dt = rs.getString(2);
-    verdoc->updated_dt = rs.getString(3);
+    verdoc->updated_dt = cdr::toXmlDate(rs.getString(3));
     verdoc->usr = rs.getInt(4);
     verdoc->doc_type = rs.getInt(5);
     verdoc->title = rs.getString(6);
@@ -342,7 +346,7 @@ bool cdr::getLabelVersion(int docId, cdr::db::Connection& conn,
     verdoc->document = docId;
     verdoc->num = rs.getInt(1);;
     verdoc->dt = rs.getString(2);
-    verdoc->updated_dt = rs.getString(3);
+    verdoc->updated_dt = cdr::toXmlDate(rs.getString(3));
     verdoc->usr = rs.getInt(4);
     verdoc->doc_type = rs.getInt(5);
     verdoc->title = rs.getString(6);
@@ -372,7 +376,7 @@ int cdr::getVersionNumber(int docId, cdr::db::Connection& conn,
   if (rs.next())
   {
     if (date != NULL)
-      *date = rs.getString(2);
+      *date = cdr::toXmlDate(rs.getString(2));
 
     return rs.getInt(1);
   }
