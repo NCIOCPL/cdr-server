@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbStatement.cpp,v 1.1 2000-04-15 12:21:14 bkline Exp $
+ * $Id: CdrDbStatement.cpp,v 1.2 2000-04-17 21:24:48 bkline Exp $
  *
  * Implementation for ODBC HSTMT wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/15 12:21:14  bkline
+ * Initial revision
+ *
  */
 
 #include "CdrDbStatement.h"
@@ -51,41 +54,62 @@ cdr::db::ResultSet cdr::db::Statement::executeQuery(const char* query)
 void cdr::db::Statement::setString(int pos, const cdr::String& val)
 {
     Parameter* p = new Parameter;
-    p->position = pos;
-    p->len      = val.size() * sizeof(wchar_t);
-    p->value    = new wchar_t[val.size() + 1];
-    p->cType    = SQL_C_WCHAR;
-    p->sType    = val.size() > 2000 ? SQL_WLONGVARCHAR : SQL_WVARCHAR;
-    p->cb       = SQL_NTS;
-    memset(p->value, 0, p->len + sizeof(wchar_t));
-    memcpy(p->value, val.c_str(), p->len);
+    p->position  = pos;
+    p->cType     = SQL_C_WCHAR;
+    p->sType     = val.size() > 2000 ? SQL_WLONGVARCHAR : SQL_WVARCHAR;
+    if (val.isNull()) {
+        p->len   = 0;
+        p->value = 0;
+        p->cb    = SQL_NULL_DATA;
+    }
+    else {
+        p->len   = val.size() * sizeof(wchar_t) + sizeof(wchar_t);
+        p->value = new wchar_t[val.size() + 1];
+        p->cb    = SQL_NTS;
+        memset(p->value, 0, p->len + sizeof(wchar_t));
+        memcpy(p->value, val.c_str(), p->len);
+    }
     paramVector.push_back(p);
 }
 
-void cdr::db::Statement::setString(int pos, const std::string& val)
+void cdr::db::Statement::setString(int pos, const std::string& val, bool null)
 {
     Parameter* p = new Parameter;
-    p->position = pos;
-    p->len      = val.size();
-    p->value    = new char[val.size() + 1];
-    p->cType    = SQL_C_CHAR;
-    p->sType    = SQL_VARCHAR;
-    p->cb       = SQL_NTS;
-    memset(p->value, 0, p->len + sizeof(char));
-    memcpy(p->value, val.c_str(), p->len);
+    p->position  = pos;
+    p->cType     = SQL_C_CHAR;
+    p->sType     = SQL_VARCHAR;
+    if (null) {
+        p->len   = 0;
+        p->value = 0;
+        p->cb    = SQL_NULL_DATA;
+    }
+    else {
+        p->len   = val.size() + 1;
+        p->value = new char[val.size() + 1];
+        p->cb    = SQL_NTS;
+        memset(p->value, 0, p->len + sizeof(char));
+        memcpy(p->value, val.c_str(), p->len);
+    }
     paramVector.push_back(p);
 }
 
-void cdr::db::Statement::setInt(int pos, int val)
+void cdr::db::Statement::setInt(int pos, const cdr::Int& val)
 {
     Parameter* p = new Parameter;
-    p->position = pos;
-    p->value    = new int[1];
-    p->len      = 0;
-    p->cType    = SQL_C_SLONG;
-    p->sType    = SQL_INTEGER;
-    p->cb       = 0;
-    memcpy(p->value, &val, sizeof(int));
+    p->position  = pos;
+    p->cType     = SQL_C_SLONG;
+    p->sType     = SQL_INTEGER;
+    p->len       = 0;
+    if (val.isNull()) {
+        p->value = 0;
+        p->cb    = SQL_NULL_DATA;
+    }
+    else {
+        p->value = new int[1];
+        p->cb    = 0;
+        int i    = val;
+        memcpy(p->value, &i, sizeof(int));
+    }
     paramVector.push_back(p);
 }
 
