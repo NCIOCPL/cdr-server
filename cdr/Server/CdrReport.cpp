@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.2 2000-10-26 15:03:17 mruben Exp $
+ * $Id: CdrReport.cpp,v 1.3 2001-04-08 22:47:11 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/10/26 15:03:17  mruben
+ * fixed various bugs
+ *
  *
  */
 
@@ -113,9 +116,9 @@ cdr::String cdr::Report::doReport(cdr::Session& session,
   if (report == NULL)
     throw cdr::Exception(L"missing report name");
   
-  return L"<CdrReportResponse>"
+  return L"<CdrReportResp>"
        + report->execute(session, dbConnection, parm)
-       + L"</CdrReportResponse>";
+       + L"</CdrReportResp>";
 }
 
 /*****************************************************************************/
@@ -162,7 +165,7 @@ namespace
     inactivity_length >> year >> month >> day;
     year = -year;
 
-    string query = "SELECT c.id, c.dt_out, u.name, a.dt, ac.name "
+    string query = "SELECT c.id, c.dt_out, u.name, a.dt, ac.name, dt.name "
                    "FROM checkout c "
                    "INNER JOIN usr u "
                    "ON c.usr = u.id "
@@ -170,6 +173,10 @@ namespace
                    "   ON c.id = a.document "
                    "INNER JOIN action ac "
                    "   ON a.action = ac.id "
+                   "INNER JOIN document d"
+                   "   ON c.id = d.id "
+                   "INNER JOIN doc_type dt"
+                   "   ON dt.id = d.doc_type "
                    "WHERE c.dt_in IS NULL "
                    "  AND a.dt < DATEADD(day, ?, "
                    "                     DATEADD(month, ?, "
@@ -196,18 +203,20 @@ namespace
       cdr::String name = rs.getString(3);
       cdr::String dt = cdr::toXmlDate(rs.getString(4));
       cdr::String aname = rs.getString(5);
+      cdr::String dtype = rs.getString(6);
       result << L"<ReportRow>\n"
-                L"<DocId>" << id << L"</DocId>\n"
+                L"<DocId>" << cdr::stringDocId(id) << L"</DocId>\n"
+                L"<DocType>" << dtype << L"</DocType>\n"
                 L"<CheckedOutTo>" << name << L"</CheckedOutTo>\n"
                 L"<WhenCheckedOut>" << dt << L"</WhenCheckedOut>\n"
                 L"<LastActivity>\n"
-                L"<ActionType>" << aname << L"</Actiontype>\n"
+                L"<ActionType>" << aname << L"</ActionType>\n"
                 L"<ActionWhen>" << dt << L"</ActionWhen>\n"
                 L"</LastActivity>\n"
                 L"</ReportRow>\n";
     }
 
-    result << L"]]</ReportBody>\n";
+    result << L"]]></ReportBody>\n";
     return result.str();
   }
 
