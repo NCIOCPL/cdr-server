@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.13 2003-01-02 13:28:59 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.14 2003-02-14 17:57:42 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2003/01/02 13:28:59  bkline
+ * Fixed bug in report of checked out docs without recent activity.
+ *
  * Revision 1.12  2002/09/08 12:27:21  bkline
  * Added PublishLinkedDocs code (not finished or enabled yet).
  *
@@ -497,7 +500,7 @@ namespace
         "                             '/OtherPracticeLocation' +        "
         "                             '/PersonRole'                     "
         "            AND t2.value   = 'Protocol Update Person'          "
-        "            AND LEFT(t2.node_loc, 8) = LEFT(t2.node_loc, 8)    ";
+        "            AND LEFT(t1.node_loc, 8) = LEFT(t2.node_loc, 8)    ";
       
     cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
     select.setInt(1, leadOrg.extractDocId());
