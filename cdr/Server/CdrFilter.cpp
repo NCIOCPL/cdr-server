@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.17 2002-02-01 22:08:01 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.18 2002-02-19 22:44:59 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2002/02/01 22:08:01  bkline
+ * Fixed whitespace in XSLT error messages.
+ *
  * Revision 1.16  2002/01/31 21:35:09  mruben
  * changed default format for current date
  *
@@ -297,7 +300,15 @@ namespace
       if (ui != NULL)
         *ui = u;
 
-      return getDocument(u, 0, connection, type);
+      int version = 0;
+      cdr::dom::Node verAttr = attributes.getNamedItem("version");
+      if (verAttr != NULL)
+      {
+        cdr::String verString = verAttr.getNodeValue();
+        version = verString.getInt();
+      }
+
+      return getDocument(u, version, connection, type);
     }
 
     cdr::dom::Node f = docspec.getFirstChild();
