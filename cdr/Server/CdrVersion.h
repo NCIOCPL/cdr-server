@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.h,v 1.4 2001-05-22 21:29:25 mruben Exp $
+ * $Id: CdrVersion.h,v 1.5 2001-05-23 01:27:50 ameyer Exp $
  *
  * Internal support functions for CDR verison control
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2001/05/22 21:29:25  mruben
+ * added status information to CdrVerDoc
+ *
  * Revision 1.3  2000/12/07 16:02:08  ameyer
  * Made allowVersion() a public function, needed by delDoc().
  *
@@ -37,6 +40,7 @@ namespace cdr {
      *  @param  conn        reference to an active connection to the CDR
      *                      database.
      *  @param  usr         int user ID
+     *  @param  actStatus   "A"=publishable (active), "I"=inactive
      *  @param  comment     cdr::String* comment on check in.  If NULL, the
      *                      comment will not be updated
      *  @param  abandon     bool true if checkout is to be abandoned (i.e.,
@@ -52,6 +56,7 @@ namespace cdr {
     extern int checkIn(cdr::Session&           session,
                        int                     docId,
                        cdr::db::Connection&    conn,
+                       cdr::String             actStatus,
                        const cdr::String*      comment = NULL,
                        bool                    abandon = false,
                        bool                    force = false);
