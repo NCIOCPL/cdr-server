@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.33 2001-04-08 22:44:01 bkline Exp $
+# $Id: Makefile,v 1.34 2001-04-13 12:29:26 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.33  2001/04/08 22:44:01  bkline
+# Added CdrGetTree.obj.
+#
 # Revision 1.32  2001/02/28 03:19:15  ameyer
 # Added CdrLinkProcs.h,.cpp.
 #
@@ -182,6 +185,7 @@ OBJS   =CdrCommand.obj \
         CdrModUsr.obj \
         CdrDelUsr.obj \
         CdrListUsrs.obj \
+        CdrActions.obj \
         CdrDoc.obj \
         CdrValidateDoc.obj \
         CdrLink.obj \
