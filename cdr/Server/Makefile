@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.13 2000-05-04 12:46:32 bkline Exp $
+# $Id: Makefile,v 1.14 2000-05-04 16:49:10 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.13  2000/05/04 12:46:32  bkline
+# Sorted HDRS lines; eliminated duplicate line.
+#
 # Revision 1.12  2000/05/03 15:27:13  bkline
 # Added CdrDbPreparedStatement module; fixed rm invocation; added warning
 # option for compiler.
@@ -115,10 +118,15 @@ OBJS   =CdrCommand.obj \
         CdrGetDoc.obj
 LIBS   =cdr.lib xerces-c_1.lib wsock32.lib odbc32.lib user32.lib
 
+#--------------------------------------------------------------------------
 # File suffixes examined for rule interpretation
+#--------------------------------------------------------------------------
+.SUFFIXES:
 .SUFFIXES: .obj .c .cpp
 
+#--------------------------------------------------------------------------
 # Targets
+#--------------------------------------------------------------------------
 all: init $(CDRSVR) CdrDocs
 
 #--------------------------------------------------------------------------
@@ -147,6 +155,12 @@ $(LIBOBJS): $(HDRS)
 CdrServer.obj: CdrServer.cpp $(HDRS)
 
 #--------------------------------------------------------------------------
+# Rule for building CDR library.
+#--------------------------------------------------------------------------
+$(CDRLIB): $(LIBOBJS)
+	lib /OUT:$(CDRLIB) $(LIBOBJS) >> errs
+
+#--------------------------------------------------------------------------
 # For Bison, we're not attempting a generic rule
 #--------------------------------------------------------------------------
 BISON_SIMPLE=/etc/bison.cdrtest
@@ -155,16 +169,6 @@ CdrSearch_tab.obj: CdrSearch_tab.c $(HDRS)
 
 CdrSearch_tab.c: CdrSearch.y $(HDRS) $(CDRINC)/CdrSearch.h
 	bison -p CdrSearch CdrSearch.y
-
-#--------------------------------------------------------------------------
-# Rule for building CDR library.
-#--------------------------------------------------------------------------
-$(CDRLIB): $(LIBOBJS)
-	lib /OUT:$(CDRLIB) $(LIBOBJS) >> errs
-
-
-# This one has a different header dependency
-CdrString.obj: CdrString.cpp $(CDRINC)/CdrString.h
 
 #--------------------------------------------------------------------------
 # Rule for building CDR programmer documentation.
@@ -183,6 +187,7 @@ $(DOCS): $(HDRS)
 
 .cpp.obj:
 	$(CC) -c $(CFLAGS) $*.cpp >> errs
+
 
 #--------------------------------------------------------------------------
 # Cleanup rules.
