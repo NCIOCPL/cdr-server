@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbStatement.cpp,v 1.6 2000-05-03 15:25:41 bkline Exp $
+ * $Id: CdrDbStatement.cpp,v 1.7 2000-05-21 00:48:59 bkline Exp $
  *
  * Implementation for ODBC HSTMT wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/05/03 15:25:41  bkline
+ * Fixed database statement creation.
+ *
  * Revision 1.5  2000/04/22 22:15:04  bkline
  * Added more comments.
  *
@@ -92,7 +95,7 @@ void cdr::db::Statement::closeStatement()
 }
 
 /**
- * submits the specified query to the CDR database and returns a new
+ * Submits the specified query to the CDR database and returns a new
  * <code>ResultSet</code> object.
  */
 cdr::db::ResultSet cdr::db::Statement::executeQuery(const char* query)
@@ -104,6 +107,25 @@ cdr::db::ResultSet cdr::db::Statement::executeQuery(const char* query)
         throw cdr::Exception(L"Failure executing database query",
                              getErrorMessage(rc));
     return cdr::db::ResultSet(*this);
+}
+
+/**
+ * Submits a SQL request to the CDR database and returns the number of rows
+ * affected for an UPDATE, INSERT, or DELETE statement.  Other SQL statements
+ * (including DDL) can be submitted using this method, but if the query is not
+ * an UPDATE, INSERT, or DELETE statement the return value is undefined.
+ */
+int cdr::db::Statement::executeUpdate(const char* query)
+{
+    SQLRETURN rc;
+    rc = SQLExecDirect(hstmt, (SQLCHAR *)query, SQL_NTS);
+    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO &&
+            rc != SQL_NO_DATA_FOUND)
+        throw cdr::Exception(L"Failure executing database query",
+                             getErrorMessage(rc));
+    SQLINTEGER count;
+    SQLRowCount(hstmt, &count);
+    return count;
 }
 
 /**
