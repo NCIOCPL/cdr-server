@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.25 2001-04-08 19:13:13 bkline Exp $
+ * $Id: tables.sql,v 1.26 2001-04-13 00:31:20 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2001/04/08 19:13:13  bkline
+ * Added term_parents view.
+ *
  * Revision 1.24  2001/03/21 22:55:16  mruben
  * corrected comment
  *
@@ -595,7 +598,7 @@ CREATE TABLE grp_usr
 CREATE TABLE link_type (
           id INTEGER IDENTITY PRIMARY KEY,
         name VARCHAR(32) UNIQUE,
-     comment VARCHAR(255) NULL,
+     comment VARCHAR(255) NULL
 )
 
 /*
@@ -627,10 +630,28 @@ CREATE TABLE link_xml (
  *    source_link_type  Type of link to be checked.
  *    target_doc_type   Allowed doc_type of target.  May be more than 1.
  */
-
 CREATE TABLE link_target (
     source_link_type  INTEGER NOT NULL REFERENCES link_type,
      target_doc_type  INTEGER NOT NULL REFERENCES doc_type
+)
+
+/*
+ * Valid link property types.
+ * Lists all link custom validation properties known to the system.
+ * Each entry in this table essentially identifies a custom validation
+ *  routine which may be invoked during link validation.
+ * Entries may only be created by a programmer who has written code
+ *  to support the custom validation identified here.  Entries must
+ *  not be made by users.
+ * See CdrLinkProcs.cpp for how custom link properties are validated.
+ *     id       Unique id used in other tables.
+ *     name     Human readable name
+ *     comment  Optional free text notes
+ */
+CREATE TABLE link_prop_type (
+          id INTEGER IDENTITY PRIMARY KEY,
+        name VARCHAR(32) UNIQUE,
+     comment VARCHAR(255) NULL
 )
 
 /*
@@ -647,13 +668,11 @@ CREATE TABLE link_target (
  *   Link target doc must contain certain field/value pairs.
  *      (we have a whole megillah for checking this.)
  */
-
-CREATE TABLE link_prop (
+CREATE TABLE link_properties (
       link_id INTEGER NOT NULL REFERENCES link_type,
-     property VARCHAR(32) UNIQUE,
-        value VARCHAR(1024),
+  property_id INTEGER NOT NULL REFERENCES link_prop_type,
+        value VARCHAR(1024) NULL,
       comment VARCHAR(256) NULL
-  PRIMARY KEY (link_id, property)
 )
 
 /*
