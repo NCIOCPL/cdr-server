@@ -5,17 +5,20 @@
 <DocTitle readonly="yes">Miscellaneous Document Report Filter</DocTitle>
 <ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
-<xsl:transform   xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                   version = "1.0"
-                 xmlns:cdr = "cips.nci.nih.gov/cdr">
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
 
  <xsl:import    href = "cdr:name:Module: InLine Markup Formatter"/>
  <xsl:include   href = "cdr:name:Module: Table Formatter"/>
  <xsl:include   href = "cdr:name:Module: STYLE Default"/>  
 
  <xsl:output                    method = "html"/>
-   
+
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
+
  <!-- 
  ================================================================
  Filter to create a Miscellaneous QC Report
@@ -28,23 +31,17 @@
   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
   <HTML>
    <HEAD>
-       <xsl:variable                name="cdrmydoc" 
-                                 select="document('cdrx:/*/CdrCtl')"/>
-      
-     <xsl:variable      name = "docID"
-                                select = "document('cdrutil:/docid')"/>
+    <xsl:variable                 name = "cdrdocs" 
+                                select = "document('cdrx:/*/CdrCtl')"/>
 
-      <TITLE>
-      <xsl:value-of   select = "concat('CDR', 
-                                   number(
-                                   substring-after($docID, 'CDR')))"/>
-                                   <xsl:text>: </xsl:text>
-                                   <xsl:value-of  select="
-                                   substring-before
-                                   ($cdrmydoc/CdrDocCtl/DocTitle,';')"/>  
-    <!--<xsl:text>: </xsl:text>
-     <xsl:value-of              select = "substring-before($cdrmydoc/
-                                          CdrDocCtl/DocTitle,';')"/>-->
+    <TITLE>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+     <xsl:text>: </xsl:text>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/> 
     </TITLE>
      
     <!--Inline sytle sheet to display H2 and H4 headers in Navy -->
@@ -59,90 +56,114 @@
  </xsl:template>
 
 
-  <!-- Generate the HTML Miscellaneous Document report"  -->
-   <xsl:template match="MiscellaneousDocument">
-    <BODY>
+ <!-- 
+ ========================================================================
+ Generate the HTML Miscellaneous Document report" 
+ ======================================================================== -->
+ <xsl:template                   match = "MiscellaneousDocument">
+  <BODY>
 
- <!-- ====================================================================
-       Display Report heading and subheading
-      ==================================================================== --> 
-  
-  <b><font size='4'><center>Miscellaneous Document<br />QC Report</center></font></b>
- <b><font size='3'><center><xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/></center></font></b>
-<p/>
-<p/>
- <xsl:variable                name = "docID"
-                                select = "document('cdrutil:/docid')"/>
- <b>
- <font size='4'>
- <xsl:value-of              select = "concat('CDR', 
+  <!-- 
+  ==================================================================
+  Display Report heading and subheading 
+  ================================================================== -->
+   <b>
+    <font size='4'>
+     <center>
+      <xsl:text>Miscellaneous Document</xsl:text>
+      <br/>
+      <xsl:text>QC Report</xsl:text>
+     </center>
+    </font>
+    <font size='3'>
+     <center>
+      <xsl:value-of             select = "document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M% 25p')"/>
+     </center>
+    </font>
+   </b>
+   <p/>
+
+   <b>
+    <font size='4'>
+    <xsl:value-of               select = "concat('CDR', 
                                            number(
                                            substring-after($docID, 'CDR')))"/>
+    </font>
+   </b>
+   <p/>
 
- </font>
- </b>
- <br />
- <br />
+   <xsl:apply-templates/>
+  </BODY>
+ </xsl:template>
 
-<xsl:apply-templates/>
-</BODY>
-  </xsl:template>
 
-<!-- =================================================================
+ <!-- 
+ =================================================================
               Display the Document Title
-     ================================================================== -->
-<xsl:template match="MiscellaneousDocumentTitle">
+ ================================================================== -->
+ <xsl:template                   match = "MiscellaneousDocumentTitle">
   <table width='90%' cellspacing = '0' cellpadding = '0'>
-    <tr>
+   <tr>
     <th align='left' width='40%'>
-     <b><font size='4'>Title</font></b>
-     </th>
-      <td width='60%'>
-      <xsl:apply-templates/></td>
-    </tr>
+     <b>
+      <font size='4'>Title</font>
+     </b>
+    </th>
+    <td width='60%'>
+     <xsl:apply-templates/>
+    </td>
+   </tr>
   </table>
-</xsl:template>
-     
- <!-- =================================================================
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
                                Display MetaData
-       ================================================================== -->
-
-<xsl:template match="MiscellaneousDocumentMetadata">
-
-  <b><font size='4'>Metadata</font></b>
-    <table width = '90%' cellpadding='0' cellspacing='0'>
-      <tr>
-        <td width='5%'> 
-        </td>
-        <td width='35%'>
-        <b>Type</b>
-        </td>
-        <td width ='60%'>
-          <xsl:apply-templates select="MiscellaneousDocumentType"/>
-        </td>
-      </tr>
-      <tr>
-      <td> </td>
-       <td><b>Language</b></td>
-        <td><xsl:apply-templates select="Language"/></td>
-      </tr>
-      <tr>
-       <td> </td>
-       <td>
-       <b>Audience</b>
-       </td>
-        <td><xsl:apply-templates select="Audience"/></td>
-      </tr>
-    </table>
-    <p/>
-</xsl:template>
+ ================================================================= -->
+ <xsl:template                   match = "MiscellaneousDocumentMetadata">
+  <b>
+   <font size='4'>Metadata</font>
+  </b>
+  <table width = '90%' cellpadding='0' cellspacing='0'>
+   <tr>
+    <td width='5%'> 
+    </td>
+    <td width='35%'>
+     <b>Type</b>
+    </td>
+    <td width ='60%'>
+     <xsl:apply-templates       select = "MiscellaneousDocumentType"/>
+    </td>
+   </tr>
+   <tr>
+    <td> </td>
+    <td>
+     <b>Language</b>
+    </td>
+    <td>
+     <xsl:apply-templates       select = "Language"/>
+    </td>
+   </tr>
+   <tr>
+    <td> </td>
+    <td>
+     <b>Audience</b>
+    </td>
+    <td>
+     <xsl:apply-templates       select = "Audience"/>
+    </td>
+   </tr>
+  </table>
+  <p/>
+ </xsl:template>
 
        
  <!-- 
  ==================================================================
  Display Paragraph text
  ================================================================== -->
- <xsl:template             match = "MiscellaneousDocumentText">
+ <xsl:template                   match = "MiscellaneousDocumentText">
   <b>
    <font size = '4'>Text</font>
   </b>
@@ -151,31 +172,37 @@
  </xsl:template>
 
 
- <xsl:template             match = "Title">
+ <!--
+ ==================================================================
+ ================================================================== -->
+ <xsl:template                   match = "Title">
   <b>
-   <xsl:value-of          select = "."/>
+   <xsl:value-of                select = "."/>
   </b>
   <p/>
  </xsl:template>
 
 
-   <!-- ===================================================================
+ <!-- 
+ ==================================================================
                  Display DateLastModified
-       ================================================================== -->
-<xsl:template match="DateLastModified">
+ ================================================================== -->
+ <xsl:template                   match = "DateLastModified">
   <br />
   <table width='90%' cellpadding = "0" cellspacing = "0">
-    <tr>
-      <td width='40%'><b><font size='4'>Date Last Modified</font></b></td>
-      <td width='60%'><xsl:apply-templates/></td>
-    </tr>
+   <tr>
+    <td width='40%'>
+     <b>
+      <font size='4'>Date Last Modified</font>
+     </b>
+    </td>
+    <td width='60%'>
+     <xsl:apply-templates/>
+    </td>
+   </tr>
   </table>
-
-</xsl:template>
-
-
-
-               
-   </xsl:transform>]]>
+ </xsl:template>
+</xsl:transform>
+]]>
 </CdrDocXml>
 </CdrDoc>
