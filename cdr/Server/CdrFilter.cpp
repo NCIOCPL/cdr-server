@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.42 2004-02-20 00:34:42 ameyer Exp $
+ * $Id: CdrFilter.cpp,v 1.43 2004-03-12 00:30:30 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.42  2004/02/20 00:34:42  ameyer
+ * Removed a debugging line inadvertently left in.
+ *
  * Revision 1.41  2004/02/19 22:12:36  ameyer
  * Reorganized code in order to add new function filterDocumentByScriptSetName().
  * Took some code out of existing functions in order to centralize filter
@@ -243,7 +246,7 @@ namespace
   {
     public:
       ~ParmList();
-      void addparm(const cdr::String& name, const cdr::String& value);
+      void addparm(char* name, char* value);
       char** g_parms() { return parms.size() == 0 ? NULL : &parms[0]; }
 
     private:
@@ -273,20 +276,10 @@ namespace
     return p;
   }
 
-  void ParmList::addparm(const cdr::String& name, const cdr::String& value)
+  void ParmList::addparm(char* name, char* value)
   {
-    if (parms.size() == 0)
-    {
-      parms.push_back(parmstr(name));
-      parms.push_back(parmstr(value));
-    }
-    else
-    {
-      parms[parms.size() - 2] = parmstr(name);
-      parms[parms.size() - 1] = parmstr(value);
-    }
-    parms.push_back(NULL);
-    parms.push_back(NULL);
+      parms.push_back(name);
+      parms.push_back(value);
   }
 
   /***************************************************************************/
@@ -783,86 +776,79 @@ namespace
                      cdr::FilterParmVector* parms,
                      ThreadData* thread_data)
   {
-    char* s = NULL;
-    char* d = NULL;
-    char* r = NULL;
+      int         rc = 0;
+      const char* s  = script.c_str();
+      const char* d  = document.c_str();
+      char*       r  = NULL;
 
-    try
-    {
-      // We have to go through some contortions here to avoid sending a const
-      // char* to sablotron.  This probably is not necessary, but the function
-      // is not declared as taking a const char* so it seems safer.
+      try {
+          // Prepare the control structures for Sablotron processing.
+          SablotSituation situation = NULL;
+          SablotHandle    processor = NULL;
+          try {
+              SablotCreateSituation(&situation);
+              SablotCreateProcessorForSituation(situation, &processor);
+              SablotAddArgBuffer(situation, processor, "sheet", s);
+              SablotAddArgBuffer(situation, processor, "data", d);
 
-      s = new char[script.length() + 1];
-      strcpy(s, script.c_str());
-      d = new char[document.length() + 1];
-      strcpy(d, document.c_str());
+              // Plug in (and remember for cleanup) the parameter strings.
+              ParmList parmList;
+              if (parms != NULL) {
+                  for (cdr::FilterParmVector::iterator ip = parms->begin();
+                       ip != parms->end();
+                       ++ip) {
+                      char* name = parmstr(ip->first);
+                      char* value = parmstr(ip->second);
+                      parmList.addparm(name, value);
+                      SablotAddParam(situation, processor, name, value);
+                  }
+              }
 
-      ParmList p;
-      if (parms != NULL)
-        for (cdr::FilterParmVector::iterator ip = parms->begin();
-             ip != parms->end();
-             ++ip)
-          p.addparm(ip->first, ip->second);
+              // Register our custom handlers.
+              MessageHandler mh = { makeCode, messageHandler, messageHandler };
+              if (SablotRegHandler(processor, HLR_MESSAGE, &mh, thread_data))
+                  throw cdr::Exception(L"cannot register Sablotron "
+                                       L"message handler");
 
-      char *arguments[] = { "/_stylesheet", s,
-                            "/_xmlinput", d,
-                            "/_output", NULL,
-                            NULL
-                          };
-      void* proc;
-      int rc;
-      try
-      {
-        if ((rc = SablotCreateProcessor(&proc)))
-          throw cdr::Exception(L"Cannot create XSLT processor");
+              SchemeHandler sh = { uri_getall, uri_free, uri_open,
+                                   uri_get, uri_put,  uri_close
+              };
+              if (SablotRegHandler(processor, HLR_SCHEME, &sh, thread_data))
+                  throw cdr::Exception(L"cannot register Sablotron "
+                                       L"scheme handler");
 
-        MessageHandler mh = { makeCode, messageHandler, messageHandler };
-        if (SablotRegHandler(proc, HLR_MESSAGE, &mh, thread_data))
-          throw cdr::Exception(L"cannot register Sablotron message handler");
+              // Perform the XSL/T transformation.
+              rc = SablotRunProcessorGen(situation, processor, "arg:/sheet",
+                                         "arg:/data", "arg:/out");
+              if (thread_data->fatalError)
+                  throw cdr::Exception(thread_data->errMsg.str());
+              if (rc)
+                  throw cdr::Exception(L"XSLT error");
+              if ((rc = SablotGetResultArg(processor, "arg:/out", &r)) != 0)
+                  throw cdr::Exception(L"Cannot get XSLT result");
+          }
+          catch (...) {
+              SablotDestroyProcessor(processor);
+              SablotDestroySituation(situation);
+              throw;
+          }
 
-        SchemeHandler sh = { uri_getall, uri_free, uri_open,
-                             uri_get, uri_put,  uri_close
-        };
-        if (SablotRegHandler(proc, HLR_SCHEME, &sh, thread_data))
-          throw cdr::Exception(L"cannot register Sablotron scheme handler");
+          // Clean up and save the output.
+          if ((rc = SablotDestroyProcessor(processor)) != 0)
+              throw cdr::Exception(L"Cannot destroy XSLT processor");
+          if ((rc = SablotDestroySituation(situation)) != 0)
+              throw cdr::Exception(L"Cannot destroy Sablotron situation");
 
-        char** pparms = p.g_parms();
-        // XXX casts of last two arguments will be needed for sab 0.95.
-        rc = SablotRunProcessor(proc, "arg:/_stylesheet",
-                                "arg:/_xmlinput", "arg:/_output",
-                                (const char**)pparms,
-                                (const char**)arguments);
-        if (thread_data->fatalError)
-          throw cdr::Exception(thread_data->errMsg.str());
-        if (rc)
-          throw cdr::Exception(L"XSLT error");
-        if ((rc = SablotGetResultArg(proc, "arg:/_output", &r)))
-          throw cdr::Exception(L"Cannot get XSLT result");
+          result = r;
+          SablotFree(r);
+          return rc;
       }
-      catch (...)
-      {
-        SablotDestroyProcessor(proc);
-        throw;
+      catch (...) {
+          SablotFree(r);
+          throw;
       }
-
-      if ((rc = SablotDestroyProcessor(proc)))
-        throw cdr::Exception(L"Cannot destroy XSLT processor");
-
-      result = r;
-      delete[] s;
-      delete[] d;
-      SablotFree(r);
-      return rc;
-    }
-    catch (...)
-    {
-      delete[] s;
-      delete[] d;
-      SablotFree(r);
-      throw;
-    }
   }
+
 }
 
 // Version that accepts filter document id
