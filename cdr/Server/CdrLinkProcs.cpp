@@ -17,9 +17,12 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.1 2001-04-06 00:07:48 ameyer Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.2 2001-04-13 16:23:04 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2001/04/06 00:07:48  ameyer
+ * Initial revision
+ *
  */
 
 // Prototypes
@@ -54,9 +57,9 @@ int cdr::link::customLinkCheck (
     //   We won't do that here, but if link checking turns out to be
     //     a significant problem, this is a possible place to look
     //     for optimization.
-    qry = "SELECT property, value "
-          "FROM   link_prop "
-          "WHERE  link_id = ?";
+    qry = "SELECT t.name, p.value "
+          "FROM   link_prop_type t, link_properties p "
+          "WHERE  link_id = ? AND t.id = p.property_id";
 
     cdr::db::PreparedStatement prop_sel = conn.prepareStatement (qry);
     prop_sel.setInt (1, link->getType());
