@@ -28,7 +28,7 @@
     <HEAD>
      <xsl:variable name="cdrdocs" select="document('cdrx:/*/CdrCtl')"/>
 
-    <TITLE><xsl:value-of select="document('cdrutil:/docid')"/>  <xsl:value-of select="substring-before($cdrdocs/CdrDocCtl/DocTitle,';')"/></TITLE>
+    <TITLE><xsl:value-of select="document('cdrutil:/docid')"/><xsl:value-of select="substring-before($cdrdocs/CdrDocCtl/DocTitle,';')"/></TITLE>
      
    <!--Inline sytle sheet to display H2 and H4 headers in Navy -->
      <STYLE>
@@ -107,6 +107,9 @@
 <!-- ======================================================================== 
      templates to handle summary section anchors,list formats, and paragraphs
      that can occur in any order in the summaries 
+
+     10/09/2002 (CB)
+     Modified code to eliminate third level titles being displayed in italics
      ====================================================================== -->
 
 <!-- Display a summary section title and include anchor --> 
@@ -120,7 +123,23 @@
 <h3><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h3>
 </xsl:template>
 
-<xsl:template match="SummarySection/SummarySection/SummarySection/Title | SummarySection/SummarySection/SummarySection/SummarySection/Title">
+<xsl:template match="SummarySection/SummarySection/SummarySection/Title">
+<h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4>
+</xsl:template>
+
+<xsl:template match="SummarySection/SummarySection/SummarySection/SummarySection/Title">
+<i><h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4></i>
+</xsl:template>
+
+
+<!-- 10/08/2002 CB  Added additional template to display inserted titles in bold/italics -->
+
+<xsl:template match="SummarySection/SummarySection/SummarySection/Insertion/Title">
+<h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4>
+</xsl:template>
+
+<xsl:template 
+match=" SummarySection/SummarySection/SummarySection/SummarySection/Insertion/Title">
 <i><h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4></i>
 </xsl:template>
 
@@ -213,7 +232,7 @@
          template deletes data elements not used in the display 
      ===================================================================== -->
 
-<xsl:template match="PdqKey | PDQBoard | SectionType |Diagnosis | SummaryLanguage| SummaryType |SummaryAudience | SummaryTitle |MainTopics | SecondaryTopics | DocId | DateLastModified"/>
+<xsl:template match="PdqKey | PDQBoard | SectionType |Diagnosis | SummaryLanguage| SummaryType |SummaryAudience | SummaryTitle |MainTopics | SecondaryTopics | DocId | DateLastModified |PatientVersionOf | TranslationOf"/>
 
 <!-- ====================================================================
                          Display Paragraphs 
@@ -223,32 +242,7 @@
                         <p><xsl:apply-templates/></p>
                         </xsl:template>
 
-<!-- ======================================================================
-                           Display an Insertion 
-     ===================================================================== -->
-
-        <xsl:template match="Insertion">
-        <b><u><xsl:apply-templates/></u></b>
-        </xsl:template>
-
-       <xsl:template match="Insertion/Para | Insertion/ItemizedList/ListItem | Insertion/OrderedList/ListItem">
-       <b><u><xsl:apply-templates/></u></b>
-       </xsl:template>
-
-      <xsl:template match="Entry/Insertion">
-        <b><u><xsl:apply-templates/></u></b>
-        </xsl:template>
-  
-   
- <!-- Added new template for Insertion tags before a new title to produce 
-      a line break before displaying inserted paragraph -->
-
-      <xsl:template match="Insertion/Title">
-       <b><u><xsl:apply-templates/></u></b>
-       <br /><br />
-      </xsl:template>
-                     
-
+                          
 
 <!-- =================================================================== 
                Create a link to another document or website 
