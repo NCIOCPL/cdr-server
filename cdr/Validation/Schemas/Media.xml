@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
-      $Id: Media.xml,v 1.3 2004-10-21 23:22:01 bkline Exp $
+      $Id: Media.xml,v 1.4 2004-11-03 18:18:42 bkline Exp $
 
      $Log: not supported by cvs2svn $
+     Revision 1.3  2004/10/21 23:22:01  bkline
+     Made MinWidthPixels optional, dropped MinHeightPixels, fixed a typo
+     (malformed end tag), and changed Title to MediaTitle (to avoid a
+     conflict with the included common schema, which has a different
+     definition for that name).
+
      Revision 1.2  2004/10/01 00:55:22  ameyer
      Added required Title element.
      Made DateCreated optional - we won't always know precisely.
@@ -339,28 +345,29 @@
     <sequence>
       <element       name            = 'ContentDescription'
                      type            = 'GeneralText'
-                     maxOccurs       = 'unbounded'>
-        <complexType>
-          <attribute name            = 'audience'
-                     type            = 'Audience'/>
-        </complexType>
-      </element>
+                     maxOccurs       = 'unbounded'/>
     </sequence>
   </complexType>
 
   <complexType       name            = 'Captions'>
     <sequence>
       <element       name            = 'Caption'
-                     type            = 'GeneralText'
-                     maxOccurs       = 'unbounded'>
-        <complexType>
-          <attribute name            = 'audience'
-                     type            = 'Audience'/>
-          <attribute name            = 'language'
-                     type            = 'Language'/>
-        </complexType>
-      </element>
+                     type            = 'Caption'
+                     maxOccurs       = 'unbounded'/>
     </sequence>
+  </complexType>
+
+  <complexType       name            = 'Caption'
+                     mixed           = 'true'>
+    <choice          minOccurs       = '0'
+                     maxOccurs       = 'unbounded'>
+      <group         ref             = 'PhraseOrParaElements'/>
+      <group         ref             = 'CommonTextElements'/>
+    </choice>
+    <attribute       name            = 'audience'
+                     type            = 'Audience'/>
+    <attribute       name            = 'language'
+                     type            = 'Language'/>
   </complexType>
 
   <simpleType        name            = 'Language'>
