@@ -1,10 +1,13 @@
 #----------------------------------------------------------------------
 #
-# $Id: base_data_sql.py,v 1.7 2002-05-24 13:05:51 bkline Exp $
+# $Id: base_data_sql.py,v 1.8 2002-05-24 17:55:54 bkline Exp $
 #
 # Generate SQL statements for loading the base CDR database records.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.7  2002/05/24 13:05:51  bkline
+# Added code to preserve the Documentation table of contents.
+#
 # Revision 1.6  2002/03/02 00:46:57  bkline
 # Added code to handle non-ASCII characters (in Documentation docs).
 #
@@ -554,7 +557,8 @@ INSERT INTO document(val_status, val_date, doc_type, title, xml,
      SELECT %s, %s, id, %s, %s, %s, %s, 0
        FROM doc_type
       WHERE name = 'Documentation'""" % (
-            quote(row[0]), quote(row[1]), quote(row[2]), quote(row[3]),
+            quote(row[0]), quote(row[1]), quote(row[2]), 
+            re.sub(r"""\s*cdr:id\s*=\s*['"]_\d+['"]""", "", quote(row[3])),
             quote(row[4]), quote(row[5]))
     print "GO"
     cursor.close()
@@ -577,7 +581,8 @@ INSERT INTO document(val_status, val_date, doc_type, title, xml,
      SELECT %s, %s, id, %s, %s, %s, %s, 0
        FROM doc_type
       WHERE name = 'DocumentationToC'""" % (
-            quote(row[0]), quote(row[1]), quote(row[2]), quote(row[3]),
+            quote(row[0]), quote(row[1]), quote(row[2]),
+            re.sub(r"""\s*cdr:id\s*=\s*['"]_\d+['"]""", "", quote(row[3])),
             quote(row[4]), quote(row[5]))
     print "GO"
     cursor.close()
