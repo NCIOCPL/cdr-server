@@ -6,7 +6,7 @@
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
-     $Id: CDR0000000069.xml,v 1.2 2002-07-01 15:50:51 bkline Exp $
+     $Id: CDR0000000069.xml,v 1.3 2002-08-16 21:33:00 bkline Exp $
 
      Filter which extracts address information for protocol update person
      contact info picklist.
@@ -19,164 +19,183 @@
      Initial revision
   -->
 
-<xsl:transform       xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                     xmlns:cdr = "cips.nci.nih.gov/cdr"
-                       version = "1.0">
+<xsl:transform            xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                          xmlns:cdr = "cips.nci.nih.gov/cdr"
+                            version = "1.0">
 
- <!-- Passed in by the caller -->
- <xsl:param               name = "docId"/>
- <xsl:param               name = "repName"/>
+ <!-- 
+ ========================================================================
+ Passed in by the caller.
+ ======================================================================== -->
+ <xsl:param                    name = "docId"/>
+ <xsl:param                    name = "repName"/>
+ <xsl:param                    name = "privatePracticeOnly"
+                             select = "'no'"/>
 
- <!-- Start at the top.  We only want PrivatePractice and
-      OtherPracticeLocation elements. 
-   -->
- <xsl:template           match = "/">
+ <!-- 
+ ========================================================================
+ Start at the top.  We only want PrivatePractice and (possibly)
+ OtherPracticeLocation elements. 
+ ======================================================================== -->
+ <xsl:template                match = "/">
   <ReportBody>
    <ReportName>
-    <xsl:value-of select='$repName'/>
+    <xsl:value-of            select = '$repName'/>
    </ReportName>
-   <xsl:apply-templates select = "//PrivatePractice|//OtherPracticeLocation"/>
+   <xsl:apply-templates      select = "//PrivatePracticeLocation"/>
+   <xsl:if                     test = "$privatePracticeOnly = 'no'">
+    <xsl:apply-templates     select = "//OtherPracticeLocation"/>
+   </xsl:if>
   </ReportBody>
  </xsl:template>
 
- <!-- Extract the address information for the PrivatePractice element -->
- <xsl:template           match = "PrivatePractice">
-  <xsl:variable           name = "addrStr">
-   <xsl:call-template     name = "concat-address-pieces"/>
+ <!-- 
+ ========================================================================
+ Extract the address information for the PrivatePractice element. 
+ ======================================================================== -->
+ <xsl:template                match = "PrivatePracticeLocation">
+  <xsl:variable                name = "addrStr">
+   <xsl:call-template          name = "concat-address-pieces"/>
   </xsl:variable>
-  <xsl:if                 test = '$addrStr and @cdr:id'>
+  <xsl:if                      test = '$addrStr and @cdr:id'>
    <ReportRow>
-    <Link><xsl:value-of  select = 'concat($docId,"#",@cdr:id)'/></Link>
-    <Data><xsl:value-of  select = 'substring($addrStr, 2)'/></Data>
+    <Link><xsl:value-of      select = 'concat($docId,"#",@cdr:id)'/></Link>
+    <Data><xsl:value-of      select = 'substring($addrStr, 2)'/></Data>
    </ReportRow>
   </xsl:if>
  </xsl:template>
 
- <!-- Extract the address information for the OtherPracticeLocation elements -->
- <xsl:template           match = "OtherPracticeLocation">
-  <xsl:variable           name = "fragRef"
-                        select = "OrganizationLocation/@cdr:ref"/>
-  <xsl:variable           name = "orgDoc"
-                        select = "document(concat('cdrx:', $fragRef))"/>
-  <xsl:if                 test = "$orgDoc and @cdr:id">
-   <xsl:variable          name = "orgName"
-                        select = "$orgDoc//OfficialName/Name"/>
-   <xsl:variable          name = "fragId"
-                        select = "substring-after($fragRef, '#')"/>
-   <xsl:variable          name = "orgLocs"
-                        select = "$orgDoc/Organization/OrganizationLocations"/>
-   <xsl:variable          name = "orgLoc"
-                        select = "$orgLocs/OrganizationLocation/Location[@cdr:id = $fragId]"/>
-   <xsl:variable          name = "addrStr">
+ <!-- 
+ ========================================================================
+ Extract the address information for the OtherPracticeLocation elements.
+ ======================================================================== -->
+ <xsl:template                match = "OtherPracticeLocation">
+  <xsl:variable                name = "fragRef"
+                             select = "OrganizationLocation/@cdr:ref"/>
+  <xsl:variable                name = "orgDoc"
+                             select = "document(concat('cdrx:', $fragRef))"/>
+  <xsl:if                      test = "$orgDoc and @cdr:id">
+   <xsl:variable               name = "orgName"
+                             select = "$orgDoc//OfficialName/Name"/>
+   <xsl:variable               name = "fragId"
+                             select = "substring-after($fragRef, '#')"/>
+   <xsl:variable               name = "orgLocs"
+                             select = "$orgDoc/Organization/
+                                       OrganizationLocations"/>
+   <xsl:variable               name = "orgLoc"
+                             select = "$orgLocs/OrganizationLocation/
+                                       Location[@cdr:id = $fragId]"/>
+   <xsl:variable               name = "addrStr">
     <xsl:choose>
-     <xsl:when            test = "SpecificPostalAddress">
-      <xsl:apply-templates
-                        select = "SpecificPostalAddress"/>
+     <xsl:when                 test = "SpecificPostalAddress">
+      <xsl:apply-templates   select = "SpecificPostalAddress"/>
      </xsl:when>
      <xsl:otherwise>
-      <xsl:apply-templates
-                        select = "$orgLoc/PostalAddress"/>
+      <xsl:apply-templates   select = "$orgLoc/PostalAddress"/>
      </xsl:otherwise>
     </xsl:choose>
     <xsl:choose>
-     <xsl:when            test = "SpecificPhone">
-      <xsl:apply-templates
-                        select = "SpecificPhone"/>
+     <xsl:when                 test = "SpecificPhone">
+      <xsl:apply-templates   select = "SpecificPhone"/>
      </xsl:when>
      <xsl:otherwise>
-      <xsl:apply-templates
-                        select = "$orgLoc/Phone"/>
+      <xsl:apply-templates   select = "$orgLoc/Phone"/>
      </xsl:otherwise>
     </xsl:choose>
     <xsl:choose>
-     <xsl:when            test = "SpecificTollFreePhone">
-      <xsl:apply-templates
-                        select = "SpecificTollFreePhone"/>
+     <xsl:when                 test = "SpecificTollFreePhone">
+      <xsl:apply-templates   select = "SpecificTollFreePhone"/>
      </xsl:when>
      <xsl:otherwise>
-      <xsl:apply-templates
-                        select = "$orgLoc/TollFreePhone"/>
+      <xsl:apply-templates   select = "$orgLoc/TollFreePhone"/>
      </xsl:otherwise>
     </xsl:choose>
     <xsl:choose>
-     <xsl:when            test = "SpecificFax">
-      <xsl:apply-templates
-                        select = "SpecificFax"/>
+     <xsl:when                 test = "SpecificFax">
+      <xsl:apply-templates   select = "SpecificFax"/>
      </xsl:when>
      <xsl:otherwise>
-      <xsl:apply-templates
-                        select = "$orgLoc/Fax"/>
+      <xsl:apply-templates   select = "$orgLoc/Fax"/>
      </xsl:otherwise>
     </xsl:choose>
     <xsl:choose>
-     <xsl:when            test = "SpecificEmail">
-      <xsl:apply-templates
-                        select = "SpecificEmail"/>
+     <xsl:when                 test = "SpecificEmail">
+      <xsl:apply-templates   select = "SpecificEmail"/>
      </xsl:when>
      <!-- Lakshmi decided she doesn't want this.
      <xsl:otherwise>
-      <xsl:apply-templates
-                        select = "$orgLoc/Email"/>
+      <xsl:apply-templates   select = "$orgLoc/Email"/>
      </xsl:otherwise>
        -->
     </xsl:choose>
     <xsl:choose>
-     <xsl:when            test = "SpecificWebSite">
-      <xsl:apply-templates
-                        select = "SpecificWebSite"/>
+     <xsl:when                 test = "SpecificWebSite">
+      <xsl:apply-templates   select = "SpecificWebSite"/>
      </xsl:when>
      <xsl:otherwise>
-      <xsl:apply-templates
-                        select = "$orgLoc/WebSite"/>
+      <xsl:apply-templates   select = "$orgLoc/WebSite"/>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:variable>
-   <xsl:if                test = "string($addrStr)">
+   <xsl:if                     test = "string($addrStr)">
     <ReportRow>
      <Link>
-      <xsl:value-of    select = 'concat($docId,"#",@cdr:id)'/>
+      <xsl:value-of          select = 'concat($docId,"#",@cdr:id)'/>
      </Link>
      <Data>
-      <xsl:value-of    select = 'concat($orgName, $addrStr)'/>
+      <xsl:value-of          select = 'concat($orgName, $addrStr)'/>
      </Data>
     </ReportRow>
    </xsl:if>
   </xsl:if>
  </xsl:template>
 
- <xsl:template            name = 'concat-address-pieces'>
-  <xsl:apply-templates  select = 'PostalAddress'/>
-  <xsl:apply-templates  select = 'Phone|TollFreePhone|Fax|Email|WebSite'/>
+ <!-- 
+ ========================================================================
+ Named template for pulling together postal address pieces..
+ ======================================================================== -->
+ <xsl:template                 name = 'concat-address-pieces'>
+  <xsl:apply-templates       select = 'PostalAddress'/>
+  <xsl:apply-templates       select = 'Phone|TollFreePhone|Fax|Email|WebSite'/>
  </xsl:template>
 
- <xsl:template           match = 'SpecificPostalAddress|PostalAddress'>
-  <xsl:apply-templates  select = 'Street|City|CitySuffix|
-                                  PoliticalSubUnit_State'/>
-  <xsl:apply-templates  select = 'Country|PostalCode_ZIP'/>
+ <!-- 
+ ========================================================================
+ Extract postal address information.
+ ======================================================================== -->
+ <xsl:template                match = 'SpecificPostalAddress|PostalAddress'>
+  <xsl:apply-templates       select = 'Street|City|CitySuffix|
+                                       PoliticalSubUnit_State'/>
+  <xsl:apply-templates       select = 'Country|PostalCode_ZIP'/>
  </xsl:template>
 
- <xsl:template           match = 'Street|City|CitySuffix|PostalCode_ZIP|
-                                  Phone|TollFreePhone|Fax|Email'>
-  <xsl:if                 test = "string(.)">
-   <xsl:value-of        select = "concat('/',string(.))"/>
+ <!-- 
+ ========================================================================
+ Templates for concatenating the individual pieces.
+ ======================================================================== -->
+ <xsl:template                match = 'Street|City|CitySuffix|PostalCode_ZIP|
+                                       Phone|TollFreePhone|Fax|Email'>
+  <xsl:if                      test = "string(.)">
+   <xsl:value-of             select = "concat('/',string(.))"/>
   </xsl:if>
  </xsl:template>
 
- <xsl:template           match = 'PoliticalSubUnit_State|Country|WebSite'>
-  <xsl:if                 test = "string(.)">
-   <xsl:value-of        select = "concat('/',string(.))"/>
+ <xsl:template                match = 'PoliticalSubUnit_State|Country|WebSite'>
+  <xsl:if                      test = "string(.)">
+   <xsl:value-of             select = "concat('/',string(.))"/>
   </xsl:if>
  </xsl:template>
 
- <xsl:template           match = 'SpecificPhone|SpecificTollFreePhone'>
-  <xsl:if                 test = "string(.)">
-   <xsl:value-of        select = "concat('/',string(.))"/>
+ <xsl:template                match = 'SpecificPhone|SpecificTollFreePhone'>
+  <xsl:if                      test = "string(.)">
+   <xsl:value-of             select = "concat('/',string(.))"/>
   </xsl:if>
  </xsl:template>
 
- <xsl:template           match = 'SpecificFax|SpecificEmail|SpecificWebSite'>
-  <xsl:if                 test = "string(.)">
-   <xsl:value-of        select = "concat('/',string(.))"/>
+ <xsl:template                match = 'SpecificFax|SpecificEmail|
+                                       SpecificWebSite'>
+  <xsl:if                      test = "string(.)">
+   <xsl:value-of             select = "concat('/',string(.))"/>
   </xsl:if>
  </xsl:template>
 
