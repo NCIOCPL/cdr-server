@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.8 2001-05-04 17:00:49 mruben Exp $
+ * $Id: CdrFilter.cpp,v 1.9 2001-05-08 15:00:00 mruben Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2001/05/04 17:00:49  mruben
+ * added attribute to skip output
+ *
  * Revision 1.7  2001/04/05 23:10:02  mruben
  * added specifying filter by name
  *
@@ -559,5 +562,5 @@ cdr::String cdr::filter(cdr::Session& session,
   
   return L"<CdrFilterResp>"
        + result
-       + "</CdrFilterResp>\n";
+       + L"</CdrFilterResp>\n";
 }
