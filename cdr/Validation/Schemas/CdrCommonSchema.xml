@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<!-- $Id: CdrCommonSchema.xml,v 1.12 2001-06-15 15:47:42 ArkD Exp $ 
+<!-- $Id: CdrCommonSchema.xml,v 1.13 2001-06-22 15:13:17 ArkD Exp $ 
 
      $Log: not supported by cvs2svn $
+     Revision 1.12  2001/06/15 15:47:42  ArkD
+     "Author" renamed into "QuoteAuthor", "URL" renamed into "URI"
+     in order to resolve cinflicts with Citation Schema.
+
      Revision 1.11  2001/05/02 22:39:13  bkline
      Prior to migration to final schema syntax.
 
@@ -210,61 +214,55 @@
                      minOccurs       = '0'/>
   </complexType>
 
-  <complexType       name            = 'Contact'>
-    <sequence>
-      <element       name            = 'ContactName'
-                     type            = 'string'
-                     minOccurs       = '0'
-                     maxOccurs       = '*'/>
-      <element       name            = 'ContactDetail'
-                     type            = 'ContactDetail'/>
-    </sequence>
-  </complexType>
+<complexType name='Contact'>
+<sequence>
+<element name='ContactName' type='string' minOccurs='0' maxOccurs='*'/>
+<element name='ContactDetail' type='ContactDetail'/>
+</sequence>
+</complexType>
 
-  <complexType       name            = 'ContactDetail'>
-    <sequence>
-      <element       name            = 'Street'
-                     type            = 'string'
-                     minOccurs       = '0'
-                     maxOccurs       = '3'/>
-      <element       name            = 'City'
-                     type            = 'string'/>
-      <element       name            = 'PoliticalUnit_State'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      <element       name            = 'Country'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      <element       name            = 'PostalCode_ZIP'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      <element       name            = 'CodePosition'
-                     type            = 'CodePosition'
-                     minOccurs       = '0'/>
-      <element       name            = 'Phone'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      <element       name            = 'TollFreePhone'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      <element       name            = 'Fax'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      <element       name            = 'Email'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      <element       name            = 'URI'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-    </sequence>
-    <attribute       name            = 'Public'
-                     type            = 'YesNo'/>
-    <attribute       name            = 'AddressType'
-                     type            = 'AddressType'/>
-    <attribute       name            = 'CdrCallingId'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-  </complexType>
+<complexType name='ContactDetail'>
+<sequence>
+<element name='PostalAddress' type='PostalAddress' minOccurs='*'/>
+<element name='Phone' type='Phone' minOccurs='0'/>
+
+<element name='TollFreePhone' type='string' minOccurs='0'/>
+<element name='Fax' type='string' minOccurs='0'/>
+<element name='Email' type='Email' minOccurs='0'/>
+<element name='URI' type='string' minOccurs='0'/>
+</sequence>
+<attribute name='CdrCallingId' type='string' minOccurs='0'/>
+</complexType>
+
+<complexType name='Email'>
+<sequence>
+<element name ='EmailString' type='string'/>
+</sequence>
+<attribute name='Public' type='YesNo'/>
+</complexType>
+
+<complexType name='Phone'>
+<sequence>
+<element name ='PhoneString' type='string'/>
+</sequence>
+<attribute name='Public' type='YesNo'/>
+</complexType>
+
+<complexType name='PostalAddress'>
+<sequence>
+<element name ='Street' type='string' minOccurs='0' maxOccurs='3'/>
+<element name='City' type='string'/>
+<element name='CitySuffix' type='string' minOccurs='0'/>
+<element name='PoliticalUnit_State' type='GeographicalEntityLink' minOccurs='0'/>
+<element name='Country' type='GeographicalEntityLink' minOccurs='0'/>
+<element name='PostalCode_ZIP' type='string' minOccurs='0'/>
+<element name='CodePosition' type='CodePosition' minOccurs='0'/>
+</sequence>
+<attribute name='Public' type='YesNo'/>
+<attribute name='AddressType' type='AddressType'/>
+</complexType>
+
+
 
   <complexType       name            = 'Quote'>
     <sequence>
@@ -375,6 +373,13 @@
   </complexType>
 
   <complexType       name            = 'TerminologyLink'
+                     content         = 'textOnly'>
+    <attribute       name            = 'cdr:ref'
+                     type            = 'DocId'
+                     miOccurs        = '0'/>
+  </complexType>
+
+  <complexType       name            = 'GeographicalEntityLink'
                      content         = 'textOnly'>
     <attribute       name            = 'cdr:ref'
                      type            = 'DocId'
