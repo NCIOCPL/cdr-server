@@ -1,11 +1,15 @@
 /*
- * $Id: CdrXsd.cpp,v 1.1 2000-04-11 14:15:56 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.2 2000-04-11 21:22:58 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/11 14:15:56  bkline
+ * Initial revision
+ *
  */
 
 // System headers.
 #include <climits>
+#include <iostream>
 
 // Project headers.
 #include "CdrXsd.h"
@@ -33,7 +37,7 @@ cdr::xsd::Schema::Schema(const cdr::dom::Node& schemaElement)
             else if (nodeName == cdr::xsd::COMPLEX_TYPE)
                 registerType(new cdr::xsd::ComplexType(childNode));
             else if (nodeName == cdr::xsd::SIMPLE_TYPE)
-                registerType(new cdr::xsd::SimpleType(childNode));
+                registerType(new cdr::xsd::SimpleType(*this, childNode));
         }
         childNode = childNode.getNextSibling();
     }
@@ -148,6 +152,9 @@ cdr::xsd::Attribute::Attribute(const cdr::dom::Node& dn)
             name = attrValue;
         else if (attrName == cdr::xsd::TYPE)
             typeName = attrValue;
+        else if (attrName == cdr::xsd::MIN_OCCURS)
+            if (attrValue == L"0")
+                optional = true;
     }
     if (name.size() == 0)
         throw cdr::Exception(L"Name missing for attribute");
@@ -156,20 +163,57 @@ cdr::xsd::Attribute::Attribute(const cdr::dom::Node& dn)
 }
 
 /**
+ * Constructs a built-in simple type from "magic" knowledge of certain
+ * fundamental ur-types.
+ */
+cdr::xsd::SimpleType::SimpleType(const cdr::String& n) 
+{
+    // Defaults.
+    base        = 0;
+    minLength   = 0;
+    maxLength   = INT_MAX;
+    length      = -1;
+    precision   = -1;
+    scale       = -1;
+    encoding    = HEX;
+
+    struct BuiltinTypeMapElement { 
+        BuiltinTypeMapElement(const cdr::String& n, 
+                              cdr::xsd::SimpleType::BuiltinType t) 
+            : name(n), type(t) {}
+        cdr::String name; 
+        cdr::xsd::SimpleType::BuiltinType type; 
+    };
+    static BuiltinTypeMapElement map[] = {
+        BuiltinTypeMapElement(cdr::xsd::STRING,         STRING       ),
+        BuiltinTypeMapElement(cdr::xsd::DATE,           DATE         ),
+        BuiltinTypeMapElement(cdr::xsd::TIME,           TIME         ),
+        BuiltinTypeMapElement(cdr::xsd::DECIMAL,        DECIMAL      ),
+        BuiltinTypeMapElement(cdr::xsd::INTEGER,        INTEGER      ),
+        BuiltinTypeMapElement(cdr::xsd::BINARY,         BINARY       ),
+        BuiltinTypeMapElement(cdr::xsd::URI,            URI          ),
+        BuiltinTypeMapElement(cdr::xsd::TIME_INSTANT,   TIME_INSTANT )
+    };
+
+    for (size_t i = 0; i < sizeof map / sizeof *map; ++i) {
+        if (n == map[i].name) {
+            setName(n);
+            builtinType = map[i].type;
+            break;
+        }
+    }
+    if (getName().size() == 0)
+        throw cdr::Exception(L"Unrecognized builtin type", n);
+}
+
+/**
  * Builds a new schema element object from the xsd:simpleType node in the 
  * schema document.
  */
-cdr::xsd::SimpleType::SimpleType(const cdr::dom::Node& dn)
+cdr::xsd::SimpleType::SimpleType(const cdr::xsd::Schema& schema,
+                                 const cdr::dom::Node& dn)
 {
-    // Not using these yet.
     base = 0;
-    minLength = 0;
-    maxLength = INT_MAX;
-    length = -1;
-    precision = -1;
-    scale = -1;
-    encoding = HEX;
-
     cdr::dom::NamedNodeMap attrs = dn.getAttributes();
     int nAttrs = attrs.getLength();
     for (int i = 0; i < nAttrs; ++i) {
@@ -178,42 +222,59 @@ cdr::xsd::SimpleType::SimpleType(const cdr::dom::Node& dn)
         cdr::String attrValue = attr.getNodeValue();
         if (attrName == cdr::xsd::NAME)
             setName(attrValue);
-        else if (attrName == cdr::xsd::BASE)
+        else if (attrName == cdr::xsd::BASE) {
             baseName = attrValue;
+            base = dynamic_cast<const cdr::xsd::SimpleType*>
+                (schema.lookupType(baseName));
+        }
     }
+    if (!base)
+        throw cdr::Exception(L"Unknown base class", baseName);
     if (getName().size() == 0)
         throw cdr::Exception(L"Name missing for simple type");
+
+    minLength   = base->minLength;
+    maxLength   = base->maxLength;
+    length      = base->length;
+    precision   = base->precision;
+    scale       = base->scale;
+    encoding    = base->encoding;
+    builtinType = base->builtinType;
+
     cdr::dom::Node childNode = dn.getFirstChild();
     while (childNode != 0) {
         int nodeType = childNode.getNodeType();
         if (nodeType == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String nodeName = childNode.getNodeName();
-            cdr::String nodeValue = childNode.getNodeValue();
-            if (nodeName == cdr::xsd::ENUMERATION)
-                enumSet.insert(nodeValue);
+            cdr::dom::Element& e = static_cast<cdr::dom::Element&>(childNode);
+            cdr::String value = e.getAttribute(cdr::xsd::VALUE);
+            if (nodeName == cdr::xsd::ENUMERATION) {
+                std::wcerr << L"adding [" << value << L"] to enumset\n";
+                enumSet.insert(value);
+            }
             else if (nodeName == cdr::xsd::MIN_INCLUSIVE)
-                minInclusive = nodeValue;
+                minInclusive = value;
             else if (nodeName == cdr::xsd::MAX_INCLUSIVE)
-                maxInclusive = nodeValue;
+                maxInclusive = value;
             else if (nodeName == cdr::xsd::MIN_LENGTH)
-                minLength = nodeValue.getInt();
+                minLength = value.getInt();
             else if (nodeName == cdr::xsd::MAX_LENGTH)
-                maxLength = nodeValue.getInt();
+                maxLength = value.getInt();
             else if (nodeName == cdr::xsd::LENGTH)
-                length = nodeValue.getInt();
+                length = value.getInt();
             else if (nodeName == cdr::xsd::PATTERN)
-                patterns.push_back(nodeValue);
+                patterns.push_back(value);
             else if (nodeName == cdr::xsd::PRECISION)
-                precision = nodeValue.getInt();
+                precision = value.getInt();
             else if (nodeName == cdr::xsd::SCALE)
-                scale = nodeValue.getInt();
+                scale = value.getInt();
             else if (nodeName == cdr::xsd::ENCODING) {
-                if (nodeValue == cdr::xsd::HEX)
+                if (value == cdr::xsd::HEX)
                     encoding = HEX;
-                else if (nodeValue == cdr::xsd::BASE64)
+                else if (value == cdr::xsd::BASE64)
                     encoding = BASE64;
                 else
-                    throw cdr::Exception(L"Illegal encoding value", nodeValue);
+                    throw cdr::Exception(L"Illegal encoding value", value);
             }
         }
         childNode = childNode.getNextSibling();

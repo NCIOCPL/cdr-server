@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.h,v 1.1 2000-04-11 14:18:50 bkline Exp $
+ * $Id: CdrXsd.h,v 1.2 2000-04-11 21:23:40 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/11 14:18:50  bkline
+ * Initial revision
+ *
  */
 
 #ifndef CDR_XSD_H_
@@ -94,6 +97,7 @@ namespace cdr {
         class Node {
         public:
             Node() : type(0) {}
+            virtual ~Node() {}
             cdr::String     getName() const { return name; }
             const Type*     getType(const Schema& s) { 
                 return resolveType(s); 
@@ -127,22 +131,23 @@ namespace cdr {
         class Attribute : public Node {
         public:
             Attribute(const cdr::dom::Node&);
+            bool            isOptional() const { return optional; }
+        private:
+            bool            optional;
         };
 
         /**
-         * Base class for schema types, both simple and comples.  Uses
-         * a dummy virtual function to make the runtime type information
-         * work.
+         * Base class for schema types, both simple and comples.
          */
         class Type {
         public:
             Type() {}
+            virtual ~Type() {}
             cdr::String     getName() const { return name; }
         protected:
             void            setName(const cdr::String& n) { name = n; }
         private:
             cdr::String     name;
-            virtual void    rttiDummy() const {}
         };
 
         /**
@@ -150,11 +155,27 @@ namespace cdr {
          */
         class SimpleType : public Type {
         public:
-            SimpleType(const cdr::dom::Node&);
-            SimpleType(const cdr::String& n) { setName(n); }
+            SimpleType(const Schema&, const cdr::dom::Node&);
+            SimpleType(const cdr::String& n);
             enum Encoding { HEX, BASE64 };
+            enum BuiltinType { STRING, DATE, TIME, DECIMAL, INTEGER,
+                               URI, BINARY, TIME_INSTANT };
+            cdr::String         getBaseName() const { return baseName; }
+            int                 getMinLength() const { return minLength; }
+            int                 getMaxLength() const { return maxLength; }
+            int                 getLength() const { return length; }
+            int                 getPrecision() const { return precision; }
+            int                 getScale() const { return scale; }
+            Encoding            getEncoding() const { return encoding; }
+            BuiltinType         getBuiltinType() const { return builtinType; }
+            cdr::String         getMinInclusive() const { return minInclusive; }
+            cdr::String         getMaxInclusive() const { return maxInclusive; }
+            const
+            cdr::StringSet&     getEnumSet() const { return enumSet; }
+            const
+            cdr::StringVector&  getPatterns() const { return patterns; }
         private:
-            SimpleType*         base;
+            const SimpleType*   base;
             cdr::String         baseName;
             int                 minLength;
             int                 maxLength;
@@ -162,6 +183,7 @@ namespace cdr {
             int                 precision;
             int                 scale;
             Encoding            encoding;
+            BuiltinType         builtinType;
             cdr::String         minInclusive;
             cdr::String         maxInclusive;
             cdr::StringSet      enumSet;
