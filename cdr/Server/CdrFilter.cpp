@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.43 2004-03-12 00:30:30 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.44 2004-03-31 03:05:53 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.43  2004/03/12 00:30:30  bkline
+ * Replaced calls to obsolete Sablotron APIs.
+ *
  * Revision 1.42  2004/02/20 00:34:42  ameyer
  * Removed a debugging line inadvertently left in.
  *
@@ -976,7 +979,9 @@ cdr::String cdr::filterDocument(const cdr::String& document,
 {
   string result;
   ThreadData thread_data(connection, doc_id);
-  if (processStrings(filter.toUtf8(), document.toUtf8(), result,
+  string fString = filter.toUtf8();
+  string dString = document.toUtf8();
+  if (processStrings(fString, dString, result,
                      connection, parms, &thread_data))
       throw cdr::Exception(L"error in XSLT processing");
 
@@ -1188,7 +1193,8 @@ static std::string filterVector (
     cdr::String           doc_id
 ) {
     // Convert input doc to utf8 for filtering
-    std::string doc(document.toUtf8());
+    string dString = document.toUtf8();
+    std::string doc(dString);
     std::string result(doc);
 
     // Create struct for Sablotron callbacks
@@ -1199,7 +1205,8 @@ static std::string filterVector (
          i != filterSet.end(); ++i) {
 
         // Execute one filter
-        if (processStrings (i->toUtf8(), doc, result, connection, parms,
+        string fString = i->toUtf8();
+        if (processStrings (fString, doc, result, connection, parms,
                             &threadData))
             throw cdr::Exception (L"error in XSLT processing");
 
