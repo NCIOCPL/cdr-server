@@ -553,13 +553,23 @@
 
  <!--
  ===================================================================
- Extract the information for one lead organization.
+ Extract the information for one lead organization or private 
+ practice site.
  =================================================================== -->
  <xsl:template                   match = "ProtocolSites">
   <xsl:element                    name = "{name()}">
-   <xsl:for-each                select = "OrgSite/OrgSiteID | 
-                                          OrgSite/PrivatePracticeSite">
-    <xsl:call-template            name = "getOrganization"/>
+   <xsl:for-each                select = "OrgSite/
+                                           OrgSiteID | 
+                                          PrivatePracticeSite/
+                                           PrivatePracticeSiteID">
+    <xsl:choose>
+     <xsl:when                    test = "name() = 'OrgSiteID'">
+      <xsl:call-template          name = "getOrganization"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:call-template          name = "getPrivatePracticeSite"/>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:for-each>
 
   </xsl:element>

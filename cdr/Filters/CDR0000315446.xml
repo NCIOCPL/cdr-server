@@ -219,6 +219,48 @@
  </xsl:template>
 
 
+ <!-- 
+ ===================================================================
+ Extract the information for one PrivatePractice Person.
+ =================================================================== -->
+ <xsl:template                    name = "getPrivatePracticeSite">
+  <xsl:element                    name = "{name()}">
+   <xsl:variable                  name = "privorgID"
+                                select = "@cdr:ref"/>
+   <xsl:variable                  name = "privorg"
+                                select = "document(concat('cdr:', $privorgID, 
+                                                          '/last'))"/>
+   <!-- 
+   Adding an additional wrapper element to allow the PrivatePracticePerson 
+   in the vendor filter to be formatted with the Person template 
+   ======================================================================= -->
+   <PrivatePracticePerson>
+    <Person>
+     <xsl:for-each              select = "@*">
+      <xsl:attribute              name = "{name()}">
+       <xsl:value-of            select = "."/>
+      </xsl:attribute>
+     </xsl:for-each>
+
+     <xsl:variable                name = "contactID"
+                                select = "@cdr:ref"/>
+     <xsl:variable                name = "contactPerson"
+                                select = "document(concat('cdr:', $contactID, 
+                                                          '/last'))"/>
+     <xsl:call-template           name = "getPerson">
+      <xsl:with-param             name = "contactPerson"
+                                select = "$contactPerson"/>
+     </xsl:call-template>
+    </Person>
+   </PrivatePracticePerson>
+
+   <xsl:copy-of                 select = "../Role"/>
+   <xsl:copy-of                 select = "../PrivatePracticeSiteStatus"/>
+
+  </xsl:element>
+ </xsl:template>
+
+
  <!--
  ===================================================================
  Extract the information for person information.
