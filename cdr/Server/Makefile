@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.27 2000-10-24 13:13:16 mruben Exp $
+# $Id: Makefile,v 1.28 2000-12-28 13:29:54 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.27  2000/10/24 13:13:16  mruben
+# added support for CdrReport
+#
 # Revision 1.26  2000/10/04 18:37:44  bkline
 # Added -nologo flag to CFLAGS; added link and catchexp modules.
 #
@@ -173,6 +176,7 @@ OBJS   =CdrCommand.obj \
         CdrVersion.obj \
         CdrReport.obj \
         CdrDocTypes.obj \
+        CdrGetSchema.obj \
         CdrShutdown.obj \
         CdrDOMtoString.obj
 
