@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.9 2001-03-13 22:15:09 mruben Exp $
+ * $Id: CdrGetDoc.cpp,v 1.10 2001-06-12 20:55:03 ameyer Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2001/03/13 22:15:09  mruben
+ * added ability to use CdrDoc element for filter
+ *
  * Revision 1.8  2001/03/02 13:58:39  bkline
  * Moved the body for fixString() to cdr::entConvert() in CdrString.cpp.
  *
@@ -65,6 +68,7 @@ cdr::String cdr::getDocString(
                         "                 d.val_date,"
                         "                 d.title,"
                         "                 d.xml,"
+                        "                 d.active_status,"
                         "                 d.comment,"
                         "                 t.name,"
                         "                 b.data"
@@ -79,13 +83,14 @@ cdr::String cdr::getDocString(
     cdr::db::ResultSet rs = select.executeQuery();
     if (!rs.next())
         throw cdr::Exception(L"Unable to load document", docIdString);
-    cdr::String     valStatus = rs.getString(1);
-    cdr::String     valDate   = rs.getString(2);
-    cdr::String     title     = cdr::entConvert(rs.getString(3));
-    cdr::String     xml       = rs.getString(4);
-    cdr::String     comment   = cdr::entConvert(rs.getString(5));
-    cdr::String     docType   = rs.getString(6);
-    cdr::Blob       blob      = rs.getBytes(7);
+    cdr::String     valStatus    = rs.getString(1);
+    cdr::String     valDate      = rs.getString(2);
+    cdr::String     title        = cdr::entConvert(rs.getString(3));
+    cdr::String     xml          = rs.getString(4);
+    cdr::String     activeStatus = rs.getString(5);
+    cdr::String     comment      = cdr::entConvert(rs.getString(6));
+    cdr::String     docType      = rs.getString(7);
+    cdr::Blob       blob         = rs.getBytes(8);
     select.close();
 
     // Just in case the caller sent an ID string not in canonical form.
@@ -100,6 +105,7 @@ cdr::String cdr::getDocString(
                        + L"'>\n<CdrDocCtl>\n";
 
     cdrDoc += readOnlyWrap (valStatus, L"DocValStatus");
+    cdrDoc += readOnlyWrap (activeStatus, L"DocActiveStatus");
     if (!valDate.isNull() && valDate.length() > 0) {
         if (valDate.length() > 10)
             valDate[10] = L'T';
@@ -174,10 +180,14 @@ cdr::String cdr::getDocString(
                        + docIdString
                        + L"'>\n<CdrDocCtl>\n";
 
+    // Create attributes for DocVersion
+    cdr::String verAttrs = L"readonly=\"yes\" Publishable=\"" +
+                           docVer->publishable + L"\"";
+
     // Individual elements of control info
     // These are not all the same as in the document table
     cdrDoc += readOnlyWrap (docVer->title, L"DocTitle")
-           +  readOnlyWrap (versionStr, L"DocVersion")
+           +  tagWrap (versionStr, L"DocVersion", verAttrs)
            +  readOnlyWrap (docVer->updated_dt, L"DocModified")
            +  readOnlyWrap (usrName, L"DocModifier");
 
