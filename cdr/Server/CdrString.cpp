@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.17 2001-06-12 22:38:31 bkline Exp $
+ * $Id: CdrString.cpp,v 1.18 2002-03-14 13:33:13 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2001/06/12 22:38:31  bkline
+ * Added code to set null attribute in Blob constructor.
+ *
  * Revision 1.16  2001/06/06 12:25:08  bkline
  * Added blob encoding/decoding.
  *
@@ -211,7 +214,7 @@ double cdr::String::getFloat() const
  */
 int cdr::String::extractDocId() const
 {
-    cdr::RegEx pattern(L"CDR\\d+");
+    cdr::RegEx pattern(L"CDR\\d+(#.*)?");
     if (!pattern.match(*this))
         throw cdr::Exception(L"Invalid document ID string", *this);
     cdr::String numString = substr(3);
