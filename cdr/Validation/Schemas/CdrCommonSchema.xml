@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<!-- $Id: CdrCommonSchema.xml,v 1.15 2001-06-22 16:03:37 ArkD Exp $ 
+<!-- $Id: CdrCommonSchema.xml,v 1.16 2001-06-27 13:42:38 bkline Exp $ 
 
      $Log: not supported by cvs2svn $
+     Revision 1.15  2001/06/22 16:03:37  ArkD
+     Attribute 'Compact' (YesNo) added to the ItemizedList.
+
      Revision 1.14  2001/06/22 15:31:21  ArkD
      Geographical changed to Geographic at all uccurances.
 
@@ -56,7 +59,8 @@
      planning meeting 23 Jan 2001.
 <schema              xmlns           = 'http://www.w3.org/2001/XMLSchema'>
 
-<schema              xmlns           = 'http://www.w3.org/2000/08/XMLSchema'>
+<!--=================================================================-->
+<!--                COMMON CDR SCHEMA COMPONENTS                     -->
 <!--=================================================================-->
 <!--                  TEXT MARKUP ELEMENT GROUPS                     -->
 
@@ -152,17 +156,17 @@
 <!--                  GENERAL TEXT ELEMENT TYPES                     -->
     <simpleContent>
   <complexType       name            = 'Title'
-                     content         = 'mixed'>
+                     mixed           = 'true'>
     <choice          minOccurs       = '0'
-                     maxOccurs       = '*'>
+                     maxOccurs       = 'unbounded'>
       <group         ref             = 'TitleMarkupElements'/>
     </choice>
   </complexType>
 
   <complexType       name            = 'AltTitle'
-                     content         = 'mixed'>
+                     mixed           = 'true'>
     <choice          minOccurs       = '0'
-                     maxOccurs       = '*'>
+                     maxOccurs       = 'unbounded'>
       <group         ref             = 'TitleMarkupElements'/>
     </choice>
     <attribute       name            = 'Usage'
@@ -171,9 +175,9 @@
   </complexType>
 
   <complexType       name            = 'PhraseLevel'
-                     content         = 'mixed'>
+                     mixed           = 'true'>
     <choice          minOccurs       = '0'
-                     maxOccurs       = '*'>
+                     maxOccurs       = 'unbounded'>
       <group         ref             = 'PhraseElements'/>
       <group         ref             = 'CommonTextElements'/>
     </choice>
@@ -184,16 +188,16 @@
 
   <complexType       name            = 'ParaLevel'>
     <choice          minOccurs       = '1'
-                     maxOccurs       = '*'>
+                     maxOccurs       = 'unbounded'>
       <group         ref             = 'ParaLevelElements'/>
       <group         ref             = 'CommonTextElements'/>
     </choice>
   </complexType>
 
   <complexType       name            = 'GeneralText'
-                     content         = 'mixed'>
+                     mixed           = 'true'>
     <choice          minOccurs       = '0'
-                     maxOccurs       = '*'>
+                     maxOccurs       = 'unbounded'>
       <group         ref             = 'PhraseOrParaElements'/>
       <group         ref             = 'CommonTextElements'/>
     </choice>
@@ -207,74 +211,109 @@
       <element       name            = 'AltTitle'
                      type            = 'AltTitle'
                      minOccurs       = '0'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'KeyPoint'
                      type            = 'PhraseLevel'
                      minOccurs       = '0'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
       <choice        minOccurs       = '0'
-                     maxOccurs       = '*'>
+                     maxOccurs       = 'unbounded'>
         <group       ref             = 'ParaLevelElements'/>
       </choice>
       <element       name            = 'Section'
                      type            = 'Section'
                      minOccurs       = '0'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
     </sequence>
     <attribute       name            = 'CdrCallingId'
                      type            = 'string'
                      minOccurs       = '0'/>
   </complexType>
 
-<complexType name='Contact'>
-<sequence>
-<element name='ContactName' type='string' minOccurs='0' maxOccurs='*'/>
-<element name='ContactDetail' type='ContactDetail'/>
-</sequence>
-</complexType>
+  <complexType       name            = 'Contact'>
+    <sequence>
+      <element       name            = 'ContactName'
+                     type            = 'string'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'ContactDetail'
+                     type            = 'ContactDetail'/>
+    </sequence>
+  </complexType>
 
-<complexType name='ContactDetail'>
-<sequence>
-<element name='PostalAddress' type='PostalAddress' minOccurs='*'/>
-<element name='Phone' type='Phone' minOccurs='0'/>
+  <complexType       name            = 'ContactDetail'>
+    <sequence>
+      <element       name            = 'PostalAddress'
+                     type            = 'PostalAddress'
+                     minOccurs       = '*'/>
+      <element       name            = 'Phone'
+                     type            = 'Phone'
+                     minOccurs       = '0'/>
+      <element       name            = 'TollFreePhone'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+      <element       name            = 'Fax'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+      <element       name            = 'Email'
+                     type            = 'Email'
+                     minOccurs       = '0'/>
+      <element       name            = 'URI'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+    </sequence>
+    <attribute       name            = 'CdrCallingId'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+  </complexType>
 
-<element name='TollFreePhone' type='string' minOccurs='0'/>
-<element name='Fax' type='string' minOccurs='0'/>
-<element name='Email' type='Email' minOccurs='0'/>
-<element name='URI' type='string' minOccurs='0'/>
-</sequence>
-<attribute name='CdrCallingId' type='string' minOccurs='0'/>
-</complexType>
+  <complexType       name            = 'Email'>
+    <sequence>
+      <element       name            = 'EmailString'
+                     type            = 'string'/>
+    </sequence>
+    <attribute       name            = 'Public'
+                     type            = 'YesNo'/>
+  </complexType>
 
-<complexType name='Email'>
-<sequence>
-<element name ='EmailString' type='string'/>
-</sequence>
-<attribute name='Public' type='YesNo'/>
-</complexType>
+  <complexType       name            = 'Phone'>
+    <sequence>
+      <element       name            = 'PhoneString'
+                     type            = 'string'/>
+    </sequence>
+    <attribute       name            = 'Public'
+                     type            = 'YesNo'/>
+  </complexType>
 
-<complexType name='Phone'>
-<sequence>
-<element name ='PhoneString' type='string'/>
-</sequence>
-<attribute name='Public' type='YesNo'/>
-</complexType>
-
-<complexType name='PostalAddress'>
-<sequence>
-<element name ='Street' type='string' minOccurs='0' maxOccurs='3'/>
-<element name='City' type='string'/>
-<element name='CitySuffix' type='string' minOccurs='0'/>
-<element name='PoliticalUnit_State' type='GeographicEntityLink' minOccurs='0'/>
-<element name='Country' type='GeographicEntityLink' minOccurs='0'/>
-<element name='PostalCode_ZIP' type='string' minOccurs='0'/>
-<element name='CodePosition' type='CodePosition' minOccurs='0'/>
-</sequence>
-<attribute name='Public' type='YesNo'/>
-<attribute name='AddressType' type='AddressType'/>
-</complexType>
-
-
+  <complexType       name            = 'PostalAddress'>
+    <sequence>
+      <element       name            = 'Street'
+                     type            = 'string'
+                     minOccurs       = '0'
+                     maxOccurs       = '3'/>
+      <element       name            = 'City'
+                     type            = 'string'/>
+      <element       name            = 'CitySuffix'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+      <element       name            = 'PoliticalUnit_State'
+                     type            = 'GeographicEntityLink'
+                     minOccurs       = '0'/>
+      <element       name            = 'Country'
+                     type            = 'GeographicEntityLink'
+                     minOccurs       = '0'/>
+      <element       name            = 'PostalCode_ZIP'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+      <element       name            = 'CodePosition'
+                     type            = 'CodePosition'
+                     minOccurs       = '0'/>
+    </sequence>
+    <attribute       name            = 'Public'
+                     type            = 'YesNo'/>
+    <attribute       name            = 'AddressType'
+                     type            = 'AddressType'/>
+  </complexType>
 
   <complexType       name            = 'Quote'>
     <sequence>
@@ -296,7 +335,7 @@
                      minOccurs       = '0'/>
       <element       name            = 'ListItem'
                      type            = 'GeneralText'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
     </sequence>
     <attribute       name            = 'Style'
                      type            = 'ItemizedListStyle'
@@ -304,7 +343,8 @@
     <attribute       name            = 'CdrCallingId'
                      type            = 'string'
                      minOccurs       = '0'/>
-<attribute name='Compact' type='YesNo'/>
+    <attribute       name            = 'Compact'
+                     type            = 'YesNo'/>
   </complexType>
 
   <complexType       name            = 'OrderedList'>
@@ -314,7 +354,7 @@
                      minOccurs       = '0'/>
       <element       name            = 'ListItem'
                      type            = 'GeneralText'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
     </sequence>
     <attribute       name            = 'Style'
                      type            = 'OrderedListStyle'
@@ -324,103 +364,142 @@
                      minOccurs       = '0'/>
   </complexType>
 
-  <complexType       name            = 'Multimedia'
-                     content         = 'textOnly'>
-    <attribute       name            = 'cdr:ref'
+  <complexType       name            = 'Multimedia'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
                      type            = 'DocId'
                      minOccurs       = '0'/>
-    <attribute       name            = 'ExternalLink'
+        <attribute   name            = 'ExternalLink'
                      type            = 'uri'
                      minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
-  <complexType       name            = 'CdrHref'
-                     content         = 'textOnly'>
-    <attribute       name            = 'cdr:href'
+  <complexType       name            = 'CdrHref'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:href'
                      type            = 'DocId'
                      minOccurs       = '0'/>
-    <attribute       name            = 'PdqKey'
+        <attribute   name            = 'PdqKey'
                      type            = 'integer'
                      minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
-  <complexType       name            = 'CdrRef'
-                     content         = 'textOnly'>
-    <attribute       name            = 'cdr:ref'
+  <complexType       name            = 'CdrRef'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
                      type            = 'DocId'
                      minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
-  <complexType       name            = 'ExternalLink'
-                     content         = 'textOnly'>
-    <attribute       name            = 'href'
+  <complexType       name            = 'ExternalLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'href'
                      type            = 'uri'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
-  <complexType       name            = 'ProtocolLink'
-                     content         = 'textOnly'>
-    <attribute       name            = 'cdr:ref'
+  <complexType       name            = 'ProtocolLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
                      type            = 'DocId'
                      miOccurs        = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
-  <complexType       name            = 'SummaryLink'
-                     content         = 'textOnly'>
-    <attribute       name            = 'cdr:ref'
+  <complexType       name            = 'SummaryLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
                      type            = 'DocId'
                      miOccurs        = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
-  <complexType       name            = 'OrganizationLink'
-                     content         = 'textOnly'>
-    <attribute       name            = 'cdr:ref'
+  <complexType       name            = 'OrganizationLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
                      type            = 'DocId'
                      miOccurs        = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
-  <complexType       name            = 'PersonLink'
-                     content         = 'textOnly'>
-    <attribute       name            = 'cdr:ref'
+  <complexType       name            = 'PersonLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
                      type            = 'DocId'
                      miOccurs        = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
-  <complexType       name            = 'TerminologyLink'
-                     content         = 'textOnly'>
-    <attribute       name            = 'cdr:ref'
+  <complexType       name            = 'TerminologyLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
                      type            = 'DocId'
                      miOccurs        = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
-  <complexType       name            = 'GeographicEntityLink'
-                     content         = 'textOnly'>
-    <attribute       name            = 'cdr:ref'
+  <complexType       name            = 'GeographicEntityLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
                      type            = 'DocId'
                      miOccurs        = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
-  <complexType       name            = 'CitationLink'
-                     content         = 'textOnly'>
-    <attribute       name            = 'cdr:ref'
+  <complexType       name            = 'CitationLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
                      type            = 'DocId'
                      miOccurs        = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
-  <complexType       name            = 'DiagnosisLink'
-                     content         = 'textOnly'>
-    <attribute       name            = 'cdr:ref'
+  <complexType       name            = 'DiagnosisLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:ref'
                      type            = 'DocId'
                      miOccurs        = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
-  <complexType       name            = 'GlossaryLink'
-                     content         = 'textOnly'>
-    <attribute       name            = 'cdr:href'
+  <complexType       name            = 'GlossaryLink'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'cdr:href'
                      type            = 'DocId'
                      minOccurs       = '0'/>
-    <attribute       name            = 'PdqKey'
+        <attribute   name            = 'PdqKey'
                      type            = 'integer'
                      minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
   <complexType       name            = 'QandASet'>
@@ -431,10 +510,10 @@
       <choice>
         <element     name            = 'QandADiv'
                      type            = 'QandASet'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
         <element     name            = 'QandAEntry'
                      type            = 'QandAEntry'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
       </choice>
     </sequence>
     <attribute       name            = 'CdrCallingId'
@@ -449,7 +528,7 @@
       <element       name            = 'Answer'
                      type            = 'GeneralText'
                      minOccurs       = '0'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
     </sequence>
   </complexType>
 
@@ -465,7 +544,7 @@
                      minOccurs       = '0'/>
       <element       name            = 'TGroup'
                      type            = 'TGroup'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
     </sequence>
     <attribute       name            = 'Frame'
                      type            = 'FrameAttrType'
@@ -488,7 +567,7 @@
     <sequence>
       <element       name            = 'TGroup'
                      type            = 'TGroup'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
     </sequence>
     <attribute       name            = 'Frame'
                      type            = 'FrameAttrType'
@@ -509,11 +588,11 @@
       <element       name            = 'ColSpec'
                      type            = 'ColSpec'
                      minOccurs       = '0'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'SpanSpec'
                      type            = 'SpanSpec'
                      minOccurs       = '0'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'THead'
                      type            = 'THeadOrFoot'
                      minOccurs       = '0'/>
@@ -545,8 +624,7 @@
                      minOccurs       = '0'/>
   </complexType>
 
-  <complexType       name            = 'ColSpec'
-                     content         = 'empty'>
+  <complexType       name            = 'ColSpec'>
     <attribute       name            = 'Align'
                      type            = 'Align'
                      minOccurs       = '0'/>
@@ -573,8 +651,7 @@
                      minOccurs       = '0'/>
   </complexType>
 
-  <complexType       name            = 'SpanSpec'
-                     content         = 'empty'>
+  <complexType       name            = 'SpanSpec'>
     <attribute       name            = 'Align'
                      type            = 'Align'
                      minOccurs       = '0'/>
@@ -606,10 +683,10 @@
       <element       name            = 'ColSpec'
                      type            = 'ColSpec'
                      minOccurs       = '0'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'Row'
                      type            = 'Row'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
     </sequence>
     <attribute       name            = 'Valign'
                      type            = 'Valign'
@@ -620,7 +697,7 @@
     <sequence>
       <element       name            = 'Row'
                      type            = 'Row'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
     </sequence>
     <attribute       name            = 'Valign'
                      type            = 'Valign'
@@ -631,7 +708,7 @@
     <sequence>
       <element       name            = 'entry'
                      type            = 'Entry'
-                     maxOccurs       = '*'/>
+                     maxOccurs       = 'unbounded'/>
     </sequence>
     <attribute       name            = 'RowSep'
                      type            = 'YesOrNo'
@@ -642,9 +719,9 @@
   </complexType>
 
   <complexType       name            = 'Entry'
-                     content         = 'mixed'>
+                     mixed           = 'true'>
     <choice          minOccurs       = '0'
-                     maxOccurs       = '*'>
+                     maxOccurs       = 'unbounded'>
       <group         ref             = 'PhraseElements'/>
     </choice>
     <attribute       name            = 'RowSep'
@@ -685,89 +762,100 @@
 <!--=================================================================-->
 <!--                    COMMON SIMPLE TYPES                          -->
 <!--=================================================================-->
-  <simpleType        name            = 'ItemizedListStyle'
-                     base            = 'string'>
-    <enumeration     value           = 'simple'/>
-    <enumeration     value           = 'bullet'/>
-    <enumeration     value           = 'dash'/>
+  <simpleType        name            = 'ItemizedListStyle'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'simple'/>
+      <enumeration   value           = 'bullet'/>
+      <enumeration   value           = 'dash'/>
+    </restriction>
   </simpleType>
 
-  <simpleType        name            = 'OrderedListStyle'
-                     base            = 'string'>
-    <enumeration     value           = 'Arabic'/>
-    <enumeration     value           = 'UAlpha'/>
-    <enumeration     value           = 'URoman'/>
-    <enumeration     value           = 'LAlpha'/>
-    <enumeration     value           = 'LRoman'/>
+  <simpleType        name            = 'OrderedListStyle'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Arabic'/>
+      <enumeration   value           = 'UAlpha'/>
+      <enumeration   value           = 'URoman'/>
+      <enumeration   value           = 'LAlpha'/>
+      <enumeration   value           = 'LRoman'/>
+    </restriction>
   </simpleType>
 
-  <simpleType        name            = 'YesOrNo'
-                     base            = 'integer'>
-    <enumeration     value           = '0'/>
-    <enumeration     value           = '1'/>
+  <simpleType        name            = 'YesOrNo'>
+    <restriction     base            = 'integer'>
+      <enumeration   value           = '0'/>
+      <enumeration   value           = '1'/>
+    </restriction>
   </simpleType>
 
-  <simpleType        name            = 'YesNo'
-                     base            = 'string'>
-    <enumeration     value           = 'Yes'/>
-    <enumeration     value           = 'No'/>
+  <simpleType        name            = 'YesNo'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Yes'/>
+      <enumeration   value           = 'No'/>
+    </restriction>
   </simpleType>
 
-  <simpleType        name            = 'FrameAttrType'
-                     base            = 'string'>
-    <enumeration     value           = 'Sides'/>
-    <enumeration     value           = 'Top'/>
-    <enumeration     value           = 'Bottom'/>
-    <enumeration     value           = 'TopBot'/>
-    <enumeration     value           = 'All'/>
+  <simpleType        name            = 'FrameAttrType'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Sides'/>
+      <enumeration   value           = 'Top'/>
+      <enumeration   value           = 'Bottom'/>
+      <enumeration   value           = 'TopBot'/>
+      <enumeration   value           = 'All'/>
+    </restriction>
   </simpleType>
 
-  <simpleType        name            = 'Align'
-                     base            = 'string'>
-    <enumeration     value           = 'Center'/>
-    <enumeration     value           = 'Char'/>
-    <enumeration     value           = 'Justify'/>
-    <enumeration     value           = 'Left'/>
-    <enumeration     value           = 'Right'/>
+  <simpleType        name            = 'Align'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Center'/>
+      <enumeration   value           = 'Char'/>
+      <enumeration   value           = 'Justify'/>
+      <enumeration   value           = 'Left'/>
+      <enumeration   value           = 'Right'/>
+    </restriction>
   </simpleType>
 
-  <simpleType        name            = 'Valign'
-                     base            = 'string'>
-    <enumeration     value           = 'Bottom'/>
-    <enumeration     value           = 'Middle'/>
-    <enumeration     value           = 'Top'/>
+  <simpleType        name            = 'Valign'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Bottom'/>
+      <enumeration   value           = 'Middle'/>
+      <enumeration   value           = 'Top'/>
+    </restriction>
   </simpleType>
 
-  <simpleType        name            = 'DocId'
-                     base            = 'string'>
-    <pattern         value           = 'CDR[0-9]{10}'/>
+  <simpleType        name            = 'DocId'>
+    <restriction     base            = 'string'>
+      <pattern       value           = 'CDR[0-9]{10}'/>
+    </restriction>
   </simpleType>
 
-  <simpleType        name            = 'AddressType'
-                     base            = 'string'>
-    <enumeration     value           = 'US'/>
+  <simpleType        name            = 'AddressType'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'US'/>
     <!--Will enforce (through programming outside schema):
         1. Zip should be required
         2. State should be required
         3. Country=US
         4. Phone should be required
       -->
-    <enumeration     value           = 'Non US'/>
+      <enumeration   value           = 'Non US'/>
     <!--Will enforce (through programming outside schema):
         if PostalCode_Zip is not Null then CodePosition should be required
       -->
+    </restriction>
   </simpleType>
 
-  <simpleType        name            = 'CodePosition'
-                     base            = 'string'>
-    <enumeration     value           = 'after City'/>
-    <enumeration     value           = 'after Country'/>
-    <enumeration     value           = 'after PoliticalUnit_State'/>
-    <enumeration     value           = 'before City'/>
+  <simpleType        name            = 'CodePosition'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'after City'/>
+      <enumeration   value           = 'after Country'/>
+      <enumeration   value           = 'after PoliticalUnit_State'/>
+      <enumeration   value           = 'before City'/>
+    </restriction>
   </simpleType>
 
-  <simpleType        name            = 'PrimarySecondary'
-                     base            = 'string'>
-    <enumeration     value           = 'Primary'/>
-    <enumeration     value           = 'Secondary'/>
+  <simpleType        name            = 'PrimarySecondary'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Primary'/>
+      <enumeration   value           = 'Secondary'/>
+    </restriction>
   </simpleType>
