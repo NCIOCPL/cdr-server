@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.14 2000-06-09 00:01:09 ameyer Exp $
+ * $Id: tables.sql,v 1.15 2000-09-12 22:49:11 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2000/06/09 00:01:09  ameyer
+ * Added table debug_log.
+ * Regularized some comment formatting for tables I defined.
+ *
  * Revision 1.13  2000/05/18 15:12:33  bkline
  * Dropped url table and changed constraint on link_net.val_status from
  * "CHECK ..." to "REFERENCES doc_status".
@@ -538,6 +542,22 @@ CREATE TABLE link_xml (
 )
 
 /*
+ * Link target control
+ * Checked by link validation software to determine whether
+ *  a particular link refers to a document of the correct type.
+ * Note that a single link type may refer to more than one target
+ *  document type.
+ *
+ *    source_link_type  Type of link to be checked.
+ *    target_doc_type   Allowed doc_type of target.  May be more than 1.
+ */
+
+CREATE TABLE link_target (
+    source_link_type  INTEGER NOT NULL REFERENCES link_type,
+     target_doc_type  INTEGER NOT NULL REFERENCES doc_type
+)
+
+/*
  * Types of properties of links.
  * A list of properties which may appear in the link_prop table.
  *
@@ -581,52 +601,40 @@ CREATE TABLE link_prop (
  *  documents.  It allows us to find all documents linked to any given
  *  document, either as source or target, without having to examine 
  *  the documents themselves.
- * If target_fmt is not CDR xml, then url is used and target_doc,
- *  target_doctype and target_frag are all null
+ * If target doc format is not CDR xml, then url is used and target_doc
+ *  and target_frag are null
  *
  *     link_type      An identifier for the type of link, e.g., author, etc.
- *     val_status     P(assed validation) F(ailed) or N(ot validated).
  *     source_doc     Doc id containing a link element.
- *     source_doctype Doc type of source_doc
  *     source_elem    Element in source doc containing a link.
  *     target_doc     Doc id linked to by source (null if url used)
- *     target_doctype Doc type of target_doc
- *     target_fmt     Format (xml, html, etc.) of target_doc
  *     target_frag    Fragment id linked to, if any.
  *     url            Alternative to target id + fragment for non CDR targets.
- *     val_time       Date/time err_count set.
  */
 CREATE TABLE link_net (
           link_type INTEGER NOT NULL REFERENCES link_type,
-         val_status CHAR NOT NULL REFERENCES doc_status,
          source_doc INTEGER NOT NULL REFERENCES document,
-     source_doctype INTEGER NOT NULL REFERENCES doc_type,
         source_elem VARCHAR(32) NOT NULL,
          target_doc INTEGER NULL REFERENCES document,
-     target_doctype INTEGER REFERENCES doc_type NULL,
-         target_fmt INTEGER NOT NULL REFERENCES format,
         target_frag VARCHAR(32) NULL,
                 url VARCHAR(256) NULL,
-           val_time DATETIME
 )
 
 /*
- * Link targets found in the system.
- * An entry is created here for each document added to the link database.
- * If the document has any "id" attributes, additional entries are made
- *  for each doc_id + element + fragment.
+ * Document fragment link targets found in the system.
+ * If a document has any "id" attributes, an entry is made
+ *  for each doc_id + fragment.
  * This table allows us to quickly determine whether an attempt to link
- *  to a document or fragment within a document will succeed.
+ *  to a fragment within a document will succeed, without having to
+ *  retrieve, parse, and search the target document
  *
  *     doc_id    Id of doc containing fragment.
- *     elem      Element tag for element containing fragment.
  *     fragment  Value of id attribute in element.
  */
 CREATE TABLE link_fragment (
          doc_id INTEGER NOT NULL REFERENCES document,
-           elem VARCHAR(32),
-       fragment VARCHAR(32),
-    PRIMARY KEY (doc_id, elem)
+       fragment VARCHAR(64),
+    PRIMARY KEY (doc_id, fragment)
 )
 
 /*************************************************************
