@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.30 2002-02-27 01:44:10 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.31 2002-03-06 21:55:11 bkline Exp $
  *
  */
 
@@ -1008,7 +1008,7 @@ cdr::String cdr::CdrDoc::getRevisionFilteredXml (
             revisedXml = cdr::filterDocumentByScriptTitle (
                 Xml, L"Revision Markup Filter", docDbConn, &errorStr, &pv);
         }
-        catch (cdr::Exception e) {
+        catch (cdr::Exception& e) {
             // Don't try filtering this doc again
             revFilterFailed = true;
 
@@ -1070,7 +1070,7 @@ void cdr::CdrDoc::createTitle()
             filterTitle = cdr::filterDocumentByScriptId (
                     Xml, titleFilterId, docDbConn, &filterMsgs);
         }
-        catch (cdr::Exception e) {
+        catch (cdr::Exception& e) {
             // Add an error to the doc object
             errList.push_back (L"Generating title: " + cdr::String (e.what()));
             filterTitle = L"";
@@ -1383,7 +1383,7 @@ void cdr::CdrDoc::genFragmentIds ()
             newXml = cdr::filterDocument (Xml, xslt, docDbConn,
                                           &filterMsgs);
         }
-        catch (cdr::Exception e) {
+        catch (cdr::Exception& e) {
             // Add an error to the doc object
             errList.push_back (L"Generating fragment ids: " +
                                cdr::String (e.what()));
@@ -1496,7 +1496,7 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
     }
 
     // Parsing will be tried again later, errors here are redundant
-    catch (cdr::Exception) {
+    catch (cdr::Exception&) {
         // Validation will catch the fact that the document is malformed.
         return;
     }
@@ -1573,7 +1573,7 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
         //   make sure it is not re-used since document may have changed
         parsed = false;
     }
-    catch (cdr::Exception e) {
+    catch (cdr::Exception& e) {
         errList.push_back(L"Failure setting protocol status: " +
                           cdr::String(e.what()));
     }
