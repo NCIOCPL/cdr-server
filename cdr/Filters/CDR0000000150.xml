@@ -11,6 +11,7 @@
                          xmlns:cdr = "cips.nci.nih.gov/cdr"
            exclude-result-prefixes = "cdr"
                            version = "1.0">
+<!-- Select the following transform statement if namespace error exists -->
 <!-- xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                          xmlns:cdr = "cips.nci.nih.gov/cdr"
                            version = "1.0" -->
@@ -407,12 +408,21 @@
  ====================================================================
  Assemble the Para element.
  ==================================================================== -->
- <xsl:template               match = "Para">
+ <xsl:template               match = "Para"
+                              mode = "copy">
   <Para>
    <xsl:attribute             name = "id">
     <xsl:value-of           select = "@id"/>
    </xsl:attribute>
    <xsl:apply-templates       mode = "copy"/>
+  </Para>
+ </xsl:template>
+ <xsl:template               match = "Para">
+  <Para>
+   <xsl:attribute             name = "id">
+    <xsl:value-of           select = "@id"/>
+   </xsl:attribute>
+   <xsl:apply-templates/>
   </Para>
  </xsl:template>
 
@@ -466,6 +476,42 @@
     </xsl:element>
   </xsl:template>
 
+
+ <!-- ==============================================================
+      Template for renaming the attribute name cdr:id
+      ============================================================== -->
+ <xsl:template               match = "@cdr:id"
+                              mode = "copy">
+      <xsl:attribute          name = "id">
+       <xsl:value-of        select = "."/>
+      </xsl:attribute>
+      <xsl:apply-templates    mode = "copy"/>
+  </xsl:template>
+  
+
+ <!-- ==============================================================
+      Template for renaming the attribute name cdr:ref
+      ============================================================== -->
+ <xsl:template               match = "@cdr:ref"
+                              mode = "copy">
+      <xsl:attribute          name = "ref">
+       <xsl:value-of        select = "."/>
+      </xsl:attribute>
+      <xsl:apply-templates    mode = "copy"/>
+  </xsl:template>
+  
+
+ <!-- ==============================================================
+      Template for renaming the attribute name cdr:href
+      ============================================================== -->
+ <xsl:template               match = "@cdr:href"
+                              mode = "copy">
+      <xsl:attribute          name = "href">
+       <xsl:value-of        select = "."/>
+      </xsl:attribute>
+      <xsl:apply-templates    mode = "copy"/>
+  </xsl:template>
+  
 
  <!--
  ====================================================================
