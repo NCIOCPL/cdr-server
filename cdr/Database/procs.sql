@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.13 2002-06-07 20:06:35 bkline Exp $
+ * $Id: procs.sql,v 1.14 2002-06-09 12:31:43 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2002/06/07 20:06:35  bkline
+ * New stored procedure to support the Person QC report.
+ *
  * Revision 1.12  2002/06/04 20:05:48  bkline
  * Added cdr_coop_group_report stored procedure.
  *
@@ -446,9 +449,19 @@ AS
 GO
 
 /*
+ * Get the member organizations and their principal investigators for
+ * a specified cooperative group.  Used by the Coop Group Member Orgs
+ * & Investigators report.
+ *
  * ADODB won't let us get to the temporary tables created for a single
  * connection, so we have to wrap up the queries for this report
  * in a stored procedure.
+ *
+ * [2002-06-09]: To be more precise, ADODB fails to create the temporary
+ * table if a placeholder is used for one of the values in a WHERE clause,
+ * as in the first query below.  It would have worked (but probably less
+ * efficiently) if we had created the query strings on the fly with the
+ * document ID for the cooperative group embedded in the query string.  BK
  */
 CREATE PROCEDURE cdr_coop_group_report
     @docId INTEGER
