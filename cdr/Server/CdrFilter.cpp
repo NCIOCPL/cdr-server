@@ -1,9 +1,13 @@
 /*
- * $Id: CdrFilter.cpp,v 1.33 2002-11-19 22:43:32 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.34 2003-03-14 02:01:40 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2002/11/19 22:43:32  bkline
+ * Fixed code for last and lastp version specifications to throw an error
+ * if the requested version is not found.
+ *
  * Revision 1.32  2002/11/14 13:23:58  bkline
  * Changed CdrFilter command to use filter sets.  Added CdrDelFilterSet
  * command.
@@ -359,7 +363,8 @@ namespace
       if (verAttr != NULL)
       {
         cdr::String verString = verAttr.getNodeValue();
-        version = verString.getInt();
+        if (verString.size())
+          version = verString.getInt();
       }
 
       return getDocument(u, version, connection, type);

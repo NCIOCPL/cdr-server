@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.20 2002-11-25 21:15:48 bkline Exp $
+ * $Id: CdrString.cpp,v 1.21 2003-03-14 02:01:40 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2002/11/25 21:15:48  bkline
+ * Added optional doQuotes boolean argument to entConvert() function.
+ *
  * Revision 1.19  2002/08/21 04:17:00  ameyer
  * Added normalizeWhiteSpace().
  *
@@ -240,7 +243,7 @@ cdr::String cdr::normalizeWhiteSpace (
 int cdr::String::getInt() const
 {
     std::wistringstream is(*this);
-    int i;
+    int i = 0;
     is >> i;
     return i;
 }
