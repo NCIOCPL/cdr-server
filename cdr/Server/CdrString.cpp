@@ -1,7 +1,11 @@
 /*
- * $Id: CdrString.cpp,v 1.23 2004-05-13 15:43:18 ameyer Exp $
+ * $Id: CdrString.cpp,v 1.24 2004-11-05 05:58:01 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2004/05/13 15:43:18  ameyer
+ * Optimized case of no space to trim in trimWhiteSpace().
+ * Trivially optimized construction of output String in trimWhiteSpace().
+ *
  * Revision 1.22  2004/05/12 02:46:04  ameyer
  * Added trimWhiteSpace().
  *
@@ -619,3 +623,34 @@ const wchar_t* cdr::Blob::getDecodingTable()
     }
     return decodingTable;
 }
+
+/**
+ * Compute a 32 bit hash value for a byte stream.
+ * Adapted from: http://www.cs.yorku.ca/~oz/hash.html.
+ *
+ *  "this algorithm (k=33) was first reported by dan bernstein
+ *   many years ago in comp.lang.c. another version of this algorithm
+ *   (now favored by bernstein) uses xor:
+ *      hash(i) = hash(i - 1) * 33 ^ str[i];
+ *   the magic of number 33 (why it works better than many other
+ *   constants, prime or not) has never been adequately explained."
+ */
+unsigned long cdr::hashBytes(const unsigned char *bytes, size_t len)
+{
+    unsigned long hash = 5381;
+    int c;
+
+    // Can't hash what isn't there
+    if (len < 1)
+        return 0L;
+
+    // Here's Bernstein's original algorithm, adapted for passed len
+    //   instead of null terminated string
+    while (len--) {
+        c = *bytes++;
+        hash = ((hash << 5) + hash) + c;
+    }
+
+    return hash;
+}
+
