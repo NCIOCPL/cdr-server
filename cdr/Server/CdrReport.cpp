@@ -1,9 +1,13 @@
 /*
- * $Id: CdrReport.cpp,v 1.18 2004-11-03 19:00:07 venglisc Exp $
+ * $Id: CdrReport.cpp,v 1.19 2004-11-03 19:14:03 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2004/11/03 19:00:07  venglisc
+ * Modified SQL query for creating the Menu Hierarchy Report by adding the
+ * SortOrder attribute value to the output. (Bug 1363)
+ *
  * Revision 1.17  2004/10/19 22:02:33  venglisc
  * Modified SQL query for creating the Menu Hierarchy Report by eliminating
  * display of terms with MenuStatus of Offline. (Bug 1363)
@@ -767,9 +771,9 @@ namespace
         "                c.value   AS menu_status,                            "
         "                d.value   AS display_name,                           "
         "                e.int_val AS parent,                                 "
-	"           CASE WHEN f.value is NULL THEN a.value                    "
-	"                                     ELSE f.value                    "
-	"            END           AS sort_string                             "
+        "           CASE WHEN f.value is NULL THEN a.value                    "
+        "                                     ELSE f.value                    "
+        "            END           AS sort_string                             "
         "           FROM query_term a                                         "
         "           JOIN query_term b                                         "
         "             ON b.doc_id = a.doc_id                                  "
@@ -785,15 +789,15 @@ namespace
         "            AND e.path = '/Term/MenuInformation/MenuItem'            "
         "                       + '/MenuParent/@cdr:ref'                      "
         "            AND LEFT(e.node_loc, 8) = LEFT(b.node_loc, 8)            "
-	"LEFT OUTER JOIN query_term f                                         "
-	"             ON f.doc_id = a.doc_id                                  "
-	"            AND f.path = '/Term/MenuInformation/MenuItem/@SortOrder' "
+        "LEFT OUTER JOIN query_term f                                         "
+        "             ON f.doc_id = a.doc_id                                  "
+        "            AND f.path = '/Term/MenuInformation/MenuItem/@SortOrder' "
         "            AND LEFT(f.node_loc, 8) = LEFT(b.node_loc, 8)            "
         "          WHERE a.path = '/Term/PreferredName'                       "
         "            AND b.path = '/Term/MenuInformation/MenuItem/MenuType'   "
         "            AND c.path = '/Term/MenuInformation/MenuItem/MenuStatus' "
         "            AND b.value LIKE ?                                       "
-	"            AND c.value != 'Offline'                                 "
+        "            AND c.value != 'Offline'                                 "
         "       ORDER BY a.doc_id                                             "
         ;
       
@@ -831,7 +835,7 @@ namespace
                  << L"</ParentId>";
       result << L"<SortString>"
              << sortString
-	     << L"</SortString>";
+             << L"</SortString>";
       result << L"</MenuItem>\n";
     }
     result << L"]]></ReportBody>\n";
