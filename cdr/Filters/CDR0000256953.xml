@@ -3,6 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Table Formatter</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
   <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -30,20 +31,14 @@
                 width attribute changed to 11% -->   
     
               <xsl:for-each select="TGroup/THead/Row">
+               <xsl:variable name="span1" select="../../@Cols"/>
                <tr>
               <xsl:for-each select="entry">
-              <xsl:variable name="span3" select="substring(@NameEnd,4,2)-substring(@NameSt,4,2)+1"/>
-             <xsl:if test="@NameEnd">
-             <xsl:choose>
-             <xsl:when test="@Align">
-             <td colspan='{$span3}' align='center' width='11%'><b><xsl:apply-templates select="."/></b>&#160;</td>
-             </xsl:when>
-             <xsl:otherwise>
-             <td colspan='{$span3}' align='left' width='11%'><b><xsl:apply-templates/></b>&#160;</td>
-            </xsl:otherwise>
-            </xsl:choose>
+              <xsl:if test="@NameEnd">
+              <xsl:variable name="span3" select="substring(@NameEnd,5,2)-substring(@NameSt,4,2)+1"/>
+              <td colspan='{$span3}' align='center' width='11%'><b><xsl:apply-templates select="."/></b>&#160;</td>
              </xsl:if>
-            
+                     
                          
               <xsl:if test="not(@NameEnd)">
               <xsl:choose>
@@ -51,7 +46,7 @@
              <td align='center' width='11%'><b><xsl:apply-templates/></b>&#160;</td>
              </xsl:when>
              <xsl:otherwise>
-             <td  align='left' width='11%'><b><xsl:apply-templates/></b>&#160;</td>
+             <td  align='center' width='11%'><b><xsl:apply-templates/></b>&#160;</td>
             </xsl:otherwise>
             </xsl:choose>
                 
@@ -71,7 +66,7 @@
               <xsl:if test="@MoreRows">
               <xsl:variable name="rows" select="@MoreRows"/>
               <xsl:choose>
-              <xsl:when test="contains(.,'-')">
+              <xsl:when test="contains(.,'--')">
               <td rowspan='{$rows+1}' align='center'><xsl:apply-templates select="."/>&#160;</td>
               </xsl:when>
                <xsl:otherwise>
@@ -94,11 +89,12 @@
 
                </xsl:if>
                </xsl:if>
+             
               <xsl:if test="@NameEnd"> 
                <xsl:variable name="cols2" select="substring(@NameEnd,4,2)"/>
               <xsl:if test="@MoreRows">
               <xsl:variable name="rows" select="@MoreRows"/>
-              <td align='left' rowspan='{$rows+1}' colspan='{$cols2}'   width='5%'><xsl:apply-templates select="."/>&#160;</td>
+              <td align='left' rowspan='{$rows+1}' colspan='{$cols2}'   width='11%'><xsl:apply-templates select="."/>&#160;</td>
                 </xsl:if>
               <xsl:if test="not(@MoreRows)">
 <td align='left' colspan='{$cols2}' width='11%'><xsl:apply-templates select="."/>&#160;</td>
