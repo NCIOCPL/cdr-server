@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.19 2000-12-26 23:22:59 ameyer Exp $
+ * $Id: CdrString.h,v 1.20 2001-02-28 02:37:16 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2000/12/26 23:22:59  ameyer
+ * Fixed bad html in comment string.
+ *
  * Revision 1.18  2000/10/25 19:07:08  mruben
  * added functions to put dates in correct format
  *
@@ -178,6 +181,26 @@ namespace cdr {
          *  @param  s           reference to object to be copied.
          */
         String(const String& s) : StdWstring(s), null(s.null) {}
+
+        /**
+         * Assignment operators.  Need to be explicit so that null state is
+         * handled properly.
+         *
+         *  @param  w           reference to object to be copied.
+         *  @return             reference to modified String object.
+         */
+        String& operator=(const String& s) 
+            { assign(s); null = s.null; return *this; }
+        String& operator=(const StdWstring& s) 
+            { assign(s); null = false; return *this; }
+        String& operator=(const wchar_t* s)
+            { assign(s); null = false; return *this; }
+        String& operator=(const DOMString& s) 
+            { assign(s.rawBuffer(), s.length()); null = false; return *this; }
+        String& operator=(const std::string& s) 
+            { utf8ToUtf16(s.c_str()); null = false; return *this; }
+        String& operator=(const char* s)
+            { utf8ToUtf16(s); null = false; return *this; }
 
         /**
          * Concatentate something else to this cdr::String
