@@ -34,6 +34,8 @@ Filter to create a Citation QC Report
   <xsl:attribute                  name = "valign">top</xsl:attribute>
  </xsl:attribute-set>
 
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
  <!-- 
  ==================================================================
  Create HTML Output
@@ -47,10 +49,13 @@ Filter to create a Citation QC Report
     <xsl:variable                 name = "cdrdocs" 
                                 select = "document('cdrx:/*/CdrCtl')"/>
     <TITLE>
-     <xsl:value-of              select = "document('cdrutil:/docid')"/>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
      <xsl:text>: </xsl:text>
-     <xsl:value-of              select = "substring-before($cdrdocs/
-                                          CdrDocCtl/DocTitle,';')"/>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/> 
     </TITLE>
    </HEAD>
    <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif'/> 
@@ -87,7 +92,9 @@ Filter to create a Citation QC Report
 
    <b>
     <font size='4'>
-     <xsl:value-of              select = "document('cdrutil:/docid')"/>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
     </font>
    </b>
    <p/>
