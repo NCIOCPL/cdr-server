@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.h,v 1.8 2002-03-28 18:27:00 bkline Exp $
+ * $Id: CdrDbResultSet.h,v 1.9 2002-05-01 01:04:16 bkline Exp $
  *
  * Wrapper for ODBC result fetching.  Modeled after JDBC interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2002/03/28 18:27:00  bkline
+ * Added some support for ResultSetMetaData.
+ *
  * Revision 1.7  2000/12/28 13:31:10  bkline
  * Removed refCount member, as counter is now dynamically allocated.
  *
@@ -73,7 +76,7 @@ namespace cdr {
              *  @returns            column name
              */
             cdr::String getColumnName(int column) const {
-                if (column < 1 || column > columnVector.size())
+                if (column < 1 || (size_t)column > columnVector.size())
                     throw cdr::Exception(L"Column number out of range.");
                 return columnVector[column - 1].name;
             }
