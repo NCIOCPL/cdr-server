@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.37 2001-11-08 23:00:20 bkline Exp $
+# $Id: Makefile,v 1.38 2001-11-28 20:36:16 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.37  2001/11/08 23:00:20  bkline
+# Added CdrLock.h
+#
 # Revision 1.36  2001/10/26 20:13:46  bkline
 # Added /LIBPATH:$(REGEX)/lib to LFLAGS.
 #
@@ -318,4 +321,4 @@ $(DOCS): $(HDRS)
 # Cleanup rules.
 #--------------------------------------------------------------------------
 clean:
-	rm -f *.obj *~ CdrSearch_tab.c
+	rm -f *.obj *~ *.bak CdrSearch_tab.c CdrSearch.tab.c ccdoc.ctf
