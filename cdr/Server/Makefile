@@ -1,10 +1,14 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.63 2002-10-06 23:39:36 bkline Exp $
+# $Id: Makefile,v 1.64 2002-10-30 12:27:59 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.63  2002/10/06 23:39:36  bkline
+# Switched from using the debugging runtime library (-MDd) to the
+# release version (-MD).
+#
 # Revision 1.62  2002/09/09 12:42:55  bkline
 # Added support for debugging Sablotron.
 #
@@ -222,9 +226,6 @@ VCVER  =7
 REVER  =vc$(VCVER)
 CDRINC =.
 INC    =-I$(XML4C)/include -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)
-CFLAGS =$(INC) -W3 -GX -MD -GR -nologo -Zi #-DSINGLE_THREAD_DEBUGGING #-D_NDEBUG
-LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
-        /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/$(REVER) /DEBUG
 CC     =cl
 BISON  =bison
 LN     =link
@@ -232,12 +233,24 @@ CP     =cp -f
 CVSUPD =cvs update
 DOC    =$(DRV)/InetPub/wwwroot/cdr/
 DOCS   =$(DOC)default.htm
-CDRLIB =$(CDR)/lib/cdr.lib
 CDRBIN =$(CDR)/bin
 CDRSVR =$(CDRBIN)/CdrServer.exe
 SERVICE=$(CDRBIN)/CdrService.exe
+!IF "$(DBG)" == ""
+CFLAGS =$(INC) -W3 -GX -MD -GR -nologo -O2 -D_NDEBUG
+LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
+        /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/$(REVER)
+CDRLIB =$(CDR)/lib/cdr.lib
+SVC_CFLAGS =-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT \
+            -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MT
+!ELSE
+CFLAGS =$(INC) -W3 -GX -MD -GR -nologo -Zi #-DSINGLE_THREAD_DEBUGGING
+LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
+        /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/$(REVER) /DEBUG
+CDRLIB =$(CDR)/lib/cdrd.lib
 SVC_CFLAGS =-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT -DDEBUG \
             -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MT
+!ENDIF
 HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrCommand.h \
         $(CDRINC)/CdrDbConnection.h \
@@ -323,16 +336,16 @@ LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
 # Targets
 #--------------------------------------------------------------------------
 all: cvsupdate
-	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) SABLOT=$(SABLOT) _all
+	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) SABLOT=$(SABLOT) DBG=$(DBG) _all
 
 cvsupdate:
 	$(CVSUPD)
 
 service: cvsupdate
-	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) SABLOT=$(SABLOT) $(SERVICE)
+	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) SABLOT=$(SABLOT) DBG=$(DBG) $(SERVICE)
 
 install: cvsupdate
-	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) SABLOT=$(SABLOT) _install
+	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) SABLOT=$(SABLOT) DBG=$(DBG) _install
 
 _all: init CdrServer.exe CdrTestClient.exe #CdrDocs $(SERVICE)
 
