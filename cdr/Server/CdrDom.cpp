@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.cpp,v 1.5 2000-10-04 18:26:40 bkline Exp $
+ * $Id: CdrDom.cpp,v 1.6 2000-10-05 21:25:09 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/10/04 18:26:40  bkline
+ * Modified access to exception error message strings.
+ *
  * Revision 1.4  2000/05/09 21:07:48  bkline
  * Added error handler.
  *
@@ -73,13 +76,19 @@ void cdr::dom::Parser::parse(const std::string& xml)
     // Used to track down a bug in xml4c RMK 2000-09-07
     //std::cerr << "XML=[" << xml << "]" << std::endl;
     MemBufInputSource s((const XMLByte* const)xml.c_str(), xml.size(), "MEM");
-    ((::DOMParser *)this)->parse(s);
+    ((::DOMParser*)this)->parse(s);
 }
 
 void cdr::dom::Parser::parse(const cdr::String& xml)
     throw(cdr::dom::DOMException)
 {
     parse(xml.toUtf8());
+}
+
+void cdr::dom::Parser::parseFile(const char* fileName)
+    throw(cdr::dom::DOMException)
+{
+    ((::DOMParser*)this)->parse(fileName);
 }
 
 cdr::String cdr::dom::getTextContent(const cdr::dom::Node& node)

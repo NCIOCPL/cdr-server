@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.h,v 1.8 2000-10-04 18:21:58 bkline Exp $
+ * $Id: CdrDom.h,v 1.9 2000-10-05 21:22:29 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2000/10/04 18:21:58  bkline
+ * Expanded the exception types.
+ *
  * Revision 1.7  2000/05/09 21:10:39  bkline
  * Added error handler.
  *
@@ -117,6 +120,16 @@ namespace cdr {
              *  @exception      DOMException if a parsing error is encountered.
              */
             void parse(const cdr::String& xml) throw(DOMException);
+
+            /**
+             * Parses a document directly from a file.
+             *
+             *  @param  fileName    c-style (null-terminated) string
+             *                      identifying name of XML file.
+             *  @exception          DOMException if file not found or a
+             *                      parsing error is encountered.
+             */
+            void parseFile(const char* fileName) throw(DOMException);
 
         private:
 
