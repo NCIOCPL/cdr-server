@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLog.cpp,v 1.1 2000-06-15 22:32:24 ameyer Exp $
+ * $Id: CdrLog.cpp,v 1.2 2000-10-05 17:23:21 ameyer Exp $
  *
  * Implementation of writing info to the log table in the database.
  * If that can't be done, takes an alternative action to write to file.
@@ -7,6 +7,9 @@
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/06/15 22:32:24  ameyer
+ * Initial revision
+ *
  */
 
 #include <cstdlib>
@@ -20,8 +23,6 @@
 #include "CdrDbResultSet.h"
 #include "CdrLog.h"
 
-// Prototype for function to use when database isn't available
-static void AlternateWrite (const cdr::String, const cdr::String);
 
 /**
  * Thread global pointer to thread specific instance of a log object.
@@ -96,7 +97,7 @@ cdr::log::Log::Log ()
         // This should never happen
         // If it does, let object write itself to wherever critical errors go
         cdr::String src = L"Log constructor";
-        AlternateWrite (src, ErrMsg);
+        WriteFile (src, ErrMsg);
     }
 }
 
@@ -120,7 +121,13 @@ void cdr::log::Log::Write (
     catch (cdr::Exception e) {
         // Failed to connect or failed to write
         // Use alternative instead
-        AlternateWrite (MsgSrc, Msg);
+        WriteFile (L"CdrLog DB Write Failed", e.what());
+        WriteFile (MsgSrc, Msg);
+    }
+    catch (...) {
+        // Use alternative instead
+        WriteFile (L"CdrLog DB Write Failed", L"Unknown exception");
+        WriteFile (MsgSrc, Msg);
     }
 }
 
@@ -174,50 +181,58 @@ void cdr::log::Log::Write (
     catch (cdr::Exception e) {
         // Couldn't write.  Use exception reporting instead
         // Don't re-throw exception.  Would probably cause a loop.
-        AlternateWrite (MsgSrc, Msg);
+        WriteFile (MsgSrc, Msg);
     }
 #else
-    AlternateWrite (MsgSrc, Msg);
+    WriteFile (MsgSrc, Msg);
 #endif
 }
 
 
 /**
- * AlternateWrite ()
- *   Does something with a log message which can't be logged
- *   Currently writes it to a file, but could change to post
- *   to event log, or somewhere else.
+ * WriteFile ()
+ *   Writes to ordinary os file, if it can't be logged to db.
+ *   But can also be called directly.
  */
 
-static void AlternateWrite (
+/* XXXX - BUG - XXXX
+ * Can I write a wide string to a file with fwprintf?
+ * Result ain't right.
+ */
+
+void cdr::log::WriteFile (
     const cdr::String MsgSrc,   // Name of module or whatever caller wants
-    const cdr::String Msg       // Message
+    const cdr::String Msg,      // Message
+    const std::string Fname     // Filename, may be defaulted
 ) {
     // First try to get exclusive control of the file
-    HANDLE hMutex = CreateMutex (0, false, "CdrAlternateWriteMutex");
+    HANDLE hMutex = CreateMutex (0, false, "CdrWriteFileMutex");
     DWORD stat    = WaitForSingleObject (hMutex, 5000);
 
-    // Get pointers to messages, or truncated versions
-    const wchar_t *pSrc = MsgSrc.c_str();
-    const wchar_t *pMsg = Msg.c_str();
 
-    if (MsgSrc.size() > cdr::log::SrcMaxLen)
-        pSrc = (MsgSrc.substr(0, cdr::log::SrcMaxLen)).c_str();
-    if (Msg.size() > cdr::log::MsgMaxLen)
-        pMsg = (Msg.substr(0, cdr::log::MsgMaxLen)).c_str();
+    // Set datetime
+    time_t ltime;
+    time (&ltime);
+    wchar_t *wct = _wctime (&ltime);
 
     // Try to log the message whether or not we got exclusive access
+    // When writing to a file, we don't truncate the data - don't
+    //   have the database string limits on output
     FILE  *fp;
-    if ((fp = fopen (cdr::log::OSLogFile, "a")) != NULL) {
+    if ((fp = fopen (Fname.c_str(), "a")) != NULL) {
 
         // Datetime, source, message
-        time_t ltime;
-        time (&ltime);
-        wchar_t *wct = _wctime (&ltime);
-        fwprintf (fp, L"---%s>>>%s:\n%s\n", wct, pSrc, pMsg);
+        fwprintf (fp, L"---%s>>>%s:\n%s\n", wct,
+                  MsgSrc.c_str(), Msg.c_str());
 
         fclose (fp);
     }
+    else {
+        // Last resort is stderr
+        fwprintf (stderr, L"---%s>>>%s:\n%s\n", wct,
+                  MsgSrc.c_str(), Msg.c_str());
+    }
+
 
     // Release mutex
     if (stat == WAIT_OBJECT_0 || stat == WAIT_ABANDONED)
