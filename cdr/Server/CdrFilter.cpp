@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.34 2003-03-14 02:01:40 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.35 2003-06-05 15:36:32 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2003/03/14 02:01:40  bkline
+ * Fixed garbage returns from cdr::String::getInt().
+ *
  * Revision 1.33  2002/11/19 22:43:32  bkline
  * Fixed code for last and lastp version specifications to throw an error
  * if the requested version is not found.
@@ -155,6 +158,8 @@ static void getFiltersInSet(int,
                             std::vector<int>& filterSet, 
                             int depth,
                             cdr::db::Connection& conn);
+static string getPubVerNumber(const string&,
+                              cdr::db::Connection&);
 
 namespace
 {
@@ -629,6 +634,11 @@ namespace
       {
         u.doc = string("<PrettyUrl>") + getPrettyUrl(parms).toUtf8() + 
                       "</PrettyUrl>";
+      }
+      // RMK 2003-05-29: added function to get number of last pub. version.
+      else if (function == "get-pv-num")
+      {
+        u.doc = getPubVerNumber(parms, thread_data->connection);
       }
       else
         return 1;
@@ -1836,4 +1846,35 @@ void getFiltersInSet(int id,
         else
             filterSet.push_back(setMembers[i].foreignKey);
     }
+}
+
+string getPubVerNumber(const string& parms,
+                       cdr::db::Connection& conn)
+{
+    cdr::String idString = parms;
+    int id = 0;
+    try {
+        id = idString.extractDocId();
+    }
+    catch (...) {
+        return "<PubVerNumber>0</PubVerNumber>";
+    }
+    if (!id)
+        return "<PubVerNumber>0</PubVerNumber>";
+    cdr::db::PreparedStatement stmt = conn.prepareStatement(
+            "  SELECT MAX(v.num)            "
+            "    FROM doc_version v         "
+            "    JOIN document d            "
+            "      ON d.id = v.id           "
+            "   WHERE v.id = ?              "
+            "     AND d.active_status = 'A' "
+            "     AND v.publishable = 'Y'   ");
+    stmt.setInt(1, id);
+    cdr::db::ResultSet rs = stmt.executeQuery();
+    if (!rs.next())
+        return "<PubVerNumber>0</PubVerNumber>";
+    int versionNum = rs.getInt(1);
+    std::ostringstream os;
+    os << "<PubVerNumber>" << versionNum << "</PubVerNumber>";
+    return os.str();
 }
