@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.21 2000-06-09 04:02:33 ameyer Exp $
+# $Id: Makefile,v 1.22 2000-07-10 19:51:55 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.21  2000/06/09 04:02:33  ameyer
+# Added CdrLog.h, CdrLog.cpp
+#
 # Revision 1.20  2000/05/21 00:51:33  bkline
 # Added CdrShutdown.
 #
@@ -93,6 +96,9 @@ DOCS   =$(DOC)default.htm
 CDRLIB =$(CDR)/lib/cdr.lib
 CDRBIN =$(CDR)/bin
 CDRSVR =$(CDRBIN)/CdrServer.exe
+SERVICE=$(CDRBIN)/CdrService.exe
+SVC_CFLAGS =-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT \
+            -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MT
 HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrCommand.h \
         $(CDRINC)/CdrDbConnection.h \
@@ -158,7 +164,9 @@ LIBS   =cdr.lib xerces-c_1.lib sablot.lib xmlparse.lib xmltok.lib \
 #--------------------------------------------------------------------------
 # Targets
 #--------------------------------------------------------------------------
-all: init $(CDRSVR) CdrDocs
+all: init $(CDRSVR) CdrDocs #$(SERVICE)
+
+service: $(SERVICE)
 
 #--------------------------------------------------------------------------
 # Initialization, saving two generations of old errors
@@ -174,6 +182,19 @@ init:
 
 $(CDRSVR): CdrServer.obj $(OBJS) $(CDRLIB)
 	$(LN) $(LFLAGS) /out:$(CDRSVR) CdrServer.obj $(OBJS) $(LIBS) >> errs
+
+#--------------------------------------------------------------------------
+# Rule for building CDR service.
+#--------------------------------------------------------------------------
+
+$(SERVICE): CdrService.obj service.obj
+	$(CC) -MT -Fe$(SERVICE) CdrService.obj service.obj advapi32.lib
+
+CdrService.obj: CdrService.c service.h
+	$(CC) -c $(SVC_CFLAGS) CdrService.c
+
+service.obj: service.c service.h
+	$(CC) -c $(SVC_CFLAGS) service.c
 
 #--------------------------------------------------------------------------
 # We're not doing dependency checking.
