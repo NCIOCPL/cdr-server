@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Module: Citation Formatting</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.11: Misc Citation Formatting (Bug 934)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
  
@@ -81,16 +81,11 @@
 
 
  <!-- 
- ==============================================================
+ ===============================================================
  C) Protocol Citation Formatting
-    According to Margaret there wouldn't be a protocol citation 
-    within a protocol and there is no protocol to test with.  
-    Therefore I'm leaving this piece alone for now but I'm leaving 
-    it in here for completeness since it's more readable then 
-    the original filter CDR46.
  =============================================================== -->
-<xsl:template                match = "ProtocolLink">
- <Citation>
+ <xsl:template               match = "ProtocolLink">
+  <Citation>
   <xsl:attribute              name = "cdr:ref">
    <xsl:value-of            select = "@cdr:ref"/>
   </xsl:attribute>
@@ -103,40 +98,109 @@
    </xsl:attribute>
   </xsl:if>   
 
- <!-- 
- Format the LeadOrgPersonnel name
- ====================================================================== -->
-  <xsl:for-each             select = "ProtocolLeadOrg/LeadOrgPersonnel">
-   <xsl:if                    test = "not(@public)">
-    <xsl:if                   test = "../LeadOrgRole = 'Primary'">
-     <xsl:if                  test = "PersonRole = 'Protocol chair'">
-       <xsl:value-of        select = "Person/PersonNameInformation/SurName"/>
-       <xsl:text> </xsl:text>
-       <xsl:value-of        select = "substring(Person/
-                                      PersonNameInformation/GivenName,1,1)"/>
-       <xsl:variable          name = "Gname" 
-                            select = "substring-after(Person/
-                                      PersonNameInformation/GivenName,' ')"/>
-       <xsl:choose>
-       <xsl:when              test = "not(contains($Gname,'.'))">
-         <xsl:value-of      select = "substring($Gname,1,1)"/>
+  <!-- 
+  Display the "Protocol Author List" based on the following rules:
+  - find the primary organization
+  - display the Protocol chair, if it is listed as public
+  - if no public PC exists display the Protocol co-chair, if it is 
+    listed as public
+  - if no public PC or Protocol co-chair exist display the Principle
+    investigator, if it is listed as public
+  - if no public PC, Protocol co-chair, or Principle investigator exist
+    display the Study coordinator and Research coordinator that are 
+    listed as public
+  - if none of the above exist do not display any name.
+  - if more then three persons are listed display the first three and
+    add "et al."
+  ===================================================================== -->
+  <xsl:choose>   <!-- Check for Protocol chair -->
+   <xsl:when                      test = "ProtocolLeadOrg
+                                            [LeadOrgRole = 'Primary']/
+                                          LeadOrgPersonnel
+                                            [PersonRole = 'Protocol chair'
+                                             and
+                                             not(@Public)]">
+    <xsl:for-each               select = "ProtocolLeadOrg
+                                            [LeadOrgRole = 'Primary']/
+                                          LeadOrgPersonnel
+                                            [PersonRole = 'Protocol chair'
+                                             and
+                                             not(@Public)]">
+     <xsl:call-template           name = "getPersonName"/>
+    </xsl:for-each>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>   <!-- Check for Protocol co-chair -->
+     <xsl:when                    test = "ProtocolLeadOrg
+                                            [LeadOrgRole = 'Primary']/
+                                          LeadOrgPersonnel
+                                            [PersonRole = 'Protocol co-chair'
+                                             and
+                                             not(@Public)]">
+      <xsl:for-each             select = "ProtocolLeadOrg
+                                            [LeadOrgRole = 'Primary']/
+                                          LeadOrgPersonnel
+                                            [PersonRole = 'Protocol co-chair'
+                                             and
+                                             not(@Public)]">
+       <xsl:call-template         name = "getPersonName"/>
+      </xsl:for-each>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:choose>   <!-- Check for Principle investigator -->
+       <xsl:when                  test = "ProtocolLeadOrg
+                                            [LeadOrgRole = 'Primary']/
+                                          LeadOrgPersonnel
+                                            [PersonRole = 
+                                                    'Principal investigator'
+                                             and
+                                             not(@Public)]">
+        <xsl:for-each           select = "ProtocolLeadOrg
+                                            [LeadOrgRole = 'Primary']/
+                                          LeadOrgPersonnel
+                                            [PersonRole = 
+                                                    'Principal investigator'
+                                             and
+                                             not(@Public)]">
+         <xsl:call-template       name = "getPersonName"/>
+        </xsl:for-each>
        </xsl:when>
        <xsl:otherwise>
-        <xsl:value-of       select = "translate($Gname,'.','')"/>
+        <xsl:choose>   <!-- Check for Study/Research coordinator -->
+         <xsl:when                test = "ProtocolLeadOrg
+                                            [LeadOrgRole = 'Primary']/
+                                          LeadOrgPersonnel
+                                            [PersonRole = 'Study coordinator'
+                                             or
+                                             PersonRole = 
+                                                      'Research coordinator']">
+          <xsl:for-each         select = "ProtocolLeadOrg
+                                            [LeadOrgRole = 'Primary']/
+                                          LeadOrgPersonnel
+                                            [PersonRole = 'Study coordinator'
+                                             and 
+                                             not(@Public)
+                                             or
+                                             PersonRole = 
+                                                      'Research coordinator'
+                                             and
+                                             not(@Public)]">
+           <xsl:call-template     name = "getPersonName"/>
+          </xsl:for-each>
+         </xsl:when>
+        </xsl:choose>
        </xsl:otherwise>
-       </xsl:choose>
-       <xsl:text> </xsl:text>
-     </xsl:if>
-    </xsl:if>
-   </xsl:if>
-  </xsl:for-each>
+      </xsl:choose>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
 
   <!-- 
   Format the Organization Name
   ======================================================================== -->
   <xsl:for-each                  select = "ProtocolLeadOrg">
    <xsl:if                       test   = "LeadOrgRole = 'Primary'">
-    <xsl:text>, </xsl:text>
     <xsl:value-of                select = "Organization/
                                            OrganizationNameInformation/
                                            OfficialName/Name"/>:
@@ -153,7 +217,62 @@
   <xsl:value-of                  select = "CurrentProtocolStatus"/>
   <xsl:text>.</xsl:text>
  </Citation>
-</xsl:template>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Template to create Author Names for Protocol Citations
+ ==================================================================== -->
+ <xsl:template                name = "getPersonName">
+  <xsl:if                     test = "position() &lt; 4">
+   <!-- 
+   If the first name field contains the middle initial try to extract
+   it and display both initials.
+   ====================================================================== -->
+   <xsl:variable              name = "Gname" 
+                            select = "substring-after(Person/
+                                      PersonNameInformation/GivenName,' ')"/>
+   <xsl:variable              name = "mInit"
+                            select = "Person/
+                                      PersonNameInformation/MiddleInitial"/>
+
+   <xsl:value-of            select = "Person/PersonNameInformation/SurName"/>
+   <xsl:text> </xsl:text>
+   <xsl:value-of            select = "substring(Person/
+                                      PersonNameInformation/GivenName,1,1)"/>
+
+   <!-- If the middle initial is part of the first name concatenate it -->
+   <xsl:choose>
+    <xsl:when                 test = "not(contains($Gname,'.'))">
+     <xsl:value-of          select = "substring($Gname,1,1)"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of          select = "translate($Gname,'.','')"/>
+    </xsl:otherwise>
+   </xsl:choose>
+
+   <!-- If the middle initial is in the middle initial field concatenate it -->
+   <xsl:choose>
+    <xsl:when                 test = "not(contains($mInit,'.'))">
+     <xsl:value-of          select = "substring($mInit,1,1)"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of          select = "translate($mInit,'.','')"/>
+    </xsl:otherwise>
+   </xsl:choose>
+
+   <xsl:choose>
+    <xsl:when                 test = "position() = 3
+                                      and
+                                      last() &gt; 3">
+     <xsl:text>, et al.</xsl:text>
+    </xsl:when>
+   </xsl:choose>
+
+   <xsl:text>, </xsl:text>
+  </xsl:if>
+ </xsl:template>
 
 
  <!-- 
