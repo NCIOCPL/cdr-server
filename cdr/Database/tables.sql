@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.50 2002-02-02 01:39:51 bkline Exp $
+ * $Id: tables.sql,v 1.51 2002-04-02 19:02:02 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.50  2002/02/02 01:39:51  bkline
+ * Fixed typo in pub_proc table creation.
+ *
  * Revision 1.49  2002/01/31 20:24:07  mruben
  * added no_output column to pub_proc
  *
@@ -1169,11 +1172,13 @@ GO
  *     pub_proc  foreign key into the pub_proc table.
  *       doc_id  identification of document being processed.
  *  doc_version  part of foreign key into doc_version table.
+ *      failure  set to 'Y' if document could not be published.
  */
 CREATE TABLE pub_proc_doc
    (pub_proc INTEGER      NOT NULL  REFERENCES pub_proc,
       doc_id INTEGER      NOT NULL,
  doc_version INTEGER      NOT NULL,
+     failure CHAR             NULL,
     messages NTEXT            NULL,
   CONSTRAINT pub_proc_doc_fk        PRIMARY KEY(pub_proc, doc_id, doc_version),
   CONSTRAINT pub_proc_doc_fk_docver FOREIGN KEY(doc_id, doc_version) 
@@ -1196,6 +1201,8 @@ CREATE VIEW published_doc
          AS SELECT pub_proc_doc.*
               FROM pub_proc_doc, pub_event
              WHERE pub_event.status = 'Success'
+               AND (pub_proc_doc.failure IS NULL
+                OR pub_proc_doc.failure <> 'Y')
 GO
 
 /*
