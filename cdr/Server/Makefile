@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.7 2000-04-21 13:52:24 bkline Exp $
+# $Id: Makefile,v 1.8 2000-04-22 09:26:36 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.7  2000/04/21 13:52:24  bkline
+# Added CdrSearch module.
+#
 # Revision 1.6  2000/04/17 21:26:23  bkline
 # Added CdrCheckAuth command.
 #
@@ -67,6 +70,16 @@ OBJS   =CdrServer.obj \
         CdrLogon.obj \
         CdrLogoff.obj \
         CdrCheckAuth.obj \
+        CdrAddGrp.obj \
+        CdrGetGrp.obj \
+        CdrModGrp.obj \
+        CdrDelGrp.obj \
+        CdrListGrps.obj \
+        CdrAddUsr.obj \
+        CdrGetUsr.obj \
+        CdrModUsr.obj \
+        CdrDelUsr.obj \
+        CdrListUsrs.obj \
         CdrSearch.obj \
         CdrSearch_tab.obj
 LIBS   =cdr.lib xerces-c_1.lib wsock32.lib odbc32.lib
@@ -94,6 +107,36 @@ CdrLogoff.obj: CdrLogoff.cpp $(HDRS)
 
 CdrCheckAuth.obj: CdrCheckAuth.cpp $(HDRS)
 	$(CC) $(CFLAGS) -c CdrCheckAuth.cpp
+
+CdrAddGrp.obj: CdrAddGrp.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrAddGrp.cpp
+
+CdrGetGrp.obj: CdrGetGrp.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrGetGrp.cpp
+
+CdrModGrp.obj: CdrModGrp.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrModGrp.cpp
+
+CdrDelGrp.obj: CdrDelGrp.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrDelGrp.cpp
+
+CdrListGrps.obj: CdrListGrps.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrListGrps.cpp
+
+CdrAddUsr.obj: CdrAddUsr.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrAddUsr.cpp
+
+CdrGetUsr.obj: CdrGetUsr.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrGetUsr.cpp
+
+CdrModUsr.obj: CdrModUsr.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrModUsr.cpp
+
+CdrDelUsr.obj: CdrDelUsr.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrDelUsr.cpp
+
+CdrListUsrs.obj: CdrListUsrs.cpp $(HDRS)
+	$(CC) $(CFLAGS) -c CdrListUsrs.cpp
 
 CdrSearch.obj: CdrSearch.cpp $(HDRS) $(CDRINC)/CdrSearch.h
 	$(CC) $(CFLAGS) -c CdrSearch.cpp
