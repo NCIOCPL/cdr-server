@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.23 2001-10-30 22:38:24 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.24 2001-11-06 21:37:38 bkline Exp $
  *
  */
 
@@ -24,6 +24,7 @@
 #include "CdrVersion.h"
 #include "CdrFilter.h"
 #include "CdrDoc.h"
+#include "CdrGetDoc.h"
 #include "CdrLink.h"
 #include "CdrValidateDoc.h"
 #include "CdrXsd.h"
@@ -495,7 +496,8 @@ static cdr::String CdrPutDoc (
     bool cmdCheckIn,            // True=Check in doc, else doc still locked
          cmdVersion,            // True=Create new version in version control
          cmdPublishVersion,     // True=New version ctl version is publishable
-         cmdValidate;           // True=Perform validation, else just store
+         cmdValidate,           // True=Perform validation, else just store
+         cmdEcho;               // True=Client want modified doc echoed back
     cdr::String cmdReason;      // Reason to associate with new version
     cdr::dom::Node child,       // Child node in command
                    docNode;     // Node containing CdrDoc
@@ -712,10 +714,8 @@ static cdr::String CdrPutDoc (
     cdr::String resp = cdr::String (L"  <Cdr") + rtag + L"DocResp>\n"
                      + L"   <DocId>" + doc.getTextId() + L"</DocId>\n"
                      + doc.getErrString();
-    if (cmdEcho) {
-        ; // XXXX Include possibly modified doc
-        // Something with doc.getTitle() and doc.getXml()
-    }
+    if (cmdEcho)
+        resp += cdr::getDocString(doc.getTextId(), dbConn, true, true) + L"\n";
 
     resp += L"  </Cdr" + rtag + L"DocResp>\n";
     return resp;
@@ -952,10 +952,6 @@ cdr::String cdr::CdrDoc::getRevisionFilteredXml (
                              + cdr::String::toString (revisionLevel)
                              + L" requested for document");
 
-// XXXX NO FILTERS YET, NEED A BLANK ONE AT LEAST FOR TESTING
-//      SO I'VE DISABLED THIS FUNCTION FOR NOW
-return Xml;
-
     // Need to filter revision markup if:
     //   Filtering never attempted (revisedXmlLevel == 0)
     //   Filtering done but at level other than what we want
@@ -965,7 +961,7 @@ return Xml;
         // Attempt to filter at the requested level
         cdr::FilterParmVector pv;        // Parameters passed to it
         pv.push_back (std::pair<cdr::String,cdr::String>
-            (L"RevisionFilterLevel", cdr::String::toString (revisionLevel)));
+            (L"useLevel", cdr::String::toString (revisionLevel)));
 
         try {
             revisedXml = cdr::filterDocumentByScriptTitle (
