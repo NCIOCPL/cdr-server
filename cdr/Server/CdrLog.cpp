@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLog.cpp,v 1.3 2001-10-29 15:44:12 bkline Exp $
+ * $Id: CdrLog.cpp,v 1.4 2002-02-28 01:02:53 bkline Exp $
  *
  * Implementation of writing info to the log table in the database.
  * If that can't be done, takes an alternative action to write to file.
@@ -7,6 +7,9 @@
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2001/10/29 15:44:12  bkline
+ * Replaced fopen/fwprintf/fclose with wofstream I/O.
+ *
  * Revision 1.2  2000/10/05 17:23:21  ameyer
  * Replaced AlternateWrite with WriteFile, an externally callable
  * method that allows the caller to write to an OS file instead of
@@ -242,4 +245,6 @@ void cdr::log::WriteFile (
     // Release mutex
     if (stat == WAIT_OBJECT_0 || stat == WAIT_ABANDONED)
         ReleaseMutex (hMutex);
+    if (hMutex)
+        CloseHandle(hMutex);
 }

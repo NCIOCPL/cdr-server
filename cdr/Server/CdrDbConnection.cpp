@@ -1,9 +1,13 @@
 /*
- * $Id: CdrDbConnection.cpp,v 1.7 2001-12-14 15:19:10 bkline Exp $
+ * $Id: CdrDbConnection.cpp,v 1.8 2002-02-28 01:02:53 bkline Exp $
  *
  * Implementation for ODBC connection wrapper.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2001/12/14 15:19:10  bkline
+ * Added optional hooks for tracking number of active connections during
+ * heap debugging.
+ *
  * Revision 1.6  2000/06/01 18:48:58  bkline
  * Removed some debugging output.
  *
@@ -91,6 +95,7 @@ cdr::db::Connection::Connection(const SQLCHAR* dsn,
         if (lock.m) {
             ++activeConnections;
         }
+		CloseHandle(mutex);
     }
 #endif
 }
@@ -156,6 +161,7 @@ void cdr::db::Connection::close()
                     L"Connection::close(): No connections open.");
             --activeConnections;
         }
+		CloseHandle(mutex);
     }
 #endif
     SQLDisconnect(hdbc);
