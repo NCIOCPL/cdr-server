@@ -23,9 +23,14 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.21 2002-08-14 01:51:04 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.22 2002-08-29 21:52:07 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2002/08/14 01:51:04  ameyer
+ * Added length checks on fragment and url sizes.
+ * Restored saveLink checking in link table insertions, left out of the
+ * new speedup code.
+ *
  * Revision 1.20  2002/08/11 22:48:34  bkline
  * Plugged in makeshift solution for overlong values for link_net table.
  *
@@ -200,13 +205,13 @@ cdr::link::CdrLink::CdrLink (
     type          = 0;
     typeStr       = L"";
     srcField      = L"";
-    trgId         = 0;
+    trgId         = cdr::link::NO_DOC_ID;
     trgIdStr      = L"";
     trgFound      = false;
     trgDocType    = 0;
     trgDocTypeStr = L"";
     trgActiveStat = L"";
-    trgFrag       = L"";
+    trgFrag       = cdr::link::NO_FRAGMENT;
     hasData       = false;
     errCount      = 0;
     saveLink      = true;
@@ -238,7 +243,7 @@ cdr::link::CdrLink::CdrLink (
                 trgIdStr = cdr::stringDocId (srcId);
         }
         else {
-            trgFrag  = L"";
+            trgFrag  = cdr::link::NO_FRAGMENT;
             trgIdStr = ref;
         }
 
@@ -249,6 +254,8 @@ cdr::link::CdrLink::CdrLink (
         }
         catch (const cdr::Exception& e) {
             // Probably an invalid format
+            // If we add cdr:xref to the link_net, this has to change
+            trgId = cdr::link::NO_DOC_ID;
             this->addLinkErr (e.what());
         }
 
@@ -264,6 +271,8 @@ cdr::link::CdrLink::CdrLink (
             // This is needed whether or not we validate the link because
             //   we can't save a link that doesn't point to an existing
             //   document
+            // Note that if trgId==NO_DOC_ID, this will (correctly) get
+            //   no hits
             qry = "SELECT doc_type, active_status FROM all_docs WHERE id = ?";
             cdr::db::PreparedStatement doc_sel = conn.prepareStatement (qry);
             doc_sel.setInt (1, trgId);
@@ -289,7 +298,7 @@ cdr::link::CdrLink::CdrLink (
     }
     if (ref.size() > cdr::link::MAX_URL_SIZE) {
         this->addLinkErr (L"Full reference '" +
-                trgFrag + L"' too large for database table");
+                ref + L"' too large for database table");
         saveLink = false;
     }
 
@@ -327,7 +336,7 @@ int cdr::link::CdrLink::validateLink (
         this->addLinkErr (L"Target document not found in CDR");
 
     // None of these checks can be made without a link type or target id
-    else if (type != 0 && trgId != 0) {
+    else if (type != 0 && trgId != cdr::link::NO_DOC_ID) {
 
         // Tests are done differently for links to self and links to other
         if (trgId != srcId) {
@@ -338,8 +347,8 @@ int cdr::link::CdrLink::validateLink (
                 if (trgActiveStat == L"D")
                     this->addLinkErr (L"Target link is to deleted document");
 
-                // Does the target contain the expect fragment id, if any?
-                if (trgFrag.size() > 0) {
+                // Does the target contain the expected fragment id, if any?
+                if (trgFrag != cdr::link::NO_FRAGMENT) {
 
                     qry = "SELECT fragment FROM link_fragment "
                           "WHERE doc_id = ? AND fragment = ?";
@@ -360,7 +369,7 @@ int cdr::link::CdrLink::validateLink (
         else {
             // Target doc is same as source doc
             // If this is a link to a fragment, check to be sure it's here
-            if (trgFrag.size() > 0) {
+            if (trgFrag != cdr::link::NO_FRAGMENT) {
                 if (fragSet.find (trgFrag) == fragSet.end())
                     this->addLinkErr (L"cdr:id matching fragment '" +
                             trgFrag + L"' not found in this document");
@@ -403,7 +412,7 @@ int cdr::link::CdrLink::validateLink (
         if (type == 0)
             this->addLinkErr (L"No link type is defined for field " +
                               srcField + L" in document type " + srcDocTypeStr);
-        else { // trgId==0
+        else { // trgId==NO_DOC_ID
             if (style == cdr::link::ref || style == cdr::link::href)
                 this->addLinkErr (L"No target document id specified in link");
         }
@@ -599,7 +608,7 @@ cdr::String cdr::link::CdrLink::dumpXML (
     }
 
     // Fragment identifier, if any
-    if (trgFrag.size() > 0)
+    if (trgFrag != cdr::link::NO_FRAGMENT)
         xml += cdr::tagWrap (trgFrag, L"LnkTrgFrag");
 
     // Reference string
@@ -1531,6 +1540,8 @@ void cdr::link::updateLinkNet (
         cdr::String elem     = getLinksResults.getString(2);
         cdr::Int    targDoc  = getLinksResults.getInt   (3);
         cdr::String targFrag = getLinksResults.getString(4);
+        if (targFrag.isNull())
+            targFrag == cdr::link::NO_FRAGMENT;
         cdr::String url      = getLinksResults.getString(5);
         LinkNetRow row(type, docId, elem, targDoc, targFrag, url);
         oldRows.insert(row);
@@ -1559,22 +1570,53 @@ void cdr::link::updateLinkNet (
     }
     else {
         // Otherwise, delete just the rows which are no longer needed.
-        cdr::db::PreparedStatement delStmt = conn.prepareStatement(
-                "DELETE FROM link_net       "
-                "      WHERE source_doc  = ?"
-                "        AND link_type   = ?"
-                "        AND source_elem = ?"
-                "        AND target_doc  = ?"
-                "        AND target_frag = ?"
-                "        AND url         = ?");
+        // We need two different prepared statements to do our deletes.
+        // One is used when the target fragment is null, and one when it's not.
+        // The alternative is to build the statement dynamically and prepare
+        //   it separately for each row - which is more expensive.
+        // We're probably optimizing too much here but, here it is anyway.
+
+        // Two statements one for links with a fragment and one without
+        cdr::db::PreparedStatement delStmtFrag = conn.prepareStatement(
+            "DELETE FROM link_net       "
+            "      WHERE source_doc  = ?"
+            "        AND link_type   = ?"
+            "        AND source_elem = ?"
+            "        AND target_doc  = ?"
+            "        AND target_frag = ?"
+            "        AND url         = ?");
+        cdr::db::PreparedStatement delStmtNullFrag = conn.prepareStatement(
+            "DELETE FROM link_net       "
+            "      WHERE source_doc  = ?"
+            "        AND link_type   = ?"
+            "        AND source_elem = ?"
+            "        AND target_doc  = ?"
+            "        AND target_frag IS NULL"
+            "        AND url         = ?");
+
+        // Pointer to one or the other of them
+        cdr::db::PreparedStatement *delStmt;
+
+        // Delete each unwanted row in the table
         for (rsi = unwantedRows.begin(); rsi != unwantedRows.end(); ++rsi) {
-            delStmt.setInt   (1, docId);
-            delStmt.setInt   (2, rsi->link_type);
-            delStmt.setString(3, rsi->source_elem);
-            delStmt.setInt   (4, rsi->target_doc);
-            delStmt.setString(5, rsi->target_frag);
-            delStmt.setString(6, rsi->url);
-            delStmt.executeUpdate();
+            // Point to one or the other prepared statement
+            if (rsi->target_frag == cdr::link::NO_FRAGMENT)
+                delStmt = &delStmtNullFrag;
+            else
+                delStmt = &delStmtFrag;
+
+            // Insert values into whichever statement we're using
+            delStmt->setInt   (1, docId);
+            delStmt->setInt   (2, rsi->link_type);
+            delStmt->setString(3, rsi->source_elem);
+            delStmt->setInt   (4, rsi->target_doc);
+            if (rsi->target_frag == cdr::link::NO_FRAGMENT)
+                delStmt->setString(5, rsi->url);
+            else {
+                delStmt->setString(5, rsi->target_frag);
+                delStmt->setString(6, rsi->url);
+            }
+            delStmt->executeUpdate();
         }
         rowsToInsert = &wantedRows;
     }
