@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.20 2002-09-29 01:42:20 bkline Exp $
+ * $Id: CdrVersion.cpp,v 1.21 2003-02-09 21:16:02 bkline Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2002/09/29 01:42:20  bkline
+ * Fixed typo in closing tag for LastVersionsResp element (missing '/').
+ *
  * Revision 1.19  2002/09/25 14:37:46  pzhang
  * Added val_status = 'V' in lastVersions().
  *
@@ -969,6 +972,7 @@ cdr::String cdr::listVersions(Session& session,
   if (nVersions > 0)
       sprintf(top, "TOP %d ", nVersions);
   sprintf(query, "SELECT %snum,      "
+                 "       dt,         "
                  "       comment     "
                  "  FROM doc_version "
                  " WHERE id = ?      "
@@ -981,13 +985,16 @@ cdr::String cdr::listVersions(Session& session,
   while (rs.next())
   {
     int num        = rs.getInt(1);
-    String comment = rs.getString(2);
+    String dt      = rs.getString(2);
+    String comment = rs.getString(3);
     response << L"<Version><Num>"
              << String::toString(num)
-             << L"</Num>";
+             << L"</Num><Date>"
+             << dt.c_str()
+             << L"</Date>";
     if (!comment.isNull())
       response << L"<Comment>"
-               << comment.c_str()
+               << entConvert(comment.c_str())
                << L"</Comment>";
     response << L"</Version>";
   }
