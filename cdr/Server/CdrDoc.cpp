@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.21 2001-10-18 17:07:35 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.22 2001-10-22 20:37:05 bkline Exp $
  *
  */
 
@@ -235,7 +235,8 @@ cdr::CdrDoc::CdrDoc (
                         "                 t.name,"
                         "                 t.title_filter,"
                         "                 t.xml_schema,"
-                        "                 b.data"
+                        "                 b.data,"
+                        "                 r.doc_id"
                         "            FROM document d"
                         "            JOIN doc_type t"
                         "              ON t.id = d.doc_type"
