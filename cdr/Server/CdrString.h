@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.10 2000-05-04 12:39:43 bkline Exp $
+ * $Id: CdrString.h,v 1.11 2000-05-09 19:21:59 mruben Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2000/05/04 12:39:43  bkline
+ * More ccdoc comments.
+ *
  * Revision 1.9  2000/05/03 15:42:31  bkline
  * Added greater-than and less-than comparison operators.  Added getFloat()
  * method.
@@ -152,6 +155,20 @@ namespace cdr {
         String(const String& s) : StdWstring(s), null(s.null) {}
 
         /**
+         * Concatentate something else to this cdr::String
+         *
+         *  @param  s           const reference to obejct to be concatentated
+         *
+         *  @return             reference to this cdr::String
+         */
+        String& operator+=(const String& s)
+            { *this = *this + s; return *this; }
+        String& operator+=(const wchar_t* s)
+            { *this = *this + s; return *this; }
+        String& operator+=(wchar_t s)
+            { *this = *this + s; return *this; }
+
+        /**
          * Compares another cdr::String to this one.  Case is significant for
          * the purposes of this comparison.
          *
@@ -243,6 +260,14 @@ namespace cdr {
         bool null;
     };
 
+    /**
+     * Concatenate two Strings
+     */
+    inline String operator+(String s, const String& t)
+    {
+      return s += t;
+    }
+  
     /**
      * Containers of <code>String</code> objects.  Typedefs given here for
      * convenience, and as workarounds for MSVC++ template bugs.
