@@ -2,23 +2,23 @@
 #include <iostream>
 #include <string>
 
-#if 0
-static std::string trim(const char* s) {
-    if (!s) return "";
-    const char* p = s;
-    while (*p && strchr(" \t\r\n", *p))
-        ++p;
-    size_t len = strlen(p);
-    while (len > 0 && strchr(" \t\r\n", p[len - 1]))
-        --len;
-    return std::string(p, len);
-}
-#endif
 static int level = 0, showlevels = 999999;
 static bool in_text = false, first = true, just_opened = false;
 %}
 
+%x CMNT
 %%
+
+"<!--" {
+    BEGIN CMNT;
+    std::cout << yytext;
+}
+<CMNT>"-->" {
+    BEGIN INITIAL;
+    std::cout << yytext << "\n";
+}
+<CMNT>. |
+<CMNT>\n { std::cout << yytext; }
 
 (\<[^/!][^>]*\>)|(\<!\[CDATA\[) { bool emptyTag = false;
                  if (level < showlevels) {
