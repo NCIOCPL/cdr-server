@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.10 2002-03-20 14:02:38 bkline Exp $
+ * $Id: procs.sql,v 1.11 2002-06-03 22:11:58 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2002/03/20 14:02:38  bkline
+ * Added DROP statement for cdr_newly_published_trials procedure.
+ *
  * Revision 1.9  2002/03/20 05:46:16  bkline
  * Added procedure cdr_newly_published_trails.
  *
@@ -220,7 +223,7 @@ AS
                 AND LEFT(qt1.node_loc, 12) =
                     LEFT(qt2.node_loc, 12)
 
-    SELECT DISTINCT #po.id as po, d.id, d.title
+    SELECT DISTINCT #po.id AS po, d.id, d.title, frag.value AS frag_id
                INTO #pi
                FROM document d
                JOIN query_term po
@@ -234,6 +237,9 @@ AS
                  ON role.doc_id = po.doc_id
                 AND LEFT(role.node_loc, 12) = 
                     LEFT(lo.node_loc, 12)
+               JOIN query_term frag
+                 ON frag.doc_id = po.doc_id
+                AND LEFT(frag.node_loc, 8) = LEFT(po.node_loc, 8)
               WHERE po.path    = '/Person' +
                                  '/PersonLocations' +
                                  '/OtherPracticeLocation' +
@@ -248,10 +254,12 @@ AS
                                  '/OtherPracticeLocation' +
                                  '/ComplexAffiliation' +
                                  '/RoleAtAffiliatedOrganization'
+                AND frag.path  = '/Person/PersonLocations' + 
+                                 '/OtherPracticeLocation/@cdr:id'
                 AND role.value = 'Principal Investigator'
                 AND lo.int_val = @lead_org
 
-             SELECT po.id, po.title, #po.path, pi.id, pi.title
+             SELECT po.id, po.title, #po.path, pi.id, pi.title, pi.frag_id
                FROM document po
                JOIN #po
                  ON #po.id = po.id
