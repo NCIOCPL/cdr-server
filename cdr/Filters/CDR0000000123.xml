@@ -10,38 +10,44 @@
 <!-- ================================================================
            Filter to generate a Protocol Administrative QC Report
      ================================================================ -->
-  
-  <xsl:transform       xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                         version="1.0"
-                       xmlns:cdr="cips.nci.nih.gov/cdr">
-    <xsl:include    href = "cdr:name:Module: InLine Markup Formatter"/>
-    <xsl:include    href = "cdr:name:Module: STYLE Default"/>
-    <xsl:output method="html"/>
+<xsl:transform      xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                      version = "1.0"
+                    xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+ <xsl:include   href = "cdr:name:Module: InLine Markup Formatter"/>
+ <xsl:include   href = "cdr:name:Module: STYLE Default"/> 
+ 
+ <xsl:output                     method = "html"/>
 
 <!-- ===============================================================
                     Generate Report Headings
      =============================================================== -->
+ <xsl:template                   match = "/">
+  <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+  <HTML>
+   <HEAD>
+    <xsl:variable                 name = "cdrdocs" 
+                                select = "document('cdrx:/*/CdrCtl')"/>
+    <TITLE>
+     <xsl:value-of              select = "document('cdrutil:/docid')"/>
+     <xsl:text>: </xsl:text>
+     <xsl:value-of              select = "substring-before($cdrdocs/
+                                          CdrDocCtl/DocTitle,';')"/>
+    </TITLE>
 
-   <xsl:template match="/">
-  
- 
-   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
-    <HTML>
-       <xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
-      <HEAD>
+    <!--Inline sytle sheet to display H2 and H4 headers in Navy -->
+    <STYLE type='text/css'>
+     <xsl:call-template           name = "defaultStyle"/>  
+    </STYLE>
+   </HEAD>
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif'/> 
+   <xsl:apply-templates         select = "InScopeProtocol"/>
+  </HTML>
+ </xsl:template>
 
-    <TITLE><xsl:value-of select="document('cdrutil:/docid')"/>&#xa0;&#xa0;<xsl:value-of select="substring-before($cdrmydoc/CdrDocCtl/DocTitle,';')"/></TITLE>
-     <!--
-     <LINK REL='stylesheet' 
-           HREF='/stylesheets/protocol2.css' 
-           TYPE='text/css' /> -->
-    </HEAD>
-    <BASEFONT FACE='Arial, Helvetica, sans-serif' /> 
-    <xsl:apply-templates select="InScopeProtocol"/>
-    </HTML>
-    </xsl:template>
-    <xsl:template match="InScopeProtocol">
-    <BODY>
+
+ <xsl:template                   match = "InScopeProtocol">
+  <BODY>
     <b><font size='4'><center>Administrative Protocol Information<br />QC Report</center></font></b>
  
  <b><font size='3'><center><xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/></center></font></b><br />
