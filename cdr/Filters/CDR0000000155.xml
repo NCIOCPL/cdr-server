@@ -362,7 +362,7 @@
 <b><xsl:text>Information Category Name</xsl:text></b><xsl:text>................</xsl:text><xsl:value-of select="StudyCategoryName"/><br />
 <b><xsl:text>Study Focus</xsl:text></b><xsl:text>............................................</xsl:text>
 <xsl:if test="StudyFocus">
-<xsl:for-each select="StudyFocus">
+<xsl:for-each select="//StudyFocus">
 <xsl:value-of select="."/><br /><xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
 &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
 &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
@@ -483,10 +483,20 @@
      ================================================================ -->
   
           <xsl:template match="ProtocolRelatedLinks">
-          <b><font size='4'>Related Protocols</font></b><br /><br />
-          <xsl:for-each select="RelatedProtocolsForQC">
-          <xsl:value-of select="."/><br /><br />
+         <b><font size='4'>Related Protocols
+             </font>
+         </b>
+           <br />
+          <xsl:for-each              select="RelatedProtocols/InScopeProtocol">
+          <xsl:value-of              select="ProtocolIDs/PrimaryID/IDString"/>;
+          <xsl:if                    test ="ProtocolIDs/OtherID/IDString">
+          <xsl:value-of              select="ProtocolIDs/OtherID/IDString"/>;
+          </xsl:if>
+          <xsl:value-of              select="ProtocolTitle
+                                             [@Type='Professional']"/>
+                                 
           </xsl:for-each>
+           <br />
           </xsl:template>
 
     
@@ -988,19 +998,25 @@
      
       <xsl:for-each select="ProtocolSites">
   <u><b><font size='3'>Participating Organizations (for Lead Organization)</font></b></u><br /><br />
-      <xsl:for-each select="OrgSiteID">  
+      <xsl:for-each select="OrgSiteID | PrivatePracticeSiteID">  
        <xsl:value-of select="position()"/>.    
         <b><font size='3'>Organization Name</font></b>
-        <xsl:text>................................</xsl:text>
-      <xsl:value-of select="Organization/
-                            OrganizationNameInformation/
-                            OfficialName/Name"/><br />
-       <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Organization Protocol Status</font></b>
-       <xsl:text>............</xsl:text>
-       <xsl:value-of select="OrgSiteStatus"/><br />
-        <xsl:for-each select="OrgSiteContact">
-       <xsl:if test="SpecificPerson">
-       <xsl:for-each select="SpecificPerson/Person">
+        <xsl:text>..................................</xsl:text>
+      <xsl:value-of    select="Organization/
+                              OrganizationNameInformation/
+                              OfficialName/Name"/>
+       <xsl:if        test  ="PrivatePracticePerson">
+       <xsl:value-of  select = "'Private Practice'"/>
+       </xsl:if>
+       <br /> 
+       <xsl:text>&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Organization Protocol Status</font></b>
+       <xsl:text>...............</xsl:text>
+       <xsl:value-of select="OrgSiteStatus |
+                             PrivatePracticeSiteStatus"/>
+       <br />
+        <xsl:for-each select="OrgSiteContact | PrivatePracticePerson">
+       <xsl:if test="SpecificPerson | Person">
+       <xsl:for-each select="SpecificPerson/Person | Person">
        <xsl:variable name="PerFrag"  select="substring-after(@cdr:ref,'#')"/>
        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Contact</font></b>
           <xsl:text>.....................................................</xsl:text>
@@ -1014,15 +1030,34 @@
           <br />
        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Role</font></b>
                 <xsl:text>............................................................</xsl:text>
-          <xsl:value-of select="../Role"/><br />
+          <xsl:value-of select="../Role | ../../Role"/><br />
          <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Phone</font></b>
                 <xsl:text>........................................................</xsl:text>
         <!--  <xsl:value-of select="PersonLocations/OtherPracticeLocation[$PerFrag=@cdr:id]/SpecificPhone"/>&#xa0;-->
-           <xsl:if   test="../SpecificPhone">
-             <xsl:value-of select="../SpecificPhone"/>
-           <xsl:if test="../SpecificPhone/@Public">
+           <xsl:if   test="../SpecificPhone | PersonLocations/PrivatePractice/
+                           PrivatePracticeLocation[$PerFrag = @cdr:id]/
+                           Phone | PersonLocations/Home[$PerFrag = @cdr:id]/
+                           Phone">
+                           
+             <xsl:value-of select="../SpecificPhone | 
+                                   PersonLocations/PrivatePractice/
+                                   PrivatePracticeLocation[$PerFrag = @cdr:id]/
+                                   Phone |
+                                   PersonLocations/Home[$PerFrag = @cdr:id]/
+                                   Phone"/>
+           <xsl:if test="../SpecificPhone/@Public |
+                          PersonLocations/PrivatePractice/
+                           PrivatePracticeLocation[$PerFrag = @cdr:id]/
+                           Phone/@Public |
+                          PersonLocations/Home[$PerFrag = @cdr:id]/
+                           Phone/@Public">
           <xsl:text>(Public=</xsl:text>
-          <xsl:value-of select="../SpecificPhone/@Public"/>
+          <xsl:value-of select="../SpecificPhone/@Public |
+                                PersonLocations/PrivatePractice/
+                               PrivatePracticeLocation[$PerFrag = @cdr:id]/
+                              Phone/@Public | 
+                              PersonLocations/Home[$PerFrag = @cdr:id]/
+                              Phone/Public"/>
           <xsl:text>)</xsl:text>
           </xsl:if>
           </xsl:if>
@@ -1062,7 +1097,8 @@
 
 <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Toll Free Phone</font></b>
       <xsl:text>......................................</xsl:text>
-      <xsl:value-of select="PersonLocations/OtherPracticeLocation[$PerFrag=@cdr:id]/SpecificTollFreePhone"/>
+      <xsl:value-of select="PersonLocations/OtherPracticeLocation[$PerFrag=@cdr:id]/SpecificTollFreePhone |
+      PersonLocations/PrivatePractice/PrivatePracticeLocation[@PerFrag=@cdr:id]/TollFreePhone"/>
    <xsl:if test="not(PersonLocations/OtherPracticeLocation[$PerFrag=@cdr:id]/SpecificTollFreePhone)">
         
          <i><xsl:value-of           select="PersonLocations/
@@ -1081,9 +1117,12 @@
                                 <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Fax</font></b>
                 <xsl:text>.............................................................</xsl:text>
   <xsl:value-of select="PersonLocations/
-  OtherPracticeLocation[$PerFrag=@cdr:id]/SpecificFax"/>
+  OtherPracticeLocation[$PerFrag=@cdr:id]/SpecificFax |
+   PersonLocations/PrivatePractice/PrivatePracticeLocation[$PerFrag=@cdr:id]/
+    Fax"/>
+  
    <xsl:if test="not(PersonLocations/OtherPracticeLocation[$PerFrag=@cdr:id]/SpecificFax)">
-         
+  
   <i><xsl:value-of select="PersonLocations/OtherPracticeLocation[$PerFrag=@cdr:id]/OrganizationLocation/Organization/OrganizationLocations/
   OrganizationLocation/Location/Fax"/></i>
  </xsl:if>
@@ -1093,11 +1132,18 @@
                                  
         <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text><b><font size='3'>Email</font></b>
          <xsl:text>..........................................................</xsl:text>
-      <xsl:value-of select="PersonLocations/OtherPracticeLocation[$PerFrag=@cdr:id]/SpecificEmail"/>&#xa0;
+      <xsl:value-of select="PersonLocations/OtherPracticeLocation[$PerFrag=@cdr:id]/SpecificEmail |
+     PersonLocations/PrivatePractice/PrivatePracticeLocation[$PerFrag=@cdr:id]/Email"/>&#xa0;
+   
                                 
-          <xsl:if test="PersonLocations/OtherPracticeLocation[$PerFrag=@cdr:id]/SpecificEmail/@Public">
+          <xsl:if test="PersonLocations/OtherPracticeLocation[$PerFrag=@cdr:id]/SpecificEmail/@Public |
+         PersonLocations/PrivatePractice/PrivatePracticeLocation[$PerFrag=@cdr:id]/Email/@Public">
+   
+          
           <xsl:text>(Public=</xsl:text>
-          <xsl:value-of select="PersonLocations/OtherPracticeLocation[$PerFrag=@cdr:id]/SpecificEmail/@Public"/>
+          <xsl:value-of select="PersonLocations/OtherPracticeLocation[$PerFrag=@cdr:id]/SpecificEmail/@Public |
+          PersonLocations/PrivatePractice/PrivatePracticeLocation[$PerFrag=@cdr:id]/Email/@Public"/>
+   
              
           <xsl:text>)</xsl:text>
           </xsl:if>
@@ -1124,10 +1170,12 @@ OrganizationLocation/Organization
 
 
     <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;WebSite</font></b>
-    <xsl:text>...........................................</xsl:text>
-    <xsl:value-of select="PersonLocations/OtherPracticeLocation[$PerFrag=cdr:id]/SpecificWebSite/@cdr:xref"/>
+    <xsl:text>.....................................................</xsl:text>
+    <xsl:value-of select="PersonLocations/OtherPracticeLocation[$PerFrag=cdr:id]/SpecificWebSite/@cdr:xref |
+     PersonLocations/PrivatePractice/PrivatePracticeLocation[$PerFrag=@cdr:id]/WebSite/@cdr:xref"/>
    
-  <!--  <br />
+   
+   <br />
      <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
                  &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
                  &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
@@ -1137,11 +1185,12 @@ OrganizationLocation/Organization
                  &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
                  &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
                  &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-                 &#xa0;&#xa0;
-        </xsl:text>-->
-        <br />     
-     <xsl:value-of select="PersonLocations/OtherPracticeLocation[$PerFrag=cdr:id]/SpecificWebSite"/>
-        <br />
+                 &#xa0;&#xa0;&#xa0;
+        </xsl:text>
+        
+     <xsl:value-of select="PersonLocations/OtherPracticeLocation[$PerFrag=cdr:id]/SpecificWebSite |
+         PersonLocations/PrivatePractice/PrivatePracticeLocation[$PerFrag=@cdr:id]/WebSite"/>
+   <br />
 
 
 
@@ -1183,7 +1232,7 @@ OrganizationLocation/Organization
                                                          
           </xsl:for-each>              
           </xsl:if>  
-         <xsl:if test="GenericPerson">
+        <xsl:if test="GenericPerson">
           <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;Generic Title</font></b>
           <xsl:text>...........................................</xsl:text>
           <xsl:value-of select="GenericPerson/PersonTitle"/><br />
@@ -1231,28 +1280,28 @@ OrganizationLocation/Organization
           <xsl:text>)</xsl:text>
           </xsl:if>
           
-       <!--   <xsl:if          test="not(GenericPerson/GenericPersonContact/
+          <xsl:if          test="not(GenericPerson/GenericPersonContact/
                                      ContactDetail/Phone)">
            <i>
           <xsl:value-of    select ="../Organization/OrganizationLocations/
                                     OrganizationLocation/Location/Phone"/>
            </i>
-           </xsl:if>-->
+           </xsl:if>
             <br />
 
-         
+        
         
          <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;Toll Free Phone</font></b>
           <xsl:text>....................................</xsl:text>
-          <xsl:value-of   select="GenericPerson/GenericPersonContact/ContactDetail/TollFreePhone"/>
-      <!--   <xsl:if          test="not(GenericPerson/GenericPersonContact/
+          <xsl:value-of   select="GenericPerson/GenericPersonContact/ContactDetail/TollFreePhone"/>-->
+         <xsl:if          test="not(GenericPerson/GenericPersonContact/
                                      ContactDetail/TollFreePhone)">
            <i>
           <xsl:value-of   select = "../Organization/OrganizationLocations/
                                     OrganizationLocation/Location/
                                      TollFreePhone"/>
            </i>
-           </xsl:if>-->
+           </xsl:if>
            <br /> 
 
     <b><font size='3'>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;Fax</font></b>
@@ -1317,9 +1366,7 @@ OrganizationLocation/Organization
           </xsl:for-each>
           </xsl:for-each>
           </xsl:for-each>
-        <!--  </xsl:for-each>
-          </xsl:for-each>-->
-
+        
           </xsl:template>
 
      <!-- ==============================================================
@@ -1331,7 +1378,41 @@ OrganizationLocation/Organization
                                                
          <xsl:apply-templates      select = "."  mode = "PE"/>
          </xsl:template>
+
+        <!-- ==============================================================
+                     Display Dated Action
+       ============================================================== -->
+
+         <xsl:template             match = "DatedAction">
+          <b>
+        <font size='4'><xsl:text>Dated Action</xsl:text></font>
+          </b>
+          <br />
+          <br />
+          <b>
+        <font size='3'><xsl:text>Action Description</xsl:text></font>
+         <br />
+         </b>
+        <xsl:value-of             select = "ActionDescription"/>
+        <br />
+        <br />
+        <b>
+        <font size='3'><xsl:text>Action Date</xsl:text></font>
+        </b>
+        <br />
+        <xsl:value-of             select ="ActionDate"/>
+         <br />
+         <br />
+        <b>
+         <font size='3'><xsl:text>Comment</xsl:text></font>
+        </b>   
+        <br />
+        <xsl:value-of             select ="Comment"/>                           
+        <br />
+        <br />
+         </xsl:template>
      
+                         
                          
             
 
