@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.10 2001-05-10 02:07:23 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.11 2001-05-23 01:16:34 ameyer Exp $
  *
  */
 
@@ -341,48 +341,65 @@ static cdr::String CdrPutDoc (
 ) {
     bool cmdCheckIn,            // True=Check in doc, else doc still locked
          cmdVersion,            // True=Create new version in version control
+         cmdPublishVersion,     // True=New version ctl version is publishable
          cmdValidate;           // True=Perform validation, else just store
     cdr::String cmdReason,      // Reason to associate with new version
                 errorStr;       // Error string returned by validation
-    cdr::dom::Node topNode,     // Top level node in command
-                   child,       // Child node in command
+    cdr::dom::Node child,       // Child node in command
                    docNode;     // Node containing CdrDoc
+    cdr::dom::NamedNodeMap attrMap; // Map of attributes in DocCtl subelement
+    cdr::dom::Node attr;        // Single attribute from map
 
 
-    // Default values, may be replace by elements in command
-    cmdVersion  = false;
-    cmdValidate = true;
+    // Default values, may be replaced by elements in command
+    cmdVersion        = false;
+    cmdPublishVersion = false;
+    cmdValidate       = true;
+    cmdCheckIn        = false;
 
     // Default reason is NULL created by cdr::String contructor
     cmdReason   = L"";
 
     // Parse command to get document and relevant parts
-    topNode = cmdNode.getFirstChild();
-    while (topNode != 0) {
-        if (topNode.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
-            cdr::String name = topNode.getNodeName();
+    child = cmdNode.getFirstChild();
+    while (child != 0) {
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String name = child.getNodeName();
 
             // User must specify whether to check-in (unlock) the
             //   document or leave it locked
             if (name == L"CheckIn")
-                cmdCheckIn = cdr::ynCheck (cdr::dom::getTextContent (topNode),
+                cmdCheckIn = cdr::ynCheck (cdr::dom::getTextContent (child),
                                            false, L"CheckIn");
 
-            else if (name == L"Version")
-                cmdVersion = cdr::ynCheck (cdr::dom::getTextContent (topNode),
+            else if (name == L"Version") {
+                cmdVersion = cdr::ynCheck (cdr::dom::getTextContent (child),
                                            false, L"Version");
+                // If versioning, must specify publishability of new version
+                if (cmdVersion) {
+                    attrMap = child.getAttributes();
+                    if ((attr = attrMap.getNamedItem ("Publishable")) == NULL)
+                        throw cdr::Exception (
+                            L"Missing required 'Publishable' attribute "
+                            L"in Version element");
+                    cmdPublishVersion =
+                        cdr::ynCheck (cdr::String (attr.getNodeValue()), false,
+                            L"'Publishable' attribute of Version element");
+                }
+            }
+
 
             else if (name == L"Validate")
-                cmdValidate = cdr::ynCheck (cdr::dom::getTextContent (topNode),
+                cmdValidate = cdr::ynCheck (cdr::dom::getTextContent (child),
                                            false, L"Validate");
 
             else if (name == L"Reason")
-                cmdReason = cdr::dom::getTextContent (topNode);
+                cmdReason = cdr::dom::getTextContent (child);
 
             else if (name == L"CdrDoc")
 
                 // Save node for later use
-                docNode = topNode;
+                docNode = child;
 
             else {
                 throw cdr::Exception (L"CdrDoc: Unrecognized element '" +
@@ -390,7 +407,7 @@ static cdr::String CdrPutDoc (
             }
         }
 
-        topNode = topNode.getNextSibling ();
+        child = child.getNextSibling ();
     }
 
     // Construct a doc object containing all the data
@@ -491,6 +508,12 @@ static cdr::String CdrPutDoc (
     // Add support for queries.
     doc.updateQueryTerms();
 
+    // Append audit info
+    // Have to do this before checkIn so checkIn can use the exact same
+    //   date-time, as taken from the audit trail.
+    auditDoc (dbConn, doc.getId(), session.getUserId(), action,
+              L"CdrPutDoc", cmdReason);
+
     // Checkin must be performed either to checkin or version the doc.
     // If versioning without long term checkin, then an immediate
     //   re-checkout is required.
@@ -503,7 +526,9 @@ static cdr::String CdrPutDoc (
             vcAbandon = false;
 
         // Perform checkIn and (possibly) versioning
-        cdr::checkIn (session, doc.getId(), dbConn, &cmdReason, vcAbandon);
+        cdr::checkIn (session, doc.getId(), dbConn,
+                      cmdPublishVersion ? L"A" : L"I",
+                      &cmdReason, vcAbandon);
 
         // If user wants to keep his lock on the document, we check it out
         //    again.
@@ -511,10 +536,6 @@ static cdr::String CdrPutDoc (
             cdr::checkOut (session, doc.getId(), dbConn,
                            L"Continue editing after versioning");
     }
-
-    // Append audit info
-    auditDoc (dbConn, doc.getId(), session.getUserId(), action,
-              L"CdrPutDoc", cmdReason);
 
     // If we got here okay commit all updates
     dbConn.commit();
@@ -551,8 +572,7 @@ cdr::String cdr::delDoc (
                 errCount;       // Number of link releated errors
     bool        autoCommitted,  // True=Not inside SQL transaction at start
                 cmdValidate;    // True=Validate that nothing links to doc
-    cdr::dom::Node topNode,     // Top level node in command
-                   child,       // Child node in command
+    cdr::dom::Node child,       // Child node in command
                    docNode;     // Node containing CdrDoc
     cdr::ValidRule vRule;       // Validation request to CdrDelLinks
     cdr::StringList errList;    // List of errors from CdrDelLinks
@@ -565,29 +585,29 @@ cdr::String cdr::delDoc (
     docId       = -1;
 
     // Parse incoming command
-    topNode = cmdNode.getFirstChild();
-    while (topNode != 0) {
-        if (topNode.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
-            cdr::String name = topNode.getNodeName();
+    child = cmdNode.getFirstChild();
+    while (child != 0) {
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String name = child.getNodeName();
 
             if (name == L"DocId") {
-                docIdStr = cdr::dom::getTextContent (topNode);
+                docIdStr = cdr::dom::getTextContent (child);
                 docId    = docIdStr.extractDocId ();
             }
 
             else if (name == L"Validate")
-                cmdValidate = cdr::ynCheck (cdr::dom::getTextContent (topNode),
+                cmdValidate = cdr::ynCheck (cdr::dom::getTextContent (child),
                                            false, L"Validate");
 
             else if (name == L"Reason")
-                cmdReason = cdr::dom::getTextContent (topNode);
+                cmdReason = cdr::dom::getTextContent (child);
 
             else
                 throw cdr::Exception (L"CdrDelDoc: Unrecognized element '" +
                                         name + L"' in command");
         }
 
-        topNode = topNode.getNextSibling ();
+        child = child.getNextSibling ();
     }
 
     // Get document type, need it to check user authorization
@@ -631,7 +651,8 @@ cdr::String cdr::delDoc (
                                   L" by another user");
 
         // If it's checked out, we'll check it in
-        checkIn (session, docId, conn, &cmdReason, false, false);
+        // No version is created in version control
+        checkIn (session, docId, conn, L"I", &cmdReason, false, false);
     }
 
     // Update the link net to delete links from this document
