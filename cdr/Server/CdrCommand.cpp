@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.cpp,v 1.16 2000-12-28 13:29:26 bkline Exp $
+ * $Id: CdrCommand.cpp,v 1.17 2001-01-17 21:49:18 bkline Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2000/12/28 13:29:26  bkline
+ * Added entry for CdrGetSchema command.
+ *
  * Revision 1.15  2000/10/27 02:31:55  ameyer
  * ifdef'd out the delDoc stub.
  *
@@ -97,7 +100,10 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
         CommandMap(L"CdrFilter",        cdr::filter),
         CommandMap(L"CdrGetLinks",      cdr::getLinks),
         CommandMap(L"CdrListDocTypes",  cdr::listDocTypes),
-        CommandMap(L"CdrGetSchema",     cdr::getSchema),
+        CommandMap(L"CdrAddDocType",    cdr::addDocType),
+        CommandMap(L"CdrModDocType",    cdr::modDocType),
+        CommandMap(L"CdrDelDocType",    cdr::delDocType),
+        CommandMap(L"CdrGetDocType",    cdr::getDocType),
         CommandMap(L"CdrShutdown",      cdr::shutdown)
     };
     for (size_t i = 0; i < sizeof map / sizeof *map; ++i) {
@@ -294,6 +300,30 @@ cdr::String cdr::report(cdr::Session& session,
 cdr::String cdr::filter(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
                         cdr::db::Connection& dbConnection) {
+    return stub(L"Filter");
+}
+
+cdr::String cdr::addDocType(cdr::Session& session,
+                            const cdr::dom::Node& commandNode,
+                            cdr::db::Connection& dbConnection) {
+    return stub(L"Filter");
+}
+
+cdr::String cdr::modDocType(cdr::Session& session,
+                            const cdr::dom::Node& commandNode,
+                            cdr::db::Connection& dbConnection) {
+    return stub(L"Filter");
+}
+
+cdr::String cdr::delDocType(cdr::Session& session,
+                            const cdr::dom::Node& commandNode,
+                            cdr::db::Connection& dbConnection) {
+    return stub(L"Filter");
+}
+
+cdr::String cdr::getDocType(cdr::Session& session,
+                            const cdr::dom::Node& commandNode,
+                            cdr::db::Connection& dbConnection) {
     return stub(L"Filter");
 }
 #endif
