@@ -15,7 +15,9 @@
  Tells us which of the lead organizations we a dealing with.
  ========================================================================== -->
  <xsl:param                      name = "leadOrgId"/>
-
+ <!-- Used for testing only................
+                               select = "'CDR0000036412'"/>
+ -->
  <!--
  ==========================================================================
  Rule for the root of the document.
@@ -51,9 +53,6 @@
  <!--
  ==========================================================================
  Grab the protocol status and descend to the lead org of interest.
-
-
-
  ========================================================================== -->
  <xsl:template                  match = "ProtocolAdminInfo">
   <xsl:param                     name = "title"/>
@@ -269,6 +268,7 @@
     </xsl:when>
     <xsl:otherwise>
      <xsl:copy-of              select = "$doc/Organization
+
                                              /OrganizationLocations
                                              /OrganizationLocation
                                              /Location[@cdr:id = $fragId]
@@ -339,7 +339,72 @@
 
  <!--
  ==========================================================================
- Assemble the collection of participating organizations.
+ Assemble the collection of participating organizations and private
+ practice sites.
+
+ At the request of Sheri and Lakshmi (issue 591 2003-02-13), the logic
+ for selecting the contact phone to be listed for the protocol sites
+ has been altered as follows (logic compiled 2003-02-24 by RMK from
+ email instructions provided by Lakshmi 2003-02-19 in a message with
+ subject line "Phone numbers on Protocols" and approved by Lakshmi
+ on 2003-02-25):
+
+ If the site is an org site:
+   If the contact is a specific person:
+     If there is a SpecificPhone:
+       Use it
+     Otherwise, if the person location is a private practice location: [1]
+       If there is a Phone element:
+         Use it (ignoring any Public = 'No' attribute)
+       Otherwise:
+         Leave the cell blank
+     Otherwise, if the person location is an other practice location:
+       If there is a SpecificPhone without a Public = 'No' attribute:
+         Use it
+       Otherwise, if there is a SpecificTollFreePhone:
+         Use it
+       Otherwise, if the linked Organization location has a Phone: [2]
+         Use it
+       Otherwise, if the Org location has a TollFreePhone:
+         Use it
+       Otherwise:
+         Leave the cell blank
+     Otherwise [Home location; shouldn't happen]:
+       Leave the cell blank
+   Otherwise [the contact is a generic person]:
+     If there is a Phone element:
+       Use it [ignoring any Public attribute]
+     Otherwise, if there is a TollFreePhone element:
+       Use it
+     Otherwise:
+       Leave the cell blank
+ Otherwise [the site is a private practice site]:
+   If the fragment link is for a PrivatePracticeLocation:
+     If there is a Phone element:
+       Use it [ignore any Public attribute]
+     Otherwise, if there is a TollFreePhone:
+       Use it
+     Otherwise:
+       Leave the cell blank
+   Otherwise:
+     Leave the cell blank [3]
+
+============================================================================
+Notes:
+============================================================================
+[1] Not likely, since this is a site tied to an organization, but the
+    combination is allowed by the schema, and I'm providing for the
+    possibility in case it happens; if it doesn't, no harm will have
+    been done.  Note that I am applying your instructions about ignoring
+    the Public attribute here, carrying over that approach from what
+    you said for private practice sites.
+[2] I'm ignoring the Public attribute here, because your Feb 19 memo
+    says "Also, if there is no Phone [in the Person document], and a
+    Phone exists for the Organization, it is displayed."  Note that
+    the possible presence of the Public attribute here is not mentioned.
+[3] I'm not doing anything at all if the fragment points to an other
+    practice location, as this combination is too ludicrous to consider.
+
  ========================================================================== -->
  <xsl:template                  match = "ProtocolSites">
   <ProtocolSites>
@@ -377,11 +442,11 @@
                                                 $uri)"/>
    </xsl:message>
   </xsl:if>
-  <Site>
+  <OrgSiteName>
    <xsl:value-of               select = "$doc/Organization/
                                          OrganizationNameInformation/
                                          OfficialName/Name"/>
-  </Site>
+  </OrgSiteName>
  </xsl:template>
 
  <!--
@@ -406,6 +471,11 @@
                                select = "concat('cdrx:', $link)"/>
   <xsl:variable                  name = "doc"
                                select = "document($uri)"/>
+  <xsl:variable                  name = "fragId">
+   <xsl:if                       test = "contains($link, '#')">
+    <xsl:value-of              select = "substring-after($link, '#')"/>
+   </xsl:if>
+  </xsl:variable>
   <xsl:if                        test = "not($doc)">
    <xsl:message             terminate = "yes">
     <xsl:value-of              select = "concat('Unable to open specific ',
@@ -413,116 +483,81 @@
                                                 $uri)"/>
    </xsl:message>
   </xsl:if>
-  <xsl:if                        test = "$doc">
-   <PI>
-    <xsl:apply-templates       select = "$doc/Person/PersonNameInformation"/>
-   </PI>
-   <xsl:call-template            name = "findPhone">
-    <xsl:with-param              name = "doc"
-                               select = "$doc"/>
-    <xsl:with-param              name = "link"
-                               select = "$link"/>
-   </xsl:call-template>
-  </xsl:if>
- </xsl:template>
+  <SpecificPerson>
+   <xsl:apply-templates        select = "$doc/Person/PersonNameInformation"/>
+  </SpecificPerson>
 
- <!--
- ==========================================================================
- Find the telephone number for a principal investigator.
- ========================================================================== -->
- <xsl:template                   name = "findPhone">
-  <xsl:param                     name = "doc"/>
-  <xsl:param                     name = "link"/>
-  <xsl:variable                  name = "phone">
+  <!-- See logic for phone specified at template for ProtocolSites. -->
+  <Phone>
    <xsl:choose>
-
-    <!-- A specific phone number in the protocol takes highest precedence. -->
     <xsl:when                    test = "SpecificPhone">
      <xsl:value-of             select = "SpecificPhone"/>
     </xsl:when>
-
-    <!-- If the protocol has no phone, look in the person's address fragment. -->
-    <xsl:otherwise>
-     <xsl:variable               name = "frag">
-      <xsl:call-template         name = "findPersonFragment">
-       <xsl:with-param           name = "doc"
-                               select = "$doc"/>
-       <xsl:with-param           name = "link"
-                               select = "$link"/>
-      </xsl:call-template>
+    <xsl:when                    test = "$doc/Person/PersonLocations/
+                                         OtherPracticeLocation
+                                         [@cdr:id = $fragId]">
+     <xsl:variable               name = "orgLink"
+                               select = "$doc/Person/PersonLocations/
+                                         OtherPracticeLocation
+                                         [@cdr:id = $fragId]/
+                                         OrganizationLocation/@cdr:ref"/>
+     <xsl:variable               name = "orgUri"
+                               select = "concat('cdrx:', $orgLink)"/>
+     <xsl:variable               name = "org"
+                               select = "document($orgUri)"/>
+     <xsl:variable               name = "orgFragId">
+      <xsl:if                    test = "contains($orgLink, '#')">
+       <xsl:value-of           select = "substring-after($orgLink, '#')"/>
+      </xsl:if>
      </xsl:variable>
-
-     <!-- Use the person's specific phone if present, otherwise the org's. -->
-     <xsl:if                     test = "$frag">
-      <xsl:choose>
-       <xsl:when                 test = "$frag/OtherPracticeLocation
-                                              /SpecificPhone">
-        <xsl:value-of          select = "$frag/OtherPracticeLocation
-                                              /SpecificPhone"/>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:call-template       name = "findOrgPhone">
-         <xsl:with-param         name = "personFrag"
-                               select = "$frag"/>
-        </xsl:call-template>
-       </xsl:otherwise>
-      </xsl:choose>
-     </xsl:if>
-    </xsl:otherwise>
+     <xsl:choose>
+      <xsl:when                  test = "$doc/Person/PersonLocations/
+                                         OtherPracticeLocation
+                                         [@cdr:id = $fragId]/SpecificPhone
+                                         [not(@Public='No')]">
+       <xsl:value-of           select = "$doc/Person/PersonLocations/
+                                         OtherPracticeLocation
+                                         [@cdr:id = $fragId]/SpecificPhone
+                                         [not(@Public='No')]"/>
+      </xsl:when>
+      <xsl:when                  test = "$doc/Person/PersonLocations/
+                                         OtherPracticeLocation
+                                         [@cdr:id = $fragId]/
+                                         SpecificTollFreePhone">
+       <xsl:value-of           select = "$doc/Person/PersonLocations/
+                                         OtherPracticeLocation
+                                         [@cdr:id = $fragId]/
+                                         SpecificTollFreePhone"/>
+      </xsl:when>
+      <xsl:when                  test = "$org/Organization/
+                                         OrganizationLocations/
+                                         OrganizationLocation/Location/Phone">
+       <xsl:value-of           select = "$org/Organization/
+                                         OrganizationLocations/
+                                         OrganizationLocation/Location/Phone"/>
+      </xsl:when>
+      <xsl:when                  test = "$org/Organization/
+                                         OrganizationLocations/
+                                         OrganizationLocation/Location/
+                                         TollFreePhone">
+       <xsl:value-of           select = "$org/Organization/
+                                         OrganizationLocations/
+                                         OrganizationLocation/Location/
+                                         TollFreePhone"/>
+      </xsl:when>
+     </xsl:choose>
+    </xsl:when>
+    <xsl:when                    test = "$doc/Person/PersonLocations/
+                                         PrivatePractice/
+                                         PrivatePracticeLocation
+                                         [@cdr:id = $fragId]/Phone">
+     <xsl:value-of             select = "$doc/Person/PersonLocations/
+                                         PrivatePractice/
+                                         PrivatePracticeLocation
+                                         [@cdr:id = $fragId]/Phone"/>
+    </xsl:when>
    </xsl:choose>
-  </xsl:variable>
-
-  <!-- Did we find a phone number anywhere? -->
-  <xsl:if                        test = "$phone and not($phone = '')">
-   <Phone>
-    <xsl:value-of              select = "$phone"/>
-   </Phone>
-  </xsl:if>
- </xsl:template>
-
- <!--
- ==========================================================================
- Find the address fragment for a principal investigator.
- ========================================================================== -->
- <xsl:template                   name = "findPersonFragment">
-  <xsl:param                     name = "doc"/>
-  <xsl:param                     name = "link"/>
-  <xsl:if                        test = "contains($link, '#')">
-   <xsl:variable                 name = "fragId">
-    <xsl:value-of              select = "substring-after($link, '#')"/>
-   </xsl:variable>
-   <xsl:copy-of                select = "$doc/Person/PersonLocations/
-                                        OtherPracticeLocation
-                                        [@cdr:id = $fragId]"/>
-  </xsl:if>
- </xsl:template>
-
- <!--
- ==========================================================================
- Find the organization telephone number behind a principal investigator's
- address fragment.
- ========================================================================== -->
- <xsl:template                   name = "findOrgPhone">
-  <xsl:param                     name = "personFrag"/>
-  <xsl:variable                  name = "link"
-                               select = "$personFrag/OtherPracticeLocation
-                                                    /OrganizationLocation
-                                                    /@cdr:ref"/>
-  <xsl:if                        test = "contains($link, '#')">
-   <xsl:variable                 name = "fragId"
-                               select = "substring-after($link, '#')"/>
-   <xsl:variable                 name = "uri"
-                               select = "concat('cdrx:', $link)"/>
-   <xsl:variable                 name = "doc"
-                               select = "document($uri)"/>
-   <xsl:if                       test = "$doc">
-    <xsl:value-of              select = "$doc/Organization
-                                             /OrganizationLocations
-                                             /OrganizationLocation
-                                             /Location[@cdr:id = $fragId]
-                                             /Phone"/>
-   </xsl:if>
-  </xsl:if>
+  </Phone>
  </xsl:template>
 
  <!--
@@ -532,14 +567,22 @@
  ========================================================================== -->
  <xsl:template                  match = "GenericPerson">
   <GenericPerson>
-   <PersonTitle>
-    <xsl:value-of              select = "PersonTitle"/>
-   </PersonTitle>
-   <Phone>
-    <xsl:value-of              select = "GenericPersonContact/
-                                         ContactDetail/Phone"/>
-   </Phone>
+   <xsl:value-of               select = "PersonTitle"/>
   </GenericPerson>
+  <Phone>
+   <xsl:choose>
+    <xsl:when                    test = "GenericPersonContact/
+                                         ContactDetail/Phone">
+     <xsl:value-of             select = "GenericPersonContact/
+                                         ContactDetail/Phone"/>
+    </xsl:when>
+    <xsl:when                    test = "GenericPersonContact/
+                                         ContactDetail/TollFreePhone">
+     <xsl:value-of             select = "GenericPersonContact/
+                                         ContactDetail/TollFreePhone"/>
+    </xsl:when>
+   </xsl:choose>
+  </Phone>
  </xsl:template>
 
  <!--
@@ -558,8 +601,42 @@
  Extract information for a private practice person.
  ========================================================================== -->
  <xsl:template                  match = "PrivatePracticeSiteID">
-  <xsl:variable                  name = "uri"
+  <xsl:variable                  name = "link"
                                select = "@cdr:ref"/>
+  <xsl:variable                  name = "uri"
+                               select = "concat('cdrx:', $link)"/>
+  <xsl:variable                  name = "doc"
+                               select = "document($uri)"/>
+  <xsl:variable                  name = "fragId">
+   <xsl:if                       test = "contains($uri, '#')">
+    <xsl:value-of              select = "substring-after($uri, '#')"/>
+   </xsl:if>
+  </xsl:variable>
+  <PrivatePracticeSiteName>
+   <xsl:apply-templates        select = "$doc/Person/PersonNameInformation"/>
+  </PrivatePracticeSiteName>
+  <Phone>
+   <xsl:choose>
+    <xsl:when                    test = "$doc/Person/PersonLocations/
+                                         PrivatePractice/
+                                         PrivatePracticeLocation
+                                         [@cdr:id = $fragId]/Phone">
+     <xsl:value-of             select = "$doc/Person/PersonLocations/
+                                         PrivatePractice/
+                                         PrivatePracticeLocation
+                                         [@cdr:id = $fragId]/Phone"/>
+    </xsl:when>
+    <xsl:when                    test = "$doc/Person/PersonLocations/
+                                         PrivatePractice/
+                                         PrivatePracticeLocation
+                                         [@cdr:id = $fragId]/TollFreePhone">
+     <xsl:value-of             select = "$doc/Person/PersonLocations/
+                                         PrivatePractice/
+                                         PrivatePracticeLocation
+                                         [@cdr:id = $fragId]/TollFreePhone"/>
+    </xsl:when>
+   </xsl:choose>
+  </Phone>
  </xsl:template>
 
 </xsl:transform>]]>
