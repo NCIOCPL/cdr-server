@@ -1,0 +1,254 @@
+<CdrDoc Type='Filter' Id='CDR0000256346'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">InLine Markup Formatter</DocTitle>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+  <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                 version="1.0"
+                 xmlns:cdr="cips.nci.nih.gov/cdr">
+  
+<!-- ====================================================================
+                    Display a Summary Reference
+     =================================================================== -->
+
+            <xsl:template match="SummaryRef">
+           <u><xsl:value-of select="."/></u>
+            </xsl:template>
+
+<!-- =========================================================
+                       Link to glossaryTermRefs 
+     =========================================================-->
+<xsl:template match="GlossaryTermRef">
+ <a>
+ <xsl:attribute name="href">
+ <xsl:value-of select="concat('/cgi-bin/cdr/Filter.py?DocId=',@cdr:href,'&amp;Filter=name:Glossary+Term+Display+for+Patient+Summaries')"/>
+ </xsl:attribute>
+<xsl:value-of select="."/>
+</a>
+</xsl:template>
+
+<!--======================================================================
+                       Display an ordered list 
+    ===================================================================== -->
+<xsl:template match="OrderedList[@Style='Arabic']">
+<ol>
+<xsl:for-each select="ListItem">
+<li><xsl:apply-templates/></li><br />
+</xsl:for-each>
+</ol>
+</xsl:template>
+
+<!--======================================================================
+                       Display an ordered list Style-UAlpha
+    ===================================================================== -->
+<xsl:template match="OrderedList[@Style='UAlpha']">
+<ol>
+<xsl:for-each select="ListItem">
+<li type='A'><xsl:apply-templates/></li><br />
+</xsl:for-each>
+</ol>
+</xsl:template>
+
+<!--======================================================================
+                       Display an ordered list Style-LAlpha
+    ===================================================================== -->
+<xsl:template match="OrderedList[@Style='LAlpha']">
+<ol>
+<xsl:for-each select="ListItem">
+<li type='a'><xsl:apply-templates/></li><br />
+</xsl:for-each>
+</ol>
+</xsl:template>
+
+<!--======================================================================
+                       Display an ordered list Style-URoman
+    ===================================================================== -->
+<xsl:template match="OrderedList[@Style='URoman']">
+<ol>
+<xsl:for-each select="ListItem">
+<li type='I'><xsl:apply-templates/></li><br />
+</xsl:for-each>
+</ol>
+</xsl:template>
+
+<!--======================================================================
+                       Display an ordered list Style-LRoman
+    ===================================================================== -->
+<xsl:template match="OrderedList[@Style='LRoman']">
+<ol>
+<xsl:for-each select="ListItem">
+<li type='i'><xsl:apply-templates/></li><br />
+</xsl:for-each>
+</ol>
+</xsl:template>
+
+
+
+ <!-- ===================================================================
+                Display Itemized Lists
+     ================================================================== -->
+
+ <xsl:template match="ItemizedList">
+
+       <b><i><xsl:value-of  select="ListTitle"/></i></b>
+
+       <xsl:choose>
+          <xsl:when test="@Style='bullet'">
+            <xsl:choose>
+           <xsl:when test="@Compact">
+           <ul>
+           <xsl:for-each select="ListItem">
+           <li><xsl:apply-templates/></li><br /><br />
+             </xsl:for-each>
+             </ul>
+            </xsl:when>
+            <xsl:otherwise>
+              <ul>
+             <xsl:for-each select="ListItem">
+             <li type='disc'><xsl:apply-templates/></li>
+             </xsl:for-each>
+             </ul>
+             </xsl:otherwise>
+             </xsl:choose>
+             </xsl:when>
+
+          <xsl:when test="@Style='dash'">
+           <xsl:choose>
+           <xsl:when test="@Compact">
+           <ul>
+           <xsl:for-each select="ListItem">
+           <li type='square'><xsl:apply-templates/></li><br /><br />
+             </xsl:for-each>
+             </ul>
+            </xsl:when>
+            <xsl:otherwise>
+              <ul>
+             <xsl:for-each select="ListItem">
+             <li type='square'><xsl:apply-templates/></li><br />
+             </xsl:for-each>
+             </ul>
+             </xsl:otherwise>
+             </xsl:choose>
+             </xsl:when>
+
+          <xsl:when test="@Style='simple'">
+            <xsl:choose>
+           <xsl:when test="@Compact">
+           <ul>
+           <xsl:for-each select="ListItem">
+           <li class='lnone'><xsl:apply-templates/></li><br /><br />
+             </xsl:for-each>
+             </ul>
+            </xsl:when>
+            <xsl:otherwise>
+              <ul>
+             <xsl:for-each select="ListItem">
+             <li class='lnone'><xsl:apply-templates/></li>
+             </xsl:for-each>
+             </ul>
+             </xsl:otherwise>
+             </xsl:choose>
+             </xsl:when>
+       
+             <xsl:when test="@Style=''">
+            <xsl:choose>
+           <xsl:when test="@Compact">
+           <ul>
+           <xsl:for-each select="ListItem">
+           <li class='lnone'><xsl:apply-templates/></li><br /><br />
+             </xsl:for-each>
+             </ul>
+            </xsl:when>
+            <xsl:otherwise>
+              <ul>
+             <xsl:for-each select="ListItem">
+             <li class='lnone'><xsl:apply-templates/></li>
+             </xsl:for-each>
+             </ul>
+             </xsl:otherwise>
+             </xsl:choose>
+             </xsl:when>
+
+         
+         <xsl:otherwise>
+          <ul>
+          <xsl:for-each select="ListItem">
+          <li class='lnone'><xsl:apply-templates/></li><br />
+          </xsl:for-each>
+          </ul>
+                  
+       </xsl:otherwise>
+       </xsl:choose>
+       </xsl:template>
+
+ 
+   <!-- ==================================================================
+                     Display a Subscript 
+     =================================================================== -->
+
+              <xsl:template match="Subscript">
+              <sub><xsl:apply-templates/></sub>
+              </xsl:template>
+
+<!-- ==================================================================
+                     Display a Superscript 
+     =================================================================== -->
+
+              <xsl:template match="Superscript">
+              <sup><xsl:apply-templates/></sup>
+              </xsl:template>
+
+<!-- ==================================================================
+                     Display Strong 
+     =================================================================== -->
+
+              <xsl:template match="Strong">
+              <b><xsl:apply-templates/></b>
+              </xsl:template>
+
+<!-- ==================================================================
+                     Display Emphasis 
+     =================================================================== -->
+
+              <xsl:template match="Emphasis">
+              <i><xsl:apply-templates/></i>
+              </xsl:template>
+
+<!-- ==================================================================
+              Display DrugName - No formatting required at this time
+     =================================================================== 
+
+              <xsl:template match="DrugName">
+              <xsl:apply-templates/>
+              </xsl:template>-->
+
+
+<!-- ==================================================================
+                     Display Scientific Name 
+     =================================================================== -->
+
+              <xsl:template match="ScientificName">
+              <i><xsl:apply-templates/></i>
+              </xsl:template>
+<!-- ==================================================================
+                     Display Foreign Word 
+     =================================================================== -->
+
+              <xsl:template match="ForeignWord">
+              <i><xsl:apply-templates/></i>
+              </xsl:template>
+
+<!-- ==================================================================
+                     Display Gene Name 
+     =================================================================== -->
+
+              <xsl:template match="GeneName">
+              <i><xsl:apply-templates/></i>
+              </xsl:template>
+
+
+</xsl:transform>]]>
+</CdrDocXml>
+</CdrDoc>
