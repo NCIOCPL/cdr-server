@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.9 2001-05-08 15:00:00 mruben Exp $
+ * $Id: CdrFilter.cpp,v 1.10 2001-06-19 18:54:29 mruben Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2001/05/08 15:00:00  mruben
+ * fixed bug in generating filter results
+ *
  * Revision 1.8  2001/05/04 17:00:49  mruben
  * added attribute to skip output
  *
@@ -46,6 +49,7 @@
 #include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
 #include "CdrException.h"
+#include "CdrFilter.h"
 #include "CdrGetDoc.h"
 #include "CdrString.h"
 
@@ -59,6 +63,56 @@ namespace
   // unique type used to get CdrDocCtl
   const wchar_t CdrDocType[] = L"";
   string filter_messages;
+
+  class ParmList
+  {
+    public:
+      ~ParmList();
+      void addparm(const cdr::String& name, const cdr::String& value);
+      char** g_parms() { return parms.size() == 0 ? NULL : &parms[0]; }
+      
+    private:
+      vector<char*> parms;
+  };
+
+  ParmList::~ParmList()
+  {
+    for (std::vector<char*>::iterator i = parms.begin();
+         i != parms.end();
+         ++i)
+    {
+      delete[] *i;
+      *i = NULL;
+    }
+  }
+
+/***************************************************************************/
+  /* returns pointer to UTF-8 string of data in s.  Note that this string    */
+  /* is owned by the caller and must be delete[]ed.                          */
+  /***************************************************************************/
+  char* parmstr(const cdr::String& s)
+  {
+    string us = s.toUtf8();
+    char* p = new char[s.length() + 1];
+    strcpy(p, us.c_str());
+    return p;
+  }
+
+  void ParmList::addparm(const cdr::String& name, const cdr::String& value)
+  {
+    if (parms.size() == 0)
+    {
+      parms.push_back(parmstr(name));
+      parms.push_back(parmstr(value));
+    }
+    else
+    {
+      parms[parms.size() - 2] = parmstr(name);
+      parms[parms.size() - 1] = parmstr(value);
+    }
+    parms.push_back(NULL);
+    parms.push_back(NULL);
+  }
   
   /***************************************************************************/
   /* get document from the repository.  Error if type not NULL and document  */
@@ -398,7 +452,8 @@ namespace
   /* Process filter on document                                              */
   /***************************************************************************/
   int processStrings(string script, string document,
-                     string& result, cdr::db::Connection& connection)
+                     string& result, cdr::db::Connection& connection,
+                     cdr::FilterParmVector* parms = NULL)
   {
     char* s = NULL;
     char* d = NULL;
@@ -414,6 +469,13 @@ namespace
       strcpy(s, script.c_str());
       d = new char[document.length() + 1];
       strcpy(d, document.c_str());
+
+      ParmList p;
+      if (parms != NULL)
+        for (cdr::FilterParmVector::iterator ip = parms->begin();
+             ip != parms->end();
+             ++ip)
+          p.addparm(ip->first, ip->second);
       
       char *arguments[] = { "/_stylesheet", s,
                             "/_xmlinput", d,
@@ -436,10 +498,11 @@ namespace
         };
         if (SablotRegHandler(proc, HLR_SCHEME, &sh, &connection))
           throw cdr::Exception(L"cannot register Sablotron scheme handler");
-      
+
+        char** pparms = p.g_parms();
         if ((rc = SablotRunProcessor(proc, "arg:/_stylesheet",
                                      "arg:/_xmlinput", "arg:/_output",
-                                     NULL, arguments)))
+                                     pparms, arguments)))
           throw cdr::Exception(L"XSLT error");
 
         if ((rc = SablotGetResultArg(proc, "arg:/_output", &r)))
@@ -470,6 +533,24 @@ namespace
   }
 }
 
+cdr::String filterDocument(const cdr::String& document,
+                           const cdr::String& filter,
+                           cdr::db::Connection& connection,
+                           cdr::String* messages,
+                           cdr::FilterParmVector* parms)
+{
+  filter_messages = "";
+  string result;
+  if (processStrings(filter.toUtf8(), document.toUtf8(), result,
+                     connection, parms))
+      throw cdr::Exception(L"error in XSLT processing");
+
+  if (messages != NULL)
+    *messages = filter_messages;
+
+  return result;
+}
+
 cdr::String cdr::filter(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
                         cdr::db::Connection& connection)
@@ -477,11 +558,6 @@ cdr::String cdr::filter(cdr::Session& session,
   vector<cdr::String> filters;
   cdr::String document;
   cdr::String ui;
-
-  // we need to serialize.  Save current autocommit state so if the
-  // caller has already done so, we don't mess him up
-  bool autocommitted = connection.getAutoCommit();
-  connection.setAutoCommit(false);
 
   // check if we're to do output
   bool output = true;
@@ -524,8 +600,10 @@ cdr::String cdr::filter(cdr::Session& session,
       }
     }
   }
+
+  cdr::FilterParmVector pvector;
   
-  // extract filters from the command
+  // extract filters and parms from the command
   {
     for (cdr::dom::Node child = commandNode.getFirstChild();
          child != NULL;
@@ -536,25 +614,56 @@ cdr::String cdr::filter(cdr::Session& session,
         cdr::String name = child.getNodeName();
         if (name == L"Filter")
           filters.push_back(getDocument(child, connection, NULL, NULL, &ui));
+        else
+        if (name == L"Parms")
+        {
+          for (cdr::dom::Node pchild = child.getFirstChild();
+               pchild != NULL;
+               pchild = pchild.getNextSibling())
+          {
+            cdr::String name = pchild.getNodeName();
+            if (name == L"Parm")
+            {
+              cdr::String name;
+              cdr::String value;
+              for (cdr::dom::Node ppchild = pchild.getFirstChild();
+                   ppchild != NULL;
+                   ppchild = ppchild.getNextSibling())
+              {
+                cdr::String nname = ppchild.getNodeName();
+                cdr::String nvalue;
+                cdr::dom::Node  ppc = ppchild.getFirstChild();
+                if (ppc != NULL
+                      && ppc.getNodeType() == cdr::dom::Node::TEXT_NODE)
+                  nvalue = ppc.getNodeValue();
+                
+                if (nname == L"Name")
+                  name = nvalue;
+                else
+                if (nname == L"Value")
+                  value = nvalue;
+              }
+              if (name.length() != 0)
+                pvector.push_back(pair<cdr::String, cdr::String>(name, value));
+            }
+          }
+        }
       }
     }
   }
 
   string doc(document.toUtf8());
   string result(doc);
+  filter_messages = "";
   for (std::vector<cdr::String>::iterator i = filters.begin();
        i != filters.end();
        ++i)
   {
-    filter_messages = "";
-    if (processStrings(i->toUtf8(), doc, result, connection))
+    if (processStrings(i->toUtf8(), doc, result, connection, &pvector))
       throw cdr::Exception(L"error in XSLT processing");
 
     doc = result;
   }
-
-  // we're done with the database, so we can let others at it
-  connection.setAutoCommit(autocommitted);
 
   result = output ? "<Document><![CDATA[" + result + "]]></Document>\n" : "";
   if (filter_messages.length() != 0)
