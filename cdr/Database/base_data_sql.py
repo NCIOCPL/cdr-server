@@ -1,10 +1,13 @@
 #----------------------------------------------------------------------
 #
-# $Id: base_data_sql.py,v 1.4 2001-12-21 23:15:27 bkline Exp $
+# $Id: base_data_sql.py,v 1.5 2002-02-08 15:01:06 bkline Exp $
 #
 # Generate SQL statements for loading the base CDR database records.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.4  2001/12/21 23:15:27  bkline
+# Retained primary keys for issue and dev_tasks tables.
+#
 # Revision 1.3  2001/12/19 20:46:52  bkline
 # Added exit(0) to keep make happy.
 #
@@ -518,6 +521,52 @@ UPDATE doc_type SET xml_schema = @@IDENTITY WHERE name = %s""" % (
     cursor.close()
 
 #----------------------------------------------------------------------
+# Generate SQL queries for loading the Documentation documents.
+#----------------------------------------------------------------------
+def load_documentation_docs():
+    cursor = conn.cursor()
+    cursor.execute("""\
+SELECT d.val_status, d.val_date, d.title, d.xml, d.comment, d.active_status
+  FROM document d
+  JOIN doc_type t
+    ON t.id = d.doc_type
+ WHERE t.name = 'Documentation'""")
+    for row in cursor.fetchall():
+        print """\
+INSERT INTO document(val_status, val_date, doc_type, title, xml, 
+                     comment, active_status, last_frag_id)
+     SELECT %s, %s, id, %s, %s, %s, %s, 0
+       FROM doc_type
+      WHERE name = 'Documentation'""" % (
+            quote(row[0]), quote(row[1]), quote(row[2]), quote(row[3]),
+            quote(row[4]), quote(row[5]))
+    print "GO"
+    cursor.close()
+
+#----------------------------------------------------------------------
+# Generate SQL queries for loading the MiscellaneousDocument documents.
+#----------------------------------------------------------------------
+def load_miscellaneous_docs():
+    cursor = conn.cursor()
+    cursor.execute("""\
+SELECT d.val_status, d.val_date, d.title, d.xml, d.comment, d.active_status
+  FROM document d
+  JOIN doc_type t
+    ON t.id = d.doc_type
+ WHERE t.name = 'MiscellaneousDocument'""")
+    for row in cursor.fetchall():
+        print """\
+INSERT INTO document(val_status, val_date, doc_type, title, xml, 
+                     comment, active_status, last_frag_id)
+     SELECT %s, %s, id, %s, %s, %s, %s, 0
+       FROM doc_type
+      WHERE name = 'MiscellaneousDocument'""" % (
+            quote(row[0]), quote(row[1]), quote(row[2]), quote(row[3]),
+            quote(row[4]), quote(row[5]))
+    print "GO"
+    cursor.close()
+
+#----------------------------------------------------------------------
 # Do this in the right database.
 #----------------------------------------------------------------------
 print "USE cdr\nGO\n"
@@ -556,4 +605,6 @@ load_css_docs()
 load_filter_docs()
 load_publishing_system_docs()
 load_schema_docs()
+load_documentation_docs()
+load_miscellaneous_docs()
 sys.exit(0)
