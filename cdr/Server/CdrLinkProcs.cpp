@@ -18,9 +18,12 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.8 2002-03-25 20:19:18 bkline Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.9 2002-03-25 21:33:50 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2002/03/25 20:19:18  bkline
+ * Fixed off-by-one loop error in code to parse tag in property string.
+ *
  * Revision 1.7  2001/11/09 22:23:56  bkline
  * Fixed some bugs.
  *
@@ -524,9 +527,9 @@ static cdr::link::LinkChkRelation *parseRelation (const char **stringpp)
 static cdr::link::LinkChkPair *parseRule (const char **rulepp)
 {
     // Data to put in the top of the parse tree
-    cdr::link::LinkChkNode   *leftNode;
-    cdr::link::LinkChkNode   *rightNode;
-    cdr::link::LinkChkBoolOp boolConnector;
+    cdr::link::LinkChkNode   *leftNode     = 0;
+    cdr::link::LinkChkNode   *rightNode    = 0;
+    cdr::link::LinkChkBoolOp boolConnector = cdr::link::boolOr;
 
 
     // Recursive descent parser
