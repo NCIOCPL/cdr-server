@@ -1,9 +1,13 @@
 /*
- * $Id: CdrServer.cpp,v 1.39 2004-03-22 14:27:24 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.40 2004-03-31 03:29:22 ameyer Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.39  2004/03/22 14:27:24  bkline
+ * Adjustments to use of _DEBUG and _NDEBUG symbols to prevent unwanted
+ * linking of the debugging versions of Microsoft's runtime libraries.
+ *
  * Revision 1.38  2004/03/21 21:19:27  bkline
  * Added signal handler for Control-C.
  *
@@ -141,6 +145,7 @@
 #include "CdrDbConnection.h"
 #include "CdrException.h"
 #include "CdrDbStatement.h"
+#include "CdrString.h"
 #include "HeapDebug.h"
 
 // Local constants.
@@ -173,6 +178,10 @@ static bool             timeToShutdown = false;
 static bool             logCommands = true;
 static cdr::log::Log    log;
 
+
+/* This is a C++ function, but needs a C interface */
+static void excep_trans_func(unsigned int u, struct _EXCEPTION_POINTERS *pExp);
+
 /**
  * Creates a socket and listens for connections on it.  Spawns
  * a new thread to handle each incoming connection.
@@ -193,9 +202,20 @@ main(int ac, char **av)
     if (getenv("SUPPRESS_CDR_COMMAND_LOGGING"))
         logCommands = false;
 
-    // In case of catastrophe, don't hang up on console
+    // In case of catastrophe, don't hang up on console, but do abort.
+    // My experiments so using a C++ wrapper work in the
+    //   individual threads, but not at the top level of the
+    //   program.  So I'm still using a plain old C style
+    //   structured exception handler.
+    // We replace the exception catcher here with one with a C++ wrapper
+    //   around cdr::Exception in each started thread.
     if (!getenv ("NOCATCHCRASH"))
-        set_exception_catcher ("d:/cdr/log/CdrServer.crash");
+        set_exception_catcher ("d:/cdr/log/CdrServer.crash", 1);
+
+    // Set new structured exception handler that throws cdr::Exception
+    // Couldn't get this to work here.  It rethrew itself recursively
+    //   in a nasty loop
+    // _set_se_translator (excep_trans_func);
 
     if (WSAStartup(0x0101, &wsadata) != 0) {
         int err = WSAGetLastError();
@@ -253,10 +273,26 @@ main(int ac, char **av)
             SHOW_HEAP_USED("Bottom of main processing loop");
             MEM_REPORT();
         }
-        catch (...) {
-            logTopLevelFailure(L"main processing loop exception",
-                    GetLastError());
+        catch (const cdr::Exception& e) {
+            logTopLevelFailure(L"main processing loop exception: "
+                               + e.what(), 0L);
         }
+        // We used to catch (...) here, but no longer
+        // realDispatcher() now registers a routine for unhandled
+        //   exceptions that rethrows them as cdr::Exceptions.
+        // If error occurs before that it's almost certainly fatal
+        //   andway and is caught by routine registered by
+        //   set_exception_catcher above this.
+        // This is not perfect.  I think there is still a small
+        //   window within which an exception will be uncaught,
+        //   but it's as close to perfect as I've gotten.
+        // If we reinstate the code below, it can intercept exceptions
+        //   headed for SH exception handler registered at program
+        //   entry and prevent aborting on serious errors.
+        // catch (...) {
+        //     logTopLevelFailure(L"main processing loop (...) exception: ",
+        //                        GetLastError());
+        // }
     }
     return EXIT_SUCCESS;
 }
@@ -339,6 +375,9 @@ void realDispatcher(void* arg) {
     cdr::String threadId = cdr::String::toString(GetCurrentThreadId());
     cdr::log::pThreadLog->Write(L"Thread Starting", threadId);
 
+    // Set new structured exception handler that throws cdr::Exception
+    _set_se_translator (excep_trans_func);
+
     int fd = (int)arg;
     std::string request;
     int nBytes;
@@ -351,8 +390,11 @@ void realDispatcher(void* arg) {
             processCommands(fd, request, conn, now);
         }
     }
+    catch (const cdr::Exception e) {
+        cdr::log::pThreadLog->Write (L"realDispatcher1", e.what());
+    }
     catch (...) {
-        cdr::log::pThreadLog->Write (L"realDispatcher", L"Exception caught");
+        cdr::log::pThreadLog->Write (L"realDispatcher2", L"Exception caught");
     }
 
     // Thread is about to go, done with thread specific log
@@ -834,4 +876,27 @@ void logTopLevelFailure(const cdr::String what, unsigned long code)
     wchar_t buf[80];
     swprintf(buf, L"%lu", code);
     cdr::log::WriteFile(what, buf);
+}
+
+/**
+ * If we have told Windows to call this function via
+ *      _set_se_translator (excep_trans_func);
+ * then this will be called when an OS level "structured exception" occurs.
+ *
+ * It throws a C++ cdr::Exception, catchable in C++, with
+ * the info the OS gives us.  Without this, catch (...) will
+ * still catch the exception, but won't give us any info about it.
+ * With this, "catch (cdr::Exception e) {...}" will get info.
+ *
+ * _set_se_translator() _MUST_ be called in each thread, individually.
+ *
+ * Note that exception code u is duplicated in pExp, and therefore
+ * not needed by analyzeException().
+ */
+static void excep_trans_func (unsigned int u, _EXCEPTION_POINTERS* pExp) {
+
+    char *msg = analyzeException (pExp);
+    cdr::String s = cdr::String (msg);
+    std::cout << "In excep_trans_func: " << msg << std::endl;
+    throw cdr::Exception (s);
 }
