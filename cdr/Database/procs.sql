@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.7 2002-01-02 21:58:54 bkline Exp $
+ * $Id: procs.sql,v 1.8 2002-01-29 20:22:41 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2002/01/02 21:58:54  bkline
+ * Added depth paramater for term tree proc.
+ *
  * Revision 1.6  2001/12/19 20:09:47  bkline
  * Added some new procedures.
  *
@@ -23,6 +26,12 @@
  * Revision 1.1  2001/04/08 19:08:34  bkline
  * Initial revision
  */
+
+/*
+ * Switch to the right database.
+ */
+use cdr
+GO
 
 /*
  * Drop old versions.
