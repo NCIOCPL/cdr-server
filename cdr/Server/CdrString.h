@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.21 2001-04-05 22:34:21 ameyer Exp $
+ * $Id: CdrString.h,v 1.22 2002-04-04 01:07:25 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2001/04/05 22:34:21  ameyer
+ * Added ynCheck() prototype.
+ *
  * Revision 1.20  2001/02/28 02:37:16  bkline
  * Added explicit assignment operators.
  *
@@ -73,6 +76,7 @@
 #include <set>
 #include <vector>
 #include <list>
+#include <map>
 
 // IBM DOM implementation.
 #include <dom/DOMString.hpp>
@@ -337,6 +341,7 @@ namespace cdr {
     typedef std::set<String>             StringSet;
     typedef std::vector<String>          StringVector;
     typedef std::list<String>            StringList;
+    typedef std::map<String, String>     NamedValues;
 
     /**
      * Convert an integer to a CDR doc id, with 'CDR' prefix and
