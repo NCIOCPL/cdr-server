@@ -111,9 +111,18 @@
      =================================================================== -->
 <PersonLocations>
 <xsl:if test="PersonLocations/Home">
+<xsl:if test="not(PersonLocations/PrivatePractice)">
+<xsl:if test="not(PersonLocations/OtherPracticeLocation)">
 <xsl:for-each select="PersonLocations/Home">
 <xsl:variable name="id" select="@id"/>
+
 <Home id="{$id}">
+<xsl:if test="../../Status/CurrentStatus='Inactive'">
+<xsl:attribute name="Status">
+<xsl:text>Inactive--Contact Information may not be current</xsl:text>
+</xsl:attribute>
+</xsl:if>
+
 <PostalAddress>
 <xsl:apply-templates select="PostalAddress/Street" mode="copy"/>
 <xsl:apply-templates select="PostalAddress/City" mode="copy"/>
@@ -133,8 +142,9 @@
 <xsl:apply-templates select="PostalAddress/PostalCodePosition" mode="copy"/> 
 </PostalAddress>
 <xsl:if test="Phone">
+<xsl:if test="not(@Public='No')">
 <xsl:apply-templates select="Phone" mode="copy"/>
-
+</xsl:if>
 </xsl:if>
 <xsl:if test="TollFreePhone">
 <xsl:apply-templates select="TollFreePhone" mode="copy"/>
@@ -151,17 +161,25 @@
 </Home>
 </xsl:for-each>
 </xsl:if>
+</xsl:if>
+</xsl:if>
 
 <!-- =====================================================================
             Copy Contact Information for Private Practice
      ==================================================================== --> 
-  
+
 <xsl:if test="PersonLocations/PrivatePractice/PrivatePracticeLocation">
 <xsl:for-each select="PersonLocations/PrivatePractice/PrivatePracticeLocation">
 <xsl:variable name="id" select="@id"/>
 <PrivatePracticeLocation  id="{$id}">
+<xsl:if test="../../../Status/CurrentStatus='Inactive'">
+<xsl:attribute name="Status">
+<xsl:text>Inactive--Contact Information may not be current</xsl:text>
+</xsl:attribute>
+</xsl:if>
+
 <xsl:if test="../PreviousLocation">
-<xsl:attribute name="status">
+<xsl:attribute name="Status">
 <xsl:text>Inactive--Contact Information may not be current</xsl:text>
 </xsl:attribute>
 </xsl:if>
@@ -208,14 +226,23 @@
      ================================================================ -->
 
 <xsl:for-each select="PersonLocations/OtherPracticeLocation">
-<xsl:variable name="ind" select="@id"/>
-<xsl:variable name="Stat" select="Status"/>
+ <xsl:variable name="ind" select="@id"/>
+ <xsl:variable name="Stat" select="Status"/>
  <OtherPracticeLocation id="{$ind}" Status="{$Stat}">
+ 
+ <xsl:if test="../../Status/CurrentStatus='Inactive'">
+<xsl:attribute name="Status">
+<xsl:text>Inactive--Contact Information may not be current</xsl:text>
+</xsl:attribute>
+</xsl:if>
+
+
 <xsl:if test="../PreviousLocation">
 <xsl:attribute name="Status">
 <xsl:text>Inactive--Contact Information may not be current</xsl:text>
 </xsl:attribute>
 </xsl:if>
+
 <xsl:variable name="orgloc" select="Organization/@id"/>
 <xsl:variable name="orgnameloc" select="substring-before(Organization/@id,'#')"/>
 <PersonOrganizationName ref="{$orgnameloc}">
