@@ -163,11 +163,11 @@ VOID ServiceStart (DWORD dwArgc, LPTSTR *lpszArgv)
             }
         }
 
-        DBGLOG("ENTERING WAITFORSINGLEOBJECT", service_log);
+        //DBGLOG("ENTERING WAITFORSINGLEOBJECT", service_log);
         // Servers are now running, wait for shutdown
         if (WaitForSingleObject(hServerStopEvent, RECHECK_TIME) != WAIT_TIMEOUT)
             break;
-        DBGLOG("BACK FROM WAITFORSINGLEOBJECT", service_log);
+        //DBGLOG("BACK FROM WAITFORSINGLEOBJECT", service_log);
     }
 
     DBGLOG("SHUTTING DOWN", service_log);
