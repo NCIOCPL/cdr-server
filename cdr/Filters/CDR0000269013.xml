@@ -6,7 +6,6 @@
 <ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
-
 <!-- Creator:  Volker Englisch
      Created:  11/07/2002        
      Comment:  This filter is the first part of a two part filtering
@@ -14,13 +13,14 @@
                Sort ProtocolSite) is sorting ProtocolSite and ProtPerson
                Elements and combining the ProtPerson fragments from
                identical ProtocolSite fragments.
-               This second part (Vendor Filter: InScopeProtocol - Remove
-               Duplicate ProtocolSite) ensures that each ProtocolSite only
+               The second part (Vendor Filter: InScopeProtocol - Remove
+               Duplicate ProtocolSite) ensures that each 
+               ProtocolSite/ProtPerson combination only
                appears once in the resulting output. -->
 
 <!-- 
  ==================================================================
- $Id: CDR0000269013.xml,v 1.4 2002-11-15 16:31:02 venglisc Exp $
+ $Id: CDR0000269013.xml,v 1.5 2002-11-15 17:44:00 venglisc Exp $
 
  $Log: not supported by cvs2svn $
  ================================================================== -->
@@ -97,17 +97,15 @@
    </xsl:attribute>
 
    <xsl:copy-of                select = "SiteName"/>
-   <xsl:for-each               select = "ProtocolSites
+   <xsl:for-each               select = "/Protocol/ProtocolAdminInfo
+                                         /ProtocolSites
                                          /ProtocolSite[
                                            substring(@ref, 1, 13)=$siteID]
-                                         /ProtPerson[
-                                           not(.=preceding::ProtPerson)] |
-                                         ProtocolSites
-                                         /ProtocolSite[@ref=$siteID]
-                                         /ProtPerson[
-                                           not(.=preceding::ProtPerson)]">
-    <xsl:sort                  select = "."/>
+                                         /ProtPerson">
+    <xsl:sort/>
+    <xsl:apply-templates       select = "."/>
    </xsl:for-each>
+
   </ProtocolSite>
  </xsl:template>
 
