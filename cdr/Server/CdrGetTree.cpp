@@ -1,9 +1,12 @@
 /*
- * $Id: CdrGetTree.cpp,v 1.2 2001-04-08 22:44:31 bkline Exp $
+ * $Id: CdrGetTree.cpp,v 1.3 2002-01-02 21:59:25 bkline Exp $
  *
  * Retrieves tree context information for terminology term.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2001/04/08 22:44:31  bkline
+ * Optimized to use stored procedure; much faster.
+ *
  * Revision 1.1  2001/04/07 21:17:46  bkline
  * Initial revision
  */
@@ -23,6 +26,7 @@ cdr::String cdr::getTree(cdr::Session& session,
 
     // Extract the document id from the command.
     int docId = 0;
+    int depth = 1;
     cdr::dom::Node child = commandNode.getFirstChild();
     while (child != 0) {
         if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
@@ -31,6 +35,11 @@ cdr::String cdr::getTree(cdr::Session& session,
                 cdr::String idString = cdr::dom::getTextContent(child);
                 docId                = idString.extractDocId();
             }
+            else if (name == L"ChildDepth") {
+                cdr::String depthString = cdr::dom::getTextContent(child);
+                depth = depthString.getInt();
+            }
+
         }
         child = child.getNextSibling();
     }
@@ -42,9 +51,10 @@ cdr::String cdr::getTree(cdr::Session& session,
     resp << L"<CdrGetTreeResp>\n";
 
     // Invoke the stored procedure to collect the tree information.
-    std::string proc = "{call cdr_get_term_tree(?)}";
+    std::string proc = "{call cdr_get_term_tree(?,?)}";
     cdr::db::PreparedStatement stmt = conn.prepareStatement(proc);
     stmt.setInt(1, docId);
+    stmt.setInt(2, depth);
     cdr::db::ResultSet rs1 = stmt.executeQuery();
 
     // Extract the child/parent pairs.
