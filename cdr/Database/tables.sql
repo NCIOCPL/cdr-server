@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.7 2000-04-13 22:09:05 bkline Exp $
+ * $Id: tables.sql,v 1.8 2000-04-14 15:55:14 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2000/04/13 22:09:05  bkline
+ * Cleaned up DDL to make it runnable.
+ *
  * Revision 1.6  2000/04/11 22:46:25  ameyer
  * Minor changes to link related tables.
  *
@@ -41,7 +44,7 @@
 CREATE TABLE common
         (tag VARCHAR(32) PRIMARY KEY,
  description VARCHAR(255) NOT NULL,
-         dtd VARCHAR(255) NULL)
+         dtd NVARCHAR(255) NULL)
 
 /* 
  * Valid categories for control values.
@@ -68,7 +71,7 @@ CREATE TABLE ctl_grp
 CREATE TABLE ctl
         (grp INTEGER NOT NULL REFERENCES ctl_grp,
         name VARCHAR(32) NOT NULL,
-         val VARCHAR(255) NULL,
+         val NVARCHAR(255) NULL,
      comment VARCHAR(255) NULL,
  PRIMARY KEY (grp, name))
 
@@ -121,6 +124,7 @@ CREATE TABLE session
          usr INTEGER NOT NULL REFERENCES usr,
    initiated DATETIME NOT NULL,
     last_act DATETIME NOT NULL,
+       ended DATETIME NULL,
      comment VARCHAR(255) NULL)
 
 /* 
@@ -164,9 +168,9 @@ CREATE TABLE doc_type
         name VARCHAR(32) NOT NULL,
       format INTEGER NOT NULL REFERENCES format,
      created DATETIME NOT NULL,
-  versioning CHAR NOT NULL,
-         dtd TEXT NOT NULL,
-  xml_schema TEXT NOT NULL,
+  versioning CHAR NOT NULL DEFAULT 'Y',
+         dtd NTEXT NOT NULL,
+  xml_schema NTEXT NOT NULL,
      comment VARCHAR(255) NULL)
 
 /* 
@@ -179,7 +183,7 @@ CREATE TABLE doc_type
  *               for this function
  */
 CREATE TABLE action
-         (id INTEGER PRIMARY KEY,
+         (id INTEGER IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL,
      comment VARCHAR(255) NULL)
 
@@ -251,7 +255,7 @@ CREATE TABLE document
        title VARCHAR(255) NOT NULL,
     modified DATETIME NULL,
     modifier INTEGER NULL REFERENCES usr,
-         xml TEXT NOT NULL,
+         xml NTEXT NOT NULL,
      comment VARCHAR(255) NULL)
 
 /* 
@@ -326,7 +330,7 @@ CREATE TABLE attr
          (id INTEGER NOT NULL REFERENCES document,
         name VARCHAR(32) NOT NULL,
          num INTEGER NOT NULL,
-         val VARCHAR(255) NULL,
+         val NVARCHAR(255) NULL,
      comment VARCHAR(255) NULL,
  PRIMARY KEY (id, name, num))
 
