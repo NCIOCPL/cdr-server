@@ -1,7 +1,11 @@
 /*
- * $Id: CdrXsd.cpp,v 1.16 2001-07-20 14:55:02 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.17 2001-09-19 18:45:17 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2001/07/20 14:55:02  bkline
+ * Added support for ID/IDREF.  Added hasAttribute() method to Schema
+ * type.  First cut at elemsWithAttr() method.
+ *
  * Revision 1.15  2001/06/12 22:38:03  bkline
  * Added mixing #IMPLIED for readonly attribute decl.
  *
@@ -1150,10 +1154,11 @@ void cdr::xsd::ComplexType::resolveGroupRefs(const Schema& schema)
 void cdr::xsd::validateDocAgainstSchema(
         cdr::dom::Element&         docElem,
         cdr::dom::Element&         schemaElem,
-        cdr::StringList&           errors)
+        cdr::StringList&           errors,
+        cdr::db::Connection*       conn)
 {
     // Parse the schema
-    cdr::xsd::Schema schema(schemaElem);
+    cdr::xsd::Schema schema(schemaElem, conn);
 
     // Use the schema to validate the XML portion of the document
     cdr::xsd::Element schemaElement = schema.getTopElement();
@@ -1269,12 +1274,28 @@ void validateElement(
     const cdr::xsd::ComplexType* complexType;
     simpleType  = dynamic_cast<const cdr::xsd::SimpleType*>(&type);
     complexType = dynamic_cast<const cdr::xsd::ComplexType*>(&type);
-    if (simpleType)
+    if (simpleType) {
         validateSimpleType(docElement.getNodeName(),
                            L"",
                            cdr::dom::getTextContent(docElement),
                            *simpleType,
                            errors);
+        
+        // Make sure there are no attributes present.
+        cdr::dom::NamedNodeMap attrs = docElement.getAttributes();
+        int nAttrs = attrs.getLength();
+        for (int i = 0; i < nAttrs; ++i) {
+            cdr::dom::Node  attr = attrs.item(i);
+            cdr::String     name = attr.getNodeName();
+            cdr::String err = cdr::String(L"Unexpected attribute ")
+                            + name
+                            + L"='"
+                            + cdr::String(attr.getNodeValue())
+                            + L"' in element "
+                            + cdr::String(docElement.getNodeName());
+            errors.push_back(err);
+        }
+    }
     else {
         bool denormalized = validateAttributes(docElement,
                                                *complexType,
@@ -6536,14 +6557,19 @@ void cdr::xsd::Schema::writeDtdElement(cdr::xsd::Element& elem,
 
         // Handle the attributes, if any.
         if (cType->getAttrCount() > 0 || isTopElement) {
-            bool haveReadonlyAttr = false;
+            bool haveNamespaceAttr = false;
+            bool haveReadonlyAttr  = false;
             os << L"<!ATTLIST " << elem.getName();
             cdr::xsd::AttrEnum attrs = cType->getAttributes();
             while (attrs != cType->getAttrEnd()) {
                 cdr::xsd::Attribute* a = (attrs++)->second;
                 cdr::String aName = a->getName();
-                if (isTopElement && aName == L"readonly")
-                    haveReadonlyAttr = true;
+                if (isTopElement) {
+                    if (aName == L"readonly")
+                        haveReadonlyAttr = true;
+                    else if (aName == L"xmlns:cdr")
+                        haveNamespaceAttr = true;
+                }
                 os << L" " << a->getName() << L" ";
                 const cdr::xsd::SimpleType* aType = 
                     dynamic_cast<const cdr::xsd::SimpleType*>
@@ -6570,8 +6596,12 @@ void cdr::xsd::Schema::writeDtdElement(cdr::xsd::Element& elem,
                 else
                     os << L" #REQUIRED";
             }
-            if (isTopElement && !haveReadonlyAttr)
-                os << L" readonly CDATA #IMPLIED";
+            if (isTopElement) {
+                if (!haveReadonlyAttr)
+                    os << L" readonly CDATA #IMPLIED";
+                if (!haveNamespaceAttr)
+                    os << L" xmlns:cdr CDATA #IMPLIED";
+            }
             os << L">\n";
         }
 
@@ -6888,11 +6918,106 @@ bool cdr::xsd::Schema::hasAttribute(const cdr::String& elemName,
 void cdr::xsd::Schema::elemsWithAttr(const cdr::String& attrName,
                                      cdr::StringList& elemList) const
 {
+    cdr::StringSet alreadyChecked;
     elemList.clear();
-    ElemTypeMap::const_iterator i = elements.begin();
-    while (i != elements.end()) {
-        cdr::String name = (i++)->first;
-        if (hasAttribute(name, attrName))
-            elemList.push_back(name);
+    checkElementForAttribute(getTopElement(), elemList, alreadyChecked);
+}
+
+/**
+ * Recursively examines the current element and its children to
+ * see which have cdr:id attributes.
+ *
+ *  @param  schema      reference to CDR schema object.
+ *  @param  elem        reference to current element.
+ *  @param  elemList    reference to list we're building of 
+ *                      elements which have cdr:id attributes.
+ *  @param  checked     set to prevent processing the same 
+ *                      element multiple times.
+ */
+void cdr::xsd::Schema::checkElementForAttribute(
+        Element&            elem,
+        cdr::StringList&    elemList,
+        cdr::StringSet&     checked) const
+{
+    // Make sure we haven't already seen this element.
+    cdr::String name = elem.getName();
+    if (checked.find(name) != checked.end())
+        return;
+    checked.insert(name);
+
+    // Find the type of the element.
+    const Type* type = elem.getType(*this);
+    if (!type)
+        throw cdr::Exception(L"Missing type for element", name);
+
+    // See if it's a complex type (not interested in simple types).
+    const ComplexType* cType = dynamic_cast<const ComplexType*>(type);
+    if (!cType)
+        return;
+
+    // See if the element has a cdr:id attribute.
+    if (cType->hasAttribute(L"cdr:id"))
+        elemList.push_back(name);
+
+    // See what kind of content we have.
+    switch (cType->getContentType()) {
+        case ComplexType::EMPTY:
+        case ComplexType::TEXT_ONLY:
+            return;
+        case ComplexType::MIXED:
+        case ComplexType::ELEMENT_ONLY:
+            break;
     }
+
+    // Handle the child elements.
+    checkContentForAttribute(cType->getContent(), elemList, checked);
+}
+
+/**
+ * Examine content for a complex type, looking for elements.  
+ * Content can be a group, a sequence, a choice, or an element.
+ *
+ *  @param  node        address of schema node.
+ *  @param  elemList    reference to list we're building of 
+ *                      elements which have cdr:id attributes.
+ *  @param  checked     set to prevent processing the same 
+ *                      element multiple times.
+ */
+void cdr::xsd::Schema::checkContentForAttribute(
+        const Node*         node,
+        cdr::StringList&    elemList,
+        cdr::StringSet&     checked) const
+{
+    // Sanity check.
+    if (!node)
+        throw cdr::Exception(L"checkElement: NULL content node");
+
+    // Is this a group?
+    const Group* g = dynamic_cast<const Group*>(node);
+    if (g) {
+        checkContentForAttribute(g->getContent(), elemList, checked);
+        return;
+    }
+
+    // Is this an element?
+    const Element* e = dynamic_cast<const Element*>(node);
+    if (e) {
+        // Const cast is required because elements need to resolve their type
+        // name to their type when first used.
+        checkElementForAttribute(const_cast<Element&>(*e), elemList, checked);
+        return;
+    }
+
+    // How about a sequence or choice?
+    const ChoiceOrSequence* cs = dynamic_cast<const ChoiceOrSequence*>(node);
+    if (cs) {
+        NodeEnum nodeEnum = cs->getNodes();
+        while (nodeEnum != cs->getListEnd())
+            checkContentForAttribute(*nodeEnum++, elemList, checked);
+        return;
+    }
+
+    // Better not get here!
+    throw cdr::Exception(L"Internal error: unknown node type while checking "
+                         L"node for attribute");
 }
