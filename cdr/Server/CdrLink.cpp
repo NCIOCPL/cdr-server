@@ -23,9 +23,13 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.25 2003-12-30 22:49:16 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.26 2004-02-10 22:11:20 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2003/12/30 22:49:16  ameyer
+ * Added more error checking for creation of link types.  Also added
+ * a cheap runtime check.
+ *
  * Revision 1.24  2003/09/29 18:15:18  bkline
  * Fixed a memory leak on line 1663 (unwanted use of new operator).
  *
@@ -979,6 +983,7 @@ cdr::String cdr::putLinkType (
 
     // Process the rest of the transaction, restarting at the top
     child = node.getFirstChild();
+    bool gotTargetDocType = false;
     while (child != 0) {
         if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
             name = child.getNodeName();
@@ -988,8 +993,10 @@ cdr::String cdr::putLinkType (
                 addLinkSource (child, conn, linkId);
 
             // Document type we can link to
-            if (name == L"TargetDocType")
+            if (name == L"TargetDocType") {
                 addLinkTarget (cdr::dom::getTextContent (child), conn, linkId);
+                gotTargetDocType = true;
+            }
 
             // Special Properties for this link
             if (name == L"LinkProperties")
@@ -997,6 +1004,12 @@ cdr::String cdr::putLinkType (
         }
         child = child.getNextSibling();
     }
+
+    // A target document type was required
+    if (!gotTargetDocType)
+            throw cdr::Exception (
+                L"No target document type specified for link type '" +
+                 typeName + L"'");
 
     // Restore autocommit status if required
     conn.setAutoCommit(autoCommitted);
