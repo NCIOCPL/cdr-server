@@ -1,10 +1,12 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.1 2000-05-03 15:18:12 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.2 2000-05-17 12:55:55 bkline Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/05/03 15:18:12  bkline
+ * Initial revision
  */
 
 #include "CdrDom.h"
@@ -30,13 +32,9 @@ cdr::String cdr::getDocString(
 {
     // Go get the document information.
     int docId = docIdString.extractDocId();
-    std::string query = "          SELECT d.created,"
-                        "                 c.name,"
-                        "                 d.val_status,"
+    std::string query = "          SELECT d.val_status,"
                         "                 d.val_date,"
                         "                 d.title,"
-                        "                 d.modified,"
-                        "                 m.name,"
                         "                 d.xml,"
                         "                 d.comment,"
                         "                 t.name,"
@@ -46,27 +44,19 @@ cdr::String cdr::getDocString(
                         "              ON b.id = d.id"
                         "            JOIN doc_type t"
                         "              ON t.id = d.doc_type"
-                        "            JOIN usr c"
-                        "              ON c.id = d.creator"
-                        " LEFT OUTER JOIN usr m"
-                        "              ON m.id = d.modifier"
                         "           WHERE d.id = ?";
     cdr::db::PreparedStatement select = conn.prepareStatement(query);
     select.setInt(1, docId);
     cdr::db::ResultSet rs = select.executeQuery();
     if (!rs.next())
         throw cdr::Exception(L"Unable to load document", docIdString);
-    cdr::String     created   = rs.getString(1);
-    cdr::String     creator   = rs.getString(2);
-    cdr::String     valStatus = rs.getString(3);
-    cdr::String     valDate   = rs.getString(4);
-    cdr::String     title     = rs.getString(5);
-    cdr::String     modified  = rs.getString(6);
-    cdr::String     modifier  = rs.getString(7);
-    cdr::String     xml       = rs.getString(8);
-    cdr::String     comment   = rs.getString(9);
-    cdr::String     docType   = rs.getString(10);
-    cdr::Blob       blob      = rs.getBytes(11);
+    cdr::String     valStatus = rs.getString(1);
+    cdr::String     valDate   = rs.getString(2);
+    cdr::String     title     = rs.getString(3);
+    cdr::String     xml       = rs.getString(4);
+    cdr::String     comment   = rs.getString(5);
+    cdr::String     docType   = rs.getString(6);
+    cdr::Blob       blob      = rs.getBytes(7);
     select.close();
 
     // Just in case the caller sent an ID string not in canonical form.
@@ -74,17 +64,11 @@ cdr::String cdr::getDocString(
     swprintf(canonicalIdString, L"CDR%010d", docId);
 
     // Build the CdrDoc string.
-    if (created.size() > 10)
-        created[10] = L'T';
     cdr::String cdrDoc = cdr::String(L"<CdrDoc><CdrDocCtl><DocId>")
                        + canonicalIdString
                        + L"</DocId><DocType>"
                        + docType
-                       + L"</DocType><DocCreated>"
-                       + created
-                       + L"</DocCreated><DocCreator>"
-                       + creator
-                       + L"</DocCreator><DocValStatus>"
+                       + L"</DocType><DocValStatus>"
                        + valStatus
                        + L"</DocValStatus>";
     if (!valDate.isNull()) {
@@ -94,39 +78,12 @@ cdr::String cdr::getDocString(
     }
     cdrDoc += cdr::String(L"<DocType>") + title + L"</DocType><DocTitle>"
            + title + L"</DocTitle>";
-    if (!modified.isNull()) {
-        if (modified.size() > 10)
-            modified[10] = L'T';
-        cdrDoc += cdr::String(L"<DocModified>") + modified + L"</DocModified>";
-    }
-    if (!modifier.isNull())
-        cdrDoc += cdr::String(L"<DocModifier>") + modifier + L"</DocModifier>";
     if (!comment.isNull())
         cdrDoc += cdr::String(L"<Comment>") + comment + L"</Comment>";
     cdrDoc += L"</CdrDocCtl>";
 
-    // Add the attributes and the main XML for the document.
-    query = "   SELECT name,"
-            "          val"
-            "     FROM attr"
-            "    WHERE id = ?"
-            " ORDER BY id, name, num";
-    cdr::db::PreparedStatement attrQuery = conn.prepareStatement(query);
-    attrQuery.setInt(1, docId);
-    cdr::db::ResultSet attrResultSet = attrQuery.executeQuery();
-
-    cdr::String attrs = L"<CdrDocAttrs>";
-    while (attrResultSet.next()) {
-        cdr::String attrName  = attrResultSet.getString(1);
-        cdr::String attrValue = attrResultSet.getString(2);
-        attrs += cdr::String(L"<CdrAttr><AttrName>")
-              +  attrName
-              +  L"</AttrName><AttrVal>"
-              +  attrValue
-              + L"</AttrVal></CdrAttr>";
-    }
-    cdrDoc += attrs
-           +  L"</CdrDocAttrs><CdrDocXml><![CDATA["
+    // Plug in the body of the document.
+    cdrDoc += L"<CdrDocXml><![CDATA["
            +  xml
            +  L"]]></CdrDocXml>";
 
