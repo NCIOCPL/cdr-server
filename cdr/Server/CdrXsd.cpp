@@ -1,7 +1,12 @@
 /*
- * $Id: CdrXsd.cpp,v 1.13 2001-05-16 15:49:35 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.14 2001-06-12 11:06:54 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2001/05/16 15:49:35  bkline
+ * Fixed bogus mismatch error report; added more context information to
+ * mismatched content error report; fixed reversed logic test bug;
+ * added getValidValueSets command.
+ *
  * Revision 1.12  2001/05/03 18:46:10  bkline
  * Moved in code from ParseSchema.cpp; generating DTD in this module now.
  *
@@ -6492,11 +6497,15 @@ void cdr::xsd::Schema::writeDtdElement(cdr::xsd::Element& elem,
         }
 
         // Handle the attributes, if any.
-        if (cType->getAttrCount() > 0) {
+        if (cType->getAttrCount() > 0 || isTopElement) {
+            bool haveReadonlyAttr = false;
             os << L"<!ATTLIST " << elem.getName();
             cdr::xsd::AttrEnum attrs = cType->getAttributes();
             while (attrs != cType->getAttrEnd()) {
                 cdr::xsd::Attribute* a = (attrs++)->second;
+                cdr::String aName = a->getName();
+                if (isTopElement && aName == L"readonly")
+                    haveReadonlyAttr = true;
                 os << L" " << a->getName() << L" ";
                 const cdr::xsd::SimpleType* aType = 
                     dynamic_cast<const cdr::xsd::SimpleType*>
@@ -6523,6 +6532,8 @@ void cdr::xsd::Schema::writeDtdElement(cdr::xsd::Element& elem,
                 else
                     os << L" #REQUIRED";
             }
+            if (isTopElement && !haveReadonlyAttr)
+                os << L" readonly CDATA";
             os << L">\n";
         }
 
@@ -6531,7 +6542,9 @@ void cdr::xsd::Schema::writeDtdElement(cdr::xsd::Element& elem,
         if (isTopElement) {
             os << L"<!ELEMENT CdrDocCtl (DocId, DocTitle)>\n";
             os << L"<!ELEMENT DocId (#PCDATA)>\n";
+            os << L"<!ATTLIST DocId readonly (yes|no) #IMPLIED>\n";
             os << L"<!ELEMENT DocTitle (#PCDATA)>\n";
+            os << L"<!ATTLIST DocTitle readonly (yes|no) #IMPLIED>\n";
             declaredElems.clear();
             declaredElems.insert(elem.getName());
             declaredElems.insert(L"CdrDocCtl");
