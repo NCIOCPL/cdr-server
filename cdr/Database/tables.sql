@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.65 2002-07-30 19:43:27 pzhang Exp $
+ * $Id: tables.sql,v 1.66 2002-08-07 18:03:08 pzhang Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.65  2002/07/30 19:43:27  pzhang
+ * Added pub_proc_cg_work table.
+ *
  * Revision 1.64  2002/07/30 18:36:24  ameyer
  * Modified batch_job table slightly for wider, varchar job name.
  *
@@ -1234,6 +1237,7 @@ CREATE TABLE pub_proc_doc
      failure CHAR             NULL,
     messages NTEXT            NULL,
      removed CHAR(1)          NULL DEFAULT 'N',
+      subdir VARCHAR(32)      NULL DEFAULT '',
   CONSTRAINT pub_proc_doc_fk        PRIMARY KEY(pub_proc, doc_id, doc_version),
   CONSTRAINT pub_proc_doc_fk_docver FOREIGN KEY(doc_id, doc_version) 
                                     REFERENCES doc_version)
