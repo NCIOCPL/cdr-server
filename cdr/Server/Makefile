@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.60 2002-07-24 15:09:36 bkline Exp $
+# $Id: Makefile,v 1.61 2002-09-07 17:05:34 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.60  2002/07/24 15:09:36  bkline
+# Added performance enhancements to link and query_term table updates.
+#
 # Revision 1.59  2002/07/22 14:26:06  bkline
 # Added commented-out line for debugging Sablotron.
 #
@@ -210,7 +213,7 @@ XML4C  =$(DRV)/usr/xml4c
 SABLOT =$(DRV)/usr/sablot
 #SABLOT = $(DRV)/Sablot-0.95
 REGEX  =$(DRV)/usr/regex
-VCVER  =6
+VCVER  =7
 REVER  =vc$(VCVER)
 CDRINC =.
 INC    =-I$(XML4C)/include -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)
