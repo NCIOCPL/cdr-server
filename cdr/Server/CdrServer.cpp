@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.13 2000-06-15 23:02:20 ameyer Exp $
+ * $Id: CdrServer.cpp,v 1.14 2000-06-23 15:29:01 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2000/06/15 23:02:20  ameyer
+ * Modified logging in processCommand().
+ *
  * Revision 1.12  2000/06/09 04:00:09  ameyer
  * Added logging.
  *
@@ -52,6 +55,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+#include <ctime>
 
 // Project headers.
 #include "CdrCommand.h"
@@ -66,7 +70,7 @@ const short CDR_PORT = 2019;
 const int   CDR_QUEUE_SIZE = 10;
 
 // Local functions.
-static void             cleanup() { WSACleanup(); }
+static void             cleanup();
 static int              readRequest(int, std::string&, const cdr::String&);
 static void             sendResponse(int, const cdr::String&);
 static void             processCommands(int, const std::string&,
@@ -81,7 +85,8 @@ static void             sendErrorResponse(int, const cdr::String&,
 static DWORD __stdcall  dispatcher(LPVOID);
 static DWORD __stdcall  sessionSweep(LPVOID);
 
-static bool timeToShutdown = false;
+static bool             timeToShutdown = false;
+static cdr::log::Log    log;
 
 /**
  * Creates a socket and listens for connections on it.  Spawns
@@ -99,6 +104,7 @@ main(int ac, char **av)
     }
     atexit(cleanup);
     std::cout << "initialized...\n";
+    log.Write("CdrServer", "Starting");
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
@@ -141,6 +147,15 @@ main(int ac, char **av)
         }
     }
     return EXIT_SUCCESS;
+}
+
+/**
+ * Logs server shutdown and cleans up winsock resources.
+ */
+void cleanup()
+{
+    log.Write("CdrServer", "Stopping");
+    WSACleanup(); 
 }
 
 /**
@@ -442,23 +457,47 @@ DWORD __stdcall sessionSweep(LPVOID arg) {
                         " WHERE ended IS NULL"
                         "   AND DATEDIFF(hour, last_act, GETDATE()) > 24";
     int counter = 0;
+    cdr::log::Log log;
+#ifdef LOGSWEEP
+    FILE *fp = fopen("sweep.log", "a");
+    if (fp) {
+        time_t now = time(0);
+        fprintf(fp, "sweep starting at %s", ctime(&now));
+        fclose(fp);
+    }
+#endif
     while (!timeToShutdown) {
-        if (counter++ % 60 == 0) {
-            cdr::db::Connection conn =
-                cdr::db::DriverManager::getConnection(
-                        cdr::db::url,
-                        cdr::db::uid,
-                        cdr::db::pwd);
-            cdr::db::Statement s = conn.createStatement();
-            int rows = s.executeUpdate(query);
-            if (rows > 0) {
-                cdr::String now = conn.getDateTimeString();
-                now[10] = L'T';
-                std::wcerr << L"*** CLEARED " << rows
-                    << L" INACTIVE SESSIONS AT " << now << L"\n";
+        try {
+            if (counter++ % 60 == 0) {
+                cdr::db::Connection conn =
+                    cdr::db::DriverManager::getConnection(cdr::db::url,
+                                                          cdr::db::uid,
+                                                          cdr::db::pwd);
+                cdr::db::Statement s = conn.createStatement();
+                int rows = s.executeUpdate(query);
+#ifdef LOGSWEEP
+                fp = fopen("sweep.log", "a");
+                if (fp) {
+                    time_t now = time(0);
+                    fprintf(fp, "sweep found %d rows at %s", rows, ctime(&now));
+                    fclose(fp);
+                }
+#endif
+                if (rows > 0) {
+                    cdr::String now = conn.getDateTimeString();
+                    now[10] = L'T';
+                    std::wcerr << L"*** CLEARED " << rows
+                               << L" INACTIVE SESSIONS AT " << now << L"\n";
+                }
             }
+            Sleep(5000);
         }
-        Sleep(5000);
+        catch (cdr::Exception e) {
+            log.Write("sessionSweep", e.what());
+        }
+        catch (...) {
+            log.Write("sessionSweep", "unknown exception");
+        }
     }
     return EXIT_SUCCESS;
 }
