@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.5 2000-05-03 15:24:34 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.6 2000-05-04 12:45:25 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/05/03 15:24:34  bkline
+ * Added timestamp for command batch response.
+ *
  * Revision 1.4  2000/04/22 09:33:56  bkline
  * Added transaction support, calling rollback() in exception handlers.
  *
@@ -244,7 +247,7 @@ void processCommands(int fd, const std::string& buf,
     catch (const cdr::Exception& cdrEx) {
         if (!conn.getAutoCommit())
             conn.rollback();
-        sendErrorResponse(fd, cdrEx.getString(), when);
+        sendErrorResponse(fd, cdrEx.what(), when);
     }
     catch (const cdr::dom::DOMException& ex) {
         if (!conn.getAutoCommit())
@@ -333,7 +336,7 @@ cdr::String processCommand(cdr::Session& session,
                                           + cmdName
                                           + L"Resp>\n"
                                           + L"   <Errors>\n    <Err>"
-                                          + e.getString()
+                                          + e.what()
                                           + L"</Err>\n   </Errors>\n"
                                           + L"  </"
                                           + cmdName
