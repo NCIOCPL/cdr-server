@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.20 2002-06-01 00:00:02 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.21 2002-06-19 22:25:25 pzhang Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2002/06/01 00:00:02  bkline
+ * Fixed bug in SQL to get user and date for last document modification.
+ *
  * Revision 1.19  2002/04/04 19:05:24  bkline
  * Fixed ending tag for CdrDocCtl element.
  *
@@ -352,7 +355,7 @@ cdr::String cdr::getDocCtlString(
         throw cdr::Exception(L"Unable to load document", docIdString);
     cdr::String     valStatus = rs.getString(1);
     cdr::String     valDate   = rs.getString(2);
-    cdr::String     title     = cdr::entConvert(rs.getString(3));
+    cdr::String     title     = rs.getString(3);
     cdr::String     comment   = cdr::entConvert(rs.getString(4));
     select.close();
 
