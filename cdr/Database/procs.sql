@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.14 2002-06-09 12:31:43 bkline Exp $
+ * $Id: procs.sql,v 1.15 2002-08-13 19:41:24 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2002/06/09 12:31:43  bkline
+ * Further documentation for ADODB bug.
+ *
  * Revision 1.13  2002/06/07 20:06:35  bkline
  * New stored procedure to support the Person QC report.
  *
@@ -611,3 +614,58 @@ AS
        AND person.int_val  = @docId
   GROUP BY audience.value
 GO
+
+/*
+ * Find all documents (except Citations) linked to the document
+ * specified by the caller.  Returns a result set which includes
+ * the specified document.  The result set contains two columns:
+ * the id of the document (INTEGER) and the name of the document's
+ * type.
+ *
+ *  @param doc_id       primary key of the document to be reported on.
+ */
+CREATE PROC find_linked_docs
+    @doc_id INTEGER
+AS
+    -- Local variables.
+    DECLARE @nrows INTEGER
+
+    -- Create a temporary table for the linked documents.
+    CREATE TABLE #linked_docs (id INTEGER, doc_type VARCHAR(32))
+
+    -- Seed the table with the caller's document ID.
+    INSERT INTO #linked_docs
+         SELECT @doc_id,
+                t.name
+           FROM document d
+           JOIN doc_type t
+             ON t.id = d.doc_type
+          WHERE d.id = @doc_id
+
+    -- Keep inserting until we exhaust the links.  
+    -- Don't get citations.
+    SELECT @nrows = @@ROWCOUNT
+    WHILE @nrows > 0
+    BEGIN
+        INSERT INTO #linked_docs
+        SELECT DISTINCT d.id, t.name
+                   FROM document d
+                   JOIN link_net n
+                     ON n.target_doc = d.id
+                   JOIN doc_type t
+                     ON t.id = d.doc_type
+                   JOIN #linked_docs ld
+                     ON ld.id = n.source_doc
+                  WHERE d.id NOT IN (SELECT id FROM #linked_docs)
+                    AND t.name <> 'Citation'
+        SELECT @nrows = @@ROWCOUNT
+    END
+
+    -- Uncomment this next row if you want to drop the original document
+    -- DELETE FROM #linked_docs WHERE id = @doc_id
+
+    -- Give the caller the results.
+    SELECT DISTINCT id, doc_type FROM #linked_docs
+
+    -- Clean up after ourselves.
+    DROP TABLE #linked_docs
