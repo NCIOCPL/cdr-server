@@ -11,10 +11,6 @@
                          xmlns:cdr = "cips.nci.nih.gov/cdr"
            exclude-result-prefixes = "cdr"
                            version = "1.0">
-<!-- Select the following transform statement if namespace error exists -->
-<!-- xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                         xmlns:cdr = "cips.nci.nih.gov/cdr"
-                           version = "1.0" -->
 
   <xsl:include href = "cdr:name:Module: Vendor Filter Templates"/>
   
@@ -27,6 +23,8 @@
   <xsl:param                      name = "DateFirstPub"
                                 select = "''"/> 
 
+  <!-- For the purpose of output layout. This is fine only when used with
+       indent='yes'. -->
   <xsl:strip-space        elements = "*"/>
 
  <!--
@@ -240,29 +238,7 @@
   </Patient>
  </xsl:template>
 
- <!--
- ====================================================================
- Assemble the EntryCriteria detail section.
- ==================================================================== -->
- <xsl:template               match = "EntryCriteria">
-   <xsl:apply-templates/>
- </xsl:template>
-
-
- <!--
- ====================================================================
- Assemble the Protocol detail section.
- ==================================================================== -->
- <xsl:template               match = "DiseaseCharacteristics |
-                                      PatientCharacteristics |
-                                      PriorConcurrentTherapy |
-                                      GeneralEligibilityCriteria">
-  <xsl:element                name = "{name()}">
-   <xsl:apply-templates/>
-  </xsl:element>
- </xsl:template>
-
-
+ 
  <!--
  ====================================================================
  Assemble the Protocol detail section.
@@ -276,242 +252,95 @@
 
 
 <!-- ==================================================================== 
-     Create the ItemizedList template. (Template used by Patient Section)
+     We should drop this later when mode="copy" is widely applied.
      ==================================================================== -->
   <xsl:template              match = "ItemizedList">
-    <ItemizedList>
-      <xsl:attribute          name = "id">
-        <xsl:value-of       select = "./@cdr:id"/>
-      </xsl:attribute>
-      <xsl:if                 test = "./@Compact">
-       <xsl:attribute         name = "Compact">
-        <xsl:value-of       select = "./@Compact"/>
-       </xsl:attribute>
-      </xsl:if>
-      <xsl:if                 test = "./@Style">
-       <xsl:attribute         name = "Style">
-        <xsl:value-of       select = "./@Style"/>
-       </xsl:attribute>
-      </xsl:if>
-      <xsl:apply-templates/>
-    </ItemizedList>
-  </xsl:template>
-    
-<!-- ==================================================================== 
-     Create the ItemizedList template. 
-     ==================================================================== -->
-  <xsl:template              match = "ItemizedList"
-                              mode = "copy">
-    <ItemizedList>
-      <xsl:attribute          name = "id">
-        <xsl:value-of       select = "./@cdr:id"/>
-      </xsl:attribute>
-      <xsl:if                 test = "./@Compact">
-       <xsl:attribute         name = "Compact">
-        <xsl:value-of       select = "./@Compact"/>
-       </xsl:attribute>
-      </xsl:if>
-      <xsl:if                 test = "./@Style">
-       <xsl:attribute         name = "Style">
-        <xsl:value-of       select = "./@Style"/>
-       </xsl:attribute>
-      </xsl:if>
-      <xsl:apply-templates    mode = "copy"/>
-    </ItemizedList>
+      <xsl:apply-templates  select = "."
+                              mode = "copy"/>
   </xsl:template>
     
 
 
 <!-- ==================================================================== 
-     Create the OrderedList template. (Template used by Patient Section)
+     We should drop this later when mode="copy" is widely applied.
      ==================================================================== -->
   <xsl:template              match = "OrderedList">
-    <OrderedList>
-      <xsl:attribute          name = "id">
-        <xsl:value-of       select = "@cdr:id"/>
-      </xsl:attribute>
-      <!-- To be included in June 2003 update  -->
-      <!-- xsl:if                 test = "./@Compact">
-       <xsl:attribute          name = "Compact">
-        <xsl:value-of       select = "./@Compact"/>
-       </xsl:attribute>
-      </xsl:if -->
-      <xsl:if                 test = "./@Style">
-       <xsl:attribute          name = "Style">
-        <xsl:value-of       select = "./@Style"/>
-       </xsl:attribute>
-      </xsl:if>
-      <xsl:apply-templates/>
-    </OrderedList>
+      <xsl:apply-templates  select = "."
+                              mode = "copy"/>
   </xsl:template>
     
 
 <!-- ==================================================================== 
-     Create the OrderedList template to be called with the mode="copy".
+     Temporarily drop @Compact until June, 2003.
      ==================================================================== -->
-  <xsl:template              match = "OrderedList"
-                              mode = "copy">
-    <OrderedList>
-      <xsl:attribute          name = "id">
-        <xsl:value-of       select = "@cdr:id"/>
-      </xsl:attribute>
-      <!-- To be included in June 2003 update  -->
-      <!--xsl:if                 test = "./@Compact">
-       <xsl:attribute         name = "Compact">
-        <xsl:value-of       select = "./@Compact"/>
-       </xsl:attribute>
-      </xsl:if -->
-      <xsl:if                 test = "./@Style">
-       <xsl:attribute         name = "Style">
-        <xsl:value-of       select = "./@Style"/>
-       </xsl:attribute>
-      </xsl:if>
-      <xsl:apply-templates    mode = "copy"/>
-    </OrderedList>
-  </xsl:template>
+  <xsl:template              match = "OrderedList/@Compact"
+                              mode = "copy"/>
     
-
-
-<!-- ==================================================================== 
-     Create the ListItems for ItemizedList and OrderedList.
-     ==================================================================== -->
-  <xsl:template              match = "ListItem">
-    <ListItem>
-      <xsl:apply-templates/>
-    </ListItem>
-  </xsl:template>
-  <xsl:template              match = "ListItem"
-                              mode = "copy">
-    <ListItem>
-      <xsl:apply-templates    mode = "copy"/>
-    </ListItem>
-  </xsl:template>
-    
-
-<!-- ==================================================================== 
-     Create the ListTitle
-     ==================================================================== -->
-  <xsl:template              match = "ListTitle">
-    <ListTitle>
-      <xsl:apply-templates/>
-    </ListTitle>
-  </xsl:template>
-  <xsl:template              match = "ListTitle"
-                              mode = "copy">
-    <ListTitle>
-      <xsl:apply-templates    mode = "copy"/>
-    </ListTitle>
-  </xsl:template>
-    
+ <!--
+ ====================================================================
+     We should drop this later when mode="copy" is widely applied.
+ ==================================================================== -->
+ <xsl:template               match = "Para">
+      <xsl:apply-templates  select = "."
+                              mode = "copy"/>
+ </xsl:template>
 
  <!--
  ====================================================================
- Assemble the Para element.
+ Drop the cdr namespace in cdr:id with mode = "copy".
  ==================================================================== -->
- <xsl:template               match = "Para"
-                              mode = "copy">
-  <Para>
-   <xsl:attribute             name = "id">
-    <xsl:value-of           select = "@id"/>
-   </xsl:attribute>
-   <xsl:apply-templates       mode = "copy"/>
-  </Para>
- </xsl:template>
- <xsl:template               match = "Para">
-  <Para>
-   <xsl:attribute             name = "id">
-    <xsl:value-of           select = "@id"/>
-   </xsl:attribute>
-   <xsl:apply-templates/>
-  </Para>
- </xsl:template>
-
-
- <!-- ==============================================================
-      Template for extracting Glossary Term definitions for Patient
-      Abstract section
-      Note:  This template has been created in order to correctly 
-             copy the ProtocolRef and GlossaryTermRef elements 
-             during the copy of a node tree.
-      ============================================================== -->
- <xsl:template               match = "GlossaryTermRef | ProtocolRef">
-    <xsl:element              name = "{name()}">
-      <xsl:attribute          name = "href">
-       <xsl:value-of        select = "@cdr:href"/>
-      </xsl:attribute>
-      <xsl:apply-templates/>
-    </xsl:element>
-  </xsl:template>
-
- <xsl:template               match = "GlossaryTermRef | ProtocolRef"
-                              mode = "copy">
-    <xsl:element              name = "{name()}">
-      <xsl:attribute          name = "href">
-       <xsl:value-of        select = "@cdr:href"/>
-      </xsl:attribute>
-      <xsl:apply-templates/>
-    </xsl:element>
-  </xsl:template>
-
-
- <!-- ==============================================================
-      Template for extracting Glossary Term Link definitions for Patient
-      Abstract section
-      ============================================================== -->
- <xsl:template               match = "GlossaryTermLink">
-    <xsl:element              name = "{name()}">
-      <xsl:attribute          name = "ref">
-       <xsl:value-of        select = "@cdr:ref"/>
-      </xsl:attribute>
-      <xsl:apply-templates/>
-    </xsl:element>
-  </xsl:template>
- <xsl:template               match = "GlossaryTermLink"
-                              mode = "copy"> 
-    <xsl:element              name = "{name()}">
-      <xsl:attribute          name = "ref">
-       <xsl:value-of        select = "@cdr:ref"/>
-      </xsl:attribute>
-      <xsl:apply-templates    mode = "copy"/>
-    </xsl:element>
-  </xsl:template>
-
-
- <!-- ==============================================================
-      Template for renaming the attribute name cdr:id
-      ============================================================== -->
  <xsl:template               match = "@cdr:id"
                               mode = "copy">
-      <xsl:attribute          name = "id">
-       <xsl:value-of        select = "."/>
-      </xsl:attribute>
-      <xsl:apply-templates    mode = "copy"/>
-  </xsl:template>
-  
+   <xsl:attribute             name = "id">
+    <xsl:value-of           select = "."/>
+   </xsl:attribute>
+ </xsl:template>
 
- <!-- ==============================================================
-      Template for renaming the attribute name cdr:ref
-      ============================================================== -->
+ <!--
+ ====================================================================
+ Drop the cdr namespace in cdr:ref with mode = "copy".
+ ==================================================================== -->
  <xsl:template               match = "@cdr:ref"
                               mode = "copy">
-      <xsl:attribute          name = "ref">
-       <xsl:value-of        select = "."/>
-      </xsl:attribute>
-      <xsl:apply-templates    mode = "copy"/>
-  </xsl:template>
-  
+   <xsl:attribute             name = "ref">
+    <xsl:value-of           select = "."/>
+   </xsl:attribute>
+ </xsl:template>
 
- <!-- ==============================================================
-      Template for renaming the attribute name cdr:href
-      ============================================================== -->
+ <!--
+ ====================================================================
+ Drop the cdr namespace in cdr:href with mode = "copy".
+ ==================================================================== -->
  <xsl:template               match = "@cdr:href"
                               mode = "copy">
-      <xsl:attribute          name = "href">
-       <xsl:value-of        select = "."/>
-      </xsl:attribute>
-      <xsl:apply-templates    mode = "copy"/>
+   <xsl:attribute             name = "href">
+    <xsl:value-of           select = "."/>
+   </xsl:attribute>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Drop PdqKey with mode = "copy".
+ ==================================================================== -->
+ <xsl:template               match = "@PdqKey"
+                              mode = "copy"/>
+
+ <!--
+ ====================================================================
+ Drop PdqKey to be on the safe side. It doesn't seem to be used.
+ ==================================================================== -->
+ <xsl:template               match = "@PdqKey"/>
+
+
+ <!-- ==============================================================
+     We should drop this later when mode="copy" is widely applied.
+      ============================================================== -->
+ <xsl:template               match = "GlossaryTermRef | 
+                                      GlossaryTermLink |
+                                      ProtocolRef">
+      <xsl:apply-templates  select = "."
+                              mode = "copy"/>
   </xsl:template>
-  
 
  <!--
  ====================================================================
