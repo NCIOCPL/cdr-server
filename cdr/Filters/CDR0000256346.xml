@@ -39,43 +39,84 @@
 <!-- ======================================================================
                        Display an ordered list 
      ===================================================================== -->
-  <xsl:template                  match = "OrderedList[@Style='Arabic'] |
-                                          OrderedList[@Style='UAlpha'] |
-                                          OrderedList[@Style='LAlpha'] |
-                                          OrderedList[@Style='URoman'] |
-                                          OrderedList[@Style='URoman']">
-    <xsl:apply-templates        select = "ListTitle"/>
-
-    <ol>
-    <xsl:for-each               select = "ListItem">
-      <li>
-      
-      <!-- No attribute for Arabic; it is the default. -->
+  <xsl:template                   name = "OrderedList">
+    <xsl:param                    name = "markup"/>
+     
+    <xsl:variable                 name = "style"
+                                select = "@Style"/> 
+                                
+    <!-- Handle ListTitle first. -->
+    <xsl:for-each               select = "Insertion/ListTitle |
+                                          Deletion/ListTitle |
+                                          ListTitle">
       <xsl:choose>
-        <xsl:when                 test = "../@Style='UAlpha'">
-          <xsl:attribute          name = "type">
-            <xsl:text>A</xsl:text>
-          </xsl:attribute>
+        <xsl:when                 test = "name(..) = 'Deletion'">
+          <xsl:if                 test = "$markup = 'Redline'">
+            <strike>             
+            <xsl:apply-templates />                                        
+            </strike>
+          </xsl:if>
         </xsl:when>
-        <xsl:when                 test = "../@Style='LAlpha'">
-          <xsl:attribute          name = "type">
-            <xsl:text>a</xsl:text>
-          </xsl:attribute>
+        <xsl:when                 test = "name(..) = 'Insertion'">
+          <xsl:if                 test = "$markup = 'Redline'">
+            <font color="#FF0000">
+            <xsl:apply-templates />  
+            </font>
+          </xsl:if>
+          <xsl:if                 test = "$markup = 'BoldUnderline'">
+            <u><b>
+            <xsl:apply-templates />
+            </b></u>
+          </xsl:if>
+        </xsl:when> 
+        <xsl:otherwise>                                           
+          <xsl:apply-templates /> 
+        </xsl:otherwise> 
+      </xsl:choose> 
+    </xsl:for-each> 
+
+    <!-- Handle ListItem. -->
+    <ol>
+    <xsl:for-each               select = "Insertion/ListItem |
+                                          Deletion/ListItem |
+                                          ListItem"> 
+      <xsl:choose>
+        <xsl:when                 test = "name(..) = 'Deletion'">
+          <xsl:if                 test = "$markup = 'Redline'">
+            <strike>             
+            <xsl:call-template    name = "OrderedListItem">  
+              <xsl:with-param     name = "style"
+                                select = "$style"/>
+            </xsl:call-template>           
+            </strike>
+          </xsl:if>
         </xsl:when>
-        <xsl:when                 test = "../@Style='URoman'">
-          <xsl:attribute          name = "type">
-            <xsl:text>I</xsl:text>
-          </xsl:attribute>
-        </xsl:when>
-        <xsl:when                 test = "../@Style='LRoman'">
-          <xsl:attribute          name = "type">
-            <xsl:text>i</xsl:text>
-          </xsl:attribute>
-        </xsl:when>
-      </xsl:choose>
-      <xsl:apply-templates/>
-      </li>
-      <br />
+        <xsl:when                 test = "name(..) = 'Insertion'">
+          <xsl:if                 test = "$markup = 'Redline'">
+            <font color="#FF0000">
+            <xsl:call-template    name = "OrderedListItem">  
+              <xsl:with-param     name = "style"
+                                select = "$style"/>
+            </xsl:call-template> 
+            </font>
+          </xsl:if>
+          <xsl:if                 test = "$markup = 'BoldUnderline'">
+            <u><b>
+            <xsl:call-template    name = "OrderedListItem">  
+              <xsl:with-param     name = "style"
+                                select = "$style"/>
+            </xsl:call-template>
+            </b></u>
+          </xsl:if>
+        </xsl:when> 
+        <xsl:otherwise>                                           
+          <xsl:call-template    name = "OrderedListItem">  
+            <xsl:with-param     name = "style"
+                              select = "$style"/>
+          </xsl:call-template>
+        </xsl:otherwise> 
+      </xsl:choose> 
+   
     </xsl:for-each>
     </ol>
   </xsl:template>
@@ -108,53 +149,101 @@
     </ul>
   </xsl:template>
                        
-<!-- ======================================================================
+<!-- =====================================================================
                 Display an Itemized List
-     ===================================================================== -->               
-  <xsl:template                  match = "ItemizedList[@Style='bullet'] |
-                                          ItemizedList[@Style='dash'] |
-                                          ItemizedList[@Style='simple'] |
-                                          ItemizedList">
-    <xsl:apply-templates        select = "ListTitle"/>
-   
-    <ul>
-    <xsl:for-each select="ListItem">      
-      <li>
+     ==================================================================== -->               
+  <xsl:template                   name = "ItemizedList">
+    <xsl:param                    name = "markup"/>
+
+    <xsl:variable                 name = "compact"
+                                select = "@Compact"/>
+    <xsl:variable                 name = "style"
+                                select = "@Style"/> 
+     
+    <!-- Handle ListTitle first. -->
+    <xsl:for-each               select = "Insertion/ListTitle |
+                                          Deletion/ListTitle |
+                                          ListTitle">
       <xsl:choose>
-        <xsl:when                 test = "../@Style='bullet'">
-          <xsl:attribute          name = "type">
-            <xsl:text>disc</xsl:text>
-          </xsl:attribute>
+        <xsl:when                 test = "name(..) = 'Deletion'">
+          <xsl:if                 test = "$markup = 'Redline'">
+            <strike>             
+            <xsl:apply-templates />                                        
+            </strike>
+          </xsl:if>
         </xsl:when>
-        <xsl:when                 test = "../@Style='dash'">
-          <xsl:attribute          name = "type">
-            <xsl:text>square</xsl:text>
-          </xsl:attribute>
+        <xsl:when                 test = "name(..) = 'Insertion'">
+          <xsl:if                 test = "$markup = 'Redline'">
+            <font color="#FF0000">
+            <xsl:apply-templates />  
+            </font>
+          </xsl:if>
+          <xsl:if                 test = "$markup = 'BoldUnderline'">
+            <u><b>
+            <xsl:apply-templates />
+            </b></u>
+          </xsl:if>
+        </xsl:when> 
+        <xsl:otherwise>                                           
+          <xsl:apply-templates /> 
+        </xsl:otherwise> 
+      </xsl:choose> 
+    </xsl:for-each> 
+
+    <ul>
+    <xsl:for-each               select = "Insertion/ListItem |
+                                          Deletion/ListItem |
+                                          ListItem"> 
+                                      
+      <xsl:choose>
+        <xsl:when                 test = "name(..) = 'Deletion'">
+          <xsl:if                 test = "$markup = 'Redline'">
+            <strike>             
+            <xsl:call-template    name = "ItemizedListItem">  
+              <xsl:with-param     name = "style"
+                                select = "$style"/>
+            </xsl:call-template>           
+            </strike>
+          </xsl:if>
         </xsl:when>
-        <xsl:when                 test = "../@Style='simple'">
-          <xsl:attribute          name = "class">
-            <xsl:text>lnone</xsl:text>
-          </xsl:attribute>
-        </xsl:when>       
-        <xsl:when                 test = "not(../@Style)">
-          <xsl:attribute          name = "class">
-            <xsl:text>lnone</xsl:text>
-          </xsl:attribute>
-        </xsl:when>
-      </xsl:choose>                               
-      <xsl:apply-templates/>
-      </li>
+        <xsl:when                 test = "name(..) = 'Insertion'">
+          <xsl:if                 test = "$markup = 'Redline'">            
+            <font color="#FF0000">
+            <xsl:call-template    name = "ItemizedListItem">  
+              <xsl:with-param     name = "style"
+                                select = "$style"/>
+            </xsl:call-template> 
+            </font>
+          </xsl:if>
+          <xsl:if                 test = "$markup = 'BoldUnderline'">
+            <u><b>
+            <xsl:call-template    name = "ItemizedListItem">  
+              <xsl:with-param     name = "style"
+                                select = "$style"/>
+            </xsl:call-template>
+            </b></u>
+          </xsl:if>
+        </xsl:when> 
+        <xsl:otherwise>                                
+          <xsl:call-template    name = "ItemizedListItem">  
+            <xsl:with-param     name = "style"
+                              select = "$style"/>
+          </xsl:call-template>
+        </xsl:otherwise> 
+      </xsl:choose> 
+      
       <xsl:if                     test = "position() != last()">      
         <xsl:choose>
-          <xsl:when               test = "../@Compact='No'">
+          <xsl:when               test = "$compact = 'No'">
             <br />
             <br />
           </xsl:when>
-          <xsl:when               test = "not (../@Style='dash')">
+          <xsl:when               test = "not ($style = 'dash')">
             <br />
           </xsl:when>
         </xsl:choose>
       </xsl:if>
+
     </xsl:for-each>    
     </ul>  
   </xsl:template>          
@@ -211,12 +300,90 @@
 <!-- ======================================================================
         Template handling ListTitle
      ===================================================================== -->  
-  <xsl:template                  match = "ListTitle"> 
-      <br />
-      <b><i>
-      <xsl:apply-templates /> 
-      </i></b>    
+  <xsl:template                  match = "ListTitle">    
+    <br />
+    <b><i>
+    <xsl:apply-templates /> 
+    </i></b>      
   </xsl:template>
+
+<!-- ======================================================================
+        Template handling ListItem in OrderedList
+     ===================================================================== -->  
+  <xsl:template                   name = "OrderedListItem">                                 
+    <xsl:param                    name = "style"/> 
+        
+    <li>      
+      <!-- No attribute for Arabic; it is the default. -->
+      <xsl:choose>
+        <xsl:when                 test = "$style = 'UAlpha'">
+          <xsl:attribute          name = "type">
+            <xsl:text>A</xsl:text>
+          </xsl:attribute>
+        </xsl:when>
+        <xsl:when                 test = "$style = 'LAlpha'">
+          <xsl:attribute          name = "type">
+            <xsl:text>a</xsl:text>
+          </xsl:attribute>
+        </xsl:when>
+        <xsl:when                 test = "$style = 'URoman'">
+          <xsl:attribute          name = "type">
+            <xsl:text>I</xsl:text>
+          </xsl:attribute>
+        </xsl:when>
+        <xsl:when                 test = "$style = 'LRoman'">
+          <xsl:attribute          name = "type">
+            <xsl:text>i</xsl:text>
+          </xsl:attribute>
+        </xsl:when>
+      </xsl:choose>
+      <xsl:apply-templates/>
+    </li>
+    <br />
+  </xsl:template>
+
+<!-- ======================================================================
+        Template handling ListItem in ItemizedList
+     ===================================================================== -->  
+  <xsl:template                   name = "ItemizedListItem">                                 
+    <xsl:param                    name = "style"/> 
+        
+    <li> 
+      <xsl:choose>
+        <xsl:when                 test = "$style = 'bullet'">
+          <xsl:attribute          name = "type">
+            <xsl:text>disc</xsl:text>
+          </xsl:attribute>
+        </xsl:when>
+        <xsl:when                 test = "$style = 'dash'">
+          <xsl:attribute          name = "type">
+            <xsl:text>square</xsl:text>
+          </xsl:attribute>
+        </xsl:when>
+        <xsl:when                 test = "$style = 'simple'">
+          <xsl:attribute          name = "class">
+            <xsl:text>lnone</xsl:text>
+          </xsl:attribute>
+        </xsl:when>       
+        <xsl:when                 test = "not($style)">
+          <xsl:attribute          name = "class">
+            <xsl:text>lnone</xsl:text>
+          </xsl:attribute>
+        </xsl:when>
+      </xsl:choose>                               
+      <xsl:apply-templates/>
+    </li>
+  </xsl:template>
+
+<!--=====================================================================
+         Display Content Summary Title with Deletion and Insertion
+    ==================================================================== -->
+  <xsl:template                  match = "SummaryTitle"
+                                  mode = "ContentTitle">
+    <h2>
+    <xsl:apply-templates/>
+    </h2>
+  </xsl:template> 
 
 </xsl:transform>]]>
 </CdrDocXml>
