@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.23 2001-02-20 15:44:24 bkline Exp $
+ * $Id: tables.sql,v 1.24 2001-03-21 22:55:16 mruben Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2001/02/20 15:44:24  bkline
+ * Added css to doc_type table; fixed default for schema_date.
+ *
  * Revision 1.22  2001/02/16 01:59:07  ameyer
  * Dropped link_prop_type table
  * Changed property in link_prop to char string, and added comment
@@ -462,30 +465,6 @@ CREATE TABLE debug_log
       source NVARCHAR(64) NOT NULL,
          msg NVARCHAR(3800) NOT NULL)
 
-/* 
- * Version control.  XXX - will we use version control for documents whose
- * data is stored externally (e.g., graphics)?  Also, should we add a column
- * for older versions which have been archived from the on-line portion of the
- * system, providing location information for the version's data?
- * Alan has suggested that we may only want to store version information for
- * versions which have been "published" - assuming we can come up with a
- * satisfactory definition for that term in this context.
- *
- *     document  identifies the document which this version represents
- *          num  sequential number of the version of the document; numbering
- *               starts with 1
- *           dt  date/time the modifications were stored in the repository
- *     doc_type  foreign key reference into the doc_type table
- *        title  required string containing title for document; Titles will
- *               not be required to be unique
- *          xml  for structured documents, this is the data for the document;
- *               for unstructured documents this contains tagged textual
- *               information associated with the document (for example, the
- *               standard caption for an illustration)
- *         data  binary image of the documents unstructured data
- *      comment  optional free-text description of additional characteristics
- *               of the document
- */
 /* 
  * Version control.  XXX - will we use version control for documents whose
  * data is stored externally (e.g., graphics)?  Also, should we add a column
