@@ -15,7 +15,8 @@
           This program is a filter to display the Terminology
           titles  
         ==========================================================-->
-   <xsl:template match="Term">
+          <xsl:template match="Term">
+
    <!-- ======================================
          Display Preferred Term name 
         ======================================-->
@@ -24,24 +25,32 @@
             <xsl:value-of select="."/>;<xsl:text/>
          </xsl:for-each>
       </xsl:if>
+
       <!-- ====================================
             Display Term Type 
            ====================================-->
-      <xsl:if test="TermType/TermTypeName">
+         <xsl:if test="TermType/TermTypeName">
          <xsl:for-each select="TermType/TermTypeName">
-            <xsl:value-of select="."/>;<xsl:text/>
+         <xsl:value-of select="."/>;<xsl:text/>
          </xsl:for-each>
-      </xsl:if>
+         </xsl:if>
+
       <!-- =========================================
             Display Semantic Type 
-           =========================================-->
-      <xsl:if test="SemanticTypeText">
-         <xsl:for-each select="SemanticTypeText">
-            <xsl:value-of select="."/>
-            <xsl:if test="position() !=last()">;<xsl:text/></xsl:if>
-         </xsl:for-each>
-      </xsl:if>
-   </xsl:template>
+            Modified 10/09/2002 (CB) to replace SemanticTypeText
+            with SematicType
+           ========================================= -->
+
+        <xsl:if test="SemanticType">
+        <xsl:for-each select="SemanticType">
+        <xsl:variable name="Ref" select="@cdr:ref"/>
+        <xsl:variable name="SemTypeID" select="@cdr:ref"/>
+        <xsl:variable name="SemTypeInfo" select="document(concat ('cdrx:',$SemTypeID,'/lastp'))"/>
+        <xsl:value-of select="$SemTypeInfo/Term/PreferredName"/>
+        <xsl:if test="position() !=last()">;<xsl:text/></xsl:if>
+        </xsl:for-each>
+        </xsl:if>
+        </xsl:template>
 
   </xsl:transform>]]>
 </CdrDocXml>
