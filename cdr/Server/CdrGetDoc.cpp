@@ -1,14 +1,19 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.2 2000-05-17 12:55:55 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.3 2000-05-19 00:07:22 bkline Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/05/17 12:55:55  bkline
+ * Removed code to process columns which are no longer present in the
+ * document table.
+ *
  * Revision 1.1  2000/05/03 15:18:12  bkline
  * Initial revision
  */
 
+#include <iostream>
 #include "CdrDom.h"
 #include "CdrCommand.h"
 #include "CdrException.h"
@@ -19,6 +24,7 @@
 
 // Local functions.
 static cdr::String encodeBlob(const cdr::Blob& blob);
+static cdr::String fixString(const cdr::String& s);
 
 /**
  * Builds the XML string for a <CdrDoc> element for a document extracted from
@@ -52,9 +58,9 @@ cdr::String cdr::getDocString(
         throw cdr::Exception(L"Unable to load document", docIdString);
     cdr::String     valStatus = rs.getString(1);
     cdr::String     valDate   = rs.getString(2);
-    cdr::String     title     = rs.getString(3);
+    cdr::String     title     = fixString(rs.getString(3));
     cdr::String     xml       = rs.getString(4);
-    cdr::String     comment   = rs.getString(5);
+    cdr::String     comment   = fixString(rs.getString(5));
     cdr::String     docType   = rs.getString(6);
     cdr::Blob       blob      = rs.getBytes(7);
     select.close();
@@ -64,22 +70,21 @@ cdr::String cdr::getDocString(
     swprintf(canonicalIdString, L"CDR%010d", docId);
 
     // Build the CdrDoc string.
-    cdr::String cdrDoc = cdr::String(L"<CdrDoc><CdrDocCtl><DocId>")
-                       + canonicalIdString
-                       + L"</DocId><DocType>"
+    cdr::String cdrDoc = cdr::String(L"<CdrDoc Type='")
                        + docType
-                       + L"</DocType><DocValStatus>"
+                       + L"' Id='"
+                       + canonicalIdString
+                       + L"'><CdrDocCtl><DocValStatus>"
                        + valStatus
                        + L"</DocValStatus>";
-    if (!valDate.isNull()) {
-        if (valDate.size() > 10)
+    if (!valDate.isNull() && valDate.length() > 0) {
+        if (valDate.length() > 10)
             valDate[10] = L'T';
         cdrDoc += cdr::String(L"<DocValDate>") + valDate + L"</DocValDate>";
     }
-    cdrDoc += cdr::String(L"<DocType>") + title + L"</DocType><DocTitle>"
-           + title + L"</DocTitle>";
-    if (!comment.isNull())
-        cdrDoc += cdr::String(L"<Comment>") + comment + L"</Comment>";
+    cdrDoc += cdr::String(L"<DocTitle>") + title + L"</DocTitle>";
+    if (!comment.isNull() && comment.length() > 0)
+        cdrDoc += cdr::String(L"<DocComment>") + comment + L"</DocComment>";
     cdrDoc += L"</CdrDocCtl>";
 
     // Plug in the body of the document.
@@ -153,4 +158,27 @@ cdr::String encodeBlob(const cdr::Blob& blob)
         delete [] buf;
         throw;
     }
+}
+
+cdr::String fixString(const cdr::String& s)
+{
+    cdr::String fs = s;
+    if (fs.isNull())
+        return fs;
+    size_t pos = fs.find(L'&');
+    while (pos != fs.npos) {
+        fs.replace(pos, 1, L"&amp;");
+        pos = fs.find(L'&', pos + 5);
+    }
+    pos = fs.find(L'<');
+    while (pos != fs.npos) {
+        fs.replace(pos, 1, L"&lt;");
+        pos = fs.find(L'<', pos + 4);
+    }
+    pos = fs.find(L'>');
+    while (pos != fs.npos) {
+        fs.replace(pos, 1, L"&gt;");
+        pos = fs.find(L'>', pos + 4);
+    }
+    return fs;
 }
