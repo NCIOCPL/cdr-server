@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.48 2002-01-06 15:30:15 bkline Exp $
+ * $Id: tables.sql,v 1.49 2002-01-31 20:24:07 mruben Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48  2002/01/06 15:30:15  bkline
+ * Removed statements to drop and recreate database.
+ *
  * Revision 1.47  2001/12/24 00:59:36  bkline
  * Added commands to drop and re-add database.
  *
@@ -1137,7 +1140,8 @@ CREATE TABLE pub_proc
       status VARCHAR(32)  NOT NULL,
     messages NTEXT            NULL,
        email VARCHAR(255)     NULL,
-    external CHAR(1)          NULL DEFAULT 'N')
+    external CHAR(1)          NULL DEFAULT 'N'
+   no_output CHAR(1)      NOT NULL DEFAULT 'N')
 GO
 
 /*
