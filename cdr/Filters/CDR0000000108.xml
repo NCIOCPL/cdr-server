@@ -342,10 +342,97 @@
 
  <!-- 
  ==============================================================
- Template for displaying ProtocolRelatedLink section
+ Template for displaying ProtocolRelatedLink section.
+ In addition to displaying the RelatedProtocols and RelatedWebsites
+ elements a new element RelatedProtocolsForQC is introduced to
+ allow the QC report to display all protocol IDs as well as the 
+ professional title for a related protocol.
+ This new element is being filtered out again by the protocol
+ vendor filter.
  ============================================================== -->
  <xsl:template                  match = "ProtocolRelatedLinks">
   <xsl:element                   name = "ProtocolRelatedLinks">
+
+   <xsl:for-each               select = "RelatedProtocols | RelatedWebsites">
+    <xsl:choose>
+     <xsl:when                   test = "name() = 'RelatedProtocols'">
+      <xsl:element               name = "RelatedProtocols">
+       <xsl:attribute            name = "ref">
+        <xsl:value-of          select = "@cdr:ref"/>
+       </xsl:attribute>
+       <xsl:apply-templates/>
+      </xsl:element>
+      <RelatedProtocolsForQC>
+       <xsl:attribute            name = "ref">
+        <xsl:value-of          select = "@cdr:ref"/>
+       </xsl:attribute>
+       <xsl:variable             name = "relProtRef"
+                               select = "@cdr:ref"/>
+       <xsl:variable             name = "prot_uri"
+                               select = "concat('cdr:', $relProtRef,
+                                                '/last')"/>
+       <xsl:variable             name = "protocolDoc"
+                               select = "document($prot_uri)"/>
+
+  <!-- Stop processing if the link cannot be resolved. 
+        This doesn't work for me, VE                    ==>
+  <xsl:if                         test = "not($protocolDoc)">
+   <xsl:message              terminate = "no">
+    <xsl:text>Cannot resolve link </xsl:text>
+    <xsl:value-of               select = "$prot_uri"/>
+    <xsl:text> for versioned protocol document.</xsl:text>
+   </xsl:message> 
+  </xsl:if -->
+
+       <xsl:value-of           select = "$protocolDoc/InScopeProtocol/
+                                          ProtocolIDs/PrimaryID/IDString"/>
+       <xsl:if                   test = "$protocolDoc/InScopeProtocol/
+                                          ProtocolIDs/OtherID">
+        <xsl:for-each          select = "$protocolDoc/InScopeProtocol/
+                                          ProtocolIDs/OtherID/IDString">
+         <xsl:text>; </xsl:text>
+         <xsl:value-of         select = "."/>
+        </xsl:for-each>
+       </xsl:if>
+       <xsl:text>; </xsl:text>
+       <xsl:choose>
+       <xsl:when                 test = "$protocolDoc/InScopeProtocol/
+                                          ProtocolTitle[@Type='Professional']">
+        <xsl:value-of          select = "$protocolDoc/InScopeProtocol/
+                                          ProtocolTitle[@Type='Professional']"/>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:text>*** Protocol professional title does not exist. ***</xsl:text>
+       </xsl:otherwise>
+       </xsl:choose>
+
+      </RelatedProtocolsForQC>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:element               name = "RelatedWebsites">
+       <xsl:attribute            name = "xref">
+        <xsl:value-of          select = "@cdr:xref"/>
+       </xsl:attribute>
+       <xsl:apply-templates/>
+      </xsl:element>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:for-each>
+
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ ==============================================================
+ Template for displaying ProtocolRelatedLinkForQC section
+ The QC reports will need to display additional information 
+ including the OtherProtocolIDs and Professional Title of those
+ protocols.  Therefore the related protocol info will have to get
+ denormalized.
+ ============================================================== -->
+ <xsl:template                  match = "ProtocolRelatedLinksForQC">
+  <xsl:element                   name = "ProtocolRelatedLinksForQC">
 
    <xsl:for-each               select = "RelatedProtocols | RelatedWebsites">
     <xsl:choose>
@@ -370,6 +457,7 @@
 
   </xsl:element>
  </xsl:template>
+
 
  <!-- 
  ==============================================================
@@ -859,6 +947,8 @@
      <xsl:call-template           name = "getOtherPracticeLocation">
       <xsl:with-param             name = "specificPhone"
                                 select = "SpecificPhone"/>
+      <xsl:with-param             name = "specificPhonePublic"
+                                select = "SpecificPhone/@Public"/>
       <xsl:with-param             name = "errorPersonId"
                                 select = "$personId"/>
       <xsl:with-param             name = "specificContact"
@@ -1177,8 +1267,9 @@
  ======================================================================= -->
  <xsl:template                    name = "getOtherPracticeLocation">
   <xsl:param                      name = "specificPhone"/>
+  <xsl:param                      name = "specificPhonePublic"/>
   <xsl:param                      name = "errorPersonId"/>
-  <xsl:param                      name = "specificContact"/>                              
+  <xsl:param                      name = "specificContact"/>
   <xsl:variable                   name = "fragRef"
                                 select = "OrganizationLocation/@cdr:ref"/>
   <!-- Stop processing if document link cannot be resolved -->
@@ -1309,14 +1400,27 @@
    <xsl:when                      test = "$hidePersonPhone">
     <xsl:apply-templates        select = "$specificContact/Phone"/>
    </xsl:when>
+
    <xsl:when                      test = "$specificPhone">
     <Phone>
+     <xsl:if                      test = "$specificPhonePublic = 'No'">
+      <xsl:attribute              name = "Public">
+       <xsl:value-of            select = "$specificPhonePublic"/>
+      </xsl:attribute>
+     </xsl:if>
      <xsl:value-of              select = "$specificPhone"/>
     </Phone>
+    <xsl:if                       test = "$specificPhonePublic = 'No'">
+     <OrgPhone>
+      <xsl:value-of             select = "$orgLoc/Phone"/>
+     </OrgPhone>
+    </xsl:if>
    </xsl:when>
+
    <xsl:when                      test = "SpecificPhone">
     <xsl:apply-templates        select = "SpecificPhone"/>
    </xsl:when>
+
    <xsl:otherwise>
     <xsl:apply-templates        select = "$orgLoc/Phone"
                                   mode = "copy"/>
