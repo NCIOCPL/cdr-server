@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">InScope Protocol Administrative Report Filter</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.19: Adding Related Protocols (Bug 897)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--Filter written by C.Burg - 3/13/2002 -->
@@ -14,9 +14,9 @@
   <xsl:transform       xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                          version="1.0"
                        xmlns:cdr="cips.nci.nih.gov/cdr">
-    <xsl:include    href = "cdr:name:InLine Markup Formatter"/>
-
-   <xsl:output method="html"/>
+    <xsl:include    href = "cdr:name:Module: InLine Markup Formatter"/>
+    <xsl:include    href = "cdr:name:Module: STYLE Default"/>
+    <xsl:output method="html"/>
 
 <!-- ===============================================================
                     Generate Report Headings
@@ -47,58 +47,67 @@
  <b><font size='3'><center><xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/></center></font></b><br />
 <b><xsl:value-of select="document('cdrutil:/docid')"/></b><br />
   <xsl:apply-templates/>
-<!-- ===================================================================
-      Display Creation Date,User, and Modification Date and User
-     ================================================================== -->
-<br />
-<b><font size='4'>Record Information</font></b><br /><br />
-<xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
- <table width='90%'>
-  <tr>
-  <th align='left' cellpadding='0' width='40%'>
-  <b>
-  <xsl:text>Date Created
-  </xsl:text>
-  </b>
-  </th>
-  <td width='60%'>
-<xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/Date"/>
-  </td>
-  </tr>
-  <tr>
- <th align='left' width='40%'>
-<b>
-<xsl:text>User</xsl:text>
-</b>
-</th>
-<td width='60%'>
-<xsl:value-of select="$cdrmydoc/CdrDocCtl/Create/User"/>
- </td>
- </tr>
- <tr>
-  <th align='left' width='40%'>
-   <b>
-  <xsl:text>Date Modfied</xsl:text>
-  </b>
- </th>
- <td width='60%'>
- <xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/Date"/>
- </td>
- </tr>
- <tr>
- <th align='left' width='40%'>
-<b>
-<xsl:text>User</xsl:text>
-</b>
-</th>
-<td width='60%'>
-<xsl:value-of select="$cdrmydoc/CdrDocCtl/Modify/User"/>
- </td>
- </tr>
- </table>
- </BODY>
- </xsl:template>
-  
+   </BODY>
+  </xsl:template>
+
+<!-- =====================================================================
+             Display Record Information ( Date created, Modified, and User
+     ===================================================================== --> 
+              <xsl:template        match="CdrDocCtl">
+              <br />
+              <b><font size='4'>Record Information</font></b>
+              <br /><br />
+              <table cellpadding='0' cellspacing ='0'  width='90%'>
+              <tr>
+              <th align='left' width='40%'>   
+              <b>
+              <font size='3'>Created By
+              </font>
+              </b>
+              </th>
+               <td width='60%'>
+              <xsl:value-of               select="Create/User"/>
+              </td>
+              </tr>
+              <tr>
+              <th align='left' width='40%'>   
+              <b>
+              <font size='3'>Date
+              </font>
+              </b>
+              </th>
+              <td width='60%'>
+              <xsl:value-of               select="substring-before 
+                                                 (Create/Date,'T')"/>
+             </td>
+             </tr>
+              <tr>
+              <th align='left' width='40%'>   
+               <b>
+              <font size='3'>Updated By
+              </font>
+              </b>
+              </th>
+              <td width='60%'>
+              <xsl:value-of               select="Modify/User"/><br />
+              </td>
+              </tr>
+               <tr>
+              <th align='left' width='40%'>   
+              <b>
+              <font size='3'>Date
+              </font>
+              </b>
+              </th>
+              <td width='60%'>
+              <xsl:value-of               select="substring-before
+                                                  (Modify/Date,'T')"/>
+              </td>
+              </tr>
+              </table>
+              <br /><br />
+              </xsl:template>
+
  
 <!-- ==================================================================
               Display the Professional and Original Title
@@ -224,16 +233,20 @@
       <b><font size='4'>Protocol Sponsors</font></b>
       <br /><br />
       <table width='90%'>
+      <xsl:for-each   select  = "SponsorName">
         <tr>
         <th align='left' width='40%'>
+        <xsl:if      test = "not(preceding-sibling::SponsorName)">
         <b><font size='3'>Name
          </font>
          </b>
+        </xsl:if>
          </th>
          <td width='60%'>
-         <xsl:value-of             select="SponsorName"/>
+         <xsl:value-of             select="."/>
          </td>
          </tr>
+         </xsl:for-each>
          </table>         
          <b><font size='3'>Comments</font></b>
               <br />
@@ -866,7 +879,7 @@
     <table width='90%'> 
    <tr>                      
    <th align='left' width='40%'>
-   <xsl:text>&#xa0;&#xa0;&#xa0;URL</xsl:text>
+   <xsl:text>&#xa0;&#xa0;&#xa0;Web Site</xsl:text>
    </th>
    <td width='60%'>
    <xsl:value-of        select="../SpecificWebSite/@cdr:xref"/>
@@ -1076,7 +1089,7 @@
    <table width='90%'> 
    <tr>                      
    <th align='left' width='40%'>
-   <xsl:text>&#xa0;&#xa0;&#xa0;URL</xsl:text>
+   <xsl:text>&#xa0;&#xa0;&#xa0;Web Site</xsl:text>
    </th>
    <td width='60%'>
     <xsl:value-of  select="../../../../../../SpecificWebSite/@cdr:xref"/>
@@ -1766,7 +1779,7 @@
          <br />
          <xsl:for-each              select = "RelatedWebsites">
 
-         <b><font size='3'>&#xa0;&#xa0;URL
+         <b><font size='3'>&#xa0;&#xa0;Web Site
          </font>
          </b>
          <br />
