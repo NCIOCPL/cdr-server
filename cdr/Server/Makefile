@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.29 2001-01-08 16:57:08 mruben Exp $
+# $Id: Makefile,v 1.30 2001-01-17 21:46:52 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.29  2001/01/08 16:57:08  mruben
+# removed libraries no longer needed by sablotron
+#
 # Revision 1.28  2000/12/28 13:29:54  bkline
 # Added CdrGetSchema.obj.
 #
@@ -179,7 +182,6 @@ OBJS   =CdrCommand.obj \
         CdrVersion.obj \
         CdrReport.obj \
         CdrDocTypes.obj \
-        CdrGetSchema.obj \
         CdrShutdown.obj \
         CdrDOMtoString.obj
 
