@@ -245,7 +245,8 @@
  Display an ordered list 
  ===================================================================== -->
  <xsl:template                 match = "OrderedList">   
-  <xsl:apply-templates        select = "ListTitle"/>     
+ <xsl:apply-templates        select = "ListTitle"/> 
+    
 
   <!-- Handle ListItem now. -->
   <ol>
@@ -738,12 +739,12 @@
                                         $level &lt; 3">
    <ul Class="lnone">
     <xsl:for-each           select = "SummarySection">
-     <xsl:if                test   =  "not(Title/Deletion)">
+   <!--  <xsl:if                test   =  "not(Title/Deletion)">-->
       <xsl:call-template      name = "TocSummarySection">
        <xsl:with-param        name = "level"
                             select = "$level + 1"/>
       </xsl:call-template>
-     </xsl:if>
+   <!--  </xsl:if>-->
     </xsl:for-each>
    </ul>
   </xsl:if>
@@ -754,13 +755,20 @@
             Display titles for Patient Summaries
       ============================================================= -->
 
-     <xsl:template              match= "Title"
-                                mode = "PT">
-     <xsl:if                    test = "count(ancestor::SummarySection) 
-                                        &gt; 1">
-     <h3><xsl:apply-templates/></h3>
-     </xsl:if>
-     </xsl:template>
+   <xsl:template              match= "Title"
+                              mode = "PT">
+   <xsl:variable              name = "ancestors"
+                              select = "ancestor::SummarySection"/>
+  
+   <xsl:choose>
+    <xsl:when                  test = "count($ancestors) = 2">
+    <h3><xsl:apply-templates/></h3>
+   </xsl:when>
+   <xsl:when                   test = "count($ancestors) &gt; 2">
+   <h4><xsl:apply-templates/></h4>
+   </xsl:when>
+   </xsl:choose>
+   </xsl:template>
 
 
  <!-- 
