@@ -3,6 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Denormalization Filter (1/5): Summary</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 
@@ -28,7 +29,6 @@
   <xsl:copy>
      <xsl:apply-templates select="document('cdrutil:/docid')" mode="copy"/>
      <xsl:apply-templates select="document('cdr:/*/CdrCtl')" mode="copy"/>
-
    <!-- ===============================================
          copy summary meta data, and title 
         ===============================================-->
@@ -37,10 +37,25 @@
       <xsl:apply-templates select="SummaryMetaData/SummaryAudience" mode="copy"/>
       <xsl:apply-templates select="SummaryMetaData/SummaryLanguage" mode="copy"/>
       <xsl:apply-templates select="SummaryMetaData/PDQBoard" mode="copy"/>
-      <xsl:apply-templates select="SummaryMetaData/MainTopics" mode="copy"/>
-      <xsl:apply-templates select="SummaryMetaData/SecondaryTopics" mode="copy"/>
-   
-   </SummaryMetaData>
+
+<!-- Modified 11/1/2002(CB) to link to term records for term preferred name -->
+      <xsl:for-each select="SummaryMetaData/MainTopics">
+      <xsl:if test="contains(Term/@cdr:ref,'CDR')">
+      <xsl:variable name="TermID" select="Term/@cdr:ref"/>
+      <xsl:variable name="TermInfo" 
+              select="document(concat('cdr:',$TermID,'/lastp'))"/>
+    <MainTopics><Term cdr:ref='{$TermID}'><xsl:value-of select="$TermInfo/Term/PreferredName"/></Term></MainTopics>
+      </xsl:if>
+     </xsl:for-each>
+       <xsl:for-each select="SummaryMetaData/SecondaryTopics">
+      <xsl:if test="contains(Term/@cdr:ref,'CDR')">
+      <xsl:variable name="TermID" select="Term/@cdr:ref"/>
+      <xsl:variable name="TermInfo" 
+              select="document(concat('cdr:',$TermID,'/lastp'))"/>
+    <SecondaryTopics><Term cdr:ref='{$TermID}'><xsl:value-of select="$TermInfo/Term/PreferredName"/></Term></SecondaryTopics>
+     </xsl:if>
+     </xsl:for-each>
+     </SummaryMetaData>
 
    <xsl:apply-templates select="SummaryTitle" mode="copy"/>
    <!-- =====================================================================
@@ -55,7 +70,7 @@
 
       <!-- Added Insertion and Deletion tags to copy 10/07/2002 CB -->
 
-              <xsl:apply-templates select="Para | OrderedList |ItemizedList | SummarySection | Table | Deletion | Insertion"  mode="copy"/>
+              <xsl:apply-templates select="Para | OrderedList |ItemizedList | SummarySection | Table | Insertion | Deletion"  mode="copy"/>
                            
                <xsl:apply-templates select="PdqKey" mode="copy"/>
                <ReferenceList>
