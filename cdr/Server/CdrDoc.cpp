@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.45 2002-08-09 11:45:53 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.46 2002-08-14 01:35:07 ameyer Exp $
  *
  */
 
@@ -49,7 +49,7 @@ static cdr::String createFragIdTransform (cdr::db::Connection&, int);
 static void rememberQueryTerm(int, cdr::String&, cdr::String&, wchar_t*,
                               cdr::QueryTermSet&);
 
-static void checkForDuplicateTitle(cdr::db::Connection&, int, 
+static void checkForDuplicateTitle(cdr::db::Connection&, int,
                                    const cdr::String&,
                                    const cdr::String&);
 
@@ -79,7 +79,8 @@ cdr::CdrDoc::CdrDoc (
     revFilterLevel (0),
     NeedsReview (false),
     titleFilterId (0),
-    Title (L"")
+    Title (L""),
+    conType (not_set)
 {
 
     // Get doctype and id from CdrDoc attributes
@@ -122,7 +123,8 @@ cdr::CdrDoc::CdrDoc (
     cdr::Int tfi  = rs.getInt(2);
     cdr::Int sdi  = rs.getInt(3);
 
-    // There may not be schema or filter ids, so we need to check
+    // There may not be title filter and/or schemas for all doc types,
+    //   so we need to check
     if (tfi.isNull())
         titleFilterId = 0;
     else
@@ -276,6 +278,9 @@ cdr::CdrDoc::CdrDoc (
     cdr::Int sdi   = rs.getInt (11);
     BlobData       = rs.getBytes (12);
     cdr::Int rvRdy = rs.getInt (13);
+
+    // Content or control type document
+    conType = not_set;
 
     // There may not be schema or filter ids, default is 0
     if (tfi.isNull())
@@ -645,15 +650,15 @@ static cdr::String CdrPutDoc (
     // Make sure validation has been invoked if a publishable version
     // has been requested.  The DLL will enforce this, but we do it
     // here as well, since the DLL is our primary, but not our only client.
-    cdr::String doctype = doc.getTextDocType();
-    if (cmdPublishVersion && (!cmdSchemaVal || !cmdLinkVal) && doctype !=
-            L"Filter" && doctype != L"css" && doctype != L"schema")
+    if (cmdPublishVersion && (!cmdSchemaVal || !cmdLinkVal)
+                          && doc.isContentType())
         throw cdr::Exception(L"CdrPubDoc: creation of a published version "
                              L"not allowed unless full document validation is "
                              L"invoked.");
 
     // Check user authorizations
     cdr::String action = newrec ? L"ADD DOCUMENT" : L"MODIFY DOCUMENT";
+    cdr::String doctype = doc.getTextDocType();
     if (!session.canDo (dbConn, action, doctype))
         throw cdr::Exception (L"CdrPutDoc: User '" + session.getUserName() +
                               L"' not authorized to '" + action +
@@ -671,7 +676,7 @@ static cdr::String CdrPutDoc (
             throw cdr::Exception(L"Failure retrieving document status "
                                  L"from database");
         cdr::String dbActStat = rs.getString(1);
-        if (dbActStat != doc.getActiveStatus() 
+        if (dbActStat != doc.getActiveStatus()
                 && !session.canDo(dbConn, L"PUBLISH DOCUMENT", doctype))
             if (dbActStat == L"A")
                 throw cdr::Exception(L"User not authorized to block "
@@ -707,7 +712,7 @@ static cdr::String CdrPutDoc (
 
     // Block creation of documents with duplicate titles for special document
     // types.
-    if (doctype == L"Filter" || doctype == L"css"    || doctype == L"schema")
+    if (doc.isControlType())
         checkForDuplicateTitle(dbConn, doc.getId(), doctype, doc.getTitle());
 
     // Does document id attribute match expected action type?
@@ -791,7 +796,8 @@ static cdr::String CdrPutDoc (
     }
 
     // Perform validation if requested
-    if (cmdValidate) {
+    // But only validate content type documents, not control documents
+    if (cmdValidate && doc.isContentType()) {
         if (cmdLinkVal && !cmdSetLinks)
             // If not setting links, can't do any link validation because
             //   it automatically does a link_net update
@@ -814,10 +820,11 @@ static cdr::String CdrPutDoc (
         SHOW_ELAPSED("validation completed", incrementalTimer);
     }
 
-    if (cmdSetLinks && !cmdLinkVal) {
+    if (cmdSetLinks && !cmdLinkVal && doc.isContentType()) {
         // Update of link tables is part of unconditional link validation
         // But if not done there, we have to do it here unless it was
         //   specifically suppressed with the SetLinks command.
+        // Only do it if it's a content type doc, not a control doc
         // Call to parseAvailable is done first to check if the document
         //   was already parsed, or if not, parse it.  It also
         //   handles revision filtering before the parse.
@@ -1138,11 +1145,12 @@ cdr::String cdr::CdrDoc::getRevisionFilteredXml (
                              + L" requested for document");
 
     // Need to filter revision markup if:
+    //   This is a content (not a control) document
     //   Filter attempt has not already failed (!revFilterFailed)
     //   Filtering never attempted (revFilterLevel == 0)
     //   Filtering done but at level other than what we want (revisionLevel...)
     //   Any previous revision filtering discarded (...size() == 0)
-    if (!revFilterFailed &&
+    if (isContentType() && !revFilterFailed &&
         ((revisionLevel != revFilterLevel) || revisedXml.size() == 0)) {
 
         // Attempt to filter at the requested level
@@ -1448,7 +1456,7 @@ void cdr::CdrDoc::updateQueryTerms()
             unwantedTerms.insert(*i);
 
     // Sometimes it's just faster to wipe out the rows and start fresh.
-    if (unwantedTerms.size() > 1000 && 
+    if (unwantedTerms.size() > 1000 &&
         unwantedTerms.size() > newTerms.size() / 2) {
         delQueryTerms(docDbConn, Id);
         termsToInsert = &newTerms;
@@ -1488,7 +1496,7 @@ void cdr::CdrDoc::updateQueryTerms()
     }
     SHOW_ELAPSED((cdr::String("finished inserting ") +
                   cdr::String::toString(termsToInsert->size()) +
-                  cdr::String(" new terms")).toUtf8().c_str(), 
+                  cdr::String(" new terms")).toUtf8().c_str(),
                   queryTermsTimer);
 }
 
@@ -1506,14 +1514,12 @@ void cdr::CdrDoc::preProcess(bool validating)
 // not to use.  See the XSL/T script itself for documentation of the logic.
 void cdr::CdrDoc::stripXmetalPis(bool validating)
 {
-    // Only do this when the user has requested validation during a save.
-    if (!validating)
+    // Not for control documents
+    if (isControlType())
         return;
 
-    // Don't touch certain doc types
-    if (TextDocType == L"Filter" ||
-        TextDocType == L"css"    ||
-        TextDocType == L"schema")
+    // Only do this when the user has requested validation during a save.
+    if (!validating)
         return;
 
     cdr::FilterParmVector pv;
@@ -1549,9 +1555,12 @@ void cdr::CdrDoc::stripXmetalPis(bool validating)
 //   auto-generated cdr:id attributes in some fields
 void cdr::CdrDoc::genFragmentIds ()
 {
+    // Not for control documents
+    if (isControlType())
+        return;
+
     cdr::String xslt;       // XSLT transform for creating fragment ids
     cdr::String newXml;     // Document XML after fragment id's are entered
-
 
     // If we don't have an XSL transform for this document type yet,
     //   create one.
@@ -1918,7 +1927,7 @@ static void delQueryTerms (cdr::db::Connection& conn, int doc_id)
  */
 void rememberQueryTerm(
         int docId,
-        cdr::String& path, 
+        cdr::String& path,
         cdr::String& value,
         wchar_t *ordPosPathp,
         cdr::QueryTermSet& qtSet
@@ -1938,6 +1947,27 @@ void rememberQueryTerm(
 
     cdr::QueryTerm qt(docId, path, value, intVal, ordPosPathp);
     qtSet.insert(qt);
+}
+
+// Determine if this is a content type document.
+bool cdr::CdrDoc::isContentType()
+{
+    if (conType == not_set) {
+        if (TextDocType == L"Filter" ||
+            TextDocType == L"css"    ||
+            TextDocType == L"schema")
+          conType = control;
+        else
+          conType = content;
+    }
+
+    return (conType == content);
+}
+
+// Determine if this is a control type document.
+bool cdr::CdrDoc::isControlType()
+{
+    return (!isContentType());
 }
 
 // Recursively collect all the query terms present in the document.
@@ -2007,7 +2037,7 @@ void cdr::CdrDoc::collectQueryTerms(
             // Construct the ordinal position path
             swprintf (ordPosPathp + (depth * cdr::INDEX_POS_WIDTH), L"%0*X",
                       cdr::INDEX_POS_WIDTH, ordPos);
-            collectQueryTerms (fullPath, child.getNodeName(), child, 
+            collectQueryTerms (fullPath, child.getNodeName(), child,
                                paths, ordPosPathp, depth, qtSet);
             ++ordPos;
         }
@@ -2031,7 +2061,7 @@ void cdr::CdrDoc::collectQueryTerms(
  *                      Filters and Schemas).
  */
 void checkForDuplicateTitle(
-        cdr::db::Connection& conn, 
+        cdr::db::Connection& conn,
         int id,
         const cdr::String& docType,
         const cdr::String& title)
