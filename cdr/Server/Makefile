@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.72 2004-03-23 16:26:48 bkline Exp $
+# $Id: Makefile,v 1.73 2004-03-31 03:08:44 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.72  2004/03/23 16:26:48  bkline
+# Upgraded to version 5.4.0 of xml4c (but still using deprecated APIs).
+#
 # Revision 1.71  2004/03/22 14:27:24  bkline
 # Adjustments to use of _DEBUG and _NDEBUG symbols to prevent unwanted
 # linking of the debugging versions of Microsoft's runtime libraries.
@@ -263,7 +266,7 @@ DOCS   =$(DOC)default.htm
 CDRBIN =$(CDR)/bin
 CDRSVR =$(CDRBIN)/CdrServer.exe
 SERVICE=$(CDRBIN)/CdrService.exe
-CFLAGS =$(INC) -W3 -GX -MD -GR -nologo
+CFLAGS =$(INC) -W3 -GX -EHa -MD -GR -nologo
 LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
         /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/$(REVER)
 LIBS   =xml4c_5.lib sablot.lib wsock32.lib odbc32.lib user32.lib 
@@ -323,7 +326,8 @@ LIBOBJS=CdrString.obj \
         CdrParserInput.obj \
         CdrRegEx.obj \
         CdrVersion.obj \
-        catchexp.obj
+        catchexp.obj \
+        analyzeException.obj
 OBJS   =CdrCommand.obj \
         CdrLogon.obj \
         CdrLogoff.obj \
