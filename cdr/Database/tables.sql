@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.45 2001-12-22 01:38:34 bkline Exp $
+ * $Id: tables.sql,v 1.46 2001-12-23 14:55:12 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.45  2001/12/22 01:38:34  bkline
+ * Temporarily disabled foreign key constraint on link_net.target_doc.
+ *
  * Revision 1.44  2001/12/06 03:00:36  bkline
  * Synchronized with actual database tables.
  *
@@ -242,10 +245,6 @@ CREATE TABLE usr
      expired DATETIME        NULL,
      comment VARCHAR(255)    NULL)
 GO
-GRANT SELECT ON usr TO CdrGuest
-GO
-GRANT SELECT ON usr TO CdrPublishing
-GO
 
 /*
  * Sessions created on behalf of individual users.
@@ -269,10 +268,6 @@ CREATE TABLE session
        ended DATETIME        NULL,
      comment VARCHAR(255)    NULL)
 GO
-GRANT SELECT ON session TO CdrGuest
-GO
-GRANT SELECT ON session TO CdrPublishing
-GO
 
 /* 
  * Tells whether the document type is in XML, or in some other format, such
@@ -286,10 +281,6 @@ CREATE TABLE format
          (id INTEGER     IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
      comment VARCHAR(255)    NULL)
-GO
-GRANT SELECT ON format TO CdrGuest
-GO
-GRANT SELECT ON format TO CdrPublishing
 GO
 
 /* 
@@ -338,10 +329,6 @@ title_filter INT             NULL,
       active CHAR        NOT NULL DEFAULT 'Y',
      comment VARCHAR(255)    NULL)
 GO
-GRANT SELECT ON doc_type TO CdrGuest
-GO
-GRANT SELECT ON doc_type TO CdrPublishing
-GO
 
 /* 
  * Functions (a.k.a "actions") which can be performed on documents.
@@ -360,10 +347,6 @@ GO
 doctype_specific CHAR(1)      DEFAULT 'N',
          comment VARCHAR(255) NULL)
 GO
-GRANT SELECT ON action TO CdrGuest
-GO
-GRANT SELECT ON action TO CdrPublishing
-GO
 
 /* 
  * Groups used to assign permissions; users can belong to more than one. 
@@ -380,10 +363,6 @@ CREATE TABLE grp
          (id INTEGER     IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
      comment VARCHAR(255)    NULL)
-GO
-GRANT SELECT ON grp TO CdrGuest
-GO
-GRANT SELECT ON grp TO CdrPublishing
 GO
 
 /* 
@@ -402,10 +381,6 @@ CREATE TABLE doc_status
         name VARCHAR(32) NOT NULL UNIQUE,
      comment VARCHAR(255)    NULL)
 GO
-GRANT SELECT ON doc_status TO CdrGuest
-GO
-GRANT SELECT ON doc_status TO CdrPublishing
-GO
 
 /*
  * Set of legal values for the active_status column in the document table.
@@ -422,10 +397,6 @@ CREATE TABLE active_status
          (id CHAR PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
      comment VARCHAR(255) NULL)
-GO
-GRANT SELECT ON active_status TO CdrGuest
-GO
-GRANT SELECT ON active_status TO CdrPublishing
 GO
 
 /* 
@@ -480,10 +451,6 @@ GO
  */
 CREATE INDEX doc_status_idx ON all_docs(active_status, id)
 GO
-GRANT SELECT ON all_docs TO CdrGuest
-GO
-GRANT SELECT ON all_docs TO CdrPublishing
-GO
 
 /*
  * Couldn't do this until now, because the all_docs table hadn't been
@@ -524,10 +491,6 @@ GO
 CREATE TABLE ready_for_review
      (doc_id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs)
 GO
-GRANT SELECT ON ready_for_review TO CdrGuest
-GO
-GRANT SELECT ON ready_for_review TO CdrPublishing
-GO
 
 /* 
  * Record of a document's having been checked out.  Retained even after it has
@@ -556,10 +519,6 @@ CREATE TABLE checkout
      comment VARCHAR(255) NULL,
  PRIMARY KEY (id, dt_out))
 GO
-GRANT SELECT ON checkout TO CdrGuest
-GO
-GRANT SELECT, UPDATE, INSERT ON checkout TO CdrPublishing
-GO
 
 /* 
  * Non-XML data for document. 
@@ -571,10 +530,6 @@ CREATE TABLE doc_blob
          (id INTEGER NOT NULL REFERENCES all_docs,
         data IMAGE   NOT NULL,
  PRIMARY KEY (id))
-GO
-GRANT SELECT ON doc_blob TO CdrGuest
-GO
-GRANT SELECT ON doc_blob TO CdrPublishing
 GO
 
 /* 
@@ -663,10 +618,6 @@ CREATE TABLE audit_trail
      comment VARCHAR(255)     NULL,
  PRIMARY KEY (document, dt))
 GO
-GRANT SELECT ON audit_trail TO CdrGuest
-GO
-GRANT SELECT ON audit_trail TO CdrPublishing
-GO
 
 /*
  * Information logged for debugging.
@@ -690,10 +641,6 @@ CREATE TABLE debug_log
          msg NVARCHAR(3800) NOT NULL)
 GO
 CREATE INDEX debug_log_recorded_idx ON debug_log(recorded)
-GO
-GRANT SELECT ON debug_log TO CdrGuest
-GO
-GRANT SELECT, INSERT ON debug_log TO CdrPublishing
 GO
 
 /* 
@@ -741,10 +688,6 @@ CREATE TABLE doc_version
          comment VARCHAR(255)     NULL,
      PRIMARY KEY (id, num))
 GO
-GRANT SELECT ON doc_version TO CdrGuest
-GO
-GRANT SELECT ON doc_version TO CdrPublishing
-GO
 
 /*
  * Marks a version for later retrieval by name.  Note that a single version of
@@ -766,10 +709,6 @@ CREATE TABLE version_label
         name VARCHAR(32) NOT NULL UNIQUE,
      comment VARCHAR(255)    NULL)
 GO
-GRANT SELECT ON version_label TO CdrGuest
-GO
-GRANT SELECT ON version_label TO CdrPublishing
-GO
 
 /*
  * Associates a version label with a specific version of a single document.
@@ -784,10 +723,6 @@ CREATE TABLE doc_version_label
     document INTEGER NOT NULL REFERENCES all_docs,
          num INTEGER NOT NULL,
  PRIMARY KEY (label, document))
-GO
-GRANT SELECT ON doc_version_label TO CdrGuest
-GO
-GRANT SELECT ON doc_version_label TO CdrPublishing
 GO
   
 /* 
@@ -807,10 +742,6 @@ CREATE TABLE grp_action
      comment VARCHAR(255) NULL,
  PRIMARY KEY (grp, action, doc_type))
 GO
-GRANT SELECT ON grp_action TO CdrGuest
-GO
-GRANT SELECT ON grp_action TO CdrPublishing
-GO
 
 /* 
  * Membership of groups.
@@ -825,10 +756,6 @@ CREATE TABLE grp_usr
          usr INTEGER  NOT NULL REFERENCES usr,
      comment VARCHAR(255) NULL,
  PRIMARY KEY (grp, usr))
-GO
-GRANT SELECT ON grp_usr TO CdrGuest
-GO
-GRANT SELECT ON grp_usr TO CdrPublishing
 GO
 
 
@@ -853,10 +780,6 @@ CREATE TABLE link_type (
      comment VARCHAR(255)           NULL
 )
 GO
-GRANT SELECT ON link_type TO CdrGuest
-GO
-GRANT SELECT ON link_type TO CdrPublishing
-GO
 
 /*
  * Link source control.
@@ -877,10 +800,6 @@ CREATE TABLE link_xml (
    PRIMARY KEY (doc_type, element)
 )
 GO
-GRANT SELECT ON link_xml TO CdrGuest
-GO
-GRANT SELECT ON link_xml TO CdrPublishing
-GO
 
 /*
  * Link target control
@@ -896,10 +815,6 @@ CREATE TABLE link_target (
     source_link_type  INTEGER NOT NULL REFERENCES link_type,
      target_doc_type  INTEGER NOT NULL REFERENCES doc_type
 )
-GO
-GRANT SELECT ON link_target TO CdrGuest
-GO
-GRANT SELECT ON link_target TO CdrPublishing
 GO
 
 /*
@@ -920,10 +835,6 @@ CREATE TABLE link_prop_type (
         name VARCHAR(32)  NOT NULL UNIQUE,
      comment VARCHAR(255)     NULL
 )
-GO
-GRANT SELECT ON link_prop_type TO CdrGuest
-GO
-GRANT SELECT ON link_prop_type TO CdrPublishing
 GO
 
 /*
@@ -946,10 +857,6 @@ CREATE TABLE link_properties (
         value VARCHAR(1024)     NULL,
       comment VARCHAR(256)      NULL
 )
-GO
-GRANT SELECT ON link_properties TO CdrGuest
-GO
-GRANT SELECT ON link_properties TO CdrPublishing
 GO
 
 /*
@@ -981,10 +888,6 @@ CREATE TABLE link_net (
                 url VARCHAR(256)    NULL
 )
 GO
-GRANT SELECT ON link_net TO CdrGuest
-GO
-GRANT SELECT ON link_net TO CdrPublishing
-GO
 
 /*
  * Document fragment link targets found in the system.
@@ -1002,10 +905,6 @@ CREATE TABLE link_fragment (
        fragment VARCHAR(64) NOT NULL,
     PRIMARY KEY (doc_id, fragment)
 )
-GO
-GRANT SELECT ON link_fragment TO CdrGuest
-GO
-GRANT SELECT ON link_fragment TO CdrPublishing
 GO
 
 /*************************************************************
@@ -1042,10 +941,6 @@ CREATE INDEX ix_query_term3 ON query_term(doc_id, node_loc)
 GO
 CREATE INDEX ix_query_term4 ON query_term(int_val, doc_id)
 GO
-GRANT SELECT ON query_term TO CdrGuest
-GO
-GRANT SELECT ON query_term TO CdrPublishing
-GO
 
 /*
  * Allows for future customization of the query support mechanism, using more
@@ -1063,10 +958,6 @@ CREATE TABLE query_term_rule
         name VARCHAR(32)   NOT NULL,
     rule_def VARCHAR(2000) NOT NULL)
 GO
-GRANT SELECT ON query_term_rule TO CdrGuest
-GO
-GRANT SELECT ON query_term_rule TO CdrPublishing
-GO
 
 /*
  * Identifies elements which are to be indexed for querying.
@@ -1078,10 +969,6 @@ GO
 CREATE TABLE query_term_def
        (path VARCHAR(512) NOT NULL,
    term_rule INTEGER          NULL REFERENCES query_term_rule)
-GO
-GRANT SELECT ON query_term_def TO CdrGuest
-GO
-GRANT SELECT ON query_term_def TO CdrPublishing
 GO
 
 /*
@@ -1133,8 +1020,6 @@ GO
 CREATE TABLE dev_task_status
      (status VARCHAR(20) NOT NULL PRIMARY KEY)
 GO
-GRANT SELECT ON dev_task_status TO CdrGuest
-GO
 
 /*
  * Table for tracking CDR development tasks.
@@ -1149,8 +1034,6 @@ CREATE TABLE dev_task
 est_complete DATETIME        NULL,
        notes TEXT            NULL)
 GO
-GRANT SELECT ON dev_task TO CdrGuest
-GO
 
 /*
  * Table for valid values in issue.priority column.
@@ -1158,16 +1041,12 @@ GO
 CREATE TABLE issue_priority
     (priority VARCHAR(20) PRIMARY KEY)
 GO
-GRANT SELECT ON issue_priority TO CdrGuest
-GO
 
 /*
  * Table for valid values in user columns of issue table.
  */
 CREATE TABLE issue_user
        (name VARCHAR(30) PRIMARY KEY)
-GO
-GRANT SELECT ON issue_user TO CdrGuest
 GO
 
 /*
@@ -1197,8 +1076,6 @@ CREATE TABLE issue
     resolved DATETIME        NULL,
  resolved_by VARCHAR(30)     NULL REFERENCES issue_user,
        notes TEXT            NULL)
-GO
-GRANT SELECT ON issue TO CdrGuest
 GO
 
 /*
@@ -1246,10 +1123,6 @@ CREATE TABLE pub_proc
        email VARCHAR(255)     NULL,
     external CHAR(1)          NULL DEFAULT 'N')
 GO
-GRANT SELECT ON pub_proc TO CdrGuest
-GO
-GRANT SELECT, UPDATE, INSERT ON pub_proc TO CdrPublishing
-GO
 
 /*
  * Table used to record parameters used for processing a publication event.
@@ -1265,10 +1138,6 @@ CREATE TABLE pub_proc_parm
    parm_name VARCHAR(32)  NOT NULL,
   parm_value NVARCHAR(255)    NULL,
   CONSTRAINT pub_proc_parm_pk      PRIMARY KEY(pub_proc, id))
-GO
-GRANT SELECT ON pub_proc_parm TO CdrGuest
-GO
-GRANT SELECT, UPDATE, INSERT ON pub_proc_parm TO CdrPublishing
 GO
 
 /*
@@ -1286,10 +1155,6 @@ CREATE TABLE pub_proc_doc
   CONSTRAINT pub_proc_doc_fk        PRIMARY KEY(pub_proc, doc_id, doc_version),
   CONSTRAINT pub_proc_doc_fk_docver FOREIGN KEY(doc_id, doc_version) 
                                     REFERENCES doc_version)
-GO
-GRANT SELECT ON pub_proc_doc TO CdrGuest
-GO
-GRANT SELECT, UPDATE, INSERT ON pub_proc_doc TO CdrPublishing
 GO
 
 /*
