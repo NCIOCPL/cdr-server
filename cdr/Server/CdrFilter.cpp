@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.23 2002-06-07 13:52:10 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.24 2002-07-12 20:29:24 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2002/06/07 13:52:10  bkline
+ * Added support for last publishable linked document retrieval.
+ *
  * Revision 1.22  2002/05/21 19:08:55  bkline
  * Implemented support for finding documents by title in URI.
  *
@@ -102,6 +105,8 @@ using std::vector;
 using std::wostringstream;
 
 static int getDocIdFromTitle(const cdr::String& title,
+                             cdr::db::Connection& connection);
+static cdr::String getDocTitle(const cdr::String& id,
                              cdr::db::Connection& connection);
 
 namespace
@@ -208,7 +213,8 @@ namespace
       return cdr::getDocString(ui, connection, version, true, false);
 
     cdr::String docstring(cdr::getDocString(ui, connection, version, true,
-                                            type != CdrFilterType));
+                                            //type != CdrFilterType));
+                                            false));
 
     cdr::dom::Parser parser;
     parser.parse(docstring);
@@ -505,9 +511,17 @@ namespace
         else if (!version_str.empty())
           version = version_str.getInt();
 
-        if (type == L"CdrCtl")
+        if (type == L"CdrCtl") {
+          //std::wcout << L"getDocCtlString for " << uid << L"\n";
           u.doc = cdr::getDocCtlString(uid, version, connection,
                                cdr::DocCtlComponents::all).toUtf8();
+        }
+        else if (type == L"DocTitle") {
+          //std::wcout << L"getDocTitle for " << uid << L"\n";
+          u.doc = "<CdrDocTitle>"
+                + getDocTitle(uid, connection).toUtf8()
+                + "</CdrDocTitle>";
+        }
         else
           u.doc = getDocument(uid, version, connection).toUtf8();
       }
@@ -698,7 +712,7 @@ namespace
         char** pparms = p.g_parms();
         rc = SablotRunProcessor(proc, "arg:/_stylesheet",
                                 "arg:/_xmlinput", "arg:/_output",
-                                pparms, arguments);
+                                (const char**)pparms, (const char**)arguments);
         if (thread_data->fatalError)
           throw cdr::Exception(thread_data->errMsg.str());
         if (rc)
@@ -772,6 +786,21 @@ int getDocIdFromTitle(const cdr::String& title,
   if (rs.next())
     throw cdr::Exception(L"Multiple documents with title", title);
   return id;
+}
+
+cdr::String getDocTitle(const cdr::String& id, cdr::db::Connection& conn)
+{
+  int docId = id.extractDocId();
+  const char* const query = " SELECT title    "
+                            "   FROM document "
+                            "  WHERE id = ?   ";
+  cdr::db::PreparedStatement ps = conn.prepareStatement(query);
+  ps.setInt(1, id.extractDocId());
+  cdr::db::ResultSet rs = ps.executeQuery();
+  if (!rs.next())
+    throw cdr::Exception(L"Document not found", id);
+  cdr::String title = rs.getString(1);
+  return cdr::entConvert(title);
 }
 
 // Version that accepts filter document title
