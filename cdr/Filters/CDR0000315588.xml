@@ -168,6 +168,15 @@
                               mode = "copy"/>
                                
 
+ <!--
+ Drop native attribute for the TollFreePhone element.  This attribute
+ is included for the QC reports only.
+ ===================================================================== -->
+ <xsl:template               match = "TollFreePhone/@native |
+                                      PostalAddress/@native"
+                              mode = "copy"/>
+                               
+
  <!-- 
  =====================================================================
  Suppress nodes with or without copy mode that are not to be displayed
@@ -274,6 +283,35 @@
                                       Phone">
   <xsl:if                     test = "not(@Public)">
    <xsl:element               name = "{name()}">
+    <xsl:value-of           select = "."/>
+   </xsl:element>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Drop the WebSite element with attribute native = 'no'.
+ Note:  Since the QC report needs this displayed it is being 
+        filtered out at the last step creating the vendor output.
+ ==================================================================== -->
+ <xsl:template               match = "WebSite"
+                              mode = "copy">
+  <xsl:if                     test = "not(@native)">
+   <xsl:element               name = "{name()}">
+    <xsl:attribute            name = "xref">
+     <xsl:value-of          select = "@xref"/>
+    </xsl:attribute>
+    <xsl:value-of           select = "."/>
+   </xsl:element>
+  </xsl:if>
+ </xsl:template>
+ <xsl:template               match = "WebSite">
+  <xsl:if                     test = "not(@native)">
+   <xsl:element               name = "{name()}">
+    <xsl:attribute            name = "xref">
+     <xsl:value-of          select = "@xref"/>
+    </xsl:attribute>
     <xsl:value-of           select = "."/>
    </xsl:element>
   </xsl:if>
