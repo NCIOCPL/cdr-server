@@ -1,7 +1,11 @@
 /*
- * $Id: CdrXsd.cpp,v 1.17 2001-09-19 18:45:17 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.18 2001-10-16 19:39:02 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2001/09/19 18:45:17  bkline
+ * Added support for ID/IDREF, as well as methods to check for the presence
+ * of an attribute.
+ *
  * Revision 1.16  2001/07/20 14:55:02  bkline
  * Added support for ID/IDREF.  Added hasAttribute() method to Schema
  * type.  First cut at elemsWithAttr() method.
@@ -2024,8 +2028,8 @@ bool matchSchemaNode(
     // Update the caller's picture of where we are in the document.
     nextChild = docNode;
 
-    // Tell the caller we found a match.
-    return true;
+    // Tell the caller whether we found any matches.
+    return docOccs > 0;
 }
 
 /**
