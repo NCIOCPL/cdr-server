@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.7 2000-10-30 17:41:47 mruben Exp $
+ * $Id: CdrGetDoc.cpp,v 1.8 2001-03-02 13:58:39 bkline Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2000/10/30 17:41:47  mruben
+ * modified interface to version control functions
+ *
  * Revision 1.6  2000/10/24 23:08:40  ameyer
  * Added version control and locking.
  *
@@ -74,9 +77,9 @@ cdr::String cdr::getDocString(
         throw cdr::Exception(L"Unable to load document", docIdString);
     cdr::String     valStatus = rs.getString(1);
     cdr::String     valDate   = rs.getString(2);
-    cdr::String     title     = fixString(rs.getString(3));
+    cdr::String     title     = cdr::entConvert(rs.getString(3));
     cdr::String     xml       = rs.getString(4);
-    cdr::String     comment   = fixString(rs.getString(5));
+    cdr::String     comment   = cdr::entConvert(rs.getString(5));
     cdr::String     docType   = rs.getString(6);
     cdr::Blob       blob      = rs.getBytes(7);
     select.close();
@@ -264,8 +267,8 @@ cdr::String cdr::getDocCtlString(
         throw cdr::Exception(L"Unable to load document", docIdString);
     cdr::String     valStatus = rs.getString(1);
     cdr::String     valDate   = rs.getString(2);
-    cdr::String     title     = fixString(rs.getString(3));
-    cdr::String     comment   = fixString(rs.getString(4));
+    cdr::String     title     = cdr::entConvert(rs.getString(3));
+    cdr::String     comment   = cdr::entConvert(rs.getString(4));
     select.close();
 
     // Build the CdrDoc string.
@@ -340,30 +343,6 @@ cdr::String encodeBlob(const cdr::Blob& blob)
         delete [] buf;
         throw;
     }
-}
-
-
-cdr::String fixString(const cdr::String& s)
-{
-    cdr::String fs = s;
-    if (fs.isNull())
-        return fs;
-    size_t pos = fs.find(L'&');
-    while (pos != fs.npos) {
-        fs.replace(pos, 1, L"&amp;");
-        pos = fs.find(L'&', pos + 5);
-    }
-    pos = fs.find(L'<');
-    while (pos != fs.npos) {
-        fs.replace(pos, 1, L"&lt;");
-        pos = fs.find(L'<', pos + 4);
-    }
-    pos = fs.find(L'>');
-    while (pos != fs.npos) {
-        fs.replace(pos, 1, L"&gt;");
-        pos = fs.find(L'>', pos + 4);
-    }
-    return fs;
 }
 
 /**
