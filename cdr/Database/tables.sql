@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.37 2001-09-20 18:08:24 ameyer Exp $
+ * $Id: tables.sql,v 1.38 2001-09-21 13:44:08 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.37  2001/09/20 18:08:24  ameyer
+ * Changed title_filter to integer foreign key referencing all_docs(id).
+ *
  * Revision 1.36  2001/09/05 17:53:16  bkline
  * Added publication tracking tables.
  *
@@ -275,7 +278,7 @@ CREATE TABLE doc_type
      created DATETIME NOT NULL,
   versioning CHAR NOT NULL DEFAULT 'Y',
          dtd NTEXT NOT NULL,
-  xml_schema INTEGER REFERENCES document,
+  xml_schema INTEGER REFERENCES all_docs,
  schema_date DATETIME NOT NULL DEFAULT GETDATE(),
          css NTEXT NOT NULL,
 title_filter INT REFERENCES ALL_DOCS (ID) NULL,
@@ -417,7 +420,7 @@ CREATE VIEW deleted_doc AS SELECT * FROM document WHERE active_status = 'D'
  *               out
  */
 CREATE TABLE checkout
-         (id INTEGER NOT NULL REFERENCES document,
+         (id INTEGER NOT NULL REFERENCES all_docs,
       dt_out DATETIME NOT NULL,
          usr INTEGER NOT NULL REFERENCES usr,
        dt_in DATETIME NULL,
@@ -432,7 +435,7 @@ CREATE TABLE checkout
  *         data  binary image of the document's unstructured data
  */
 CREATE TABLE doc_blob
-         (id INTEGER NOT NULL REFERENCES document,
+         (id INTEGER NOT NULL REFERENCES all_docs,
         data IMAGE NOT NULL,
  PRIMARY KEY (id))
 
@@ -458,7 +461,7 @@ CREATE TABLE doc_blob
  *      comment  optional free-text notes concerning this attribute value
  */
 CREATE TABLE doc_attr
-         (id INTEGER NOT NULL REFERENCES document,
+         (id INTEGER NOT NULL REFERENCES all_docs,
         name VARCHAR(32) NOT NULL,
          num INTEGER NOT NULL,
          val NVARCHAR(255) NULL,
@@ -487,7 +490,7 @@ CREATE TABLE id_category
  *           id  value of the external identifier; e.g., '99446448'
  */
 CREATE TABLE external_id
-   (document INTEGER NOT NULL REFERENCES document,
+   (document INTEGER NOT NULL REFERENCES all_docs,
       id_cat INTEGER NOT NULL REFERENCES id_category,
           id VARCHAR(32) NOT NULL,
  PRIMARY KEY (id_cat, id))
@@ -505,7 +508,7 @@ CREATE TABLE external_id
  *      comment  optional free-form text explanation of the changes
  */
 CREATE TABLE audit_trail
-   (document INTEGER NOT NULL REFERENCES document,
+   (document INTEGER NOT NULL REFERENCES all_docs,
           dt DATETIME NOT NULL,
          usr INTEGER NOT NULL REFERENCES usr,
       action INTEGER NOT NULL REFERENCES action,
@@ -564,7 +567,7 @@ CREATE TABLE debug_log
  *               of the document
  */
 CREATE TABLE doc_version
-             (id INTEGER NOT NULL REFERENCES document,
+             (id INTEGER NOT NULL REFERENCES all_docs,
              num INTEGER NOT NULL,
               dt DATETIME NOT NULL,
       updated_dt DATETIME NOT NULL,
@@ -609,7 +612,7 @@ CREATE TABLE version_label
 CREATE TABLE doc_version_label
 
       (label INTEGER NOT NULL REFERENCES version_label,
-    document INTEGER NOT NULL REFERENCES document,
+    document INTEGER NOT NULL REFERENCES all_docs,
          num INTEGER NOT NULL,
  PRIMARY KEY (label, document))
   
@@ -758,9 +761,9 @@ CREATE TABLE link_properties (
  */
 CREATE TABLE link_net (
           link_type INTEGER NOT NULL REFERENCES link_type,
-         source_doc INTEGER NOT NULL REFERENCES document,
+         source_doc INTEGER NOT NULL REFERENCES all_docs,
         source_elem VARCHAR(32) NOT NULL,
-         target_doc INTEGER NULL REFERENCES document,
+         target_doc INTEGER NULL REFERENCES all_docs,
         target_frag VARCHAR(32) NULL,
                 url VARCHAR(256) NULL,
 )
@@ -777,7 +780,7 @@ CREATE TABLE link_net (
  *     fragment  Value of id attribute in element.
  */
 CREATE TABLE link_fragment (
-         doc_id INTEGER NOT NULL REFERENCES document,
+         doc_id INTEGER NOT NULL REFERENCES all_docs,
        fragment VARCHAR(64),
     PRIMARY KEY (doc_id, fragment)
 )
@@ -802,7 +805,7 @@ CREATE TABLE link_fragment (
  *               table represent sibling under the same parent.
  */
 CREATE TABLE query_term
-     (doc_id INTEGER NOT NULL REFERENCES document,
+     (doc_id INTEGER NOT NULL REFERENCES all_docs,
         path VARCHAR(512) NOT NULL,
        value NVARCHAR(255) NOT NULL,
      int_val INTEGER NULL,
