@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.33 2002-09-13 21:48:17 anon Exp $
+ * $Id: CdrServer.cpp,v 1.34 2002-09-13 21:53:04 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2002/09/13 21:48:17  anon
+ * Testing anonymous CVS.
+ *
  * Revision 1.32  2002/08/12 15:48:11  bkline
  * Error handling enhanced for _beginthread() failure.
  *
@@ -129,7 +132,6 @@ const short CDR_PORT = 2019;
 const int   CDR_QUEUE_SIZE = 10;
 const unsigned int MAX_REQUEST_LENGTH = 25000000;
 
-// I'M A READER, NOT A WRITER!
 // Local functions.
 static void             cleanup();
 static int              readRequest(int, std::string&, const cdr::String&);
