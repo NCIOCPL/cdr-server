@@ -1,10 +1,14 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.8 2000-10-05 21:26:14 bkline Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.9 2001-04-05 19:58:18 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2000/10/05 21:26:14  bkline
+ * Moved most of the lower-level schema validation routines to the CdrXsd
+ * module.
+ *
  * Revision 1.7  2000/10/05 14:40:33  ameyer
  * Converted to work with CdrDoc objects, to implement link validation,
  * and to handle database update flags differently.
@@ -178,13 +182,14 @@ cdr::String cdr::validateDoc(
  *   the database.
  *
  * @param  docObj           Reference to CdrDoc object to validate
- * @param  errList          Reference to list of strings for error msgs
- * @param  dbUpdate         Instructions pertaining to database update
+ * @param  validRule        Instructions pertaining to database update
  *                              ValidateOnly - Do not update status/link info.
  *                              UpdateIfValid - Update info if doc valid.
  *                              UpdateUnconditionally - Update status/link
+ * @param  validationTypes  String containing list of all types of validation
+ *                          to perform.
  *
- * @return                  Validation status
+ * @return                  Packed error list string.
  */
 
 cdr::String cdr::execValidateDoc (
@@ -287,7 +292,7 @@ void cdr::validateDocAgainstSchema(
     cdr::dom::Parser parser;
     parser.parse(schemaString);
     cdr::xsd::validateDocAgainstSchema(docElem,
-                                  parser.getDocument().getDocumentElement(), 
+                                  parser.getDocument().getDocumentElement(),
                                   errors);
 }
 
