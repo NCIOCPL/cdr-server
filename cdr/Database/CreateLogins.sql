@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.20 2005-03-04 22:35:34 bkline Exp $
+ * $Id: CreateLogins.sql,v 1.21 2005-03-04 22:48:08 bkline Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2005/03/04 22:35:34  bkline
+ * Added GRANT statement for new external_map_rule table.
+ *
  * Revision 1.19  2005/01/07 16:28:47  bkline
  * Added rights for ctgov_export table.
  *
@@ -401,4 +404,14 @@ GO
 GRANT SELECT, INSERT ON ctgov_export TO CdrPublishing
 GO
 GRANT SELECT ON external_map_rule TO CdrGuest
+GO
+GRANT SELECT ON import_disposition TO CdrGuest
+GO
+GRANT SELECT ON import_source TO CdrGuest
+GO
+GRANT SELECT ON import_doc TO CdrGuest
+GO
+GRANT SELECT ON import_job TO CdrGuest
+GO
+GRANT SELECT ON import_event TO CdrGuest
 GO
