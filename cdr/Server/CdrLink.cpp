@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.19 2002-07-25 09:57:33 bkline Exp $
+ * $Id: CdrLink.cpp,v 1.20 2002-08-11 22:48:34 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2002/07/25 09:57:33  bkline
+ * Turned off timing code.
+ *
  * Revision 1.18  2002/07/24 15:09:36  bkline
  * Added performance enhancements to link and query_term table updates.
  *
@@ -1566,6 +1569,18 @@ void cdr::link::updateLinkNet (
             "             url)         "
             "     VALUES (?,?,?,?,?,?) ");
     for (rsi = rowsToInsert->begin(); rsi != rowsToInsert->end(); ++rsi) {
+        // XXX This is a stopgap measure.  Problems should be detected and
+        //     reported when the link tree is built.
+        if (rsi->target_frag.size() > 32) {
+            cdr::log::pThreadLog->Write(L"updateLinkNet",
+                    L"target_frag too long" + rsi->target_frag);
+            continue;
+        }
+        if (rsi->url.size() > 256) {
+            cdr::log::pThreadLog->Write(L"updateLinkNet",
+                    L"url too long" + rsi->url);
+            continue;
+        }
         insStmt.setInt   (1, docId);
         insStmt.setInt   (2, rsi->link_type);
         insStmt.setString(3, rsi->source_elem);
