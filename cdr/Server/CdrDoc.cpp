@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.29 2002-02-14 21:42:35 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.30 2002-02-27 01:44:10 ameyer Exp $
  *
  */
 
@@ -1494,8 +1494,14 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
         parser.parse(Xml);
         docElement = parser.getDocument().getDocumentElement();
     }
-    catch (const cdr::dom::XMLException& e) {
-        // Eliminate warning on usused variable
+
+    // Parsing will be tried again later, errors here are redundant
+    catch (cdr::Exception) {
+        // Validation will catch the fact that the document is malformed.
+        return;
+    }
+    catch (cdr::dom::XMLException &e) {
+        // Eliminate warning on unused variable
         void *foo = (void *) &e;
 
         // Validation will catch the fact that the document is malformed.
