@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSession.h,v 1.5 2000-04-22 18:01:26 bkline Exp $
+ * $Id: CdrSession.h,v 1.6 2000-04-22 18:57:38 bkline Exp $
  *
  * Information about the current login.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/04/22 18:01:26  bkline
+ * Fleshed out documentation comments.
+ *
  * Revision 1.4  2000/04/21 14:02:06  bkline
  * Added canDo() method.
  *
@@ -23,7 +26,13 @@
 #include "CdrString.h"
 #include "CdrDbConnection.h"
 
+/**@#-*/
+
 namespace cdr {
+
+/**@#+*/
+
+    /** @pkg cdr */
 
     /**
      * A <code>Session</code> object carries information about the currently

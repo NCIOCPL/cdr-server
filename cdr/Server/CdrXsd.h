@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.h,v 1.3 2000-04-22 18:01:26 bkline Exp $
+ * $Id: CdrXsd.h,v 1.4 2000-04-22 18:57:38 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/04/22 18:01:26  bkline
+ * Fleshed out documentation comments.
+ *
  * Revision 1.2  2000/04/11 21:23:40  bkline
  * Fleshed out support for simple types; added true type inheritance.
  *
@@ -21,9 +24,14 @@
 #include "CdrException.h"
 #include "CdrDom.h"
 
-namespace cdr {
+/**@#-*/
 
+namespace cdr {
     namespace xsd {
+
+/**@#+*/
+
+    /** @pkg cdr.xsd */
 
         /**
          * Schema constants, used to recognize tokens found by the parser.

@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.6 2000-04-22 18:01:26 bkline Exp $
+ * $Id: CdrString.h,v 1.7 2000-04-22 18:57:38 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/04/22 18:01:26  bkline
+ * Fleshed out documentation comments.
+ *
  * Revision 1.5  2000/04/21 14:01:17  bkline
  * Added String(size_t, wchar_t) constructor.
  *
@@ -30,7 +33,13 @@
 // IBM DOM implementation.
 #include <dom/DOMString.hpp>
 
+/**@#-*/
+
 namespace cdr {
+
+/**@#+*/
+
+    /** @pkg cdr */
 
     /**
      * This typedef is required to work around MSVC++ bugs in the handling of

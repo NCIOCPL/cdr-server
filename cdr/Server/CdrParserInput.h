@@ -1,9 +1,12 @@
 /*
- * $Id: CdrParserInput.h,v 1.2 2000-04-22 16:33:24 bkline Exp $
+ * $Id: CdrParserInput.h,v 1.3 2000-04-22 18:57:38 bkline Exp $
  *
  * Maintains state information for input for CDR string parser.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/22 16:33:24  bkline
+ * Fleshed out documentation.
+ *
  * Revision 1.1  2000/04/21 14:00:52  bkline
  * Initial revision
  */
@@ -14,7 +17,13 @@
 #include "CdrString.h"
 #include "CdrException.h"
 
+/**@#-*/
+
 namespace cdr {
+
+/**@#+*/
+
+    /** @pkg cdr */
 
     /**
      * The <code>ParserInput</code> class manages the input fed to a

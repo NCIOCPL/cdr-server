@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.4 2000-04-22 15:34:56 bkline Exp $
+ * $Id: CdrCommand.h,v 1.5 2000-04-22 18:57:38 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/04/22 15:34:56  bkline
+ * Filled out documentation comments.
+ *
  * Revision 1.3  2000/04/16 19:11:36  bkline
  * Added const qualifier to Node argument in Command signature.
  *
@@ -23,7 +26,14 @@
 #include "CdrString.h"
 #include "CdrDbConnection.h"
 
+/**@#-*/
+
 namespace cdr {
+
+/**@#+*/
+
+    /** @pkg cdr */
+
     /**
      * All external commands have this signature.
      */
@@ -66,6 +76,7 @@ namespace cdr {
     extern String report     (Session&, const dom::Node&, db::Connection&);
     extern String filter     (Session&, const dom::Node&, db::Connection&);
     extern String getLinks   (Session&, const dom::Node&, db::Connection&);
+
 }
 
 #endif

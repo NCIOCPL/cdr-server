@@ -1,9 +1,13 @@
 /*
- * $Id: CdrDbConnection.h,v 1.4 2000-04-22 15:35:15 bkline Exp $
+ * $Id: CdrDbConnection.h,v 1.5 2000-04-22 18:57:38 bkline Exp $
  *
  * Interface for CDR wrapper for an ODBC database connection.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/04/22 15:35:15  bkline
+ * Filled out documentation comments.  Made all ODBC-specific members
+ * private.
+ *
  * Revision 1.3  2000/04/22 09:35:43  bkline
  * Added transaction support and getLastIdent() method.
  *
@@ -22,8 +26,14 @@
 #include "CdrString.h"
 #include "CdrException.h"
 
+/**@#-*/
+
 namespace cdr {
     namespace db {
+
+/**@#+*/
+
+        /** @pkg cdr.db */
 
         // Forward references.
         class Statement;

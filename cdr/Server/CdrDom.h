@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.h,v 1.3 2000-04-22 15:38:53 bkline Exp $
+ * $Id: CdrDom.h,v 1.4 2000-04-22 18:57:38 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/04/22 15:38:53  bkline
+ * Added more documentation comments.
+ *
  * Revision 1.2  2000/04/16 19:10:30  bkline
  * Added new function getTextContent().
  *
@@ -24,8 +27,14 @@
 
 #include "CdrString.h"
 
+/**@#-*/
+
 namespace cdr {
     namespace dom {
+
+/**@#+*/
+
+        /** @pkg cdr.dom */
 
         // Map back to names in DOM standard.
         typedef ::DOM_NamedNodeMap  NamedNodeMap;
