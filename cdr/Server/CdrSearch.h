@@ -1,10 +1,13 @@
 /*
- * $Id: CdrSearch.h,v 1.4 2000-04-26 01:37:28 bkline Exp $
+ * $Id: CdrSearch.h,v 1.5 2000-05-04 12:39:43 bkline Exp $
  *
  * Interface for CDR search implementation.  Used by implementation of search
  * command and by the query parser.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/04/26 01:37:28  bkline
+ * Tweaking ccdoc comments.
+ *
  * Revision 1.3  2000/04/22 18:57:38  bkline
  * Added ccdoc comment markers for namespaces and @pkg directives.
  *
@@ -43,7 +46,13 @@ namespace cdr {
          */
         enum NodeType { ASSERTION, BOOLEAN, NEGATION };
 
+        /**
+         * Delimiter tokens used to mark temporarily string or integer
+         * parameters in a query expression which must be extracted to
+         * positional parameters when the query is executed.
+         */
         enum Delimiters { STRING_MARK = 0xE001, INT_MARK = 0xE002 };
+
         /**
          * An <code>OpType</code> represents either the type of an operator
          * used in a simple assertion (for example, an equality operator),
@@ -70,6 +79,10 @@ namespace cdr {
 
         /**
          * Constructor for a node representing a test of a named attribute.
+         *
+         *  @param  s1          left operand of the test operator.
+         *  @param  o           token representing the test operator.
+         *  @param  s2          right operand of the test operator.
          */
         QueryNode(const String& s1, OpType o, const String& s2)
             : lValueType(ATTR), nodeType(ASSERTION), lValueName(s1), op(o),
@@ -78,6 +91,13 @@ namespace cdr {
         /**
          * Constructor for a node representing a test of a document "control"
          * value.
+         *
+         *  @param  t           one of the <code>LValueType</code> tokens
+         *                      representing a known control type.
+         *  @param  o           token representing the test operator.
+         *  @param  s           reference to object containing string to 
+         *                      be compared to the documents' comparable
+         *                      values.
          */
         QueryNode(LValueType t, OpType o, const String& s)
             : lValueType(t), op(o), nodeType(ASSERTION), rValue(s), 
@@ -85,34 +105,89 @@ namespace cdr {
 
         /**
          * Constructor for a node representing negation of another node.
+         *
+         *  @param  n           address of node whose assertions are being
+         *                      negated.
          */
         QueryNode(QueryNode* n) : nodeType(NEGATION), left(0), right(n) {}
 
         /**
          * Constructor for a node representing a boolean combination of two
          * other nodes.
+         *
+         *  @param  n1          left operand of the Boolean operator.
+         *  @param  o           token representing the Boolean operator.
+         *  @param  n2          right operand of the Boolean operator.
          */
         QueryNode(QueryNode* n1, OpType o, QueryNode* n2)
             : left(n1), op(o), right(n2), nodeType(BOOLEAN) {}
 
         /**
-         * Access methods.
+         * Accessor method for the query node's operator.
+         *
+         *  @return             token representing the object's operator.
          */
         OpType      getOp()         const { return op;         }
+
+        /**
+         * Accessor method for the query node's lvalue type (for testing a
+         * known control type value).
+         *
+         *  @return             token representing the object's control value
+         *                      type.
+         */
         LValueType  getLValueType() const { return lValueType; }
+
+        /**
+         * Accessor method for the name of the attribute to be tested (when
+         * the <code>LValueType</code> is <code>ATTR</code>.
+         *
+         *  @return             name of the attribute to be tested.
+         */
         String      getLValueName() const { return lValueName; }
+
+        /**
+         * Accessor method for the query node's string value to be tested
+         * against the corresponding values contained in the CDR documents.
+         *
+         *  @return             string containing the node's test value.
+         */
         String      getRValue()     const { return rValue;     }
+
+        /**
+         * Accessor method for the query node's type.
+         *
+         *  @return             token representing the object's type.
+         */
         NodeType    getNodeType()   const { return nodeType;   }
+
+        /**
+         * Accessor method for the query node's left-side child.
+         *
+         *  @return             token representing the object's left-side
+         *                      child.
+         */
         QueryNode*  getLeftNode()   const { return left;       }
+
+        /**
+         * Accessor method for the query node's right-side child.
+         *
+         *  @return             token representing the object's right-side
+         *                      child.
+         */
         QueryNode*  getRightNode()  const { return right;      }
 
         /**
          * Recursively constructs the portion of the WHERE clause representing
          * the tests for this node in the query tree.
+         *
+         *  @return             new <code>String</code> object containing
+         *                      the SQL test(s) for this node.
          */
         String      getSql()        const;
 
     private:
+
         OpType      op;
         LValueType  lValueType;
         String      lValueName;
@@ -155,10 +230,14 @@ namespace cdr {
          * Generates a <code>String</code> containing the SQL for the query.
          * Most of the work is handled by the recursive work of the
          * <code>getSql()</code> method of <code>QueryNode</code>.
+         *
+         *  @return             new <code>String</code> object for SQL
+         *                      query to be submitted to the CDR database.
          */
         String      getSql();
 
     private:
+
         QueryNode*  tree;
         void        freeNodes(QueryNode*);
         bool        hasDocTypeTest;
@@ -184,9 +263,24 @@ namespace cdr {
         /**
          * Creates a wrapper for the pointers to the private information 
          * needed by the parser and lexical analyzer.
+         *
+         *  @param  q       address of <code>Query</code> object to be
+         *                  populated by the parser.
+         *  @param  pi      address of <code>ParserInput</code> object
+         *                  containing XQL query to be parsed.
          */
         QueryParam(Query* q, void* pi) : query(q), parserInput(pi) {}
+
+        /**
+         * Address of <code>Query</code> object to be populated by the query
+         * parser.
+         */
         Query*      query;
+
+        /**
+         * Address of <code>ParserInput</code> object containing XQL query to
+         * be parsed.
+         */
         void*       parserInput;
     };
 

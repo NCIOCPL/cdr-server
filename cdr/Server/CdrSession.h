@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSession.h,v 1.6 2000-04-22 18:57:38 bkline Exp $
+ * $Id: CdrSession.h,v 1.7 2000-05-04 12:39:43 bkline Exp $
  *
  * Information about the current login.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/04/22 18:57:38  bkline
+ * Added ccdoc comment markers for namespaces and @pkg directives.
+ *
  * Revision 1.5  2000/04/22 18:01:26  bkline
  * Fleshed out documentation comments.
  *
@@ -92,8 +95,13 @@ namespace cdr {
          * was received and handled for the session.  This information can be
          * used by the server to time out sessions which have been inactive
          * for a long time.
+         *
+         *  @param  conn            reference to active connection object
+         *                          for CDR database, whose clock we use as
+         *                          the reference for the current date and
+         *                          time.
          */
-        void setLastActivity(db::Connection&) const;
+        void setLastActivity(db::Connection& conn) const;
 
         /**
          * Returns <code>true</code> if the user account for the current
@@ -101,6 +109,20 @@ namespace cdr {
          * specified document type.  For actions which are independent of
          * specific document types (such as ADD USER), the caller must pass an
          * empty (not a NULL) String.
+         *
+         *  @param  connection      reference to active connection object
+         *                          for the CDR database, which we query to
+         *                          determine whether the user can perform the
+         *                          specified action.
+         *  @param  action          name of the action to be checked.
+         *  @param  docType         name of the document type for which the
+         *                          action should be checked (or an empty
+         *                          string for an action which is not
+         *                          associated with any particular document
+         *                          type.
+         *  @return                 <code>true</code> iff the user is 
+         *                          authorized to perform the specified
+         *                          action.
          */
         bool canDo(db::Connection&    connection, 
                    const cdr::String& action, 

@@ -1,7 +1,11 @@
 /*
- * $Id: CdrString.h,v 1.9 2000-05-03 15:42:31 bkline Exp $
+ * $Id: CdrString.h,v 1.10 2000-05-04 12:39:43 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2000/05/03 15:42:31  bkline
+ * Added greater-than and less-than comparison operators.  Added getFloat()
+ * method.
+ *
  * Revision 1.8  2000/04/26 01:40:12  bkline
  * Added copy constructor, != operator, and extractDocId() method.
  *
@@ -63,24 +67,39 @@ namespace cdr {
         /**
          * Creates an empty string.  The object represents a <code>NULL</code>
          * string if the optional argument is set to <code>true</code>.
+         *
+         *  @param  n           <code>true</code> if the object represents
+         *                      a NULL value; defaults to <code>false</code>.
          */
         String(bool n = false) : null(n) {}
 
         /**
          * Creates a non-NULL <code>String</code> object from a
          * null-terminated buffer of wide characters.
+         *
+         *  @param  s           address of null-terminated array of characters
+         *                      representing a string encoded as UTF-16.
          */
         String(const wchar_t* s) : StdWstring(s), null(false) {}
 
         /**
          * Creates a non-NULL <code>String</code> object from at most the
          * first <code>n</code> wide characters in buffer <code>s</code>.
+         *
+         *  @param  s           address of array of characters representing
+         *                      a string encoded as UTF-16.
+         *  @param  n           limit to the number of characters in the
+         *                      array to be used in constructing the new
+         *                      object.
          */
         String(const wchar_t* s, size_t n) : StdWstring(s, n), null(false) {}
 
         /**
          * Creates a non-NULL <code>String</code> object from a standard
          * <code>wstring</code>.
+         *
+         *  @param  s           reference to standard string object to be
+         *                      copied.
          */
         String(const StdWstring& s) : StdWstring(s), null(false) {}
 
@@ -88,12 +107,19 @@ namespace cdr {
          * Creates a non-NULL <code>String</code> object from a
          * null-terminated buffer of characters encoded using
          * <code>UTF-8</code>.
+         *
+         *  @param  s           address of null-terminated array of characters
+         *                      representing a string encoded as UTF-8.
          */
         String(const char* s) : null(false) { utf8ToUtf16(s); }
 
         /**
          * Creates a non-NULL <code>String</code> object from a standard
          * <code>string</code> encoded using <code>UTF-8</code>.
+         *
+         *  @param  s           reference to standard <code>string</code>
+         *                      object containing UTF-8 encoded value for
+         *                      object.
          */
         String(const std::string& s) : null(false) { utf8ToUtf16(s.c_str()); }
 
@@ -103,66 +129,112 @@ namespace cdr {
          * Useful for creating a <code>String</code> which is known in advance
          * to require at least <code>n</code> characters, but whose contents
          * must be determined after creation of the object.
+         *
+         *  @param  n           size of new object (in characters).
+         *  @param  c           character to be used to initialize the object.
          */
         String(size_t n, wchar_t c) : StdWstring(n, c), null(false) {}
 
         /**
          * Creates a non-NULL <code>String</code> object from a string used by
          * the DOM interface.
+         *
+         *  @param  s           reference to DOM string to be copied.
          */
         String(const DOMString& s) 
             : StdWstring(s.rawBuffer(), s.length()), null(false) {}
 
         /**
          * Copy constructor.
+         *
+         *  @param  s           reference to object to be copied.
          */
         String(const String& s) : StdWstring(s), null(s.null) {}
 
         /**
-         * Compares another cdr::String to this one.
+         * Compares another cdr::String to this one.  Case is significant for
+         * the purposes of this comparison.
+         *
+         *  @param  s           reference to object to be compared with this
+         *                      object.
+         *  @return             <code>true</code> iff the contents of this
+         *                      object differ from those of <code>s</code>.
          */
         bool operator!=(const String& s) const
             { return *this != static_cast<const StdWstring&>(s); }
 
         /**
-         * Compares another cdr::String to this one.
+         * Compares another cdr::String to this one.  Case is significant for
+         * the purposes of this comparison.
+         *
+         *  @param  s           reference to object to be compared with this
+         *                      object.
+         *  @return             <code>true</code> iff the contents of this
+         *                      object sort lexically before those of 
+         *                      <code>s</code>.
          */
         bool operator<(const String& s) const
             { return *this < static_cast<const StdWstring&>(s); }
 
         /**
-         * Compares another cdr::String to this one.
+         * Compares another cdr::String to this one.  Case is significant for
+         * the purposes of this comparison.
+         *
+         *  @param  s           reference to object to be compared with this
+         *                      object.
+         *  @return             <code>true</code> iff the contents of this
+         *                      object sort lexically after those of 
+         *                      <code>s</code>.
          */
         bool operator>(const String& s) const
             { return *this > static_cast<const StdWstring&>(s); }
 
         /**
-         * Returns <code>true</code> if the object represents a
-         * <code>NULL</code> string.
+         * Accessor method for determining whether this object is NULL.
+         *
+         *  @return             <code>true</code> iff the object represents
+         *                      a <code>NULL</code> string.
          */
         bool isNull() const { return null; }
 
         /**
          * Parses the integer value represented by the string value of the
          * object.
+         *
+         *  @return             integer value represented by the string 
+         *                      value of the object; <code>0</code> if
+         *                      the value of the object does not represent 
+         *                      a number.
          */
         int getInt() const;
 
         /**
          * Parses the floating-point value represented by the string value of 
          * the object.
+         *
+         *  @return             floating-point value represented by the string 
+         *                      value of the object; <code>0.0</code> if
+         *                      the value of the object does not represent 
+         *                      a number.
          */
         double getFloat() const;
 
         /**
          * Creates a standard <code>string</code> copy of the value of the
          * object, encoded using <code>UTF-8</code>.
+         *
+         *  @return             new <code>string</code> object containing
+         *                      UTF-8 encoding of the object's value.
          */
         std::string toUtf8() const;
 
         /**
          * Skips past the 'CDR' prefix and extracts the integer id for the
          * document.
+         *
+         *  @return             integer for the document's primary key.
+         *  @exception          <code>cdr::Exception</code> if the first
+         *                      characters of the string are not "CDR".
          */
         int extractDocId() const;
 
@@ -173,7 +245,7 @@ namespace cdr {
 
     /**
      * Containers of <code>String</code> objects.  Typedefs given here for
-     * convenience.
+     * convenience, and as workarounds for MSVC++ template bugs.
      */
     typedef std::set<String>             StringSet;
     typedef std::vector<String>          StringVector;
