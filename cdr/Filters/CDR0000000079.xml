@@ -54,7 +54,7 @@
            TYPE='text/css' /> -->
     </HEAD>
      <BASEFONT FACE='Arial, Helvetica, sans-serif' /> 
-    <xsl:apply-templates select="Summary"/>
+     <xsl:apply-templates select="Summary"/>
     </HTML>
    </xsl:template>
 
@@ -62,10 +62,11 @@
            Display summary title
        ================================================================== -->
 
-<xsl:template match="Summary">
+<xsl:template                  match = "Summary">
 
  <BODY>
-  <xsl:apply-templates select="SummaryTitle" mode="TOC"/>  
+  <xsl:apply-templates        select = "SummaryTitle" 
+                                mode = "TOC"/>  
 
 <!-- ==================================================================
           Display a Contents List of Summary Section Titles 
@@ -85,41 +86,10 @@
 
  </BODY>
 </xsl:template>
-
-
-<!-- ======================================================================
-    templates to handle summary section anchors,list formats, and paragraphs
-     that can occur in any order in the summaries 
-     10/06/2002(CB) - Added templates for inserted titles to preserve the format
-                  for newly inserted titles (CB)
-      10/09/2002 (CB) Removed italics from third level titles
-     ====================================================================== -->
-
-<!-- Display a summary section title and include anchor --> 
-
- 
-<xsl:template match="SummarySection/Title | SummarySection/*/Title | */SummarySection/Title">
-<h2><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h2>
-</xsl:template>
-
-<xsl:template match="SummarySection/SummarySection/Title | SummarySection/*/SummarySection/Title |*/SummarySection/SummarySection/Title | SummarySection/SummarySection/*/Title | */SummarySection/*/SummarySection/Title">
-<h3><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h3>
-</xsl:template>
-
- <xsl:template match="SummarySection/SummarySection/SummarySection/Title | SummarySection/SummarySection/SummarySection/*/Title | */SummarySection/SummarySection/SummarySection/Title | SummarySection/*/SummarySection/SummarySection/Title | SummarySection/SummarySection/*/SummarySection/Title | SummarySection/*/SummarySection/*/SummarySection/Title | SummarySection/*/SummarySection/*/SummarySection/*/SummarySection/Title">
-<h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4>
-</xsl:template>
-
-
-
-<xsl:template match="SummarySection/SummarySection/SummarySection/SummarySection/Title | SummarySection/*/SummarySection/SummarySection/SummarySection/*/Title | */SummarySection/SummarySection/SummarySection/SummarySection/*/Title | SummarySection/SummarySection/*/SummarySection/SummarySection/Title | SummarySection/SummarySection/SummarySection/*/SummarySection/Title | SummarySection/*/SummarySection/*/SummarySection/SummarySection/Title | SummarySection/*/SummarySection/*/SummarySection/*/SummarySection/Title | */ SummarySection/*/SummarySection/*/SummarySection/*/SummarySection/Title">
-<i><h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4></i>
-</xsl:template>
           
 <!-- ======================================================================
-                           display CitationLink
+       Display CitationLinks
      ===================================================================== -->
-
     <xsl:template              match = "CitationLink">
      <xsl:variable              name = "nextRef" 
                               select = "position()+1"/>
@@ -172,64 +142,19 @@
       
     </xsl:template>
 
-
- 
-<!-- =========================================================
-                       Link to glossaryTermRefs 
-     =========================================================-->
-<xsl:template match="GlossaryTermRef">
- <a>
- <xsl:attribute name="href">
- <xsl:value-of select="concat('/cgi-bin/cdr/Filter.py?DocId=',@cdr:href,'&amp;Filter=name:Glossary+Term+Display+for+Patient+Summaries')"/>
- </xsl:attribute>
-<xsl:value-of select="."/>
-</a>
-</xsl:template>
-
-
-
-<!-- ===================================================================
-                 display references 
-     ================================================================== -->
-
-<xsl:template match="ReferenceList">
-<xsl:if test="Reference">
-<xsl:choose>
-<xsl:when test="/Summary/SummaryMetaData/SummaryLanguage='Spanish'">
-<h3><b>Referencias:</b></h3>
-</xsl:when>
-<xsl:otherwise>
-<h3><b>References:</b></h3>
-</xsl:otherwise>
-</xsl:choose>
-<ol>
-<xsl:for-each select="Reference | Deletion | Insertion">
-<p><li><xsl:apply-templates select=".">
-</xsl:apply-templates></li></p>
-</xsl:for-each>
-</ol>
-</xsl:if>
-</xsl:template>
-
-
-
 <!-- =======================================================================
        This template deletes data elements not used in the display 
-     ==================================================================== -->
-
-<xsl:template match="PdqKey | PDQBoard | SectionType |Diagnosis | SummaryLanguage| SummaryType |SummaryAudience | SummaryTitle |MainTopics | SecondaryTopics | DocId| DateLastModified | PatientVersionOf | TranslationOf"/>
-
-<!-- ============================================================
-                          Display Paragraphs 
-     ============================================================== -->
-
-                         <xsl:template match="Para">
-                         <p><xsl:apply-templates/></p>
-                         </xsl:template>
-
+     ==================================================================== --> 
+    <xsl:template              match = "PdqKey | PDQBoard | SectionType |
+                                        Diagnosis | SummaryLanguage |       
+                                        SummaryType |SummaryAudience |
+                                        SummaryTitle |MainTopics | 
+                                        SecondaryTopics | DocId| 
+                                        DateLastModified | PatientVersionOf |
+                                        TranslationOf"/>
                        
 <!-- ================================================================== 
-                       Display an Insertion 
+       Display an Insertion 
      =================================================================== -->
     <xsl:template              match = "Insertion">
      <xsl:choose>
@@ -245,94 +170,41 @@
       </xsl:otherwise>
      </xsl:choose>
     </xsl:template>
-                
-   
-       <!-- Added 10/07/2002 to display inserted text in table header (CB)
-
-                <xsl:template match="Entry/Insertion">
-                <font color="#FF0000"><xsl:apply-templates/></font>
-                 </xsl:template>-->
-
          
 <!-- ==================================================================
-                     Display a Deletion 
+       Display a Deletion 
      =================================================================== -->
-
-
-
-              <xsl:template match="Deletion">
-              <strike><xsl:apply-templates/></strike>
-              </xsl:template>
-
-                          
-
-
-
-     <!-- Added 10/07/2002 to display deleted text in table header (CB)-->
-
-               <xsl:template match="Entry/Deletion">
-               <strike><xsl:apply-templates/></strike>
-               </xsl:template>
-
-
-
-<!-- =====================================================================
-            Create a link to another document or website 
-     ================================================================== -->
-
-          <xsl:template match="ExternalRef">
-          <xsl:variable name="nlink" select="@cdr:xref"/>
-          <a href="{$nlink}"><xsl:apply-templates/></a>
-          </xsl:template>
-
-           <xsl:template match="Reference/ExternalRef">
-          <xsl:variable name="nlink" select="@cdr:xref"/>
-          <a href="{$nlink}"><xsl:apply-templates/></a>
-          </xsl:template>
-
-
-<!--=====================================================================
-                              Display tables -old format
-    ==================================================================== -->
-
-                 <xsl:template match="Para/TT">
-                 <pre><xsl:apply-templates/></pre>
-                 </xsl:template>
+    <xsl:template              match = "Deletion">
+     <strike>
+     <xsl:apply-templates/>
+     </strike>
+    </xsl:template>
 
 <!--=====================================================================
          Display an ordered list 
     ==================================================================== -->
-  <xsl:template                  match = "OrderedList">
-    <xsl:variable                 name = "redline">
-      <xsl:text>Redline</xsl:text>
+   <xsl:template               match = "OrderedList">
+    <xsl:variable               name = "redline">
+     <xsl:text>Redline</xsl:text>
     </xsl:variable>
-    <xsl:call-template            name = "OrderedList">
-      <xsl:with-param             name = "markup"        
-                                select = "$redline"/>
+    <xsl:call-template          name = "OrderedList">
+     <xsl:with-param            name = "markup"        
+                              select = "$redline"/>
     </xsl:call-template>
-  </xsl:template>
+   </xsl:template>
 
 <!--=====================================================================
                 Display an Itemized List
     ==================================================================== -->
-  <xsl:template                  match = "ItemizedList">
-    <xsl:variable                 name = "redline">
-      <xsl:text>Redline</xsl:text>
+   <xsl:template               match = "ItemizedList">
+    <xsl:variable               name = "redline">
+     <xsl:text>Redline</xsl:text>
     </xsl:variable>
-    <xsl:call-template            name = "ItemizedList">
-      <xsl:with-param             name = "markup"        
-                                select = "$redline"/>
+    <xsl:call-template          name = "ItemizedList">
+     <xsl:with-param            name = "markup"        
+                              select = "$redline"/>
     </xsl:call-template>
-  </xsl:template>
-
-  <!-- ===================================================================
-
-             Display Insertion for Redline/strikeout report
-      =================================================================== -->
-
-   <xsl:template    match="Insertion/Table">
-    <xsl:apply-templates select="." mode="R"/>
-    </xsl:template>
+   </xsl:template>
 
 </xsl:transform>]]>
 </CdrDocXml>
