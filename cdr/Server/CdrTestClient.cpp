@@ -1,5 +1,5 @@
 /*
- * $Id: CdrTestClient.cpp,v 1.5 2001-01-18 14:57:05 bkline Exp $
+ * $Id: CdrTestClient.cpp,v 1.6 2001-05-03 18:43:11 bkline Exp $
  *
  * Test client (C++ version) for sending commands to CDR server.
  *
@@ -16,6 +16,9 @@
  * The encoding for the XML must be UTF-8.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2001/01/18 14:57:05  bkline
+ * Removed unused count variable.
+ *
  * Revision 1.4  2001/01/18 14:51:50  bkline
  * Make "Server response:" header into a comment.
  *
@@ -31,6 +34,8 @@
 
 // System headers.
 #include <winsock.h>
+#include <io.h>
+#include <fcntl.h>
 #include <iostream>
 #include <fstream>
 #include <cstdio>
@@ -41,6 +46,10 @@
 
 // Local constants.
 const short CDR_PORT = 2019;
+#ifndef O_BINARY
+#define O_BINARY _O_BINARY
+#define setmode _setmode
+#endif
 
 // Local functions.
 static std::string  readFile(std::istream&);
@@ -62,15 +71,17 @@ main(int ac, char **av)
 
     // Load the requests.
     if (ac > 1 && strcmp(av[1], "-")) {
-        std::ifstream is(av[1]);
+        std::ifstream is(av[1], std::ios::binary | std::ios::in);
         if (!is) {
             std::cerr << av[1] << ": " << strerror(errno) << '\n';
             return EXIT_FAILURE;
         }
         requests = readFile(is);
     }
-    else
+    else {
+        setmode(fileno(stdout), O_BINARY);
         requests = readFile(std::cin);
+    }
 
     // Initialize socket I/O.
     if (WSAStartup(0x0101, &wsadata) != 0) {
@@ -150,6 +161,7 @@ main(int ac, char **av)
         }
         totalRead += bytesRead;
     }
+    setmode(fileno(stdout), O_BINARY);
     std::cout << "<!-- Server response: -->\n" << response << '\n';
     return EXIT_SUCCESS;
 }
