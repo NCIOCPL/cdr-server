@@ -203,12 +203,26 @@
    <xsl:if                       test   = "LeadOrgRole = 'Primary'">
     <xsl:value-of                select = "Organization/
                                            OrganizationNameInformation/
-                                           OfficialName/Name"/>:
+                                           OfficialName/Name"/>
+    <xsl:text>:</xsl:text>
    </xsl:if>
   </xsl:for-each>
 
   <xsl:text> </xsl:text>
-  <xsl:value-of                  select = "ProtocolTitle"/>
+  <xsl:variable                    name = "protTitle"
+                                 select = "normalize-space(ProtocolTitle)"/>
+  <xsl:choose>
+   <xsl:when                       test = "substring($protTitle, 
+                                                string-length($protTitle), 1)
+                                                                       = ' '">
+    <xsl:value-of                select = "substring($protTitle, 1,
+                                                string-length($protTitle)-1)"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:value-of                select = "$protTitle"/>
+   </xsl:otherwise>
+  </xsl:choose>
+  <!-- xsl:value-of                  select = "ProtocolTitle"/ -->
   <xsl:text>, </xsl:text>
   <xsl:value-of                  select = "ProtocolIDs/PrimaryID/IDString"/>
   <xsl:text>, </xsl:text>
