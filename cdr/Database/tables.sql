@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.4 1999-12-16 21:53:40 bkline Exp $
+ * $Id: tables.sql,v 1.5 2000-02-04 01:53:11 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  1999/12/16 21:53:40  bkline
+ * Added 'approved' column to document table.
+ *
  * Revision 1.3  1999/12/14 23:06:58  bobk
  * After meeting with Alan and Mike.
  *
@@ -460,27 +463,139 @@ CREATE TABLE grp_usr
      comment VARCHAR(255) NULL,
  PRIMARY KEY (grp, usr))
 
-/*
- * Set of valid link types used by link table.
- */
-CREATE TABLE link_type
-         (id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32),
-  transitive BIT,
- cardinality CHAR,
-     comment VARCHAR(255))
 
-/* 
- * Control table for links between documents.  Needs work.  Alan
- * is tackling this one.
+/*************************************************************
+ *      Link related tables
+ *************************************************************/
+
+/*
+ * Valid link types.
+ * Provides a unique identifier for a single link type.
+ * Most types will appear in one specific field of one doctype, but
+ *  it is possible for the same type to be used in more than one place.
+ * Each unique type has defining properties, see table link_properties.
+ *
+ *     id    unique id used in other tables.
+ *     name  human readable name
+ *     comment  optional free tex notes
  */
-CREATE TABLE link
-         (id INTEGER IDENTITY PRIMARY KEY,
-      source INTEGER NOT NULL REFERENCES document,
-      target INTEGER NULL REFERENCES document,
-         url VARCHAR(255) NULL,
-        type INTEGER NOT NULL REFERENCES link_type,
-     comment VARCHAR(255) NULL)
+CREATE TABLE link_type (
+     id INTEGER IDENTITY PRIMARY KEY,
+     name VARCHAR(32) UNIQUE,
+     comment VARCHAR(255) NULL
+)
+
+/*
+ * Link source control.
+ * Checked by link validation software to determine whether 
+ *  a particular field is allowed to contain a particular link type.
+ * A particular field may only contain one link type.  Otherwise
+ *  the presence of a field with an href would not be enough to
+ *  determine the type of link represented.
+ *
+ *     doc_type foreign key references doc_type table
+ *     element  element in doc_type which may contain one of these links.
+ *     link_id  foreign key references link table.
+ */
+CREATE TABLE link_xml (
+     doc_type  integer NOT NULL REFERENCES doc_type,
+     element   VARCHAR(32) NOT NULL UNIQUE,
+     link_id   integer NOT NULL REFERENCES link_type
+)
+
+/*
+ * Types of properties of links.
+ * A list of properties which may appear in the link_prop table.
+ *
+ *     id      unique identifier of property.
+ *     name    human readable property name.
+ *     comment free text comments.
+ */
+CREATE TABLE link_prop_type (
+     id      INTEGER IDENTITY PRIMARY KEY,
+     name    VARCHAR(32) UNIQUE,
+     comment VARCHAR(256) NULL
+)
+
+/*
+ * Properties of links.
+ * Checked by link validation software to determine whether 
+ *  any given link or link set has the specified properties.
+ *
+ *     link_id  identifier for a type of link.
+ *     property identifier for a property type
+ *     value    a valid value of this property for this link type
+ *
+ * Some example properties are:
+ *   Allowed source document type
+ *   Allowed source element type
+ *   Allowed target document type
+ *   Link type is transitive
+ *   Link type is reflexive
+ *   etc.
+ */
+CREATE TABLE link_prop (
+     link_id  INTEGER NOT NULL REFERENCES link_type,
+     property INTEGER NOT NULL REFERENCE link_prop_type,
+     value    VARCHAR(64)
+)
+
+/*
+ * Link network.
+ * A database modelling all of the links found in the xml of all CDR
+ *  documents.  It allows us to find all documents linked to any given
+ *  document, either as source or target, without having to examine 
+ *  the documents themselves.
+ * If target_fmt is not CDR xml, then url is used and target_doc,
+ *  target_doctype and target_frag are all null
+ *
+ *     link_type      an identifier for the type of link, e.g., author, etc.
+ *     val_status     P(assed validation) F(ailed) or N(ot validated).
+ *     source_doc     doc id containing a link element.
+ *     source_doctype doc type of source_doc
+ *     source_elem    element in source doc containing a link.
+ *     target_doc     doc id linked to by source.
+ *     target_fmt     format (xml, html, etc.) of target_doc
+ *     target_doctype doc type of target_doc
+ *     target_frag    fragment id linked to, if any.
+ *     url            alternative to target id + fragment for non CDR targets.
+ *     val_time       date/time err_count set.
+ */
+CREATE TABLE link_net (
+     link_type      INTEGER NOT NULL REFERENCE link_type,
+     val_status     CHAR NOT NULL CHECK (val_status IN ('P', 'F', 'N')),
+     source_doc     INTEGER NOT NULL REFERENCES doc,
+     source_doctype INTEGER NOT NULL REFERENCES doc,
+     source_elem    VARCHAR(32) NOT NULL,
+     target_doc     INTEGER NULL REFERENCES doc,
+     target_fmt     INTEGER NOT NULL REFERENCES format,
+     target_doctype INTEGER REFERENCES doc_type NULL,
+     target_frag    VARCHAR(32) NULL,
+     url            VARCHAR(256) NULL,
+     val_time       DATETIME
+)
+
+/*
+ * Link targets found in the system.
+ * An entry is created here for each document added to the link database.
+ * If the document has any "id" attributes, additional entries are made
+ *  for each doc_id + element + fragment.
+ * This table allows us to quickly determine whether an attempt to link
+ *  to a document or fragment within a document will succeed.
+ *
+ *     doc_id    id of doc containing fragment
+ *     elem      element tag for element containing fragment.
+ *     fragment  value of id attribute in element.
+ */
+CREATE TABLE link_fragment (
+     doc_id     INTEGER NOT NULL REFERENCES doc,
+     elem       VARCHAR(32),
+     fragment   VARCHAR(32)
+)
+
+/*************************************************************
+ *      End link related tables
+ *************************************************************/
 
 /* 
  * Valid value rules.  Requirement 3.3.3.  Another approach might be
