@@ -23,7 +23,7 @@
   <xsl:param                      name = "DateFirstPub"
                                 select = "''"/> 
 
-  <!-- xsl:strip-space        elements = "*"/ -->
+  <xsl:strip-space        elements = "*"/>
 
  <!--
  ====================================================================
@@ -308,11 +308,12 @@
         <xsl:value-of       select = "./@Style"/>
        </xsl:attribute>
       </xsl:if>
-      <xsl:if                 test = "./@Compact">
+      <!-- To be included in June 2003 update  -->
+      <!-- xsl:if                 test = "./@Compact">
        <xsl:attribute          name = "Compact">
         <xsl:value-of       select = "./@Compact"/>
        </xsl:attribute>
-      </xsl:if>
+      </xsl:if -->
       <xsl:apply-templates/>
     </OrderedList>
   </xsl:template>
@@ -332,11 +333,12 @@
         <xsl:value-of       select = "./@Style"/>
        </xsl:attribute>
       </xsl:if>
-      <xsl:if                 test = "./@Compact">
+      <!-- To be included in June 2003 update  -->
+      <!-- xsl:if                 test = "./@Compact">
        <xsl:attribute         name = "Compact">
         <xsl:value-of       select = "./@Compact"/>
        </xsl:attribute>
-      </xsl:if>
+      </xsl:if -->
       <xsl:apply-templates/>
     </OrderedList>
   </xsl:template>
@@ -351,12 +353,24 @@
       <xsl:apply-templates/>
     </ListItem>
   </xsl:template>
+  <xsl:template              match = "ListItem"
+                              mode = "copy">
+    <ListItem>
+      <xsl:apply-templates/>
+    </ListItem>
+  </xsl:template>
     
 
 <!-- ==================================================================== 
      Create the ListTitle
      ==================================================================== -->
   <xsl:template              match = "ListTitle">
+    <ListTitle>
+      <xsl:apply-templates/>
+    </ListTitle>
+  </xsl:template>
+  <xsl:template              match = "ListTitle"
+                              mode = "copy">
     <ListTitle>
       <xsl:apply-templates/>
     </ListTitle>
@@ -384,6 +398,15 @@
              copy the ProtocolRef and GlossaryTermRef elements 
              during the copy of a node tree.
       ============================================================== -->
+ <xsl:template               match = "GlossaryTermRef | ProtocolRef">
+    <xsl:element              name = "{name()}">
+      <xsl:attribute          name = "href">
+       <xsl:value-of        select = "@cdr:href"/>
+      </xsl:attribute>
+      <xsl:apply-templates/>
+    </xsl:element>
+  </xsl:template>
+
  <xsl:template               match = "GlossaryTermRef | ProtocolRef"
                               mode = "copy">
     <xsl:element              name = "{name()}">
@@ -1003,51 +1026,14 @@
  </xsl:template>
 
 
+ <!--
+ ====================================================================
+ Template for inline Note elements
+ ==================================================================== -->
  <xsl:template                   match = "Note">
   <xsl:element                    name = "Note">
    <xsl:apply-templates/>
   </xsl:element>
- </xsl:template>
-
-
-<!-- ======================================================================
-     WARNING: Overwrite the default action for text node.
-     This template must be placed below all templates that match text node,
-     to guarantee that this template will be invoked by this filter.
-     Therefore, we don't include this template from other filters.
-     ===================================================================== -->
- <xsl:template               match = "text">
-
-  <xsl:choose>
-  <!-- For performance concern, we avoid call-template overhead. -->
-   <xsl:when                  test = "normalize-space() != ''">
-    <xsl:value-of           select = "."/>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:call-template        name = "stripSpaceNode"/>
-   </xsl:otherwise>
-  </xsl:choose>
-
- </xsl:template>
-
-
-<!-- ======================================================================
-     WARNING: Overwrite the default action for text node with mode "copy".
-     This template must be placed below all templates that match text node,
-     to guarantee that this template will be invoked by this filter.
-     Therefore, we don't include this template from other filters.
-     ===================================================================== -->
- <xsl:template               match = "text"
-                              mode = "copy">
-  <xsl:choose>
-   <!-- For performance concern, we avoid call-template overhead. -->
-   <xsl:when                  test = "normalize-space() != ''">
-    <xsl:value-of           select = "."/>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:call-template        name = "stripSpaceNode"/>
-   </xsl:otherwise>
-  </xsl:choose>
  </xsl:template>
 
 </xsl:transform>
