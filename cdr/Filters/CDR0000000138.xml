@@ -133,7 +133,9 @@
 <xsl:apply-templates select="PostalAddress/PostalCodePosition" mode="copy"/> 
 </PostalAddress>
 <xsl:if test="Phone">
+<xsl:if test="@Public='Yes'">
 <xsl:apply-templates select="Phone" mode="copy"/>
+</xsl:if>
 </xsl:if>
 <xsl:if test="TollFreePhone">
 <xsl:apply-templates select="TollFreePhone" mode="copy"/>
@@ -144,7 +146,8 @@
 </xsl:if>
 </xsl:if>
 <xsl:if test="WebSite">
-<xsl:apply-templates select="WebSite" mode="copy"/>
+<xsl:variable name="ref" select="@cdr:xref"/>
+<WebSite xref='{$ref}'><xsl:apply-templates select="WebSite" mode="copy"/></WebSite>
 </xsl:if>
 </Home>
 </xsl:for-each>
@@ -183,14 +186,19 @@
 <xsl:apply-templates select="PostalAddress/PostalCode_ZIP" mode="copy"/>
 <xsl:apply-templates select="PostalAddress/PostalCodePosition" mode="copy"/> 
 </PostalAddress>
-<xsl:apply-templates select="../Phone" mode="copy"/>
+<xsl:if test="not(../Phone/@Public='No')">
+<Phone><xsl:value-of select="../Phone"/></Phone>
+</xsl:if>
 <xsl:apply-templates select="../TollFreePhone" mode="copy"/>
 <xsl:if test="Email">
 <xsl:if test="not(@Public='No')">
 <xsl:apply-templates select="SpecificEmail"/>
 </xsl:if>
 </xsl:if>
-<xsl:apply-templates select="../WebSite" mode="copy"/>
+<xsl:if test="../WebSite">
+<xsl:variable name="ref" select="../WebSite/@cdr:xref"/>
+<WebSite xref='{$ref}'></WebSite>
+</xsl:if>
 </PrivatePracticeLocation>
 </xsl:for-each>
 </xsl:if>
@@ -233,9 +241,11 @@
 <xsl:apply-templates select="SpecificPostalAddress/PostalCodePosition" mode="copy"/> 
 </PostalAddress>
 <xsl:if test="SpecificPhone">
+<xsl:if test="not(@Public='No')">
 <Phone><xsl:apply-templates select="SpecificPhone"/></Phone>
 </xsl:if>
-<xsl:if test="Phone">
+</xsl:if>
+<xsl:if test="not(Phone/@Public='No')">
 <Phone><xsl:apply-templates select="Phone"/></Phone>
 </xsl:if>
 
