@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.9 2002-08-23 17:26:37 pzhang Exp $
+ * $Id: CreateLogins.sql,v 1.10 2002-10-17 22:41:30 ameyer Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2002/08/23 17:26:37  pzhang
+ * Corrected mistakes.
+ *
  * Revision 1.8  2002/08/23 17:23:24  pzhang
  * Added permission for PPC and PPCW
  *
@@ -333,4 +336,12 @@ GO
 GRANT SELECT ON primary_pub_job TO CdrGuest
 GO
 GRANT SELECT ON primary_pub_doc TO CdrGuest
+GO
+GRANT SELECT, UPDATE, INSERT ON batch_job TO CdrPublishing
+GO
+GRANT SELECT ON batch_job TO CdrGuest
+GO
+GRANT SELECT, UPDATE, INSERT ON batch_job_parm TO CdrPublishing
+GO
+GRANT SELECT ON batch_job_parm TO CdrGuest
 GO
