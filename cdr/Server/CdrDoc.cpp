@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.11 2001-05-23 01:16:34 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.12 2001-05-25 02:30:41 ameyer Exp $
  *
  */
 
@@ -34,6 +34,9 @@ static cdr::String CdrPutDoc (cdr::Session&, const cdr::dom::Node&,
 
 static void auditDoc (cdr::db::Connection&, int, int, cdr::String,
                       cdr::String, cdr::String);
+
+static void addSingleQueryTerm (cdr::db::Connection&, int,
+                                cdr::String&, cdr::String&);
 
 // Constructor for a CdrDoc
 // Extracts the various elements from the CdrDoc for database update
@@ -813,7 +816,8 @@ void cdr::CdrDoc::updateQueryTerms()
     char selQuery[256];
     sprintf(selQuery, "SELECT path"
                       "  FROM query_term_def"
-                      " WHERE path LIKE '/%s/%%'",
+                      " WHERE path LIKE '/%s/%%'"
+                      "    OR path LIKE '//%%'",
                       TextDocType.toUtf8().c_str());
     cdr::db::ResultSet rs = selStmt.executeQuery(selQuery);
     StringSet paths;
@@ -829,43 +833,83 @@ void cdr::CdrDoc::updateQueryTerms()
         cdr::dom::Parser parser;
         parser.parse(Xml);
         cdr::dom::Node node = parser.getDocument().getDocumentElement();
-        addQueryTerms(cdr::String("/") + node.getNodeName(), node, paths);
+        addQueryTerms(cdr::String(L""), node.getNodeName(), node, paths);
+    }
+}
+
+// See CdrDoc.h for interface documentation
+
+void cdr::CdrDoc::addQueryTerms(const cdr::String& parentPath,
+                                const cdr::String& nodeName,
+                                const cdr::dom::Node& node,
+                                const StringSet& paths)
+{
+    // Create full paths to check in the path lookup table
+    cdr::String fullPath = parentPath + L"/" + nodeName;
+    cdr::String wildPath = cdr::String (L"//") + nodeName;
+
+    // Is either possible description of our current node in the table?
+    if (paths.find(fullPath) != paths.end() ||
+        paths.find(wildPath) != paths.end()) {
+
+        // Add the absolute path to the content to the query table
+        cdr::String value = cdr::dom::getTextContent(node);
+        addSingleQueryTerm (docDbConn, Id, fullPath, value);
+    }
+
+    // Attributes of the node might also be indexed.
+    // Check each of them
+    cdr::dom::NamedNodeMap nMap = node.getAttributes();
+    unsigned int len = nMap.getLength();
+    for (unsigned int i=0; i<len; i++) {
+
+        // Do we have an attribute?
+        cdr::dom::Node aNode = nMap.item (i);
+        if (aNode.getNodeType() == cdr::dom::Node::ATTRIBUTE_NODE) {
+
+            // Search for it, and it's wild counterpart
+            cdr::String name = aNode.getNodeName();
+            cdr::String fullAttrPath = fullPath + L"/@" + name;
+            cdr::String wildAttrPath = cdr::String (L"//@") + name;
+
+            if (paths.find(fullAttrPath) != paths.end() ||
+                paths.find(wildAttrPath) != paths.end()) {
+                    cdr::String value = aNode.getNodeValue();
+                    addSingleQueryTerm (docDbConn, Id, fullAttrPath, value);
+            }
+        }
+    }
+
+    // Recursively add terms for sub-elements.
+    cdr::dom::Node child = node.getFirstChild();
+    while (child != 0) {
+
+        // If child is an element
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE)
+            addQueryTerms (fullPath, child.getNodeName(), child, paths);
+
+        child = child.getNextSibling();
     }
 }
 
 /**
- * Adds a row to the query_term table for the current node if appropriate,
- * and recursively does the same for all sub-elements.
+ * Add a single query term + value to the database.
  *
- *  @param  path        reference to string representing path for current
- *                      node; e.g., "/Person/PersonStatus".
- *  @param  node        reference to current node of document's DOM tree.
- *  @param  paths       reference to set of paths to be indexed.
+ *  @param doc_id       Document id
+ *  @param path         Absolute XPath path (element and attr ids) to this
+ *                      value.
+ *  @param value        Value associated with the key.
  */
-void cdr::CdrDoc::addQueryTerms(const cdr::String& path,
-                                const cdr::dom::Node& node,
-                                const StringSet& paths)
-{
-    // Step 1: add a row to the query_term table if appropriate.
-    if (paths.find(path) != paths.end()) {
-        cdr::String value = cdr::dom::getTextContent(node);
-        const char* insert = "INSERT INTO query_term(doc_id, path, value)"
-                             "     VALUES(?,?,?)";
-        cdr::db::PreparedStatement stmt = docDbConn.prepareStatement(insert);
-        stmt.setInt(1, Id);
-        stmt.setString(2, path);
-        stmt.setString(3, value);
-        stmt.executeQuery();
-    }
 
-    // Step 2: recursively add terms for sub-elements.
-    cdr::dom::Node child = node.getFirstChild();
-    while (child != 0) {
-        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
-            addQueryTerms(path + "/" + child.getNodeName(),
-                          child,
-                          paths);
-        }
-        child = child.getNextSibling();
-    }
+static void addSingleQueryTerm (cdr::db::Connection& conn, int doc_id,
+                                cdr::String& path, cdr::String& value) {
+
+    // Add the absolute path to this term to the query table
+    const char* insert = "INSERT INTO query_term(doc_id, path, value)"
+                         "     VALUES(?,?,?)";
+    cdr::db::PreparedStatement stmt = conn.prepareStatement(insert);
+    stmt.setInt(1, doc_id);
+    stmt.setString(2, path);
+    stmt.setString(3, value);
+    stmt.executeQuery();
 }
