@@ -1,7 +1,11 @@
 /*
- * $Id: CdrXsd.cpp,v 1.11 2001-01-17 21:48:09 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.12 2001-05-03 18:46:10 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2001/01/17 21:48:09  bkline
+ * Implemented general model for groups, sequences, and choices; also
+ * implemented inclusion of modular schema documents.
+ *
  * Revision 1.10  2000/12/28 13:28:12  bkline
  * Added support for xsd:choice.
  *
@@ -36,7 +40,6 @@
  *
  * Revision 1.1  2000/04/11 14:15:56  bkline
  * Initial revision
- *
  */
 
 // Eliminate annoying warnings about truncated debugging information.
@@ -45,10 +48,13 @@
 // System headers.
 #include <climits>
 #include <iostream>
+#include <ctime>
 
 // Project headers.
 #include "CdrXsd.h"
 #include "CdrRegEx.h"
+#include "CdrDbPreparedStatement.h"
+#include "CdrDbResultSet.h"
 
 static void validateElement(
         cdr::dom::Element&              docElement,
@@ -161,23 +167,41 @@ static bool matchSchemaNode(
         const cdr::xsd::Node* node);
 static int countChildElements(
         cdr::dom::Node& firstChild);
+static const std::string setSchemaDir();
+static bool areNMTokens(
+        const cdr::StringSet& vals);
+static const wchar_t* const getDtdCountCharacter(
+        const cdr::xsd::CountConstrained& ccNode);
+static std::wostream& operator<<(
+        std::wostream& os, 
+        const cdr::xsd::Node* node);
+static void outputMixedContentToDtd(
+        const cdr::xsd::Node* node, 
+        cdr::StringSet& elements,
+        std::wostream& os);
+
+const std::string cdr::xsd::Schema::schemaDir = setSchemaDir();
 
 /**
  * Extracts document constraint information from the schema document,
  * including any nested inclusions.
  */
-cdr::xsd::Schema::Schema(const cdr::dom::Node& schemaElement)
+cdr::xsd::Schema::Schema(const cdr::dom::Node& schemaElement,
+                         cdr::db::Connection* conn)
 {
     topElement = 0;
     seedBuiltinTypes();
-    parseSchema(schemaElement);
+    parseSchema(schemaElement, conn);
     resolveGroupRefs();
+    resolveKeys();
+    resolveKeyRefs();
 }
 
 /**
  * Extracts document constraint information from the schema document.
  */
-void cdr::xsd::Schema::parseSchema(const cdr::dom::Node& schemaElement)
+void cdr::xsd::Schema::parseSchema(const cdr::dom::Node& schemaElement,
+                                   cdr::db::Connection* conn)
 {
     cdr::String nodeName = schemaElement.getNodeName();
     if (nodeName != cdr::xsd::SCHEMA)
@@ -186,6 +210,7 @@ void cdr::xsd::Schema::parseSchema(const cdr::dom::Node& schemaElement)
     while (childNode != 0) {
         if (childNode.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
             nodeName = childNode.getNodeName();
+            //std::wcerr << L"parseSchema(): " << nodeName << L"\n";
             if (nodeName == cdr::xsd::ELEMENT) {
                 if (topElement)
                     throw cdr::Exception(
@@ -201,7 +226,7 @@ void cdr::xsd::Schema::parseSchema(const cdr::dom::Node& schemaElement)
             else if (nodeName == cdr::xsd::GROUP)
                 registerGroup(new cdr::xsd::Group(*this, childNode));
             else if (nodeName == cdr::xsd::INCLUDE)
-                includeSchema(childNode);
+                includeSchema(childNode, conn);
         }
         childNode = childNode.getNextSibling();
     }
@@ -210,26 +235,51 @@ void cdr::xsd::Schema::parseSchema(const cdr::dom::Node& schemaElement)
 /**
  * Loads an included schema document and recursively calls parseSchema.
  */
-void cdr::xsd::Schema::includeSchema(const cdr::dom::Node& n)
+void cdr::xsd::Schema::includeSchema(const cdr::dom::Node& n,
+                                     cdr::db::Connection* conn)
 {
     // Find out where the included schema lives.
-    // XXX Make this fancier if/when we need to.
     const cdr::dom::Element& e = static_cast<const cdr::dom::Element&>(n);
     cdr::String value = e.getAttribute(cdr::xsd::SCHEMA_LOC);
     if (value.empty())
         throw cdr::Exception(L"Inclusion missing schemaLocation attribute");
-    std::string fileName;
-    const char* schemaDir = getenv("CDR_SCHEMA_DIRECTORY");
-    if (!schemaDir)
-        schemaDir = ".";
-    fileName = std::string(schemaDir) + "/" + value.toUtf8();
 
-    // Parse it.
+    // Find out whether we look in the database or the filesystem.
     cdr::dom::Parser parser;
-    parser.parseFile(fileName.c_str());
+    if (conn) {
+
+        // Pull the included schema from the document table.
+        std::string query = "SELECT xml"
+                            "  FROM document d,"
+                            "       doc_type t"
+                            " WHERE t.name  = 'Schema'"
+                            "   AND t.id    = d.doc_type"
+                            "   AND d.title = ?";
+        cdr::db::PreparedStatement s = conn->prepareStatement(query);
+        s.setString(1, value);
+        cdr::db::ResultSet r = s.executeQuery();
+        if (!r.next())
+            throw cdr::Exception(L"Unable to locate included schema",
+                                 value);
+        cdr::String xml = r.getString(1);
+
+        // Parse it.
+        parser.parse(xml);
+    }
+
+    // Pull the schema document from the filesystem.
+    else {
+        std::string fileName;
+        fileName = std::string(schemaDir) + "/" + value.toUtf8();
+
+        // Parse it.
+        parser.parseFile(fileName.c_str());
+    }
+
+    // Pull out the document element and parse the schema it represents.
     cdr::dom::Document document = parser.getDocument();
     cdr::dom::Element docElement = document.getDocumentElement();
-    parseSchema(docElement);
+    parseSchema(docElement, conn);
 }
 
 /**
@@ -242,9 +292,14 @@ void cdr::xsd::Schema::seedBuiltinTypes()
     registerType(new cdr::xsd::SimpleType(cdr::xsd::TIME));
     registerType(new cdr::xsd::SimpleType(cdr::xsd::DECIMAL));
     registerType(new cdr::xsd::SimpleType(cdr::xsd::INTEGER));
+    // XXX Remove after compatility period.
     registerType(new cdr::xsd::SimpleType(cdr::xsd::BINARY));
+    registerType(new cdr::xsd::SimpleType(cdr::xsd::HEXBIN));
+    registerType(new cdr::xsd::SimpleType(cdr::xsd::BASE64BIN));
     registerType(new cdr::xsd::SimpleType(cdr::xsd::URI));
+    // XXX Remove after compatility period.
     registerType(new cdr::xsd::SimpleType(cdr::xsd::TIME_INSTANT));
+    registerType(new cdr::xsd::SimpleType(cdr::xsd::DATE_TIME));
     registerType(new cdr::xsd::SimpleType(cdr::xsd::NMTOKEN));
 }
 
@@ -349,6 +404,75 @@ void cdr::xsd::Schema::resolveGroupRefs()
 }
 
 /**
+ * Attaches ID types to attributes identified as keys by the
+ * schema.
+ */
+void cdr::xsd::Schema::resolveKeys()
+{
+    for (KeyList::iterator i = keyList.begin(); i != keyList.end(); ++i)
+        resolveKeyOrKeyRef(*i, L"ID");
+}
+
+/**
+ * Attaches IDREF types to attributes identified as keyrefs by the
+ * schema.
+ */
+void cdr::xsd::Schema::resolveKeyRefs()
+{
+    for (KeyRefList::iterator i = keyRefList.begin(); 
+            i != keyRefList.end(); ++i)
+        resolveKeyOrKeyRef(*i, L"IDREF");
+}
+
+void cdr::xsd::ComplexType::setAttrDtdType(const cdr::String& attrName,
+                                           const cdr::String& typeName) const
+{
+    AttrSet::const_iterator i = attrSet.find(attrName);
+    if (i == getAttrEnd()) {
+        cdr::String err = L"Cannot set attribute " + attrName + L" to " 
+                        + typeName;
+        throw cdr::Exception(err);
+    }
+    Attribute* a = i->second;
+    a->setDtdType(typeName);
+}
+
+/**
+ * Common code shared by <code>resolveKeys()</code> and
+ * <code>resolveKeyRefs</code>.
+ */
+void cdr::xsd::Schema::resolveKeyOrKeyRef(KeyOrKeyRef* k, 
+                                          const cdr::String& dtdType)
+{
+    cdr::String elementName = k->getSelector();
+    cdr::String typeName = lookupElementType(elementName);
+    const Type* type = lookupType(typeName);
+    const ComplexType* complexType = 
+        dynamic_cast<const ComplexType*>(type);
+    if (!complexType) {
+        const wchar_t* err;
+        if (dtdType == L"ID")
+            err = L"Key assigned to element which does not have a "
+                  L"complex type";
+        else
+            err = L"Keyref assigned to element which does not have a "
+                  L"complex type";
+        throw cdr::Exception(err, elementName);
+    }
+    for (StringList::const_iterator i = k->getFields(); i !=
+            k->getFieldsEnd(); ++i) {
+        cdr::String field = *i;
+        if (field.empty())
+            throw cdr::Exception(L"Empty field for key/keyref", k->getName());
+        if (field[0] != L'@')
+            throw cdr::Exception(L"Only attribute key/keyrefs supported",
+                                 k->getName() + L"/" + field);
+        complexType->setAttrDtdType(field.substr(1), dtdType);
+    }
+}
+
+
+/**
  * Cleans up dynamically allocated objects used by the schema.
  */
 cdr::xsd::Schema::~Schema()
@@ -356,6 +480,14 @@ cdr::xsd::Schema::~Schema()
     while (!nodeList.empty()) {
         delete nodeList.back();
         nodeList.pop_back();
+    }
+    while (!keyList.empty()) {
+        delete keyList.back();
+        keyList.pop_back();
+    }
+    while (!keyRefList.empty()) {
+        delete keyRefList.back();
+        keyRefList.pop_back();
     }
 }
 
@@ -369,6 +501,79 @@ cdr::xsd::NamedAndTypedNode::resolveType(const cdr::xsd::Schema& schema)
     if (!type)
         type = schema.lookupType(typeName);
     return type;
+}
+
+/**
+ * Builds a key object indicating the path and attribute used to hold the keys
+ * for a schema.
+ */
+cdr::xsd::Key::Key(const cdr::dom::Node& dn, const cdr::String& elemName)
+{
+    parent = elemName;
+    const cdr::dom::Element& e = static_cast<const cdr::dom::Element&>(dn);
+    name = e.getAttribute(cdr::xsd::NAME);
+    cdr::dom::Node childNode = dn.getFirstChild();
+    while (childNode != 0) {
+        int nodeType = childNode.getNodeType();
+        if (nodeType == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String nodeName = childNode.getNodeName();
+            if (nodeName == cdr::xsd::SELECTOR) {
+                cdr::dom::Element& childElem = 
+                    static_cast<cdr::dom::Element&>(childNode);
+                selector = childElem.getAttribute(cdr::xsd::XPATH);
+            }
+            else if (nodeName == cdr::xsd::FIELD) {
+                cdr::dom::Element& childElem = 
+                    static_cast<cdr::dom::Element&>(childNode);
+                fields.push_back(childElem.getAttribute(cdr::xsd::XPATH));
+            }
+        }
+        childNode = childNode.getNextSibling();
+    }
+    if (name.empty())
+        throw cdr::Exception(L"Missing name for key element");
+    if (selector.empty())
+        throw cdr::Exception(L"missing selector for key", name);
+    if (fields.empty())
+        throw cdr::Exception(L"Missing fields for key", name);
+}
+
+/**
+ * Builds a keyref object indicating the path and attribute used to hold the 
+ * keyrefs for a schema.
+ */
+cdr::xsd::KeyRef::KeyRef(const cdr::dom::Node& dn, const cdr::String& elemName)
+{
+    parent = elemName;
+    const cdr::dom::Element& e = static_cast<const cdr::dom::Element&>(dn);
+    name = e.getAttribute(cdr::xsd::NAME);
+    refer = e.getAttribute(cdr::xsd::REFER);
+    cdr::dom::Node childNode = dn.getFirstChild();
+    while (childNode != 0) {
+        int nodeType = childNode.getNodeType();
+        if (nodeType == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String nodeName = childNode.getNodeName();
+            if (nodeName == cdr::xsd::SELECTOR) {
+                cdr::dom::Element& childElem = 
+                    static_cast<cdr::dom::Element&>(childNode);
+                selector = childElem.getAttribute(cdr::xsd::XPATH);
+            }
+            if (nodeName == cdr::xsd::FIELD) {
+                cdr::dom::Element& childElem = 
+                    static_cast<cdr::dom::Element&>(childNode);
+                fields.push_back(childElem.getAttribute(cdr::xsd::XPATH));
+            }
+        }
+        childNode = childNode.getNextSibling();
+    }
+    if (name.empty())
+        throw cdr::Exception(L"Missing name for keyref element");
+    if (refer.empty())
+        throw cdr::Exception(L"Missing refer attribute for keyref", name);
+    if (selector.empty())
+        throw cdr::Exception(L"Missing selector for keyref", name);
+    if (fields.empty())
+        throw cdr::Exception(L"Missing fields for keyref", name);
 }
 
 /**
@@ -391,7 +596,8 @@ cdr::xsd::Element::Element(cdr::xsd::Schema& schema, const cdr::dom::Node& dn)
         else if (attrName == cdr::xsd::MIN_OCCURS)
             minOccs = attrValue.getInt();
         else if (attrName == cdr::xsd::MAX_OCCURS) {
-            if (attrValue == cdr::xsd::UNLIMITED)
+            /* XXX remove L"*" after compatibility period. */
+            if (attrValue == cdr::xsd::UNLIMITED || attrValue == L"*")
                 maxOccs = INT_MAX;
             else
                 maxOccs = attrValue.getInt();
@@ -401,6 +607,21 @@ cdr::xsd::Element::Element(cdr::xsd::Schema& schema, const cdr::dom::Node& dn)
         throw cdr::Exception(L"Name missing for element");
     if (typeName.size() == 0)
         throw cdr::Exception(L"Type missing for element", name);
+
+    // Parse any key or keyref elements present.
+    cdr::dom::Node childNode = dn.getFirstChild();
+    while (childNode != 0) {
+        int nodeType = childNode.getNodeType();
+        if (nodeType == cdr::dom::Node::ELEMENT_NODE) {
+            cdr::String nodeName = childNode.getNodeName();
+            if (nodeName == cdr::xsd::KEY)
+                schema.addKey(new Key(childNode, name));
+            else if (nodeName == cdr::xsd::KEYREF)
+                schema.addKeyRef(new KeyRef(childNode, name));
+        }
+        childNode = childNode.getNextSibling();
+    }
+
     schema.registerObject(this);
 }
 
@@ -409,6 +630,7 @@ cdr::xsd::Element::Element(cdr::xsd::Schema& schema, const cdr::dom::Node& dn)
  * schema document.
  */
 cdr::xsd::Attribute::Attribute(Schema& schema, const cdr::dom::Node& dn)
+    : dtdType(L"CDATA")
 {
     optional = false;
     cdr::dom::NamedNodeMap attrs = dn.getAttributes();
@@ -490,7 +712,8 @@ cdr::xsd::ChoiceOrSequence::ChoiceOrSequence(cdr::xsd::Schema& schema,
         if (attrName == cdr::xsd::MIN_OCCURS)
             minOccs = attrValue.getInt();
         else if (attrName == cdr::xsd::MAX_OCCURS) {
-            if (attrValue == cdr::xsd::UNLIMITED)
+            /* XXX remove L"*" after compatibility period. */
+            if (attrValue == cdr::xsd::UNLIMITED || attrValue == L"*")
                 maxOccs = INT_MAX;
             else
                 maxOccs = attrValue.getInt();
@@ -623,8 +846,13 @@ cdr::xsd::SimpleType::SimpleType(const cdr::String& n)
         BuiltinTypeMapElement(cdr::xsd::TIME,           TIME         ),
         BuiltinTypeMapElement(cdr::xsd::DECIMAL,        DECIMAL      ),
         BuiltinTypeMapElement(cdr::xsd::INTEGER,        INTEGER      ),
+        // XXX Remove after compatibility period.
         BuiltinTypeMapElement(cdr::xsd::BINARY,         BINARY       ),
+        BuiltinTypeMapElement(cdr::xsd::HEXBIN,         HEXBIN       ),
+        BuiltinTypeMapElement(cdr::xsd::BASE64BIN,      BASE64BIN    ),
         BuiltinTypeMapElement(cdr::xsd::URI,            URI          ),
+        BuiltinTypeMapElement(cdr::xsd::DATE_TIME,      DATE_TIME    ),
+        // XXX Remove after compatibility period.
         BuiltinTypeMapElement(cdr::xsd::TIME_INSTANT,   TIME_INSTANT ),
         BuiltinTypeMapElement(cdr::xsd::NMTOKEN,        NMTOKEN      )
     };
@@ -647,6 +875,7 @@ cdr::xsd::SimpleType::SimpleType(const cdr::String& n)
 cdr::xsd::SimpleType::SimpleType(const cdr::xsd::Schema& schema,
                                  const cdr::dom::Node& dn)
 {
+    //std::wcerr << L"simpleType constructor" << std::endl;
     base = 0;
     cdr::dom::NamedNodeMap attrs = dn.getAttributes();
     int nAttrs = attrs.getLength();
@@ -654,8 +883,10 @@ cdr::xsd::SimpleType::SimpleType(const cdr::xsd::Schema& schema,
         cdr::dom::Node attr = attrs.item(i);
         cdr::String attrName = attr.getNodeName();
         cdr::String attrValue = attr.getNodeValue();
+        //std::wcerr << attrName << L"=" << attrValue << std::endl;
         if (attrName == cdr::xsd::NAME)
             setName(attrValue);
+        // XXX Remove after compatibility period.
         else if (attrName == cdr::xsd::BASE) {
             baseName = attrValue;
             base = dynamic_cast<const cdr::xsd::SimpleType*>
@@ -664,27 +895,50 @@ cdr::xsd::SimpleType::SimpleType(const cdr::xsd::Schema& schema,
     }
     if (getName().size() == 0)
         throw cdr::Exception(L"Name missing for simple type");
-    if (baseName.empty())
-        throw cdr::Exception(L"Base type not specified for simple type",
-                getName());
-    if (!base)
-        throw cdr::Exception(L"Unknown base class", baseName);
 
-    minLength   = base->minLength;
-    maxLength   = base->maxLength;
-    length      = base->length;
-    precision   = base->precision;
-    scale       = base->scale;
-    encoding    = base->encoding;
-    builtinType = base->builtinType;
+    if (base) {
+        minLength   = base->minLength;
+        maxLength   = base->maxLength;
+        length      = base->length;
+        precision   = base->precision;
+        scale       = base->scale;
+        encoding    = base->encoding;
+        builtinType = base->builtinType;
+    }
 
     cdr::dom::Node childNode = dn.getFirstChild();
     while (childNode != 0) {
         int nodeType = childNode.getNodeType();
         if (nodeType == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String nodeName = childNode.getNodeName();
+            //std::wcerr << L"nodeName: " << nodeName << std::endl;
             cdr::dom::Element& e = static_cast<cdr::dom::Element&>(childNode);
             cdr::String value = e.getAttribute(cdr::xsd::VALUE);
+
+            // XXX Using an approach which will work whether or not the
+            // restriction wrapper is present (for the compatibility period).
+            if (nodeName == cdr::xsd::RESTRICTION) {
+                baseName = e.getAttribute(cdr::xsd::BASE);
+                //std::wcout << L"baseName: " << baseName << L"\n";
+
+                // XXX Can we count on having seen the base type already?
+                base = dynamic_cast<const cdr::xsd::SimpleType*>
+                    (schema.lookupType(baseName));
+                if (!base)
+                    throw cdr::Exception(L"Base type must be declared before "
+                                         L"derived simpleType",
+                                         baseName);
+                minLength   = base->minLength;
+                maxLength   = base->maxLength;
+                length      = base->length;
+                precision   = base->precision;
+                scale       = base->scale;
+                encoding    = base->encoding;
+                builtinType = base->builtinType;
+                childNode   = e.getFirstChild();
+                continue;
+            }
+
             if (nodeName == cdr::xsd::ENUMERATION)
                 enumSet.insert(value);
             else if (nodeName == cdr::xsd::MIN_INCLUSIVE)
@@ -699,10 +953,17 @@ cdr::xsd::SimpleType::SimpleType(const cdr::xsd::Schema& schema,
                 length = value.getInt();
             else if (nodeName == cdr::xsd::PATTERN)
                 patterns.push_back(value);
-            else if (nodeName == cdr::xsd::PRECISION)
+            else if (nodeName == cdr::xsd::PRECISION
+                     // XXX Remove after compatibility period
+                     || nodeName == L"precision"
+                    )
                 precision = value.getInt();
-            else if (nodeName == cdr::xsd::SCALE)
+            else if (nodeName == cdr::xsd::SCALE
+                     // XXX Remove after compatibility period
+                     || nodeName == L"scale"
+                    )
                 scale = value.getInt();
+            // XXX Remove after compatibility period.
             else if (nodeName == cdr::xsd::ENCODING) {
                 if (value == cdr::xsd::HEX)
                     encoding = HEX;
@@ -714,6 +975,13 @@ cdr::xsd::SimpleType::SimpleType(const cdr::xsd::Schema& schema,
         }
         childNode = childNode.getNextSibling();
     }
+
+    // Make sure we found the base type.
+    if (baseName.empty())
+        throw cdr::Exception(L"Base type not specified for simple type",
+                getName());
+    if (!base)
+        throw cdr::Exception(L"Unknown base class", baseName);
 }
 
 /**
@@ -722,7 +990,7 @@ cdr::xsd::SimpleType::SimpleType(const cdr::xsd::Schema& schema,
  */
 cdr::xsd::ComplexType::ComplexType(cdr::xsd::Schema& schema,
                                    const cdr::dom::Node& dn) :
-    content(0), contentType(ELEMENT_ONLY)
+    content(0), contentType(EMPTY)
 {
     cdr::dom::NamedNodeMap attrs = dn.getAttributes();
     int nAttrs = attrs.getLength();
@@ -732,6 +1000,10 @@ cdr::xsd::ComplexType::ComplexType(cdr::xsd::Schema& schema,
         cdr::String attrValue = attr.getNodeValue();
         if (attrName == cdr::xsd::NAME)
             setName(attrValue);
+        else if (attrName == cdr::xsd::MIXED && attrValue == L"true")
+            contentType = MIXED;
+
+        // XXX Remove after compatibility period.
         else if (attrName == cdr::xsd::CONTENT) {
             if (attrValue == cdr::xsd::TEXT_ONLY)
                 contentType = TEXT_ONLY;
@@ -748,29 +1020,65 @@ cdr::xsd::ComplexType::ComplexType(cdr::xsd::Schema& schema,
         int nodeType = childNode.getNodeType();
         if (nodeType == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String nodeName = childNode.getNodeName();
+            //std::wcout << L"CHECKING NODE NAME " << nodeName << L"\n";
             if (nodeName == cdr::xsd::ATTRIBUTE) {
                 cdr::xsd::Attribute* a = new cdr::xsd::Attribute(schema,
                                                                  childNode);
                 cdr::String attrName = a->getName();
                 if (hasAttribute(attrName)) {
                     delete a;
-                    throw cdr::Exception(L"Duplicate attribute", attrName);
+                    throw cdr::Exception(L"Duplicate attribute", 
+                                         getName() + L"/@" + attrName);
                 }
                 attrSet[attrName] = a;
             }
             else if (content)
                 throw cdr::Exception(L"Complex type may contain only one "
-                        L"sequence, choice, or group");
-            else if (nodeName == cdr::xsd::SEQUENCE)
-                content = new Sequence(schema, childNode);
-            else if (nodeName == cdr::xsd::CHOICE)
-                content = new Choice(schema, childNode);
-            else if (nodeName == cdr::xsd::GROUP)
-                content = new GroupRef(schema, childNode);
-            else
-                throw cdr::Exception(L"Content for complexType can be only "
-                                     L"group, sequence, or choice; see type",
-                                     getName());
+                        L"sequence, choice, simpleContent, or group element",
+                        getName());
+            else if (nodeName == cdr::xsd::SIMPLE_CONTENT) {
+                contentType = TEXT_ONLY;
+
+                // Drop down to the extension element.
+                childNode = childNode.getFirstChild();
+                while (childNode != 0) {
+                    int nodeType = childNode.getNodeType();
+                    if (nodeType == cdr::dom::Node::ELEMENT_NODE) {
+                        cdr::String nodeName = childNode.getNodeName();
+                        if (nodeName == cdr::xsd::EXTENSION)
+                            break;
+                    }
+                    childNode = childNode.getNextSibling();
+                }
+                if (childNode == 0)
+                    throw cdr::Exception(L"Missing extension element for "
+                                         L"simpleContent in complexType",
+                                         getName());
+                cdr::dom::Element& e = 
+                    static_cast<cdr::dom::Element&>(childNode);
+
+                // We'll look this up later.
+                content = new SimpleContent(e.getAttribute(cdr::xsd::BASE),
+                                            &schema);
+
+                // The attributes are stored inside the extension node.
+                childNode = childNode.getFirstChild();
+            }
+            else {
+                if (contentType == EMPTY)
+                    contentType = ELEMENT_ONLY;
+                if (nodeName == cdr::xsd::SEQUENCE)
+                    content = new Sequence(schema, childNode);
+                else if (nodeName == cdr::xsd::CHOICE)
+                    content = new Choice(schema, childNode);
+                else if (nodeName == cdr::xsd::GROUP)
+                    content = new GroupRef(schema, childNode);
+                else
+                    throw cdr::Exception(L"Content for complexType can be "
+                                         L"only group, sequence, "
+                                         L"simpleContent, or "
+                                         L"choice; see type", getName());
+            }
         }
         childNode = childNode.getNextSibling();
     }
@@ -782,7 +1090,7 @@ cdr::xsd::ComplexType::ComplexType(cdr::xsd::Schema& schema,
 void cdr::xsd::ComplexType::resolveGroupRefs(const Schema& schema)
 {
     // If this is an empty or textOnly type, nothing to do here.
-    if (!content)
+    if (!content || dynamic_cast<SimpleContent*>(content))
         return;
 
     GroupRef* groupRef = dynamic_cast<GroupRef*>(content);
@@ -797,7 +1105,8 @@ void cdr::xsd::ComplexType::resolveGroupRefs(const Schema& schema)
         ChoiceOrSequence* cs = dynamic_cast<ChoiceOrSequence*>(content);
         if (!cs)
             throw cdr::Exception(L"Content for complexType must be "
-                                 L"one of group, sequence, or choice");
+                                 L"one of group, sequence, choice, "
+                                 L"or simpleContent");
         cs->resolveGroupRefs(schema);
     }
 }
@@ -958,8 +1267,23 @@ void validateElement(
             verifyElementSequence(docElement, *complexType, schema, errors);
             break;
         case cdr::xsd::ComplexType::TEXT_ONLY:
+        {
             verifyNoElements(docElement, errors);
+            const cdr::xsd::Node* simpleContentNode = 
+                complexType->getContent();
+            const cdr::xsd::SimpleContent* simpleContent = 
+                dynamic_cast<const cdr::xsd::SimpleContent*>(simpleContentNode);
+            if (!simpleContent)
+                throw cdr::Exception(L"Unable to find simple content "
+                                     L"node for type", type.getName());
+            validateSimpleType(docElement.getNodeName(),
+                               L"",
+                               cdr::dom::getTextContent(docElement),
+                               *simpleContent->getSimpleType(),
+                               errors);
+
             break;
+        }
         case cdr::xsd::ComplexType::MIXED:
             verifyElementSequence(docElement, *complexType, schema, errors);
             break;
@@ -1372,9 +1696,12 @@ void validateSimpleType(
     case cdr::xsd::SimpleType::URI:
         validateUri(elemName, attrName, value, simpleType, errors);
         break;
+    // XXX Replace with new binary types.
     case cdr::xsd::SimpleType::BINARY:
         validateBinary(elemName, attrName, value, simpleType, errors);
         break;
+    case cdr::xsd::SimpleType::DATE_TIME:
+    // XXX Remove after compatibility period.
     case cdr::xsd::SimpleType::TIME_INSTANT:
         validateTimeInstant(elemName, attrName, value, simpleType, errors);
         break;
@@ -5998,5 +6325,428 @@ bool cdr::xsd::isNMToken(const cdr::String& s)
         if (!(charCharacteristics[*p++] & nameCharMask))
             return false;
     }
+    return true;
+}
+
+/**
+ * Set the directory to be used for locating included schema subdocuments when
+ * the filesystem is being used.
+ *
+ *  @return             string object identifying schema file location.
+ */
+const std::string setSchemaDir()
+{
+    const char* schemaDir = getenv("CDR_SCHEMA_DIRECTORY");
+    return schemaDir ? schemaDir : ".";
+}
+
+/**
+ * Writes the DTD equivalent of the schema to a string.
+ */
+cdr::String cdr::xsd::Schema::makeDtd(const cdr::String& schemaFilename)
+{
+    if (!&getTopElement())
+        throw cdr::Exception(L"No top element declared");
+    time_t now = time(0);
+    cdr::String when = asctime(localtime(&now));
+    std::wostringstream os;
+    os << L"<!--\n\n     Machine generated " << when
+       << L"     From XML Schema " << schemaFilename 
+       << L"\n\n  -->\n\n";
+    writeDtdElement(getTopElement(), os, true);
+    return os.str();
+}
+
+/**
+ * Recursively writes an element description for the DTD to the specified
+ * stream.  Element object cannot be const because it needs to lookup
+ * and store its type information.
+ */
+void cdr::xsd::Schema::writeDtdElement(cdr::xsd::Element& elem,
+                                       std::wostream& os, 
+                                       bool isTopElement)
+{
+    // Find out what type we are (from the type name).
+    const cdr::xsd::Type *type = elem.getType(*this);
+    if (!type)
+        throw cdr::Exception(L"Missing type for element", elem.getName());
+
+    // Start the element declaration.
+    os << L"<!ELEMENT " << elem.getName() << L" ";
+
+    // Use RTTI to determine whether this is a simple or complex type.
+    const cdr::xsd::SimpleType *sType = 
+        dynamic_cast<const cdr::xsd::SimpleType*>(type);
+    const cdr::xsd::ComplexType *cType = 
+        dynamic_cast<const cdr::xsd::ComplexType*>(type);
+    if (sType)
+        os << L"(#PCDATA)>\n";
+    else {
+
+        // Sanity check.
+        if (!cType)
+            throw cdr::Exception(L"Internal error",
+                                 L"type must be simple or complex");
+                            
+        // Handle the content.
+        const cdr::xsd::Node* elements = cType->getContent();
+        switch (cType->getContentType()) {
+
+        case cdr::xsd::ComplexType::EMPTY:
+            if (elements)
+                throw cdr::Exception(L"Elements not allowed for "
+                                     L"empty content");
+            os << L"EMPTY>\n";
+            break;
+
+        case cdr::xsd::ComplexType::TEXT_ONLY:
+
+            os << L"(#PCDATA)>\n";
+            break;
+
+        case cdr::xsd::ComplexType::MIXED: {
+
+            /*
+             * From http://www.w3.org/TR/xmlschema-0/#mixedContent:
+             * "Note that the mixed model in XML Schema differs fundamentally
+             * from the mixed model in XML 1.0. Under the XML Schema mixed
+             * model, the order and number of child elements appearing in an
+             * instance must agree with the order and number of child elements
+             * specified in the model. In contrast, under the XML 1.0 mixed
+             * model, the order and number of child elements appearing in an
+             * instance cannot be constrained. In sum, XML Schema provides
+             * full schema validation of mixed models in contrast to the
+             * partial schema validation provided by XML 1.0."
+             */
+
+            // For keeping track of elements which have been declared.
+            cdr::StringSet mixedElements;
+
+            os << L"(#PCDATA";
+            outputMixedContentToDtd(elements, mixedElements, os);
+            if (mixedElements.empty())
+                throw cdr::Exception(L"Element with mixed content has no "
+                                     L"child elements",  elem.getName());
+            os << L")*>\n";
+            break;
+        }
+
+        case cdr::xsd::ComplexType::ELEMENT_ONLY: {
+
+            // Create a working string for the content.
+            std::wostringstream contentStream;
+
+            // Add the CdrDocCtl element for the benefit of XMetaL.
+            if (isTopElement)
+                contentStream << L"(CdrDocCtl,";
+
+            // Recursively add the elements for the content model.
+            contentStream << elements;
+
+            // Close the sequence for the top element.
+            if (isTopElement)
+                contentStream << L")";
+
+            // Extract the working string.
+            cdr::String s = contentStream.str();
+
+            // Sanity check.
+            if (s.empty() || s == L"(CdrDocCtl,)")
+                throw cdr::Exception(L"Elements required for elementOnly "
+                                     L"content");
+
+            // Add parens if needed.
+            if (s[0] != L'(')
+                os << L"(";
+            os << s;
+            if (s[0] != '(')
+                os << L")";
+
+            // Finish off the line.
+            os << L">\n";
+            break;
+        }
+
+        default:
+
+            // Sanity check.
+            throw cdr::Exception(L"Internal error",
+                                 L"Unrecognized content model");
+            break;
+        }
+
+        // Handle the attributes, if any.
+        if (cType->getAttrCount() > 0) {
+            os << L"<!ATTLIST " << elem.getName();
+            cdr::xsd::AttrEnum attrs = cType->getAttributes();
+            while (attrs != cType->getAttrEnd()) {
+                cdr::xsd::Attribute* a = (attrs++)->second;
+                os << L" " << a->getName() << L" ";
+                const cdr::xsd::SimpleType* aType = 
+                    dynamic_cast<const cdr::xsd::SimpleType*>
+                    (a->getType(*this));
+                if (!aType)
+                    throw cdr::Exception(L"Missing type for attribute", 
+                                         a->getName());
+
+                // DTD's can't handle enumerated values which aren't NMTOKENS.
+                const cdr::StringSet& enums = aType->getEnumSet();
+                if (!enums.empty() && areNMTokens(enums)) {
+                    const wchar_t* sep = L"(";
+                    cdr::StringSet::const_iterator i = enums.begin();
+                    while (i != enums.end()) {
+                        os << sep << (*i++);
+                        sep = L"|";
+                    }
+                    os << L")";
+                }
+                else
+                    os << a->getDtdType();
+                if (a->isOptional())
+                    os << L" #IMPLIED";
+                else
+                    os << L" #REQUIRED";
+            }
+            os << L">\n";
+        }
+
+        // Declare any child elements which have not already been declared.
+        static cdr::StringSet declaredElems;
+        if (isTopElement) {
+            os << L"<!ELEMENT CdrDocCtl (DocId, DocTitle)>\n";
+            os << L"<!ELEMENT DocId (#PCDATA)>\n";
+            os << L"<!ELEMENT DocTitle (#PCDATA)>\n";
+            declaredElems.clear();
+            declaredElems.insert(elem.getName());
+            declaredElems.insert(L"CdrDocCtl");
+            declaredElems.insert(L"DocId");
+            declaredElems.insert(L"DocTitle");
+        }
+        declareDtdChildElements(declaredElems, elements, os);
+    }
+}
+
+/**
+ * Recursively write to the DTD each element which can appear for mixed 
+ * content type.
+ *
+ *  @param  node        can be element, group, choice, or sequence.
+ *  @param  elements    set of elements which have already been written
+ *                      for this type (so we don't repeat them).
+ */
+void outputMixedContentToDtd(const cdr::xsd::Node* node, 
+                             cdr::StringSet& elements,
+                             std::wostream& os)
+{
+    // Safety measure.
+    if (!node)
+        throw cdr::Exception(L"Internal error",
+                             L"NULL node encountered for mixed content tree");
+
+    // Is this an element node?
+    const cdr::xsd::Element* e = dynamic_cast<const cdr::xsd::Element*>(node);
+    if (e) {
+        cdr::String name = e->getName();
+
+        // Sanity check.
+        if (name.empty())
+            throw cdr::Exception(L"Missing name for element in mixed content");
+
+        // Only output this element if we haven't already done so.
+        if (elements.find(name) == elements.end()) {
+            os << L"|" << name;
+            elements.insert(name);
+        }
+        return;
+    }
+
+    // Is this node a named group?
+    const cdr::xsd::Group* g = dynamic_cast<const cdr::xsd::Group*>(node);
+    if (g) {
+        outputMixedContentToDtd(g->getContent(), elements, os);
+        return;
+    }
+
+    // Is this node a choice or sequence?
+    const cdr::xsd::ChoiceOrSequence* cs =
+        dynamic_cast<const cdr::xsd::ChoiceOrSequence*>(node);
+    if (cs) {
+        cdr::xsd::NodeEnum ne = cs->getNodes();
+        while (ne != cs->getListEnd())
+            outputMixedContentToDtd(*ne++, elements, os);
+        return;
+    }
+
+    // Sanity check.  Should never reach this point.
+    throw cdr::Exception(L"Internal error",
+            L"Mixed content must be element, group, choice, or sequence");
+}
+
+/**
+ * Output the element group DTD declarations for elementOnly content.
+ *
+ *  @param  os          reference to output stream for element groups.
+ *  @param  n           element, sequence, choice, or named group.
+ *  @return             reference to output stream.
+ */
+std::wostream& operator<<(std::wostream& os, const cdr::xsd::Node* n)
+{
+    // Safety measure.
+    if (!n)
+        throw cdr::Exception(L"Internal error",
+                             L"NULL node encountered for elementOnly content");
+
+    // Is this node a named group.
+    const cdr::xsd::Group* g = dynamic_cast<const cdr::xsd::Group*>(n);
+    if (g) {
+        os << g->getContent();
+        return os;
+    }
+
+    // Is this an element?
+    const cdr::xsd::Element* e = dynamic_cast<const cdr::xsd::Element*>(n);
+    if (e) {
+        cdr::String name = e->getName();
+
+        // Sanity check.
+        if (name.empty())
+            throw cdr::Exception(L"Unnamed element object encountered");
+
+        os << name << getDtdCountCharacter(*e);
+        return os;
+    }
+
+    // Is this a sequence or a choice?
+    const cdr::xsd::Sequence* s = dynamic_cast<const cdr::xsd::Sequence*>(n);
+    const cdr::xsd::Choice*   c = dynamic_cast<const cdr::xsd::Choice*>(n);
+    if (s || c) {
+
+        // Use a single variable to represent the choice or sequence.
+        const cdr::xsd::ChoiceOrSequence* cs;
+        if (s)
+            cs = s;
+        else
+            cs = c;
+
+        // Make sure the sequence or choice is not empty.
+        if (cs->getNodeCount() < 1)
+            throw cdr::Exception(L"Empty sequence or choice for "
+                                 L"elementOnly content");
+
+        // Add parentheses around multi-node list.
+        if (cs->getNodeCount() > 1)
+            os << L"(";
+
+        // Walk through the nodes in the sequence or choice.
+        cdr::xsd::NodeEnum e = cs->getNodes();
+        const wchar_t* sep = L"";
+        while (e != cs->getListEnd()) {
+            os << sep << *e++;
+            sep = s ? L"," : L"|";
+        }
+
+        // Add parentheses around multi-node list.
+        if (cs->getNodeCount() > 1)
+            os << L")";
+        return os << getDtdCountCharacter(*cs);
+    }
+
+    // Sanity check.  Should never reach this point.
+    throw cdr::Exception(L"Internal error",
+            L"Content must be element, group, choice, or sequence");
+    return os;
+}
+
+/**
+ * Determine what character, if any, should be used to indicate the number of
+ * repetitions allowed for a count-constrained node.  Note that the DTD cannot
+ * really represent the precision of which XML Schema is capable of
+ * representing.  For example, if a schema indicates that an element or group
+ * can occur between two and four times, the DTD will use "+" to indicate that
+ * one or more occurrences is allowed.  No character is used when exactly one
+ * occurrence is required.
+ *
+ *  @return             "*" if zero or more repetitions are allowed;
+ *                      "?" if zero or one repetition(s) are allowed;
+ *                      "+" if one or more repetitions are allowed;
+ *                      otherwise "".
+ */
+const wchar_t* const getDtdCountCharacter(
+        const cdr::xsd::CountConstrained& ccNode)
+{
+    if (ccNode.getMinOccs() < 1)
+        return ccNode.getMaxOccs() == 1 ? L"?" : L"*";
+    else if (ccNode.getMaxOccs() > 1)
+        return L"+";
+    return L"";
+}
+
+/**
+ * Recursively declare any child elements of the current node which have not
+ * already been declared.  Used for creating a DTD from a schema.
+ *
+ *  @param  schema              reference to schema currently being processed.
+ *  @param  declaredElems       reference to set of elements which have
+ *                              already been declared.
+ *  @param  n                   address of current node; can be an element,
+ *                              a sequence, a choice, or a named group.
+ */
+void cdr::xsd::Schema::declareDtdChildElements(cdr::StringSet& declaredElems, 
+                                               const cdr::xsd::Node* n,
+                                               std::wostream& os)
+{
+    // Safety check.
+    if (!n)
+        return;
+
+    // Is this an element?
+    const Element* e = dynamic_cast<const Element*>(n);
+    if (e) {
+
+        // See if we have already declared this element.
+        cdr::String name = e->getName();
+        if (declaredElems.find(name) != declaredElems.end())
+            return;
+        declaredElems.insert(name);
+
+        // Const cast is required because elements need to resolve their type
+        // name to their type when first used.
+        writeDtdElement(const_cast<Element&>(*e), os);
+        return;
+    }
+
+    // Is this a named group?
+    const Group* g = dynamic_cast<const Group*>(n);
+    if (g) {
+        declareDtdChildElements(declaredElems, g->getContent(), os);
+        return;
+    }
+
+    // Is this a choice or a sequence?
+    const ChoiceOrSequence* cs = dynamic_cast<const ChoiceOrSequence*>(n);
+    if (cs) {
+        NodeEnum e = cs->getNodes();
+        while (e != cs->getListEnd())
+            declareDtdChildElements(declaredElems, *e++, os);
+        return;
+    }
+
+    // Sanity check.
+    if (dynamic_cast<const SimpleContent*>(n))
+        throw cdr::Exception(L"Internal error",
+                             L"Content must be element, group, choice, "
+                             L"sequence, or simpleContent");
+}
+
+/**
+ * Examines the set of enumerated values to determine whether they all match
+ * the NMTOKEN production of the XML 1.0 recommendation.
+ */
+bool areNMTokens(const cdr::StringSet& vals)
+{
+    cdr::StringSet::const_iterator i = vals.begin();
+    while (i != vals.end())
+        if (!cdr::xsd::isNMToken(*i++))
+            return false;
     return true;
 }
