@@ -1,15 +1,21 @@
 
 /*
- * $Id: CdrGetUsr.cpp,v 1.1 2000-04-22 09:25:50 bkline Exp $
+ * $Id: CdrGetUsr.cpp,v 1.2 2000-04-23 01:19:58 bkline Exp $
  *
  * Retrieves information about requested user.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/22 09:25:50  bkline
+ * Initial revision
  */
 
 #include "CdrCommand.h"
 #include "CdrDbResultSet.h"
 
+/**
+ * Load the row from the usr table belonging to the specified user, as well as
+ * the rows from the grp_usr table joined to the usr row.
+ */
 cdr::String cdr::getUsr(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
                         cdr::db::Connection& dbConnection) 

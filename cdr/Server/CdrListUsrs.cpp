@@ -1,15 +1,21 @@
 
 /*
- * $Id: CdrListUsrs.cpp,v 1.1 2000-04-22 09:25:23 bkline Exp $
+ * $Id: CdrListUsrs.cpp,v 1.2 2000-04-23 01:19:58 bkline Exp $
  *
  * Retrieves list of the existing CDR users.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/22 09:25:23  bkline
+ * Initial revision
  */
 
 #include "CdrCommand.h"
 #include "CdrDbResultSet.h"
 
+/**
+ * Selects all rows in the usr table and displays the values from the name
+ * column.
+ */
 cdr::String cdr::listUsrs(cdr::Session& session, 
                           const cdr::dom::Node& commandNode,
                           cdr::db::Connection& dbConnection) 

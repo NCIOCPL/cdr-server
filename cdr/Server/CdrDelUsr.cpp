@@ -1,16 +1,22 @@
 
 /*
- * $Id: CdrDelUsr.cpp,v 1.1 2000-04-22 09:27:18 bkline Exp $
+ * $Id: CdrDelUsr.cpp,v 1.2 2000-04-23 01:19:58 bkline Exp $
  *
  * Deletes a user (and any of the user's group memberships) from the CDR.  
  * Fails if any actions have been performed by the user.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/22 09:27:18  bkline
+ * Initial revision
  */
 
 #include "CdrCommand.h"
 #include "CdrDbResultSet.h"
 
+/**
+ * Drops any rows from the grp_usr table associated with this user, then drops
+ * the row from the usr table.
+ */
 cdr::String cdr::delUsr(cdr::Session& session, 
                         const cdr::dom::Node& commandNode,
                         cdr::db::Connection& dbConnection) 
