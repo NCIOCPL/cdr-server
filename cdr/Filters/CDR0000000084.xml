@@ -3,34 +3,209 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Organization Address Fragment</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 
-<xsl:transform       xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                     xmlns:cdr = "cips.nci.nih.gov/cdr"
-                       version = "1.0">
+<xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                           xmlns:cdr = "cips.nci.nih.gov/cdr"
+                             version = "1.0">
+ <!--
+ =======================================================================
+ This filter finds the organization location which matches the fragment
+ ID passed in by the caller.  This is used by the client DLL, which 
+ grabs the organization address pointed to by a person location and 
+ inserts it into the person document at the user's request so that the
+ address can be customized for the person.  It is also used by the 
+ mailer software, which needs to construct an address to which an
+ Organization mailer should be sent.
+ ======================================================================= -->
 
  <!-- Passed in by the caller -->
- <xsl:param               name = "fragId"/>
+ <xsl:param                     name = "fragId"/>
 
  <!-- Start at the top.  We only want Location elements. -->
- <xsl:template           match = "/">
+ <xsl:template                 match = "/">
   <AddressElements>
-   <xsl:apply-templates select = 
-"Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id = $fragId]"/>
+   <xsl:apply-templates       select = "Organization/OrganizationDetails/
+                                        CIPSContactPerson"/>
+   <xsl:apply-templates       select = "Organization/
+                                        OrganizationNameInformation"/>
+   <xsl:variable                name = "orgLoc"
+                              select = "Organization/
+                                        OrganizationLocations/
+                                        OrganizationLocation
+                                        [Location/@cdr:id = $fragId]"/>
+   <xsl:if                      test = "$orgLoc">
+    <xsl:if                     test = "$orgLoc/@IncludeParentName = 'Yes'">
+     <ParentNames>
+      <xsl:attribute            name = "OrderParentNameFirst">
+       <xsl:value-of          select = "$orgLoc/@OrderParentNameFirst"/>
+      </xsl:attribute>
+      <xsl:call-template        name = "getParent">
+       <xsl:with-param          name = "parentId"
+                              select = "Organization/
+                                        OrganizationParent/
+                                        ParentOrganization/@cdr:ref"/>
+      </xsl:call-template>
+     </ParentNames>
+    </xsl:if>
+    <xsl:apply-templates      select = "$orgLoc/Location"/>
+   </xsl:if>
   </AddressElements>
  </xsl:template>
 
  <!-- Identity rule, copies everything to the output tree. -->
- <xsl:template           match = "@*|node()">
+ <xsl:template                 match = "@*|node()">
   <xsl:copy>
-   <xsl:apply-templates select = "@*|node()"/>
+   <xsl:apply-templates       select = "@*|node()"/>
   </xsl:copy>
  </xsl:template>
 
  <!-- Extract the address information for the Location element -->
- <xsl:template           match = "Location">
-   <xsl:apply-templates  select = "node()"/>
+ <xsl:template                 match = "Location">
+   <xsl:apply-templates       select = "node()"/>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Get the personal name information for the person that goes with this address. 
+ =========================================================================== -->
+ <xsl:template                 match = "CIPSContactPerson">
+  <xsl:variable                 name = "id"
+                              select = "@cdr:ref"/>
+  <xsl:variable                 name = "uri"
+                              select = "concat('cdrx:', $id, '/last')"/>
+  <xsl:variable                 name = "doc"
+                              select = "document($uri)"/>
+  <xsl:if                       test = "$doc">
+   <PersonName>
+    <xsl:apply-templates      select = "$doc/Person/PersonNameInformation/*"/>
+   </PersonName>
+  </xsl:if>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Get the country name(s) for the country document.
+ =========================================================================== -->
+ <xsl:template                 match = "OrganizationNameInformation">
+  <OrgName>
+   <xsl:value-of              select = "OfficialName/Name"/>
+  </OrgName>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Get the country name(s) for the country document.
+ =========================================================================== -->
+ <xsl:template                 match = "Country">
+  <xsl:variable                 name = "docId"
+                              select = "@cdr:ref"/>
+  <xsl:variable                 name = "uri"
+                              select = "concat('cdrx:', $docId)"/>
+  <xsl:variable                 name = "doc"
+                              select = "document($uri)"/>
+  <Country                   cdr:ref = "{@cdr:ref}">
+   <xsl:choose>
+    <xsl:when                   test = "$doc/Country/CountryShortName">
+     <xsl:value-of            select = "$doc/Country/CountryShortName"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of            select = "$doc/Country/CountryFullName"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </Country>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Ditto for the state.
+ =========================================================================== -->
+ <xsl:template                 match = "PoliticalSubUnit_State">
+  <xsl:variable                 name = "docId"
+                              select = "@cdr:ref"/>
+  <xsl:variable                 name = "uri"
+                              select = "concat('cdrx:', $docId)"/>
+  <xsl:variable                 name = "doc"
+                              select = "document($uri)"/>
+  <PoliticalSubUnit_State    cdr:ref = "{@cdr:ref}">
+   <xsl:choose>
+    <xsl:when                   test = "$doc/PoliticalSubUnit
+                                            /PoliticalSubUnitShortName">
+     <xsl:value-of            select = "$doc/PoliticalSubUnit
+                                            /PoliticalSubUnitShortName"/>
+   </xsl:when>
+   <xsl:otherwise>
+     <xsl:value-of            select = "$doc/PoliticalSubUnit
+                                            /PoliticalSubUnitFullName"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </PoliticalSubUnit_State>
+ </xsl:template>
+
+<!--
+ <xsl:template                 match = "OtherPracticeLocation">
+  <xsl:variable                 name = "fragLink"
+                              select = "OrganizationLocation/@cdr:ref"/>
+  <xsl:variable                 name = "fragId"
+                              select = "substring-after($fragLink, '#')"/>
+  <xsl:variable                 name = "orgUri"
+                              select = "concat('cdrx:', $fragLink, '/last')"/>
+  <xsl:variable                 name = "org"
+                              select = "document($orgUri)"/>
+  <xsl:variable                 name = "orgName"
+                              select = "$org/Organization/
+                                        OrganizationNameInformation/
+                                        OfficialName/Name"/>
+  <xsl:variable                 name = "orgLoc"
+                              select = "$org/Organization/
+                                        OrganizationLocations/
+                                        OrganizationLocation
+                                        [Location/@cdr:id = $fragId]"/>
+                                    
+  <OrgName>
+   <xsl:value-of              select = "$orgName"/>
+  </OrgName>
+  <xsl:if                       test = "$orgLoc/@IncludeParentName = 'Yes'">
+   <ParentNames>
+    <xsl:attribute              name = "OrderParentNameFirst">
+     <xsl:value-of            select = "$orgLoc/@OrderParentNameFirst"/>
+    </xsl:attribute>
+    <xsl:call-template          name = "getParent">
+     <xsl:with-param            name = "org"
+                              select = "$org"/>
+    </xsl:call-template>
+   </ParentNames>
+  </xsl:if>
+-->
+
+ <!--
+ ===========================================================================
+ Recursively collect all the parents of an organizations.
+ =========================================================================== -->
+ <xsl:template                  name = "getParent">
+  <xsl:param                    name = "parentId"/>
+  <xsl:variable                 name = "parentUri"
+                              select = "concat('cdrx:', $parentId, '/last')"/>
+  <xsl:variable                 name = "parentDoc"
+                              select = "document($parentUri)"/>
+  <xsl:variable                 name = "parentName"
+                              select = "$parentDoc/Organization/
+                                        OrganizationNameInformation/
+                                        OfficialName/Name"/>
+  <xsl:if                       test = "$parentName">
+   <ParentName>
+    <xsl:value-of             select = "$parentName"/>
+   </ParentName>
+   <xsl:call-template           name = "getParent">
+    <xsl:with-param             name = "parentId"
+                              select = "$parentDoc/Organization
+                                                  /OrganizationParent
+                                                  /ParentOrganization
+                                                  /@cdr:ref"/>
+   </xsl:call-template>
+  </xsl:if>                                    
  </xsl:template>
 
 </xsl:transform>
