@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.11 2001-07-12 19:35:06 mruben Exp $
+ * $Id: CdrFilter.cpp,v 1.12 2001-09-20 20:13:31 mruben Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2001/07/12 19:35:06  mruben
+ * fixed error in message
+ *
  * Revision 1.10  2001/06/19 18:54:29  mruben
  * addes API call and support for parms
  *
@@ -55,6 +58,7 @@
 #include "CdrFilter.h"
 #include "CdrGetDoc.h"
 #include "CdrString.h"
+#include "CdrVersion.h"
 
 using std::pair;
 using std::string;
@@ -122,13 +126,14 @@ namespace
   /* does not have this type                                                 */
   /***************************************************************************/
   cdr::String getDocument(cdr::String ui,
+                          int version,
                           cdr::db::Connection& connection,
                           const wchar_t* type = NULL)
   {
     if (type == CdrDocType)
-      return cdr::getDocString(ui, connection, false);
+      return cdr::getDocString(ui, connection, version, false);
 
-    cdr::String docstring(cdr::getDocString(ui, connection));
+    cdr::String docstring(cdr::getDocString(ui, connection, version));
 
     cdr::dom::Parser parser;
     parser.parse(docstring);
@@ -210,7 +215,7 @@ namespace
     if (rs.next())
       throw cdr::Exception(L"Multiple documents with title: " + name);
 
-    return getDocument(cdr::stringDocId(id), connection);
+    return getDocument(cdr::stringDocId(id), 0, connection);
   }
 
 
@@ -239,7 +244,7 @@ namespace
       if (ui != NULL)
         *ui = u;
 
-      return getDocument(u, connection, type);
+      return getDocument(u, 0, connection, type);
     }
 
     cdr::dom::Node f = docspec.getFirstChild();
@@ -348,23 +353,57 @@ namespace
       // ***TODO***
       // for now we only implement simple UI to get the document XML and
       // ui/CdrCtl to get the entire doc control string
-      cdr::String uid(rest);
+      cdr::String spec(rest);
+      cdr::String uid;
+      cdr::String version_str;
       cdr::String type;
-      cdr::String::size_type sep = uid.find(L'/');
-      if (sep != cdr::String::npos)
+      cdr::String::size_type sep = spec.find('/');
+      if (sep != string::npos)
       {
-        type = uid.substr(sep + 1);
-        uid = uid.substr(0, sep);
-        sep = type.find(L'/');
-        if (sep != cdr::String::npos)
-          type = type.substr(0, sep);
+        uid = spec.substr(0, sep);
+        spec = spec.substr(sep + 1);
+      }
+      else
+      {
+        uid = spec;
+        spec = L"";
       }
 
+      if (!spec.empty())
+      {
+        sep = spec.find('/');
+        if (sep != string::npos)
+        {
+          version_str = spec.substr(0, sep);
+          spec = spec.substr(sep + 1);
+        }
+        else
+        {
+          version_str = spec;
+          spec = L"";
+        }
+        if (!version_str.empty()
+            && !isdigit(static_cast<unsigned char>(version_str[0]))
+            && version_str != "last")
+        {
+          spec = version_str;
+          version_str = "";
+        }
+      }
+      type = spec;
+
+      int version = 0;
+      if (version_str == L"last")
+        version = cdr::getVersionNumber(uid.extractDocId(), connection);
+      else
+      if (!version_str.empty())
+        version = version_str.getInt();
+
       if (type == L"CdrCtl")
-        u.doc = cdr::getDocCtlString(uid, connection,
+        u.doc = cdr::getDocCtlString(uid, version, connection,
                                      cdr::DocCtlComponents::DocTitle).toUtf8();
       else
-        u.doc = getDocument(uid, connection).toUtf8();
+        u.doc = getDocument(uid, version, connection).toUtf8();
     }
     catch (...)
     {

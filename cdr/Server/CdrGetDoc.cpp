@@ -1,10 +1,14 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.12 2001-06-15 02:28:21 ameyer Exp $
+ * $Id: CdrGetDoc.cpp,v 1.13 2001-09-20 20:13:31 mruben Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2001/06/15 02:28:21  ameyer
+ * Made request for version=0 fetch current document.
+ * Made DocTitle read only.
+ *
  * Revision 1.11  2001/06/12 22:37:23  bkline
  * Fixed blob handling.
  *
@@ -212,7 +216,25 @@ cdr::String cdr::getDocString(
     return cdrDoc;
 }
 
+cdr::String cdr::getDocString(
+        const cdr::String&    docIdString,
+        cdr::db::Connection&  conn,
+        int version,
+        bool usecdata
+) {
+  if (version == 0)
+    return cdr::getDocString(docIdString, conn, usecdata);
 
+  cdr::CdrVerDoc v;
+  
+  if (!getVersion(docIdString.extractDocId(), conn, version, &v))
+    throw cdr::Exception(L"getDocString: Unable to find document "
+                             + docIdString
+                             + L", version: "
+                             + cdr::String::toString(version));
+
+  return cdr::getDocString(docIdString, conn, &v, usecdata);
+}
 /**
  * Wrap a tag around an element, giving it a readonly attribute.
  * We also append a newline just for nicer formatting.
@@ -308,6 +330,58 @@ cdr::String cdr::getDocCtlString(
     cdrDoc += L"</CdrDocCtl>\n";
 
     return cdrDoc;
+}
+
+/**
+ * Builds the XML string for a <CdrDocCtl> element for a document version
+ * extracted from the database.
+ */
+cdr::String cdr::getDocCtlString(
+        const cdr::String&    docIdString,
+        int                   version,
+        cdr::db::Connection&  conn,
+        int elements)
+{
+  if (version == 0)
+    return cdr::getDocCtlString(docIdString, conn, elements);
+  
+  // For now we ignore the select and get everything
+  // Go get the document information.
+  int docId = docIdString.extractDocId();
+  std::string query = "SELECT d.val_status,"
+                      "       d.val_date,"
+                      "       d.title,"
+                      "       d.comment"
+                      "  FROM doc_version d"
+                      " WHERE d.id = ?"
+                      "   AND d.num=?";
+  cdr::db::PreparedStatement select = conn.prepareStatement(query);
+  select.setInt(1, docId);
+  select.setInt(2, version);
+  cdr::db::ResultSet rs = select.executeQuery();
+  if (!rs.next())
+    throw cdr::Exception(L"Unable to load document", docIdString);
+  cdr::String     valStatus = rs.getString(1);
+  cdr::String     valDate   = rs.getString(2);
+  cdr::String     title     = cdr::entConvert(rs.getString(3));
+  cdr::String     comment   = cdr::entConvert(rs.getString(4));
+  select.close();
+
+  // Build the CdrDoc string.
+  cdr::String cdrDoc = cdr::String(L"<CdrDocCtl><DocValStatus>")
+    + valStatus
+    + L"</DocValStatus>";
+  if (!valDate.isNull() && valDate.length() > 0) {
+    if (valDate.length() > 10)
+      valDate[10] = L'T';
+    cdrDoc += cdr::String(L"<DocValDate>") + valDate + L"</DocValDate>";
+  }
+  cdrDoc += cdr::String(L"<DocTitle>") + title + L"</DocTitle>";
+  if (!comment.isNull() && comment.length() > 0)
+    cdrDoc += cdr::String(L"<DocComment>") + comment + L"</DocComment>";
+  cdrDoc += L"</CdrDocCtl>\n";
+
+  return cdrDoc;
 }
 
 /**
