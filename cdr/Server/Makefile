@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.24 2000-08-10 19:47:14 bkline Exp $
+# $Id: Makefile,v 1.25 2000-08-10 20:26:56 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.24  2000/08/10 19:47:14  bkline
+# Added dependency for 'install' rule.
+#
 # Revision 1.23  2000/08/10 19:37:56  bkline
 # Default rule now builds server in /cdr/src; new 'install' rule added.
 #
@@ -175,7 +178,9 @@ all: init CdrServer.exe CdrDocs #$(SERVICE)
 service: $(SERVICE)
 
 install: CdrServer.exe
-	-cp CdrServer.exe $(CDRSVR)
+	-net stop Cdr
+	cp CdrServer.exe ../bin/CdrServer.exe
+	net start Cdr
 
 #--------------------------------------------------------------------------
 # Initialization, saving two generations of old errors
