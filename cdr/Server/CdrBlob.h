@@ -1,9 +1,12 @@
 /*
- * $Id: CdrBlob.h,v 1.3 2001-06-06 12:39:45 bkline Exp $
+ * $Id: CdrBlob.h,v 1.4 2004-11-05 05:19:26 ameyer Exp $
  *
  * CDR wrapper for a string of bytes.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2001/06/06 12:39:45  bkline
+ * Added encoding/decoding support.
+ *
  * Revision 1.2  2000/05/03 17:27:54  bkline
  * Fleshed out ccdoc comments.
  *
@@ -48,7 +51,7 @@ namespace cdr {
         Blob(bool null_ = false) : null(null_) {}
 
         /**
-         * Creates a new non-null <code>Blob</code> object from an array 
+         * Creates a new non-null <code>Blob</code> object from an array
          * of bytes.
          *
          *  @param  s           address of array of bytes.
@@ -85,6 +88,14 @@ namespace cdr {
          */
         String encode() const;
 
+        /**
+         * Returns an unsigned integer representing a hash
+         * of the bytes in the Blob.
+         *
+         *  @return             Hash value.
+         */
+        unsigned int hash() const { return cdr::hashBytes(data(), length()); }
+
     private:
 
         /**
@@ -120,7 +131,6 @@ namespace cdr {
          */
         static wchar_t invalidBits() { return L'\xFFC0'; }
     };
-
 }
 
-#endif
+#endif // CDR_BLOB_
