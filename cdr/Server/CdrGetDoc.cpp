@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.30 2002-10-17 17:37:01 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.31 2004-11-05 05:55:26 ameyer Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2002/10/17 17:37:01  bkline
+ * Added ReadyForReview to CdrDocCtl.
+ *
  * Revision 1.29  2002/09/16 22:06:15  pzhang
  * Updated FirstPub logic; picked value from first_pub in all_docs.
  *
@@ -109,6 +112,7 @@
 #include "CdrGetDoc.h"
 #include "CdrVersion.h"
 #include "CdrBlob.h"
+#include "CdrBlobExtern.h"
 #include "CdrFilter.h"
 
 // Local functions.
@@ -134,7 +138,9 @@ cdr::String cdr::getDocString(
         const cdr::String&    docIdString,
         cdr::db::Connection&  conn,
         bool                  usecdata,
-        bool                  denormalize)
+        bool                  denormalize,
+        bool                  getXml,
+        bool                  getBlob)
 {
     // Go get the document information.
     int docId = docIdString.extractDocId();
@@ -145,10 +151,10 @@ cdr::String cdr::getDocString(
                         "                 d.active_status,"
                         "                 d.comment,"
                         "                 t.name,"
-                        "                 b.data"
+                        "                 b.blob_id"
                         "            FROM document d"
-                        " LEFT OUTER JOIN doc_blob b"
-                        "              ON b.id = d.id"
+                        " LEFT OUTER JOIN doc_blob_usage b"
+                        "              ON b.doc_id = d.id"
                         "            JOIN doc_type t"
                         "              ON t.id = d.doc_type"
                         "           WHERE d.id = ?";
@@ -164,7 +170,7 @@ cdr::String cdr::getDocString(
     cdr::String     activeStatus = rs.getString(5);
     cdr::String     comment      = cdr::entConvert(rs.getString(6));
     cdr::String     docType      = rs.getString(7);
-    cdr::Blob       blob         = rs.getBytes(8);
+    cdr::Int        blobId       = rs.getInt(8);
     select.close();
 
     // Just in case the caller sent an ID string not in canonical form.
@@ -192,16 +198,27 @@ cdr::String cdr::getDocString(
     cdrDoc += readOnlyWrap (readyForReview ? L"Y" : L"N", L"ReadyForReview");
     cdrDoc += L"</CdrDocCtl>\n";
 
-    // Denormalize the links if requested.
-    if (denormalize)
-        xml = denormalizeLinks(xml, conn, docType);
+    // XML
+    if (getXml) {
+        // Denormalize the links if requested.
+        if (denormalize)
+            xml = denormalizeLinks(xml, conn, docType);
 
-    // Plug in the body of the document.
-    cdrDoc += usecdata ? makeDocXml (xml) : xml;
+        // Plug in the body of the document.
+        cdrDoc += usecdata ? makeDocXml (xml) : xml;
+    }
 
     // If there's a blob, add it, too.
-    if (!blob.isNull())
-        cdrDoc += makeDocBlob (blob);
+    if (getBlob && !blobId.isNull()) {
+        cdr::Blob *pBlob = cdr::getBlobPtrByBlobId(conn, blobId);
+        if (pBlob) {
+            cdrDoc += makeDocBlob(*pBlob);
+            delete pBlob;
+        }
+        else
+            throw cdr::Exception(L"getDocString: No blob found for blobId=" +
+                                 docIdString);
+    }
 
     // Terminate and return the string to the caller.
     cdrDoc += L"</CdrDoc>\n";
@@ -220,7 +237,9 @@ cdr::String cdr::getDocString(
         cdr::db::Connection&  conn,
         const struct cdr::CdrVerDoc *docVer,
         bool usecdata,
-        bool denormalize
+        bool denormalize,
+        bool getXml,
+        bool getBlob
 ) {
     // Extract doc id from string
     int docId = docIdString.extractDocId();
@@ -278,19 +297,21 @@ cdr::String cdr::getDocString(
 
     // Comment is optional
     if (docVer->comment.size() > 0)
-        cdrDoc += readOnlyWrap (cdr::entConvert(docVer->comment), 
+        cdrDoc += readOnlyWrap (cdr::entConvert(docVer->comment),
                                 L"DocComment");
-
-    // Denormalize the links if requested.
-    cdr::String xml = docVer->xml;
-    if (denormalize)
-        xml = denormalizeLinks(xml, conn, typName);
-
     // That's all we've got from the doc control
     // Add an end tag for it and fetch xml and blob
     cdrDoc += L"</CdrDocCtl>\n";
-    cdrDoc += usecdata ? makeDocXml (xml) : xml;
-    if (!docVer->data.isNull())
+
+    // Denormalize the links if requested.
+    if (getXml) {
+        cdr::String xml = docVer->xml;
+        if (denormalize)
+            xml = denormalizeLinks(xml, conn, typName);
+        cdrDoc += usecdata ? makeDocXml (xml) : xml;
+    }
+
+    if (getBlob && !docVer->data.isNull())
         cdrDoc += makeDocBlob (docVer->data);
 
     // Terminate and return the string to the caller.
@@ -303,10 +324,13 @@ cdr::String cdr::getDocString(
         cdr::db::Connection&  conn,
         int version,
         bool usecdata,
-        bool denormalize
+        bool denormalize,
+        bool getXml,
+        bool getBlob
 ) {
   if (version == 0)
-    return cdr::getDocString(docIdString, conn, usecdata, denormalize);
+    return cdr::getDocString(docIdString, conn, usecdata, denormalize,
+                             getXml, getBlob);
 
   cdr::CdrVerDoc v;
 
@@ -316,8 +340,10 @@ cdr::String cdr::getDocString(
                              + L", version: "
                              + cdr::String::toString(version));
 
-  return cdr::getDocString(docIdString, conn, &v, usecdata, denormalize);
+  return cdr::getDocString(docIdString, conn, &v, usecdata, denormalize,
+                           getXml, getBlob);
 }
+
 /**
  * Wrap a tag around an element, giving it a readonly attribute.
  * We also append a newline just for nicer formatting.
@@ -352,6 +378,16 @@ static cdr::String makeDocXml (
 
 /**
  * Build a blob element in base64.
+ *
+ * XXX - Optimization note:
+ *
+ *   For optimization, we could call cdr::getVerBlob here rather than
+ *   in the code that fills in a CdrVerDoc structure.
+ *
+ *   Not sure the blob is used anywhere except by routines that
+ *   call makeDocBlob to encode it in base64.
+ *
+ *   Then we should only call makeDocBlob if blob is actually requested.
  *
  *  @param  blob    Reference to xml string
  *  @return         CdrDocBlob element encoded in base64
@@ -538,18 +574,18 @@ static cdr::String getCommonCtlString(int docId,
 
   if (elements & cdr::DocCtlComponents::DocFirstPub)
   {
-    std::string query = "SELECT d.first_pub                          "                      
-                        "  FROM document d                           "                      
+    std::string query = "SELECT d.first_pub                          "
+                        "  FROM document d                           "
                         " WHERE NOT d.first_pub IS NULL                  "
                         "   AND d.first_pub_knowable = 'Y'           "
-                        "   AND d.id = ?                             ";                       
+                        "   AND d.id = ?                             ";
 
     cdr::db::PreparedStatement select = conn.prepareStatement(query);
     select.setInt(1, docId);
     cdr::db::ResultSet rs = select.executeQuery();
     if (rs.next())
     {
-      cdr::String date = cdr::toXmlDate(rs.getString(1));     
+      cdr::String date = cdr::toXmlDate(rs.getString(1));
       cdrDoc += L"<FirstPub><Date>" + date + L"</Date></FirstPub>";
     }
     select.close();
@@ -568,7 +604,7 @@ static cdr::String getCommonCtlString(int docId,
  *  @param  docType name of the document's type.
  *  @return         denormalized xml string.
  */
-cdr::String denormalizeLinks(const cdr::String& xml, 
+cdr::String denormalizeLinks(const cdr::String& xml,
                              cdr::db::Connection& conn,
                              const cdr::String& docType)
 {
@@ -640,6 +676,15 @@ cdr::String cdr::getDoc(cdr::Session& session,
   bool        denorm = true;        // Flag for link denormalization
   struct cdr::CdrVerDoc docVer;     // Filled in by version control
 
+
+  const cdr::dom::Element& cmdElem =
+        static_cast<const cdr::dom::Element&>(commandNode);
+
+  // Attributes on the command node can suppress retrieval of xml or blob
+  bool getXml  = cdr::ynCheck(cmdElem.getAttribute(L"includeXml"), true, "");
+  bool getBlob = cdr::ynCheck(cmdElem.getAttribute(L"includeBlob"), true, "");
+  if (!getXml && !getBlob)
+      throw cdr::Exception("getDoc: Can't specify no xml and no blob");
 
   // extract command arguments
   for (cdr::dom::Node child = commandNode.getFirstChild();
@@ -781,7 +826,8 @@ cdr::String cdr::getDoc(cdr::Session& session,
   // What comes next depends on requested version
   if (versionType == current)
       // Get it from the document table
-      docStr += getDocString (idStr, dbConnection, true, denorm);
+      docStr += getDocString (idStr, dbConnection, true, denorm,
+                              getXml, getBlob);
 
   else {
       switch (versionType) {
@@ -821,7 +867,8 @@ cdr::String cdr::getDoc(cdr::Session& session,
       }
 
       // We've retrieved the version, format it into XML
-      docStr += cdr::getDocString (idStr, dbConnection, &docVer, true, denorm);
+      docStr += cdr::getDocString (idStr, dbConnection, &docVer, true, denorm,
+                                   getXml, getBlob);
   }
 
   // Add xml termination for all
@@ -834,7 +881,7 @@ cdr::String cdr::getDoc(cdr::Session& session,
  */
 bool isReadyForReview(int id, cdr::db::Connection& conn)
 {
-      std::string query = 
+      std::string query =
           "SELECT doc_id FROM ready_for_review WHERE doc_id = ?";
       cdr::db::PreparedStatement stmt = conn.prepareStatement(query);
       stmt.setInt(1, id);
