@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbConnection.h,v 1.5 2000-04-22 18:57:38 bkline Exp $
+ * $Id: CdrDbConnection.h,v 1.6 2000-05-03 15:37:54 bkline Exp $
  *
  * Interface for CDR wrapper for an ODBC database connection.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/04/22 18:57:38  bkline
+ * Added ccdoc comment markers for namespaces and @pkg directives.
+ *
  * Revision 1.4  2000/04/22 15:35:15  bkline
  * Filled out documentation comments.  Made all ODBC-specific members
  * private.
@@ -25,6 +28,8 @@
 #include <sqlext.h>
 #include "CdrString.h"
 #include "CdrException.h"
+#include "CdrDbStatement.h"
+#include "CdrDbPreparedStatement.h"
 
 /**@#-*/
 
@@ -36,7 +41,6 @@ namespace cdr {
         /** @pkg cdr.db */
 
         // Forward references.
-        class Statement;
         class ResultSet;
 
         /**
@@ -64,6 +68,18 @@ namespace cdr {
             ~Connection();
 
             /**
+             * Creates an object which can handle a parameterized SQL
+             * query.
+             */
+            PreparedStatement prepareStatement(const std::string&);
+
+            /**
+             * Creates an object which can handle an unparamaterized
+             * SQL query.
+             */
+            Statement createStatement();
+
+            /**
              * Turning off auto-commit starts an open transaction,
              * which can be committed or rolled back.  A new connection
              * is started with auto-commit turned on, effectively making 
@@ -81,11 +97,19 @@ namespace cdr {
              */
             int getLastIdent();
 
+            /**
+             * Returns a string representing the CDR DBMS's idea of the
+             * current time.
+             */
+            cdr::String getDateTimeString();
+
         private:
             static cdr::String getErrorMessage(SQLRETURN, HENV, HDBC, HSTMT);
             HDBC hdbc;
             static HENV henv;
             bool autoCommit;
+            Connection(const Connection&);              // Block this
+            Connection& operator=(const Connection&);   // And this
         };
     }
 }
