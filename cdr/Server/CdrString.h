@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.8 2000-04-26 01:40:12 bkline Exp $
+ * $Id: CdrString.h,v 1.9 2000-05-03 15:42:31 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2000/04/26 01:40:12  bkline
+ * Added copy constructor, != operator, and extractDocId() method.
+ *
  * Revision 1.7  2000/04/22 18:57:38  bkline
  * Added ccdoc comment markers for namespaces and @pkg directives.
  *
@@ -122,6 +125,18 @@ namespace cdr {
             { return *this != static_cast<const StdWstring&>(s); }
 
         /**
+         * Compares another cdr::String to this one.
+         */
+        bool operator<(const String& s) const
+            { return *this < static_cast<const StdWstring&>(s); }
+
+        /**
+         * Compares another cdr::String to this one.
+         */
+        bool operator>(const String& s) const
+            { return *this > static_cast<const StdWstring&>(s); }
+
+        /**
          * Returns <code>true</code> if the object represents a
          * <code>NULL</code> string.
          */
@@ -132,6 +147,12 @@ namespace cdr {
          * object.
          */
         int getInt() const;
+
+        /**
+         * Parses the floating-point value represented by the string value of 
+         * the object.
+         */
+        double getFloat() const;
 
         /**
          * Creates a standard <code>string</code> copy of the value of the
