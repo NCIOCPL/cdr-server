@@ -1,9 +1,13 @@
 /*
- * $Id: CdrSearch.cpp,v 1.3 2000-10-04 18:28:26 bkline Exp $
+ * $Id: CdrSearch.cpp,v 1.4 2001-03-02 13:59:57 bkline Exp $
  *
  * Queries the CDR to create subset list of documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/10/04 18:28:26  bkline
+ * Fixed comment typo; added support for MaxDocs attribute; implemented
+ * command to search for link target candidates.
+ *
  * Revision 1.2  2000/05/03 15:25:41  bkline
  * Fixed database statement creation.
  *
@@ -97,12 +101,14 @@ cdr::String cdr::search(cdr::Session& session,
         if (rows++ == 0)
             response += L"   <QueryResults>\n";
         int         id      = rs.getInt(1);
-        cdr::String title   = rs.getString(2);
+        cdr::String title   = cdr::entConvert(rs.getString(2));
+        cdr::String docType = rs.getString(3);
         wchar_t tmp[1000];
         swprintf(tmp, L"    <QueryResult>\n     <DocId>CDR%010ld</DocId>\n"
+                      L"     <DocType>%s</DocType>\n"
                       L"     <DocTitle>%.500s</DocTitle>\n"
                       L"    </QueryResult>\n", 
-                 id, title.c_str());
+                 id, docType.c_str(), title.c_str());
         response += tmp;
     }
     if (rows > 0)
@@ -290,7 +296,7 @@ cdr::String cdr::Query::getSql(int maxDocs)
         swprintf(tBuf, L"TOP %d ", maxDocs);
         sql += tBuf;
     }
-    sql += "document.id, document.title FROM document";
+    sql += "document.id, document.title, doc_type.name FROM document";
     if (tree) {
         checkTablesJoined(tree);
         cdr::String where = L" WHERE ";
@@ -306,10 +312,10 @@ cdr::String cdr::Query::getSql(int maxDocs)
             sql += L", usr AS modifier";
             where += L"document.modifier = modifier.id AND ";
         }
-        if (hasDocTypeTest) {
+        /* if (hasDocTypeTest) { */
             sql += L", doc_type";
             where += L"document.doc_type = doc_type.id AND ";
-        }
+        /* } */
         sql += where + L"(" + tree->getSql() + L")";
     }
     return sql;
