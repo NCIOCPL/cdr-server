@@ -18,9 +18,12 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.6 2001-11-08 23:00:04 bkline Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.7 2001-11-09 22:23:56 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2001/11/08 23:00:04  bkline
+ * Tightened up the mutex handling.
+ *
  * Revision 1.5  2001/11/08 19:02:41  ameyer
  * Added comment about a problem.  See XXXX.
  *
@@ -267,7 +270,11 @@ cdr::link::LinkChkTargContains::LinkChkTargContains (cdr::String linkRule)
 
     // Parse the rule and save the parse tree
     // If parse fails, an exception is thrown
-    const char *ruleStrz = ruleString.toUtf8().c_str();
+    // Microsoft C++ library bug workaround.  Destructor for string
+    // returned by toUtf8() kicks in too soon.
+    // const char *ruleStrz = ruleString.toUtf8().c_str(); -> fails!
+    const std::string bugWorkaround = ruleString.toUtf8();
+    const char* ruleStrz = bugWorkaround.c_str();
     treeTop = parseRule (&ruleStrz);
 }
 
@@ -364,11 +371,11 @@ static cdr::link::LinkChkRelator parseRelator (const char **stringpp)
 {
     // Do simple, dumb comparisons to try to match against known relators
     const char *p = *stringpp;
-    if (strncmp (p, "==", 2)) {
+    if (!strncmp (p, "==", 2)) {
         *stringpp += 2;
         return cdr::link::relEqual;
     }
-    if (strncmp (p, "!=", 2)) {
+    if (!strncmp (p, "!=", 2)) {
         *stringpp += 2;
         return cdr::link::relNotEqual;
     }
@@ -455,11 +462,13 @@ static cdr::link::LinkChkBoolOp parseBoolOp (const char **stringpp)
 {
     // Simple comparisons
     if (**stringpp == '|') {
-        ++*stringpp;
+        while (**stringpp == '|')
+            ++*stringpp;
         return cdr::link::boolOr;
     }
     if (**stringpp == '&') {
-        ++*stringpp;
+        while (**stringpp == '&')
+            ++*stringpp;
         return cdr::link::boolAnd;
     }
 
