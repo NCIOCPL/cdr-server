@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.2 2000-04-11 17:49:54 bkline Exp $
+ * $Id: CdrString.cpp,v 1.3 2000-04-26 01:28:01 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/04/11 17:49:54  bkline
+ * Added constructor for converting from UTF-8.
+ *
  * Revision 1.1  2000/04/11 14:16:13  bkline
  * Initial revision
  *
@@ -98,4 +101,16 @@ int cdr::String::getInt() const
     int i;
     is >> i;
     return i;
+}
+/**
+ * Skips past the 'CDR' prefix and extracts the integer id for the
+ * document.
+ */
+int cdr::String::extractDocId() const
+{
+    int i = 0;
+    while (i < size() && !isdigit((*this)[i]))
+        ++i;
+    cdr::String numString = substr(i);
+    return numString.getInt();
 }
