@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLogon.cpp,v 1.1 2000-04-15 12:23:14 bkline Exp $
+ * $Id: CdrLogon.cpp,v 1.2 2000-04-15 14:05:10 bkline Exp $
  *
  * Opens a new CDR session.
  *
@@ -15,6 +15,8 @@
  *  </CdrLogonResp>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/15 12:23:14  bkline
+ * Initial revision
  */
 
 #include <ctime>
@@ -22,48 +24,47 @@
 #include "CdrCommand.h"
 #include "CdrDbResultSet.h"
 
-cdr::String logon(cdr::Session& session, 
-                  const cdr::dom::Node& node, 
-                  cdr::db::Connection& conn)
+cdr::String cdr::logon(cdr::Session& session, 
+                       const cdr::dom::Node& node, 
+                       cdr::db::Connection& conn)
 {
     // Extract the parameters from the command.  Caller catches exceptions.
-    cdr::String uid, pwd;
+    cdr::String userName, password;
     cdr::dom::Node child = node.getFirstChild();
     while (child != 0) {
         if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String name = child.getNodeName();
-            cdr::String value = child.getNodeValue();
             if (name == L"UserName")
-                uid = value;
+                userName = cdr::dom::getTextContent(child);
             else if (name == L"Password")
-                pwd = value;
+                password = cdr::dom::getTextContent(child);
         }
         child = child.getNextSibling();
     }
 
     // Look up the user in the database.
-    static const char selectQuery[] = "SELECT id, password"
-                                        "FROM usr"
+    static const char selectQuery[] = "SELECT id, password "
+                                        "FROM usr "  
                                        "WHERE name = ?";
     cdr::db::Statement select(conn);
-    select.setString(1, uid);
+    select.setString(1, userName);
     cdr::db::ResultSet rs = select.executeQuery(selectQuery);
-    if (!rs.next() || pwd != rs.getString(2))
+    if (!rs.next())
         throw cdr::Exception(L"Invalid logon credentials");
     int id = rs.getInt(1);
+    cdr::String dbPassword = rs.getString(2);
+    if (password != dbPassword)
+        throw cdr::Exception(L"Invalid logon credentials");
    
     // Create a new row in the session table.
     char idBuf[256];
     unsigned long now = time(0);
+    unsigned long ticks = clock();
         static char randomChars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     static size_t nRandomChars = sizeof randomChars - 1;
-    static bool randomized = false;
-    if (!randomized) {
-        srand(now);
-        randomized = true;
-    }
-    sprintf(idBuf, "%lX-%d-%c%c%c%c%c%c%c%c%c%c%c%c",
-        now, id, 
+    srand(ticks);
+    sprintf(idBuf, "%lX-%lX-%d-%c%c%c%c%c%c%c%c%c%c%c%c",
+        ticks, now, id, 
         randomChars[rand() % nRandomChars],
         randomChars[rand() % nRandomChars],
         randomChars[rand() % nRandomChars],
