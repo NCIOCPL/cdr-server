@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.1 2000-04-11 14:15:32 bkline Exp $
+# $Id: Makefile,v 1.2 2000-04-11 17:51:30 bkline Exp $
 #
 # Rules for building CDR library.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.1  2000/04/11 14:15:32  bkline
+# Initial revision
+#
 #
 #--------------------------------------------------------------------------
 
@@ -37,5 +40,8 @@ CdrXsd.obj: CdrXsd.cpp $(HDRS)
 CdrDom.obj: CdrDom.cpp $(HDRS)
 	$(CC) $(CFLAGS) -c CdrDom.cpp
 
+tCdrString.exe: tCdrString.cpp $(CDRLIB)
+	$(CC) $(CFLAGS) tCdrString.cpp $(CDRLIB)
+
 clean:
-	rm -f *.obj
+	rm -f *.obj *~
