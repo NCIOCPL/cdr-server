@@ -225,8 +225,11 @@
    </xsl:attribute>
 
    <xsl:for-each              select = "ListItem"> 
-    <xsl:call-template          name = "ItemizedListItem"/>
-    
+    <!-- Don't display empty list items -->
+    <xsl:if                     test = "not(. = '')">
+     <xsl:call-template          name = "ItemizedListItem"/>
+    </xsl:if>
+
     <!-- Take care of extra attributes. -->
     <xsl:if                     test = "position() != last() 
                                         and
@@ -746,6 +749,19 @@
   </xsl:if>
  </xsl:template>
 
+  <!--
+      ============================================================
+            Display titles for Patient Summaries
+      ============================================================= -->
+
+     <xsl:template              match= "Title"
+                                mode = "PT">
+     <xsl:if                    test = "count(ancestor::SummarySection) 
+                                        &gt; 1">
+     <h3><xsl:apply-templates/></h3>
+     </xsl:if>
+     </xsl:template>
+
 
  <!-- 
  =====================================================================
@@ -754,7 +770,8 @@
  a mode here to avoid unintended usage in documents that
  are not summaries, but with Title.
  ===================================================================== -->
- <xsl:template               match = "Title">
+ <xsl:template               match = "Title"
+                                      mode="RB">
                                      
  <!-- <xsl:if                    test  = "not(../../SummaryMetaData/
                                           SummaryAudience='Patients')">-->
