@@ -23,9 +23,15 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.23 2003-09-23 23:02:42 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.24 2003-09-29 18:15:18 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2003/09/23 23:02:42  ameyer
+ * Modified link_net.target_doc updating to insert null if no target_doc id
+ * is present instead of 0.
+ * This has no effect for now because we are not installing xrefs in the
+ * link_net table.  But it is desirable if we ever do.
+ *
  * Revision 1.22  2002/08/29 21:52:07  ameyer
  * Added some constants to represent initial values of object members.
  *
@@ -1654,7 +1660,7 @@ void cdr::link::updateLinkNet (
         if (rsi->target_doc > 0)
             insStmt.setInt   (4, rsi->target_doc);
         else {
-            cdr::Int nullTarg = new cdr::Int(true);
+            cdr::Int nullTarg(true);
             insStmt.setInt (4, nullTarg);
         }
         insStmt.setString(5, rsi->target_frag);
