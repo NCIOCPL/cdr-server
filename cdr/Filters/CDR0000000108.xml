@@ -326,7 +326,7 @@
        ============================================================== -->
   <xsl:template            match = "Outline          |
                                     ProjectedAccrual">
-    <xsl:apply-templates  select = "Para"/>
+    <xsl:apply-templates/>
   </xsl:template>
 
 
@@ -345,11 +345,7 @@
        ============================================================== -->
   <xsl:template            match = "EligibilityText   |
                                     Objectives">
-    <xsl:apply-templates  select = "ItemizedList"/>
-    <xsl:apply-templates  select = "OrderedList"/>
-    <xsl:apply-templates  select = "Para"/>
-    <xsl:apply-templates  select = "TT"/>
-    
+    <xsl:apply-templates/>
   </xsl:template>
 
 
@@ -960,14 +956,39 @@
   </xsl:template>
 
 
-  <xsl:template              match = "TT">
-    <TT>
+<!-- ============================================================= 
+     Create the LiteralLayout template including the renamed attribute for 
+     the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+     ============================================================= -->
+  <xsl:template              match = "LiteralLayout">
+    <LiteralLayout>
       <xsl:attribute          name = "id">
         <xsl:value-of       select = "./@cdr:id"/>
       </xsl:attribute>
       <xsl:apply-templates/>
+    </LiteralLayout>
+  </xsl:template>
+
+
+  <xsl:template              match = "TT">
+    <TT>
+      <xsl:if                 test = "./@cdr:id">
+       <xsl:attribute          name = "id">
+        <xsl:value-of       select = "./@cdr:id"/>
+       </xsl:attribute>
+      </xsl:if>
+       <xsl:apply-templates/>
     </TT>
   </xsl:template>
+
+
+  <xsl:template              match = "Emphasis       | Strong         |
+                                      Subscript      | Superscript    |
+                                      GeneName       | ScientificName |
+                                      ForeignName">
+      <xsl:apply-templates/>
+  </xsl:template>
+
 
   <xsl:template              match = "TermDefinition">
     <Para>
@@ -980,9 +1001,11 @@
 
   <xsl:template              match = "ItemizedList">
     <ItemizedList>
-      <xsl:attribute          name = "id">
+      <xsl:if                 test = "./@cdr:id">
+       <xsl:attribute          name = "id">
         <xsl:value-of       select = "./@cdr:id"/>
-      </xsl:attribute>
+       </xsl:attribute>
+      </xsl:if>
       <xsl:if                 test = "./@Compact">
        <xsl:attribute         name = "Compact">
         <xsl:value-of       select = "./@Compact"/>
