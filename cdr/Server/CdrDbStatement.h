@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbStatement.h,v 1.9 2000-05-21 00:54:11 bkline Exp $
+ * $Id: CdrDbStatement.h,v 1.10 2000-12-28 13:31:58 bkline Exp $
  *
  * Wrapper for ODBC HSTMT.  Modeled after JDBC interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2000/05/21 00:54:11  bkline
+ * Added executeUpdate() method.
+ *
  * Revision 1.8  2000/05/04 00:04:08  bkline
  * Removed see also reference for field member (ccdoc can't find references
  * to these).
@@ -71,7 +74,9 @@ namespace cdr {
 
             /**
              * Releases the statement handle after all copies of the object
-             * have been destroyed.
+             * have been destroyed.  It is important that the Statement
+             * object not be destroyed if any outstanding ResultSet objects
+             * will still be depending on it.
              */
             virtual ~Statement();
 
@@ -148,14 +153,7 @@ namespace cdr {
 
             /**
              * Reference count used to prevent premature release of statement
-             * resources.  Only the <code>refCount</code> field of the
-             * original object is used.
-             */
-            int         refCount;
-
-            /**
-             * Address of the <code>refCount</code> field of the original copy
-             * of the object.  This address is shared by all copies.
+             * resources.  This address is shared by all copies of the object.
              */
             int*        pRefCount;
 

@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.h,v 1.6 2000-05-03 23:39:22 bkline Exp $
+ * $Id: CdrDbResultSet.h,v 1.7 2000-12-28 13:31:10 bkline Exp $
  *
  * Wrapper for ODBC result fetching.  Modeled after JDBC interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/05/03 23:39:22  bkline
+ * More ccdoc comments.
+ *
  * Revision 1.5  2000/05/03 15:39:34  bkline
  * Added copy constructor which bypasses copying of the column vector.
  * Blocked use of assignment operator.  Added getBytes() method.
@@ -59,6 +62,9 @@ namespace cdr {
              * vector of information about the result set columns.  Uses
              * reference counting to find out when the cleanup really needs to
              * happen.
+             *
+             * NB: Do not destroy the Statement object responsible for the
+             * result set before you are finished using that result set.
              */
             ~ResultSet();
 
@@ -148,14 +154,6 @@ namespace cdr {
              */
             Statement&  st;
             
-            /**
-             * Number of copies of this objects in existence.  Used to make it
-             * possible to perform only shallow copies of the object.  The
-             * <code>refCount</code> member itself is not shared.  Instead the
-             * original copy of the object shares a pointer to its counter.
-             */
-            int         refCount;
-
             /**
              * Pointer to the reference count shared by all copies of the
              * object.  When a new copy is made the count is incremented.
