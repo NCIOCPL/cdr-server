@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.50 2003-01-10 00:04:21 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.51 2003-01-10 01:00:10 ameyer Exp $
  *
  */
 
@@ -71,6 +71,7 @@ cdr::CdrDoc::CdrDoc (
     Id (0),
     DocType (0),
     ActiveStatus (L"A"),
+    dbActiveStatus (L"A"),
     ValStatus (L"U"),
     Xml (L""),
     schemaDocId (0),
@@ -108,8 +109,11 @@ cdr::CdrDoc::CdrDoc (
         cdr::db::ResultSet rs = select.executeQuery();
         if (!rs.next())
             throw cdr::Exception(L"CdrDoc: Unable to find document " + TextId);
-        ActiveStatus   = rs.getString (1);
-        lastFragmentId = rs.getInt (2);
+        dbActiveStatus = rs.getString (1);
+        lastFragmentId  = rs.getInt (2);
+
+        // We know the original status, here's a copy that might change
+        ActiveStatus = dbActiveStatus;
     }
     else
         Id = 0;
@@ -269,7 +273,7 @@ cdr::CdrDoc::CdrDoc (
     ValStatus      = rs.getString (1);
     ValDate        = rs.getString (2);
     Title          = cdr::entConvert (rs.getString (3));
-    ActiveStatus   = rs.getString (4);
+    dbActiveStatus = rs.getString (4);
     DocType        = rs.getInt (5);
     Xml            = rs.getString (6);
     lastFragmentId = rs.getInt (7);
@@ -279,6 +283,9 @@ cdr::CdrDoc::CdrDoc (
     cdr::Int sdi   = rs.getInt (11);
     BlobData       = rs.getBytes (12);
     cdr::Int rvRdy = rs.getInt (13);
+
+    // Modifiable copy of status, must be initialized
+    ActiveStatus = dbActiveStatus;
 
     // Content or control type document
     conType = not_set;
@@ -673,30 +680,16 @@ static cdr::String CdrPutDoc (
                               L"' with docs of type '" + doctype + L"'");
 
     // Make sure user is authorized for the desired active status.
-    if (!newrec) {
-        static const char* const query = "SELECT active_status "
-                                         "  FROM document      "
-                                         " WHERE id = ?        ";
-        cdr::db::PreparedStatement st = dbConn.prepareStatement(query);
-        st.setInt(1, doc.getId());
-        cdr::db::ResultSet rs = st.executeQuery();
-        if (!rs.next())
-            throw cdr::Exception(L"Failure retrieving document status "
-                                 L"from database");
-        cdr::String dbActStat = rs.getString(1);
-        if (dbActStat != doc.getActiveStatus()
-                && !session.canDo(dbConn, L"PUBLISH DOCUMENT", doctype))
-            if (dbActStat == L"A")
-                throw cdr::Exception(L"User not authorized to block "
-                                     L"publication for this document");
-            else
-                throw cdr::Exception(L"User not authorized to remove "
-                                     L"publication block for this document");
+    // Note that docs found via the DOCUMENT view can't have status='D'elete
+    if (doc.getDbActiveStatus() != doc.getActiveStatus()
+            && !session.canDo(dbConn, L"PUBLISH DOCUMENT", doctype)) {
+        if (doc.getActiveStatus() == L"I")
+            throw cdr::Exception(L"User not authorized to block "
+                                 L"publication for this document");
+        else if (doc.getActiveStatus() == L"A")
+            throw cdr::Exception(L"User not authorized to remove "
+                                 L"publication block for this document");
     }
-    else if (doc.getActiveStatus() != L"A"
-            && !session.canDo(dbConn, L"PUBLISH DOCUMENT", doctype))
-        throw cdr::Exception(L"User not authorized to block publication "
-                             L"for this document");
 
     // Make sure user is authorized to create the first publishable version.
     if (cmdPublishVersion) {
