@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.26 2002-02-14 18:56:05 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.27 2002-03-19 00:38:05 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2002/02/14 18:56:05  bkline
+ * Added missing log comment.
+ *
  * Revision 1.25  2002/02/06 21:42:47  bkline
  * Backed out attempt to fix validation bug.
  *
@@ -2174,8 +2177,39 @@ bool isRequired(const cdr::xsd::Node* schemaNode)
                              L"Schema node must represent an element, "
                              L"sequence, choice, or named group");
 
-    // See if we are supposed to have at least one of these in the document.
-    return ccNode->getMinOccs() > 0;
+    // If the node is optional, the answer to the question (is required?) is no.
+	if (ccNode->getMinOccs() < 1)
+		return false;
+
+	// If this is a choice, then if any of the possibilities is optional, 
+    // so is the choice.
+	const cdr::xsd::Choice* c = 
+        dynamic_cast<const cdr::xsd::Choice*>(schemaNode);
+    if (c) {
+		cdr::xsd::NodeEnum nodeEnum = c->getNodes();
+		while (nodeEnum != c->getListEnd()) {
+			if (!isRequired(*nodeEnum))
+				return false;
+			++nodeEnum;
+		}
+		return true;
+	}
+
+	// Same for a sequence, but they all have to be optional.
+	const cdr::xsd::Sequence* s = 
+        dynamic_cast<const cdr::xsd::Sequence*>(schemaNode);
+    if (s) {
+		cdr::xsd::NodeEnum nodeEnum = s->getNodes();
+		while (nodeEnum != s->getListEnd()) {
+			if (isRequired(*nodeEnum))
+				return true;
+			++nodeEnum;
+		}
+		return false;
+	}
+
+	// If we get here, we have a required element node.
+    return true;
     
 }
 
@@ -2241,7 +2275,7 @@ bool matchChoice(
     // Get a local copy of current node in document.
     cdr::dom::Node docNode = nextChild;
 
-    // Check each node in the schema sequence for a match.
+    // Check each node in the schema choice for a match.
     cdr::xsd::NodeEnum nodeEnum = schemaChoice->getNodes();
     while (nodeEnum != schemaChoice->getListEnd()) {
         if (matchSchemaNode(docNode, *nodeEnum++)) {
