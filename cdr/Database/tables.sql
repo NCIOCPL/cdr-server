@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.56 2002-06-08 03:17:04 ameyer Exp $
+ * $Id: tables.sql,v 1.57 2002-06-11 15:54:44 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.56  2002/06/08 03:17:04  ameyer
+ * Added GO after remailer_ids.
+ *
  * Revision 1.55  2002/06/04 18:50:31  ameyer
  * Added remailer_ids to support remailing.
  *
@@ -1137,6 +1140,7 @@ CREATE TABLE report_task
         spec VARCHAR(255)     NULL,
       sample VARCHAR(255)     NULL,
     dev_task INT              NULL REFERENCES dev_task)
+GO
 
 /*
  * Table used to track processing of publication events.
