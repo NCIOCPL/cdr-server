@@ -1,9 +1,12 @@
 /*
- * $Id: HeapDebug.cpp,v 1.3 2002-03-04 20:52:59 bkline Exp $
+ * $Id: HeapDebug.cpp,v 1.4 2002-03-04 21:22:38 bkline Exp $
  *
  * Instrumentation for tracking down dynamic memory leaks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/03/04 20:52:59  bkline
+ * Modified headers to conform with MS advice on heap debugging.
+ *
  * Revision 1.2  2001/12/14 18:28:06  bkline
  * Added heapDebugging flag.
  *
@@ -54,7 +57,9 @@ long heapUsed()
     if (heapDebugging) {
         _CrtMemState cms;
         _CrtMemCheckpoint(&cms);
-        return (long)cms.lSizes[_NORMAL_BLOCK];
+        return (long)cms.lSizes[_NORMAL_BLOCK] +
+               (long)cms.lSizes[_CRT_BLOCK]    +
+               (long)cms.lSizes[_CLIENT_BLOCK];
     }
     return 0;
 }
