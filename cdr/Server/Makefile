@@ -1,10 +1,14 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.46 2002-01-28 23:11:53 bkline Exp $
+# $Id: Makefile,v 1.47 2002-01-29 23:55:49 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.46  2002/01/28 23:11:53  bkline
+# Backed out changes to CP macro; added code for cvs update at
+# appropriate spots.
+#
 # Revision 1.45  2002/01/25 15:10:01  bkline
 # Working on getting cvs update invoked the correct number of times.
 #
@@ -343,7 +347,8 @@ CdrSearch_tab.obj: CdrSearch_tab.c $(HDRS)
 	$(CC) $(CFLAGS) -c -TP CdrSearch_tab.c >> errs
 
 CdrSearch_tab.c: CdrSearch.y $(HDRS)
-	$(BISON) -p CdrSearch CdrSearch.y
+	set BISON_SIMPLE=$(BISON_SIMPLE)
+	$(BISON) -p CdrSearch CdrSearch.y -o CdrSearch_tab.c
 
 #--------------------------------------------------------------------------
 # Rule for building CDR programmer documentation.
