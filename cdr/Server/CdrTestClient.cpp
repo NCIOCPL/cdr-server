@@ -1,5 +1,5 @@
 /*
- * $Id: CdrTestClient.cpp,v 1.4 2001-01-18 14:51:50 bkline Exp $
+ * $Id: CdrTestClient.cpp,v 1.5 2001-01-18 14:57:05 bkline Exp $
  *
  * Test client (C++ version) for sending commands to CDR server.
  *
@@ -16,6 +16,9 @@
  * The encoding for the XML must be UTF-8.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2001/01/18 14:51:50  bkline
+ * Make "Server response:" header into a comment.
+ *
  * Revision 1.3  2000/08/24 20:08:21  ameyer
  * Added NT structured exception handling for crashes.
  *
@@ -24,7 +27,6 @@
  *
  * Revision 1.1  2000/04/15 14:10:50  bkline
  * Initial revision
- *
  */
 
 // System headers.
@@ -49,7 +51,6 @@ main(int ac, char **av)
     WSAData             wsadata;
     char *              host;
     int                 sock;
-    int                 count;
     long                address;
     struct sockaddr_in  addr;
     struct hostent *    ph;
