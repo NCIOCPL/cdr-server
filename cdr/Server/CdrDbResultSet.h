@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.h,v 1.4 2000-04-22 18:57:38 bkline Exp $
+ * $Id: CdrDbResultSet.h,v 1.5 2000-05-03 15:39:34 bkline Exp $
  *
  * Wrapper for ODBC result fetching.  Modeled after JDBC interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/04/22 18:57:38  bkline
+ * Added ccdoc comment markers for namespaces and @pkg directives.
+ *
  * Revision 1.3  2000/04/22 15:36:02  bkline
  * Filled out documentation comments.
  *
@@ -20,6 +23,8 @@
 #include <vector>
 #include <string>
 #include "CdrDbStatement.h"
+#include "CdrBlob.h"
+#include "CdrString.h"
 
 /**@#-*/
 
@@ -40,6 +45,12 @@ namespace cdr {
             ~ResultSet();
 
             /**
+             * Copy constructor which blocks copying of the column
+             * vector.
+             */
+            ResultSet(const ResultSet& rs) : st(rs.st) {}
+
+            /**
              * Moves the <code>ResultSet</code> to the next row.  The first 
              * call makes the first row the current row.  The method returns 
              * <code>true</code> as long as there is a next row to move to.
@@ -50,11 +61,12 @@ namespace cdr {
 
             /**
              * These methods return the specified column value for the current
-             * row as the data type that matches the method name.  Both data
+             * row as the data type that matches the method name.  The data
              * types are capable of representing <code>NULL</code> values.
              */
             cdr::String getString(int);
             cdr::Int    getInt(int);
+            cdr::Blob   getBytes(int);
 
         private:
             Statement&  st;
@@ -67,6 +79,7 @@ namespace cdr {
             };
             typedef std::vector<Column*> ColumnVector;;
             ColumnVector    columnVector;
+            ResultSet& operator=(const ResultSet&);         // Block this.
         };
     }
 }
