@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.31 2004-05-14 02:06:16 ameyer Exp $
+ * $Id: CdrCommand.h,v 1.32 2004-07-08 00:32:38 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2004/05/14 02:06:16  ameyer
+ * Added cacheInit command.
+ *
  * Revision 1.30  2003/02/10 14:04:20  bkline
  * Added new command CdrMailerCleanup.
  *
@@ -1208,6 +1211,22 @@ namespace cdr {
     extern String cacheInit    (Session&          session,
                                 const dom::Node&  node,
                                 db::Connection&   conn);
+
+    /**
+     * Returns a document identifying which glossary terms should be used
+     * for marking up phrases found in a CDR document.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String getGlossaryMap(Session&         session,
+                                 const dom::Node& node,
+                                 db::Connection&  conn);
 
     /**
      * Shuts down the CDR Server.

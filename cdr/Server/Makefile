@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.76 2004-05-14 02:21:24 ameyer Exp $
+# $Id: Makefile,v 1.77 2004-07-08 00:32:38 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.76  2004/05/14 02:21:24  ameyer
+# Added CdrCache.h / .cpp
+#
 # Revision 1.75  2004/05/06 20:51:58  ameyer
 # Eliminated cdrd.lib
 # Eliminated automatic build of the library in the production lib directory.
@@ -369,7 +372,8 @@ OBJS   =CdrCommand.obj \
         CdrShutdown.obj \
         CdrGetTree.obj \
         CdrMergeProt.obj \
-        CdrPublish.obj
+        CdrPublish.obj \
+        CdrGlossaryMap.obj
 
 
 #--------------------------------------------------------------------------
@@ -494,4 +498,4 @@ $(DOCS): $(HDRS)
 # Cleanup rules.
 #--------------------------------------------------------------------------
 clean:
-	rm -f *.obj *~ *.bak CdrSearch_tab.c CdrSearch.tab.c ccdoc.ctf
+	rm -f *.obj *~ *.bak CdrSearch_tab.c CdrSearch.tab.c ccdoc.ctf cdr.lib
