@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.18 2000-05-17 13:54:46 ameyer Exp $
+# $Id: Makefile,v 1.19 2000-05-19 00:14:25 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.18  2000/05/17 13:54:46  ameyer
+# Added CdrDoc
+#
 # Revision 1.17  2000/05/10 21:51:31  mruben
 # fixed command line arguments for Sablotron libraries and includes
 #
@@ -61,7 +64,6 @@
 #
 # Revision 1.1  2000/04/11 14:15:32  bkline
 # Initial revision
-#
 #
 #--------------------------------------------------------------------------
 
