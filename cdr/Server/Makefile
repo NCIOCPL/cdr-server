@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.41 2002-01-08 18:27:57 bkline Exp $
+# $Id: Makefile,v 1.42 2002-01-24 23:29:03 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.41  2002/01/08 18:27:57  bkline
+# Rebuilt CDR Service with DEBUG turned on.
+#
 # Revision 1.40  2002/01/02 20:01:06  bkline
 # Pointed CDRINC to currect directory and added HeadDebug.h to header list.
 #
@@ -137,17 +140,19 @@
 # Makefile variables
 #--------------------------------------------------------------------------
 
-CDR    =/cdr
-XML4C  =/usr/xml4c
-SABLOT =/usr/sablot
-REGEX  =/usr/regex
+CDR    =$(DRV)/cdr
+XML4C  =$(DRV)/usr/xml4c
+SABLOT =$(DRV)/usr/sablot
+REGEX  =$(DRV)/usr/regex
 CDRINC =.
 INC    =-I$(XML4C)/include -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)/include
 CFLAGS =$(INC) -W3 -GX -MT -GR -Zi -nologo
 LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
 	/LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/lib /DEBUG
 CC     =cl
+BISON  =bison
 LN     =link
+CVSUPD =cvs update
 DOC    =../../InetPub/wwwtest/cdr/
 DOCS   =$(DOC)default.htm
 CDRLIB =$(CDR)/lib/cdr.lib
@@ -244,15 +249,15 @@ service: $(SERVICE)
 
 install: CdrServer.exe
 	-net stop Cdr
-	cp CdrServer.exe ../bin/CdrServer.exe
+	copy CdrServer.exe ../bin/CdrServer.exe
 	net start Cdr
 
 #--------------------------------------------------------------------------
 # Initialization, saving two generations of old errors
 #--------------------------------------------------------------------------
 init:
-	-cp errs.1 errs.2
-	-cp errs errs.1
+	-copy errs.1 errs.2
+	-copy errs errs.1
 	-rm -f errs
 
 #--------------------------------------------------------------------------
@@ -267,12 +272,15 @@ CdrServer.exe: CdrServer.obj $(OBJS) $(CDRLIB)
 #--------------------------------------------------------------------------
 
 $(SERVICE): CdrService.obj service.obj
+	$(CVSUPD)
 	$(CC) -MT -Fe$(SERVICE) CdrService.obj service.obj advapi32.lib
 
 CdrService.obj: CdrService.c service.h
+	$(CVSUPD)
 	$(CC) -c $(SVC_CFLAGS) CdrService.c
 
 service.obj: service.c service.h
+	$(CVSUPD)
 	$(CC) -c $(SVC_CFLAGS) service.c
 
 #--------------------------------------------------------------------------
@@ -280,6 +288,7 @@ service.obj: service.c service.h
 #--------------------------------------------------------------------------
 
 CdrTestClient.exe: CdrTestClient.cpp ../lib/cdr.lib
+	$(CVSUPD)
 	$(CC) $(CFLAGS) CdrTestClient.cpp ../lib/cdr.lib wsock32.lib
 
 #--------------------------------------------------------------------------
@@ -295,18 +304,18 @@ CdrServer.obj: CdrServer.cpp $(HDRS)
 #--------------------------------------------------------------------------
 # Rule for building CDR library.
 #--------------------------------------------------------------------------
-$(CDRLIB): $(LIBOBJS)
-	lib /OUT:$(CDRLIB) $(LIBOBJS) >> errs
+$(CDRLIB): $(LIBOBJS) lib /OUT:$(CDRLIB) $(LIBOBJS) >> errs
 
 #--------------------------------------------------------------------------
 # For Bison, we're not attempting a generic rule
 #--------------------------------------------------------------------------
-BISON_SIMPLE=/etc/bison.cdrtest
+BISON_SIMPLE=$(DRV)/etc/bison.cdrtest
 CdrSearch_tab.obj: CdrSearch_tab.c $(HDRS)
+	$(CVSUPD)
 	$(CC) $(CFLAGS) -c -TP CdrSearch_tab.c >> errs
 
 CdrSearch_tab.c: CdrSearch.y $(HDRS)
-	bison -p CdrSearch CdrSearch.y
+	$(BISON) -p CdrSearch CdrSearch.y
 
 #--------------------------------------------------------------------------
 # Rule for building CDR programmer documentation.
@@ -315,15 +324,17 @@ CdrDocs: $(DOCS)
 
 $(DOCS): $(HDRS)
 	ccdoc -html $(DOC) -imgurl images/ $(HDRS)
-	cp -f $(DOC)ccdoc.index.html $(DOCS)
+	copy -f $(DOC)ccdoc.index.html $(DOCS)
 
 #--------------------------------------------------------------------------
 # Generic rules for object files
 #--------------------------------------------------------------------------
 .c.obj:
+	$(CVSUPD)
 	$(CC) -c $(CFLAGS) $*.c >> errs
 
 .cpp.obj:
+	$(CVSUPD)
 	$(CC) -c $(CFLAGS) $*.cpp >> errs
 
 
