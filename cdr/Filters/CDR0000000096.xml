@@ -6,413 +6,172 @@
 <ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
+<!-- 
+================================================================
+Filter to create a Person Content QC Report 
+================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
 
-<!-- ================================================================
-        Filter to create a Person Content QC Report 
-     ================================================================ -->
+ <xsl:output                    method = "html"/>
 
-  <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                 version="1.0"
-                 xmlns:cdr="cips.nci.nih.gov/cdr">
-   <xsl:output method="html"/>
-     <xsl:template match="/">
-     <!--Filter written by C.Burg - 4/26/2002 -->
-     <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
-    <HTML>
-    <HEAD>
-      <xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
+ <!-- Defining standard HTML Attribute Sets -->
+ <xsl:attribute-set               name = "table">
+  <xsl:attribute                  name = "border">0</xsl:attribute>
+  <xsl:attribute                  name = "width">100%</xsl:attribute>
+  <xsl:attribute                  name = "cellspacing">0</xsl:attribute>
+  <xsl:attribute                  name = "cellpadding">0</xsl:attribute>
+ </xsl:attribute-set>
 
-    <TITLE><xsl:value-of select="document('cdrutil:/docid')"/>&#xa0;&#xa0;<xsl:value-of select="substring-before($cdrmydoc/CdrDocCtl/DocTitle,';')"/> </TITLE>
-     
-       <!--
-     <LINK REL='stylesheet' 
-           HREF='/stylesheets/protocol2.css' 
-           TYPE='text/css' /> -->
-    </HEAD>
-  <BASEFONT FACE='Arial, Helvetica, sans-serif' />
-    <xsl:apply-templates select="Person"/>
-    
-    </HTML>
-    </xsl:template>
-  <!-- Generate the HTML for the Person QC Report-->
+ <xsl:attribute-set               name = "cell1of2">
+  <xsl:attribute                  name = "width">35%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
 
-  <xsl:template match="Person">
-    <BODY>
+ <xsl:attribute-set               name = "cell2of2">
+  <xsl:attribute                  name = "width">65%</xsl:attribute>
+  <xsl:attribute                  name = "valign">top</xsl:attribute>
+ </xsl:attribute-set>
 
- <!-- ==================================================================
-              Display Report heading and subheading 
-      ================================================================== -->
+ <!-- 
+ ===============================================================
+ Main Template
+ Filter written by C.Burg - 4/26/2002
+ =============================================================== -->
+ <xsl:template                   match = "/">
+  <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+  <HTML>
+   <HEAD>
+    <xsl:variable                 name = "cdrmydoc" 
+                                select = "document('cdrx:/*/CdrCtl')"/>
 
-  <!-- Display report title -->
- <b><font size='4'><center>
-  <xsl:text>Person QC Report</xsl:text></center></font>
- </b>
- <b><font size='3'><center>
- <xsl:value-of        select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M% 25p')"/></center>
- </font></b><br /><br />
-
-<!-- ====================================================================
-                 Display Name Header, and PersonNameInformation
-     ==================================================================== -->
- 
- 
- <b><xsl:value-of select="document('cdrutil:/docid')"/></b>
- <br />
- <b>
- <font size='4'><xsl:text>Name</xsl:text>
-    </font>
-</b><br /><br />
- <xsl:if                     test  = "PersonNameInformation/Prefix">
- <xsl:apply-templates        select="PersonNameInformation/Prefix"/>
- <xsl:text>&#xa0;</xsl:text>
- </xsl:if>
- <xsl:apply-templates        select="PersonNameInformation/GivenName"/>
- <xsl:text>&#xa0;</xsl:text>
- <xsl:apply-templates        select="PersonNameInformation/MiddleInitial"/>
- <xsl:text>&#xa0;</xsl:text>
- 
- 
- 
+    <TITLE>
+     <xsl:value-of              select = "document('cdrutil:/docid')"/>
+     <xsl:text>: </xsl:text>
+     <xsl:value-of              select = "substring-before
+                                          ($cdrmydoc/CdrDocCtl/DocTitle,';')"/>
+    </TITLE>
+    <STYLE type='text/css'>
+     ul {margin-left: 16 ; padding-left: 0;}
+    </STYLE>
+   </HEAD>
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
+   <xsl:apply-templates         select = "Person"/>
+  </HTML>
+ </xsl:template>
 
 
-<!--check for Professional suffix and display -->
-   <xsl:choose>
-   <xsl:when               test="PersonNameInformation/ProfessionalSuffix">
-    <xsl:apply-templates   select="PersonNameInformation/SurName"/>,
-   <xsl:apply-templates    select="PersonNameInformation/GenerationSuffix"/>
-   <xsl:text>&#xa0;</xsl:text>
-    <xsl:for-each              select="PersonNameInformation/
-                                       ProfessionalSuffix">
-                                                                                                                
- <xsl:value-of              select="."/>
- <xsl:if                    test="position() !=last()">,&#xa0;</xsl:if>
-</xsl:for-each>
-  <br /><br />
-   </xsl:when>
-   <xsl:otherwise>
-   <!-- Display surname if no Suffix is present -->
-    <xsl:apply-templates   select="PersonNameInformation/SurName"/>
-         <br /><br />
-    </xsl:otherwise>
-    </xsl:choose>
- <b><font size='4'>Comment</font></b><br />
- <xsl:apply-templates      select="PersonNameInformation/Comment"/>
-  <br /><br />
-<!-- ============================================================
-                  Display Professional information 
-      ============================================================ -->
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Person QC Report
+ =================================================================== -->
+ <xsl:template                   match = "Person">
+  <BODY>
 
-   <b><font size='4'>
-  <xsl:text>Professional Information</xsl:text>
-   </font>
-   </b>
-   <br /><br />
- 
-<xsl:for-each             select="ProfessionalInformation/PhysicianDetails/
-                                  PhysicianSpecialtyInformation">
- <table cellpadding='0' width='90%'>
-  <tr>
-  <th align='left' width='10%'>
-  <b>
- <xsl:text>PDQ Board</xsl:text>
-  </b>
-  </th>
-   
-   <xsl:if                 test  ="../../PDQBoardMembershipDetails/
-                                   PDQEditorialBoard">
-  <tr>
-  <td align='left' width='10%'>
-  </td>
-  <td width='30%'>
- <xsl:value-of            select ="../../PDQBoardMembershipDetails/
-                                   PDQEditorialBoard/Organization/
-                                   OrganizationName"/>
-   </td>
-   </tr>
-   </xsl:if>
-   <xsl:if                 test  ="../../PDQBoardMembershipDetails/
-                                   PDQAdvisoryBoard">
-  <tr>
-   <td align='left' width='10%'>
-  </td>
-  <td width='30%'>
- <xsl:value-of            select ="../../PDQBoardMembershipDetails/
-                                   PDQAdvisoryBoard/Organization/
-                                   OrganizationName"/>
-  </td>
-  </tr>
- </xsl:if>
-  <xsl:if                 test  ="../../PDQBoardMembershipDetails/
-                                   PDQVoluntaryProtocolReviewBoard">
-   <tr>
-   <td align='left' width='10%'>
-   </td>
-   <td width='30%'>
-   <xsl:value-of            select ="../../PDQBoardMembershipDetails/
-                                   PDQVoluntaryProtocolReviewBoard/
-                                   Organization/
-                                   OrganizationName"/>
-  </td>
-  </tr>
-  </xsl:if>
-  </tr>
-  <tr>
-  <td>
-  <xsl:text>&#xa0;</xsl:text>
-  </td>
-  </tr>
-<xsl:for-each             select="BoardCertifiedSpecialty">
- <tr>
- <th align='left' width='10%'>
-  <b>
- <xsl:text>Specialty</xsl:text>
-  </b>
-  </th>
-  <td width='30%'>
-  <xsl:value-of             select="BoardCertifiedSpecialtyName"/>
-  </td>
-  </tr>
-  <tr>
-  <th align='left' width='10%'>
-  <b>
- <xsl:text>Board Certification</xsl:text>
-  </b>
-  </th>
-  <td width='30%'>
-  <xsl:value-of             select="Certified"/>
-  </td>
-  </tr>
-  
-  <tr>
-  <th align='left' width='10%'>
-  <b>
- <xsl:text>Verification</xsl:text>
-  </b>
-  </th>
-  <td width='30%'> 
-  <xsl:value-of             select="Verified"/>
-  </td> 
-  </tr>
-  <tr>
-  <td>
-  <xsl:text>&#xa0;</xsl:text>
-  </td>
-  </tr>
-  </xsl:for-each>
-  
-   <tr>
-   <td align='left' width='10%'>
+  <!-- 
+  ==================================================================
+  Display Report heading and subheading 
+  ================================================================== -->
    <b>
- <xsl:text>Other Specialty</xsl:text>
-  </b>
-  </td>
-  </tr>
-  <xsl:for-each             select="OtherSpecialty">
-   <tr>
-   <td width='30%'>
-  <xsl:value-of            select="."/>
-  </td>
-  </tr>
- </xsl:for-each>
- </table>
- </xsl:for-each>
+    <font size='4'>
+     <center>
+      <xsl:text>Person</xsl:text>
+      <br/>
+      <xsl:text>QC Report</xsl:text>
+     </center>
+    </font>
+    <font size='3'>
+     <center>
+      <xsl:value-of             select = "document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M% 25p')"/>
+     </center>
+    </font>
+   </b>
+   <p/>
 
- 
-  
+   <!-- 
+   ====================================================================
+   Display Name Header, and PersonNameInformation
+   ==================================================================== -->
+   <b>
+    <font size='4'>
+     <xsl:value-of select="document('cdrutil:/docid')"/>
+    </font>
+   </b>
+   <p/>
 
-<!-- ===================================================================
-                 Display Membership Information
-     ================================================================== -->
- <br />
- <b>
- <font size='3'>
- <xsl:text>Membership Information</xsl:text>
- </font>
- </b>
- <br /><br />
- <b><font size='3'>Cooperative Group(s)</font></b>
- 
- <xsl:for-each               select="ProfessionalInformation/PhysicianDetails/
-                                     PhysicianMembershipInformation/
-                                     MemberOfCooperativeGroup/
-                                     CooperativeGroup/
-                                     Organization/
-                                     OrganizationName">
-                                     
- <table cellpadding='0' width='90%'>
- <tr>
- <th align='left'>
-  <xsl:text>&#xa0;</xsl:text>
-  </th>
-                                       
- <xsl:if                     test="not(../../../../../@GroupChair)">
- <td>
-<xsl:value-of               select="."/>
- </td>
-</xsl:if>
-<xsl:if                     test="../../../../../@GroupChair">
-<td>
-<xsl:value-of               select="."/>
-<xsl:text>&#xa0;&#xa0;(Group Chair)</xsl:text>
-</td>
-</xsl:if>
-</tr>
- </table>
-</xsl:for-each> 
-
- <br />
-  
- <b>
- <font size='3'>Medical Societies
- </font>
- </b>
-  <table cellpadding='0' width='90%'>
-  <xsl:for-each          select="ProfessionalInformation/PhysicianDetails/
-                                  PhysicianMembershipInformation/
-                                  MemberOfMedicalSociety">
-  <tr>
-  <th align='left'>
-  <xsl:text>&#xa0;</xsl:text>
-  </th>
-  <td >
-  <xsl:value-of           select="."/>
-  </td>
-  </tr> 
-  </xsl:for-each>
-  </table>
-  <br />
-  <b><font size='4'>Comment</font></b><br />
- <xsl:apply-templates      select="ProfessionalInformation/PhysicianDetails/
-                                   Comment"/>
-  <br /><br />
+   <xsl:apply-templates         select = "PersonNameInformation"/>
+   <p/>
+   <!-- 
+   ============================================================
+   Display Professional information 
+   ============================================================ -->
+   <xsl:apply-templates         select = "ProfessionalInformation"/>
 
 
-<!-- ======================================================================
-                      Display Administrative Information 
-      ===================================================================== -->
+   <!-- 
+   ======================================================================
+   Display the Administrative Information Section
+   ===================================================================== -->
+   <b>
+    <font size='4'>Administrative Information</font>
+   </b>
+   <xsl:apply-templates         select = "ProfessionalInformation/
+                                          PhysicianDetails/
+                                          AdministrativeInformation"/>
 
-     <br /><br />
-     <b>
-     <font size='4'>Administrative Information</font>
-     </b>
-     <br /><br />
-     
-    <xsl:for-each         select="ProfessionalInformation/PhysicianDetails/
-                                  AdministrativeInformation/Directory">
-    <table cellpadding='0' width='90%'>
-    <tr> 
-    <th align='left' width='40%'>
-    <b>
-    <xsl:text>Directory</xsl:text>
-    </b>
-    </th>
-    <td width='60%'>   
-    <xsl:value-of           select="Include"/>
-    </td>
-    </tr>
-
-  <tr>
-  <th align='left' width='40%'>
-  <b>
- <xsl:text>Entered By</xsl:text>
-  </b>
-  </th>
-  <td width='60%'>
-  <xsl:value-of          select="EnteredBy"/>
-  </td>
-  </tr>
-   
-   <tr> 
-  <th align='left' width='40%'>
-  <b>
- <xsl:text>Date</xsl:text>
-  </b>
-  </th>
-  <td width='60%'>
-  <xsl:value-of         select="Date"/>
-  </td>
-  </tr>
-  </table>
-  </xsl:for-each>
-  
-  
-  <b>
- <xsl:text>Comment</xsl:text>
-  </b>
-  <br />
-  <xsl:value-of           select="ProfessionalInformation/PhysicianDetails/
-                                  AdministrativeInformation/Directory/
-                                  Comment"/>
- 
-   <br />
-   <br />
-   <table cellpadding='0' width='90%'>
-   <xsl:for-each           select="Status">
-  <tr>
-  <th align='left' width='40%'>
-  <b>
- <xsl:text>Status</xsl:text>
-  </b>
-  </th>
-  <td width='60%'>
-  <xsl:value-of           select="CurrentStatus"/>
-  </td>
-  </tr>
-   <tr>
-  <th align='left' width='40%'>
-  <b>
- <xsl:text>Entered By</xsl:text>
-  </b>
-  </th>
-  <td width='60%'>
-  <xsl:value-of           select="EnteredBy"/>
-  </td>
-  </tr>
-   <tr>
-  <th align='left' width='40%'>
-  <b>
- <xsl:text>Entry Date</xsl:text>
-  </b>
-  </th>
-   <td width='60%'>
-  <xsl:value-of           select="EntryDate"/>
-  </td>
-  </tr>
- </xsl:for-each>
-  </table>
-  <b>
-  <xsl:text>Comment</xsl:text> 
-  </b>
-  <br />
-  <xsl:for-each             select="Status/Comment">
-   <xsl:value-of            select="."/>
-   </xsl:for-each>
-    
-  
-
-   <table cellpadding='0' width='90%'>
-   <xsl:for-each        select="ProfessionalInformation/PhysicianDetails/
-                               AdministrativeInformation">
+   <table      xsl:use-attribute-sets = "table">
     <tr>
-    <th align='left' width='40%'>
-    <b>
-    <xsl:text>Preferred Contact Mode</xsl:text>
-    </b>
-    </th>
-   
-   <td width='60%'>
-    <xsl:value-of          select="PreferredContactMode"/>
-  </td>
-  </tr>
-  </xsl:for-each>
-  </table>
-   <br /><br />
+     <td       xsl:use-attribute-sets = "cell1of2">
+      <b><u>Status</u></b>
+     </td>
+     <td       xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of            select = "Status/CurrentStatus"/>
+     </td>
+    </tr>  
+    <tr>
+     <td       xsl:use-attribute-sets = "cell1of2">
+      <b>Entered By</b>
+     </td>
+     <td       xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of            select = "Status/EnteredBy"/>
+     </td>
+    </tr>  
+    <tr>
+     <td       xsl:use-attribute-sets = "cell1of2">
+      <b>Entry Date</b>
+     </td>
+     <td       xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of            select = "Status/EntryDate"/>
+     </td>
+    </tr>  
+    <tr>
+     <td       xsl:use-attribute-sets = "cell1of2">
+      <b>Comment</b>
+     </td>
+     <td       xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of            select = "Status/Comment"/>
+     </td>
+    </tr>  
+    <tr>
+     <td       xsl:use-attribute-sets = "cell1of2">
+      <b>Preferred Contact Mode</b>
+     </td>
+     <td       xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of            select = "ProfessionalInformation/
+                                         PhysicianDetails/
+                                         AdministrativeInformation/
+                                         PreferredContactMode"/>
+     </td>
+    </tr>
+   </table>
+   <p/>
 
 <!-- ======================================================================
                  Display Location Information for Home Office
      ===================================================================== -->
 
-<b><font size='4'>Location Information</font></b><br /><br />
+<b><font size='4'>Location Information</font></b><br />
 
    <b><font size='3'>Home</font></b><br />
     <xsl:if test="PersonLocations/Home">
@@ -1063,60 +822,54 @@
 <!--- =================================================================
        Display links to other documents, Dated Actions, Date Last Modified
       ===================================================================== -->
-<b><font size='4'>Links to Other Documents</font></b><br /><br />
+<b><font size='4'>Links to Other Documents</font></b><br />
 
 <!--Variable names should be replaced with a Yes or a No depending on the    
     query results for the links -->
+  <table xsl:use-attribute-sets = "table">
+   <tr>
+    <td  xsl:use-attribute-sets = "cell1of2">
+     <b>Active, Approved, Temporarily Closed Protocols</b>
+    </td>
+    <td  xsl:use-attribute-sets = "cell2of2">@@ACTIVE_APPR0VED_TEMPORARILY_CLOSED_PROTOCOLS@@</td>
+   </tr>
+   <tr>
+    <td>
+     <b>Closed, Completed Protocols</b>
+    </td>
+    <td>@@CLOSED_COMPLETED_PROTOCOLS@@</td>
+   </tr>
+   <tr>
+    <td>
+     <b>Health Professional Summaries</b>
+    </td>
+    <td>@@HEALTH_PROFESSIONAL_SUMMARIES@@</td>
+   </tr>
+   <tr>
+    <td>
+     <b>Patient Summaries</b>
+    </td>
+    <td>@@PATIENT_SUMMARIES@@</td>
+   </tr>
+  </table>
+  <p/>
 
-<b><font size='3'>Active,Approved,Temporarily Closed Protocols</font></b>
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-
-</xsl:text>@@ACTIVE_APPR0VED_TEMPORARILY_CLOSED_PROTOCOLS@@<br />
-
-<b><font size='3'>Closed,Completed Protocols</font></b> 
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-</xsl:text>
-@@CLOSED_COMPLETED_PROTOCOLS@@<br />
-
-<b><font size='3'>Health Professional Summaries</font></b>
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;
-</xsl:text>
-@@HEALTH_PROFESSIONAL_SUMMARIES@@<br />
-
-<b><font size='3'>Patient Summaries</font></b>
- <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
-&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
- &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
- 
- 
-</xsl:text>
- @@PATIENT_SUMMARIES@@<br /><br />
-
-<b><font size='4'>Dated Action(s)</font></b><br /><br />
+<b><font size='4'>Dated Action(s)</font></b><br />
 <xsl:for-each               select="DatedAction">
 <xsl:value-of               select="ActionDescription"/><br />
 <xsl:value-of               select="ActionDate"/><br />
-<br />
 </xsl:for-each>
-<br />
-<b><font size='4'>Date Last Modified</font>
-</b>
-<br /><br />
-<xsl:apply-templates        select="DateLastModified"/><br /><br />
+<p/>
+
+<b><font size='4'>Date Last Modified</font></b>
+<xsl:apply-templates        select="DateLastModified"/>
+<p/>
 
   <!-- =====================================================================
              Display Record Information ( Date created, Modified, and User
      =====================================================================  -->
-              <b><font size='4'>Record</font></b><br /><br />
-              <table cellpadding='0' width='90%'>
+              <b><font size='4'>Record</font></b><br />
+              <table cellpadding='0' cellspacing = '0' width='90%'>
               <xsl:for-each               select="CdrDocCtl">
               <tr>
               <th align='left' width='40%'>   
@@ -1166,56 +919,320 @@
               </tr>
               </xsl:for-each>
               </table>
-              <br /><br />
-
-
+              <p/>
 
 <!-- =================================================================
         Display most recent Mailer Information
      ================================================================= -->
+   <b><font size='4'>Most Recent Mailer</font></b>
 
-<b><font size='4'>Most Recent Mailer</font></b><br /><br />
+   <table cellpadding='0' width='90%'>
+    <tr>
+     <th align='left' width='40%'>   
+      <b>Date Sent</b>
+     </th>
+     <td  width='60%'>@@MAILER_DATE_SENT@@</td>
+    </tr>
+    <tr>
+     <th align='left' width='40%'>   
+      <b>Date Received</b>
+     </th>
+     <td width='35%'>@@MAILER_RESPONSE_RECEIVED@@</td>
+    </tr>
+    <tr>
+     <th align='left' width='40%'>   
+      <b>Type of Change</b>
+     </th>
+     <td width='60%'>@@MAILER_TYPE_OF_CHANGE@@</td>
+    </tr>
+   </table>
+   <p/>
+  </BODY>
+ </xsl:template>
 
- <table cellpadding='0' width='90%'>
- <tr>
- <th align='left' width='40%'>   
-  <b>
- <font size='3'>Date Sent
- </font>
- </b>
- </th>
- <td  width='60%'>
-   @@MAILER_DATE_SENT@@
-  </td>
-  </tr>
-  <tr>
-  <th align='left' width='40%'>   
-  <b>
-  <font size='3'>Date Received
-  </font>
-  </b>
-  </th>
- <td width='35%'> 
-  @@MAILER_RESPONSE_RECEIVED@@
-  </td>
-  </tr>
-  <tr>
- <th align='left' width='40%'>   
- <b>
- <font size='3'>Type of Change
- </font>
- </b>
- </th>
- <td width='60%'>
-   @@MAILER_TYPE_OF_CHANGE@@
-  </td>
-  </tr>
+
+ <!--
+ =================================================================
+ Template for PersonNameInformation
+ ================================================================= -->
+ <xsl:template                   match = "PersonNameInformation">
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>
+      <font size='4'>Name</font>
+     </b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:if                      test = "Prefix">
+      <xsl:apply-templates      select = "Prefix"/>
+      <xsl:text> </xsl:text>
+     </xsl:if>
+     <xsl:apply-templates       select = "GivenName"/>
+     <xsl:text> </xsl:text>
+     <xsl:apply-templates       select = "MiddleInitial"/>
+     <xsl:text> </xsl:text>
+ 
+     <!-- check for Professional suffix and display -->
+     <xsl:choose>
+      <xsl:when                   test = "ProfessionalSuffix">
+       <xsl:apply-templates     select = "SurName"/>
+       <xsl:text>,</xsl:text>
+       <xsl:apply-templates     select = "GenerationSuffix"/>
+       <xsl:text> </xsl:text>
+       <xsl:for-each            select = "ProfessionalSuffix">
+        <xsl:value-of           select = "."/>
+        <xsl:if                   test = "position() !=last()">
+         <xsl:text>, </xsl:text>
+        </xsl:if>
+       </xsl:for-each>
+      </xsl:when>
+      <xsl:otherwise>
+      <!-- Display surname if no Suffix is present -->
+       <xsl:apply-templates     select = "SurName"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>
+      <font size='4'>Comment</font>
+     </b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "Comment"/>
+    </td>
+   </tr>
   </table>
-   <br />
-   <br />
-   </BODY>
-   </xsl:template>
-  </xsl:transform>
+ </xsl:template>
+
+
+ <!-- 
+ ============================================================
+ Display Professional information 
+ ============================================================ -->
+ <xsl:template                   match = "ProfessionalInformation">
+  <b>
+   <font size='4'>
+    <xsl:text>Professional Information</xsl:text>
+   </font>
+  </b>
+
+  <xsl:apply-templates          select = "PDQBoardMembershipDetails"/>
+  <xsl:apply-templates          select = "PhysicianDetails"/>
+ </xsl:template>
+
+
+ <!-- 
+ =======================================================================
+ ======================================================================= -->
+ <xsl:template                   match = "PDQBoardMembershipDetails">
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>
+      <font size='3'>PDQ Board</font>
+     </b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <ul>
+      <xsl:apply-templates      select = "PDQEditorialBoard |
+                                          PDQAdvisoryBoard  |
+                                          PDQVoluntaryProtocolReviewBoard"/>
+     </ul>
+    </td>
+   </tr>
+  </table>
+  <br/>
+ </xsl:template>
+
+
+ <!-- 
+ =========================================================================
+ ========================================================================= -->
+ <xsl:template                    match = "PDQEditorialBoard |
+                                          PDQAdvisoryBoard  |
+                                          PDQVoluntaryProtocolReviewBoard">
+  <li>
+   <xsl:value-of                 select = "Organization/
+                                           OrganizationName"/>
+  </li>
+ </xsl:template>
+
+
+ <!--
+ =========================================================================
+ ========================================================================= -->
+ <xsl:template                   match = "PhysicianDetails">
+  <xsl:for-each                 select = "PhysicianSpecialtyInformation">
+   
+    <xsl:for-each               select = "BoardCertifiedSpecialty">
+   <table       xsl:use-attribute-sets = "table">
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <b>Specialty</b>
+      </td>
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <xsl:value-of            select = "BoardCertifiedSpecialtyName"/>
+      </td>
+     </tr>
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <b>Board Certification</b>
+      </td>
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <xsl:value-of            select = "Certified"/>
+      </td>
+     </tr>
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <b>Verification</b>
+      </td>
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <xsl:value-of            select = "Verified"/>
+      </td> 
+     </tr>
+   </table>
+   <br/>
+    </xsl:for-each>
+   <p>
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td       xsl:use-attribute-sets = "cell1of2">
+      <b>Other Specialty</b>
+     </td>
+     <td       xsl:use-attribute-sets = "cell2of2">
+      <table   xsl:use-attribute-sets = "table">
+       <xsl:for-each           select = "OtherSpecialty">
+        <tr>
+         <td   xsl:use-attribute-sets = "cell2of2">
+          <xsl:value-of        select = "."/>
+         </td>
+        </tr>
+       </xsl:for-each>
+      </table>
+     </td>
+    </tr>
+   </table>
+   </p>
+  </xsl:for-each>
+
+  <xsl:apply-templates         select = "PhysicianMembershipInformation"/>
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td>
+      <b>Comment</b>
+     </td>
+     <td>
+      <xsl:apply-templates      select = "Comment"/>
+     </td>
+    </tr>
+   </table>
+  <p/>
+
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Display Membership Information
+ =================================================================== -->
+ <xsl:template                  match = "PhysicianMembershipInformation">
+  <table       xsl:use-attribute-sets = "table">
+   <tr>
+    <td        xsl:use-attribute-sets = "cell1of2">
+     <b>Membership Information</b>
+    </td>
+   </tr>
+   <tr>
+    <td        xsl:use-attribute-sets = "cell1of2">
+     <b><u>Cooperative Group(s)</u></b>
+    </td>
+    <td        xsl:use-attribute-sets = "cell2of2">
+     <ul>
+      <xsl:for-each            select = "MemberOfCooperativeGroup/
+                                         CooperativeGroup/
+                                         Organization/
+                                         OrganizationName">
+       <li>
+        <xsl:choose>
+         <xsl:when              test = "../../../@GroupChair">
+          <xsl:value-of      select = "."/>
+          <xsl:text> (Group Chair)</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:value-of      select = "."/>
+         </xsl:otherwise>
+        </xsl:choose>
+       </li>
+      </xsl:for-each> 
+     </ul>
+    </td>
+   </tr>
+  </table>
+  <p>
+  <table       xsl:use-attribute-sets = "table">
+   <tr>
+    <td        xsl:use-attribute-sets = "cell1of2">
+     <b><u>Medical Societies</u></b>
+    </td>
+    <td        xsl:use-attribute-sets = "cell2of2">
+     <ul>
+      <xsl:for-each            select = "MemberOfMedicalSociety">
+       <li>
+        <xsl:value-of          select = "."/>
+       </li>
+      </xsl:for-each> 
+     </ul>
+    </td>
+   </tr>
+  </table>
+  </p>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ ===================================================================== -->
+ <xsl:template                  match = "AdministrativeInformation">
+  <table       xsl:use-attribute-sets = "table">
+   <tr>
+    <td        xsl:use-attribute-sets = "cell1of2">
+     <b><u>Directory</u></b>
+    </td>
+    <td        xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of             select = "Directory/Include"/>
+    </td>
+   </tr>  
+   <tr>
+    <td        xsl:use-attribute-sets = "cell1of2">
+     <b>Entered By</b>
+    </td>
+    <td        xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of             select = "Directory/EnteredBy"/>
+    </td>
+   </tr>  
+   <tr>
+    <td        xsl:use-attribute-sets = "cell1of2">
+     <b>Entry Date</b>
+    </td>
+    <td        xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of             select = "Directory/Date"/>
+    </td>
+   </tr>  
+   <tr>
+    <td        xsl:use-attribute-sets = "cell1of2">
+     <b>Comment</b>
+    </td>
+    <td        xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of             select = "Directory/Comment"/>
+    </td>
+   </tr>
+  </table>
+  <p/>
+ </xsl:template> 
+</xsl:transform>
 ]]>
 </CdrDocXml>
 </CdrDoc>
