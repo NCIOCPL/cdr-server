@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.26 2001-04-13 00:31:20 ameyer Exp $
+ * $Id: tables.sql,v 1.27 2001-05-15 16:05:06 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2001/04/13 00:31:20  ameyer
+ * Retored link_prop_type table.
+ * Modified link_properties (renamed from link_prop) to use it.
+ *
  * Revision 1.25  2001/04/08 19:13:13  bkline
  * Added term_parents view.
  *
@@ -597,7 +601,7 @@ CREATE TABLE grp_usr
  */
 CREATE TABLE link_type (
           id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32) UNIQUE,
+        name VARCHAR(32) UNIQUE NOT NULL,
      comment VARCHAR(255) NULL
 )
 
@@ -615,7 +619,7 @@ CREATE TABLE link_type (
  */
 CREATE TABLE link_xml (
       doc_type INTEGER NOT NULL REFERENCES doc_type,
-       element VARCHAR(32) NOT NULL UNIQUE,
+       element VARCHAR(32) NOT NULL,
        link_id INTEGER NOT NULL REFERENCES link_type,
    PRIMARY KEY (doc_type, element)
 )
