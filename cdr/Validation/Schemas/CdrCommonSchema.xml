@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<!-- $Id: CdrCommonSchema.xml,v 1.9 2001-05-01 00:21:04 ArkD Exp $ 
+<!-- $Id: CdrCommonSchema.xml,v 1.10 2001-05-01 03:22:32 ArkD Exp $ 
      $Log: not supported by cvs2svn $
+     Revision 1.9  2001/05/01 00:21:04  ArkD
+     Document type specific link types created - ProtocolLink, SummaryLink, 
+     OrganizationLink, PersonLink, TerminologyLink, DiagnosisLink (all cdr:ref type), 
+     GlossaryLink (cdr:href type). Simle element YesNo added. 
+     Comment element type changed from GeneralText to string.
+
      Revision 1.8  2001/04/30 23:50:53  ArkD
      All ElementID attributes renamed into CdrCallingID attributes.
 
@@ -82,7 +88,7 @@
     <element name="ItemizedList"          type="ItemizedList"/>
     <element name="OrderedList"           type="OrderedList"/>
     <element name="QandASet"              type="QandASet"/>
-    <element name="Address"               type="Address"/>
+    <element name="Contact"               type="Contact"/>
   </choice>
 </group>
 
@@ -148,28 +154,29 @@
   <attribute name="CdrCallingId"             type="string"        minOccurs="0"/>
 </complexType>
 
-<complexType name="Address">
+<complexType name="Contact">
   <sequence>
-    <element name="Honorific"             type="string"        minOccurs="0"/>
-    <element name="FirstName"             type="string"        minOccurs="0"/>
-    <element name="Surname"               type="string"        minOccurs="0"/>
-    <element name="Lineage"               type="string"        minOccurs="0"/>
-    <element name="OtherName"             type="string"        minOccurs="0"/>
-    <element name="Street"                type="string"        minOccurs="0"
-                                                               maxOccurs="*"/>
-    <element name="POB"                   type="string"        minOccurs="0"/>
-    <element name="Postcode"              type="string"        minOccurs="0"/>
-    <element name="City"                  type="string"        minOccurs="0"/>
-    <element name="State"                 type="string"        minOccurs="0"/>
-    <element name="Country"               type="string"        minOccurs="0"/>
-    <element name="Phone"                 type="string"        minOccurs="0"
-                                                               maxOccurs="*"/>
-    <element name="Fax"                   type="string"        minOccurs="0"
-                                                               maxOccurs="*"/>
-    <element name="Email"                 type="string"        minOccurs="0"
-                                                               maxOccurs="*"/>
+    <element name="ContactName"           type="string"        minOccurs="0" maxOccurs="*"/>
+    <element name="ContactDetail"         type="ContactDetail"/>
   </sequence>
-  <attribute name="CdrCallingId"             type="string"        minOccurs="0"/>
+</complexType>
+<complexType name="ContactDetail">
+  <sequence>
+    <element name="Street"                type="string"        minOccurs="0" maxOccurs="3"/>
+    <element name="City"                  type="string"/>
+    <element name="PoliticalUnit_State"   type="string"        minOccurs="0"/>
+    <element name="Country"               type="string"        minOccurs="0"/>
+    <element name="PostalCode_ZIP"        type="string"        minOccurs="0"/>
+    <element name="CodePosition"          type="CodePosition"  minOccurs="0"/>
+    <element name="Phone"                 type="string"        minOccurs="0"/>
+    <element name="TollFreePhone"         type="string"        minOccurs="0"/>
+    <element name="Fax"                   type="string"        minOccurs="0"/>
+    <element name="Email"                 type="string"        minOccurs="0"/>
+    <element name="URL"                   type="string"        minOccurs="0"/>
+  </sequence>
+  <attribute name="Public"                type="YesNo"/>
+  <attribute name="AddressType"           type="AddressType"/>
+  <attribute name="CdrCallingId"          type="string"        minOccurs="0"/>
 </complexType>
 
 <complexType name="Quote">
@@ -430,3 +437,27 @@
 <simpleType     name="DocId"              base="string">
   <pattern      value="CDR[0-9]{10}" />
 </simpleType>
+
+<simpleType     name="AddressType"        base="string">
+  <enumeration  value="US"/>
+  <!--Will enforce (through programming outside schema):
+	1. Zip should be required
+	2. State should be required
+	3. Country=US
+	4. Phone should be required-->
+  <enumeration  value="Non US"/>
+  <!--Will enforce (through programming outside schema):
+      if PostalCode_Zip is not Null then CodePosition should be required-->
+</simpleType>
+
+<simpleType name="CodePosition" base="string">
+  <enumeration value="after City"/>
+  <enumeration value="after Country"/>
+  <enumeration value="after PoliticalUnit_State"/>
+  <enumeration value="before City"/>
+  </simpleType>
+
+<simpleType name="PrimarySecondary" base="string">
+  <enumeration value="Primary"/>
+  <enumeration value="Secondary"/>
+  </simpleType>
