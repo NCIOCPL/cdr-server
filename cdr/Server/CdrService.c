@@ -40,6 +40,8 @@ HANDLE  hServerStopEvent = NULL;
 
 static char server_pathname[MAX_REGSTR] = "d:\\cdr\\bin\\CdrServer.exe";
 static char service_log[MAX_REGSTR] = "d:\\cdr\\log\\CdrService.log";
+static char service_account[MAX_REGSTR] = "CdrService";
+static char service_password[MAX_REGSTR] = "***REMOVED***";
 
 static int nServers = N_SERVERS;
 static HANDLE hProcesses[MAX_SERVERS];
@@ -200,7 +202,8 @@ VOID ServiceStop()
 {
     DBGLOG("TOP OF SERVICESTOP", service_log);
 
-    _spawnl(_P_NOWAIT, SHUTDOWN, SHUTDOWN, "rmk", "***REDACTED***", 0);
+    _spawnl(_P_NOWAIT, SHUTDOWN, SHUTDOWN, service_account, 
+            service_password);
     if (!ReportStatusToSCMgr(SERVICE_STOP_PENDING, 
                              NO_ERROR, 
                              CLEANUP_SECONDS * 1000)) {
@@ -229,6 +232,12 @@ static void GetCdrServerRegVariables(void)
     if ((value = GetCdrServerRegString("ServiceLog")) != NULL
 	    && *value != '\0')
       strcpy(service_log, value);
+    if ((value = GetCdrServerRegString("ServiceAccount")) != NULL
+	    && *value != '\0')
+      strcpy(service_account, value);
+    if ((value = GetCdrServerRegString("ServicePassword")) != NULL
+	    && *value != '\0')
+      strcpy(service_password, value);
 }
 
 //----------------------------------------------------------------------
