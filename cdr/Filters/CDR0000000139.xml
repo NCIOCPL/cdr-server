@@ -15,12 +15,14 @@
                              xmlns:cdr = "cips.nci.nih.gov/cdr" 
                exclude-result-prefixes = "cdr">
     
-  <xsl:include href = "cdr:name:Module: Vendor Filter Templates"/>
-   
   <xsl:output                   method = "xml" 
                   omit-xml-declaration = "no" 
                                 indent = "yes"/>
 
+  <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
+  <xsl:include href = "cdr:name:Module: Vendor Cleanup Templates"/>
+    
+   
   <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
   <xsl:param                      name = "DateFirstPub"
                                 select = "''"/>
@@ -28,84 +30,52 @@
 <!-- ===================================================================
                   Copy Document ID and set it as an attribute
      ================================================================== -->
-   
-   
       <xsl:template match="Organization">
         <xsl:text disable-output-escaping="yes">
 &lt;!DOCTYPE Organization &gt;</xsl:text>
 
-      <xsl:element name='{name()}'>
-         <xsl:for-each select="DocId">
-         <xsl:attribute name="id">
-         <xsl:value-of select="."/>
+      <xsl:element               name='{name()}'>
+         <xsl:for-each           select="DocId">
+         <xsl:attribute          name="id">
+         <xsl:value-of           select="."/>
          </xsl:attribute>
          </xsl:for-each>
-         <xsl:if test="PdqKey">
-         <xsl:attribute name="LegacyPDQID">
-         <xsl:value-of select="PdqKey"/>
+         <xsl:if                test="PdqKey">
+         <xsl:attribute         name="LegacyPDQID">
+         <xsl:value-of          select="PdqKey"/>
          </xsl:attribute>
          </xsl:if>
- <!-- ===================================================================
-         Copy Organization Name Information - Official Name/Name
-      =================================================================== -->
 
-   <OrganizationNameInformation>
-   <xsl:for-each select="OrganizationNameInformation/OfficialName">
-   <xsl:variable name="ID" select="@cdr:id"/>
-   <OfficialName id="{$ID}">
-  <Name><xsl:value-of select="Name"/></Name>
-   </OfficialName>
-   </xsl:for-each>
+          <xsl:if               test="Status/CurrentStatus">
+         <xsl:attribute         name="Status">
+         <xsl:value-of          select="Status/CurrentStatus"/>
+         </xsl:attribute>
+         </xsl:if>
  
-  <!-- ===================================================================
-         Copy Organization Name Information -  Short Name
+ <!-- ===================================================================
+                    Copy Organization Name Information
       =================================================================== -->
-
-
-    <xsl:for-each select="OrganizationNameInformation/ShortName">
-    <xsl:variable name="ID" select="@cdr:id"/>
-
-      <ShortName id="{$ID}">
- <Name><xsl:value-of select="Name"/></Name>
-   </ShortName>
-   </xsl:for-each>
-
-  <!-- ===================================================================
-       Copy Organization Name Information -  Alternate Name and Former Name
-      =================================================================== -->
-
-
-   <xsl:apply-templates select="OrganizationNameInformation/AlternateName" 
-                                mode="copy"/>
-   <xsl:apply-templates select="OrganizationNameInformation/FormerName" 
-                                mode="copy"/>            
-      </OrganizationNameInformation>
-
+   <xsl:apply-templates select="OrganizationNameInformation" mode="copy"/>
+ 
 
  <!-- ===================================================================
          Copy Organization Name Information -  Parent Name
       =================================================================== -->
+   
+    <xsl:apply-templates select="OrganizationParent" mode="copy"/>
 
 
-<xsl:for-each select="OrganizationParent/ParentOrganization/Name">
-<OrganizationParent><xsl:value-of select="."/></OrganizationParent>
-</xsl:for-each>
-       
-  
-<!-- ==============================================================
+  <!-- ==============================================================
       Copy Organization Details- Include in Directory Info
      ============================================================== -->
 
-   <xsl:if test="OrganizationDetails/OrganizationAdministrativeInformation">
-   <xsl:for-each select="OrganizationDetails/OrganizationAdministrativeInformation">
-   <xsl:variable name="Dir" select="@Directory"/>
-   <xsl:if test="IncludeInDirectory='Include'">
+   <xsl:if                      test="OrganizationDetails/
+                                      OrganizationAdministrativeInformation">
+   <xsl:for-each                select="OrganizationDetails/
+                                        OrganizationAdministrativeInformation">
+   <xsl:variable name="Dir"     select="@Directory"/>
+   <xsl:if                      test="IncludeInDirectory='Include'">
    <IncludeInDirectory Directory="{$Dir}"/>
-   </xsl:if>
-   <xsl:if test="PreferredProtocolContactMode">
-   <xsl:for-each select="PreferredProtocolContactMode">
-   <PreferredProtocolContactMode><xsl:value-of select="."/></PreferredProtocolContactMode>
-   </xsl:for-each>
    </xsl:if>
    </xsl:for-each>
    </xsl:if>
@@ -115,120 +85,92 @@
       SubUnit, Country, Postal Code, PostalCodePosition      
      ===================================================================== -->
 
-   <OrganizationLocations>
-   <xsl:for-each select="OrganizationLocations/OrganizationLocation/Location">
-   <xsl:variable name="lid" select="@id"/>
-  <OrganizationLocation id="{$lid}">
-   <xsl:if test="../PreviousLocation">
-   <xsl:attribute name="status">
-   <xsl:text>Inactive--Contact Information may not be current</xsl:text>
-   </xsl:attribute>
-   </xsl:if>
-   <xsl:if test="../@IncludeParentName">
-   <xsl:attribute name="IncludeParentName">
-   <xsl:value-of select="../@IncludeParentName"/>
-   </xsl:attribute>
-   </xsl:if>
-   <xsl:if test="../@OrderParentNameFirst">
-   <xsl:attribute name="OrderParentNameFirst">
-   <xsl:value-of select="../@OrderParentNameFirst"/>
-   </xsl:attribute>
-   </xsl:if>
-   <xsl:for-each select="OrganizationAddressNames/OrganizationName">
-   <OrganizationName><xsl:apply-templates select="."/></OrganizationName>
-   </xsl:for-each>
+  <xsl:apply-templates select="OrganizationLocations" mode="copy"/>
 
-    <PostalAddress>
-      <xsl:for-each select="PostalAddress/Street">
-      <xsl:apply-templates select="." mode="copy"/>
-      </xsl:for-each>
- 
-
-   <xsl:apply-templates select="PostalAddress/City" mode="copy"/>
-
-   <xsl:apply-templates select="PostalAddress/CitySuffix" mode="copy"/>
-
-<xsl:if test="PostalAddress/PoliticalSubUnitRef">
-<xsl:variable name="pref" select="PostalAddress/PoliticalSubUnitRef"/>
-<PoliticalSubUnitName  ref="{$pref}"><xsl:value-of select="PostalAddress/PoliticalSubUnitFullName"/></PoliticalSubUnitName>
-</xsl:if>
-
-<xsl:variable name="cref" select="PostalAddress/CountryRef"/>
-<CountryName  ref="{$cref}"><xsl:value-of select="PostalAddress/CountryFullName"/></CountryName>
-
-<xsl:apply-templates select="PostalAddress/PostalCode_ZIP" mode="copy"/>
-
-<xsl:apply-templates select="PostalAddress/PostalCodePosition" mode="copy"/>
-</PostalAddress>
-
-<!--    =====================================================================
-      Copy Phone,  TollFreePhone, Fax, Email and WebSite
-    ===================================================================== -->
-<xsl:if test="not(Phone/@Public)">
-<xsl:apply-templates select="Phone" mode="copy"/>
-</xsl:if>
-
-<xsl:apply-templates select="TollFreePhone" mode="copy"/>
-
-<xsl:if test="not(Email/@Public)">
-<xsl:apply-templates select="Email" mode="copy"/>
-</xsl:if>
-
-<xsl:if test="WebSite">
-<WebSite>
-<xsl:attribute name="xref">
-<xsl:value-of select="WebSite/@cdr:xref"/>
-</xsl:attribute>
-</WebSite>
-</xsl:if>
-</OrganizationLocation>
-</xsl:for-each>
-</OrganizationLocations>
-
-<!--  =======================================================================
+  <!--  ====================================================================
                     Copy Organization Affiliations
     ======================================================================= -->
 
-<xsl:if test="OrganizationAffiliations">
+<xsl:if                    test="OrganizationAffiliations">
 <OrganizationAffiliations>
-<xsl:if test="OrganizationAffiliations/ResearchBaseFor">
-<xsl:for-each select="OrganizationAffiliations/ResearchBaseFor">
-<ResearchBaseFor><xsl:value-of select="Name"/></ResearchBaseFor>
-</xsl:for-each>
-</xsl:if>
-<xsl:if test="OrganizationAffiliations/MemberOfProfessionalOrganization">
-<xsl:apply-templates select="OrganizationAffiliations/MemberOfProfessionalOrganization" mode="copy"/>
-</xsl:if>
-<xsl:if test="OrganizationAffiliations/MemberOfCooperativeGroups">
-<xsl:if test="OrganizationAffiliations/MemberOfCooperativeGroups/MainMemberOf/CooperativeGroup">
-<xsl:for-each select="OrganizationAffiliations/MemberOfCooperativeGroups/MainMemberOf/CooperativeGroup">
-<xsl:variable name="MID" select="CoopMID"/>
-   <MemberOfCooperativeGroup ref="{$MID}"><xsl:value-of select="OfficialName/Name"/></MemberOfCooperativeGroup>
+<xsl:if                    test="OrganizationAffiliations/
+                                 ResearchBaseFor">
+<xsl:for-each             select="OrganizationAffiliations/ResearchBaseFor/
+                                  Organization/OrganizationNameInformation/
+                                  OfficialName/Name">
+<ResearchBaseFor>
+<xsl:value-of             select="."/>
+</ResearchBaseFor>
 </xsl:for-each>
 </xsl:if>
 
-<xsl:if test="OrganizationAffiliations/MemberOfCooperativeGroups/AffiliateMemberOf/CooperativeGroup">
-<xsl:for-each select="OrganizationAffiliations/MemberOfCooperativeGroups/AffiliateMemberOf/CooperativeGroup">
-<xsl:variable name="CID" select="CoopAID"/>
- <MemberOfCooperativeGroup ref="{$CID}"><xsl:value-of select="Name"/></MemberOfCooperativeGroup>
+<xsl:if                   test="OrganizationAffiliations/
+                                MemberOfProfessionalOrganization">
+<xsl:apply-templates      select="OrganizationAffiliations/
+                                  MemberOfProfessionalOrganization"
+                                  mode="copy"/>
+</xsl:if>
+
+<xsl:if                   test="OrganizationAffiliations/
+                                MemberOfCooperativeGroups">
+<xsl:if                   test="OrganizationAffiliations/
+                                MemberOfCooperativeGroups/AffiliateMemberOf/
+                                MainMember">
+                               
+<xsl:for-each             select="OrganizationAffiliations/
+                                  MemberOfCooperativeGroups/AffiliateMemberOf/
+                                  MainMember/Organization/
+                                  OrganizationNameInformation/
+                                  OfficialName/Name">
+                          
+                               
+<xsl:variable name="MID" select="../../../@cdr:ref"/>
+   <CooperativeGroup ref="{$MID}">
+<xsl:value-of             select="."/>
+</CooperativeGroup>
 </xsl:for-each>
 </xsl:if>
-<xsl:if test="OrganizationAffiliations/MemberOfCCOP">
-<xsl:for-each select="OrganizationAffiliations/MemberOfCCOP">
-<xsl:variable name="COD" select="@ref"/>
- <MemberOfCCOP ref="{$COD}"><xsl:value-of select="CCOP/Name"/></MemberOfCCOP>
+</xsl:if>
+<!--added above -->
+
+<xsl:if                   test="OrganizationAffiliations/
+                                MemberOfCooperativeGroups/AffiliateMemberOf/
+                                CooperativeGroup">
+<xsl:for-each             select="OrganizationAffiliations/
+                                  MemberOfCooperativeGroups/
+                                  AffiliateMemberOf/CooperativeGroup/
+                                  Organization/OrganizationNameInformation/
+                                  OfficialName/Name">
+
+<xsl:variable name="CID"  select="../../../@cdr:ref"/>
+ <CooperativeGroup ref="{$CID}">
+<xsl:value-of              select="."/>
+</CooperativeGroup>
 </xsl:for-each>
 </xsl:if>
 
+<xsl:if                     test="OrganizationAffiliations/MemberOfCCOP">
+<xsl:for-each               select="OrganizationAffiliations/
+                                    MemberOfCCOP/CCOP/Organization/
+                                    OrganizationNameInformation/OfficialName/
+                                    Name">
+<xsl:variable name="COD"    select="../../../@cdr:ref"/>
+ <MemberOfCCOP ref="{$COD}">
+<xsl:value-of               select="."/>
+</MemberOfCCOP>
+</xsl:for-each>
 </xsl:if>
+<!--
+</xsl:if>-->
 </OrganizationAffiliations>
 </xsl:if>
 
  <!-- ====================================================================
                    Copy Organization Type
       ==================================================================== -->
-   <xsl:if test="not(OrganizationType/@Public)">
-  <xsl:apply-templates select="OrganizationType" mode="copy"/>
+   <xsl:if                test="not(OrganizationType/@Public) and
+                                not(OrganizationType='No type assigned')">
+  <xsl:apply-templates    select="OrganizationType" mode="copy"/>
    </xsl:if>
 
 
@@ -238,24 +180,27 @@
   <xsl:choose>
     <xsl:when                     test = "CdrDocCtl/FirstPub/Date">
       <DateFirstPublished>
-      <xsl:value-of             select = "substring-before(CdrDocCtl/
+      <xsl:value-of               select = "substring-before(CdrDocCtl/
                                             FirstPub/Date,'T')"/>
       </DateFirstPublished>
     </xsl:when>
     <xsl:otherwise>
       <xsl:call-template          name = "getDateFirstPub">
         <xsl:with-param           name = "date"
-                                select = "$DateFirstPub"/>
+                                  select = "$DateFirstPub"/>
       </xsl:call-template>    
     </xsl:otherwise>
   </xsl:choose>
 
   <xsl:if test="DateLastModified">
-  <DateLastModified><xsl:value-of select="DateLastModified"/></DateLastModified>
+  <DateLastModified>
+  <xsl:value-of                 select="DateLastModified"/>
+  </DateLastModified>
   </xsl:if>
 </xsl:element>
 </xsl:template>
 
-</xsl:transform>]]>
+</xsl:transform>
+]]>
 </CdrDocXml>
 </CdrDoc>
