@@ -1,9 +1,22 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: InScopeProtocol.xml,v 1.5 2001-07-09 16:08:46 ArkD Exp $
+      $Id: InScopeProtocol.xml,v 1.6 2001-07-09 20:19:46 ArkD Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.5  2001/07/09 16:08:46  ArkD
+      'ProtocolAmendments' renamed into 'ProtocolAmendmentInformation'.
+      'FundingInformation' changed to incorporate 'OtherGrantContrctInfo'.
+      Protocol Statuses deleted.
+      'DatedAction' added to the 'ProtocolAdminInfo'.
+      'OrganizationID' renamed into 'LeadOrganizationID',
+      'OrgRole' to 'LeadOrgRole',
+      'OrgStatus' to 'LeadOrgProtocolStatus',
+      'ProtocolIDString' to 'LeadOrgProtocolID'.
+      'UpdateGroup' deleted.
+      Attribute 'Group' (type YesNo) added to 'ProtocolLeadOrg'.
+      'ProtocolContact' renamed into 'ProtocolSpecificContact'.
+
       Revision 1.4  2001/06/29 17:12:20  bkline
       Added namespace declaration for cdr namespace.
 
@@ -70,9 +83,11 @@
                      minOccurs       = '0'/>
       <element       name            = 'PublishedResults'
                      type            = 'PublishedResults'
-                     minOccurs       = '0'/>
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'ProtocolPhase'
-                     type            = 'ProtocolPhase'/>
+                     type            = 'ProtocolPhase'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'ProtocolDesign'
                      type            = 'ProtocolDesign'
                      maxOccurs       = 'unbounded'/>
@@ -134,8 +149,9 @@
     <sequence>
       <element       name            = 'ReviewApprovalType'
                      type            = 'ReviewApprovalType'/>
-      <element       name            = 'ReimbursmentApprovalType'
-                     type            = 'ReimbursmentApprovalType'/>
+      <element       name            = 'ReimbursementApprovalType'
+                     type            = 'ReimbursementApprovalType'
+                     minOccurs       = '0'/>
       <element       name            = 'Comment'
                      type            = 'string'
                      minOccurs       = '0'/>
@@ -186,41 +202,51 @@
                      type            = 'ProtocolStatusName'/>
       <element       name            = 'LeadOrgProtocolID'
                      type            = 'string'/>
-      <element       name            = 'ProtocolPersonnel'
-                     type            = 'ProtocolPersonnel'
+      <element       name            = 'LeadOrgPersonnel'
+                     type            = 'LeadOrgPersonnel'
                      maxOccurs       = 'unbounded'/>
     </sequence>
     <attribute       name            = 'Group'
                      type            = 'YesNo'/>
   </complexType>
 
-  <complexType       name            = 'ProtocolPersonnel'>
+  <complexType       name            = 'LeadOrgPersonnel'>
     <sequence>
       <element       name            = 'PersonID'
                      type            = 'PersonLink'/>
       <element       name            = 'PersonRole'
-                     type            = 'ProtocolPersonRole'/>
+                     type            = 'ProtocolPersonRole'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'ProtocolSpecificContact'
                      type            = 'ContactDetail'
                      minOccurs       = '0'/>
     </sequence>
+    <attribute       name            = 'Public'
+                     type            = 'No'
+                     minOccurs       = '0'/>
+    <attribute       name            = 'MailAbstractTo'
+                     type            = 'No'
+                     minOccurs       = '0'/>
   </complexType>
 
   <complexType       name            = 'ProtocolSites'>
     <sequence>
-      <element       name            = 'Organization'
-                     type            = 'Organization'
+      <element       name            = 'Site'
+                     type            = 'Site'
                      maxOccurs       = 'unbounded'/>
     </sequence>
+    <attribute       name            = 'CoopMember'
+                     type            = 'CoopMember'
+                     minOccurs       = '0'/>
   </complexType>
 
-  <complexType       name            = 'Organization'>
+  <complexType       name            = 'Site'>
     <sequence>
-      <element       name            = 'OrgID'
+      <element       name            = 'SiteID'
                      type            = 'OrganizationLink'/>
-      <element       name            = 'OrganizationStatus'
+      <element       name            = 'SiteStatus'
                      type            = 'ProtocolStatusName'/>
-      <element       name            = 'OrganizationContact'
+      <element       name            = 'SiteContact'
                      type            = 'ContactInformation'/>
     </sequence>
   </complexType>
@@ -303,7 +329,7 @@
     </restriction>
   </simpleType>
 
-  <simpleType        name            = 'ReimbursmentApprovalType'>
+  <simpleType        name            = 'ReimbursementApprovalType'>
     <restriction     base            = 'string'>
       <enumeration   value           = 'NCI'/>
       <enumeration   value           = 'New Jersey'/>
@@ -353,6 +379,13 @@
       <enumeration   value           = 'Principal Investigator'/>
       <enumeration   value           = 'Research Nurse'/>
       <enumeration   value           = 'Study Coordinator'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'CoopMember'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Main'/>
+      <enumeration   value           = 'Affiliate'/>
     </restriction>
   </simpleType>
 
