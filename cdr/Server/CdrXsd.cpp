@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.21 2001-11-25 04:53:51 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.22 2001-12-14 15:15:30 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2001/11/25 04:53:51  bkline
+ * Added code to recognize readonly attribute as valid anywhere.
+ *
  * Revision 1.20  2001/10/29 15:45:26  bkline
  * Fixed bug which was preventing non-required choice from validating
  * correctly.
@@ -1106,6 +1109,7 @@ cdr::xsd::ComplexType::ComplexType(cdr::xsd::Schema& schema,
                 // We'll look this up later.
                 content = new SimpleContent(e.getAttribute(cdr::xsd::BASE),
                                             &schema);
+                schema.registerObject(content);
 
                 // The attributes are stored inside the extension node.
                 childNode = childNode.getFirstChild();
