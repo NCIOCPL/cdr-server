@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLogon.cpp,v 1.5 2000-06-23 15:28:01 bkline Exp $
+ * $Id: CdrLogon.cpp,v 1.6 2002-04-10 14:32:14 bkline Exp $
  *
  * Opens a new CDR session.
  *
@@ -15,6 +15,10 @@
  *  </CdrLogonResp>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2000/06/23 15:28:01  bkline
+ * Fixed bug which was causing the size of the session.name column to be
+ * exceeded.
+ *
  * Revision 1.4  2000/05/03 15:25:41  bkline
  * Fixed database statement creation.
  *
@@ -59,12 +63,18 @@ cdr::String cdr::logon(cdr::Session& session,
     cdr::db::PreparedStatement select = conn.prepareStatement(selectQuery);
     select.setString(1, userName);
     cdr::db::ResultSet rs = select.executeQuery();
-    if (!rs.next())
+    if (!rs.next()) {
+        cdr::log::pThreadLog->Write(L"Failed logon attempt (invalid user name)",
+                L"name: " + userName + "; password: " + password);
         throw cdr::Exception(L"Invalid logon credentials");
+    }
     int id = rs.getInt(1);
     cdr::String dbPassword = rs.getString(2);
-    if (password != dbPassword)
+    if (password != dbPassword) {
+        cdr::log::pThreadLog->Write(L"Failed logon attempt (invalid password)",
+                L"name: " + userName + "; password: " + password);
         throw cdr::Exception(L"Invalid logon credentials");
+    }
    
     // Create a new row in the session table.
     char idBuf[256];
