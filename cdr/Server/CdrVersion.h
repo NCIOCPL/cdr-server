@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.h,v 1.3 2000-12-07 16:02:08 ameyer Exp $
+ * $Id: CdrVersion.h,v 1.4 2001-05-22 21:29:25 mruben Exp $
  *
  * Internal support functions for CDR verison control
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/12/07 16:02:08  ameyer
+ * Made allowVersion() a public function, needed by delDoc().
+ *
  * Revision 1.2  2000/10/31 15:48:15  mruben
  * changed interface to include session
  *
@@ -84,11 +87,15 @@ namespace cdr {
         cdr::String         dt;
         cdr::String         updated_dt;
         int                 usr;
+        cdr::String         val_status;
+        cdr::String         val_date;
+        cdr::String         approved;
         int                 doc_type;
         cdr::String         title;
         cdr::String         xml;
         cdr::Blob           data;
         cdr::String         comment;
+        cdr::String         active_status;
     };
 
     /**
