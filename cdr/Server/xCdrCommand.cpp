@@ -1,9 +1,12 @@
 /*
- * $Id: xCdrCommand.cpp,v 1.14 2000-10-24 13:13:16 mruben Exp $
+ * $Id: xCdrCommand.cpp,v 1.15 2000-10-27 02:31:55 ameyer Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2000/10/24 13:13:16  mruben
+ * added support for CdrReport
+ *
  * Revision 1.13  2000/10/23 14:08:06  mruben
  * added version control commands
  *
@@ -239,11 +242,13 @@ cdr::String cdr::repDoc(cdr::Session& session,
 }
 #endif
 
+#if 0
 cdr::String cdr::delDoc(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
                         cdr::db::Connection& dbConnection) {
     return stub(L"DelDoc");
 }
+#endif
 
 #if 0
 cdr::String cdr::validateDoc(cdr::Session& session,
