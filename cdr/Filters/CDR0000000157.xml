@@ -29,6 +29,10 @@
        Document element.
        =========================================================== -->
 <xsl:template                match = "Summary">
+ <xsl:variable                name = "camBoard" 
+                            select = "concat('PDQ Cancer Complementary and ', 
+                                             'Alternative Medicine Editorial ',
+                                             'Board')"/>
 
 <!-- Creating Document Element and adding Doc ID as attribute
      ======================================================== -->
@@ -36,9 +40,14 @@
      <xsl:attribute           name = "id">
        <xsl:value-of        select = "DocId"/>
      </xsl:attribute>
-     <xsl:attribute           name = "LegacyPDQID">
+
+     <!-- LegacyPDQID should not be displayed for CAM summaries -->
+     <xsl:if                  test = "not(SummaryMetaData/PDQBoard/
+                                          Board = $camBoard)">
+      <xsl:attribute          name = "LegacyPDQID">
        <xsl:value-of        select = "PdqKey"/>
-     </xsl:attribute>
+      </xsl:attribute>
+     </xsl:if>
 
      <xsl:apply-templates   select = "SummaryMetaData"/>
      <xsl:apply-templates   select = "SummaryTitle"
