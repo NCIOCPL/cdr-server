@@ -1,10 +1,14 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.73 2004-03-31 03:08:44 ameyer Exp $
+# $Id: Makefile,v 1.74 2004-04-30 01:35:39 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.73  2004/03/31 03:08:44  ameyer
+# Added analyzeException.obj
+# Added -EHa to enable C++ handling of Windows structured exceptions.
+#
 # Revision 1.72  2004/03/23 16:26:48  bkline
 # Upgraded to version 5.4.0 of xml4c (but still using deprecated APIs).
 #
@@ -326,6 +330,7 @@ LIBOBJS=CdrString.obj \
         CdrParserInput.obj \
         CdrRegEx.obj \
         CdrVersion.obj \
+        CdrTiming.obj \
         catchexp.obj \
         analyzeException.obj
 OBJS   =CdrCommand.obj \
