@@ -1,9 +1,15 @@
 /*
- * $Id: CdrVersion.cpp,v 1.9 2001-05-23 01:24:53 ameyer Exp $
+ * $Id: CdrVersion.cpp,v 1.10 2001-06-05 20:48:02 mruben Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2001/05/23 01:24:53  ameyer
+ * Added actStatus parameter to checkIn to state that doc is publishable
+ * ('A'ctive) or non-publishable ('I'nactive).
+ * Modified checkVerIn command to look for "Publishable" attribute
+ * in command xml to specify the same thing.
+ *
  * Revision 1.8  2001/05/04 17:01:17  mruben
  * fixed bug in reading attributes
  *
@@ -70,7 +76,7 @@ bool cdr::allowVersion(int docId, cdr::db::Connection& conn)
 
 int cdr::checkIn(cdr::Session& session, int docId,
                  cdr::db::Connection& conn,
-                 cdr::String actStatus, const cdr::String* comment,
+                 cdr::String publishable, const cdr::String* comment,
                  bool abandon, bool force)
 {
   // we need to serialize.  Save current autocommit state so if the
@@ -162,13 +168,13 @@ int cdr::checkIn(cdr::Session& session, int docId,
   // now add new version if not abandoned
   if (!abandon)
   {
-    // Must have new legal active_status value for new version
-    if (actStatus != L"A" && actStatus != L"I")
+    // Must have new legal publishable value for new version
+    if (publishable != L"Y" && publishable != L"N")
       throw cdr::Exception(
-          L"Must specify active_status 'A' or 'I' when creating new version");
+          L"Must specify publishable 'Y' or 'N' when creating new version");
 
     ++version;
-    string query = "SELECT d.val_status, d.val_date, d.approved, "
+    string query = "SELECT d.val_status, d.val_date, "
                    "       d.doc_type, d.title, d.xml, "
                    "       d.comment, a.dt, b.data "
                    "FROM document d "
@@ -187,18 +193,17 @@ int cdr::checkIn(cdr::Session& session, int docId,
 
     cdr::String val_status = rs.getString(1);
     cdr::String val_date = rs.getString(2);
-    cdr::String approved = rs.getString(3);
-    int doc_type = rs.getInt(4);
-    cdr::String title = rs.getString(5);
-    cdr::String xml = rs.getString(6);
-    cdr::String doc_comment = rs.getString(7);
-    cdr::String updated_dt = rs.getString(8);
-    cdr::Blob data = rs.getBytes(9);
+    int doc_type = rs.getInt(3);
+    cdr::String title = rs.getString(4);
+    cdr::String xml = rs.getString(5);
+    cdr::String doc_comment = rs.getString(6);
+    cdr::String updated_dt = rs.getString(7);
+    cdr::Blob data = rs.getBytes(8);
 
     string newver = "INSERT INTO doc_version "
                     "            (id, num, dt, updated_dt, usr, val_status, "
-                    "             val_date, approved, doc_type, title, "
-                    "             xml, data, comment, active_status) "
+                    "             val_date, doc_type, title, "
+                    "             xml, data, comment, publishable) "
       "VALUES (?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     cdr::db::PreparedStatement insert = conn.prepareStatement(newver);
     insert.setInt(1, docId);
@@ -207,13 +212,12 @@ int cdr::checkIn(cdr::Session& session, int docId,
     insert.setInt(4, usr);
     insert.setString(5, val_status);
     insert.setString(6, val_date);
-    insert.setString(7, approved);
-    insert.setInt(8, doc_type);
-    insert.setString(9, title);
-    insert.setString(10, xml);
-    insert.setBytes(11, data);
-    insert.setString(12, doc_comment);
-    insert.setString(13, actStatus);
+    insert.setInt(7, doc_type);
+    insert.setString(8, title);
+    insert.setString(9, xml);
+    insert.setBytes(10, data);
+    insert.setString(11, doc_comment);
+    insert.setString(12, publishable);
     insert.executeQuery();
   }
 
@@ -309,8 +313,8 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn, int num,
                      CdrVerDoc* verdoc)
 {
   string query = "SELECT dt, updated_dt, usr, val_status, val_date, "
-                        "approved, doc_type, title, "
-                        "xml, data, comment, active_status "
+                        "doc_type, title, "
+                        "xml, data, comment, publishable "
                  "FROM doc_version "
                  "WHERE id = ? and num = ?";
   cdr::db::PreparedStatement select = conn.prepareStatement(query);
@@ -330,13 +334,12 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn, int num,
     verdoc->usr = rs.getInt(3);
     verdoc->val_status = rs.getString(4);
     verdoc->val_date = rs.getString(5);
-    verdoc->approved = rs.getString(6);
-    verdoc->doc_type = rs.getInt(7);
-    verdoc->title = rs.getString(8);
-    verdoc->xml = rs.getString(9);
-    verdoc->data = rs.getBytes(10);
-    verdoc->comment = rs.getString(11);
-    verdoc->active_status = rs.getString(12);
+    verdoc->doc_type = rs.getInt(6);
+    verdoc->title = rs.getString(7);
+    verdoc->xml = rs.getString(8);
+    verdoc->data = rs.getBytes(9);
+    verdoc->comment = rs.getString(10);
+    verdoc->publishable = rs.getString(11);
   }
 
   return true;
@@ -347,8 +350,8 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn,
                      CdrVerDoc* verdoc)
 {
   string query = "SELECT num, dt, updated_dt, usr, val_status, val_date, "
-                        "approved, doc_type, title, "
-                        "xml, data, comment, active_status "
+                        "doc_type, title, "
+                        "xml, data, comment, publishable "
                  "FROM doc_version "
                  "WHERE document = ? "
                  "  AND dt = (SELECT MAX(dt) FROM doc_version "
@@ -371,13 +374,12 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn,
     verdoc->usr = rs.getInt(4);
     verdoc->val_status = rs.getString(5);
     verdoc->val_date = rs.getString(6);
-    verdoc->approved = rs.getString(7);
-    verdoc->doc_type = rs.getInt(8);
-    verdoc->title = rs.getString(9);
-    verdoc->xml = rs.getString(10);
-    verdoc->data = rs.getBytes(11);
-    verdoc->comment = rs.getString(12);
-    verdoc->active_status = rs.getString(13);
+    verdoc->doc_type = rs.getInt(7);
+    verdoc->title = rs.getString(8);
+    verdoc->xml = rs.getString(9);
+    verdoc->data = rs.getBytes(10);
+    verdoc->comment = rs.getString(11);
+    verdoc->publishable = rs.getString(12);
   }
 
   return true;
@@ -388,8 +390,8 @@ bool cdr::getLabelVersion(int docId, cdr::db::Connection& conn,
                           CdrVerDoc* verdoc)
 {
   string query = "SELECT d.num, d.dt, d.updated_dt, d.usr, d.val_status, "
-                        "d.val_date, d.approved, d.doc_type, d.title, "
-                        "d.xml, d.data, d.comment, d.active_status "
+                        "d.val_date, d.doc_type, d.title, "
+                        "d.xml, d.data, d.comment, d.publishable "
                         "FROM doc_version d "
                         "INNER JOIN doc_version_label dl "
                         "ON d.id = dl.document "
@@ -414,13 +416,12 @@ bool cdr::getLabelVersion(int docId, cdr::db::Connection& conn,
     verdoc->usr = rs.getInt(4);
     verdoc->val_status = rs.getString(5);
     verdoc->val_date = rs.getString(6);
-    verdoc->approved = rs.getString(7);
-    verdoc->doc_type = rs.getInt(8);
-    verdoc->title = rs.getString(9);
-    verdoc->xml = rs.getString(10);
-    verdoc->data = rs.getBytes(11);
-    verdoc->comment = rs.getString(12);
-    verdoc->active_status = rs.getString(13);
+    verdoc->doc_type = rs.getInt(7);
+    verdoc->title = rs.getString(8);
+    verdoc->xml = rs.getString(9);
+    verdoc->data = rs.getBytes(10);
+    verdoc->comment = rs.getString(11);
+    verdoc->publishable = rs.getString(12);
   }
 
   return true;
@@ -547,8 +548,7 @@ cdr::String cdr::checkVerIn(cdr::Session& session,
 {
   bool abandon = false;
   bool force = false;
-  cdr::String actStatus = L"X";     // Initialized to invalid value
-  cdr::String publishable;
+  cdr::String publishable(L"N");
   int version = -1;
   auto_ptr<cdr::String> comment;
   cdr::String ui_string;
@@ -561,18 +561,12 @@ cdr::String cdr::checkVerIn(cdr::Session& session,
   if (attr != NULL && cdr::String(attr.getNodeValue()) == L"Y")
     force = true;
 
-  // Set active status based on whether user says version is publishable
   attr = cmdattr.getNamedItem("Publishable");
-  if (attr != NULL) {
+  if (attr != NULL)
     publishable = cdr::String(attr.getNodeValue());
-    if (publishable == L"Y")
-       actStatus = L"A";
-    else if (publishable == L"N")
-       actStatus = L"I";
-  }
 
-  // If creating a new version, must specify active status
-  if (!abandon && actStatus == L"X")
+  // If creating a new version, must specify publishable
+  if (!abandon && publishable != L"Y" && publishable != L"N")
     throw cdr::Exception(
             L"Must specify Publishable='Y' or 'N' when creating new version");
 
@@ -607,7 +601,7 @@ cdr::String cdr::checkVerIn(cdr::Session& session,
     }
   }
   version = checkIn(session, ui_string.extractDocId(), dbConnection,
-                    actStatus, comment.get(), abandon, force);
+                    publishable, comment.get(), abandon, force);
 
   wostringstream ver_string;
   if (version >= 0)

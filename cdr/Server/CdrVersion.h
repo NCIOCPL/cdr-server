@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.h,v 1.5 2001-05-23 01:27:50 ameyer Exp $
+ * $Id: CdrVersion.h,v 1.6 2001-06-05 20:48:25 mruben Exp $
  *
  * Internal support functions for CDR verison control
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2001/05/23 01:27:50  ameyer
+ * Added actStatus parameter to checkIn prototype.
+ *
  * Revision 1.4  2001/05/22 21:29:25  mruben
  * added status information to CdrVerDoc
  *
@@ -40,7 +43,7 @@ namespace cdr {
      *  @param  conn        reference to an active connection to the CDR
      *                      database.
      *  @param  usr         int user ID
-     *  @param  actStatus   "A"=publishable (active), "I"=inactive
+     *  @param  publishable Y or N
      *  @param  comment     cdr::String* comment on check in.  If NULL, the
      *                      comment will not be updated
      *  @param  abandon     bool true if checkout is to be abandoned (i.e.,
@@ -100,7 +103,7 @@ namespace cdr {
         cdr::String         xml;
         cdr::Blob           data;
         cdr::String         comment;
-        cdr::String         active_status;
+        cdr::String         publishable;
     };
 
     /**
