@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.h,v 1.2 2001-09-21 03:46:40 ameyer Exp $
+ * $Id: CdrFilter.h,v 1.3 2002-01-08 18:19:12 mruben Exp $
  *
  * Internal support functions for CDR filter
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2001/09/21 03:46:40  ameyer
+ * Added filterDocumentByScriptId and fitlerDocumentByScriptTitle
+ *
  * Revision 1.1  2001/09/20 21:44:55  ameyer
  * Initial revision
  *
@@ -40,6 +43,7 @@ namespace cdr {
      *  @param  messages    cdr::String*.  If not null, nonerror messages
      *                      from the filter are placed (as XML) in this string
      *  @param  parms       vector of name-value pairs of parameters
+     *  @param  doc_id      CDR identifier of document
      *
      *  @return             cdr::String filtered document
      *
@@ -48,7 +52,8 @@ namespace cdr {
                                       const cdr::String&     filter,
                                       cdr::db::Connection&   connection,
                                       cdr::String*           messages = 0,
-                                      cdr::FilterParmVector* parms = 0);
+                                      cdr::FilterParmVector* parms = 0,
+                                      cdr::String doc_id = "");
 
     /**
      * Filters a document accepting a document id for the filter instead
@@ -63,6 +68,7 @@ namespace cdr {
      *  @param  messages    cdr::String*.  If not null, nonerror messages
      *                      from the filter are placed (as XML) in this string
      *  @param  parms       vector of name-value pairs of parameters
+     *  @param  doc_id      CDR identifier of document
      *
      *  @return             cdr::String filtered document
      *
@@ -72,7 +78,8 @@ namespace cdr {
                                       int                    filterId,
                                       cdr::db::Connection&   connection,
                                       cdr::String*           messages = 0,
-                                      cdr::FilterParmVector* parms = 0);
+                                      cdr::FilterParmVector* parms = 0,
+                                      cdr::String doc_id = "");
 
     /**
      * Filters a document accepting a document title for the filter instead
@@ -87,6 +94,7 @@ namespace cdr {
      *  @param  messages    cdr::String*.  If not null, nonerror messages
      *                      from the filter are placed (as XML) in this string
      *  @param  parms       vector of name-value pairs of parameters
+     *  @param  doc_id      CDR identifier of document
      *
      *  @return             cdr::String filtered document
      *
@@ -96,7 +104,8 @@ namespace cdr {
                                       const cdr::String&     filterTitle,
                                       cdr::db::Connection&   connection,
                                       cdr::String*           messages = 0,
-                                      cdr::FilterParmVector* parms = 0);
+                                      cdr::FilterParmVector* parms = 0,
+                                      cdr::String doc_id = "");
 
 }
 

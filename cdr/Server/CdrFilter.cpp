@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.13 2001-09-21 03:45:53 ameyer Exp $
+ * $Id: CdrFilter.cpp,v 1.14 2002-01-08 18:19:12 mruben Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2001/09/21 03:45:53  ameyer
+ * Added filterDocumentByScriptId and fitlerDocumentByScriptTitle
+ *
  * Revision 1.12  2001/09/20 20:13:31  mruben
  * added code for accessing versions -- needs testing
  *
@@ -48,6 +51,7 @@
 
 #include <cstdio>
 #include <sstream>
+#include <ctime>
 #include <string>
 #include <utility>
 #include <vector>
@@ -70,9 +74,44 @@ using std::wostringstream;
 
 namespace
 {
+  // decode URI escapes; supports % escapes and '+' to ' ' conversion
+  string uri_decode(string s)
+  {
+    string result;
+    result.reserve(s.size());
+    for (const char* p = s.c_str(); *p != '\0'; ++p)
+    {
+      switch (*p)
+      {
+        case '+':
+          result += ' ';
+          break;
+
+        case '%':
+        {
+          unsigned c = 0;
+          int n;
+          sscanf(p + 1, "%2x%n", &c, &n);
+          if (n == 0)
+            c = '%';
+          result += static_cast<char>(c);
+          p += n;
+          break;
+        }
+
+        default:
+          result += *p;
+      }
+    }
+
+    return result;
+  }
+  
   // unique type used to get CdrDocCtl
   const wchar_t CdrDocType[] = L"";
-  string filter_messages;
+
+  // unique type used to get filter by name
+  const wchar_t CdrFilterType[] = L"";
 
   class ParmList
   {
@@ -134,9 +173,10 @@ namespace
                           const wchar_t* type = NULL)
   {
     if (type == CdrDocType)
-      return cdr::getDocString(ui, connection, version, false);
+      return cdr::getDocString(ui, connection, version, true, false);
 
-    cdr::String docstring(cdr::getDocString(ui, connection, version));
+    cdr::String docstring(cdr::getDocString(ui, connection, version, true,
+                                            type != CdrFilterType));
 
     cdr::dom::Parser parser;
     parser.parse(docstring);
@@ -218,7 +258,7 @@ namespace
     if (rs.next())
       throw cdr::Exception(L"Multiple documents with title: " + name);
 
-    return getDocument(cdr::stringDocId(id), 0, connection);
+    return getDocument(cdr::stringDocId(id), 0, connection, CdrFilterType);
   }
 
 
@@ -258,6 +298,30 @@ namespace
   }
 
   /***************************************************************************/
+  /* per thread data used in handlers                                        */
+  /***************************************************************************/
+  class UriInfo
+  {
+    public:
+      UriInfo() : inuse(false), pos(0) {}
+
+      bool inuse;
+      string doc;
+      int pos;
+  };
+
+  struct ThreadData
+  {
+      ThreadData(cdr::db::Connection& c, cdr::String id)
+        : connection(c), DocId(id)
+        {}
+      string filter_messages;
+      vector<UriInfo> uri_list;
+      cdr::db::Connection& connection;
+      cdr::String DocId;
+  };
+
+  /***************************************************************************/
   /* Sablotron error/message handling callbacks                              */
   /***************************************************************************/
   MH_ERROR makeCode(void*, SablotHandle, int,
@@ -266,8 +330,8 @@ namespace
     return code;
   }
 
-  MH_ERROR messageHandler(void*, SablotHandle, MH_ERROR code, MH_LEVEL level,
-                          char** fields)
+  MH_ERROR messageHandler(void* thread_data, SablotHandle, MH_ERROR code,
+                          MH_LEVEL level, char** fields)
   {
     switch (level)
     {
@@ -300,9 +364,8 @@ namespace
               if (msg.length() != 0)
                 msg = msg.substr(0, msg.length() - 1);
 
-              filter_messages += "<message>"
-                               + msg
-                               + "</message>\n";
+              static_cast<ThreadData*>(thread_data)->filter_messages
+                += "<message>" + msg + "</message>\n";
             }
           }
 
@@ -317,133 +380,168 @@ namespace
   }
 
   /***************************************************************************/
-  /* Sablotron URI handling callbacks                                        */
+  /* Sablotron error/message handling callbacks                              */
   /***************************************************************************/
-  class UriInfo
+  int uri_open(void* data, SablotHandle, const char* scheme,
+               const char* rest, int* handle)
   {
-    public:
-      UriInfo() : inuse(false), pos(0) {}
-
-      bool inuse;
-      string doc;
-      int pos;
-  };
-
-  vector<UriInfo> uri_list;
-
-  int uri_open(void* data, SablotHandle, const char* scheme, const char* rest,
-               int* handle)
-  {
-    if (scheme != NULL && scheme[0] != '\0' && strcmp(scheme, "cdr") != 0
-            && strcmp(scheme, "cdrx") != 0)
+    if (scheme == NULL)
       return SH_ERR_UNSUPPORTED_SCHEME;
 
-    bool conditional = (strcmp(scheme, "cdrx") == 0);
-
+    ThreadData* thread_data = static_cast<ThreadData*>(data);
     UriInfo u;
-    cdr::db::Connection& connection = *static_cast<cdr::db::Connection*>(data);
 
-    while (*rest == '/')
-      ++rest;
-    if (*rest == '\0')
-      return 1;
-
-    // we don't let an exception go back through Sablotron since we're not
-    // sure if it's exception safe.  Instead we just return error if we can't
-    // get the document
-    try
+    bool conditional = (strcmp(scheme, "cdrx") == 0);
+    if (conditional || strcmp(scheme, "cdr") == 0)
     {
-      // ***TODO***
-      // for now we only implement simple UI to get the document XML and
-      // ui/CdrCtl to get the entire doc control string
-      cdr::String spec(rest);
-      cdr::String uid;
-      cdr::String version_str;
-      cdr::String type;
-      cdr::String::size_type sep = spec.find('/');
-      if (sep != string::npos)
-      {
-        uid = spec.substr(0, sep);
-        spec = spec.substr(sep + 1);
-      }
-      else
-      {
-        uid = spec;
-        spec = L"";
-      }
+      cdr::db::Connection& connection
+        = thread_data->connection;
 
-      if (!spec.empty())
+      while (*rest == '/')
+        ++rest;
+      if (*rest == '\0')
+        return 1;
+
+      // we don't let an exception go back through Sablotron since we're not
+      // sure if it's exception safe.  Instead we just return error if we can't
+      // get the document
+      try
       {
-        sep = spec.find('/');
+        // ***TODO***
+        // for now we only implement simple UI to get the document XML and
+        // ui/CdrCtl to get the entire doc control string
+        cdr::String spec(rest);
+        cdr::String uid;
+        cdr::String version_str;
+        cdr::String type;
+        cdr::String::size_type sep = spec.find('/');
         if (sep != string::npos)
         {
-          version_str = spec.substr(0, sep);
+          uid = spec.substr(0, sep);
+          if (uid == L"*")
+            uid = thread_data->DocId;
           spec = spec.substr(sep + 1);
         }
         else
         {
-          version_str = spec;
+          uid = spec;
           spec = L"";
         }
-        if (!version_str.empty()
-            && !isdigit(static_cast<unsigned char>(version_str[0]))
-            && version_str != "last")
+
+        if (!spec.empty())
         {
-          spec = version_str;
-          version_str = "";
+          sep = spec.find('/');
+          if (sep != string::npos)
+          {
+            version_str = spec.substr(0, sep);
+            spec = spec.substr(sep + 1);
+          }
+          else
+          {
+            version_str = spec;
+            spec = L"";
+          }
+          if (!version_str.empty()
+              && !isdigit(static_cast<unsigned char>(version_str[0]))
+              && version_str != "last")
+          {
+            spec = version_str;
+            version_str = "";
+          }
         }
+        type = spec;
+
+        int version = 0;
+        if (version_str == L"last")
+          version = cdr::getVersionNumber(uid.extractDocId(), connection);
+        else
+          if (!version_str.empty())
+            version = version_str.getInt();
+
+        if (type == L"CdrCtl")
+          u.doc = cdr::getDocCtlString(uid, version, connection,
+                               cdr::DocCtlComponents::DocTitle).toUtf8();
+        else
+          u.doc = getDocument(uid, version, connection).toUtf8();
       }
-      type = spec;
+      catch (...)
+      {
+        if (!conditional)
+          return 1;
 
-      int version = 0;
-      if (version_str == L"last")
-        version = cdr::getVersionNumber(uid.extractDocId(), connection);
-      else
-      if (!version_str.empty())
-        version = version_str.getInt();
-
-      if (type == L"CdrCtl")
-        u.doc = cdr::getDocCtlString(uid, version, connection,
-                                     cdr::DocCtlComponents::DocTitle).toUtf8();
-      else
-        u.doc = getDocument(uid, version, connection).toUtf8();
+        u.doc = "<CdrDocCtl><NotFound>Y</NotFound></CdrDocCtl>";
+      }
     }
-    catch (...)
+    else
+    if (strcmp(scheme, "cdrutil") == 0)
     {
-      if (!conditional)
-        return 1;
+      while (*rest == '/')
+        ++rest;
 
-      u.doc = "<CdrDocCtl><NotFound>Y</NotFound></CdrDocCtl>";
+      string function(rest);
+      string parms;
+      string::size_type idx = function.find('/');
+      if (idx != string::npos)
+      {
+        parms = function.substr(idx + 1);
+        function = function.substr(0, idx);
+        
+      }
+      
+      if (function == "docid")
+        u.doc = "<DocId>" + thread_data->DocId.toUtf8() + "</DocId>";
+      else
+      if (function == "date")
+      {
+        char buf[1024];
+        const char* format = "<Date><Year>%Y</Year><Month>%m</Month>"
+                             "<Day>%d</Day><Hour>%H</Hour>"
+                             "<Minute>%M</Minute><Second>%S</Second>"
+                             "</Date>";
+        if (!parms.empty())
+        {
+          parms = "<Date>" + uri_decode(parms) + "</Date>";
+          format = parms.c_str();
+        }
+
+        time_t tod = time(NULL);
+        strftime(buf, sizeof buf, format, localtime(&tod));
+        u.doc = buf;
+      }
+      else
+        return 1;
     }
+    else
+      return SH_ERR_UNSUPPORTED_SCHEME;
 
     u.inuse = true;
     int i;
-    int n = uri_list.size();
+    int n = thread_data->uri_list.size();
     for (i = 0; i < n; ++i)
-      if (!uri_list[i].inuse)
+      if (thread_data->uri_list[i].inuse)
       {
-        uri_list[i] = u;
+        thread_data->uri_list[i] = u;
         *handle = i;
         return 0;
       }
 
-    *handle = uri_list.size();
-    uri_list.push_back(u);
+    *handle = thread_data->uri_list.size();
+    thread_data->uri_list.push_back(u);
     return 0;
   }
 
-  int uri_close(void*, SablotHandle, int handle)
+  int uri_close(void* data, SablotHandle, int handle)
   {
-    uri_list[handle].inuse = false;
+    static_cast<ThreadData*>(data)->uri_list[handle].inuse = false;
     return 0;
   }
 
   int uri_getall(void* data, SablotHandle processor, const char* scheme,
                  const char* rest, char** buffer, int* count)
   {
-    int handle;
-
+    int handle = -1;
     *buffer = NULL;
+    ThreadData* thread_data = static_cast<ThreadData*>(data);
 
     try
     {
@@ -451,12 +549,15 @@ namespace
       if (rc)
         return 1;
 
-      *count = uri_list[handle].doc.size();
+      *count = thread_data->uri_list[handle].doc.size();
       *buffer = new char[*count + 1];
-      strcpy(*buffer, uri_list[handle].doc.c_str());
+      strcpy(*buffer, thread_data->uri_list[handle].doc.c_str());
+      uri_close(data, processor, handle);
     }
     catch (...)
     {
+      if (handle >= 0)
+        uri_close(data, processor, handle);
       delete[] *buffer;
       throw;
     }
@@ -470,9 +571,11 @@ namespace
     return 0;
   }
 
-  int uri_get(void*, SablotHandle, int handle, char* buffer, int* count)
+  int uri_get(void* data, SablotHandle, int handle, char* buffer, int* count)
   {
-    int n = uri_list[handle].doc.size() - uri_list[handle].pos;
+    ThreadData* thread_data = static_cast<ThreadData*>(data);
+    int n = thread_data->uri_list[handle].doc.size()
+          - thread_data->uri_list[handle].pos;
     if (*count > n)
       *count = n;
 
@@ -480,10 +583,12 @@ namespace
       *count = 0;
 
     if (*count > 0)
-      memcpy(buffer, uri_list[handle].doc.data() + uri_list[handle].pos,
+      memcpy(buffer,
+             thread_data->uri_list[handle].doc.data()
+                 + thread_data->uri_list[handle].pos,
              *count);
 
-    uri_list[handle].pos += *count;
+    thread_data->uri_list[handle].pos += *count;
 
     return 0;
   }
@@ -498,7 +603,8 @@ namespace
   /***************************************************************************/
   int processStrings(string script, string document,
                      string& result, cdr::db::Connection& connection,
-                     cdr::FilterParmVector* parms = NULL)
+                     cdr::FilterParmVector* parms,
+                     ThreadData* thread_data)
   {
     char* s = NULL;
     char* d = NULL;
@@ -535,13 +641,13 @@ namespace
           throw cdr::Exception(L"Cannot create XSLT processor");
 
         MessageHandler mh = { makeCode, messageHandler, messageHandler };
-        if (SablotRegHandler(proc, HLR_MESSAGE, &mh, NULL))
+        if (SablotRegHandler(proc, HLR_MESSAGE, &mh, thread_data))
           throw cdr::Exception(L"cannot register Sablotron message handler");
 
         SchemeHandler sh = { uri_getall, uri_free, uri_open,
                              uri_get, uri_put,  uri_close
         };
-        if (SablotRegHandler(proc, HLR_SCHEME, &sh, &connection))
+        if (SablotRegHandler(proc, HLR_SCHEME, &sh, thread_data))
           throw cdr::Exception(L"cannot register Sablotron scheme handler");
 
         char** pparms = p.g_parms();
@@ -584,7 +690,9 @@ cdr::String cdr::filterDocumentByScriptId (
         int filterId,
         cdr::db::Connection& connection,
         cdr::String* messages,
-        cdr::FilterParmVector* parms)
+        cdr::FilterParmVector* parms,
+        cdr::String doc_id)
+
 {
   // Convert filterId to filter itself
   std::string qry = "SELECT xml FROM document WHERE id = ?";
@@ -597,7 +705,8 @@ cdr::String cdr::filterDocumentByScriptId (
   cdr::String filterXml = rs.getString (1);
 
   // Invoke existing function, passing the script
-  return filterDocument (document, filterXml, connection, messages, parms);
+  return filterDocument (document, filterXml, connection, messages,
+                         parms, doc_id);
 }
 
 // Version that accepts filter document title
@@ -606,7 +715,8 @@ cdr::String cdr::filterDocumentByScriptTitle (
         const cdr::String& filterTitle,
         cdr::db::Connection& connection,
         cdr::String* messages,
-        cdr::FilterParmVector* parms)
+        cdr::FilterParmVector* parms,
+        cdr::String doc_id)
 {
   // Convert filterId to filter itself
   std::string qry = "SELECT xml FROM document WHERE title = ?";
@@ -624,7 +734,8 @@ cdr::String cdr::filterDocumentByScriptTitle (
                             + filterTitle);
 
   // Invoke existing function, passing the script
-  return filterDocument (document, filterXml, connection, messages, parms);
+  return filterDocument (document, filterXml, connection, messages,
+                         parms, doc_id);
 }
 
 // Primary version, using string
@@ -632,16 +743,17 @@ cdr::String cdr::filterDocument(const cdr::String& document,
                            const cdr::String& filter,
                            cdr::db::Connection& connection,
                            cdr::String* messages,
-                           cdr::FilterParmVector* parms)
+                           cdr::FilterParmVector* parms,
+                           cdr::String doc_id)
 {
-  filter_messages = "";
   string result;
+  ThreadData thread_data(connection, doc_id);
   if (processStrings(filter.toUtf8(), document.toUtf8(), result,
-                     connection, parms))
+                     connection, parms, &thread_data))
       throw cdr::Exception(L"error in XSLT processing");
 
   if (messages != NULL)
-    *messages = filter_messages;
+    *messages = thread_data.filter_messages;
 
   return result;
 }
@@ -708,7 +820,8 @@ cdr::String cdr::filter(cdr::Session& session,
       {
         cdr::String name = child.getNodeName();
         if (name == L"Filter")
-          filters.push_back(getDocument(child, connection, NULL, NULL, &ui));
+          filters.push_back(getDocument(child, connection, CdrFilterType,
+                                        NULL, &ui));
         else
         if (name == L"Parms")
         {
@@ -749,20 +862,21 @@ cdr::String cdr::filter(cdr::Session& session,
 
   string doc(document.toUtf8());
   string result(doc);
-  filter_messages = "";
+  ThreadData thread_data(connection, ui);
   for (std::vector<cdr::String>::iterator i = filters.begin();
        i != filters.end();
        ++i)
   {
-    if (processStrings(i->toUtf8(), doc, result, connection, &pvector))
+    if (processStrings(i->toUtf8(), doc, result, connection, &pvector,
+                       &thread_data))
       throw cdr::Exception(L"error in XSLT processing");
 
     doc = result;
   }
 
   result = output ? "<Document><![CDATA[" + result + "]]></Document>\n" : "";
-  if (filter_messages.length() != 0)
-    result += "<Messages>" + filter_messages + "</Messages>\n";
+  if (thread_data.filter_messages.length() != 0)
+    result += "<Messages>" + thread_data.filter_messages + "</Messages>\n";
 
   return L"<CdrFilterResp>"
        + result
