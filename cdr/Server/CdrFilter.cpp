@@ -1,9 +1,13 @@
 /*
- * $Id: CdrFilter.cpp,v 1.14 2002-01-08 18:19:12 mruben Exp $
+ * $Id: CdrFilter.cpp,v 1.15 2002-01-23 18:23:13 mruben Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2002/01/08 18:19:12  mruben
+ * Modified for reentrance.
+ * Added support for nonstandard scheme cdrutil:
+ *
  * Revision 1.13  2001/09/21 03:45:53  ameyer
  * Added filterDocumentByScriptId and fitlerDocumentByScriptTitle
  *
@@ -460,7 +464,7 @@ namespace
 
         if (type == L"CdrCtl")
           u.doc = cdr::getDocCtlString(uid, version, connection,
-                               cdr::DocCtlComponents::DocTitle).toUtf8();
+                               cdr::DocCtlComponents::all).toUtf8();
         else
           u.doc = getDocument(uid, version, connection).toUtf8();
       }
