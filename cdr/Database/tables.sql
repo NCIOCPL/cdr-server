@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.17 2000-10-27 11:09:14 bkline Exp $
+ * $Id: tables.sql,v 1.18 2000-11-30 23:21:39 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2000/10/27 11:09:14  bkline
+ * Added DDL for query_term, query_term_rule, and query_term_def tables.
+ *
  * Revision 1.16  2000/10/17 17:55:42  mruben
  * added/modified tables for version control
  *
@@ -192,9 +195,10 @@ CREATE TABLE format
  *               the document.
  *   xml_schema  XML schema which identifies requirements of the elements
  *               of documents of this type; required even for "unstrucutred"
- *               document types
+ *               document types.
+ *  schema_date  Date/time when schema was last modified.
  *      comment  optional free-text description of additional characteristics
- *               of documents of this type
+ *               of documents of this type.
  */
 CREATE TABLE doc_type
          (id INTEGER IDENTITY PRIMARY KEY,
@@ -203,7 +207,8 @@ CREATE TABLE doc_type
      created DATETIME NOT NULL,
   versioning CHAR NOT NULL DEFAULT 'Y',
          dtd NTEXT NOT NULL,
-  xml_schema NTEXT NOT NULL,
+  xml_schema NTEXT NOT NULL DEFAULT GETDATE(),
+ schema_date DATETIME NOT NULL,
      comment VARCHAR(255) NULL)
 
 /* 
