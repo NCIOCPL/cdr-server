@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.4 2000-04-19 18:29:52 bkline Exp $
+ * $Id: CdrString.h,v 1.5 2000-04-21 14:01:17 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/04/19 18:29:52  bkline
+ * Added StringList typedef.
+ *
  * Revision 1.3  2000/04/17 21:28:01  bkline
  * Made cdr::String nullable.
  *
@@ -42,6 +45,7 @@ namespace cdr {
         String(const StdWstring& s) : StdWstring(s), null(false) {}
         String(const char* s) : null(false) { utf8ToUtf16(s); }
         String(const std::string& s) : null(false) { utf8ToUtf16(s.c_str()); }
+        String(size_t n, wchar_t c) : StdWstring(n, c), null(false) {}
         String(const DOMString& s) 
             : StdWstring(s.rawBuffer(), s.length()), null(false) {}
         bool isNull() const { return null; }
