@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.19 2001-05-21 20:29:31 bkline Exp $
+ * $Id: CdrCommand.h,v 1.20 2001-06-28 17:39:32 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2001/05/21 20:29:31  bkline
+ * Added commands for query term definition support.
+ *
  * Revision 1.18  2001/05/17 17:39:09  ameyer
  * Add link administration transaction handlers.
  *
@@ -814,6 +817,21 @@ namespace cdr {
                                db::Connection&   conn);
 
     /**
+     * Send the complete set of CSS stylesheets to the client.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String getCssFiles(Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
+
+    /**
      * Load the row from the doc_type table for the requested document type.
      * Send back the schema and other related document type information.
      *
@@ -894,10 +912,13 @@ namespace cdr {
      * Converts a DOM node to its String representation
      *
      *  @param      node        contains the XML to be converted.
+     *  @param      contents_only
+     *                          true if only contents should be output
+     *                          i.e., no tag if argument is element
      *  @return                 String object containing the XML
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern String DOMtoString(const dom::Node&);
+    extern String DOMtoString(const dom::Node&, bool contents_only = false);
 
     /**
      * Shuts down the CDR Server.
