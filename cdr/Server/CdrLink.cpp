@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.7 2001-09-25 14:56:35 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.8 2001-11-06 21:41:24 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2001/09/25 14:56:35  ameyer
+ * Bob added preliminary version of pasteLink().
+ *
  * Revision 1.6  2001/05/17 17:31:43  ameyer
  * Added administrative functions to maintain the link tables.
  * Made minor modifications in error displays and catching errors.
@@ -1550,7 +1553,7 @@ static void updateFragList (
     // Add each one
     cdr::StringSet::const_iterator i = fragSet.begin();
     while (i != fragSet.end()) {
-        qry = "INSERT doc_id, fragment INTO link_fragment VALUES (?, ?)";
+        qry = "INSERT INTO link_fragment (doc_id, fragment) VALUES (?, ?)";
         cdr::db::PreparedStatement stmt = conn.prepareStatement (qry);
         stmt.setInt    (1, docId);
         stmt.setString (2, *i);
