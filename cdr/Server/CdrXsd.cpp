@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.6 2000-05-03 15:22:08 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.7 2000-05-03 21:57:57 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/05/03 15:22:08  bkline
+ * Added lookup hash for attributes.
+ *
  * Revision 1.5  2000/04/26 01:29:23  bkline
  * Added more lookup support, for finding a element's type when the element
  * is encountered in an unexpected place (so we can validate it anyway) and
@@ -148,7 +151,8 @@ cdr::xsd::Schema::~Schema()
  * Finds this node's type in the collection of types.  Caches the answer
  * so it doesn't have to do the search more than once.
  */
-const cdr::xsd::Type* cdr::xsd::Node::resolveType(const cdr::xsd::Schema& schema)
+const cdr::xsd::Type* 
+cdr::xsd::Node::resolveType(const cdr::xsd::Schema& schema)
 {
     if (!type)
         type = schema.lookupType(typeName);
