@@ -1,10 +1,16 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.15 2002-02-26 22:39:39 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.16 2002-03-15 21:53:12 bkline Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2002/02/26 22:39:39  ameyer
+ * Now updating document.val_status with 'M' if document is malformed.
+ * (previous comment about this was in error.)
+ * Now catching DOM exception if schema parse fails to throw a more
+ * informative cdr::Exception to report doctype and that it was a schema.
+ *
  * Revision 1.14  2001/09/25 14:22:57  ameyer
  * Updated call to validateDocAgainstSchema for new parameter.
  *
@@ -272,10 +278,11 @@ cdr::String cdr::execValidateDoc (
     }
 
     // If not malformed, note the outcome of the validation.
-    if (status != L"M")
+    if (wcscmp(status, L"M"))
         status = errList.size() > 0 ? L"I" : L"V";
 
-    // Update database status
+    // Update database and object status
+    docObj.setValStatus(status);
     if (validRule == cdr::UpdateUnconditionally ||
             (validRule == cdr::UpdateIfValid && errList.size() == 0))
         setDocStatus (docObj.getConn(), docObj.getId(), status);

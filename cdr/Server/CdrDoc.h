@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.12 2002-02-07 14:38:06 bkline Exp $
+ * $Id: CdrDoc.h,v 1.13 2002-03-15 21:53:11 bkline Exp $
  *
  */
 
@@ -197,6 +197,7 @@ namespace cdr {
             cdr::String getComment()       {return Comment;}
             cdr::db::Connection& getConn() {return docDbConn;}
             cdr::dom::Element& getDocumentElement() {return docElem;}
+            void setValStatus(const cdr::String& vs) { ValStatus = vs; }
 
             // Get errors as an STL list of strings
             cdr::StringList& getErrList() {return errList;}
