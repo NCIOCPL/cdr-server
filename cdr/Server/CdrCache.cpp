@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCache.cpp,v 1.3 2004-05-26 01:14:49 ameyer Exp $
+ * $Id: CdrCache.cpp,v 1.4 2004-07-02 01:26:36 ameyer Exp $
  *
  * Specialized cacheing for performance optimization, where useful.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/05/26 01:14:49  ameyer
+ * New handling of PdqKey and cdr:ref attributes.
+ *
  * Revision 1.2  2004/05/25 22:39:18  ameyer
  * This version gets PdqKey and cdr:ref for a parent from the terminology
  * link in the child record.  That works, and mirrors what used to be done,
@@ -15,7 +18,9 @@
  *
  */
 
-#include <iostream> // For debug
+#include <iostream> // Debug
+#include <sstream>
+#include <time.h>
 
 #include "CdrCommand.h"
 #include "CdrVersion.h"
@@ -39,46 +44,96 @@ static bool getCacheTypes(cdr::String, bool *);
 //   system wide cacheing is not in effect.
 static cdr::cache::TERM_MAP *S_pTermMap = 0;
 
-// Name of the mutex preventing two separate threads from reading
-//   or updating the system-wide static S_pTermMap
+// Count of the number of times cacheing has been turned on.
+// If process A turns on cacheing, then B turns it on, then either
+//   A or B turns it off, we decrement the count and only turn
+//   cacheing off when the count reaches 0.
+// But see also S_termCacheStartTime.
+static int S_cacheOnCount = 0;
+
+// Time when the cache was initialized
+// If it's too long, clear it
+static time_t S_cacheStartTime = (time_t) 0;
+
+// Name of the mutex preventing two separate threads from conflicting
+//   reads or updates of the system-wide static S_pTermMap
 static const char* const termCacheMutexName = "TermCacheMutex";
 
 // Constructor
 cdr::cache::Term::Term (
     int docId
 ) {
-    char buf[40];
-
     id     = docId;
     typeOK = true;
-    sprintf (buf, " cdr:ref=\"%d\"", id);
-    cdrRef = buf;
-std::cout << "Constructing Term, ref: " << cdrRef << "\n";
+
+    std::ostringstream os;
+    os << " cdr:ref=\"" << cdr::stringDocId(id).toUtf8() << "\"";
+
+    cdrRef = os.str();
+    // std::cout << "Constructing Term, ref: " << cdrRef << "\n";
 }
 
 // Turn system-wide cacheing on or off.  Default start state is off
 bool cdr::cache::Term::initTermCache(
     bool state
 ) {
-    // Remember what it is before change
-    bool prevState = S_pTermMap ? true : false;
+    // Protect against multiple access conflicts
+    HANDLE mutex = CreateMutex(0, false, termCacheMutexName);
+    if (mutex != 0) {
+        cdr::Lock lock(mutex, 10000);
+        if (lock.m) {
+            // Remember what it is before change
+            bool prevState = S_cacheOnCount > 0 ? true : false;
 
-    // Whether stopping or starting, if it was already started,
-    //   clear cache so we can reload terms from the database.
-    if (prevState)
-        cdr::cache::Term::clearMap(S_pTermMap);
+            // If turning it on
+            if (state) {
+                // One more process wants it on
+                ++S_cacheOnCount;
 
-    if (state)
-        // Create a new map of term doc ids to Term objects
-        S_pTermMap = new cdr::cache::TERM_MAP;
+                // And turn it on if needed by creating a new
+                //   static map of term doc ids to Term objects
+                if (!prevState) {
+                    S_pTermMap = new cdr::cache::TERM_MAP;
+                    time(&S_cacheStartTime);
+                }
+            }
 
-    return prevState;
+            // If turning it off
+            else {
+                // Decrement with sanity
+                if (--S_cacheOnCount < 0)
+                    S_cacheOnCount = 0;
+
+                // Turn off by deleting the map if no process is
+                //   still expecting the cache to be on
+                if (S_cacheOnCount < 1) {
+                    cdr::cache::Term::clearMap(S_pTermMap);
+                    S_cacheStartTime = (time_t) 0;
+                }
+            }
+
+            // Release mutex
+            CloseHandle(mutex);
+
+            // Tell caller where we were
+            return prevState;
+        }
+    }
+
+    // If we got here we either couldn't create or find the
+    //   mutex, or we couldn't acquire the lock
+    // Neither should ever happen
+    // Denormalization should take a fraction of a second
+    std::wostringstream errMsg;
+    errMsg << L"initTermCache: can't get mutex, GetLastError="
+           << GetLastError();
+    throw cdr::Exception (errMsg.str());
 }
 
 // Retrieve a utf-8 format string containing the denormalization
 //  for a Term document and all its parent Term documents ...
 std::string cdr::cache::Term::denormalizeTermId(
-    const cdr::String&   docIdStr,
+    const cdr::String&   xsltParms,
     cdr::db::Connection& conn
 ) {
     // Pointer to static system-wide map, or to local map on stack,
@@ -87,6 +142,8 @@ std::string cdr::cache::Term::denormalizeTermId(
 
     HANDLE mutex     = 0;       // Synchronize access to system-wide TERM_MAP
     bool   haveMutex = false;   // True = must release mutex
+    cdr::String docIdStr;       // Document ID as a string
+    bool   upcode;              // True=upcode as well as denormalize
 
     // String to return to caller
     std::string termsXml = "";
@@ -94,13 +151,29 @@ std::string cdr::cache::Term::denormalizeTermId(
     // If static map, try to acquire it
     if (S_pTermMap) {
 
-        HANDLE mutex = CreateMutex(0, false, termCacheMutexName);
-        if (mutex != 0) {
-            cdr::Lock lock(mutex, 3000);
-            if (lock.m) {
-                // Point to system wide cache map
-                pMap      = S_pTermMap;
-                haveMutex = true;
+        // Make sure the map isn't too stale
+        time_t now;
+        time(&now);
+        if (now - S_cacheStartTime > MAX_CACHE_DURATION) {
+            // Clear it
+            while (S_cacheOnCount > 0)
+                initTermCache (false);
+
+            // Alert somebody - it's a bug
+            // XXX Send mail? XXX Throw exception?
+            cdr::log::pThreadLog->Write("denormalizeTermId: ",
+                    "Found and deleted stale Term denormalization map");
+        }
+
+        else {
+            HANDLE mutex = CreateMutex(0, false, termCacheMutexName);
+            if (mutex != 0) {
+                cdr::Lock lock(mutex, 3000);
+                if (lock.m) {
+                    // Point to system wide cache map
+                    pMap      = S_pTermMap;
+                    haveMutex = true;
+                }
             }
         }
     }
@@ -111,12 +184,32 @@ std::string cdr::cache::Term::denormalizeTermId(
     if (!haveMutex)
         pMap = new TERM_MAP;
 
+    // Parse the passed xslt parameters into docIdStr and optional
+    //   suppress upcode indicator
+    // Any slash delimited parameter after a docIdStr suppresses upcoding
+    size_t parmPos = -1;
+    if ((parmPos = xsltParms.find (L"/")) != -1) {
+        docIdStr = xsltParms.substr (0, parmPos);
+        upcode   = false;
+    }
+    else {
+        docIdStr = xsltParms;
+        upcode   = true;
+    }
+    // std::cout << "parms='" << xsltParms.toUtf8() << "'  docIdStr='" << docIdStr.toUtf8() << "'  upcode=" << upcode << "\n";
+
     // Denormalize the term, or find an existing denormalization
     Term *t = getTerm (conn, pMap, 0, docIdStr);
 
     // If it was a legitimate term, successfully denormalized
-    if (t)
-        termsXml = t->getFamilyXml();
+    if (t) {
+        // If upcoding, get the entire family
+        if (upcode)
+            termsXml = t->getFamilyXml();
+        // Else just the preferred name
+        else
+            termsXml = t->getNameXml();
+    }
 
     // Release resources
     if (haveMutex)
@@ -204,7 +297,7 @@ cdr::cache::Term * cdr::cache::Term::getTerm(
 
             // Save PdqKey to use as an attribute
             if (nodeName == L"PdqKey")
-              pTerm->pdqKey = " PdqKey=\"" +
+              pTerm->pdqKey = " PdqKey=\"Term:" +
                               cdr::dom::getTextContent(node).toUtf8() +
                               "\"";
 
@@ -228,6 +321,7 @@ cdr::cache::Term * cdr::cache::Term::getTerm(
               }
             }
 
+            // If we're trying to upcode as well as denormalize the term
             // Look in TermRelationship for ParentTerm's ID
             // ASSUMPTION: TermType is found before TermRelationship
             else if (nodeName == L"TermRelationship") {
@@ -257,7 +351,7 @@ cdr::cache::Term * cdr::cache::Term::getTerm(
                       // Process this one now by getting it and recursively
                       //   getting its parent terms
                       pParentTerm = cdr::cache::Term::getTerm (conn, pMap,
-                                                    depth + 1, parentIdStr);
+                                            depth + 1, parentIdStr);
 
                       // If we haven't already seen this one, process it
                       if (!pTerm->parentPtrs.count(pParentTerm)) {
@@ -304,10 +398,9 @@ cdr::cache::Term * cdr::cache::Term::getTerm(
 // Get preferred name as XML string
 std::string cdr::cache::Term::getNameXml() {
 
-    if (nameXml != "")
-        nameXml = "<Term>\n"
-                  " <PreferredName>" + name + "</PreferredName>\n"
-                  "</Term>\n";
+    if (nameXml == "")
+        // If not already seen, create the XML
+        nameXml = makeTermStart() + "</Term\n>";
 
     return nameXml;
 }
@@ -316,15 +409,8 @@ std::string cdr::cache::Term::getNameXml() {
 std::string cdr::cache::Term::getFamilyXml() {
 
     if (familyXml == "") {
-        // Main term preferred name and attributes
-        // XML namespace declaration required in order to use cdrRef
-        //   which contains "cdr:ref='...'".  XSLT processor will
-        //   complain if we don't declare cdr namespace prefix.
-        familyXml = "<Term xmlns:cdr = 'cips.nci.nih.gov/cdr'";
-        if (pdqKey.size() > 0)
-            familyXml += pdqKey;
-        familyXml += cdrRef + ">\n <PreferredName>" + name +
-                     "</PreferredName>\n";
+        // Main term, attributes, and preferred name
+        familyXml = makeTermStart();
 
         // Get name of each parent
         PARENT_SET::iterator parIter = parentPtrs.begin();
@@ -342,10 +428,30 @@ std::string cdr::cache::Term::getFamilyXml() {
         }
 
         familyXml += "</Term>\n";
-std::cout << "familyXml = " << familyXml << "\n";
+        //std::cout << "familyXml = " << familyXml << "\n";
     }
 
     return familyXml;
+}
+
+// Create opening part of Term with namespace and attributes and pref name
+std::string cdr::cache::Term::makeTermStart() {
+
+    // XML namespace declaration required in order to use cdrRef
+    //   which contains "cdr:ref='...'".  XSLT processor will
+    //   complain if we don't declare cdr namespace prefix.
+    std::string termStart = "<Term xmlns:cdr = 'cips.nci.nih.gov/cdr'";
+
+    // Add PdqKey attribute
+    if (pdqKey.size() > 0)
+        termStart += pdqKey;
+
+    // Add cdr:ref attribute + preferred name element
+    termStart += cdrRef + ">\n <PreferredName>" + name + "</PreferredName>\n";
+
+    // Return partially formed XML
+    // Caller must add more data if desired plus Term end tag
+    return termStart;
 }
 
 // Empty and release a map
