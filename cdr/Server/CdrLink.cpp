@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.9 2001-12-19 15:49:29 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.10 2002-01-22 18:59:49 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2001/12/19 15:49:29  ameyer
+ * Can now update link tables without performing validation.
+ *
  * Revision 1.8  2001/11/06 21:41:24  bkline
  * Fixed a SQL bug.
  *
@@ -1473,8 +1476,8 @@ static int checkMissedFrags (
     while (rs.next()) {
 
         // Get data from the link
-        rs.getString (1);
-        rs.getInt    (2);
+        frag  = rs.getString (1);
+        srcId = rs.getInt    (2);
 
         // Is it pointing to a fragment actually in the current doc?
         if (fragSet.find (frag) == fragSet.end()) {
