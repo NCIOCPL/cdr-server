@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.92 2004-01-13 21:45:39 bkline Exp $
+ * $Id: tables.sql,v 1.93 2004-01-14 13:11:01 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.92  2004/01/13 21:45:39  bkline
+ * Added `updated' column to ctgov_download_stats table.
+ *
  * Revision 1.91  2004/01/13 21:41:19  bkline
  * Created table ctgov_download_stats.
  *
@@ -1859,7 +1862,8 @@ GO
 /*
  * Remembers statistics from download jobs for trials from ClinicalTrials.gov.
  *
- *           dt  date/time of download job (primary key)
+ *           id  primary key
+ *           dt  date/time of download job
  * total_trials  number of cancer trials that meet query criteria
  *   new_trials  new active and approved-not yet active trials
  *      updated  Updates to previously downloaded trials
@@ -1870,7 +1874,8 @@ GO
  *       closed  Skipped closed and completed trials
  */
 CREATE TABLE ctgov_download_stats
-         (dt DATETIME NOT NULL PRIMARY KEY,
+         (id INTEGER  IDENTITY PRIMARY KEY,
+          dt DATETIME NOT NULL,
 total_trials INTEGER  NOT NULL,
   new_trials INTEGER  NOT NULL,
      updated INTEGER  NOT NULL,
@@ -1879,3 +1884,4 @@ total_trials INTEGER  NOT NULL,
   duplicates INTEGER  NOT NULL,
 out_of_scope INTEGER  NOT NULL,
       closed INTEGER  NOT NULL)
+GO
