@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.34 2002-09-13 21:53:04 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.35 2003-01-14 19:41:11 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2002/09/13 21:53:04  bkline
+ * Testing readonly cvs account.
+ *
  * Revision 1.33  2002/09/13 21:48:17  anon
  * Testing anonymous CVS.
  *
@@ -153,6 +156,7 @@ static int              handleNextClient(int sock);
 static void             logTopLevelFailure(const cdr::String what,
                                            unsigned long code);
 static bool             timeToShutdown = false;
+static bool             logCommands = true;
 static cdr::log::Log    log;
 
 /**
@@ -171,6 +175,10 @@ main(int ac, char **av)
         SET_HEAP_DEBUGGING(true);
     }
 
+    // Find out whether we should suppress command logging.
+    if (getenv("SUPPRESS_CDR_COMMAND_LOGGING"))
+        logCommands = false;
+    
     // In case of catastrophe, don't hang up on console
     if (!getenv ("NOCATCHCRASH"))
         set_exception_catcher ("d:/cdr/log/CdrServer.crash");
@@ -430,7 +438,6 @@ int readRequest(int fd, std::string& request, const cdr::String& when) {
     return totalRead;
 }
 
-#ifdef _DEBUG
 void logCommand(cdr::db::Connection& conn, const std::string& buf)
 {
     try {
@@ -443,7 +450,6 @@ void logCommand(cdr::db::Connection& conn, const std::string& buf)
     }
     catch (...) {}
 }
-#endif
 
 /**
  * Parses command set buffer, extracts each command and has it
@@ -454,9 +460,8 @@ void processCommands(int fd, const std::string& buf,
                      cdr::db::Connection& conn,
                      const cdr::String& when)
 {
-#ifdef _DEBUG
-    logCommand(conn, buf);
-#endif
+    if (logCommands)
+        logCommand(conn, buf);
     try {
         cdr::dom::Parser parser;
         parser.parse(buf);
