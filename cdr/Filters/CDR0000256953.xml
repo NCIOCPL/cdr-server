@@ -19,32 +19,62 @@
                  <br />
              <b><xsl:apply-templates select="Title"/></b><br />
               </xsl:if>
-              <table border='1' valign='top' cellspacing='0' cellpadding='0' width='90%'>
-              <xsl:attribute name='border'>1</xsl:attribute>
-              <xsl:for-each select="TGroup/THead/Row">
-              <tr>
+              <table border='bordercolorlight' valign='top' cellspacing='0' cellpadding='10' width='95%'>
+            <!--  <xsl:attribute name='border'>1</xsl:attribute>-->              <xsl:for-each select="TGroup/THead/Row">
+               <tr>
               <xsl:for-each select="entry">
-              <th><b><xsl:apply-templates/></b></th>
+              <xsl:variable name="span1" select="substring(@NameSt,4,1)"/>
+              <xsl:variable name="span2" select="substring(@NameEnd,4,2)"/>
+              
+              <xsl:if test="@NameEnd">
+              <td colspan='{$span2}' width='50%'><b><xsl:value-of select="."/></b></td>
+              </xsl:if>
+              <xsl:if test="not(@NameEnd)">
+              <td><b><xsl:value-of select="."/></b></td>
+              </xsl:if>
+                
               </xsl:for-each>
               </tr>
               </xsl:for-each>
+              
+              
+              
               <xsl:for-each select="TGroup/TBody/Row">
               <tr>
-              <xsl:for-each select='entry'>
+              <xsl:for-each select="entry">
               <xsl:variable name="cols" select="../../..@Cols"/>
               <xsl:if test="not(@NameEnd)"> 
               <xsl:if test="@MoreRows">
               <xsl:variable name="rows" select="@MoreRows"/>
-              <td rowspan='{$rows+1}'><xsl:apply-templates select="."/></td>
+              <xsl:choose>
+              <xsl:when test="contains(.,'--')">
+              <td rowspan='{$rows+1}' align='center'><xsl:apply-templates select="."/></td>
+              </xsl:when>
+              <xsl:otherwise>
+                                               
+               <td rowspan='{$rows+1}' align='left'><xsl:apply-templates select="."/>&#160;</td>
+               
+
+
+              </xsl:otherwise>
+              </xsl:choose>
               </xsl:if>
+ 
               <xsl:if test="not(@MoreRows)">
-              <td ><xsl:apply-templates select="."/></td>
-              </xsl:if>
-              </xsl:if>
+              <td align='left' ><xsl:apply-templates select="."/>&#160;</td>
+               </xsl:if>
+               </xsl:if>
               <xsl:if test="@NameEnd"> 
-              
-             <td colspan='{$cols}' width='80%'><xsl:apply-templates select="."/></td>
-            </xsl:if>
+               <xsl:variable name="cols2" select="substring(@NameEnd,4,2)"/>
+              <xsl:if test="@MoreRows">
+              <xsl:variable name="rows" select="@MoreRows"/>
+              <td align='left' rowspan='{$rows+1}' colspan='{$cols2}'   width='50%'><xsl:apply-templates select="."/>&#160;</td>
+                </xsl:if>
+              <xsl:if test="not(@MoreRows)">
+<td align='left' colspan='{$cols2}' width='50%'><xsl:apply-templates select="."/>&#160;</td>
+                                      
+              </xsl:if> 
+              </xsl:if>
        
             </xsl:for-each>
             </tr>
