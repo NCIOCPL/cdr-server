@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.11 2000-10-25 19:06:01 mruben Exp $
+ * $Id: CdrString.cpp,v 1.12 2001-03-01 23:28:38 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2000/10/25 19:06:01  mruben
+ * added functions to put dates in correct format
+ *
  * Revision 1.10  2000/10/18 03:19:15  ameyer
  * Added optional parameter to tagWrap allowing attributes to be included.
  *
@@ -134,10 +137,10 @@ cdr::String cdr::entConvert (
     wchar_t *entities[max_entities];    // Table of pointers to strings
     int     c;                          // Single char from input stream
 
-    static bool first_time = true;
+    static bool s_first_time = true;
 
     // Initialize table on first call
-    if (first_time) {
+    if (s_first_time) {
 
         // Initialize entities table to null pointers
         memset (entities, 0, sizeof(entities));
@@ -147,6 +150,8 @@ cdr::String cdr::entConvert (
         entities['<'] = L"&lt;";
         entities['>'] = L"&gt;";
         entities['&'] = L"&amp;";
+
+        s_first_time = false;
     }
 
     // Convert string
