@@ -12,10 +12,16 @@
                            version = "1.0"
            exclude-result-prefixes = "cdr">
 
-<xsl:output                 method = "xml" 
+  <xsl:include href = "cdr:name:Module: Vendor Filter Templates"/>
+
+  <xsl:output               method = "xml" 
               omit-xml-declaration = "no"
                           encoding = "UTF-8"
                             indent = 'yes'/>
+
+  <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
+  <xsl:param                      name = "DateFirstPub"
+                                select = "''"/>
 
   <!-- ===========================================================
        Root element
@@ -356,12 +362,23 @@
 <!-- ===================================================================
             Copy Date First Published and Date Last Modified
      ================================================================== -->
-     <xsl:if                               test = "CdrDocCtl/FirstPub/Date">
+  <xsl:variable                   name = "CtrlBlk" 
+                                select = "document('cdr:/*/CdrCtl')"/>
+  <xsl:choose>
+    <xsl:when                     test = "$CtrlBlk/CdrDocCtl/FirstPub/Date">
       <DateFirstPublished>
-       <xsl:value-of                     select = "substring-before
-                                                (CdrDocCtl/FirstPub/Date,'T')"/>
+      <xsl:value-of             select = "substring-before($CtrlBlk/
+                                            CdrDocCtl/FirstPub/Date,'T')"/>
       </DateFirstPublished>
-     </xsl:if>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:call-template          name = "getDateFirstPub">
+        <xsl:with-param           name = "date"
+                                select = "$DateFirstPub"/>
+      </xsl:call-template>    
+    </xsl:otherwise>
+  </xsl:choose>
+
 
      <xsl:apply-templates                select = "DateLastModified"
                                          mode   = "copy"/>
@@ -1243,34 +1260,6 @@
       <xsl:apply-templates/>
    </xsl:element>
 </xsl:template>
-
-
-<!-- ==============================================================
-     Template for to do nothing
-     ============================================================== -->
-<xsl:template                match = "PdqKey|Comment">
-</xsl:template>
- <xsl:template                  match = "Comment|PdqKey"
-                                 mode = "copy"/>
-
-
-<!-- ================================================================ 
-     Template rules used to do XML to XML transformations which
-     copies any attribute or element node.
-     ================================================================ -->
- <xsl:template               match = "@*"
-                              mode = "copy">
-  <xsl:copy/>
- </xsl:template>
-
- <xsl:template               match = "*"
-                              mode = "copy">
-  <xsl:element                name = "{name()}">
-   <xsl:apply-templates     select = "@*" 
-                              mode = "copy"/>
-   <xsl:apply-templates       mode = "copy"/>
-  </xsl:element>
- </xsl:template>
 
 </xsl:transform>
 ]]>
