@@ -1,7 +1,11 @@
 /*
- * $Id: CdrException.h,v 1.3 2000-05-04 01:14:32 bkline Exp $
+ * $Id: CdrException.h,v 1.4 2000-05-15 19:12:19 mruben Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2000/05/04 01:14:32  bkline
+ * Added ccdoc comments.  Changed getString() to what() (modeled after
+ * standard exception class).
+ *
  * Revision 1.2  2000/04/22 18:57:38  bkline
  * Added ccdoc comment markers for namespaces and @pkg directives.
  *
@@ -40,6 +44,14 @@ namespace cdr {
          *                      string.
          */
         Exception(const wchar_t *s) : str(s) {}
+
+        /**
+         * Creates a new <code>Exception</code> object from
+         * <code>String</code> object
+         *
+         *  @param  s           address of String
+         */
+        Exception(const String& s) : str(s) {}
 
         /**
          * Creates a new <code>Exception</code> object from a pair of
