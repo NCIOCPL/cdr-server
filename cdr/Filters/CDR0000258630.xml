@@ -16,206 +16,68 @@
               omit-xml-declaration = "no"
                           encoding = "UTF-8"/>
 
-<!-- 
-======================================================================
-Filter to create properly formatted Citation elements for publication.
-This filter has been based on Filter CDR46 of the Summary 
-Denomalization filter set but has been adjusted for the 
-InScopeProtocol citations.
-====================================================================== -->
-<xsl:template                match = "PublishedResults/Citation">
- <!-- xsl:attribute               name = "ref">
-  <xsl:value-of             select = "@cdr:ref"/>
- </xsl:attribute -->
+ <!-- 
+ ======================================================================
+ Filter to create properly formatted Citation elements for publication.
+ This filter has been based on Filter CDR46 of the Summary 
+ Denomalization filter set but has been adjusted for the 
+ InScopeProtocol citations.
+ ====================================================================== -->
+ <xsl:template               match = "PublishedResults/Citation">
  
- <xsl:apply-templates       select = "./PDQCitation | ./PubmedArticle"/>
-</xsl:template>     
+  <xsl:apply-templates      select = "./PDQCitation | ./PubmedArticle"/>
+
+ </xsl:template>     
 
  
  <!-- 
  ================================================================
  A)  CancerLit/PDQ Citation Formatting
  ================================================================ -->
-<xsl:template                match = "PDQCitation">
-     <xsl:apply-templates   select = "AuthorList"/>
-     <xsl:apply-templates   select = "CitationTitle"/>
-     <xsl:apply-templates   select = "CitationType">
-      <xsl:with-param         name = "citType"
+ <xsl:template               match = "PDQCitation">
+  <xsl:apply-templates      select = "AuthorList"/>
+  <xsl:apply-templates      select = "CitationTitle"/>
+  <xsl:apply-templates      select = "CitationType">
+   <xsl:with-param            name = "citType"
                             select = "CitationType"/>
-     </xsl:apply-templates>
-     <xsl:apply-templates   select = "PublicationDetails/
+  </xsl:apply-templates>
+  <xsl:apply-templates      select = "PublicationDetails/
                                       PublishedIn">
-      <xsl:with-param         name = "citType"
+   <xsl:with-param            name = "citType"
                             select = "CitationType"/>
-     </xsl:apply-templates>
-     <xsl:apply-templates   select = "PublicationDetails/
+  </xsl:apply-templates>
+  <xsl:apply-templates      select = "PublicationDetails/
                                       OtherPublicationInformation"/>
-
-      <!-- xsl:for-each                select = "PublicationDetailsXX">
- 
-      <xsl:choose>
-       <xsl:when                   test   = "contains
-                                              (PublishedIn/@cdr:ref,'CDR')">
-        <xsl:variable              name   = "RefID" 
-                                   select = "PublishedIn/@cdr:ref"/>
-        <xsl:if                    test   = "contains($RefID,'CDR')">
-         <xsl:variable             name   = "RefInfo" 
-                                   select = "document(
-                                              concat('cdr:',$RefID,'/lastp'))"/>
-  
-         <xsl:if                   test   = "$RefInfo/Citation/PDQCitation
-                                             /CitationType='Book' or 
-                                             $RefInfo/Citation/PDQCitation
-                                             /CitationType='Book [Internet]'">
-          <xsl:if                  test   = "AuthorList/Author/CollectiveName">
-           <xsl:value-of           select = "$RefInfo/Citation/PDQCitation
-                                             /AuthorList/Author
-                                             /CollectiveName"/>
-           <xsl:text>: </xsl:text>
-          </xsl:if>
-          <xsl:text>In: </xsl:text>
-         </xsl:if>
-
-         <xsl:if                   test   = "$RefInfo/Citation/PDQCitation
-                                             /CitationType='Book' or   
-                                             $RefInfo/Citation/PDQCitation
-                                             /CitationType='Book [Internet]' ">
-          <xsl:for-each            select = "$RefInfo/Citation/PDQCitation
-                                             /AuthorList/Author">
-           <xsl:if                 test   = "not(CollectiveName)">
-            <xsl:value-of          select = "LastName"/>
-            <xsl:text> </xsl:text>
-            <xsl:value-of          select = "FirstName"/>
-            <xsl:if                test   = "position()!=last()">
-             <xsl:text>, </xsl:text>
-            </xsl:if>
-            <xsl:if                test   = "position()=last() and  
-                                             $RefInfo/Citation/PDQCitation
-                                             /AuthorList/@Complete='Yes'">
-             <xsl:choose>
-              <xsl:when            test   = "$RefInfo/Citation/PDQCitation
-                                             /AuthorList/@Editors='Yes'">
-               <xsl:text>, </xsl:text>
-              </xsl:when>
-              <xsl:otherwise>
-               <xsl:text>: </xsl:text>
-              </xsl:otherwise>
-             </xsl:choose>
-            </xsl:if>
- 
-
-            <xsl:if                test   = "position()=last() and  
-                                             $RefInfo/Citation/PDQCitation
-                                             /AuthorList/@Complete='No'">
-             <xsl:text>, </xsl:text>
-            </xsl:if>
-           </xsl:if>
-           <xsl:if                 test   = "CollectiveName">
-            <xsl:value-of          select = "CollectiveName"/>
-           </xsl:if>
-
-           <xsl:if                 test   = "position()=last()">
-            <xsl:if                test   = "not($RefInfo/Citation/PDQCitation
-                                             /AuthorList/@Editors='Yes')">
-             <xsl:if               test   = "$RefInfo/Citation/PDQCitation
-                                             /AuthorList/@Complete='No'">
-              <xsl:text>et al.: </xsl:text>
-             </xsl:if>
-             <xsl:if               test   = "$RefInfo/Citation/PDQCitation
-                                             /AuthorList/@Complete='Yes'">
-              <xsl:if              test   = "$RefInfo/Citation/PDQCitation
-                                             /AuthorList/@Editors='Yes'">
-               <xsl:text> eds.: </xsl:text>
-              </xsl:if>
-              <xsl:if              test   = "CollectiveName">
-               <xsl:text>:  </xsl:text>
-              </xsl:if>
-             </xsl:if>
-            </xsl:if>
-            <xsl:if                test   = "$RefInfo/Citation/PDQCitation
-                                             /AuthorList/@Editors='Yes'">
-             <xsl:if               test   = "$RefInfo/Citation/PDQCitation
-                                             /AuthorList/@Complete='No'">
-
-              <xsl:text>et al.,</xsl:text>
-             </xsl:if>
-             <xsl:if               test   = "$RefInfo/Citation/PDQCitation
-                                             /AuthorList/@Complete='Yes'">
-              <xsl:text> </xsl:text>
-             </xsl:if>
-             <xsl:if               test   = "position() &gt; 1">
-              <xsl:text> eds.: </xsl:text>
-             </xsl:if>
-             <xsl:if               test   = "position() &lt; 2">
-              <xsl:text> eds.: </xsl:text>
-             </xsl:if>
-            </xsl:if>
-           </xsl:if>
-          </xsl:for-each>
-         </xsl:if>
-         <xsl:value-of             select = "$RefInfo/Citation/PDQCitation
-                                             /CitationTitle"/>
-
-         <xsl:if                   test   = "not($RefInfo/Citation/PDQCitation
-                                             /CitationType='Journal' or  
-                                             $RefInfo/Citation/PDQCitation
-                                             /CitationType='Proceeding')">
-          <xsl:text>.</xsl:text>
-          <xsl:text> </xsl:text>
-         </xsl:if>
-
-         <xsl:if                   test   = "$RefInfo/Citation/PDQCitation
-                                             /CitationType='Journal' or 
-                                             $RefInfo/Citation/PDQCitation
-                                             /CitationType='Proceeding'">
-          <xsl:text> </xsl:text>
-         </xsl:if>
-
-         <xsl:value-of             select = "$RefInfo/Citation/PDQCitation
-                                             /PublicationDetails
-                                             /OtherPublicationInformation"/>
-         <xsl:text/>
-
-         <xsl:if                   test   = "$RefInfo/Citation/PDQCitation
-                                             /CitationType='Book' or 
-                                             $RefInfo/Citation/PDQCitation
-                                             /CitationType='Book [Internet]'">
-          <xsl:text>, </xsl:text>
-         </xsl:if>
-        </xsl:if>
-       </xsl:when>
-      </xsl:choose>
-     </xsl:for-each -->
-</xsl:template>
+ </xsl:template>
 
 
  <!-- 
  ===================================================================
  B)  PubMed Record Citation Formatting
  =================================================================== -->
-<xsl:template                match = "PubmedArticle">
- <xsl:if                      test = "MedlineCitation/MedlineID">
-  <xsl:attribute              name = "MedlineID">
-   <xsl:value-of            select = "MedlineCitation/MedlineID"/>
-  </xsl:attribute>
- </xsl:if>
+ <xsl:template               match = "PubmedArticle">
+  <xsl:if                     test = "MedlineCitation/MedlineID">
+   <xsl:attribute             name = "MedlineID">
+    <xsl:value-of           select = "MedlineCitation/MedlineID"/>
+   </xsl:attribute>
+  </xsl:if>
 
- <xsl:if                      test = "MedlineCitation/PMID">
-  <xsl:attribute              name = "PMID">
-   <xsl:value-of            select = "MedlineCitation/PMID"/>
-  </xsl:attribute>
- </xsl:if>
+  <xsl:if                     test = "MedlineCitation/PMID">
+   <xsl:attribute             name = "PMID">
+    <xsl:value-of           select = "MedlineCitation/PMID"/>
+   </xsl:attribute>
+  </xsl:if>
 
- <xsl:apply-templates       select = "MedlineCitation/Article/AuthorList"/>
- <xsl:apply-templates       select = "MedlineCitation/Article/ArticleTitle">
-  <xsl:with-param             name = "period"
+  <xsl:apply-templates      select = "MedlineCitation/Article/AuthorList"/>
+  <xsl:apply-templates      select = "MedlineCitation/Article/ArticleTitle">
+   <xsl:with-param            name = "period"
                             select = "'No'"/>
- </xsl:apply-templates>
- <xsl:apply-templates       select = "MedlineCitation/
+  </xsl:apply-templates>
+  <xsl:apply-templates      select = "MedlineCitation/
                                       MedlineJournalInfo/MedlineTA"/>
- <xsl:apply-templates       select = "MedlineCitation/Article/
+  <xsl:apply-templates      select = "MedlineCitation/Article/
                                       Journal/JournalIssue"/>
-</xsl:template>
+ </xsl:template>
 
 
  <!-- 
@@ -227,158 +89,259 @@ InScopeProtocol citations.
     it in here for completeness since it's more readable then 
     the original filter CDR46.
  =============================================================== -->
-<xsl:template                match = "ProtocolCitation">
- <xsl:if                      test = "ProtInfo/InScopeProtocol/
-                                      ProtocolIDs/PrimaryID/IDString">
-  <xsl:for-each             select = "ProtInfo/InScopeProtocol/
-                                      ProtocolAdminInfo/
-                                      ProtocolLeadOrg/LeadOrgPersonnel">
+<xsl:template                match = "ProtocolLink">
+ <Citation>
+  <xsl:attribute              name = "cdr:ref">
+   <xsl:value-of            select = "@cdr:ref"/>
+  </xsl:attribute>
+  <xsl:attribute              name = "ProtocolID">
+   <xsl:value-of            select = "@cdr:ref"/>
+  </xsl:attribute>
+
+ <!-- 
+ Format the LeadOrgPersonnel name
+ ====================================================================== -->
+  <xsl:for-each             select = "ProtocolLeadOrg/LeadOrgPersonnel">
    <xsl:if                    test = "not(@public)">
     <xsl:if                   test = "../LeadOrgRole = 'Primary'">
      <xsl:if                  test = "PersonRole = 'Protocol chair'">
-      <xsl:if                 test = "contains(Person/@cdr:ref,'CDR')">
-       <xsl:variable          name = "PerID" 
-                            select = "substring-before(Person/@cdr:ref,'#')"/>
-       <xsl:variable          name = "PerInfo" 
-                            select = "document(concat('cdr:',$PerID,
-                                                      '/last'))"/> 
-       <xsl:value-of        select = "$PerInfo/Person/
-                                      PersonNameInformation/SurName"/>
+       <xsl:value-of        select = "Person/PersonNameInformation/SurName"/>
        <xsl:text> </xsl:text>
-       <xsl:value-of        select = "substring($PerInfo/Person/
+       <xsl:value-of        select = "substring(Person/
                                       PersonNameInformation/GivenName,1,1)"/>
        <xsl:variable          name = "Gname" 
-                            select = "substring-after($PerInfo/Person/
+                            select = "substring-after(Person/
                                       PersonNameInformation/GivenName,' ')"/>
-       <xsl:if                test = "not(contains($Gname,'.'))">
+       <xsl:choose>
+       <xsl:when              test = "not(contains($Gname,'.'))">
          <xsl:value-of      select = "substring($Gname,1,1)"/>
-       </xsl:if>
-       <xsl:if                test = "contains($Gname,'.')">
+       </xsl:when>
+       <xsl:otherwise>
         <xsl:value-of       select = "translate($Gname,'.','')"/>
-       </xsl:if>
+       </xsl:otherwise>
+       </xsl:choose>
        <xsl:text> </xsl:text>
-      </xsl:if>
      </xsl:if>
     </xsl:if>
    </xsl:if>
   </xsl:for-each>
 
-  <xsl:for-each                  select = "ProtInfo/InScopeProtocol
-                                             /ProtocolAdminInfo/ProtocolLeadOrg
-                                             /LeadOrganizationID">
-   <xsl:if                       test   = "../LeadOrgRole = 'Primary'">
-    <xsl:if                      test   = "contains(@cdr:ref,'CDR')">
-     <xsl:variable               name   = "OrgID" 
-                                 select = "@cdr:ref"/>
-     <xsl:variable               name   = "OrgInfo" 
-                                 select = "document(concat('cdr:',
-                                                           $OrgID,'/last'))"/>
-     <xsl:value-of               select = "$OrgInfo/Organization/
+  <!-- 
+  Format the Organization Name
+  ======================================================================== -->
+  <xsl:for-each                  select = "ProtocolLeadOrg">
+   <xsl:if                       test   = "LeadOrgRole = 'Primary'">
+    <xsl:text>, </xsl:text>
+    <xsl:value-of                select = "Organization/
                                            OrganizationNameInformation/
                                            OfficialName/Name"/>:
-    </xsl:if>
    </xsl:if>
   </xsl:for-each>
 
   <xsl:text> </xsl:text>
-
-  <xsl:for-each                  select = "ProtInfo/InScopeProtocol/
-                                           ProtocolTitle
-                                                     [@Type = 'Professional']">
-   <xsl:value-of                 select = "."/>,
-  </xsl:for-each>
-
-  <xsl:for-each                  select = "ProtInfo/InScopeProtocol/
-                                           ProtocolIDs/PrimaryID/IDString">
-   <xsl:value-of                 select = "."/>,
-  </xsl:for-each>
-  <xsl:for-each                  select = "ProtInfo/InScopeProtocol/
-                                           ProtocolDetail/StudyType">
-   <xsl:value-of                 select = "."/>,
-  </xsl:for-each>
-  <xsl:for-each                  select = "ProtInfo/InScopeProtocol/
-                                           ProtocolAdminInfo/
-                                           CurrentProtocolStatus">
-   <xsl:value-of                 select = "."/>
-   <xsl:text>.</xsl:text>
-  </xsl:for-each>
- </xsl:if>
+  <xsl:value-of                  select = "ProtocolTitle"/>
+  <xsl:text>, </xsl:text>
+  <xsl:value-of                  select = "ProtocolIDs/PrimaryID/IDString"/>
+  <xsl:text>, </xsl:text>
+  <xsl:value-of                  select = "StudyType"/>
+  <xsl:text>, </xsl:text>
+  <xsl:value-of                  select = "CurrentProtocolStatus"/>
+  <xsl:text>.</xsl:text>
+ </Citation>
 </xsl:template>
 
 
  <!-- 
  ====================================================================
  Template to create AuthorList
+ If Authors AND CollectiveNames exist always display a total of three
+ elements (3 Authors, 2 Auth + 1 Coll, 1 Auth + 2 Coll, 3 Coll) and
+ at 'et. al.' if more then 3 elements exist.
+ Authors are displayed first, if exist.
  ==================================================================== -->
-<xsl:template                match = "AuthorList">
+ <xsl:template               match = "AuthorList">
+  <xsl:variable               name = "Authors" 
+                            select = "Author"/>
+  <xsl:variable               name = "nAuthor" 
+                            select = "count(Author)"/>
+  <xsl:variable               name = "nCollective" 
+                            select = "count(Author/CollectiveName)"/>
+  <xsl:variable               name = "nLastName" 
+                            select = "count(Author/LastName)"/>
+
+  <xsl:choose>
+   <xsl:when                  test = "contains($Authors,'null')">
+    <xsl:text></xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:for-each           select = "Author[not(CollectiveName)]">
+     <xsl:if                  test = "position() &lt; 4">
+      <xsl:value-of         select = "LastName"/>
+      <xsl:text> </xsl:text>
+      <xsl:value-of         select = "FirstName | Initials"/>
+      <xsl:if                 test = "Suffix">
+       <xsl:text> </xsl:text>
+       <xsl:value-of        select = "Suffix"/>
+      </xsl:if>
+
+      <!-- 
+      Separate AuthorNames by comma
+      ================================ -->
+      <xsl:if                 test = "position() != last()
+                                      and 
+                                      position() != $nLastName
+                                      and
+                                      position() != 3">
+       <xsl:text>, </xsl:text>
+      </xsl:if>
+     </xsl:if>
+    </xsl:for-each>
+
+    <!-- 
+    Separate AuthorName list from CollectiveName list and display
+    CollectiveName list if less then three Authors exist.
+    ============================================================= -->
+    <xsl:if                   test = "$nLastName &lt; 3
+                                      and
+                                      $nCollective &gt; 0">
+     <xsl:if                  test = "$nLastName &gt; 0">
+      <xsl:text>; </xsl:text>
+     </xsl:if>
+
+     <xsl:for-each          select = "Author[CollectiveName]">
+      <xsl:if                 test = "position() &lt; 4">
+       <xsl:value-of        select = "CollectiveName"/>
+       <xsl:text>.</xsl:text>
+
+       <!-- 
+       Separate AuthorNames by comma
+       ================================ -->
+       <xsl:if                test = "position() != last() and 
+                                          position() != $nLastName">
+        <xsl:text>, </xsl:text>
+       </xsl:if>
+      </xsl:if>
+     </xsl:for-each>
+    </xsl:if>
+
+    <!-- 
+    Indicate that more then three authors exist 
+    =========================================== -->
+    <xsl:choose>
+     <xsl:when                test = "@Complete = 'No' 
+                                      or
+                                      $nAuthor &gt; 3">
+      <xsl:text>, et al.</xsl:text>
+     </xsl:when>
+    </xsl:choose>
+
+    <!-- 
+    Add the Eds. at the end if this is a book with editors
+    ====================================================== -->
+    <xsl:choose>
+     <xsl:when                test = "@Editors = 'Yes' 
+                                      and
+                                      $nAuthor = 1">
+      <xsl:text>, ed.: </xsl:text>
+     </xsl:when>
+     <xsl:when                test = "@Editors = 'Yes'
+                                      and
+                                      $nAuthor &gt; 1">
+      <xsl:text>, eds.: </xsl:text>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>: </xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ====================================================================
+ Template to create AuthorList
+ If Authors AND CollectiveNames exist always display a total of three
+ elements (3 Authors, 2 Auth + 1 Coll, 1 Auth + 2 Coll, 3 Coll) and
+ at 'et. al.' if more then 3 elements exist.
+ Authors are displayed first, if exist.
+ ==================================================================== -->
+<xsl:template                match = "XXXAuthorList_Orig">
  <xsl:variable                name = "Authors" 
                             select = "Author"/>
  <xsl:variable                name = "nAuthor" 
                             select = "count(Author)"/>
+ <xsl:variable                name = "nCollective" 
+                            select = "count(Author/CollectiveName)"/>
+ <xsl:variable                name = "nLastName" 
+                            select = "count(Author/LastName)"/>
 
  <xsl:choose>
   <xsl:when                  test = "contains($Authors,'null')">
-   <xsl:text> </xsl:text>
+   <xsl:text></xsl:text>
   </xsl:when>
   <xsl:when                   test   = "Author/CollectiveName">
-   <xsl:value-of              select = "Author/CollectiveName"/>
+   <xsl:value-of              select = "$nAuthor"/>AA
+   <xsl:value-of              select = "$nLastName"/>LL
+   <xsl:value-of              select = "$nCollective"/>CC
    <xsl:text>: </xsl:text>
   </xsl:when>
   <xsl:otherwise>
    <xsl:for-each              select = "Author">
-   <xsl:if                      test = "position() &lt; 4">
-    <xsl:value-of             select = "LastName"/>
-    <xsl:text> </xsl:text>
-    <xsl:value-of             select = "FirstName | Initials"/>
-    <xsl:if                     test = "Suffix">
+    <xsl:if                     test = "position() &lt; 4">
+     <xsl:value-of            select = "LastName"/>
      <xsl:text> </xsl:text>
-     <xsl:value-of             select = "Suffix"/>
-    </xsl:if>
-
-    <xsl:if                   test   = "position() != last() and 
-                                        position() != 3">
-     <xsl:text>, </xsl:text>
-    </xsl:if>
-
-    <xsl:if                   test   = "position() = last() or
-                                        position() = 3">
-     <xsl:if                  test   = "not(../@Editors = 'Yes')">
-      <xsl:choose>
-       <xsl:when               test   = "../@Complete = 'No' or
-                                         $nAuthor &gt; 3">
-        <xsl:text>, et al.: </xsl:text>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:text>: </xsl:text>
-       </xsl:otherwise>
-      </xsl:choose>
+     <xsl:value-of            select = "FirstName | Initials"/>
+     <xsl:if                    test = "Suffix">
+      <xsl:text> </xsl:text>
+      <xsl:value-of           select = "Suffix"/>
      </xsl:if>
 
-     <xsl:if                  test   = "../@Editors='Yes'">
-      <xsl:choose>
-       <xsl:when               test   = "../@Complete='No'">
-        <xsl:text>, et al.</xsl:text>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:text> </xsl:text>
-       </xsl:otherwise>
-      </xsl:choose>
-      <xsl:if                  test  = "position() &gt; 1">
+     <xsl:if                   test   = "position() != last() and 
+                                        position() != 3">
+      <xsl:text>, </xsl:text>
+     </xsl:if>
+
+     <xsl:if                   test   = "position() = last() or
+                                        position() = 3">
+      <xsl:if                  test   = "not(../@Editors = 'Yes')">
        <xsl:choose>
-        <xsl:when           test  = "../@Complete='No'">
-         <xsl:text>, eds.: </xsl:text>
+        <xsl:when               test   = "../@Complete = 'No' or
+                                         $nAuthor &gt; 3">
+         <xsl:text>, et al.: </xsl:text>
         </xsl:when>
         <xsl:otherwise>
-         <xsl:text>, eds.: </xsl:text>
+         <xsl:text>: </xsl:text>
         </xsl:otherwise>
        </xsl:choose>
       </xsl:if>
 
-      <xsl:if                  test  = "position() &lt; 2">
-       <xsl:text>, ed.: </xsl:text>
+      <xsl:if                  test   = "../@Editors='Yes'">
+       <xsl:choose>
+        <xsl:when               test   = "../@Complete='No'">
+         <xsl:text>, et al.</xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:text></xsl:text>  <!-- Removed space for (1,2,5) -->
+        </xsl:otherwise>
+       </xsl:choose>
+       <xsl:if                  test  = "position() &gt; 1">
+        <xsl:choose>
+         <xsl:when           test  = "../@Complete='No'">
+          <xsl:text>, eds.: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text>, eds.: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:if>
+
+       <xsl:if                  test  = "position() &lt; 2">
+        <xsl:text>, ed.: </xsl:text>
+       </xsl:if>
       </xsl:if>
      </xsl:if>
-    </xsl:if>
     </xsl:if>
    </xsl:for-each>
   </xsl:otherwise>
@@ -426,7 +389,7 @@ InScopeProtocol citations.
 
  <!-- 
  ====================================================================
- Template to create CitationType
+ Template to handle different CitationType elements such as
  ==================================================================== -->
 <xsl:template                match = "CitationType">
  <xsl:param                   name = "citType"
@@ -435,7 +398,16 @@ InScopeProtocol citations.
   <xsl:when                   test = "$citType = 'Abstract'">
    <xsl:text>[Abstract] </xsl:text>
   </xsl:when>
-  <xsl:when                   test = "$citType = 'Book chapter'">
+  <xsl:when                   test = "$citType = 'Abstract [Internet]'">
+   <xsl:text>[FIXME] </xsl:text>
+  </xsl:when>
+  <xsl:when                   test = "$citType = 'Book chapter'
+                                      or
+                                      $citType = 'Book chapter [Internet]'
+                                      or
+                                      $citType = 'Meeting Paper'
+                                      or
+                                      $citType = 'Meeting Paper [Internet]'">
    <xsl:text>In: </xsl:text>
    <xsl:apply-templates     select = "../PublicationDetails/
                                       PublishedIn/Citation//AuthorList"/>
@@ -510,13 +482,27 @@ InScopeProtocol citations.
    </xsl:apply-templates>
    <xsl:text> </xsl:text>
   </xsl:when>
-  <xsl:when                   test = "$citType = 'Book chapter'">
+  <xsl:when                   test = "$citType = 'Book chapter'
+                                      or
+                                      $citType = 'Book chapter [Internet]'">
    <xsl:apply-templates     select = "Citation//CitationTitle">
     <xsl:with-param           name = "period"
                             select = "'Yes'"/>
    </xsl:apply-templates>
    <xsl:value-of            select = "Citation//OtherPublicationInformation"/>
    <xsl:text>, </xsl:text>
+  </xsl:when>
+  <xsl:when                   test = "$citType = 'Meeting Paper'
+                                      or
+                                      $citType = 'Meeting Paper [Internet]'">
+   <xsl:apply-templates     select = "Citation//CitationTitle">
+    <xsl:with-param           name = "period"
+                            select = "'Yes'"/>
+   </xsl:apply-templates>
+   <xsl:if                    test = "Citation//OtherPublicationInformation">
+    <xsl:value-of           select = "Citation//OtherPublicationInformation"/>
+    <xsl:text>, </xsl:text>
+   </xsl:if>
   </xsl:when>
   <xsl:otherwise>
    <xsl:apply-templates     select = "Citation//CitationTitle">
