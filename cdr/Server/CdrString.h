@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.7 2000-04-22 18:57:38 bkline Exp $
+ * $Id: CdrString.h,v 1.8 2000-04-26 01:40:12 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2000/04/22 18:57:38  bkline
+ * Added ccdoc comment markers for namespaces and @pkg directives.
+ *
  * Revision 1.6  2000/04/22 18:01:26  bkline
  * Fleshed out documentation comments.
  *
@@ -108,6 +111,17 @@ namespace cdr {
             : StdWstring(s.rawBuffer(), s.length()), null(false) {}
 
         /**
+         * Copy constructor.
+         */
+        String(const String& s) : StdWstring(s), null(s.null) {}
+
+        /**
+         * Compares another cdr::String to this one.
+         */
+        bool operator!=(const String& s) const
+            { return *this != static_cast<const StdWstring&>(s); }
+
+        /**
          * Returns <code>true</code> if the object represents a
          * <code>NULL</code> string.
          */
@@ -124,6 +138,13 @@ namespace cdr {
          * object, encoded using <code>UTF-8</code>.
          */
         std::string toUtf8() const;
+
+        /**
+         * Skips past the 'CDR' prefix and extracts the integer id for the
+         * document.
+         */
+        int extractDocId() const;
+
     private:
         void utf8ToUtf16(const char*);
         bool null;
