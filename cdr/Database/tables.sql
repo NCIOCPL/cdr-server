@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.16 2000-10-17 17:55:42 mruben Exp $
+ * $Id: tables.sql,v 1.17 2000-10-27 11:09:14 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2000/10/17 17:55:42  mruben
+ * added/modified tables for version control
+ *
  * Revision 1.15  2000/09/12 22:49:11  ameyer
  * Added link_target table and revised some link related comments.
  * Eliminated validation info from link_net table.
@@ -684,3 +687,42 @@ CREATE TABLE link_fragment (
  *      End link related tables
  *************************************************************/
 
+/*
+ * Contains searchable element data.  Populated for elements identified in
+ * query_term_def table.
+ *
+ *       doc_id  ID of document being indexed.
+ *         path  location of element in document.
+ *        value  searchable element data.
+ */
+CREATE TABLE query_term
+     (doc_id INTEGER NOT NULL REFERENCES document,
+        path VARCHAR(512) NOT NULL,
+       value NVARCHAR(255) NOT NULL)
+
+/*
+ * Allows for future customization of the query support mechanism, using more
+ * sophisticated indexing logic than simply the text content of a single
+ * element.  Syntax TBD.
+ *
+ *       doc_id  ID of document being indexed.
+ *           id  primary key for the indexing rule.
+ *         name  name of the indexing rule (for display purposes).
+ *     rule_def  specification of the logic to be used for indexing this
+ *               element.
+ */
+CREATE TABLE query_term_rule
+         (id INTEGER IDENTITY PRIMARY KEY,
+        name VARCHAR(32) NOT NULL,
+    rule_def VARCHAR(2000) NOT NULL)
+
+/*
+ * Identifies elements which are to be indexed for querying.
+ *
+ *         path  hierarchical representation of element to be indexed;
+ *               for example, 'Protocol/ProtSponsor'.
+ *    term_rule  foreign key into query_term_rule table.
+ */
+CREATE TABLE query_term_def
+       (path VARCHAR(512) NOT NULL,
+   term_rule INTEGER NULL REFERENCES query_term_rule)
