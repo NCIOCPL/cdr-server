@@ -1,7 +1,11 @@
 /*
- * $Id: CdrXsd.h,v 1.9 2000-10-05 21:23:55 bkline Exp $
+ * $Id: CdrXsd.h,v 1.10 2000-12-28 13:32:33 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2000/10/05 21:23:55  bkline
+ * Added validateDocAgainstSchema (lower level than the one tied to the
+ * database and the server).
+ *
  * Revision 1.8  2000/05/04 01:15:54  bkline
  * Fixed some unclosed comments.
  *
@@ -65,6 +69,14 @@ namespace cdr {
          *          XML Schema Part 1: Structures</A>
          */
         const wchar_t* const ELEMENT       = L"xsd:element";
+
+        /**
+         * Tag for choice-specification element in Schema document.
+         *
+         *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
+         *          XML Schema Part 1: Structures</A>
+         */
+        const wchar_t* const CHOICE        = L"xsd:choice";
 
         /**
          * Tag for attribute-specification element in Schema document.
@@ -440,20 +452,22 @@ namespace cdr {
          * Forward declarations.
          */
         class Type;
-        class Element;
-        class Attribute;
+        class Elem;
+        class Attr;
+        class ElemChoice;
 
         /**
          * Aliases for container types.  Provided for convenience (and as a
          * workaround for MSVC++ bugs).
          */
-        typedef std::list<Element*>             ElementList;
-        typedef std::list<Attribute*>           AttributeList;
-        typedef ElementList::const_iterator     ElemEnum;
-        typedef AttributeList::const_iterator   AttrEnum;
-        typedef std::map<cdr::String, Element*> ElementMap;
+        typedef std::list<ElemChoice*>          ElemSeq;
+        typedef std::map<cdr::String, Elem*>    ElemSet;
+        typedef std::map<cdr::String, Attr*>    AttrSet;
+        typedef ElemSeq::const_iterator         ChoiceEnum;
+        typedef ElemSet::const_iterator         ElemEnum;
+        typedef AttrSet::const_iterator         AttrEnum;
         typedef std::map<cdr::String, 
-                         cdr::String>           ElementTypeMap;
+                         cdr::String>           ElemTypeMap;
 
         /**
          * An object of type <code>Schema</code> represents the types
@@ -478,7 +492,7 @@ namespace cdr {
 
             /**
              * Find a <code>Type</code> object from its name, using the
-             * <code>ElementTypeMap</code> of names to types.
+             * <code>ElemTypeMap</code> of names to types.
              *
              *  @param  name    name assigned to the type.
              *  @return         pointer to type object if found; otherwise
@@ -501,7 +515,7 @@ namespace cdr {
              *
              *  @return         reference to schema's top element.
              */
-            Element&            getTopElement() const { return *topElement; }
+            Elem&               getTopElement() const { return *topElement; }
 
             /**
              * Remembers the name of the type used for this element.
@@ -529,12 +543,12 @@ namespace cdr {
             /**
              * Map from element name to name of type used by the element.
              */
-            ElementTypeMap      elements;
+            ElemTypeMap         elements;
 
             /**
              * Element forming the top of the DOM tree for this schema.
              */
-            Element*            topElement;
+            Elem*               topElement;
 
             /**
              * Registers the built-in Schema types supported by this
@@ -550,7 +564,7 @@ namespace cdr {
         };
 
         /**
-         * Base class for schema elements and attributes.
+         * Common base class for schema elements and attributes.
          */
         class Node {
 
@@ -619,7 +633,7 @@ namespace cdr {
              * Pointer to the <code>Type</code> object associated with this
              * element or attribute.  Used to cache the results of
              * <code>resolveType</code> so the lookup only has to be performed
-             * once for thie <code>Node</code>.
+             * once for this <code>Node</code>.
              */
             const Type*     type;
 
@@ -640,10 +654,10 @@ namespace cdr {
 
         /**
          * Schema element.  Can be top-level element for the schema's
-         * document type, or a member of the list of elements for a 
-         * complex type.
+         * document type, or a possible choice for one of the positions in the
+         * sequence of elements for a complex type.
          */
-        class Element : public Node {
+        class Elem : public Node {
 
         public:
 
@@ -654,7 +668,7 @@ namespace cdr {
              *  @param  n           reference to DOM node holding validation
              *                      requirements for this element.
              */
-            Element(const cdr::dom::Node& n);
+            Elem(const cdr::dom::Node& n);
 
             /**
              * Accessor method for maximum number of occurrences allowed for
@@ -690,7 +704,7 @@ namespace cdr {
         /**
          * Attribute attached to a schema element.
          */
-        class Attribute : public Node {
+        class Attr : public Node {
 
         public:
 
@@ -701,7 +715,7 @@ namespace cdr {
              *  @param  n           reference to DOM node holding validation
              *                      requirements for this attribute.
              */
-            Attribute(const cdr::dom::Node& n);
+            Attr(const cdr::dom::Node& n);
 
             /**
              * Accessor method for reporting whether this attribute can be
@@ -718,6 +732,123 @@ namespace cdr {
              * Flag recording whether this element can be omitted.
              */
             bool            optional;
+        };
+
+        /**
+         * Set of alternate elements, any one of which is acceptable in a
+         * given context.
+         */
+        class ElemChoice {
+
+        public:
+
+            /**
+             * Extracts the specification of the requirements for this choice
+             * for its schema node.
+             *
+             *  @param  s           reference to schema object which uses 
+             *                      this element choice.
+             *  @param  n           reference to DOM node holding validation
+             *                      requirements for this choice.
+             */
+            ElemChoice(Schema& s, const cdr::dom::Node& n);
+
+            /**
+             * Creates a special-case "choice" which contains only a single
+             * element.
+             *
+             *  @param  e           address of only element available for
+             *                      this "choice."
+             */
+            ElemChoice(Elem* e);
+
+            /**
+             * Cleans up the list of elements.
+             */
+            ~ElemChoice();
+
+            /**
+             * Looks up an element by name in this set of element choices.
+             *
+             *  @param  name        reference to string containing element's
+             *                      name.
+             *  @return             pointer to Elem object, if found;
+             *                      otherwise <code>NULL</code>.
+             */
+            Elem*           find(const cdr::String& name) const;
+
+            /**
+             * Inserts a new element into the set of choices.
+             *
+             *  @param  name        reference to string containing element's
+             *                      name.
+             *  @param  elem        address of object representing element.
+             *  @exception          cdr::Exception if element already exists
+             *                      in this choice.
+             */
+            void            add(const cdr::String& n, Elem* e);
+
+            /**
+             * Accessor method for the number of <code>Elem</code>s defined
+             * for this choice.
+             *
+             *  @return     integer representing the size of the set
+             *              of <code>Elem</code> pointers.
+             */
+            size_t          getElemCount() const { return elemSet.size(); }
+
+            /**
+             * Accessor method for maximum number of occurrences allowed for
+             * this choice.
+             *
+             *  @return             integer representing maximum number of
+             *                      occurrences allowed for this choice.
+             */
+            int             getMaxOccs() const { return maxOccs; }
+
+            /**
+             * Accessor method for minimum number of occurrences required for
+             * this choice.
+             *
+             *  @return             integer representing minimum number of
+             *                      occurrences required for this choice.
+             */
+            int             getMinOccs() const { return minOccs; }
+
+            /**
+             * Accessor method for the elements contained in this choice.
+             *
+             *  @return     enumerator for walking through the set of element
+             *              choices.
+             */
+            ElemEnum        getElements() const { return elemSet.begin(); }
+
+            /**
+             * Accessor method for value which terminates an enumeration loop
+             * through the elements available for this choice.
+             *
+             *  @return     enumerator indicating that the end of the list
+             *              of <code>Elem</code> pointers has been passed.
+             */
+            ElemEnum        getElemEnd() const { return elemSet.end(); }
+
+        private:
+
+            /**
+             * Set of available elements which can be selected for this
+             * choice.
+             */
+            ElemSet         elemSet;
+
+            /**
+             * Maximum number of occurrences allowed for this choice.
+             */
+            int             maxOccs;
+
+            /**
+             * Minimum number of occurrences required for this choice.
+             */
+            int             minOccs;
         };
 
         /**
@@ -1053,12 +1184,14 @@ namespace cdr {
 
             /**
              * Accessor method for the elements contained in this complex
-             * type.
+             * type.  Each node in the sequence actually represents a choice
+             * of elements which can appear at the node's position in the
+             * sequence.  Most choices will have only one element in the set.
              *
-             *  @return     enumerator for the list containing the elements
-             *              expected for this type.
+             *  @return     enumerator for the list containing the element
+             *              choices expected for this type.
              */
-            ElemEnum        getElements() const { return elemList.begin(); }
+            ChoiceEnum      getElements() const { return elemSeq.begin(); }
 
             /**
              * Accessor method for the attributes contained in this complex
@@ -1067,81 +1200,83 @@ namespace cdr {
              *  @return     enumerator for the list containing the
              *              attributes expected for this type.
              */
-            AttrEnum        getAttributes() const { return attrList.begin();}
+            AttrEnum        getAttributes() const { return attrSet.begin();}
 
             /**
              * Accessor method for value which terminates an enumeration loop
              * through the elements expected for this complex type.
              *
              *  @return     enumerator indicating that the end of the list
-             *              of <code>Element</code> pointers has been passed.
+             *              of <code>ElemChoice</code> pointers has been passed.
              */
-            ElemEnum        getElemEnd() const { return elemList.end(); }
+            ChoiceEnum      getElemEnd() const { return elemSeq.end(); }
 
             /**
              * Accessor method for value which terminates an enumeration loop
              * through the attributes expected for this complex type.
              *
              *  @return     enumerator indicating that the end of the set
-             *              of <code>Attributes</code> pointers has been passed.
+             *              of <code>Attr</code> pointers has been passed.
              */
-            AttrEnum        getAttrEnd() const { return attrList.end(); }
+            AttrEnum        getAttrEnd() const { return attrSet.end(); }
 
             /**
-             * Accessor method for the number of <code>Element</code>s defined
-             * for this complex type (not the number of element instances).
+             * Accessor method for the number of <code>ElemChoice</code>s 
+             * defined for this complex type (not the number of element 
+             * instances).
              *
              *  @return     integer representing the size of the list
-             *              of <code>Element</code> pointers.
+             *              of <code>ElemChoice</code> pointers.
              */
-            size_t          getElemCount() const { return elemList.size(); }
+            size_t          getElemCount() const { return elemSeq.size(); }
 
             /**
-             * Accessor method for the number of <code>Attribute</code>s
+             * Accessor method for the number of <code>Attr</code>s
              * defined for this complex type (not the number of attribute
              * instances).
              *
              *  @return     integer representing the number of attributes
              *              defined for this type.
              */
-            size_t          getAttrCount() const { return attrList.size(); }
+            size_t          getAttrCount() const { return attrSet.size(); }
 
+#if 0
             /**
              * Accessor method for determining whether an particular
-             * <code>Element</code> is defined for this complex type.
+             * <code>Elem</code> is defined for this complex type.
              *
              *  @param      string containing the name of the
-             *              <code>Element</code>
+             *              <code>Elem</code>
              *  @return     <code>true</code> if the specified element
              *              has been defined for this complex type.
              */
             bool            hasElement(const cdr::String& name) const
                 { return elemNames.find(name) != elemNames.end(); }
-
+#endif
             /**
              * Accessor method for determining whether an particular
-             * <code>Attribute</code> is defined for this complex type.
+             * <code>Attr</code> is defined for this complex type.
              *
              *  @param      string containing the name of the
-             *              <code>Attribute</code>
+             *              <code>Attr</code>
              *  @return     <code>true</code> if the specified attribute
              *              has been defined for this complex type.
              */
             bool            hasAttribute(const cdr::String& name) const
-                { return attrNames.find(name) != attrNames.end(); }
+                { return attrSet.find(name) != getAttrEnd(); }
 
         private:
 
             /**
-             * List of <code>Element</code>s defined for this type.
+             * List of <code>ElemChoice</code>s defined for this type.
              */
-            ElementList     elemList;
+            ElemSeq         elemSeq;
 
             /**
-             * List of <code>Attributes</code>s defined for this type.
+             * List of <code>Attr</code>s defined for this type.
              */
-            AttributeList   attrList;
-
+            AttrSet         attrSet;
+#if 0
             /**
              * Hashed set of element names used for determining whether a
              * particular element has been defined for this complex type
@@ -1155,7 +1290,7 @@ namespace cdr {
              * without scanning the entire attribute list.
              */
             cdr::StringSet  attrNames;
-
+#endif
             /**
              * Token identifying the content model for this complex type
              * (mixed, textOnly, etc.).
