@@ -1,0 +1,107 @@
+<CdrDoc Type='Filter' Id='CDR0000315593'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Sort OrganizationName for Postal Address - Organization</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                         xmlns:cdr = "cips.nci.nih.gov/cdr"
+           exclude-result-prefixes = "cdr"
+                           version = "1.0">
+
+ <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
+
+ <xsl:output                method = "xml"
+              omit-xml-declaration = "no"
+                          encoding = "UTF-8"
+                            indent = 'yes'/>
+
+
+ <xsl:template               match = "*">
+  <xsl:apply-templates/>
+ </xsl:template>
+
+
+ <!-- Vendor Output Protocols
+ =======================================================================
+ Re-arrange the order of the organization names if so requested.
+ ======================================================================= -->
+ <xsl:template              match = "ContactDetail">
+  <xsl:choose>
+   <xsl:when                 test = "OrganizationName
+                                      [@OrderParentNameFirst = 'Yes']">
+    <ContactDetail>
+     <xsl:apply-templates  select = "OrganizationName">
+      <xsl:sort            select = "position()"
+                            order = "descending"/>
+     </xsl:apply-templates>
+     <xsl:apply-templates  select = "PostalAddress | 
+                                     Phone | TollFreePhone |
+                                     Email | WebSite"/>
+    </ContactDetail>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:copy-of           select = "."/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+
+ <!-- QC Reports Organization
+ =======================================================================
+ Re-arrange the order of the organization names if so requested.
+ ======================================================================= -->
+ <xsl:template              match = "OrganizationLocation">
+  <xsl:choose>
+   <xsl:when                 test = "OrganizationName
+                                      [@OrderParentNameFirst = 'Yes']">
+    <OrganizationLocation>
+     <xsl:for-each         select = "@*">
+      <xsl:attribute         name = "{name()}">
+       <xsl:value-of       select = "."/>
+      </xsl:attribute>
+     </xsl:for-each>
+
+     <xsl:apply-templates  select = "OrganizationName">
+      <xsl:sort            select = "position()"
+                            order = "descending"/>
+     </xsl:apply-templates>
+
+      <xsl:apply-templates select = "PostalAddress         |
+                                     Phone  | TollFreePhone|
+                                     Fax    | WebSite      |
+                                     Email  | CIPSContact"/>
+    </OrganizationLocation>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:copy-of           select = "."/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <xsl:template              match = "OrganizationName">
+  <OrganizationName>
+   <xsl:value-of       select = "."/>
+  </OrganizationName>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Template rule used to do XML to XML transformations which
+ copies any attribute node, or node that is child of of something 
+ ==================================================================== -->
+ <xsl:template              match = "@* | node()">
+  <xsl:copy>
+   <xsl:apply-templates    select = "@* | node()"/>
+  </xsl:copy> 
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
