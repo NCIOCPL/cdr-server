@@ -1,10 +1,13 @@
 #----------------------------------------------------------------------
 #
-# $Id: base_data_sql.py,v 1.2 2001-12-19 20:34:30 bkline Exp $
+# $Id: base_data_sql.py,v 1.3 2001-12-19 20:46:52 bkline Exp $
 #
 # Generate SQL statements for loading the base CDR database records.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.2  2001/12/19 20:34:30  bkline
+# Specified mmdb2 as data source.
+#
 # Revision 1.1  2001/12/06 02:54:11  bkline
 # Initial revision
 #
@@ -13,7 +16,7 @@
 #----------------------------------------------------------------------
 # Load necessary modules.
 #----------------------------------------------------------------------
-import binascii, cdrdb
+import binascii, cdrdb, sys
 
 #----------------------------------------------------------------------
 # Initialize maps for reconstructing foreign key references.
@@ -542,3 +545,4 @@ load_css_docs()
 load_filter_docs()
 load_publishing_system_docs()
 load_schema_docs()
+sys.exit(0)
