@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.58 2004-08-20 19:58:56 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.59 2004-11-05 05:21:10 ameyer Exp $
  *
  */
 
@@ -24,6 +24,7 @@
 #include "CdrVersion.h"
 #include "CdrFilter.h"
 #include "CdrDoc.h"
+#include "CdrBlobExtern.h"
 #include "CdrGetDoc.h"
 #include "CdrLink.h"
 #include "CdrValidateDoc.h"
@@ -36,7 +37,7 @@
 //#define CDR_TIMINGS 1 // Uncomment line to activate timing code.
 #include "CdrTiming.h"
 
-static cdr::String CdrPutDoc (cdr::Session&, const cdr::dom::Node&,
+static cdr::String cdrPutDoc (cdr::Session&, const cdr::dom::Node&,
                               cdr::db::Connection&, bool);
 
 static void auditDoc (cdr::db::Connection&, int, int, cdr::String,
@@ -66,44 +67,44 @@ cdr::CdrDoc::CdrDoc (
     cdr::db::Connection& dbConn,
     cdr::dom::Node& docDom
 ) : docDbConn (dbConn),
-    Comment (true),
-    BlobData (true),
-    ValDate (true),
+    comment (true),
+    blobData (true),
+    valDate (true),
     parsed (false),
     malformed (false),
     Id (0),
     DocType (0),
-    ActiveStatus (L"A"),
+    activeStatus (L"A"),
     dbActiveStatus (L"A"),
-    ValStatus (L"U"),
+    valStatus (L"U"),
     Xml (L""),
     schemaDocId (0),
     lastFragmentId (0),
+    blobId(0),
     revisedXml (L""),
     revFilterFailed (false),
     revFilterLevel (DEFAULT_REVISION_LEVEL),
-    NeedsReview (false),
+    needsReview (false),
     titleFilterId (0),
-    Title (L""),
+    title (L""),
     conType (not_set),
     warningCount (0)
 {
-
     // Get doctype and id from CdrDoc attributes
     const cdr::dom::Element& docElement =
         static_cast<const cdr::dom::Element&>(docDom);
-    TextDocType = docElement.getAttribute (L"Type");
-    if (TextDocType.size() == 0)
+    textDocType = docElement.getAttribute (L"Type");
+    if (textDocType.size() == 0)
         throw cdr::Exception (L"CdrDoc: Doctag missing 'Type' attribute");
-    TextId = docElement.getAttribute (L"Id");
+    textId = docElement.getAttribute (L"Id");
     String strFilterLevel = docElement.getAttribute(L"RevisionFilterLevel");
     revFilterLevel = strFilterLevel.getInt();
     if (!revFilterLevel)
         revFilterLevel = DEFAULT_REVISION_LEVEL;
 
     // If Id was passed, document must exist in database.
-    if (TextId.size() > 0) {
-        Id = TextId.extractDocId ();
+    if (textId.size() > 0) {
+        Id = textId.extractDocId ();
 
         // Does the document exist?
         // Find out and also get info that must come from the database
@@ -116,12 +117,12 @@ cdr::CdrDoc::CdrDoc (
         select.setInt(1, Id);
         cdr::db::ResultSet rs = select.executeQuery();
         if (!rs.next())
-            throw cdr::Exception(L"CdrDoc: Unable to find document " + TextId);
+            throw cdr::Exception(L"CdrDoc: Unable to find document " + textId);
         dbActiveStatus = rs.getString (1);
         lastFragmentId  = rs.getInt (2);
 
         // We know the original status, here's a copy that might change
-        ActiveStatus = dbActiveStatus;
+        activeStatus = dbActiveStatus;
     }
     else
         Id = 0;
@@ -132,10 +133,10 @@ cdr::CdrDoc::CdrDoc (
     std::string qry = "SELECT id, title_filter, xml_schema "
                       "  FROM doc_type WHERE name = ?";
     cdr::db::PreparedStatement select = dbConn.prepareStatement(qry);
-    select.setString (1, TextDocType);
+    select.setString (1, textDocType);
     cdr::db::ResultSet rs = select.executeQuery();
     if (!rs.next())
-        throw cdr::Exception(L"CdrDoc: DocType '" + TextDocType +
+        throw cdr::Exception(L"CdrDoc: DocType '" + textDocType +
                              L"' is invalid");
     DocType       = rs.getInt(1);
     cdr::Int tfi  = rs.getInt(2);
@@ -177,20 +178,20 @@ cdr::CdrDoc::CdrDoc (
                             //   by createTitle XSLT script
                             // This title is only kept if no XSLT script
                             //   exists for this doc type
-                            Title = cdr::dom::getTextContent (ctlNode);
+                            title = cdr::dom::getTextContent (ctlNode);
 
                         else if (ctlTag == L"DocComment")
-                            Comment = cdr::dom::getTextContent (ctlNode);
+                            comment = cdr::dom::getTextContent (ctlNode);
 
                         else if (ctlTag == L"DocActiveStatus") {
-                            ActiveStatus = cdr::dom::getTextContent (ctlNode);
-                            if (ActiveStatus != L"A" && ActiveStatus != L"I")
+                            activeStatus = cdr::dom::getTextContent (ctlNode);
+                            if (activeStatus != L"A" && activeStatus != L"I")
                                 throw cdr::Exception(
                                    L"CdrDoc: Unrecognized DocActiveStatus '" +
-                                   ActiveStatus + L"' - expecting 'A' or 'I'");
+                                   activeStatus + L"' - expecting 'A' or 'I'");
                         }
                         else if (ctlTag == L"DocNeedsReview") {
-                            NeedsReview = cdr::ynCheck (
+                            needsReview = cdr::ynCheck (
                                    cdr::dom::getTextContent (ctlNode),
                                    false, L"DocNeedsReview");
                         }
@@ -215,10 +216,8 @@ cdr::CdrDoc::CdrDoc (
                 }
             }
 
-            else if (name == L"CdrDocBlob") {
-
-                BlobData = cdr::Blob(cdr::dom::getTextContent(child));
-            }
+            else if (name == L"CdrDocBlob")
+                blobData = cdr::Blob(cdr::dom::getTextContent(child));
 
             else
                 // Nothing else is allowed
@@ -229,9 +228,30 @@ cdr::CdrDoc::CdrDoc (
         child = child.getNextSibling ();
     }
 
-    // Check for absolutely required fields
-    if (Xml.size() == 0)
-        throw cdr::Exception (L"CdrDoc: Missing required 'Xml' element");
+    // No passed XML may be legal or may not, have to check other things
+    if (Xml.size() == 0) {
+        // If it's a new record, XML is required
+        if (!Id)
+            throw cdr::Exception(
+                    "LCdrDoc: Can't construct new record with no XML");
+
+        // If no passed XML must at least pass a blob
+        if (blobData.isNull())
+            throw cdr::Exception(
+                    L"CdrDoc: Must have CdrDocXml or CdrDocBlob element");
+
+        // XML stays the same, but fetch it from the database so we
+        //   can validate, gen title, and do all other actions by
+        //   current rules as caller might expect
+        cdr::db::PreparedStatement getXML = docDbConn.prepareStatement(
+            "SELECT xml FROM document WHERE id = ?");
+        getXML.setInt(1, Id);
+        cdr::db::ResultSet rs = getXML.executeQuery();
+        if (!rs.next())
+            throw cdr::Exception(L"CdrDoc: Unable to fetch document " +
+                                  textId + L" for constructor");
+        Xml = rs.getString(1);
+    }
 
     // Generate a title, or use an existing one, or create an error title
     createTitle();
@@ -247,9 +267,8 @@ cdr::CdrDoc::CdrDoc (
 ) : docDbConn (dbConn), Id (docId), warningCount (0),
     revFilterLevel (DEFAULT_REVISION_LEVEL)
  {
-
     // Text version of identifier is from passed id
-    TextId = cdr::stringDocId (Id);
+    textId = cdr::stringDocId (Id);
 
     // Get information from document and related tables
     std::string query = "          SELECT d.val_status,"
@@ -263,13 +282,10 @@ cdr::CdrDoc::CdrDoc (
                         "                 t.name,"
                         "                 t.title_filter,"
                         "                 t.xml_schema,"
-                        "                 b.data,"
                         "                 r.doc_id"
                         "            FROM document d"
                         "            JOIN doc_type t"
                         "              ON t.id = d.doc_type"
-                        " LEFT OUTER JOIN doc_blob b"
-                        "              ON b.id = d.id"
                         " LEFT OUTER JOIN ready_for_review r"
                         "              ON r.doc_id = d.id"
                         "           WHERE d.id = ?";
@@ -277,25 +293,24 @@ cdr::CdrDoc::CdrDoc (
     select.setInt(1, docId);
     cdr::db::ResultSet rs = select.executeQuery();
     if (!rs.next())
-        throw cdr::Exception(L"CdrDoc: Unable to load document " + TextId);
+        throw cdr::Exception(L"CdrDoc: Unable to load document " + textId);
 
     // Copy info into this object
-    ValStatus      = rs.getString (1);
-    ValDate        = rs.getString (2);
-    Title          = cdr::entConvert (rs.getString (3));
+    valStatus      = rs.getString (1);
+    valDate        = rs.getString (2);
+    title          = cdr::entConvert (rs.getString (3));
     dbActiveStatus = rs.getString (4);
     DocType        = rs.getInt (5);
     Xml            = rs.getString (6);
     lastFragmentId = rs.getInt (7);
-    Comment        = cdr::entConvert (rs.getString (8));
-    TextDocType    = rs.getString (9);
+    comment        = cdr::entConvert (rs.getString (8));
+    textDocType    = rs.getString (9);
     cdr::Int tfi   = rs.getInt (10);
     cdr::Int sdi   = rs.getInt (11);
-    BlobData       = rs.getBytes (12);
-    cdr::Int rvRdy = rs.getInt (13);
+    cdr::Int rvRdy = rs.getInt (12);
 
     // Modifiable copy of status, must be initialized
-    ActiveStatus = dbActiveStatus;
+    activeStatus = dbActiveStatus;
 
     // Content or control type document
     conType = not_set;
@@ -312,9 +327,12 @@ cdr::CdrDoc::CdrDoc (
 
     // Default for ready_for_review table is false (document not so marked)
     if (rvRdy.isNull())
-        NeedsReview = false;
+        needsReview = false;
     else
-        NeedsReview = true;
+        needsReview = true;
+
+    // Only need a blob id if we add a new blob
+    blobId = 0;
 
     // We haven't filtered this for insertion, deletion markup
     revisedXml = L"";
@@ -330,18 +348,18 @@ cdr::CdrDoc::CdrDoc (
 
 /**
  * Store a document.
- * Assumes all checking already done in CdrPutDoc()
+ * Assumes all checking already done in cdrPutDoc()
  * Throws exception if failed.
  *
  */
-void cdr::CdrDoc::Store ()
+void cdr::CdrDoc::store ()
 {
     std::string sqlStmt;
 
     // Make sure the client program hasn't tampered with the revision
     // filter level.
     if (getRevFilterLevel() != DEFAULT_REVISION_LEVEL)
-        throw cdr::Exception(L"CdrDoc::Store: RevisionFilterLevel cannot be "
+        throw cdr::Exception(L"CdrDoc::store: RevisionFilterLevel cannot be "
                              L"overridden when saving a CDR document.");
 
     // New record
@@ -377,13 +395,13 @@ void cdr::CdrDoc::Store ()
 
     // Fill in values
     cdr::db::PreparedStatement docStmt = docDbConn.prepareStatement (sqlStmt);
-    docStmt.setString (1, ValStatus);
-    docStmt.setString (2, ValDate);
-    docStmt.setString (3, ActiveStatus);
+    docStmt.setString (1, valStatus);
+    docStmt.setString (2, valDate);
+    docStmt.setString (3, activeStatus);
     docStmt.setInt    (4, DocType);
-    docStmt.setString (5, Title);
+    docStmt.setString (5, title);
     docStmt.setString (6, Xml);
-    docStmt.setString (7, Comment);
+    docStmt.setString (7, comment);
     docStmt.setInt    (8, lastFragmentId);
 
     // For existing records, fill in ID
@@ -401,26 +419,14 @@ void cdr::CdrDoc::Store ()
         // Convert id to wide characters
         char idbuf[32];
         sprintf (idbuf, "CDR%010d", Id);
-        TextId = idbuf;
+        textId = idbuf;
     }
 
-    // Clear out any old blob data for the document.
-    static const char* const delBlobQuery = "DELETE doc_blob WHERE id = ?";
-    cdr::db::PreparedStatement delBlob =
-        docDbConn.prepareStatement(delBlobQuery);
-    delBlob.setInt(1, Id);
-    delBlob.executeUpdate();
-
-    // Store the blob data, if any.
-    if (!BlobData.isNull()) {
-        static const char* const insBlobQuery =
-            "INSERT doc_blob(id, data) VALUES(?,?)";
-        cdr::db::PreparedStatement insBlob =
-            docDbConn.prepareStatement(insBlobQuery);
-        insBlob.setInt(1, Id);
-        insBlob.setBytes(2, BlobData);
-        insBlob.executeUpdate();
-    }
+    // If there was a blob, store it
+    // setBlob() knows how and what to do for any circumstance
+    // If we need a version, it's handled by caller
+    if (!blobData.isNull())
+        blobId = setBlob(docDbConn, blobData, Id);
 
     // Update ready_for_review table indicating that initial mailers
     //   may be sent for this document (the physician, organization or
@@ -432,7 +438,7 @@ void cdr::CdrDoc::Store ()
     //   never be made unready except in extraordinary circumstances.
     //   Hence deleting the flag is removed from the code as a simple
     //   way to prevent client programs from accidentally deleting it.
-    if (NeedsReview) {
+    if (needsReview) {
         static const char *const revQuery =
             "INSERT INTO ready_for_review (doc_id) VALUES (?)";
         cdr::db::PreparedStatement revReady =
@@ -467,11 +473,11 @@ void cdr::CdrDoc::Store ()
     }
 #endif
 
-} // Store
+} // store
 
 /**
  * Add a new document to the database.
- * A front end to CdrPutDoc.
+ * A front end to cdrPutDoc.
  * Called by CdrCommand.
  *
  *  @param      session     contains information about the current user.
@@ -487,15 +493,15 @@ cdr::String cdr::addDoc (
     const cdr::dom::Node& node,
     cdr::db::Connection& conn
 ) {
-    // Call CdrPutDoc with flag indicating new document.
+    // Call cdrPutDoc with flag indicating new document.
     // Return result.
-    return CdrPutDoc (session, node, conn, 1);
+    return cdrPutDoc (session, node, conn, 1);
 }
 
 
 /**
  * Update a document in the database by replacing it.
- * A front end to CdrPutDoc.
+ * A front end to cdrPutDoc.
  * Called by CdrCommand.
  *
  *  @param      session     contains information about the current user.
@@ -511,9 +517,9 @@ cdr::String cdr::repDoc (
     const cdr::dom::Node& node,
     cdr::db::Connection& conn
 ) {
-    // Call CdrPutDoc with flag indicating new document.
+    // Call cdrPutDoc with flag indicating new document.
     // Return result.
-    return CdrPutDoc (session, node, conn, 0);
+    return cdrPutDoc (session, node, conn, 0);
 }
 
 
@@ -532,7 +538,7 @@ cdr::String cdr::repDoc (
  *  @exception  cdr::Exception if a database or processing error occurs.
  */
 
-static cdr::String CdrPutDoc (
+static cdr::String cdrPutDoc (
     cdr::Session& session,
     const cdr::dom::Node& cmdNode,
     cdr::db::Connection& dbConn,
@@ -672,14 +678,13 @@ static cdr::String CdrPutDoc (
     // The constructor may look for additonal elements in the DocCtl
     //   not parsed out by the above logic
     if (docNode == 0)
-        throw cdr::Exception(L"CdrPutDoc: No 'CdrDoc' element in transaction");
+        throw cdr::Exception(L"cdrPutDoc: No 'CdrDoc' element in transaction");
     cdr::CdrDoc doc (dbConn, docNode);
     SHOW_ELAPSED("CdrDoc constructed", incrementalTimer);
 
-    // Make sure the client program hasn't tampered with the revision
     // filter level.
     if (doc.getRevFilterLevel() != cdr::DEFAULT_REVISION_LEVEL)
-        throw cdr::Exception(L"CdrPutDoc: RevisionFilterLevel cannot be "
+        throw cdr::Exception(L"cdrPutDoc: RevisionFilterLevel cannot be "
                              L"overridden when saving a CDR document.");
 
     // Make sure validation has been invoked if a publishable version
@@ -687,7 +692,7 @@ static cdr::String CdrPutDoc (
     // here as well, since the DLL is our primary, but not our only client.
     if (cmdPublishVersion && (!cmdSchemaVal || !cmdLinkVal)
                           && doc.isContentType())
-        throw cdr::Exception(L"CdrPutDoc: creation of a published version "
+        throw cdr::Exception(L"cdrPutDoc: creation of a published version "
                              L"not allowed unless full document validation is "
                              L"invoked.");
 
@@ -695,7 +700,7 @@ static cdr::String CdrPutDoc (
     cdr::String action = newrec ? L"ADD DOCUMENT" : L"MODIFY DOCUMENT";
     cdr::String doctype = doc.getTextDocType();
     if (!session.canDo (dbConn, action, doctype))
-        throw cdr::Exception (L"CdrPutDoc: User '" + session.getUserName() +
+        throw cdr::Exception (L"cdrPutDoc: User '" + session.getUserName() +
                               L"' not authorized to '" + action +
                               L"' with docs of type '" + doctype + L"'");
 
@@ -738,10 +743,10 @@ static cdr::String CdrPutDoc (
 
     // Does document id attribute match expected action type?
     if (doc.getId() && newrec)
-        throw cdr::Exception (L"CdrPutDoc: Attempt to add doc with "
+        throw cdr::Exception (L"cdrPutDoc: Attempt to add doc with "
                               L"existing ID as new");
     else if (!doc.getId() && !newrec)
-        throw cdr::Exception (L"CdrPutDoc: Attempt to replace doc "
+        throw cdr::Exception (L"cdrPutDoc: Attempt to replace doc "
                               L"without existing ID");
 
     // Run all the custom pre-processing routines.
@@ -755,7 +760,7 @@ static cdr::String CdrPutDoc (
 
     // If new record, store it so we can get the new ID
     if (newrec) {
-        doc.Store ();
+        doc.store ();
 
         // If we need to store a version, the user must check it out first
         //   but he can't have done that for a new record, so we do it now
@@ -859,7 +864,7 @@ static cdr::String CdrPutDoc (
 
     // If we haven't already done so, store it
     if (!newrec) {
-        doc.Store ();
+        doc.store ();
         SHOW_ELAPSED("document replaced", incrementalTimer);
     }
 
@@ -884,7 +889,7 @@ static cdr::String CdrPutDoc (
     // Have to do this before checkIn so checkIn can use the exact same
     //   date-time, as taken from the audit trail.
     auditDoc (dbConn, doc.getId(), session.getUserId(), action,
-              L"CdrPutDoc", cmdReason);
+              L"cdrPutDoc", cmdReason);
     SHOW_ELAPSED("action audited", incrementalTimer);
 
     // Checkin must be performed either to checkin or version the doc.
@@ -926,10 +931,10 @@ static cdr::String CdrPutDoc (
 
     resp += L"  </Cdr" + rtag + L"DocResp>\n";
     SHOW_ELAPSED("command response ready", incrementalTimer);
-    SHOW_ELAPSED("total elapsed time for CdrPutDoc", putDocTimer);
+    SHOW_ELAPSED("total elapsed time for cdrPutDoc", putDocTimer);
     return resp;
 
-} // CdrPutDoc
+} // cdrPutDoc
 
 
 /**
@@ -1270,7 +1275,7 @@ void cdr::CdrDoc::createTitle()
         // If we got a title, it replaces whatever is was passed in
         //   an update transaction.
         if (filterTitle.size() > 0)
-            Title = filterTitle;
+            title = filterTitle;
     }
 
     // If we still have no title because:
@@ -1279,10 +1284,10 @@ void cdr::CdrDoc::createTitle()
     //   Title filter generated terminal error
     // Then
     //   Generate a default error title.
-    if (Title.size() == 0) {
+    if (title.size() == 0) {
         errList.push_back (
             L"No title available for document, using default error title");
-        Title = NO_TITLE_AVAILABLE;
+        title = NO_TITLE_AVAILABLE;
     }
 }
 
@@ -1297,16 +1302,16 @@ void cdr::CdrDoc::malFormed()
     malformed = true;
 
     // Set validation status in case doc is stored
-    ValStatus = L"M";
+    valStatus = L"M";
 
     // Title derives from the document, but we can't derive a title
     //   from a malformed document.
     // If there is a title, leave it alone, else see if there's a filter
-    if (Title.size() == 0) {
+    if (title.size() == 0) {
         if (titleFilterId == 0)
-            Title = NO_TITLE_AVAILABLE;
+            title = NO_TITLE_AVAILABLE;
         else
-            Title = MALFORMED_DOC_TITLE;
+            title = MALFORMED_DOC_TITLE;
     }
 }
 
@@ -1412,6 +1417,7 @@ cdr::String cdr::setDocStatus(Session&         session,
     if (!session.canDo(conn, L"PUBLISH DOCUMENT", docType))
         throw Exception(L"User not authorized to change the status of " +
                         docType + L" documents");
+    s1.close();
 
     // Do it.
     db::PreparedStatement s2 = conn.prepareStatement(
@@ -1421,6 +1427,7 @@ cdr::String cdr::setDocStatus(Session&         session,
     s2.setString(1, newStatus);
     s2.setInt   (2, docId);
     s2.executeUpdate();
+    s2.close();
     conn.commit();
 
     // Report success.
@@ -1486,7 +1493,7 @@ void cdr::CdrDoc::updateQueryTerms()
                       "  FROM query_term_def"
                       " WHERE path LIKE '/%s/%%'"
                       "    OR path LIKE '//%%'",
-                      TextDocType.toUtf8().c_str());
+                      textDocType.toUtf8().c_str());
     cdr::db::ResultSet rs = selStmt.executeQuery(selQuery);
     StringSet paths;
     while (rs.next()) {
@@ -1667,7 +1674,7 @@ void cdr::CdrDoc::genFragmentIds ()
     //   that disappears after the merge.
     // If we generate fragment ids for the component that gets merged in,
     //   they will conflict with the ones in the doc we merge into.
-    if (TextDocType == L"ScientificProtocolInfo")
+    if (textDocType == L"ScientificProtocolInfo")
         return;
 
     cdr::String xslt;       // XSLT transform for creating fragment ids
@@ -1675,10 +1682,10 @@ void cdr::CdrDoc::genFragmentIds ()
 
     // If we don't have an XSL transform for this document type yet,
     //   create one.
-    // XXXX Current version always creates it.
-    //      Might optimize in future by caching them - which would
-    //      save the time needed to retrieve and parse the schema, as
-    //      well as to generate the script
+    // XXX Current version always creates it.
+    //     Might optimize in future by caching them - which would
+    //     save the time needed to retrieve and parse the schema, as
+    //     well as to generate the script
     xslt = createFragIdTransform (docDbConn, schemaDocId);
 
     // If the script isn't null
@@ -1796,7 +1803,7 @@ static cdr::String getLeadOrgStatus(const cdr::dom::Node& node,
 void cdr::CdrDoc::updateProtocolStatus(bool validating)
 {
     // Nothing to do if this isn't a protocol document or if not validating.
-    if (!validating || TextDocType != L"InScopeProtocol")
+    if (!validating || textDocType != L"InScopeProtocol")
         return;
 
     // Get a parsed copy of the document so we can examine the org statuses.
@@ -1893,7 +1900,7 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
 void cdr::CdrDoc::sortProtocolSites() {
 
     // Only run this on protocols
-    if (TextDocType != L"InScopeProtocol")
+    if (textDocType != L"InScopeProtocol")
         return;
 
     // Generate title
@@ -2094,9 +2101,9 @@ void rememberQueryTerm(
 bool cdr::CdrDoc::isContentType()
 {
     if (conType == not_set) {
-        if (TextDocType == L"Filter" ||
-            TextDocType == L"css"    ||
-            TextDocType == L"schema")
+        if (textDocType == L"Filter" ||
+            textDocType == L"css"    ||
+            textDocType == L"schema")
           conType = control;
         else
           conType = content;
