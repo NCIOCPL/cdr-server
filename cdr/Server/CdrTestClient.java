@@ -1,5 +1,5 @@
 /*
- * $Id: CdrTestClient.java,v 1.1 2000-04-13 17:12:48 bkline Exp $
+ * $Id: CdrTestClient.java,v 1.2 2000-04-17 03:15:23 bkline Exp $
  *
  * Test client (Java version) for sending commands to CDR server.
  * 
@@ -16,6 +16,9 @@
  * The encoding for the XML must be UTF-8.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/13 17:12:48  bkline
+ * Initial revision
+ *
  */
 
 import java.io.DataInputStream;
@@ -29,7 +32,7 @@ class CdrTestClient {
     public static void main(String av[]) {
         try {
             DataInputStream cmdFile;
-            if (av.length > 0)
+            if (av.length > 0 && !av[0].equals("-"))
                 cmdFile = new DataInputStream(new FileInputStream(av[0]));
             else
                 cmdFile = new DataInputStream(System.in);

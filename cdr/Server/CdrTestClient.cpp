@@ -1,5 +1,5 @@
 /*
- * $Id: CdrTestClient.cpp,v 1.1 2000-04-15 14:10:50 bkline Exp $
+ * $Id: CdrTestClient.cpp,v 1.2 2000-04-17 03:16:12 bkline Exp $
  *
  * Test client (C++ version) for sending commands to CDR server.
  *
@@ -16,6 +16,9 @@
  * The encoding for the XML must be UTF-8.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/15 14:10:50  bkline
+ * Initial revision
+ *
  */
 
 // System headers.
@@ -46,7 +49,7 @@ main(int ac, char **av)
     std::string         requests;
 
     // Load the requests.
-    if (ac > 1) {
+    if (ac > 1 && strcmp(av[1], "-")) {
         std::ifstream is(av[1]);
         if (!is) {
             std::cerr << av[1] << ": " << strerror(errno) << '\n';
