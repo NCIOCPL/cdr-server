@@ -555,27 +555,50 @@
  The ProtocolSites are only populated if the CurrentProtocolStatus
  is Active.
  ==================================================================== -->
- <xsl:template               match = "ProtocolSites">
-    <xsl:for-each           select = "OrgSite">
-     <ProtocolSite>
-      <SiteName>
-       <xsl:attribute         name = "ref">
-        <xsl:value-of       select = "@ref"/>
-       </xsl:attribute>
-       <xsl:attribute         name = "sitetype">
-        <xsl:value-of       select = "OrgSiteContact/SpecificPerson/
-                                      SiteType"/>
-       </xsl:attribute>
-       <xsl:value-of        select = "OfficialName/Name"/>
-      </SiteName>
+ <xsl:template                   match = "ProtocolSites">
+  <xsl:for-each                 select = "OrgSite">
+   <ProtocolSite>
+    <SiteName>
+     <xsl:attribute               name = "ref">
+      <xsl:value-of             select = "@ref"/>
+     </xsl:attribute>
+     <xsl:attribute               name = "sitetype">
+      <xsl:value-of             select = "'Organization'"/>
+     </xsl:attribute>
+     <xsl:value-of              select = "OfficialName/Name"/>
+    </SiteName>
 
-      <!-- ProtPerson -->
-       <xsl:apply-templates select = "OrgSiteContact/SpecificPerson|
-                                     OrgSiteContact/GenericPerson"/>
-      <!-- /ProtPerson -->
+    <!-- ProtPerson -->
+    <xsl:apply-templates        select = "OrgSiteContact/SpecificPerson|
+                                          OrgSiteContact/GenericPerson"/>
+    <!-- /ProtPerson -->
 
-     </ProtocolSite>
-    </xsl:for-each>
+   </ProtocolSite>
+  </xsl:for-each>
+
+  <!-- Added code to pick up private practice sites.  RMK 2002-09-06. -->
+  <xsl:for-each                 select = "PrivatePracticeSite">
+   <xsl:variable                  name = "status"
+                                select = "PrivatePracticeSiteStatus"/>
+   <xsl:variable                  name = "name"
+                                select = "PrivatePracticePerson/
+                                          PersonNameInformation"/>
+   <ProtocolSite>
+    <SiteName                      ref = "{@ref}"
+                              sitetype = "'Person'">
+     <xsl:if                      test = "$name/GivenName">
+      <xsl:value-of             select = "$name/GivenName"/>
+      <xsl:text> </xsl:text>
+     </xsl:if>
+     <xsl:value-of              select = "$name/SurName"/>
+    </SiteName>
+    <xsl:apply-templates        select = "PrivatePracticePerson">
+     <xsl:with-param              name = "status"
+                                select = "$status"/>
+    </xsl:apply-templates>
+   </ProtocolSite>
+  </xsl:for-each>
+   
  </xsl:template>
 
  <!--
@@ -583,8 +606,14 @@
  Assemble the output for a specific person identified as the 
  contact for a participating organization.
  ==================================================================== -->
- <xsl:template               match = "SpecificPerson">
+ <xsl:template               match = "SpecificPerson|PrivatePracticePerson">
+  <xsl:param                  name = "status"/>
   <ProtPerson>
+   <xsl:if                    test = "$status">
+    <xsl:attribute            name = "status">
+     <xsl:value-of          select = "$status"/>
+    </xsl:attribute>
+   </xsl:if>
    <xsl:attribute             name = "ref">
     <xsl:value-of           select = "@ref"/>
    </xsl:attribute>
@@ -593,12 +622,17 @@
     <xsl:value-of           select = "Role"/>
    </PersonRole>
    <Contact>
+    <xsl:if                   test = "$status">
+     <xsl:attribute           name = "Status">
+      <xsl:value-of         select = "$status"/>
+     </xsl:attribute>
+    </xsl:if>
 
     <!-- XXX The original filter didn't have this element here at all. -->
     <ContactDetail>
 
      <!-- Added at Lakshmi's request RMK 2002-09-08. -->
-     <xsl:for-each          select = "Person/OrganizationAddressNames/
+     <xsl:for-each          select = "OrganizationAddressNames/
                                       OrganizationName">
       <OrganizationName>
        <xsl:value-of        select = "."/>
@@ -660,7 +694,7 @@
     <ContactDetail>
 
      <!-- Added at Lakshmi's request RMK 2002-09-08. -->
-     <xsl:for-each          select = "Person/OrganizationAddressNames/
+     <xsl:for-each          select = "OrganizationAddressNames/
                                       OrganizationName">
       <OrganizationName>
        <xsl:value-of        select = "."/>

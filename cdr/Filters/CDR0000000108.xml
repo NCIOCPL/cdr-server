@@ -7,8 +7,10 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 
 <!--
-    Creator:  Volker Englisch
-    Created:  04/01/2002
+     <myTitle>Denormalization Filter: InScope Protocol
+              Creator:  Volker Englisch
+              Created:  04/01/2002
+              Modified: 04/23/2002</myTitle> 
 -->
 
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -1111,21 +1113,45 @@
  ==========================================================================
  -->
  <xsl:template                   match = "PrivatePracticeSite">
-  <xsl:variable                   name = "practiceId" 
+  <xsl:variable                   name = "id" 
                                 select = "PrivatePracticeSiteID/@cdr:ref"/>
-  <xsl:variable                   name = "practice"
-                                select = "document(concat('cdr:', 
-                                                          $practiceId, 
-                                                          '/last'))"/>
-  <PrivatePracticeSite             ref = "{$practiceId}">
-   <SiteType>Person</SiteType>
-   <xsl:apply-templates         select = "PrivatePracticeSiteID "
-                                  mode = "copy"/>
+  <xsl:variable                   name = "uri"
+                                select = "concat('cdrx:', $id, '/last')"/>
+  <xsl:variable                   name = "doc"
+                                select = "document($uri)"/>
+  <xsl:variable                   name = "frag"
+                                select = "substring-after($id, '#')"/>
+  <xsl:variable                   name = "loc"
+                                select = "$doc/Person/PersonLocations/
+                                           PrivatePractice/
+                                           PrivatePracticeLocation
+                                          [@cdr:id = $frag]"/>
 
-   <!-- Collect the participating org personnel information. -->
-   <PracticeSiteContact><!-- XXX -->
-    <xsl:apply-templates        select = "PrivatePracticePerson"/>
-   </PracticeSiteContact>
+  <!-- Stop processing if the link cannot be resolved. -->
+  <xsl:if                         test = "not($doc) or not($loc)">
+   <xsl:message              terminate = "yes">
+    <xsl:text>Cannot resolve link </xsl:text>
+    <xsl:value-of               select = "$uri"/>
+    <xsl:text> for private practice location.</xsl:text>
+   </xsl:message> 
+  </xsl:if>
+
+  <!-- Put it all together. -->
+  <PrivatePracticeSite             ref = "{$id}">
+   <xsl:apply-templates         select = "PrivatePracticeSiteStatus"
+                                  mode = "copy"/>
+   <PrivatePracticePerson          ref = "{$id}">
+    <xsl:apply-templates        select = "$doc/Person/PersonNameInformation"
+                                  mode = "copy"/>
+    <xsl:apply-templates        select = "Role"
+                                  mode = "copy"/>
+    <xsl:apply-templates        select = "$loc/PostalAddress"/>
+    <xsl:apply-templates        select = "$loc/Phone"/>
+    <xsl:apply-templates        select = "$loc/TollFreePhone"/>
+    <xsl:apply-templates        select = "$loc/Fax"/>
+    <xsl:apply-templates        select = "$loc/Email"/>
+    <xsl:apply-templates        select = "$loc/WebSite"/>
+   </PrivatePracticePerson>
   </PrivatePracticeSite>
  </xsl:template>
   
@@ -1286,7 +1312,6 @@
                                            OrganizationNameInformation/
                                            OfficialName"/>
 
-  <SiteType>Organization</SiteType>
   <OrganizationLocation>
    <xsl:attribute                 name = "id">
     <xsl:value-of               select = "OrganizationLocation/@cdr:ref"/>
