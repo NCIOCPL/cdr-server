@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.3 1999-12-14 23:06:58 bobk Exp $
+ * $Id: tables.sql,v 1.4 1999-12-16 21:53:40 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  1999/12/14 23:06:58  bobk
+ * After meeting with Alan and Mike.
+ *
  * Revision 1.2  1999/11/23  20:31:11  bobk
  * Added column-level comments.
  *
@@ -213,6 +216,8 @@ CREATE TABLE doc_status
  *      creator  identification of user account responsible for adding the
  *               document to the repository
  *   val_status  foreign key reference into the doc_status table
+ *     val_date  date validation processing was last performed on document
+ *     approved  approved for publication/release ('Y' or 'N')
  *     doc_type  foreign key reference into the doc_type table
  *        title  required string containing title for document; TBD is
  *               whether titles will be required to be unique, if only by
@@ -232,6 +237,7 @@ CREATE TABLE document
      creator INTEGER NOT NULL REFERENCES usr,
   val_status CHAR NOT NULL DEFAULT 'U' REFERENCES doc_status,
     val_date DATETIME NULL,
+    approved CHAR NOT NULL DEFAULT 'N'
     doc_type INTEGER NOT NULL REFERENCES doc_type,
        title VARCHAR(255) NOT NULL,
     modified DATETIME NULL,
