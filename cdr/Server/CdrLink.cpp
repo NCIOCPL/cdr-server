@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.10 2002-01-22 18:59:49 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.11 2002-01-24 15:18:07 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2002/01/22 18:59:49  ameyer
+ * Fixed dumb bug not initializing frag and srcId.
+ *
  * Revision 1.9  2001/12/19 15:49:29  ameyer
  * Can now update link tables without performing validation.
  *
@@ -249,7 +252,7 @@ int cdr::link::CdrLink::validateLink (
 
                 // Error if it doesn't
                 if (!frag_rs.next())
-                    this->addLinkErr (L"cdr:ref matching fragment '" +
+                    this->addLinkErr (L"cdr:id matching fragment '" +
                             trgFrag + L"' not found in target document");
             }
         }
@@ -259,7 +262,7 @@ int cdr::link::CdrLink::validateLink (
             // If this is a link to a fragment, check to be sure it's here
             if (trgFrag.size() > 0) {
                 if (fragSet.find (trgFrag) == fragSet.end())
-                    this->addLinkErr (L"cdr:ref matching fragment '" +
+                    this->addLinkErr (L"cdr:id matching fragment '" +
                             trgFrag + L"' not found in this document");
             }
         }
@@ -651,7 +654,8 @@ int cdr::link::CdrSetLinks (
         // Check for missing fragments
         // This is not part of validateLink because the errors are not
         //   found in a link, but rather in the absence of a fragment
-        err_count += checkMissedFrags (dbConn, ui, validRule, fragSet,errList);
+        err_count += checkMissedFrags (dbConn, ui, validRule,
+                                       fragSet, errList);
     }
 
     // Update the link net if required
@@ -1412,7 +1416,10 @@ void cdr::link::updateLinkNet (
             stmt.setInt    (2, i->getSrcId());
             stmt.setString (3, i->getSrcField());
             stmt.setInt    (4, i->getTrgId());
-            stmt.setString (5, i->getTrgFrag());
+            if (i->getTrgFrag().size() == 0)
+                stmt.setString (5, cdr::String (true));
+            else
+                stmt.setString (5, i->getTrgFrag());
             stmt.setString (6, i->getRef());
             cdr::db::ResultSet rs = stmt.executeQuery();
         }
@@ -1430,6 +1437,12 @@ void cdr::link::updateLinkNet (
 
 /**
  * Check whether there are any links to fragments that don't exist
+ *
+ * We only check for missing fragments if we have a document id
+ * A user might send us a document for validation without an ID,
+ * e.g., if the document is created in a workstation or conversion
+ * program and submitted for validation before it has ever been
+ * stored.
  *
  *  @param      conn        Reference to database connection.
  *  @param      docId       CDR document ID for XML document containing node.
@@ -1456,6 +1469,11 @@ static int checkMissedFrags (
                 frag_errs,      // Count of errors for one missing fragment
                 total_errs;     // Count of all errors
 
+
+    // Don't check for links to a document that has no id, i.e., has
+    //   never been stored.
+    if (docId < 1)
+        return 0;
 
     // Find all docs that link to any fragment in this doc
     qry = "SELECT target_frag, source_doc "
@@ -1504,8 +1522,8 @@ static int checkMissedFrags (
             if (frag_errs++ < cdr::link::MaxFragMissErrors)
                 errList.push_back (L"Document " +
                         cdr::String::toString (srcId) +
-                        L" expects cdr:ref='" + frag +
-                        L"' but no such ref found");
+                        L" expects cdr:id='" + frag +
+                        L"' but no such id found");
 
 #if 0
 THIS ISN'T A GOOD IDEA BECAUSE A USER CAN FIX THE SOURCE RECORD, LEAVING
