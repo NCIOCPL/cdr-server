@@ -17,7 +17,7 @@
 <!-- Added import of InLine Markup Formatter 7/9/2002 -->
 <!-- fixed bugs in keypoints 8/5/2002 -->
 <!-- added exclude-result-prefixes-cdr to correct character display in Spanish 
-     summaries -->
+     summaries  10/05/2002-->
 <!-- ============================================================
      This program is a filter to display the Patient summary
         in approximate cancer.gov format 
@@ -73,6 +73,7 @@
 
    <!--======================================================
          Display a Contents List of Summary Section Titles 
+        10/09/2002 (CB)  Modified to show three levels of titles
        ======================================================-->
 
       <h2>Table of Contents</h2>
@@ -82,38 +83,25 @@
             <a href="#{translate(Title,' ','-')}"><xsl:value-of select="Title"/>
             </a>
          </dt>
-         <xsl:choose>
-            <xsl:when test="descendant::SummarySection">
-               <dl>
-                  <xsl:for-each select="SummarySection">
-                  <dt>
-                     <a href="#{translate(Title,' ','-')}">
-                     <xsl:value-of select="Title"/></a>
-                  </dt>
-                  </xsl:for-each>
-               </dl>
-            </xsl:when>
-            <xsl:otherwise>
-            </xsl:otherwise>
-         </xsl:choose>
-      </xsl:for-each>
-      </dl>
-<!--
-      <xsl:if test="descendant::SummarySection/SummarySection">
-         <dl>
-            <xsl:for-each select="SummarySection/SummarySection">
-               <dt>
-                  <a href="#{translate(Title,' ','-')}">
-                  <xsl:value-of select="Title"/></a>
-               </dt><br />
-            </xsl:for-each>
-         </dl>
-      </xsl:if>
-   </xsl:for-each>
-   </dl>-->
+        <dl>  
+      <xsl:for-each select="./SummarySection">
+      <xsl:if test="not (SummarySection/SummarySection/SummarySection/SummarySection/Title)">
 
-   <hr />
-   <xsl:apply-templates/>
+ <dt><a href="#{translate(Title,' ','-')}"><xsl:value-of select="Title"/></a></dt>
+ 
+  <dl>
+<xsl:for-each select="./SummarySection">
+<dt><a href="#{translate(Title,' ','-')}"><xsl:value-of select="Title"/></a></dt>
+</xsl:for-each>
+  </dl>
+ </xsl:if>
+</xsl:for-each>
+</dl>
+</xsl:for-each>
+</dl>
+ <hr />
+
+ <xsl:apply-templates/>
 
    </BODY>
    </xsl:if>  <!-- ends if test="//'Patients' -->
@@ -128,13 +116,17 @@
      Display a summary section/summary section title and include anchor 
      ====================================================================-->
 
-<xsl:template match="SummarySection/SummarySection/Title">
+   <xsl:template match="SummarySection/SummarySection/Title">
    <h3><a name="{translate(.,' ','-')}"><xsl:apply-templates/></a></h3>
- </xsl:template>
+   </xsl:template>
 
-<!-- =================================================================
-      Display a summary section title and include anchor
-    ================================================================== -->
+    <xsl:template match="SummarySection/SummarySection/SummarySection/Title">
+    <h3><a name="{translate(.,' ','-')}"><xsl:apply-templates/></a></h3>
+    </xsl:template>
+
+   <xsl:template match="SummarySection/SummarySection/SummarySection/SummarySection/Title">
+   <i><h4><a name="{translate(.,' ','-')}"><xsl:apply-templates/></a></h4></i>
+   </xsl:template>
 
 <xsl:template match="Title">
  <xsl:if test="not(SummarySection/SummarySection)">
@@ -142,24 +134,14 @@
    </xsl:if>
  </xsl:template>
 
-<!--
-<xsl:template match="SummarySection/SummarySection/KeyPoint">
-   <h3><a name="{translate(.,' ','-')}"><xsl:apply-templates/></a></h3>
-</xsl:template>-->
-
-<!--<xsl:template match="SummarySection/Title">
-  <xsl:if test="not(SummarySection/SummarySection/Title)">
-   <h2><a name="{translate(.,' ','-')}"><xsl:apply-templates/></a></h2>
-   </xsl:if>
-  </xsl:template>-->
  
 <!-- =======================================
       Display KeyPoints 
      =======================================-->
 
-<xsl:template match="KeyPoints">
+   <xsl:template match="KeyPoints">
 
- <xsl:if test="KeyPointsList/ListItem">
+   <xsl:if test="KeyPointsList/ListItem">
       <table align='center' border='1'>
       <tr>
          <td align='middle'>
