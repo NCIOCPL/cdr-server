@@ -1,10 +1,16 @@
 /*
- * $Id: CdrPublish.cpp,v 1.6 2002-10-01 21:32:39 ameyer Exp $
+ * $Id: CdrPublish.cpp,v 1.7 2002-10-29 21:03:39 pzhang Exp $
  *
  * Commands to create a new publishing job and retrieve status for an
  * existing publishing job.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2002/10/01 21:32:39  ameyer
+ * Now accepting AllowNonPublish element in CdrPublish command.  Enables a
+ * caller to force publication of versions not marked as publishable.  This
+ * is needed for mailers - which must be printed for outside review before
+ * they are otherwise regularly published.
+ *
  * Revision 1.5  2002/09/03 21:27:01  bkline
  * Fixed typo in SQL query.
  *
@@ -71,6 +77,7 @@ static void insertDocument(
         int docId,
         int userDocVersion,
         bool allowNonPub,
+        bool allowInActive,
         const cdr::String& jobTime,
         cdr::db::Connection& conn);
 static int findExistingJob(
@@ -94,6 +101,7 @@ cdr::String cdr::publish(Session& session,
     String              email(true);
     String              noOutput = L"N";
     bool                allowNonPub = false;
+    bool                allowInActive = false;
     NamedValues         controlParms;
     NamedValues         requestParms;
     NamedValues         jobParms;
@@ -168,11 +176,15 @@ cdr::String cdr::publish(Session& session,
             else if (name == L"Email")
                 email = dom::getTextContent(child);
             else if (name == L"NoOutput")
-                noOutput = dom::getTextContent(child);
+                noOutput = dom::getTextContent(child);            
             else if (name == L"AllowNonPub") {
                 String allow = dom::getTextContent(child);
                 if (allow == L"Y")
                     allowNonPub = true;
+            } 
+            else if (name == L"AllowInActive") {
+                if (L"Y" == dom::getTextContent(child))               
+                    allowInActive = true;
             }
         }
         child = child.getNextSibling();
@@ -275,7 +287,8 @@ cdr::String cdr::publish(Session& session,
     while (docIter != docList.end()) {
         int docId  = docIter->first;
         int docVer = docIter->second;
-        insertDocument(jobId, docId, docVer, allowNonPub, jobTime, conn);
+        insertDocument(jobId, docId, docVer, allowNonPub, allowInActive, 
+                       jobTime, conn);
         docIter++;
     }
 
@@ -580,6 +593,7 @@ void insertDocument(
         int docId,
         int userDocVersion,
         bool allowNonPub,
+        bool allowInActive,
         const cdr::String& jobTime,
         cdr::db::Connection& conn)
 {
@@ -587,16 +601,26 @@ void insertDocument(
     char *query;
 
     // If caller supplied no version, get last publishable one
-    if (userDocVersion < 1)
-        query = " SELECT MAX(v.num)            "
-                "   FROM doc_version v         "
-                "   JOIN document d            "
-                "     ON d.id = v.id           "
-                "  WHERE v.id = ?              "
-                "    AND v.publishable = 'Y'   "
-                "    AND v.val_status = 'V'    "
-                "    AND d.active_status = 'A' "
-                "    AND v.dt <= ?             ";
+    if (userDocVersion < 1 || allowInActive) {
+
+        // Special code to handle Hotfix-Remove of blocked document.
+        if (allowInActive)
+            query = " SELECT MAX(v.num)            "
+                    "   FROM doc_version v         "                  
+                    "  WHERE v.id = ?              "
+                    "    AND v.dt <= ?             ";
+
+        else
+            query = " SELECT MAX(v.num)            "
+                    "   FROM doc_version v         "
+                    "   JOIN document d            "
+                    "     ON d.id = v.id           "
+                    "  WHERE v.id = ?              "
+                    "    AND v.publishable = 'Y'   "
+                    "    AND v.val_status = 'V'    "
+                    "    AND d.active_status = 'A' "
+                    "    AND v.dt <= ?             ";
+    }
 
     // Else caller supplied one, has he explicitly said it doesn't
     //   have to be publishable?
