@@ -1,9 +1,12 @@
 /*
- * $Id: ParseSchema.cpp,v 1.1 2000-04-11 17:57:44 bkline Exp $
+ * $Id: ParseSchema.cpp,v 1.2 2000-04-11 21:24:09 bkline Exp $
  *
  * Prototype for CDR schema parser.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/11 17:57:44  bkline
+ * Initial revision
+ *
  */
 
 // System headers.
@@ -161,12 +164,30 @@ void writeElement(const cdr::xsd::Schema& schema, cdr::xsd::Element& elem)
             cdr::xsd::AttrEnum attrs = cType->getAttributes();
             while (attrs != cType->getAttrEnd()) {
                 cdr::xsd::Attribute* a = *attrs++;
-                std::cout << " " << a->getName().toUtf8();
-                const cdr::xsd::Type* aType = a->getType(schema);
+                std::cout << ' ' << a->getName().toUtf8() << ' ';
+                const cdr::xsd::SimpleType* aType = 
+                    dynamic_cast<const cdr::xsd::SimpleType*>
+                    (a->getType(schema));
                 if (!aType)
                     throw(L"Missing type for attribute", a->getName());
-                // XXX need to do something with the type
-                std::cout << " CDATA #IMPLIED";
+                const cdr::StringSet& enums = aType->getEnumSet();
+                if (enums.size() > 0) {
+                    std::wcerr << L"enums.size(): " << enums.size() << std::endl;
+                    char sep = '(';
+                    cdr::StringSet::const_iterator i = enums.begin();
+                    while (i != enums.end()) {
+                        std::wcerr << L"enumerated value: " << *i << std::endl;
+                        std::cout << sep << (*i++).toUtf8();
+                        sep = '|';
+                    }
+                    std::cout << ')';
+                }
+                else
+                    std::cout << "CDATA";
+                if (a->isOptional())
+                    std::cout << " #IMPLIED";
+                else
+                    std::cout << " #REQUIRED";
             }
             std::cout << ">\n";
         }
