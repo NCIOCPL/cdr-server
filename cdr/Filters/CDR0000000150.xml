@@ -13,7 +13,6 @@
 
  <xsl:output                method = "xml" 
               omit-xml-declaration = "no"
-                    doctype-system = "http://mmdb2.nci.nih.gov/dtds/PDQ.dtd"
                           encoding = "UTF-8"/>
 
  <!--
@@ -21,6 +20,7 @@
  Root element.
  ==================================================================== -->
  <xsl:template               match = "/">
+  <xsl:text disable-output-escaping="yes">&lt;!DOCTYPE Protocol &gt;</xsl:text>
   <xsl:apply-templates      select = "InScopeProtocol"/>
  </xsl:template>
 
@@ -33,6 +33,9 @@
   <Protocol>
   <xsl:attribute              name = "id">
     <xsl:value-of           select = "DocId"/>
+  </xsl:attribute>
+  <xsl:attribute              name = "LegacyPDQID">
+    <xsl:value-of           select = "PdqKey"/>
   </xsl:attribute>
 
    <ProtocolIDs>
@@ -76,9 +79,15 @@
    <!-- Use custom templates for these. -->
    <xsl:apply-templates     select = "ProtocolAdminInfo"/>
 
-   <!-- Use generic copy templates for these. -->
-   <xsl:apply-templates     select = "DateFirstPublished"
-                              mode = "copy"/>
+<!-- ===================================================================
+            Copy Date First Published and Date Last Modified
+     ================================================================== -->
+   <xsl:if                    test = "CdrDocCtl/FirstPub/Date">
+    <DateFirstPublished>
+     <xsl:value-of          select = "substring-before
+                                      (CdrDocCtl/FirstPub/Date,'T')"/>
+    </DateFirstPublished>
+   </xsl:if>
    <xsl:apply-templates     select = "DateLastModified"
                               mode = "copy"/>
   </Protocol>
@@ -162,11 +171,7 @@
                                       TreatmentIntervention">
    <xsl:apply-templates     select = "Para|ItemizedList"
                               mode = "copy"/>
-   <!-- xsl:apply-templates     select = "Para"
-                              mode = "copy"/-->
  </xsl:template>
-
-
 
 
  <!--
@@ -177,12 +182,7 @@
   <ProtocolDetail>
    <xsl:apply-templates     select = "StudyType"
                               mode = "copy"/>
-   <StudyCategory>
-    <xsl:apply-templates    select = "StudyCategory/StudyCategoryName"
-                              mode = "copy"/>
-    <xsl:apply-templates    select = "StudyCategory/Intervention"
-                              mode = "copy"/>
-   </StudyCategory>
+   <xsl:apply-templates     select = "StudyCategory"/>
    <xsl:apply-templates     select = "StudyCondition"
                               mode = "copy"/>
    <xsl:apply-templates     select = "Gene"
@@ -343,8 +343,8 @@
      </xsl:if>
      <xsl:apply-templates   select = "Person/TollFreePhone"
                               mode = "copy"/>
-     <xsl:apply-templates   select = "Person/Fax"
-                              mode = "copy"/>
+     <!-- xsl:apply-templates   select = "Person/Fax"
+                              mode = "copy"/-->
 
      <!-- Email with Public=No attribute is not to be published -->
      <!-- ===================================================== -->
@@ -473,8 +473,8 @@
      </xsl:if>
      <xsl:apply-templates   select = "TollFreePhone"
                               mode = "copy"/>
-     <xsl:apply-templates   select = "Fax"
-                              mode = "copy"/>
+     <!-- xsl:apply-templates   select = "Fax"
+                              mode = "copy"/-->
      <!-- Email with Public=No attribute is not to be published -->
      <!-- ===================================================== -->
      <xsl:if                  test = "not(Email/@Public = 'No')">
@@ -527,8 +527,8 @@
      </xsl:if>
      <xsl:apply-templates   select = "TollFreePhone"
                               mode = "copy"/>
-     <xsl:apply-templates   select = "Fax"
-                              mode = "copy"/>
+     <!--xsl:apply-templates   select = "Fax"
+                              mode = "copy"/-->
 
      <!-- Email with Public=No attribute is not to be published -->
      <!-- ===================================================== -->
@@ -582,10 +582,27 @@
 
  <!--
  ====================================================================
+ Add citation IDs as attributes
+ ==================================================================== -->
+ <xsl:template               match = "StudyCategory">
+   <StudyCategory>
+    <xsl:apply-templates    select = "StudyCategoryName"
+                              mode = "copy"/>
+    <xsl:apply-templates    select = "Intervention"
+                              mode = "copy"/>
+   </StudyCategory>
+ </xsl:template>
+
+
+
+ <!--
+ ====================================================================
  Remove any comments from the output
  ==================================================================== -->
  <xsl:template               match = "PrimaryID | OtherID">
    <xsl:copy>
+    <xsl:apply-templates    select = "IDType"
+                              mode = "copy"/>
     <xsl:apply-templates    select = "IDString"
                               mode = "copy"/>
     <xsl:apply-templates    select = "Comment"/>
@@ -627,6 +644,9 @@
     <xsl:value-of           select = "CitationText"/>
   </PublishedResults>
  </xsl:template>
+
+
+
 
 
  <!--

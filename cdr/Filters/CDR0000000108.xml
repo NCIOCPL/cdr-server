@@ -152,161 +152,196 @@
 
       <xsl:apply-templates        select = "ProtocolDetail"/>
        
-        <Eligibility>
-          <xsl:apply-templates    select = "Eligibility"/>
-        </Eligibility>
+      <Eligibility>
+        <xsl:apply-templates      select = "Eligibility"/>
+      </Eligibility>
 
 
-<!-- ==============================================
-     Display citations for PublishedResults 
-     ============================================== -->
-<!-- Process non-PUBMED records (a.k.a PDQCitation)
-     ============================================== -->
-        <xsl:if test="PublishedResults/Citation">
-          <PublishedResults>
-          <xsl:for-each 
-               select="PublishedResults/Citation">
-            <xsl:variable          name   = "PubCit" 
-                                   select = "@cdr:ref"/>
-            <xsl:variable            name = "CitInfo" 
-                                  select = "document
-                                            (concat
-                                            ('cdrx:',$PubCit, '/lastp'))"/>
+<!--  ==============================================
+      Display citations for PublishedResults 
+      ============================================== -->
+      <xsl:apply-templates        select = "PublishedResults/Citation"/>
 
-            <xsl:if test="$CitInfo/Citation/PDQCitation">
-              <Citation ref = "{$PubCit}">
-              <xsl:apply-templates select = "$CitInfo/Citation/PDQCitation/
-                                             CancerLitID"
-                                     mode = "copy"/>
-              <CitationText>
-              <xsl:for-each        select = "$CitInfo/Citation/PDQCitation">
-                <xsl:for-each      select = "AuthorList/Author">
-                  <xsl:value-of    select = "concat(LastName,' ',FirstName)"/>
-                  <xsl:if            test = "position() != last()">, </xsl:if>
-                </xsl:for-each>
-
-<!-- ========================================================
-     If the attribute Complete=No exists the author list text
-     has to be added with et al.
-     ======================================================== -->
-                <xsl:choose>
-                  <xsl:when        test = "contains(AuthorList/@Complete,'No')">
-                    <xsl:text>, et al.: </xsl:text>
-                  </xsl:when>
-                  <xsl:otherwise>
-                    <xsl:text>: </xsl:text>
-                  </xsl:otherwise>
-                </xsl:choose>
-
-                <xsl:value-of      select = "CitationTitle"/>.
-                <xsl:text>&#xa;</xsl:text>
-                <xsl:value-of      select = "PublicationDetails/PublishedIn"/>.
-                <xsl:value-of      select = "PublicationDetails/
-                                        OtherPublicationInformation"/>.
-              </xsl:for-each>
-              </CitationText>
-
-              <xsl:apply-templates select = "$CitInfo/Citation/PDQCitation/
-                                       CancerLitAbstract/AbstractText"
-                                     mode = "copy"/>
-              </Citation>
-            </xsl:if>
-
-
-<!-- ==========================================================
-     Test to determine if citation reference is a PUBMED record     
-     ========================================================== -->
-            <xsl:if                  test = "$CitInfo/Citation/PubmedArticle">
-              <Citation               ref = "{$PubCit}">
-              <xsl:apply-templates select = "$CitInfo/Citation/PubmedArticle/
-                                             MedlineCitation/MedlineID"
-                                   mode   = "copy"/>
-              <xsl:apply-templates select = "$CitInfo/Citation/PubmedArticle/
-                                             MedlineCitation/PMID"
-                                   mode   = "copy"/>
-
-              <CitationText>
-              <xsl:if                test = "$CitInfo/Citation/PubmedArticle/
-                                             MedlineCitation/Article/
-                                             AuthorList">
-                <xsl:for-each      select = "$CitInfo/Citation/PubmedArticle/
-                                             MedlineCitation/Article/
-                                             AuthorList/Author">
-                  <xsl:if            test = "position() &lt; 4">
-                    <xsl:value-of  select = "concat(LastName,' ',Initials)"/>
-                    <xsl:if          test = "position()!=3">, </xsl:if>
-                  </xsl:if>
-                </xsl:for-each>
-
-                <xsl:text>, et al.: </xsl:text>
-              </xsl:if>
-
-              <xsl:for-each        select = "$CitInfo/Citation/PubmedArticle/
-                                             MedlineCitation/Article">
-                <xsl:value-of      select = "ArticleTitle"/>
-                <xsl:text> </xsl:text>
-              </xsl:for-each>
-
-              <xsl:for-each        select = "$CitInfo/Citation/PubmedArticle/
-                                             MedlineCitation/MedlineJournalInfo/
-                                             MedlineTA">
-                <xsl:value-of      select = "."/>
-                <xsl:text>&#xa;</xsl:text>
-              </xsl:for-each>
-
-              <xsl:for-each        select = "$CitInfo/Citation/PubmedArticle/
-                                             MedlineCitation/Article/
-                                             Journal/JournalIssue">
-                <xsl:text>&#xa;</xsl:text>
-                <xsl:value-of      select = "concat
-                                             (Volume,'(',Issue,')',': ')"/>
-              </xsl:for-each>
-
-              <xsl:for-each        select = "$CitInfo/Citation/PubmedArticle/
-                                             MedlineCitation/Article/
-                                             Pagination">
-                <xsl:value-of      select = "concat(MedlinePgn,', ')"/>
-              </xsl:for-each>
-
-              <xsl:for-each        select = "$CitInfo/Citation/PubmedArticle/
-                                             PubmedData/History/
-                                             PubMedPubDate[1]/Year">
-                <xsl:value-of      select = "."/>
-                <xsl:text>.&#xa;</xsl:text>
-              </xsl:for-each>
-              </CitationText>
-              <xsl:apply-templates select = "$CitInfo/Citation/PubmedArticle/
-                                             MedlineCitation/Article/
-                                             Abstract/AbstractText"
-                                   mode   = "copy"/>
-              </Citation>
-            </xsl:if>
-          </xsl:for-each>
-          </PublishedResults>
-        </xsl:if>
 
     <!--
     =====================================================================
     Process the Protocol Administrative Information
     ===================================================================== -->
     <ProtocolAdminInfo>
-     <xsl:apply-templates select = "ProtocolAdminInfo/CurrentProtocolStatus" 
-                            mode = "copy"/>
+     <xsl:apply-templates         select = "ProtocolAdminInfo/
+                                            CurrentProtocolStatus" 
+                                    mode = "copy"/>
 
      <!-- Fixed original, which was exploding information as a cross-product
           when there were more than one lead orgs. -->
      <xsl:apply-templates select = "ProtocolAdminInfo/ProtocolLeadOrg"/>
     </ProtocolAdminInfo>
         
-    <xsl:apply-templates  select = "DateLastModified" 
-                            mode = "copy"/>
-    <xsl:apply-templates  select = "PdqKey" 
-                            mode = "copy"/>
+    <xsl:apply-templates          select = "DateLastModified" 
+                                    mode = "copy"/>
+    <xsl:apply-templates          select = "PdqKey" 
+                                    mode = "copy"/>
    </xsl:copy>
   </xsl:template>
 
 
-  <!-- VE Code -->
+
+
+  <!-- ==============================================================
+       Template for formatting the PublishedResults citations
+       ============================================================== -->
+  <xsl:template            match = "PublishedResults/Citation">
+  <!-- A) Process non-PUBMED records (a.k.a PDQCitation)
+       ================================================= -->
+   <PublishedResults>
+    <xsl:for-each                  select = ".">
+     <xsl:variable                   name = "PubCit" 
+                                   select = "@cdr:ref"/>
+     <xsl:variable                   name = "CitInfo" 
+                                   select = "document
+                                            (concat
+                                            ('cdrx:',$PubCit, '/lastp'))"/>
+
+     <xsl:if                         test = "$CitInfo/Citation/PDQCitation">
+      <Citation                       ref = "{$PubCit}">
+       <xsl:apply-templates        select = "$CitInfo/Citation/PDQCitation/
+                                             CancerLitID"
+                                     mode = "copy"/>
+       <CitationText>
+        <xsl:for-each              select = "$CitInfo/Citation/PDQCitation">
+         <xsl:for-each             select = "AuthorList/Author">
+          <xsl:value-of            select = "concat(LastName,' ',FirstName)"/>
+          <xsl:if                    test = "position() != last()">
+           <xsl:text>, </xsl:text>
+          </xsl:if>
+         </xsl:for-each>
+
+<!-- ========================================================
+     If the attribute Complete=No exists the author list text
+     has to be added with et al.
+     ======================================================== -->
+         <xsl:choose>
+          <xsl:when                  test = "contains
+                                             (AuthorList/@Complete,'No')">
+           <xsl:text>, et al.: </xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:text>: </xsl:text>
+          </xsl:otherwise>
+         </xsl:choose>
+
+         <xsl:value-of             select = "CitationTitle"/>
+         <xsl:text>. </xsl:text>
+
+           <!-- Place the string [Abstract] after the title if the 
+                CitationType is indicates an Abstract 
+                ================================================== -->
+         <xsl:if                     test = "CitationType = 'Abstract'">
+          <xsl:text>[</xsl:text>
+          <xsl:value-of            select = "CitationType"/>
+          <xsl:text>] </xsl:text>
+         </xsl:if>
+
+         <xsl:if                     test = "not(PublicationDetails/
+                                                 PublishedIn = '')">
+          <xsl:value-of            select = "PublicationDetails/
+                                             PublishedIn"/>.
+         </xsl:if>
+
+         <xsl:if                     test = "not(PublicationDetails/
+                                                 OtherPublicationInformation
+                                                 = '')">
+          <xsl:value-of            select = "PublicationDetails/
+                                             OtherPublicationInformation"/>
+          <xsl:text> </xsl:text>
+         </xsl:if>
+        </xsl:for-each>
+       </CitationText>
+
+       <xsl:apply-templates        select = "$CitInfo/Citation/PDQCitation/
+                                       CancerLitAbstract/AbstractText"
+                                     mode = "copy"/>
+      </Citation>
+     </xsl:if>
+
+<!-- ==========================================================
+     B) Process PUBMED records    
+     ========================================================== -->
+     <xsl:if                         test = "$CitInfo/Citation/PubmedArticle">
+      <Citation                       ref = "{$PubCit}">
+       <xsl:apply-templates        select = "$CitInfo/Citation/PubmedArticle/
+                                             MedlineCitation/MedlineID"
+                                   mode   = "copy"/>
+       <xsl:apply-templates        select = "$CitInfo/Citation/PubmedArticle/
+                                             MedlineCitation/PMID"
+                                   mode   = "copy"/>
+
+       <CitationText>
+        <xsl:if                      test = "$CitInfo/Citation/PubmedArticle/
+                                             MedlineCitation/Article/
+                                             AuthorList">
+         <xsl:for-each             select = "$CitInfo/Citation/PubmedArticle/
+                                             MedlineCitation/Article/
+                                             AuthorList/Author">
+          <xsl:if                    test = "position() &lt; 4">
+           <xsl:value-of           select = "concat(LastName,' ',Initials)"/>
+           <xsl:if                   test = "position()!=3">
+            <xsl:text>, </xsl:text>
+           </xsl:if>
+          </xsl:if>
+         </xsl:for-each>
+
+         <xsl:text>, et al.: </xsl:text>
+        </xsl:if>
+
+        <xsl:for-each              select = "$CitInfo/Citation/PubmedArticle/
+                                             MedlineCitation/Article">
+         <xsl:value-of             select = "ArticleTitle"/>
+         <xsl:text> </xsl:text>
+        </xsl:for-each>
+
+        <xsl:for-each              select = "$CitInfo/Citation/PubmedArticle/
+                                             MedlineCitation/MedlineJournalInfo/
+                                             MedlineTA">
+         <xsl:value-of             select = "."/>
+         <xsl:text>&#xa;</xsl:text>
+        </xsl:for-each>
+
+        <xsl:for-each              select = "$CitInfo/Citation/PubmedArticle/
+                                             MedlineCitation/Article/
+                                             Journal/JournalIssue">
+         <xsl:text>&#xa;</xsl:text>
+         <xsl:value-of             select = "concat
+                                             (Volume,'(',Issue,')',': ')"/>
+        </xsl:for-each>
+
+        <xsl:for-each              select = "$CitInfo/Citation/PubmedArticle/
+                                             MedlineCitation/Article/
+                                             Pagination">
+         <xsl:value-of             select = "concat(MedlinePgn,', ')"/>
+        </xsl:for-each>
+
+        <xsl:for-each              select = "$CitInfo/Citation/PubmedArticle/
+                                             PubmedData/History/
+                                             PubMedPubDate[1]/Year">
+         <xsl:value-of             select = "."/>
+         <xsl:text>.&#xa;</xsl:text>
+        </xsl:for-each>
+       </CitationText>
+      <xsl:apply-templates         select = "$CitInfo/Citation/PubmedArticle/
+                                             MedlineCitation/Article/
+                                             Abstract/AbstractText"
+                                   mode   = "copy"/>
+      </Citation>
+     </xsl:if>
+    </xsl:for-each>
+   </PublishedResults>
+  </xsl:template>
+
+
+
+
+
   <!-- ==============================================================
        Template for extracting Glossary Term definitions for
        Rationale, Purpose, and TreatmentIntervention elements

@@ -24,6 +24,7 @@
 
 <xsl:template match="Term">
 
+<xsl:text disable-output-escaping="yes">&lt;!DOCTYPE Term &gt;</xsl:text>
 
 <xsl:copy>   
 <xsl:for-each select="DocId">
@@ -41,8 +42,8 @@
 <xsl:if test="OtherName">
 <xsl:for-each select="OtherName">
 <OtherName>
-<xsl:apply-templates   select="OtherTermName" mode="copy"/>
-<xsl:apply-templates   select="OtherNameType" mode="copy"/>
+<OtherTermName><xsl:value-of   select="OtherTermName"/></OtherTermName>
+<OtherNameType><xsl:value-of select="OtherNameType"/></OtherNameType>
 </OtherName>
 </xsl:for-each>
 </xsl:if>
@@ -70,29 +71,30 @@
 <xsl:for-each select="TermType">
 <xsl:for-each select="TermTypeName">
 <xsl:if test=".='Protocol selection criteria'">
-<xsl:apply-templates select="."  mode="copy"/>
+<TermTypeName><xsl:apply-templates select="."/></TermTypeName>
 </xsl:if>
 <xsl:if test=".='Obsolete term'">
-<xsl:apply-templates select="."  mode="copy"/>
+<TermTypeName><xsl:apply-templates select="."/></TermTypeName>
 </xsl:if>
 <xsl:if test=".='Header term'">
-<xsl:apply-templates select="."  mode="copy"/>
+<TermTypeName><xsl:apply-templates select="."/></TermTypeName>
 </xsl:if>
 <xsl:if test=".='Semantic type'">
-<xsl:apply-templates select="."  mode="copy"/>
+<TermTypeName><xsl:apply-templates select="."/></TermTypeName>
 </xsl:if>
 
 </xsl:for-each>
 </xsl:for-each>
 
-<xsl:for-each select="SemanticTypeText">
-<SemanticType ref=""><xsl:value-of select="."/></SemanticType>
+<xsl:for-each select="SemanticType">
+<xsl:variable name="ref" select="@ref"/>
+<SemanticType ref="{$ref}"><xsl:value-of select="."/></SemanticType>
 </xsl:for-each>
 
 <!-- =================================================================
         Copy Term Relationship (Parent TermId,PreferredName,ParentType
      ================================================================== -->
-
+               <xsl:if test="TermRelationship">
                <TermRelationship>
                <xsl:for-each select="TermRelationship">
                <xsl:for-each select="ParentTerm">
@@ -108,10 +110,36 @@
                 <xsl:apply-templates select="ParentType" mode="copy"/>
                 </ParentTerm>
                 </xsl:for-each>
+                 <xsl:for-each select="RelatedTerm">
+               <RelatedTerm>
+               <RelatedTermName>
+                <xsl:attribute name="ref">
+                <xsl:value-of select="@cdr:ref"/>
+                </xsl:attribute>
+                <xsl:for-each select="PreferredName">
+                <xsl:value-of select="."/>
+                </xsl:for-each>
+                </RelatedTermName>
+                <xsl:apply-templates select="RelationshipType" mode="copy"/>
+                </RelatedTerm>
+                </xsl:for-each>
                 </xsl:for-each>
                 </TermRelationship>
-                </xsl:copy>
-                </xsl:template>
+                </xsl:if>
+               
+<!-- ===================================================================
+            Copy Date First Published and Date Last Modified
+     ================================================================== -->
+     <xsl:if test="DateFirstPublished">
+     <xsl:apply-templates select="DateFirstPublished" mode="copy"/>
+     </xsl:if>
+     <xsl:if test="DateLastModified">
+     <xsl:apply-templates select="DateLastModified" mode="copy"/>
+     </xsl:if>
+     </xsl:copy>
+     </xsl:template>
+
+
 
  <!-- ==================================================================
        Template rule used to do XML to XML transformations which

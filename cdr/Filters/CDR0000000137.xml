@@ -24,12 +24,20 @@
         ================================================================= -->
    
 <xsl:template match="GlossaryTerm">
+ <xsl:text disable-output-escaping="yes">
+&lt;!DOCTYPE GlossaryTerm &gt;</xsl:text>
+
 <xsl:copy>
 <xsl:for-each  select="document('cdrutil:/docid')">
 <xsl:attribute name="id">
 <xsl:value-of select="."/>
 </xsl:attribute>
 </xsl:for-each>
+
+<xsl:attribute name="LegacyPDQID">
+<xsl:value-of select="PdqKey"/>
+</xsl:attribute>
+
 <xsl:apply-templates  select="TermName" mode="copy"/>
 <xsl:apply-templates  select="SpanishTermName" mode="copy"/>
 <xsl:apply-templates  select="TermPronunciation" mode="copy"/>
@@ -40,9 +48,18 @@
 <xsl:for-each select="SpanishTermDefinition">
 <TermDefinition><xsl:value-of select="."/></TermDefinition>
 </xsl:for-each>
-
+<!-- ===================================================================
+            Copy Date First Published and Date Last Modified
+     ================================================================== -->
+<xsl:if test="CdrDocCtl/Create/Date">
+ <DateFirstPublished><xsl:value-of select="substring-before(CdrDocCtl/Create/Date,'T')"/></DateFirstPublished>
+</xsl:if>
+<xsl:if test="DateLastModified">
+<xsl:apply-templates select="DateLastModified" mode="copy"/>
+</xsl:if>
 </xsl:copy>
 </xsl:template>
+
 
 <!-- ===================================================================
      Template rule used to do XML to XML transformations which

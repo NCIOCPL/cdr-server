@@ -28,7 +28,9 @@
      
    <!--Inline sytle sheet to display H2 and H4 headers in Navy -->
      <STYLE>
-    <!--   H2,H4 {color: Navy}-->
+       h2 { font style: bold font size: 14pt}
+       h3 { font style: bold font size: 13pt}
+       h4 { font style: bold font size: 12pt}
           <!-- P {font size: 12pt}
            p {font size: medium}
            dd {font size: medium}
@@ -69,10 +71,18 @@
 <xsl:choose>
 <xsl:when test="descendant::SummarySection">
 <dl>
+<xsl:for-each select="./SummarySection">
+<xsl:if test="not(SummarySection/SummarySection/SummarySection/Title)">
+<dt><xsl:value-of select="Title"/></dt><br />
+<dl>
 <xsl:for-each select=".//SummarySection">
 <dt><xsl:value-of select="Title"/></dt><br />
 </xsl:for-each>
 </dl>
+</xsl:if>
+</xsl:for-each>
+</dl>
+
 </xsl:when>
 <xsl:otherwise>
 </xsl:otherwise>
@@ -92,7 +102,19 @@
 
 <!-- Display a summary section title and include anchor --> 
 
-<xsl:template match="SummarySection/Title | SummarySection/SummarySection/Title">
+<!--<xsl:template match="SummarySection/Title | SummarySection/SummarySection/Title">
+<h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4>
+</xsl:template>-->
+
+<xsl:template match="SummarySection/Title">
+<h2><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h2>
+</xsl:template>
+
+<xsl:template match="SummarySection/SummarySection/Title">
+<h3><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h3>
+</xsl:template>
+
+<xsl:template match="SummarySection/SummarySection/SummarySection/Title | SummarySection/SummarySection/SummarySection/SummarySection/Title">
 <h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4>
 </xsl:template>
 
@@ -155,7 +177,13 @@
 			
 	</xsl:template>
 
+ <!-- ============================================================ 
+                         Display a note
+      ============================================================ -->
 
+                    <xsl:template match="Note">
+                    <i><xsl:value-of select="."/></i>
+                    </xsl:template>
 
 <!-- =========================================================
                        Link to glossaryTermRefs 
@@ -177,7 +205,7 @@
 
 <xsl:template match="ReferenceList">
 <xsl:if test="Reference">
-<p>References:</p>
+<h3><b>References:</b></h3>
 <ol>
 <xsl:for-each select="Reference">
 <xsl:variable name="Refidx" select="@refidx"/>
@@ -229,6 +257,11 @@
      ================================================================== -->
 
           <xsl:template match="ExternalRef">
+          <xsl:variable name="nlink" select="@cdr:xref"/>
+          <a href="{$nlink}"><xsl:apply-templates/></a>
+          </xsl:template>
+
+           <xsl:template match="Reference/ExternalRef">
           <xsl:variable name="nlink" select="@cdr:xref"/>
           <a href="{$nlink}"><xsl:apply-templates/></a>
           </xsl:template>
