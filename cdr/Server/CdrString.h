@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.18 2000-10-25 19:07:08 mruben Exp $
+ * $Id: CdrString.h,v 1.19 2000-12-26 23:22:59 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2000/10/25 19:07:08  mruben
+ * added functions to put dates in correct format
+ *
  * Revision 1.17  2000/10/18 03:20:00  ameyer
  * Added optional parameter to tagWrap allowing attributes to be included.
  *
@@ -332,7 +335,7 @@ namespace cdr {
      *  @param  data        reference to string to be wrapped as element data.
      *  @param  tag         reference to tag to wrap around data.
      *  @param  attrs       optional attribute info as a single string.
-     *  @return             string with <tag>data</tag>
+     *  @return             string with &lt;tag&gt;data&lt;/tag&gt;
      */
     extern String tagWrap (const String& data, const String& tag,
                            const String& = L"");
@@ -348,7 +351,7 @@ namespace cdr {
      *                      the <code>errors</code> list.
      */
     extern String packErrors(const StringList& errors);
-  
+
     /**
      * Puts a date in format suitable for use in database
      *
