@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.102 2005-03-04 22:18:29 bkline Exp $
+ * $Id: tables.sql,v 1.103 2005-03-04 22:33:08 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.102  2005/03/04 22:18:29  bkline
+ * Changed import_doc.dropped from CHAR to DATETIME column.
+ *
  * Revision 1.101  2005/01/22 16:46:11  bkline
  * Added status column to import_job table.
  *
@@ -874,6 +877,21 @@ CREATE TABLE external_map
          usr INTEGER           NULL REFERENCES usr,
     last_mod DATETIME      NOT NULL,
 CONSTRAINT external_map_unique UNIQUE (usage, value))
+GO
+
+/*
+ * Custom processing rules for mapping of external values.
+ *
+ *           id  primary key for this table (auto-generated)
+ *       map_id  foreign key into the external_map table
+ *      element  element to be populated with custom value
+ *        value  value to be placed in element
+ */
+CREATE TABLE external_map_rule
+         (id INTEGER       IDENTITY PRIMARY KEY,
+      map_id INTEGER       NOT NULL REFERENCES external_map,
+     element VARCHAR(64)   NOT NULL,
+       value NVARCHAR(255) NOT NULL)
 GO
 
 /* 
