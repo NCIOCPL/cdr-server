@@ -1,9 +1,13 @@
 /*
- * $Id: CdrDocTypes.cpp,v 1.9 2001-11-06 21:40:32 bkline Exp $
+ * $Id: CdrDocTypes.cpp,v 1.10 2002-05-15 23:40:15 bkline Exp $
  *
  * Support routines for CDR document types.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2001/11/06 21:40:32  bkline
+ * Modified query for CdrGetDocTypes command to only return the ones we're
+ * really using ("WHERE active = 'Y'") and to order them by name.
+ *
  * Revision 1.8  2001/06/28 17:38:17  bkline
  * Added method getCssFiles().
  *
@@ -162,6 +166,8 @@ cdr::String cdr::getDocType(Session&          session,
         static_cast<const cdr::dom::Element&>(node);
     cdr::String docTypeString = cmdElement.getAttribute(L"Type");
     cdr::String getEnumValues = cmdElement.getAttribute(L"GetEnumValues");
+    cdr::String omitDtdString = cmdElement.getAttribute(L"OmitDtd");
+    bool omitDtd = omitDtdString == L"Y";
     if (docTypeString.empty())
         throw cdr::Exception(L"Type attribute missing from CdrGetDocType "
                              L"command element");
@@ -216,9 +222,12 @@ cdr::String cdr::getDocType(Session&          session,
          << created
          << L"' SchemaMod='"
          << schemaMod
-         << L"'><DocDtd><![CDATA["
-         << (schema ? schema->makeDtd(schemaName) : L"")
-         << L"]]></DocDtd><DocSchema>"
+         << L"'>";
+    if (!omitDtd)
+        resp << L"<DocDtd><![CDATA["
+             << (schema ? schema->makeDtd(schemaName) : L"")
+             << L"]]></DocDtd>";
+    resp << L"<DocSchema>"
          << schemaName
          << L"</DocSchema>";
     if (schema && getEnumValues == L"Y") {
