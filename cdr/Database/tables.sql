@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.30 2001-07-15 22:43:38 bkline Exp $
+ * $Id: tables.sql,v 1.31 2001-07-15 22:45:22 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2001/07/15 22:43:38  bkline
+ * Added all_docs with document view.  Added term_kids and term_children
+ * views.
+ *
  * Revision 1.29  2001/06/21 17:59:28  ameyer
  * Added title_filter to doc_type.
  *
@@ -771,7 +775,8 @@ CREATE TABLE link_fragment (
 CREATE TABLE query_term
      (doc_id INTEGER NOT NULL REFERENCES document,
         path VARCHAR(512) NOT NULL,
-       value NVARCHAR(255) NOT NULL)
+       value NVARCHAR(255) NOT NULL,
+     int_val INTEGER NULL)
 
 /*
  * Allows for future customization of the query support mechanism, using more
