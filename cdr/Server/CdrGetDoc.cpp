@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.6 2000-10-24 23:08:40 ameyer Exp $
+ * $Id: CdrGetDoc.cpp,v 1.7 2000-10-30 17:41:47 mruben Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2000/10/24 23:08:40  ameyer
+ * Added version control and locking.
+ *
  * Revision 1.5  2000/09/25 14:01:45  mruben
  * added getDocCtlString to get information from document table
  *
@@ -513,8 +516,8 @@ cdr::String cdr::getDoc(cdr::Session& session,
 
       else
           // Check it out and get version number
-          version = cdr::String::toString (cdr::checkOut (id,
-                      dbConnection, userId, L"", false));
+          version = cdr::String::toString (cdr::checkOut (session, id,
+                      dbConnection, L"", false));
   }
 
   cdr::String docStr = L"<CdrGetDocResp>\n" + readOnlyWrap (idStr, L"DocId");

@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.6 2000-10-27 02:31:12 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.7 2000-10-30 17:41:47 mruben Exp $
  *
  */
 
@@ -484,7 +484,7 @@ static cdr::String CdrPutDoc (
     // Check-in to version control if requested
     int version = 0;
     if (cmdCheckIn == L"Y")
-        version = cdr::checkIn (doc.getId(), dbConn, session.getUserId(),
+        version = cdr::checkIn (session, doc.getId(), dbConn,
                                 &cmdReason, 0, 0);
 
     // Append audit info
