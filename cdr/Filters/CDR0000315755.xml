@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-     $Id: CDR0000315755.xml,v 1.2 2004-09-09 19:42:37 venglisc Exp $
+     $Id: CDR0000315755.xml,v 1.3 2005-02-24 20:57:42 venglisc Exp $
 
      Common Templates shared between Person and PDQBoardMember 
      QC Report Filters
@@ -227,6 +227,7 @@
   <xsl:for-each                 select = "OrganizationLocation/
                                           OrganizationName">
    <xsl:value-of                select = "."/>
+   <xsl:apply-templates         select = "@cdr:ref"/>
    <br />
   </xsl:for-each>
 
@@ -288,6 +289,34 @@
   <br/>
  </xsl:template>
 
+ <!--
+ ======================================================================
+ Template to add CDR-ID and fragment ID to the display
+ The CDR-ID should be displayed without leading zeros.
+ ====================================================================== -->
+ <xsl:template                   match = "@cdr:ref">
+  <xsl:variable                   name = "cdrId"
+                                select = "concat('CDR', 
+                                           number(
+                                            substring-after(
+                                             substring-before(
+                                              concat(., '#'), '#'), 'CDR')))"/>
+  <xsl:text> (</xsl:text>
+  <xsl:element                    name = "a">
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "concat('/cgi-bin/cdr/QcReport.py',
+                                                 '?Session=@@SESSION@@',
+                                                 '&amp;DocId=',
+                                                 $cdrId)"/>
+   </xsl:attribute>
+   <xsl:value-of                select = "$cdrId"/>
+  </xsl:element>
+  <xsl:if                         test = "contains( . , '#')">
+   <xsl:text> - </xsl:text>
+   <xsl:value-of                select = "substring-after(., '#')"/>
+  </xsl:if>
+  <xsl:text>)</xsl:text>
+ </xsl:template>
 
  <!--
  ======================================================================
