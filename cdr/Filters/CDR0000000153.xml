@@ -47,6 +47,7 @@
            pre {font size: medium}
            H3  {font size: medium}-->
            li.lnone {list-style-type: none}
+           ul.lnone {list-style: none}
 
            ol.a { list-style: lower-alpha; }
            ol.A { list-style: upper-alpha; }
@@ -68,14 +69,14 @@
      <xsl:apply-templates       select = "SummaryTitle" 
                                   mode = "TOC"/>
  
-     <dl>
+     <ul Class="lnone">
      <xsl:for-each              select = "SummarySection">
       <xsl:call-template          name = "TocSummarySection">
        <xsl:with-param            name = "level"
                                 select = "1"/>
       </xsl:call-template>  
      </xsl:for-each>
-     </dl>
+     </ul>
 
      <xsl:apply-templates/>
      </BODY>
@@ -150,10 +151,28 @@
      </xsl:choose>
     </xsl:template>
 
+  <!-- ==================================================================
+                    Display proposed Deletion 
+     ================================================================== -->
+    <xsl:template         match = "Deletion"> 
+    <xsl:if test="@RevisionLevel='proposed'">
+    <strike>
+    <xsl:apply-templates/>
+    </strike>  
+    </xsl:if>
+    </xsl:template>                            
+
+
 <!-- ==================================================================
        Don't display any Deletion 
      ================================================================== -->
-    <xsl:template              match = "Deletion"/>
+    <xsl:template        match = "Deletion[@RevisionLevel='approved'] |
+                                  Deletion[@RevisionLevel='publish']"/> 
+    
+    
+    
+                                                              
+                                   
  
 <!-- ================================================================== 
        This template deletes data elements not used in the display 
