@@ -36,9 +36,35 @@
       <xsl:apply-templates select="SummaryMetaData/SummaryType" mode="copy"/>
       <xsl:apply-templates select="SummaryMetaData/SummaryAudience" mode="copy"/>
       <xsl:apply-templates select="SummaryMetaData/SummaryLanguage" mode="copy"/>
-      <xsl:apply-templates select="SummaryMetaData/PDQBoard" mode="copy"/>
+   <!-- denormalize PDQBoard and Board Members 11/5/2002 CB -->
 
+     <xsl:for-each select="SummaryMetaData">
+     <xsl:for-each select="PDQBoard">
+      <PDQBoard>
+      <xsl:if test="contains(Board/@cdr:ref,'CDR')">
+      <xsl:variable name="BoardID" select="Board/@cdr:ref"/>
+      <xsl:variable name="BoardInfo" 
+              select="document(concat('cdr:',$BoardID,'/last'))"/>
+<Board cdr:ref='{$BoardID}'><xsl:value-of select="$BoardInfo/Organization/OrganizationNameInformation/OfficialName/Name"/></Board>
+     <xsl:for-each select="BoardMember">
+      <xsl:variable name="BoardMemberID" select="@cdr:ref"/>
+      <xsl:variable name="BoardMemberInfo" 
+              select="document(concat('cdr:',$BoardMemberID))"/>
+   <xsl:element name="BoardMember">
+    <xsl:attribute name="cdr:ref"><xsl:value-of select="@cdr:ref"/></xsl:attribute>
+    <xsl:value-of select="$BoardMemberInfo/Person/PersonNameInformation/SurName"/>, 
+      <xsl:value-of select="$BoardMemberInfo/Person/PersonNameInformation/GivenName"/>   
+  </xsl:element>
+  </xsl:for-each>
+   </xsl:if>
+   </PDQBoard>
+   </xsl:for-each>
+   
+   </xsl:for-each>
+   
+ 
 <!-- Modified 11/1/2002(CB) to link to term records for term preferred name -->
+
       <xsl:for-each select="SummaryMetaData/MainTopics">
       <xsl:if test="contains(Term/@cdr:ref,'CDR')">
       <xsl:variable name="TermID" select="Term/@cdr:ref"/>
@@ -64,7 +90,24 @@
          <xsl:for-each select="SummarySection">
          <xsl:variable name="ID" select="@cdr:id"/>
             <SummarySection cdr:id="{$ID}">
-               <xsl:apply-templates select="SectMetaData" mode="copy"/>
+
+        <!-- denormalize Diagnosis  11/5/2002 CB -->
+         <xsl:if test="SectMetaData">
+         <SectMetaData>
+         <xsl:for-each select="SectMetaData/Diagnosis">
+         <xsl:if test="contains(@cdr:ref,'CDR')">
+         <xsl:variable name="DiagID" select="@cdr:ref"/>
+         <xsl:variable name="DiagInfo" 
+              select="document(concat('cdr:',$DiagID,'/lastp'))"/>
+       <Diagnosis cdr:ref='{$DiagID}'><xsl:value-of select="$DiagInfo/Term/PreferredName"/></Diagnosis>
+       </xsl:if>
+       </xsl:for-each>
+
+
+       <xsl:apply-templates select="SectMetaData/SectionType" mode="copy"/>
+       </SectMetaData>
+       </xsl:if>
+                
                <xsl:apply-templates select="KeyPoint" mode="copy"/>
                <xsl:apply-templates select="Title" mode="copy"/>
 
