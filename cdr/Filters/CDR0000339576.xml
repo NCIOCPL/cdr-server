@@ -3,13 +3,13 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Module: InLine Markup Formatter</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.5: Fixed TOC Title (Bug 942)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml    version = "1.0"?>
-<xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                             version = "1.0"
-                           xmlns:cdr = "cips.nci.nih.gov/cdr"
-             exclude-result-prefixes = "cdr">
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+               exclude-result-prefixes = "cdr">
   
  <!-- 
  ======================================================================
@@ -205,63 +205,57 @@
  =====================================================================
  Display an itemized list
  ===================================================================== -->
- <xsl:template                 match = "ItemizedList">   
-  <xsl:apply-templates        select = "ListTitle"/>
+ <xsl:template                   match = "ItemizedList">   
+  <xsl:apply-templates          select = "ListTitle"/>
  
   <!-- Handle ListItem now. -->
   <ul>
-   <xsl:attribute               name = "class">
+   <xsl:attribute                 name = "class">
     <xsl:choose>
-     <xsl:when                  test = "@Style = 'bullet'">        
+     <xsl:when                    test = "@Style = 'bullet'">        
       <xsl:text>disc</xsl:text>   
      </xsl:when>
-     <xsl:when                  test = "@Style = 'dash'">
+     <xsl:when                    test = "@Style = 'dash'">
       <xsl:text>square</xsl:text>      
      </xsl:when>
-     <xsl:when                  test = "@Style = 'simple'">
+     <xsl:when                    test = "@Style = 'simple'">
       <xsl:text>lnone</xsl:text>     
      </xsl:when> 
     </xsl:choose> 
    </xsl:attribute>
 
-   <xsl:for-each              select = "ListItem"> 
+   <xsl:for-each                select = "ListItem"> 
     <!-- Don't display empty list items -->
-    <xsl:if                     test = "not(. = '')">
-     <xsl:call-template          name = "ItemizedListItem"/>
-    </xsl:if>
-
-    <!-- Take care of extra attributes. -->
-    <xsl:if                     test = "position() != last() 
-                                        and
-                                        ../@Compact = 'No'">
-     <br /><br />
+    <xsl:if                       test = "not(. = '')">
+     <xsl:call-template           name = "ItemizedListItem"/>
     </xsl:if>
    </xsl:for-each>    
   </ul>  
  </xsl:template>  
- 
+
+
  <!-- 
  =====================================================================
  Display an ordered list 
  ===================================================================== -->
- <xsl:template                 match = "OrderedList">   
- <xsl:apply-templates        select = "ListTitle"/> 
+ <xsl:template                   match = "OrderedList">   
+  <xsl:apply-templates          select = "ListTitle"/> 
     
 
   <!-- Handle ListItem now. -->
   <ol>
-   <xsl:attribute               name = "Class">
+   <xsl:attribute                 name = "Class">
     <xsl:choose>
-     <xsl:when                  test = "@Style = 'UAlpha'">        
+     <xsl:when                    test = "@Style = 'UAlpha'">        
       <xsl:text>A</xsl:text>
      </xsl:when>
-     <xsl:when                  test = "@Style = 'LAlpha'">
+     <xsl:when                    test = "@Style = 'LAlpha'">
       <xsl:text>little-alpha</xsl:text>
      </xsl:when>
-     <xsl:when                  test = "@Style = 'URoman'">
+     <xsl:when                    test = "@Style = 'URoman'">
       <xsl:text>I</xsl:text>
      </xsl:when>
-     <xsl:when                  test = "@Style = 'LRoman'">
+     <xsl:when                    test = "@Style = 'LRoman'">
       <xsl:text>little-roman</xsl:text>
      </xsl:when>
      <xsl:otherwise>
@@ -270,17 +264,17 @@
     </xsl:choose>
    </xsl:attribute>
 
-   <xsl:for-each              select = "ListItem">
+   <xsl:for-each                select = "ListItem">
     <li>  
      <xsl:apply-templates/>
+     <!-- Take care of extra attribute compact. -->
+     <xsl:if                      test = "position() != last() 
+                                          and
+                                          ../@Compact = 'No'">
+      <br />
+      <br /> 
+     </xsl:if>
     </li>
-    
-    <!-- Take care of extra attribute compact. -->
-    <xsl:if                     test = "position() != last() 
-                                        and
-                                        ../@Compact = 'No'">
-     <br /><br /> 
-    </xsl:if>
    </xsl:for-each>
   </ol>
  </xsl:template>        
@@ -290,7 +284,7 @@
  =====================================================================
  Display a Subscript 
  ===================================================================== -->
- <xsl:template                 match = "Subscript">
+ <xsl:template                   match = "Subscript">
   <sub>
    <xsl:apply-templates/>
   </sub>
@@ -301,7 +295,7 @@
  =====================================================================
  Display a Superscript 
  ===================================================================== -->
- <xsl:template                 match = "Superscript">
+ <xsl:template                   match = "Superscript">
   <sup>
    <xsl:apply-templates/>
   </sup>
@@ -312,7 +306,7 @@
  =====================================================================
  Display Strong 
  ===================================================================== -->
- <xsl:template                 match = "Strong">
+ <xsl:template                   match = "Strong">
   <b>
    <xsl:apply-templates/>
   </b>
@@ -323,8 +317,8 @@
  =====================================================================
  Display Emphasis, ScientificName, ForeignWord, GeneName
  ===================================================================== -->
- <xsl:template                 match = "Emphasis | ScientificName |
-                                        ForeignWord | GeneName">
+ <xsl:template                   match = "Emphasis | ScientificName |
+                                          ForeignWord | GeneName">
   <i>
    <xsl:apply-templates/>
   </i>
@@ -680,7 +674,7 @@
  Template handling ListTitle
  ====================================================================== -->
  <xsl:template               match = "ListTitle">    
-  <br/>
+  <!--<br/>-->
   <b>
    <i>
     <xsl:apply-templates /> 
@@ -694,8 +688,15 @@
  Template handling ListItem in ItemizedList
  ===================================================================== -->  
  <xsl:template                name = "ItemizedListItem">
-  <li> 
+   <li>
    <xsl:apply-templates />
+   <xsl:if                    test = "position() != last() 
+                                      and
+                                      ../@Compact = 'No'">
+    <br/>
+    <br/>
+   </xsl:if>
+
   </li>
  </xsl:template>
 
@@ -850,22 +851,24 @@
  =====================================================================
  Display references 
  ===================================================================== -->
- <xsl:template               match = "ReferenceList">
+ <xsl:template               match = "ReferenceListXX">
   <xsl:if                     test = "Reference">
    <xsl:choose>
     <xsl:when                 test = "//SummaryLanguage='Spanish'">        
      <h3>Referencias:</h3>
     </xsl:when>
     <xsl:otherwise>
-     <h3>References:</h3>        
+     <h3>References:XX</h3>        
     </xsl:otherwise>     
    </xsl:choose>
       
    <ol>
     <xsl:for-each           select = "Reference">
-     <p><li>
+     <li>
       <xsl:apply-templates  select = "."/>
-     </li></p>
+      <br/>
+      <br/>
+     </li>
     </xsl:for-each>
    </ol>
   </xsl:if>
