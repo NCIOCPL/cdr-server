@@ -1,9 +1,13 @@
 /*
- * $Id: CdrServer.cpp,v 1.26 2002-03-07 12:58:22 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.27 2002-03-09 04:21:35 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2002/03/07 12:58:22  bkline
+ * Added more tracing to standard output, as well as conditional memory
+ * allocation dumps at the bottom of each time through the main loop.
+ *
  * Revision 1.25  2002/03/06 20:33:28  bkline
  * Made catch argument a reference instead of an object.  Removed redundant
  * heap trace information.
@@ -258,7 +262,9 @@ void realDispatcher(void* arg) {
                                               cdr::db::pwd);
     cdr::String now = conn.getDateTimeString();
     now[10] = L'T';
+#ifdef _DEBUG
     std::wcout << L"NOW=" << now << L"\n";
+#endif
 
     // Create thread specific log pointer
     // Done early in thread creation so anything in the thread can
@@ -270,7 +276,9 @@ void realDispatcher(void* arg) {
     int nBytes;
     int response = 0;
     while ((nBytes = readRequest(fd, request, now)) > 0) {
-        //std::cout << "received request with " << nBytes << " bytes...\n";
+#ifdef _DEBUG
+        std::cout << "received request with " << nBytes << " bytes...\n";
+#endif
         processCommands(fd, request, conn, now);
     }
 
@@ -466,7 +474,9 @@ cdr::String processCommand(cdr::Session& session,
         int type = specificCmd.getNodeType();
         if (type == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String cmdName = specificCmd.getNodeName();
+#ifdef _DEBUG
             std::wcout << L"processing command: " << cmdName << L"...\n";
+#endif
 
             // Log info about the command
             cdr::String cmdText = L"Cmd: " + cmdName + L"  User: "
