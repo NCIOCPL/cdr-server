@@ -33,10 +33,10 @@
            TYPE='text/css' /> -->
     </HEAD>
     <BASEFONT FACE='Arial, Helvetica, sans-serif' /> 
-    <xsl:apply-templates select="InScopeProtocol"/>
+    <xsl:apply-templates select="Protocol"/>
     </HTML>
     </xsl:template>
-    <xsl:template match="InScopeProtocol">
+    <xsl:template match="Protocol">
     <BODY>
   
   <b><font size='4'><center>Protocol Citations QC Report</center></font></b>
@@ -46,45 +46,97 @@
 <!-- ====================================================================
       Display CDR ID, Protocol ID ( Primary and Others )
      ==================================================================== -->
- 
-<b><font size='3'>DocID </font></b><xsl:text>...................................................</xsl:text> 
-<xsl:value-of select="DocId"/><br />
-<b><font size='3'>Protocol ID</font></b><br />
+ <table>
+ <tr>
+ <th align='left'>
+ <b><font size='3'>DocID </font></b> 
+  </th>
+  <td>
+  <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+  </xsl:text>
+  </td>
+  <td>
+<xsl:value-of              select="@id"/>
+ </td>
+ </tr>
+ </table>
+<b><font size='3'>&#xa0;Protocol ID</font></b>
 <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Primary ID</font></b><xsl:text>....................................</xsl:text>
-<xsl:apply-templates select="ProtocolIDs/PrimaryID/IDString"/><br />
-<xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;</xsl:text>
-<b><font size='3'>Other IDs</font></b><xsl:text>......................................</xsl:text>
-<xsl:for-each select="ProtocolIDs/OtherID">
-<xsl:value-of select="IDString"/>
-<xsl:if test="position()!=last()">,</xsl:if>
-</xsl:for-each>
-<br /><br />
+ <table>
+  <tr>
+  <th align='left'>
+  <b>
+  <font size='3'>Primary ID
+  </font>
+  </b>
+ </th>
+  <td>
+  <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            
+  </xsl:text>
+  </td>
+  <td>
+  <xsl:value-of          select="ProtocolIDs/PrimaryID/IDString"/>
+ </td>
+ </tr>
+ </table>
+ <b>
+ <font size='3'>Other IDs
+ </font>
+ </b>
+  
+  <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+            &#xa0;&#xa0;&#xa0;
+  </xsl:text>
+  
+  <xsl:for-each select="ProtocolIDs/OtherID">
+  <xsl:value-of select="IDString"/>
+  <xsl:if test="position()!=last()">,</xsl:if>
+  </xsl:for-each>
+  
+   <br /><br />
 
 <!-- ==============================================================
                        Display Protocol Titles
      =============================================================== -->
 
 <b><font size='4'>Original Protocol Title</font></b><br />
-  <xsl:apply-templates select="ProtocolTitle[@Type='Original']"/><br /><br />
+  <xsl:apply-templates           select="ProtocolTitle[@Audience=
+                                         'Original']"/>
+   <br /><br />
   
 <b><font size='4'>Professional Title</font></b><br />
-  <xsl:apply-templates select="ProtocolTitle             [@Type='Professional']"/><br /><br />
+  <xsl:apply-templates          select="ProtocolTitle[@Audience=
+                                        'Professional']"/>
+  <br /><br />
 
 <!-- ================================================================
                     Display Protocol Chairman
      ================================================================ -->
+       <b>
+       <font size='4'>Protocol Chairman
+        </font>
+        </b>
+        <xsl:text>&#xa0;&#xa0;&#xa0;
+        </xsl:text>
 
-<b><font size='4'>Protocol Chairman</font></b>
-<xsl:text>.......................</xsl:text>
+        
+        <xsl:for-each                select="ProtocolAdminInfo/
+                                             ProtocolLeadOrg/LeadOrgPersonnel/
+                                             ProtPerson/PersonNameInformation">
+                                       
 
-  <xsl:for-each select="ProtocolAdminInfo/ProtocolLeadOrg/LeadOrgPersonnel/Person">
-   <xsl:if test="../../LeadOrgRole='Primary'">
-  <xsl:value-of select="PersonNameInformation/SurName"/>,
-  <xsl:value-of select="PersonNameInformation/GivenName"/>
-  </xsl:if>
-  </xsl:for-each>
-<hr />
+
+   <xsl:if test="../../../LeadOrgRole='Primary'">
+   <xsl:value-of select="SurName"/>,
+   <xsl:value-of select="GivenName"/>
+   </xsl:if>
+   </xsl:for-each>
+   <hr />
 
 <!-- ==============================================================
                 Display Published Results/Format Citation 
@@ -92,38 +144,32 @@
 
 <b><i><font size='4'>Published Results</font></i></b><br /><br />
 
-<xsl:for-each select="PublishedResults/Citation/CitationText">
+<xsl:for-each select="PublishedResults">
 
-<b><font size='3'>Citation ID</font></b>
-<xsl:text>...............................</xsl:text>
-<xsl:value-of select="../@ref"/><br /><br />
-<xsl:choose>
-<xsl:when test="../CancerLitID">
-<b><font size='3'>CANCERLIT ID</font></b>
-<xsl:text>.......................</xsl:text>
-<xsl:value-of select="../CancerLitID"/><br /><br />
-</xsl:when>
-<xsl:when test="../PMID">
-<b><font size='3'>PUBMED ID</font></b>
-<xsl:text>............................</xsl:text>
-<xsl:value-of select="../PMID"/><br /><br />
-</xsl:when>
-<xsl:otherwise>
-<b><font size='3'>CANCERLIT ID</font></b>
-<xsl:text>.......................</xsl:text><br /><br />
-</xsl:otherwise>
-</xsl:choose>
+<b>
+<font size='3'>Citation ID</font>
+</b>
+ <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+           &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+           &#xa0;
+  </xsl:text>
+  <xsl:value-of select="@ref"/>
+  <br /><br />
+  <xsl:if test="@PMID">
+  <b><font size='3'>PUBMED ID</font></b>
+  <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+           &#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;&#xa0;
+  </xsl:text>
+  <xsl:value-of           select="@PMID"/><br /><br />
+  </xsl:if>
+  <b><font size='3'>Citation</font></b><br />
+  <xsl:value-of               select="."/>
+   <br /><br />
+    <hr />
+   </xsl:for-each>
 
-
-<b><font size='3'>Citation</font></b><br />
-<xsl:value-of select="."/><br /><br />
-<b><font size='3'>Abstract</font></b><br />
-<xsl:value-of select="../AbstractText"/>
-<hr />
-</xsl:for-each>
-
-</BODY>
-</xsl:template>
+   </BODY>
+   </xsl:template>
   </xsl:transform>]]>
 </CdrDocXml>
 </CdrDoc>
