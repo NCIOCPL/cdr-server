@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.30 2001-01-17 21:46:52 bkline Exp $
+# $Id: Makefile,v 1.31 2001-02-28 02:34:54 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.30  2001/01/17 21:46:52  bkline
+# Removed CdrGetSchema.obj.
+#
 # Revision 1.29  2001/01/08 16:57:08  mruben
 # removed libraries no longer needed by sablotron
 #
@@ -197,7 +200,7 @@ LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
 #--------------------------------------------------------------------------
 # Targets
 #--------------------------------------------------------------------------
-all: init CdrServer.exe CdrDocs #$(SERVICE)
+all: init CdrServer.exe CdrTestClient.exe CdrDocs #$(SERVICE)
 
 service: $(SERVICE)
 
@@ -233,6 +236,13 @@ CdrService.obj: CdrService.c service.h
 
 service.obj: service.c service.h
 	$(CC) -c $(SVC_CFLAGS) service.c
+
+#--------------------------------------------------------------------------
+# Rule for building test client.
+#--------------------------------------------------------------------------
+
+CdrTestClient.exe: CdrTestClient.cpp ../lib/cdr.lib
+	$(CC) $(CFLAGS) CdrTestClient.cpp ../lib/cdr.lib wsock32.lib
 
 #--------------------------------------------------------------------------
 # We're not doing dependency checking.
