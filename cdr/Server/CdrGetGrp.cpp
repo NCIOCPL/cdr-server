@@ -1,10 +1,13 @@
 
 /*
- * $Id: CdrGetGrp.cpp,v 1.2 2000-05-03 15:25:41 bkline Exp $
+ * $Id: CdrGetGrp.cpp,v 1.3 2001-04-13 12:25:13 bkline Exp $
  *
  * Retrieves information about requested group.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2000/05/03 15:25:41  bkline
+ * Fixed database statement creation.
+ *
  * Revision 1.1  2000/04/22 09:31:58  bkline
  * Initial revision
  *
@@ -37,19 +40,20 @@ cdr::String cdr::getGrp(cdr::Session& session,
         throw cdr::Exception(L"Missing group name");
 
     // Look up the base information for the group.
-    std::string query = "SELECT ID, comment FROM grp WHERE name = ?";
+    std::string query = "SELECT id, name, comment FROM grp WHERE name = ?";
     cdr::db::PreparedStatement grpQuery = conn.prepareStatement(query);
     grpQuery.setString(1, grpName);
     cdr::db::ResultSet grpRs = grpQuery.executeQuery();
     if (!grpRs.next())
         throw cdr::Exception(L"Group not found", grpName);
     int         gid     = grpRs.getInt(1);
-    cdr::String comment = grpRs.getString(2);
+    cdr::String name    = grpRs.getString(2);
+    cdr::String comment = grpRs.getString(3);
 
     // Initialize a successful response.
     cdr::String response = cdr::String(L"  <CdrGetGrpResp>\n"
                                        L"   <GrpName>")
-                                     + grpName
+                                     + name
                                      + L"</GrpName>\n";
 
     // Find the authorizations associated with this group.
