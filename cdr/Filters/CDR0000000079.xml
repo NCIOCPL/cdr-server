@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Health Professional Summary Report</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.26</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 
@@ -182,32 +182,60 @@
 </xsl:template>
           
 <!-- ======================================================================
-                           display footnotes
+                           display CitationLink
      ===================================================================== -->
 
-             <xsl:template match="CitationLink">
-             <xsl:variable name="nextRef" select="position()+1"/>
-             <xsl:variable name="firstRef" select="position()-1"/>
-             <xsl:variable name="ref" select="."/>
-             <xsl:if test="name(../node()[$firstRef])!='CitationLink'">
-	     <xsl:value-of select="'['"/>
-	     </xsl:if>
+    <xsl:template              match = "CitationLink">
+     <xsl:variable              name = "nextRef" 
+                              select = "position()+1"/>
+     <xsl:variable              name = "firstRef" 
+                              select = "position()-1"/>
+     <xsl:variable              name = "ref" 
+                              select = "."/>
+      
+     <xsl:if                    test = "name(../node()[$firstRef])
+                                        != 'CitationLink'">
+      <xsl:value-of           select = "'['"/>
+     </xsl:if>
                     
-           
-	    <xsl:value-of select="@refidx"/>
-
-	    
+     <xsl:choose>
+      <xsl:when                 test = "@InsertionOrDeletion
+                                       = 'Deletion'">
+       <strike>
+        <xsl:value-of         select = "@refidx"/>
+       </strike>
+      </xsl:when> 
+      <xsl:when                 test = "@InsertionOrDeletion
+                                        = 'Insertion'">
+       <xsl:choose>
+        <xsl:when               test = "@RevisionLevel='proposed'">
+         <font color="FUCHSIA">
+          <xsl:value-of       select = "@refidx"/>
+         </font>
+        </xsl:when>
+        <xsl:otherwise>
+         <font color="RED">
+          <xsl:value-of       select = "@refidx"/>
+         </font>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:when> 
+      <xsl:otherwise>
+        <xsl:value-of         select = "@refidx"/>
+      </xsl:otherwise> 
+     </xsl:choose>  	    
 	    	
-	     <xsl:if test="name(../node()[$nextRef])='CitationLink'">
-	    <xsl:value-of select="','"/>
-	    </xsl:if>
-            
+     <xsl:if                    test = "name(../node()[$nextRef])
+                                        = 'CitationLink'">
+      <xsl:value-of           select = "','"/>
+     </xsl:if>            
           
-           <xsl:if test="name(../node()[$nextRef])!='CitationLink'">
-	    <xsl:value-of select="']'"/>
-           </xsl:if>   
-             
-	   </xsl:template>
+     <xsl:if                    test = "name(../node()[$nextRef])
+                                        != 'CitationLink'">
+      <xsl:value-of           select = "']'"/>
+     </xsl:if>   
+      
+    </xsl:template>
 
 
  
@@ -268,11 +296,20 @@
 <!-- ================================================================== 
                        Display an Insertion 
      =================================================================== -->
-
-                <xsl:template match="Insertion">
-                <font color="#FF0000"><xsl:apply-templates/></font>
-                </xsl:template>
-
+    <xsl:template              match = "Insertion">
+     <xsl:choose>
+      <xsl:when                 test = "@RevisionLevel = 'proposed'">
+       <font color="FUCHSIA">
+        <xsl:apply-templates/>
+       </font>
+      </xsl:when>
+      <xsl:otherwise>
+       <font color="RED">
+        <xsl:apply-templates/>
+       </font>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:template>
                 
    
        <!-- Added 10/07/2002 to display inserted text in table header (CB)
