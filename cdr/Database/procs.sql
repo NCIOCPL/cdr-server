@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.9 2002-03-20 05:46:16 bkline Exp $
+ * $Id: procs.sql,v 1.10 2002-03-20 14:02:38 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2002/03/20 05:46:16  bkline
+ * Added procedure cdr_newly_published_trails.
+ *
  * Revision 1.8  2002/01/29 20:22:41  bkline
  * Added 'use cdr' command.
  *
@@ -63,6 +66,13 @@ IF EXISTS (SELECT *
               AND type = 'P')
     DROP PROCEDURE cdr_get_tree_context
 GO
+IF EXISTS (SELECT *
+             FROM sysobjects
+            WHERE name = 'cdr_newly_published_trials'
+              AND type = 'P')
+    DROP PROCEDURE cdr_newly_published_trials
+GO
+
 
 
 /**
