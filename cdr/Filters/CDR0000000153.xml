@@ -81,7 +81,7 @@
 <dt><b><u><xsl:value-of select="Insertion/Title"/></u></b></dt><br />
 </xsl:if>
 <xsl:choose>
- <xsl:when test="../../Insertion">
+ <xsl:when test="name(..)='Insertion'">
 <dt><b><u><xsl:value-of select="Title"/></u></b></dt>
 </xsl:when>
 <xsl:otherwise>
@@ -99,7 +99,7 @@
 </xsl:if>
 
 <xsl:choose>
-<xsl:when test="../../Insertion">
+<xsl:when test="name(../..)='Insertion'">
 <dt><b><u><xsl:value-of select="Title"/></u></b></dt>
 </xsl:when>
 <xsl:otherwise>
@@ -114,7 +114,7 @@
 <dt><b><u><xsl:value-of select="Insertion/Title"/></u></b></dt>
 </xsl:if>
 <xsl:choose>
-<xsl:when test="../../Insertion">
+<xsl:when test="name(../../..)='Insertion'">
 <dt><b><u><xsl:value-of select="Title"/></u></b></dt>
 </xsl:when>
 <xsl:otherwise>
@@ -245,9 +245,9 @@ match=" SummarySection/SummarySection/SummarySection/SummarySection/Insertion/Ti
 
 
 
-<!-- =====================================================================
-                         display references 
-     ==================================================================== -->
+<!-- ===================================================================
+                 display references 
+     ================================================================== -->
 
 <xsl:template match="ReferenceList">
 <xsl:if test="Reference">
@@ -261,14 +261,57 @@ match=" SummarySection/SummarySection/SummarySection/SummarySection/Insertion/Ti
 </xsl:choose>
 
 <ol>
-<xsl:for-each select="Reference">
-<xsl:variable name="Refidx" select="@refidx"/>
-<p><li><a name="{$Refidx}"><xsl:apply-templates select=".">
-</xsl:apply-templates></a></li></p>
+<xsl:for-each select="Reference | Deletion | Insertion">
+<xsl:choose>
+<xsl:when     test = "Deletion">
+  <xsl:apply-templates  select = "."  mode = "refSection"/>
+</xsl:when>
+<xsl:otherwise>
+<p><li><xsl:apply-templates select =". | Deletion | Insertion" 
+                            mode = "refSection">
+</xsl:apply-templates></li></p>
+</xsl:otherwise>
+</xsl:choose>
 </xsl:for-each>
 </ol>
 </xsl:if>
 </xsl:template>
+
+                       
+<!-- ================================================================== 
+                       Display an Insertion 
+     =================================================================== -->
+                <xsl:template match="Insertion" mode = "refSection">
+                <b><u><xsl:apply-templates/></u></b>
+                <xsl:if test="name(following-sibling::node())='Insertion'">
+                <xsl:text>&#xa0;</xsl:text>
+                </xsl:if>
+                </xsl:template>
+
+                         
+<!-- ================================================================== 
+                       Display an Insertion 
+     =================================================================== -->
+                <xsl:template match="Insertion">
+                <b><u><xsl:apply-templates/></u></b>
+                </xsl:template>
+
+<!-- ==================================================================
+                     Display a Deletion 
+     =================================================================== -->
+
+              <xsl:template match="Deletion">
+              <!-- Empty template to remove deleted item -->
+              </xsl:template>
+
+<!-- ==================================================================
+                     Display a Deletion 
+     =================================================================== -->
+
+              <xsl:template match="Deletion" mode = "refSection">
+              <xsl:text>Deleted Reference</xsl:text>
+              </xsl:template>
+
 
 
 
@@ -282,7 +325,7 @@ match=" SummarySection/SummarySection/SummarySection/SummarySection/Insertion/Ti
          template deletes data elements not used in the display 
      ===================================================================== -->
 
-<xsl:template match="PdqKey | PDQBoard | SectionType |Diagnosis | SummaryLanguage| SummaryType |SummaryAudience | SummaryTitle |MainTopics | SecondaryTopics | DocId | DateLastModified |PatientVersionOf | TranslationOf"/>
+<xsl:template match="PdqKey | PDQBoard | SectionType |Diagnosis |SummaryLanguage| SummaryType |SummaryAudience | SummaryTitle |MainTopics | SecondaryTopics | DocId | DateLastModified |PatientVersionOf | TranslationOf"/>
 
 <!-- ====================================================================
                          Display Paragraphs 
@@ -304,23 +347,8 @@ match=" SummarySection/SummarySection/SummarySection/SummarySection/Insertion/Ti
                   <a href="{$nlink}"><xsl:apply-templates/></a>
                   </xsl:template>
 
- <!-- ==============================================================
-            Do not display deletions- Added 10/07/2002 CB
-     =========================================================== -->
-
-       <xsl:template match="Deletion">
-       </xsl:template>
-
- <!-- ==============================================================
-              Display an Insertion
-     =========================================================== -->
-
-       <xsl:template match="Insertion">
-      <u><b><xsl:apply-templates/></b></u>
-       </xsl:template>
-
-
-     
+ 
+    
 <!-- ======================================================================
                             Display tables 
       =================================================================== -->
