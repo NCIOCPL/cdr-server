@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Vendor Filter: GlossaryTerm</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.15</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
   
@@ -13,8 +13,8 @@
     ====================================================================== -->
   <xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
-                             xmlns:cdr = "cips.nci.nih.gov/cdr" 
-               exclude-result-prefixes = "cdr">
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+             <!--    exclude-result-prefixes = "cdr"> -->
     
   <xsl:include href = "cdr:name:Module: Vendor Filter Templates"/>
   <!-- xsl:include href = "cdr:name:Module: Global Filter Templates"/ -->
@@ -46,23 +46,37 @@
      <xsl:value-of              select = "PdqKey"/>
     </xsl:attribute>
    </xsl:if>
-   <xsl:if                        test = "@Dictionary">
-    <xsl:attribute                name = "Dictionary">
-     <xsl:value-of              select = "@Dictionary"/>
-    </xsl:attribute>
-   </xsl:if>
-
-
    <xsl:apply-templates         select = "TermName" 
                                   mode = "copy"/>
-   <xsl:apply-templates         select = "SpanishTermName" 
-                                  mode = "copy"/>
+  
    <xsl:apply-templates         select = "TermPronunciation" 
                                   mode = "copy"/>
-   <xsl:apply-templates         select = "TermDefinition"
-                                  mode = "copy"/>
-   <xsl:apply-templates         select = "SpanishTermDefinition"
-                                  mode = "copy"/>
+   
+   <xsl:for-each                select ="TermDefinition">
+   <TermDefinition>
+   <xsl:apply-templates         select = "DefinitionText"
+                                           mode="copy"/>
+   <xsl:apply-templates         select = "Dictionary"
+                                 mode = "copy"/>
+   <xsl:apply-templates         select = "Audience"
+                                  mode = "copy"/> 
+    </TermDefinition>
+    </xsl:for-each>
+  
+  <xsl:apply-templates         select = "SpanishTermName"
+                                           mode="copy"/>
+    <xsl:for-each              select = "SpanishTermDefinition">
+   
+  <SpanishTermDefinition>
+   <xsl:apply-templates        select  = "DefinitionText"
+                                           mode="copy"/>        
+                                          
+   <xsl:apply-templates         select = "Dictionary"
+                                          mode = "copy"/>
+   <xsl:apply-templates         select = "Audience"
+                                          mode = "copy"/> 
+   </SpanishTermDefinition>
+   </xsl:for-each>
 
 <!-- ===================================================================
             Copy Date First Published and Date Last Modified
@@ -94,18 +108,13 @@
  The TermDefinition and SpanishTermDefinition can contain inline 
  markup and needs to be handled with a template
  ===================================================================== -->
- <xsl:template                   match = "TermDefinition |
-                                          SpanishTermDefinition"
-                                  mode = "copy">
-  <xsl:element                    name = "{name()}">
-   <xsl:if                        test = "@Audience">
-    <xsl:attribute                name = "Audience">
-     <xsl:value-of              select = "@Audience"/>
-    </xsl:attribute>
-   </xsl:if>
-   <xsl:apply-templates           mode = "copy"/>
-  </xsl:element>
- </xsl:template>
+   <xsl:template                   match = "DefinitionText" mode="copy">
+   <xsl:element                    name = "{name()}">
+   <xsl:apply-templates            mode = "copy"/>
+   </xsl:element>
+   </xsl:template>
+                                                                                 
+ 
 
 </xsl:transform>]]>
 </CdrDocXml>
