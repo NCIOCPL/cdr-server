@@ -60,48 +60,48 @@
 <xsl:variable name="Authors" select="Author"/>
 <xsl:choose>
 <xsl:when test="contains($Authors,'null')">
-<xsl:text>&#xa;</xsl:text>
+<xsl:text> </xsl:text>
 </xsl:when>
 <xsl:when test="AuthorList/Author/CollectiveName">
-<xsl:value-of select="AuthorList/Author/CollectiveName"/>:&#xa0;
+<xsl:value-of select="AuthorList/Author/CollectiveName"/><xsl:text>: </xsl:text>
 </xsl:when>
 <xsl:otherwise>
 <xsl:for-each select="AuthorList/Author">
-<xsl:value-of select="LastName"/>&#xa0;<xsl:text/>
+<xsl:value-of select="LastName"/><xsl:text> </xsl:text>
 <xsl:value-of select="FirstName"/><xsl:text/>
-<xsl:if test="position() !=last()">,&#xa0;</xsl:if>
+<xsl:if test="position() !=last()"><xsl:text>, </xsl:text></xsl:if>
 <xsl:if test="position()=last()">
 <xsl:if test="not($CitInfo/Citation/PDQCitation/AuthorList/@Editors='Yes')">
 <xsl:if test="$CitInfo/Citation/PDQCitation/AuthorList/@Complete='No'">
-<xsl:text>,&#xa0;et al.:&#xa0;</xsl:text>
+<xsl:text>, et al.: </xsl:text>
 </xsl:if>
 <xsl:if test="$CitInfo/Citation/PDQCitation/AuthorList/@Complete='Yes'">
-<xsl:text>:&#xa0;</xsl:text>
+<xsl:text>: </xsl:text>
 </xsl:if>
 </xsl:if>
 <xsl:if test="$CitInfo/Citation/PDQCitation/AuthorList/@Editors='Yes'">
 <xsl:if test="$CitInfo/Citation/PDQCitation/AuthorList/@Complete='No'">
-<xsl:text>,&#xa0;et al.</xsl:text>
+<xsl:text>, et al.</xsl:text>
 </xsl:if>
 <xsl:if test="$CitInfo/Citation/PDQCitation/AuthorList/@Complete='Yes'">
-<xsl:text></xsl:text>
+<xsl:text> </xsl:text>
 </xsl:if>
 <xsl:if test="position() &gt; 1">
-<xsl:text>,&#xa0;eds.:&#xa0;</xsl:text>
+<xsl:text>, eds.: </xsl:text>
 </xsl:if>
 <xsl:if test="position() &lt; 2">
-<xsl:text>,&#xa0;ed.:&#xa0;</xsl:text>
+<xsl:text>, ed.: </xsl:text>
 </xsl:if>
 </xsl:if>
 </xsl:if>
 </xsl:for-each>
 </xsl:otherwise>
 </xsl:choose>
-<xsl:value-of select="CitationTitle"/>.<xsl:text/>
+<xsl:value-of select="CitationTitle"/><!--<xsl:text>.</xsl:text>-->
 <xsl:if test="$CitInfo/Citation/PDQCitation/CitationType='Abstract'">
-<xsl:text>&#xa0;[Abstract]&#xa0;</xsl:text>
+<xsl:text> [Abstract] </xsl:text>
 </xsl:if>
-<xsl:text>&#xa;</xsl:text>
+<xsl:text> </xsl:text>
 
 
 <xsl:for-each select="PublicationDetails">
@@ -114,21 +114,21 @@
   <xsl:variable name="RefInfo" select="document(concat('cdrx:',$RefID,'/lastp'))"/>
  <!--<xsl:value-of select="$RefInfo"/>-->
 <!-- <xsl:value-of select="$RefInfo/Citation/PDQCitation/CitationTitle"/>
- <xsl:text>&#xa0;</xsl:text>-->
+ <xsl:text> </xsl:text>-->
 <xsl:if test="$RefInfo/Citation/PDQCitation/CitationType='Book'">
 <xsl:variable name="book" select="RefInfo/Citation/PDQCitation/CitationType"/>
 <xsl:if test="AuthorList/Author/CollectiveName">
 <xsl:value-of select="$RefInfo/Citation/PDQCitation/AuthorList/Author/CollectiveName"/>
-<xsl:text>:&#xa0;</xsl:text>
+<xsl:text>: </xsl:text>
 </xsl:if>
 <xsl:text>In: </xsl:text>
 </xsl:if>
 
- <xsl:if test="$RefInfo/Citation/PDQCitation/CitationType='Book' ">
+ <xsl:if test="$RefInfo/Citation/PDQCitation/CitationType='Book' or   $RefInfo/Citation/PDQCitation/CitationType='Book [Internet]' ">
 <xsl:for-each select="$RefInfo/Citation/PDQCitation/AuthorList/Author">
 <xsl:if test="not(CollectiveName)">
-<xsl:value-of select="LastName"/>&#xa0;<xsl:text/>
-<xsl:value-of select="FirstName"/><xsl:text/>,
+<xsl:value-of select="LastName"/><xsl:text> </xsl:text>
+<xsl:value-of select="FirstName"/><xsl:text>, </xsl:text>
 </xsl:if>
 <xsl:if test="CollectiveName">
 <xsl:value-of select="CollectiveName"/>
@@ -137,24 +137,25 @@
 <xsl:if test="position()=last()">
 <xsl:if test="not($RefInfo/Citation/PDQCitation/AuthorList/@Editors='Yes')">
 <xsl:if test="$RefInfo/Citation/PDQCitation/AuthorList/@Complete='No'">
-<xsl:text>&#xa0;,et al.:&#xa0;</xsl:text>
+<xsl:text> ,et al.: </xsl:text>
 </xsl:if>
 <xsl:if test="$RefInfo/Citation/PDQCitation/AuthorList/@Complete='Yes'">
-<xsl:text>eds.:&#xa0;</xsl:text>
+<xsl:text>, eds.: </xsl:text>
 </xsl:if>
 </xsl:if>
 <xsl:if test="$RefInfo/Citation/PDQCitation/AuthorList/@Editors='Yes'">
 <xsl:if test="$RefInfo/Citation/PDQCitation/AuthorList/@Complete='No'">
-<xsl:text>et al.,eds.</xsl:text>
+<!--<xsl:text>et al.,eds.</xsl:text>-->
+<xsl:text>et al.,</xsl:text>
 </xsl:if>
 <xsl:if test="$RefInfo/Citation/PDQCitation/AuthorList/@Complete='Yes'">
-<xsl:text></xsl:text>
+<xsl:text> </xsl:text>
 </xsl:if>
 <xsl:if test="position() &gt; 1">
-<xsl:text>&#xa0;eds.:&#xa0;</xsl:text>
+<xsl:text> eds.: </xsl:text>
 </xsl:if>
 <xsl:if test="position() &lt; 2">
-<xsl:text>&#xa0;eds.:&#xa0;</xsl:text>
+<xsl:text> eds.: </xsl:text>
 </xsl:if>
 </xsl:if>
 </xsl:if>
@@ -164,10 +165,10 @@
 
 <xsl:if test="not($RefInfo/Citation/PDQCitation/CitationType='Journal' or $RefInfo/Citation/PDQCitation/CitationType='Proceeding')">
 <xsl:text>.</xsl:text>
-<xsl:text>&#xa0;</xsl:text>
+<xsl:text> </xsl:text>
 </xsl:if>
 <xsl:if test="$RefInfo/Citation/PDQCitation/CitationType='Journal' or $RefInfo/Citation/PDQCitation/CitationType='Proceeding'">
-<xsl:text>&#xa0;</xsl:text>
+<xsl:text> </xsl:text>
 </xsl:if>
 
 
@@ -178,7 +179,7 @@
 <xsl:value-of select="$RefInfo/Citation/PDQCitation/PublicationDetails/OtherPublicationInformation"/><xsl:text/>
 
 <xsl:if test="$RefInfo/Citation/PDQCitation/CitationType='Book'">
- <xsl:text>,&#xa0;</xsl:text>
+ <xsl:text>, </xsl:text>
  </xsl:if>
   </xsl:if>
  </xsl:when>
@@ -187,11 +188,11 @@
 <xsl:choose>
 <xsl:when test="PublicationDetails/OtherPublicationInformation/ExternalRef">
 <xsl:copy-of select="PublicationDetails/OtherPublicationInformation"/><xsl:text/>
-<xsl:text>.&#xa0;</xsl:text>
+<xsl:text>. </xsl:text>
 </xsl:when>
 <xsl:otherwise>
 <xsl:value-of select="PublicationDetails/OtherPublicationInformation"/><xsl:text/>
-<xsl:text>.&#xa0;</xsl:text>
+<xsl:text>. </xsl:text>
 </xsl:otherwise>
 </xsl:choose>
 
@@ -237,24 +238,24 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
 <xsl:text>: </xsl:text>
 </xsl:when>
 <!--<xsl:when test="position()=last()=1">
-<xsl:value-of select="concat(LastName,' ',Initials)"/>.&#xa0;<xsl:text/>
+<xsl:value-of select="concat(LastName,' ',Initials)"/><xsl:text>. </xsl:text>
 </xsl:when>-->
 
 
 <xsl:when test="position() &lt; 4 ">
 <xsl:value-of select="concat(LastName,' ',Initials)"/>
-<xsl:if test="position() !=last()"><xsl:text>,&#xa0;</xsl:text>
+<xsl:if test="position() !=last()"><xsl:text>, </xsl:text>
 </xsl:if>
-<xsl:if test="position()=last()">:&#xa0;<xsl:text/>
+<xsl:if test="position()=last()"><xsl:text>: </xsl:text>
 </xsl:if>
 </xsl:when>
 <!--<xsl:when test="position()!=3">
-<xsl:text>,&#xa;&#xa0;</xsl:text>
+<xsl:text>,  </xsl:text>
 </xsl:when>-->
 <xsl:when test="position() =4" >
 <xsl:if test="$Tnodes &gt; 3 ">
 <!--<xsl:value-of select="concat(LastName,' ',Initials)"/>-->
-<xsl:text>et al.:&#xa0;</xsl:text>
+<xsl:text>et al.: </xsl:text>
 </xsl:if>
 </xsl:when>
 <xsl:otherwise>
@@ -266,11 +267,11 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
 
 <xsl:for-each select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article">
 <xsl:value-of select="ArticleTitle"/>
-<xsl:text>&#xa;</xsl:text>
+<xsl:text> </xsl:text>
 </xsl:for-each>
 <xsl:for-each select="$CitInfo/Citation/PubmedArticle/MedlineCitation/MedlineJournalInfo/MedlineTA">
 <xsl:value-of select="."/>
-<xsl:text>&#xa;</xsl:text>
+<xsl:text> </xsl:text>
 </xsl:for-each>
 
 <xsl:for-each select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/Journal/JournalIssue">
@@ -280,13 +281,13 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
 </xsl:if>
 <xsl:if test="not(Issue)">
 <xsl:if test="contains(Article/Journal/JournalIssue/Volume,'Suppl')">
-  <xsl:value-of select="substring(Article/Journal/JournalIssue/Volume,1,1)"/>&#xa0;
-(<xsl:value-of select="substring(Article/Journal/JournalIssue/Volume,3,7)"/>)&#xa0;
+  <xsl:value-of select="substring(Article/Journal/JournalIssue/Volume,1,1)"/><xsl:text> </xsl:text>
+(<xsl:value-of select="substring(Article/Journal/JournalIssue/Volume,3,7)"/>)<xsl:text> </xsl:text>
 </xsl:if>
 <xsl:if test="not(contains(Article/Journal/JournalIssue/Volume,'Suppl'))">
-<xsl:value-of select="Article/Journal/JournalIssue/Volume"/>&#xa0;
+<xsl:value-of select="Article/Journal/JournalIssue/Volume"/><xsl:text> </xsl:text>
 </xsl:if>
-<xsl:value-of select="Volume"/>:&#xa0;
+<xsl:value-of select="Volume"/><xsl:text>:</xsl:text>
 </xsl:if>
 </xsl:for-each>
 <xsl:for-each select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/Pagination">
@@ -300,7 +301,7 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
 </xsl:if> 
 <xsl:for-each select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/Journal/JournalIssue/PubDate/Year">
 <xsl:value-of select="."/>
-<xsl:text>.&#xa;</xsl:text>
+<xsl:text>. </xsl:text>
 </xsl:for-each>
 </xsl:if>
  <!-- ==============================================================
@@ -315,7 +316,7 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
   <xsl:variable name="PerID" select="substring-before(Person/@cdr:ref,'#')"/>
   <xsl:variable name="PerInfo" select="document(concat('cdrx:',$PerID,'/last'))"/>
   <xsl:value-of select="$PerInfo/Person/PersonNameInformation/SurName"/>
-  <xsl:text>&#xa0;</xsl:text>
+  <xsl:text> </xsl:text>
   <xsl:value-of select="substring($PerInfo/Person/PersonNameInformation/GivenName,1,1)"/>
  <xsl:variable name="Gname" select="substring-after($PerInfo/Person/PersonNameInformation/GivenName,' ')"/>
 <xsl:if test="not(contains($Gname,'.'))">
@@ -324,7 +325,7 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
 <xsl:if test="contains($Gname,'.')">
  <xsl:value-of select="translate($Gname,'.','')"/>,
 </xsl:if>
-<xsl:text>&#xa0;</xsl:text>
+<xsl:text> </xsl:text>
 
   </xsl:if>
   </xsl:if>
@@ -354,7 +355,7 @@ select="$CitInfo/Citation/PubmedArticle/MedlineCitation/Article/AuthorList/Autho
   </xsl:if>
 <!--  </xsl:for-each>-->
 
-  <xsl:text>&#xa0;</xsl:text>
+  <xsl:text> </xsl:text>
   <xsl:for-each select="$ProtInfo/InScopeProtocol/ProtocolTitle[@Type='Professional']">
 <xsl:value-of select="."/>,
 </xsl:for-each>
