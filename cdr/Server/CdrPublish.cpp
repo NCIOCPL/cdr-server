@@ -1,10 +1,13 @@
 /*
- * $Id: CdrPublish.cpp,v 1.4 2002-08-27 02:38:23 bkline Exp $
+ * $Id: CdrPublish.cpp,v 1.5 2002-09-03 21:27:01 bkline Exp $
  *
  * Commands to create a new publishing job and retrieve status for an 
  * existing publishing job.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/08/27 02:38:23  bkline
+ * Added check to ensure selection of publishable versions.
+ *
  * Revision 1.3  2002/04/17 19:19:44  bkline
  * Fixed query to get latest eligible version of control document.  Added
  * check for duplicate control document title.
@@ -580,7 +583,7 @@ void insertDocument(
                                              "    AND d.active_status = 'A' "
                                              "    AND v.dt <= ?             "
                                            : " SELECT v.num                 "
-                                             "   FROM v.doc_version         "
+                                             "   FROM doc_version v         "
                                              "   JOIN document d            "
                                              "     ON d.id = v.id           "
                                              "  WHERE v.id = ?              "
