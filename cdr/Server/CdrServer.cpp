@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.15 2000-08-24 20:07:33 ameyer Exp $
+ * $Id: CdrServer.cpp,v 1.16 2000-10-04 18:31:36 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2000/08/24 20:07:33  ameyer
+ * Added NT structured exception handling for crashes.
+ *
  * Revision 1.14  2000/06/23 15:29:01  bkline
  * Added additional logging (for startup and shutdown).
  *
@@ -319,7 +322,7 @@ void processCommands(int fd, const std::string& buf,
             conn.rollback();
         sendErrorResponse(fd, cdrEx.what(), when);
     }
-    catch (const cdr::dom::DOMException& ex) {
+    catch (const cdr::dom::XMLException& ex) {
         if (!conn.getAutoCommit())
             conn.rollback();
         sendErrorResponse(fd, cdr::String(ex.getMessage()), when);
@@ -406,7 +409,7 @@ cdr::String processCommand(cdr::Session& session,
                 conn.setAutoCommit(true);
                 cmdResponse = cdrCommand(session, specificCmd, conn);
             }
-            catch (cdr::Exception e) {
+            catch (const cdr::Exception& e) {
                 if (!conn.getAutoCommit())
                     conn.rollback();
 
@@ -420,6 +423,51 @@ cdr::String processCommand(cdr::Session& session,
                                           + L"  </"
                                           + cmdName
                                           + L"Resp>\n </CdrResponse>\n");
+            }
+            catch (cdr::dom::DOMException* de) {
+                if (!conn.getAutoCommit())
+                    conn.rollback();
+                wchar_t tBuf[40];
+                swprintf(tBuf, L"DOM Exception Code %d: ", de->code);
+                cdr::String result = 
+                       cdr::String(rspTag + L"failure'><"
+                                          + cmdName 
+                                          + L"Resp><Errors><Err>"
+                                          + cdr::String(tBuf)
+                                          + cdr::String(de->msg)
+                                          + L"</Err></Errors></"
+                                          + cmdName
+                                          + L"Resp></CdrResponse>");
+                delete de;
+                return result;
+            }
+            catch (const cdr::dom::SAXParseException& spe) {
+                if (!conn.getAutoCommit())
+                    conn.rollback();
+                wchar_t tmpBuf[80];
+                swprintf(tmpBuf, L" at line %d, Column %d",
+                         spe.getLineNumber(), spe.getColumnNumber);
+                cdr::String locString = tmpBuf;
+                return cdr::String(rspTag + L"failure'><"
+                                          + cmdName 
+                                          + L"Resp><Errors>"
+                                          + L"<Err>SAX Parse Exception: "
+                                          + spe.getMessage()
+                                          + locString
+                                          + L"</Err></Errors></"
+                                          + cmdName
+                                          + L"Resp></CdrResponse>");
+            }
+            catch (const cdr::dom::SAXException& se) {
+                if (!conn.getAutoCommit())
+                    conn.rollback();
+                return cdr::String(rspTag + L"failure'><"
+                                          + cmdName 
+                                          + L"Resp><Errors><Err>SAX Exception: "
+                                          + se.getMessage()
+                                          + L"</Err></Errors></"
+                                          + cmdName
+                                          + L"Resp></CdrResponse>");
             }
             cdr::String response = rspTag + session.getStatus()
                                           + L"'>\n"
