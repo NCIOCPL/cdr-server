@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-     $Id: OrganizationSchema.xml,v 1.22 2004-01-14 20:04:47 bkline Exp $ 
+     $Id: OrganizationSchema.xml,v 1.23 2004-06-29 21:55:51 bkline Exp $ 
 
      $Log: not supported by cvs2svn $
+     Revision 1.22  2004/01/14 20:04:47  bkline
+     Added ClinicalTrialsOfficeContact element (and type); request #1039.
+
      Revision 1.21  2003/02/21 16:05:31  bkline
      Added FormerName element (requested by LG in issue #603).
 
@@ -98,6 +101,11 @@
                                         ParentOrganization/@cdr:ref'
      >@IncludeParentName found but no parent org has been specified</assert>
     </rule>
+    <rule            context         = '/Organization/OrganizationType'>
+     <assert         test            = 'not(. = "PDQ Editorial Board") or
+                                       ../PDQBoardInformation'
+     >PDQBoardInformation required for PDQ editorial boards</assert>
+    </rule>
    </pattern>
   </appInfo>
  </annotation>
@@ -135,6 +143,9 @@
       <element       name            = 'OrganizationType'
                      type            = 'OrganizationType'
                      maxOccurs       = 'unbounded'/>
+      <element       name            = 'PDQBoardInformation'
+                     type            = 'PDQBoardInformation'
+                     minOccurs       = '0'/>
       <element       name            = 'ProtocolIDAcronym'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'
@@ -389,6 +400,30 @@
                      minOccurs       = '0'/>
       <element       name            = 'ProtocolParticipation'
                      type            = 'YesNo'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'PDQBoardInformation'>
+    <sequence>
+      <element       name            = 'BoardManager'
+                     type            = 'PersonLink'/>
+      <element       name            = 'BoardManagerPhone'
+                     type            = 'Phone'/>
+      <element       name            = 'BoardMeetingDate'
+                     type            = 'BoardMeetingDate'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'BoardMeetingDate'>
+    <sequence>
+      <element       name            = 'Year'
+                     type            = 'integer'/>
+      <element       name            = 'Date'
+                     type            = 'date'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'DayTime'
+                     type            = 'time'/>
     </sequence>
   </complexType>
 
