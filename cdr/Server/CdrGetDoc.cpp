@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.26 2002-07-03 12:55:59 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.27 2002-07-12 18:09:26 bkline Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2002/07/03 12:55:59  bkline
+ * Added code to get first publication info.
+ *
  * Revision 1.25  2002/07/01 21:00:02  bkline
  * Blocked denormalization of filters and schemas.
  *
@@ -534,8 +537,8 @@ static cdr::String getCommonCtlString(int docId,
     {
       cdr::String date = cdr::toXmlDate(rs.getString(1));
       cdr::String user = rs.getString(2);
-      cdrDoc += L"<Modify><Date>" + date + L"</Date><User>"
-              + user + L"</User></Modify>";
+      cdrDoc += L"<FirstPub><Date>" + date + L"</Date><User>"
+              + user + L"</User></FirstPub>";
     }
     select.close();
   }
