@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ================================================================
-     $Id: CDR0000339576.xml,v 1.10 2004-07-16 17:21:41 venglisc Exp $
+     $Id: CDR0000339576.xml,v 1.11 2005-01-31 21:59:21 venglisc Exp $
 
      Filter handling all In-Line Markup elements of Summary Docs
         Written by Volker Englisch, 2004-07-16
@@ -72,6 +72,41 @@
    </xsl:attribute>
    <xsl:apply-templates/>
   </a>
+ </xsl:template>
+
+ <!-- 
+ ===================================================================
+ Display a Glossary Link
+ =================================================================== -->
+ <xsl:template                   match = "GlossaryTermRef | LOERef">
+  <xsl:choose>
+   <xsl:when                      test = "/Summary/SummaryMetaData/
+                                          SummaryAudience = 
+                                                          'Health professionals'
+                                          and 
+                                         /Summary/SummaryMetaData/
+                                          SummaryType != 
+                                       'Complementary and alternative medicine' 
+                                          and
+                                         /Summary/SummaryMetaData/
+                                          SummaryLanguage = 'English'">
+    <xsl:apply-templates        select = "."  
+                                  mode = "HPE"/>
+   </xsl:when>
+   <xsl:when                      test = "/Summary/
+                                         SummaryMetaData/SummaryAudience =
+                                         'Health professionals' 
+                                         and 
+                                        /Summary/SummaryMetaData/
+                                         SummaryLanguage = 'Spanish'">
+    <xsl:apply-templates        select = "."  
+                                  mode = "HPS"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:apply-templates        select = "."  
+                                  mode = "PE"/>
+   </xsl:otherwise>
+  </xsl:choose> 
  </xsl:template>
 
 
