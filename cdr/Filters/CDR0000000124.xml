@@ -44,7 +44,9 @@
   <xsl:attribute                  name = "valign">top</xsl:attribute>
  </xsl:attribute-set>
 
- 
+ <xsl:variable                    name = "docID"
+                                  select = "document('cdrutil:/docid')"/>
+
 
  <!-- ==========================================================
                     Generate the report title and date 
@@ -54,10 +56,19 @@
   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
     <HTML>
     <HEAD>
-    <xsl:variable name="cdrmydoc" select="document('cdrx:/*/CdrCtl')"/>
+    <xsl:variable name="cdrdocs" select="document('cdrx:/*/CdrCtl')"/>
+       <TITLE>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+     <xsl:text>: </xsl:text>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/> 
+    </TITLE>
+    
 
-    <TITLE><xsl:value-of select="document('cdrutil:/docid')"/>&#xa0;&#xa0;<xsl:value-of select="substring-before($cdrmydoc/CdrDocCtl/DocTitle,';')"/></TITLE>
-     <!--
+         <!--
      <LINK REL='stylesheet' 
            HREF='/stylesheets/protocol2.css' 
            TYPE='text/css' /> -->
@@ -70,7 +81,7 @@
     <BODY>
   
   <b><font size='4'><center>Protocol Citations<br /> QC Report</center></font></b>
-  <b><font size='3'><center><xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/></center></font></b><br /><br />
+  <b><font size='3'><center><xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/></center></font></b><br />
 
 
 <!-- ====================================================================
@@ -163,7 +174,7 @@
         </font>
         </b>
        </th>
-        
+        <td xsl:use-attribute-sets =   "cell2of2">
         <xsl:for-each                select="ProtocolAdminInfo/
                                              ProtocolLeadOrg/LeadOrgPersonnel/
                                              ProtPerson/PersonNameInformation">
@@ -171,12 +182,12 @@
 
 
    <xsl:if test="../../../LeadOrgRole='Primary'">
-   <td xsl:use-attribute-sets =   "cell2of2">
-   <xsl:value-of select="SurName"/>,
+      <xsl:value-of select="SurName"/>,
    <xsl:value-of select="GivenName"/>
-   </td>
    </xsl:if>
+   <br />
    </xsl:for-each>
+   </td>
    </tr>
    </table>
     <hr />
@@ -228,8 +239,7 @@
   </td>
   </tr>
   </table>
-   <br /><br />
-    <hr />
+   <hr />
    </xsl:for-each>
 
    </BODY>
