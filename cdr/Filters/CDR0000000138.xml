@@ -14,7 +14,6 @@
                              xmlns:cdr = "cips.nci.nih.gov/cdr" 
                exclude-result-prefixes = "cdr">
     
-  <xsl:include href = "cdr:name:Module: Vendor Cleanup Templates"/>
   <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
   <xsl:include href = "cdr:name:Module: Vendor Address Templates"/>
   <xsl:include href = "cdr:name:Module: Vendor Phone Templates"/>
@@ -34,10 +33,6 @@
      ================================================================= -->
 
    <xsl:template match="Person">
-
-       <!-- xsl:text disable-output-escaping="yes">
-       &lt;!DOCTYPE Person &gt;</xsl:text -->
-
    <xsl:element name='{name()}'>
    <xsl:for-each               select="DocId">
    <xsl:attribute name="id">
@@ -163,9 +158,14 @@
 
  <xsl:if                      test="../../Status/CurrentStatus='Inactive'
                               or @PreviousLocation">
- <xsl:attribute name="Status">
- <xsl:text>Inactive--Contact Information may not be current</xsl:text>
- </xsl:attribute>
+  <xsl:attribute name="Status">
+   <xsl:text>Inactive--Contact Information may not be current</xsl:text>
+  </xsl:attribute>
+ </xsl:if>
+ <xsl:if                          test = "@cdr:id = ../CIPSContact">
+  <xsl:attribute                  name = "CIPSContact">
+   <xsl:value-of                select = "'Y'"/>
+  </xsl:attribute>
  </xsl:if>
 
 
