@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.19 2002-04-04 19:05:24 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.20 2002-06-01 00:00:02 bkline Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2002/04/04 19:05:24  bkline
+ * Fixed ending tag for CdrDocCtl element.
+ *
  * Revision 1.18  2002/03/28 22:19:31  ameyer
  * Removed unreferenced variable.
  *
@@ -461,7 +464,7 @@ static cdr::String getCommonCtlString(int docId,
 
   if (elements & cdr::DocCtlComponents::DocMod)
   {
-    std::string query = "SELECT a.dt,"
+    std::string query = "SELECT TOP 1 a.dt,"
                         "       u.name"
                         "  FROM audit_trail a"
                         "  JOIN usr u"
@@ -469,7 +472,9 @@ static cdr::String getCommonCtlString(int docId,
                         "  JOIN action ac"
                         "    ON a.action = ac.id"
                         " WHERE a.document = ?"
-                        "   AND ac.name = 'MODIFY DOCUMENT'";
+                        "   AND ac.name = 'MODIFY DOCUMENT'"
+                     " ORDER BY a.dt DESC";
+
     cdr::db::PreparedStatement select = conn.prepareStatement(query);
     select.setInt(1, docId);
     cdr::db::ResultSet rs = select.executeQuery();
