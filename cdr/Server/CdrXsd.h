@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.h,v 1.8 2000-05-04 01:15:54 bkline Exp $
+ * $Id: CdrXsd.h,v 1.9 2000-10-05 21:23:55 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2000/05/04 01:15:54  bkline
+ * Fixed some unclosed comments.
+ *
  * Revision 1.7  2000/05/03 21:46:35  bkline
  * More ccdoc comments.
  *
@@ -1159,6 +1162,22 @@ namespace cdr {
              */
             ContentType     contentType;
         };
+
+        /**
+         * Checks document against the schema for its document type, reporting 
+         * any errors found in the caller's <code>Errors</code> vector.  This 
+         * lower-level method is invoked by cdr::validateDocAgainstSchema,
+         * which extracts the schema from the database.
+         *
+         *  @param  docElem             top level element for CdrDoc
+         *  @param  schemaElem          top level element for schema
+         *  @param  errors              vector of strings to be populated by
+         *                              this function
+         */
+        extern void validateDocAgainstSchema(
+                cdr::dom::Element&         docElem,
+                cdr::dom::Element&         schemaElem,
+                StringList&                errors);
     }
 }
 
