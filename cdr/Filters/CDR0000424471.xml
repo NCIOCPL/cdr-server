@@ -1,0 +1,59 @@
+<CdrDoc Type='Filter' Id='CDR0000424471'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Insert External Sites</DocTitle>
+<DocComment>-1</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version='1.0' encoding='UTF-8'?>
+ 
+<xsl:transform                version = '1.0'
+                            xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                            xmlns:cdr = 'cips.nci.nih.gov/cdr'>
+ 
+ <xsl:output                   method = 'xml'/>
+ 
+ <!--
+ =======================================================================
+ Copy most things straight through.
+ ======================================================================= -->    
+ <xsl:template                  match = '@*|node()|comment()|
+                                         processing-instruction()'>
+  <xsl:copy>
+   <xsl:apply-templates        select = '@*|node()|comment()|
+                                         processing-instruction()'/>
+  </xsl:copy>
+ </xsl:template>
+ 
+ <!-- 
+ ======================================================================
+ Add place holder for new ExternalSites element.
+ ====================================================================== -->
+ <xsl:template                 match = "ProtocolAdminInfo">
+  <xsl:copy>
+   <xsl:apply-templates       select = "@*|CurrentProtocolStatus|
+                                        ProtocolLeadOrg|
+                                        ExternalSites[not(@Source='RSS')]"/>    
+    <xsl:value-of             select = "'@@RSSSITES@@'"/>
+   <xsl:apply-templates       select = "DatedAction"/>
+  </xsl:copy>
+ </xsl:template>
+
+ <!-- 
+ ======================================================================
+ Strip protocol site children of RSS lead orgs.
+ ====================================================================== -->
+ <xsl:template                 match = "ProtocolSites">
+  <xsl:if                       test = "not(../UpdateMode[@MailerType=
+                                        'Protocol_SandP']='RSS')">
+   <xsl:copy>
+    <xsl:apply-templates       select = '@*|node()|comment()|
+                                         processing-instruction()'/>
+   </xsl:copy>
+  </xsl:if>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
