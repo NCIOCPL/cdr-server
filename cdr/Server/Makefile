@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.32 2001-02-28 03:19:15 ameyer Exp $
+# $Id: Makefile,v 1.33 2001-04-08 22:44:01 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.32  2001/02/28 03:19:15  ameyer
+# Added CdrLinkProcs.h,.cpp.
+#
 # Revision 1.31  2001/02/28 02:34:54  bkline
 # Added rule for building test client.
 #
@@ -132,10 +135,10 @@ SVC_CFLAGS =-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT \
 HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrCommand.h \
         $(CDRINC)/CdrDbConnection.h \
-        $(CDRINC)/CdrDoc.h \
         $(CDRINC)/CdrDbPreparedStatement.h \
         $(CDRINC)/CdrDbResultSet.h \
         $(CDRINC)/CdrDbStatement.h \
+        $(CDRINC)/CdrDoc.h \
         $(CDRINC)/CdrDom.h \
         $(CDRINC)/CdrException.h \
         $(CDRINC)/CdrGetDoc.h \
@@ -191,6 +194,7 @@ OBJS   =CdrCommand.obj \
         CdrReport.obj \
         CdrDocTypes.obj \
         CdrShutdown.obj \
+        CdrGetTree.obj \
         CdrDOMtoString.obj
 
 LIBS   =cdr.lib xerces-c_1.lib sablot.lib \
