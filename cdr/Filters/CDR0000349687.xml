@@ -7,8 +7,12 @@
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
-   $Id: CDR0000349687.xml,v 1.1 2003-12-14 19:16:19 bkline Exp $
+   $Id: CDR0000349687.xml,v 1.2 2003-12-23 18:19:37 bkline Exp $
+
    $Log: not supported by cvs2svn $
+   Revision 1.1  2003/12/14 19:16:19  bkline
+   Final version for promotion to production system.  
+
   -->
 
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -108,25 +112,29 @@
      <xsl:value-of             select = "$docId"/>
     </xsl:attribute>
    </xsl:if>
-   <xsl:choose>
-    <xsl:when                    test = "$doc/Person/PersonNameInformation">
-     <xsl:copy-of              select = "$doc/Person/PersonNameInformation"/>
-    </xsl:when>
-    <xsl:otherwise>
-     <PersonNameInformation>
+   <PersonNameInformation>
+    <xsl:choose>
+     <xsl:when                    test = "$doc/Person/PersonNameInformation">
+      <xsl:for-each             select = "$doc/Person/PersonNameInformation">
+       <xsl:apply-templates     select = "GivenName"/>
+       <xsl:apply-templates     select = "MiddleInitial"/>
+       <xsl:apply-templates     select = "SurName"/>
+      </xsl:for-each>
+     </xsl:when>
+     <xsl:otherwise>
       <xsl:apply-templates     select = "GivenName"/>
       <xsl:apply-templates     select = "MiddleInitial"/>
       <xsl:apply-templates     select = "Surname|SurName"/>
-      <xsl:if                    test = "ProfessionalSuffix != ''">
-       <ProfessionalSuffix>
-        <CustomProfessionalSuffix>
-         <xsl:value-of         select = "ProfessionalSuffix"/>
-        </CustomProfessionalSuffix>
-       </ProfessionalSuffix>
-      </xsl:if>
-     </PersonNameInformation>
-    </xsl:otherwise>
-   </xsl:choose>
+     </xsl:otherwise>
+    </xsl:choose>
+    <xsl:if                      test = "ProfessionalSuffix != ''">
+     <ProfessionalSuffix>
+      <CustomProfessionalSuffix>
+       <xsl:value-of           select = "ProfessionalSuffix"/>
+      </CustomProfessionalSuffix>
+     </ProfessionalSuffix>
+    </xsl:if>
+   </PersonNameInformation>
    <xsl:apply-templates        select = "Role"/>
    <xsl:apply-templates        select = "Affiliation"/>
    <xsl:apply-templates        select = "Phone"/>
