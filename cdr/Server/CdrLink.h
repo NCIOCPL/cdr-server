@@ -1,10 +1,14 @@
 /*
- * $Id: CdrLink.h,v 1.4 2001-04-17 23:14:03 ameyer Exp $
+ * $Id: CdrLink.h,v 1.5 2001-05-17 17:39:50 ameyer Exp $
  *
  * Header for Link Module software - to maintain the link_net
  * table describing the link relationships among CDR documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2001/04/17 23:14:03  ameyer
+ * Added customLinkCheck()
+ * Small changes in validation.
+ *
  * Revision 1.3  2000/09/27 20:25:39  bkline
  * Fixed last argument to findTargetDocTypes().
  *
@@ -258,14 +262,14 @@ namespace cdr {
      * Looks up the document types to which links can be made from a
      * particular element type in a given source document type.
      *
-     *  @param      conn        reference to the connection object for the
+     *  @param      conn        Reference to the connection object for the
      *                           CDR database.
-     *  @param      srcElem     reference to a string containing the source
-     *                          element name.
-     *  @param      srcDocType  reference to a string containing the source
-     *                          document type.
-     *  @param      typeList    reference to a list of keys into the doc_type
-     *                          table (out parameter).
+     *  @param      srcElem     Reference to a string containing the source
+     *                           element name.
+     *  @param      srcDocType  Reference to a string containing the source
+     *                           document type.
+     *  @param      typeList    Reference to a list of keys into the doc_type
+     *                           table (out parameter).
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
     extern void findTargetDocTypes (cdr::db::Connection& conn,
@@ -278,9 +282,9 @@ namespace cdr {
      * Checks a DBMS table to find out what procedures are required for
      * this type of link and then invokes the appropriate code for them.
      *
-     *  @param      conn        reference to the connection object for the
+     *  @param      conn        Reference to the connection object for the
      *                           CDR database.
-     *  @param      link        reference CdrLink object for link to check.
+     *  @param      link        Reference CdrLink object for link to check.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
     extern int customLinkCheck (cdr::db::Connection& conn,
