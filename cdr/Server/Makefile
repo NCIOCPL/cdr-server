@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.47 2002-01-29 23:55:49 bkline Exp $
+# $Id: Makefile,v 1.48 2002-01-31 13:19:31 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.47  2002/01/29 23:55:49  bkline
+# Made bison rules more portable.
+#
 # Revision 1.46  2002/01/28 23:11:53  bkline
 # Backed out changes to CP macro; added code for cvs update at
 # appropriate spots.
@@ -164,6 +167,7 @@
 # Makefile variables
 #--------------------------------------------------------------------------
 
+DRV    =d:
 CDR    =$(DRV)/cdr
 XML4C  =$(DRV)/usr/xml4c
 SABLOT =$(DRV)/usr/sablot
@@ -284,7 +288,7 @@ _all: init CdrServer.exe CdrTestClient.exe #CdrDocs $(SERVICE)
 
 _install: CdrServer.exe CdrDocs
 	-net stop Cdr
-	$(CP) CdrServer.exe $(CDRSVR)
+	$(CP) CdrServer.exe $(CDRBIN)
 	net start Cdr
 
 #--------------------------------------------------------------------------
