@@ -77,8 +77,7 @@
    <!-- Use generic copy templates for these. -->
    <xsl:apply-templates     select = "Eligibility"
                               mode = "copy"/>
-   <xsl:apply-templates     select = "ProtocolRelatedLinks"
-                              mode = "copy"/>
+   <xsl:apply-templates     select = "ProtocolRelatedLinks"/>
    <xsl:apply-templates     select = "PublishedResults"/>
    <xsl:apply-templates     select = "ProtocolPhase"
                               mode = "copy"/>
@@ -793,6 +792,34 @@
     <xsl:apply-templates    select = "NameFormat"
                               mode = "copy"/>
    </PersonNameInformation>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Filter the ProtocolRelatedLinks information for the vendors
+ Only the RelatedProtocols and RelatedWebsites elements are valid.
+ ==================================================================== -->
+ <xsl:template               match = "ProtocolRelatedLinks">
+  <ProtocolRelatedLinks>
+   <xsl:apply-templates     select = "RelatedProtocols | RelatedWebsites"/>
+  </ProtocolRelatedLinks>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Display the RelatedProtocols and RelatedWebsites elements 
+ ==================================================================== -->
+ <xsl:template              match = "RelatedProtocols | RelatedWebsites">
+  <xsl:element               name = "{name()}">
+   <xsl:for-each         select = "@*">
+    <xsl:attribute        name = "{name()}">
+     <xsl:value-of      select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+   <xsl:apply-templates    select = "node()"/>
+  </xsl:element>
  </xsl:template>
 
 
