@@ -75,18 +75,52 @@
                10/07/2002(CB) - Modified code to eliminate 4th level titles
      ====================================================================== -->
 
-<dl>
-<xsl:for-each select="SummarySection">
-<dt><xsl:value-of select="Title"/></dt>
+  <dl>
+<xsl:for-each select="SummarySection | Insertion/SummarySection">
+<xsl:if test="Insertion/Title">
+<dt><b><u><xsl:value-of select="Insertion/Title"/></u></b></dt><br />
+</xsl:if>
+<xsl:choose>
+ <xsl:when test="../../Insertion">
+<dt><b><u><xsl:value-of select="Title"/></u></b></dt>
+</xsl:when>
+<xsl:otherwise>
+ <xsl:apply-templates select="Title" mode="CL"/>
+</xsl:otherwise>
+</xsl:choose>
 <xsl:choose>
 <xsl:when test="descendant::SummarySection">
 <dl>
-<xsl:for-each select="./SummarySection">
-<xsl:if test="not(SummarySection/SummarySection/SummarySection/SummarySection/Title or SummarySection/SummarySection/SummarySection/SummarySection/SummarySection/Title )">
-<dt><xsl:value-of select="Title"/></dt>
+<xsl:for-each select="./SummarySection | ./Insertion/SummarySection">
+<!--<xsl:if test="not(SummarySection/SummarySection/SummarySection/SummarySection or SummarySection/SummarySection/SummarySection/SummarySection/SummarySection)">-->
+<xsl:if test="count(ancestor::SummarySection) &lt; 4">
+<xsl:if test="Insertion/Title">
+<dt><b><u><xsl:value-of select="Insertion/Title"/></u></b></dt>
+</xsl:if>
+
+<xsl:choose>
+<xsl:when test="../../Insertion">
+<dt><b><u><xsl:value-of select="Title"/></u></b></dt>
+</xsl:when>
+<xsl:otherwise>
+<dt><xsl:apply-templates select="Title" mode="CL"/></dt>
+</xsl:otherwise>
+</xsl:choose>
+
 <dl>
-<xsl:for-each select="./SummarySection">
-<dt><xsl:value-of select="Title"/></dt>
+<xsl:for-each select="./SummarySection | ./Insertion/SummarySection"> 
+
+<xsl:if test="Insertion/Title">
+<dt><b><u><xsl:value-of select="Insertion/Title"/></u></b></dt>
+</xsl:if>
+<xsl:choose>
+<xsl:when test="../../Insertion">
+<dt><b><u><xsl:value-of select="Title"/></u></b></dt>
+</xsl:when>
+<xsl:otherwise>
+ <xsl:apply-templates select="Title" mode="CL"/>
+</xsl:otherwise>
+</xsl:choose>
 </xsl:for-each>
 </dl>
 </xsl:if>
@@ -98,10 +132,10 @@
 </xsl:choose>
 </xsl:for-each>
 </dl>
-
 <xsl:apply-templates/>
 </BODY>
 </xsl:template>
+
 
 <!-- ======================================================================== 
      templates to handle summary section anchors,list formats, and paragraphs
@@ -114,21 +148,30 @@
 <!-- Display a summary section title and include anchor --> 
 
 
-<xsl:template match="SummarySection/Title">
+<xsl:template match="SummarySection/Title | */SummarySection/Title | SummarySection/*/Title">
 <h2><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h2>
 </xsl:template>
 
-<xsl:template match="SummarySection/SummarySection/Title">
+<xsl:template match="SummarySection/SummarySection/Title | SummarySection/SummarySection/*/Title | */SummarySection/SummarySection/Title | SummarySection/*/SummarySection/Title | */SummarySection/*/SummarySection/Title">
 <h3><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h3>
 </xsl:template>
 
-<xsl:template match="SummarySection/SummarySection/SummarySection/Title">
+<xsl:template match="SummarySection/SummarySection/SummarySection/Title | SummarySection/SummarySection/SummarySection/*/Title | */SummarySection/SummarySection/SummarySection/Title | SummarySection/*/SummarySection/SummarySection/Title | SummarySection/SummarySection/*/SummarySection/Title | SummarySection/*/SummarySection/*/SummarySection/Title | SummarySection/*/SummarySection/*/SummarySection/*/SummarySection/Title">">
 <h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4>
 </xsl:template>
 
-<xsl:template match="SummarySection/SummarySection/SummarySection/SummarySection/Title">
+ <xsl:template match="SummarySection/SummarySection/SummarySection/SummarySection/Title | 
+ SummarySection/SummarySection/SummarySection/SummarySection/*/Title |
+SummarySection/*/SummarySection/SummarySection/SummarySection/*/Title | */SummarySection/SummarySection/SummarySection/SummarySection/*/Title | SummarySection/SummarySection/*/SummarySection/SummarySection/Title | SummarySection/*/SummarySection/*/SummarySection/SummarySection/Title | 
+*/SummarySection/*/SummarySection/*/SummarySection/*/SummarySection/Title">
 <i><h4><a name="{translate(.,' ','')}"><xsl:apply-templates/></a></h4></i>
 </xsl:template>
+
+
+
+
+          
+          
 
 
 <!-- 10/08/2002 CB  Added additional template to display inserted titles in bold/italics -->
@@ -273,7 +316,7 @@ match=" SummarySection/SummarySection/SummarySection/SummarySection/Insertion/Ti
      =========================================================== -->
 
        <xsl:template match="Insertion">
-      <u><b><xsl:apply-templates/></b></u>
+      <b><u><xsl:apply-templates/></u></b>
        </xsl:template>
 
 
@@ -287,14 +330,43 @@ match=" SummarySection/SummarySection/SummarySection/SummarySection/Insertion/Ti
                       </xsl:template>
 
 <!--=====================================================================
-         Display Content Summary Title with Deletion and Insertion
+         Display an ordered list 
     ==================================================================== -->
-  <xsl:template                  match = "SummaryTitle"
-                                  mode = "ContentTitle">
-    <h2>
-    <xsl:apply-templates/>
-    </h2>
-  </xsl:template> 
+  <xsl:template                  match = "OrderedList">
+    <xsl:variable                 name = "boldunderline">
+      <xsl:text>BoldUnderline</xsl:text>
+    </xsl:variable>
+    <xsl:call-template            name = "OrderedList">
+      <xsl:with-param             name = "markup"        
+                                select = "$boldunderline"/>
+    </xsl:call-template>
+  </xsl:template>
+
+<!--=====================================================================
+                Display an Itemized List
+    ==================================================================== -->
+  <xsl:template                  match = "ItemizedList">
+    <xsl:variable                 name = "boldunderline">
+      <xsl:text>BoldUnderline</xsl:text>
+    </xsl:variable>
+    <xsl:call-template            name = "ItemizedList">
+      <xsl:with-param             name = "markup"        
+                                select = "$boldunderline"/>
+    </xsl:call-template>
+  </xsl:template>
+
+   <xsl:template               match="Insertion/Table">
+   <xsl:apply-templates        select="." mode="B"/>
+   </xsl:template>
+
+   <!-- ====================================================================
+           Display summary titles with insertion tags inside the title tag
+      =================================================================== -->
+
+   <xsl:template   match="Title" mode="CL">
+   <xsl:apply-templates/>
+   </xsl:template>
+  
 
 </xsl:transform>]]>
 </CdrDocXml>
