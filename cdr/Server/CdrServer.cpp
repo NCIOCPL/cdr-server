@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.7 2000-05-09 20:15:34 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.8 2000-05-21 00:52:15 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2000/05/09 20:15:34  bkline
+ * Replaced direct reading of Session fields with accessor methods.
+ *
  * Revision 1.6  2000/05/04 12:45:25  bkline
  * Changed getString() to what() for cdr::Exceptions.
  *
@@ -41,6 +44,7 @@
 #include "CdrDom.h"
 #include "CdrDbConnection.h"
 #include "CdrException.h"
+#include "CdrDbStatement.h"
 
 // Local constants.
 const short CDR_PORT = 2019;
@@ -60,6 +64,9 @@ static cdr::String      processCommand(cdr::Session&,
 static void             sendErrorResponse(int, const cdr::String&,
                                           const cdr::String&);
 static DWORD __stdcall  dispatcher(LPVOID);
+static DWORD __stdcall  sessionSweep(LPVOID);
+
+static bool timeToShutdown = false;
 
 /**
  * Creates a socket and listens for connections on it.  Spawns
@@ -98,11 +105,17 @@ main(int ac, char **av)
     }
     std::cout << "listening...\n";
 
-    for (;;) {
+    if (!CreateThread(0, 0, sessionSweep, (LPVOID)0, 0, 0)) {
+        std::cerr << "CreateThread: " << GetLastError() << '\n';
+        return EXIT_FAILURE;
+    }
+    while (!timeToShutdown) {
         struct sockaddr_in client_addr;
         int len = sizeof client_addr;
         memset(&client_addr, 0, sizeof client_addr);
         int fd = accept(sock, (struct sockaddr *)&client_addr, &len);
+        if (timeToShutdown)
+            break;
         if (fd < 0) {
             perror("accept");
             return EXIT_FAILURE;
@@ -112,6 +125,7 @@ main(int ac, char **av)
             return EXIT_FAILURE;
         }
     }
+    return EXIT_SUCCESS;
 }
 
 /**
@@ -119,7 +133,10 @@ main(int ac, char **av)
  * of handling multiple command sets for the connection.
  */
 DWORD __stdcall dispatcher(LPVOID arg) {
-    cdr::db::Connection conn;
+    cdr::db::Connection conn = 
+        cdr::db::DriverManager::getConnection(L"odbc:cdr",
+                                              L"cdr", 
+                                              L"***REMOVED***");
     cdr::String now = conn.getDateTimeString();
     now[10] = L'T';
     std::wcerr << L"NOW=" << now << L"\n";
@@ -303,6 +320,7 @@ cdr::String processCommand(cdr::Session& session,
         if (type == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String cmdName = specificCmd.getNodeName();
             std::wcerr << L"Received command: " << cmdName << L"\n";
+
             cdr::Command cdrCommand = cdr::lookupCommand(cmdName);
             if (!cdrCommand)
                 return cdr::String(rspTag + L"failure'>\n  <Errors>\n   "
@@ -349,6 +367,8 @@ cdr::String processCommand(cdr::Session& session,
                                           + L"'>\n"
                                           + cmdResponse 
                                           + L" </CdrResponse>\n";
+            if (cmdName == L"CdrShutdown")
+                timeToShutdown = true;
             return response;
         }
         specificCmd = specificCmd.getNextSibling();
@@ -371,4 +391,34 @@ void sendResponse(int fd, const cdr::String& response)
     unsigned long length = htonl(bytes);
     send(fd, (char *)&length, sizeof length, 0);
     send(fd, s.c_str(), bytes, 0);
+}
+
+/**
+ * Cleans up stale sessions (those which have been inactive for 24 hours or
+ * longer).
+ */
+DWORD __stdcall sessionSweep(LPVOID arg) {
+
+    const char* query = "DELETE SESSION"
+                        " WHERE ended IS NULL"
+                        "   AND DATEDIFF(hour, last_act, GETDATE()) > 24";
+    int counter = 0;
+    while (!timeToShutdown) {
+        if (counter++ % 60 == 0) {
+            cdr::db::Connection conn = 
+                cdr::db::DriverManager::getConnection(L"odbc:cdr",
+                                                      L"cdr", 
+                                                  L"***REMOVED***");
+            cdr::db::Statement s = conn.createStatement();
+            int rows = s.executeUpdate(query);
+            if (rows > 0) {
+                cdr::String now = conn.getDateTimeString();
+                now[10] = L'T';
+                std::wcerr << L"*** CLEARED " << rows 
+                    << L"INACTIVE SESSIONS AT " << now << L"\n";
+            }
+        }
+        Sleep(5000);
+    }
+    return EXIT_SUCCESS;
 }
