@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.23 2002-04-04 01:05:21 bkline Exp $
+ * $Id: CdrCommand.h,v 1.24 2002-05-03 20:35:45 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2002/04/04 01:05:21  bkline
+ * Added cdr::publish().
+ *
  * Revision 1.22  2001/10/17 13:51:59  bkline
  * Added mergeProt() function.
  *
@@ -597,6 +600,21 @@ namespace cdr {
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
     extern String checkVerIn    (Session&          session,
+                                 const dom::Node&  node,
+                                 db::Connection&   conn);
+
+    /**
+     * Lists the most recent versions for the specified document.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String listVersions  (Session&          session,
                                  const dom::Node&  node,
                                  db::Connection&   conn);
 

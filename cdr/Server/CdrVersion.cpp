@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.14 2002-04-30 12:36:35 bkline Exp $
+ * $Id: CdrVersion.cpp,v 1.15 2002-05-03 20:35:46 bkline Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2002/04/30 12:36:35  bkline
+ * Added workaround for suspicious semantics of `abandoned' parameter.
+ *
  * Revision 1.13  2002/04/20 05:04:44  bkline
  * Added code to log unlock actions in the audit_trail table.
  *
@@ -871,7 +874,7 @@ cdr::String cdr::unlabelDocument(cdr::Session& session,
   }
 
   if (document_id <= 0)
-    throw cdr::Exception(L"Invalid or missing label name");
+    throw cdr::Exception(L"Invalid or missing document ID");
   if (label_name.size() == 0)
     throw cdr::Exception(L"Invalid or missing label name");
 
@@ -888,3 +891,67 @@ cdr::String cdr::unlabelDocument(cdr::Session& session,
   return L"<CdrUnlabelDocumentResp/>";
 }
 
+cdr::String cdr::listVersions(Session& session,
+                              const dom::Node& commandNode,
+                              db::Connection& dbConnection)
+{
+  int docId     = 0;
+  int nVersions = -1;
+
+  for (dom::Node child = commandNode.getFirstChild();
+       child != NULL;
+       child = child.getNextSibling())
+  {
+    if (child.getNodeType() == dom::Node::ELEMENT_NODE)
+    {
+      String name = child.getNodeName();
+      if (name == L"DocId")
+      {
+        String str = dom::getTextContent(child);
+        docId      = str.extractDocId();
+      }
+      if (name == L"NumVersions")
+      {
+        String str = dom::getTextContent(child);
+        nVersions  = str.getInt();
+        if (nVersions == 0)
+          throw Exception(L"Invalid value for NumVersions", str);
+      }
+    }
+  }
+
+  if (docId <= 0)
+    throw Exception(L"Invalid or missing document ID");
+
+  char top[80];
+  char query[256];
+  *top = '\0';
+  if (nVersions > 0)
+      sprintf(top, "TOP %d ", nVersions);
+  sprintf(query, "SELECT %snum,      "
+                 "       comment     "
+                 "  FROM doc_version "
+                 " WHERE id = ?      "
+                 " ORDER BY num DESC ", top);
+  db::PreparedStatement ps = dbConnection.prepareStatement(query);
+  ps.setInt(1, docId);
+  db::ResultSet rs = ps.executeQuery();
+  wostringstream response;
+  response << L"<ListVersionsResp>";
+  while (rs.next())
+  {
+    int num        = rs.getInt(1);
+    String comment = rs.getString(2);
+    response << L"<Version><Num>"
+             << String::toString(num)
+             << L"</Num>";
+    if (!comment.isNull())
+      response << L"<Comment>"
+               << comment.c_str()
+               << L"</Comment>";
+    response << L"</Version>";
+  }
+  response << L"</ListVersionsResp>";
+
+  return response.str();
+}
