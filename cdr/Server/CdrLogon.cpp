@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLogon.cpp,v 1.7 2002-06-07 13:54:06 bkline Exp $
+ * $Id: CdrLogon.cpp,v 1.8 2003-08-04 17:03:26 bkline Exp $
  *
  * Opens a new CDR session.
  *
@@ -15,6 +15,9 @@
  *  </CdrLogonResp>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2002/06/07 13:54:06  bkline
+ * Added case-sensitive check of user name at Lakshmi's request (issue #257).
+ *
  * Revision 1.6  2002/04/10 14:32:14  bkline
  * Added logging of failed login attempts.
  *
@@ -68,7 +71,7 @@ cdr::String cdr::logon(cdr::Session& session,
     cdr::db::ResultSet rs = select.executeQuery();
     if (!rs.next()) {
         cdr::log::pThreadLog->Write(L"Failed logon attempt (invalid user name)",
-                L"name: " + userName + "; password: " + password);
+                L"name: " + userName + L"; password: " + password);
         throw cdr::Exception(L"Invalid logon credentials");
     }
     int id                 = rs.getInt(1);
@@ -77,12 +80,12 @@ cdr::String cdr::logon(cdr::Session& session,
     if (userName != dbName) {
         cdr::log::pThreadLog->Write(
                 L"Failed logon attempt (user name case mismatch)",
-                L"user typed: " + userName + "; name in database: " + dbName);
+                L"user typed: " + userName + L"; name in database: " + dbName);
         throw cdr::Exception(L"Invalid logon credentials");
     }
     if (password != dbPassword) {
         cdr::log::pThreadLog->Write(L"Failed logon attempt (invalid password)",
-                L"name: " + userName + "; password: " + password);
+                L"name: " + userName + L"; password: " + password);
         throw cdr::Exception(L"Invalid logon credentials");
     }
    

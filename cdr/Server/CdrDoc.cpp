@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.55 2003-05-29 15:35:46 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.56 2003-08-04 17:03:26 bkline Exp $
  *
  */
 
@@ -1689,7 +1689,7 @@ static cdr::String getLeadOrgStatus(const cdr::dom::Node& node,
     // Find the LeadOrgProtocolStatuses element.
     cdr::dom::Node child = node.getFirstChild();
     cdr::String targetName = L"LeadOrgProtocolStatuses";
-    while (child != 0 && targetName != child.getNodeName())
+    while (child != 0 && targetName != cdr::String(child.getNodeName()))
         child = child.getNextSibling();
     if (child == 0) {
         errList.push_back(L"updateProtocolStatus: missing " + targetName);
@@ -1699,7 +1699,7 @@ static cdr::String getLeadOrgStatus(const cdr::dom::Node& node,
     // Find the CurrentOrgStatus element.
     child = child.getFirstChild();
     targetName = L"CurrentOrgStatus";
-    while (child != 0 && targetName != child.getNodeName())
+    while (child != 0 && targetName != cdr::String(child.getNodeName()))
         child = child.getNextSibling();
     if (child == 0) {
         errList.push_back(L"updateProtocolStatus: missing " + targetName);
@@ -1709,7 +1709,7 @@ static cdr::String getLeadOrgStatus(const cdr::dom::Node& node,
     // Find the ProtocolStatusName element.
     child = child.getFirstChild();
     targetName = L"StatusName";
-    while (child != 0 && targetName != child.getNodeName())
+    while (child != 0 && targetName != cdr::String(child.getNodeName()))
         child = child.getNextSibling();
     if (child == 0) {
         errList.push_back(L"updateProtocolStatus: missing " + targetName);
@@ -1745,7 +1745,7 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
     std::set<cdr::String> statusSet;
     cdr::dom::Node child = docElement.getFirstChild();
     cdr::String targetName = L"ProtocolAdminInfo";
-    while (child != 0 && targetName != child.getNodeName()) {
+    while (child != 0 && targetName != cdr::String(child.getNodeName())) {
         //errList.push_back(L"child name is " +
                 //cdr::String(child.getNodeName()));
         child = child.getNextSibling();

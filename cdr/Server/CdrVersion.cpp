@@ -1,9 +1,13 @@
 /*
- * $Id: CdrVersion.cpp,v 1.21 2003-02-09 21:16:02 bkline Exp $
+ * $Id: CdrVersion.cpp,v 1.22 2003-08-04 17:03:26 bkline Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2003/02/09 21:16:02  bkline
+ * Added code to get version date; added code to escape special characters
+ * in comment.
+ *
  * Revision 1.20  2002/09/29 01:42:20  bkline
  * Fixed typo in closing tag for LastVersionsResp element (missing '/').
  *
@@ -345,7 +349,7 @@ int cdr::checkOut(cdr::Session& session,
         usrname = ch_rs.getString(1);
         fullname = ch_rs.getString(2);
         if (fullname.size() != 0)
-          fullname = L" (" + fullname + ")";
+          fullname = L" (" + fullname + L")";
       }
       else
       {
@@ -356,7 +360,7 @@ int cdr::checkOut(cdr::Session& session,
       throw cdr::Exception(L"Document already checked out to "
                            + usrname
                            + fullname
-                           + " at " + dt_out);
+                           + L" at " + dt_out);
     }
   }
 

@@ -1,7 +1,13 @@
 /*
- * $Id: CdrXsd.cpp,v 1.37 2003-02-24 14:26:51 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.38 2003-08-04 17:03:26 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.37  2003/02/24 14:26:51  bkline
+ * Fixed a logic bug in verifyElementSequence(); added debug logging to
+ * this part of the code.  Left the logging in (but turned off) because
+ * this is not the first time we've had to track down problems in this
+ * very complicated part of the server code.
+ *
  * Revision 1.36  2002/11/25 21:17:32  bkline
  * Finished custom validation support.
  *
@@ -1491,7 +1497,7 @@ void cdr::xsd::validateDocAgainstSchema(
 
     // Use the schema to validate the XML portion of the document
     cdr::xsd::Element schemaElement = schema.getTopElement();
-    if (schemaElement.getName() != docElem.getNodeName()) {
+    if (schemaElement.getName() != cdr::String(docElem.getNodeName())) {
         cdr::String err;
         err = cdr::String(L"Wrong element at top of document XML: ")
             + L" (expected "

@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.36 2003-06-10 20:06:50 ameyer Exp $
+ * $Id: CdrFilter.cpp,v 1.37 2003-08-04 17:03:26 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.36  2003/06/10 20:06:50  ameyer
+ * Modified repFilterSet to return <CdrRepFilterSetResp> instead of <...Add...>.
+ *
  * Revision 1.35  2003/06/05 15:36:32  bkline
  * Added new command for determining the last publishable version of
  * a CDR document.
@@ -289,7 +292,7 @@ namespace
                   && child.getNodeValue() != type)
             throw cdr::Exception(cdr::String(
                           L"Invalid DocType in filter. Type is ")
-                             + child.getNodeValue()
+                             + cdr::String(child.getNodeValue())
                              + L", expected " + type);
       }
       else
@@ -551,10 +554,10 @@ namespace
           }
           if (!version_str.empty()
               && !isdigit(static_cast<unsigned char>(version_str[0]))
-              && version_str != "last" && version_str != "lastp")
+              && version_str != L"last" && version_str != L"lastp")
           {
             spec = version_str;
-            version_str = "";
+            version_str = L"";
           }
         }
         type = spec;
@@ -1075,7 +1078,7 @@ cdr::String cdr::filter(cdr::Session& session,
     result += "<Messages>" + thread_data.filter_messages + "</Messages>\n";
 
   return L"<CdrFilterResp>"
-       + result
+       + cdr::String(result)
        + L"</CdrFilterResp>\n";
 }
 

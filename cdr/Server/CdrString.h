@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.24 2002-11-25 21:15:48 bkline Exp $
+ * $Id: CdrString.h,v 1.25 2003-08-04 17:03:26 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2002/11/25 21:15:48  bkline
+ * Added optional doQuotes boolean argument to entConvert() function.
+ *
  * Revision 1.23  2002/08/21 04:16:43  ameyer
  * Added normalizeWhiteSpace().
  *
@@ -229,6 +232,12 @@ namespace cdr {
         String& operator+=(wchar_t s)
             { *this = *this + s; return *this; }
 
+        /*
+         * These are needed by older versions of Microsoft's compiler,
+         * but they don't work with a standards-compliant compiler.
+         */
+#if defined(_MSC_VER) && _MSC_VER < 1310
+        
         /**
          * Compares another cdr::String to this one.  Case is significant for
          * the purposes of this comparison.
@@ -266,6 +275,7 @@ namespace cdr {
          */
         bool operator>(const String& s) const
             { return *this > static_cast<const StdWstring&>(s); }
+#endif
 
         /**
          * Accessor method for determining whether this object is NULL.
@@ -332,13 +342,17 @@ namespace cdr {
         bool null;
     };
 
+#if defined(_MSC_VER) && _MSC_VER < 1310
     /**
-     * Concatenate two Strings
+     * Concatenate two Strings.  Needed by older versions of MS compiler.
+     * Not sure what Mike was doing here anyway (notice that the first
+     * string is being modified).
      */
     inline String operator+(String s, const String& t)
     {
       return s += t;
     }
+#endif
 
     /**
      * Containers of <code>String</code> objects.  Typedefs given here for
