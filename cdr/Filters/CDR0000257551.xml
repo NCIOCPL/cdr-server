@@ -67,7 +67,13 @@
  <xsl:param                      name = "newStatus"/>
  <xsl:param                      name = "leadOrgId"/>
  <xsl:param                      name = "personId"/>
-
+<!--
+ <xsl:param                      name = "orgId"     select = "'CDR0000035307'"/>
+ <xsl:param                      name = "oldStatus" select = "'Closed'"/>
+ <xsl:param                      name = "newStatus" select = "'XXXXXX'"/>
+ <xsl:param                      name = "leadOrgId" select = "'CDR0000035676'"/>
+ <xsl:param                      name = "personId"  select = "'CDR0000007705'"/>
+-->
  <!--
  ================================================================
  Default rule, copying back out everything just as we got it.
@@ -106,15 +112,16 @@
                                                                   '#'),'#')"/>
 
   <!-- 
+  =========================================================
   Change the status for the specified Organization
-  if no LeadOrgId is provided (default)
-  and the organization IDs match
-  ================================================ -->
+  if a LeadOrgId is provided and the organization IDs match
+  (The default clause is run when NO LeadOrgId is provided)
+  ========================================================= -->
   <xsl:choose>
    <xsl:when                     test = "$leadOrgId">
 
      <!-- 
-     Both optional parameters - leadOrgId and personId are provided
+     Both optional parameters - leadOrgId and personId are provided.
      If the person is NOT the only SpecificContact for this site
      terminate the update with an error message.
      ============================================================== -->
@@ -157,14 +164,34 @@
              <xsl:value-of     select = "$newStatus"/>
             </OrgSiteStatus>
            </xsl:when>
-           <!-- (c) Print status element as is by default -->
+           <!-- (c) Print status element as is by default 
+                    However, this can only be done after all SpecificPerson
+                    elements have been tested and fell through.  For the 
+                    very last person of the bunch we then can print again
+                    the original status. Otherwise multiple status records
+                    would get printed if multiple SpecificPersons existed
+            =============================================================  -->
            <xsl:otherwise>
-            <OrgSiteStatus>
-             <xsl:value-of     select = "$oldStatus"/>
-            </OrgSiteStatus>
+            <xsl:if              test = "position() = last()">
+             <OrgSiteStatus>
+              <xsl:value-of     select = "$oldStatus"/>
+             </OrgSiteStatus>
+            </xsl:if>
            </xsl:otherwise>
           </xsl:choose>
          </xsl:for-each>
+
+         <!-- 
+         Need to ensure that the status element for an OrgSite
+         with a GenericPerson instead of a SpecificPerson element
+         is displayed properly.
+         ======================================================== -->
+         <xsl:if                 test = "../OrgSiteContact/
+                                         GenericPerson">
+          <OrgSiteStatus>
+           <xsl:value-of       select = "$oldStatus"/>
+          </OrgSiteStatus>
+         </xsl:if>
         </xsl:when>
 
        <!-- personId is not provided but leadOrgId is provided
