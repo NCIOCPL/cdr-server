@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.cpp,v 1.8 2001-04-08 22:46:22 bkline Exp $
+ * $Id: CdrDbResultSet.cpp,v 1.9 2001-04-16 17:59:16 bkline Exp $
  *
  * Implementation for ODBC result fetching wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2001/04/08 22:46:22  bkline
+ * Added code in constructor to skip to the first result set.
+ *
  * Revision 1.7  2000/12/28 13:24:55  bkline
  * Made ref count for ResultSet dynamic.  Added debugging statements.
  *
@@ -42,7 +45,6 @@ cdr::db::ResultSet::ResultSet(cdr::db::Statement& s)
     std::cout << "st.hstmt=" << st.hstmt << '\n';
 #endif
     SQLSMALLINT nCols;
-    SQLINTEGER  nRows;
     SQLRETURN   rc;
 
     // Move to the first result set (if any).
