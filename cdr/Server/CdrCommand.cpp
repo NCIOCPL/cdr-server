@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.cpp,v 1.11 2000-05-23 15:55:55 mruben Exp $
+ * $Id: CdrCommand.cpp,v 1.12 2000-10-04 18:24:20 bkline Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2000/05/23 15:55:55  mruben
+ * removed stub for CdrGetDoc
+ *
  * Revision 1.10  2000/05/21 00:48:23  bkline
  * Added CdrShutdown command.
  *
@@ -70,12 +73,14 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
         CommandMap(L"CdrDelDoc",        cdr::delDoc),
         CommandMap(L"CdrValidateDoc",   cdr::validateDoc),
         CommandMap(L"CdrSearch",        cdr::search),
+        CommandMap(L"CdrSearchLinks",   cdr::searchLinks),
         CommandMap(L"CdrGetDoc",        cdr::getDoc),
         CommandMap(L"CdrCheckOut",      cdr::checkOut),
         CommandMap(L"CdrCheckIn",       cdr::checkIn),
         CommandMap(L"CdrReport",        cdr::report),
         CommandMap(L"CdrFilter",        cdr::filter),
         CommandMap(L"CdrGetLinks",      cdr::getLinks),
+        CommandMap(L"CdrListDocTypes",  cdr::listDocTypes),
         CommandMap(L"CdrShutdown",      cdr::shutdown)
     };
     for (size_t i = 0; i < sizeof map / sizeof *map; ++i) {
