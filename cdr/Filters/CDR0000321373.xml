@@ -1,0 +1,94 @@
+<CdrDoc Type='Filter' Id='CDR0000321373'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Revision Markup Filter for QC Report</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                           xmlns:cdr = "cips.nci.nih.gov/cdr"
+                             version = "1.0">
+
+<!-- ==================================================================
+       Revision levels are passed in with a string of specific format
+       such as rejected|approved|proposed or rejected_approved_proposed.
+       The default for revLevels is '' and for the appLevels is publish_.
+     ================================================================== -->
+    <xsl:param                  name = "revLevels"
+                              select = "''"/>
+
+<!-- ==================================================================
+       Calculate appLevels based on revLevels.
+     ================================================================== -->
+    <xsl:variable               name = "appLevels">
+     <xsl:choose>
+      <xsl:when                 test = "contains($revLevels, 'proposed')">
+       <xsl:text>publish|approved|proposed</xsl:text>
+      </xsl:when>
+      <xsl:when                 test = "contains($revLevels, 'approved')">
+       <xsl:text>publish|approved</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>publish</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:variable>
+
+<!-- ==================================================================
+       Identity rule, copies everything to the output tree.
+     ================================================================== -->
+    <xsl:template              match = "@*|node()">
+     <xsl:copy>
+      <xsl:apply-templates    select = "@*|node()"/>
+     </xsl:copy>
+    </xsl:template>
+
+<!-- ==================================================================
+      For Insertion markup, keep the content if the RevisionLevel
+      attribute is at or above appLevels, and keep the element and
+      its attributes if the RevisionLevel is among those specified
+      by incoming revLevels; otherwise, discard the element.
+     ================================================================== -->
+    <xsl:template              match = "Insertion">
+     <xsl:choose>
+      <xsl:when                 test = "contains($revLevels, 
+                                                 @RevisionLevel)">
+       <xsl:element             name = "{name()}">
+        <xsl:apply-templates  select = "@*"/>
+        <xsl:apply-templates/>
+       </xsl:element> 
+      </xsl:when>
+      <xsl:when                 test = "contains($appLevels,
+                                                 @RevisionLevel)">
+       <xsl:apply-templates/>
+      </xsl:when>
+     </xsl:choose>
+    </xsl:template>
+
+<!-- ==================================================================
+      For Insertion markup, keep the content if the RevisionLevel
+      attribute is NOT at or above appLevels, and keep the element and
+      its attributes if the RevisionLevel is among those specified
+      by incoming revLevels; otherwise, discard the element.
+     ================================================================== -->
+    <xsl:template              match = "Deletion">
+     <xsl:choose>
+      <xsl:when                 test = "contains($revLevels, 
+                                                 @RevisionLevel)">
+       <xsl:element             name = "{name()}">
+        <xsl:apply-templates  select = "@*"/>
+        <xsl:apply-templates/>
+       </xsl:element> 
+      </xsl:when>
+      <xsl:when                 test = "not(contains($appLevels, 
+                                                     @RevisionLevel))">
+       <xsl:apply-templates/>
+      </xsl:when>
+     </xsl:choose>
+    </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
