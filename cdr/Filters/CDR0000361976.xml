@@ -1,0 +1,294 @@
+<CdrDoc Type='Filter' Id='CDR0000361976'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Global Change: Add Terminology Link to Protocol</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+
+ <!--
+ ===========================================================================
+ Add a term to an InScopeProtocol document as a result of
+ a global terminology change request.
+
+ The term can be in one of (as of this writing) exactly 6 particular fields.
+ If the list of eligible fields changes, this filter must be modified
+ accordingly.
+
+                                        Author: Alan Meyer
+                                          Date: October, 2003
+ =========================================================================== -->
+<xsl:transform       xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                     xmlns:cdr = "cips.nci.nih.gov/cdr"
+                       version = "1.0">
+
+ <xsl:output            method = "xml"/>
+ <!--
+ ===========================================================================
+ Passed parameters:
+    addElement        - Name of element to add.
+    addTermID         - CDR Doc ID of term to be added, e.g., "CDR0000012345"
+    interventionType  - Doc ID of an InterventionType.
+                         This is needed _only_ when adding an 
+                         InterventionNameLink.  When adding a NameLink, we
+                         need to know which Type to add it with as a sibling.
+                        Do _not_ use this to specify an InterventionType
+                         to add.
+                        Even if an InterventionType has already been specified
+                         as a required search term, the user must still
+                         specify this if he's adding or deleting a name link.
+    studyCategory     - StudyCategory string qualifying which StudyCategory
+                         section to process for InterventionType or NameLink.
+                        Not needed for other changes.
+                        Note: this is a string, not a Doc ID.
+ =========================================================================== -->
+ <xsl:param                name = "addElement"/>
+ <xsl:param                name = "addTermID"/>
+ <xsl:param                name = "interventionType"/>
+ <xsl:param                name = "studyCategory"/>
+
+
+ <!--
+ ================================================================
+ Default rule, copy all document elements to output via recursion
+ ================================================================ -->
+ <xsl:template            match = "@*|comment()|*|
+                                  processing-instruction()|text()">
+  <xsl:copy>
+   <xsl:apply-templates  select = "@*|comment()|*|
+                                  processing-instruction()|text()"/>
+  </xsl:copy>
+ </xsl:template>
+
+ <!--
+ ================================================================
+ Each element that can be added has to be checked to copy any existing
+ occurrences, then add the new occurrence if there is one.  Have to
+ process each in the proper order to insure that the insertion goes
+ in the right place.
+ ================================================================ -->
+
+ 
+ <!-- Eligibility / Diagnosis|ExclusionCriteria -->
+ <xsl:template            match = "Eligibility">
+  <xsl:copy>
+     <!-- Elements coming before diagnosis -->
+     <xsl:for-each       select = "HealthyVolunteers|
+                                   LowAge|
+                                   HighAge|
+                                   AgeText|
+                                   @*|
+                                   comment()|
+                                   processing-instruction()">
+      <xsl:copy-of       select = "."/>
+     </xsl:for-each>
+
+     <!-- Copy all existing Diagnoses -->
+     <xsl:for-each       select = "Diagnosis">
+      <xsl:copy-of       select = "."/>
+     </xsl:for-each>
+     <!-- If adding one, add it after other Diagnoses -->
+     <xsl:if               test = "$addElement='Diagnosis'">
+      <xsl:choose>
+       <!-- But only if it's not already there -->
+       <xsl:when           test = "Diagnosis[@cdr:ref=$addTermID]">
+        <xsl:call-template name = "alreadyHere"/>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:element       name = "Diagnosis">
+         <xsl:attribute    name = "cdr:ref">
+          <xsl:value-of  select = "$addTermID"/>
+         </xsl:attribute>
+        </xsl:element>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:if>
+
+     <!-- Same handling for ExclusionCriteria -->
+     <xsl:for-each       select = "ExclusionCriteria">
+      <xsl:copy-of       select = "."/>
+     </xsl:for-each>
+     <xsl:if               test = "$addElement='ExclusionCriteria'">
+      <xsl:choose>
+       <xsl:when           test = "ExclusionCriteria[@cdr:ref=$addTermID]">
+        <xsl:call-template name = "alreadyHere"/>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:element       name = "ExclusionCriteria">
+         <xsl:attribute    name = "cdr:ref">
+          <xsl:value-of  select = "$addTermID"/>
+         </xsl:attribute>
+        </xsl:element>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:if>
+
+     <!-- Remaining possible child of Eligibility -->
+     <xsl:for-each       select = "Comment">
+      <xsl:copy-of       select = "."/>
+     </xsl:for-each>
+
+  </xsl:copy>
+ </xsl:template>
+
+ <!--
+ ================================================================
+ ProtocolDetail
+ ================================================================ -->
+ <xsl:template            match = "ProtocolDetail">
+  <xsl:copy>
+
+   <!-- Copy up to and including first possible thing to add -->
+   <xsl:apply-templates  select = "StudyType|
+                                   StudyCategory|
+                                   Condition|
+                                   @*|
+                                   comment()|
+                                   processing-instruction()"/>
+ 
+   <xsl:if                 test = "$addElement='Condition'">
+    <xsl:choose>
+     <xsl:when             test = "Condition[@cdr:ref=$addTermID]">
+      <xsl:call-template   name = "alreadyHere"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:element         name = "Condition">
+       <xsl:attribute      name = "cdr:ref">
+        <xsl:value-of    select = "$addTermID"/>
+       </xsl:attribute>
+      </xsl:element>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:if>
+ 
+   <!-- Copy any Genes, followed by new one if adding Gene -->
+   <xsl:apply-templates  select = "Gene"/>
+   <xsl:if                 test = "$addElement='Gene'">
+    <xsl:choose>
+     <xsl:when             test = "Gene[@cdr:ref=$addTermID]">
+      <xsl:call-template   name = "alreadyHere"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:element         name = "Gene">
+       <xsl:attribute      name = "cdr:ref">
+        <xsl:value-of    select = "$addTermID"/>
+       </xsl:attribute>
+      </xsl:element>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:if>
+ 
+   <!-- Rest of ProtocolDetail elements -->
+   <xsl:apply-templates  select = "EnteredBy|EntryDate"/>
+
+  </xsl:copy>
+
+ </xsl:template>
+
+ <!--
+ ================================================================
+ StudyCategory
+ ================================================================ -->
+ <xsl:template          match = "StudyCategory">
+ 
+  <!-- But only one of possible multiple StudyCategory elements 
+       will be examined.  User must have chosen one for modification -->
+  <xsl:choose>
+   <!-- Have we got a studyCategory qualification at all,
+        and does it match what we're looking for? -->
+   <xsl:when             test = "$studyCategory and
+                                 StudyCategoryName=$studyCategory">
+
+    <!-- It matches, copy it, and examine subelements -->
+    <xsl:copy>
+
+     <!-- First the elements we aren't modifying -->
+     <xsl:apply-templates select = "StudyCategoryType|
+                                    StudyCategoryName|
+                                    StudyFocus|
+                                    @*|
+                                    comment()|
+                                    processing-instruction()"/>
+
+     <!-- Intervention is the interesting one -->
+     <xsl:apply-templates select = "Intervention"/>
+
+     <!-- If adding a new InterventionType, we need a new Intervention -->
+     <xsl:if               test = "$addElement='InterventionType'">
+      <xsl:choose>
+       <xsl:when           test = "Intervention/
+                                    InterventionType[@cdr:ref=$addTermID]">
+        <xsl:call-template name = "alreadyHere"/>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:element       name = "Intervention">
+         <xsl:element      name = "InterventionType">
+          <xsl:attribute   name = "cdr:ref">
+           <xsl:value-of select = "$addTermID"/>
+          </xsl:attribute>
+         </xsl:element>
+        </xsl:element>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:if>
+
+     <!-- Only remaining StudyCategory elements are optional comments -->
+     <xsl:apply-templates select = "Comment"/>
+
+    </xsl:copy>
+   </xsl:when>
+
+   <xsl:otherwise>
+    <xsl:copy-of         select = "."/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+ <!--
+ ================================================================
+ Intervention
+ ================================================================ -->
+ <xsl:template               match = "Intervention">
+
+  <!-- Copy everything that's already there -->
+  <xsl:copy>
+   <xsl:copy-of             select = "@*"/>
+   <xsl:copy-of             select = "InterventionType|InterventionNameLink"/>
+
+   <!-- If adding a new name link matching this type, do it here -->
+   <xsl:if                test = "$addElement='InterventionNameLink'">
+    <xsl:if               test = "InterventionType[@cdr:ref=$interventionType]">
+     <!-- but only if it's not already there -->
+     <xsl:choose>
+      <xsl:when           test = "InterventionNameLink[@cdr:ref=$addTermID]">
+       <xsl:call-template name = "alreadyHere"/>
+      </xsl:when>
+
+      <xsl:otherwise>
+       <xsl:element            name = "InterventionNameLink">
+        <xsl:attribute         name = "cdr:ref">
+         <xsl:value-of       select = "$addTermID"/>
+        </xsl:attribute>
+       </xsl:element>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:if>
+   </xsl:if>
+  </xsl:copy>
+ </xsl:template>
+
+ <!--
+ ================================================================
+ Callable template to report that desired addition is unnecessary
+ Uses globals for element name and ID to add.
+ ================================================================ -->
+ <xsl:template                name = "alreadyHere">
+  <xsl:message terminate="no">
+   <xsl:value-of select="$addElement"/> with value <xsl:value-of select="$addTermID"/> is already in this record
+  </xsl:message>
+ </xsl:template>
+
+</xsl:transform>]]>
+</CdrDocXml>
+</CdrDoc>
