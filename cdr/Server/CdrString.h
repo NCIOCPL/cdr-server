@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.11 2000-05-09 19:21:59 mruben Exp $
+ * $Id: CdrString.h,v 1.12 2000-05-16 21:19:26 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2000/05/09 19:21:59  mruben
+ * added operator+= and operator+
+ *
  * Revision 1.10  2000/05/04 12:39:43  bkline
  * More ccdoc comments.
  *
@@ -267,7 +270,7 @@ namespace cdr {
     {
       return s += t;
     }
-  
+
     /**
      * Containers of <code>String</code> objects.  Typedefs given here for
      * convenience, and as workarounds for MSVC++ template bugs.
@@ -275,6 +278,18 @@ namespace cdr {
     typedef std::set<String>             StringSet;
     typedef std::vector<String>          StringVector;
     typedef std::list<String>            StringList;
+
+    /**
+     * Packs the error messages contained in the caller's list into a
+     * single string suitable for embedding within the command response.
+     *
+     *  @param  errors      list of strings containing error information
+     *                      gathered by the command processor.
+     *  @return             marked-up &lt;errors&gt; element containing
+     *                      one &lt;err&gt; element for each member of
+     *                      the <code>errors</code> list.
+     */
+    extern String packErrors(const StringList& errors);
 }
 
 #endif
