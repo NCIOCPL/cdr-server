@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.10 2001-09-25 15:07:25 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.11 2001-10-11 19:54:47 ameyer Exp $
  *
  */
 
@@ -167,6 +167,7 @@ namespace cdr {
             // Accessors
             int getId()                    {return Id;}
             int getDocType()               {return DocType;}
+            bool getNeedsReview()          {return NeedsReview;}
             cdr::String getTextId()        {return TextId;}
             cdr::String getValStatus()     {return ValStatus;}
             cdr::String getValDate()       {return ValDate;}
@@ -207,6 +208,7 @@ namespace cdr {
             cdr::Blob   BlobData;       // Associated non-XML, if any
             cdr::String Comment;        // Free text
             cdr::dom::Element docElem;  // Top node of a parsed document
+            bool NeedsReview;           // True=User marked doc as needing it
             bool parsed;                // True=parse was attempted
             bool malformed;             // True=parse failed
             bool revFilterFailed;       // True=Revision filtering failed
