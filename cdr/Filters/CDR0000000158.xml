@@ -13,6 +13,7 @@
 
 <!--Filter written by C.Burg - 6/12/2001 -->
 <!-- Added import of InLine Markup Formatter 7/9/2002 -->
+<!-- fixed bugs in keypoints 8/5/2002 -->
 <!-- ============================================================
      This program is a filter to display the Patient summary
         in approximate cancer.gov format 
@@ -153,7 +154,8 @@
      =======================================-->
 
 <xsl:template match="KeyPoints">
-   <xsl:if test="KeyPointBox">
+
+ <xsl:if test="KeyPointsList/ListItem">
       <table align='center' border='1'>
       <tr>
          <td align='middle'>
@@ -162,26 +164,17 @@
       </tr>
       <tr>
          <td>
-            <ul>
-               <xsl:for-each select="KeyPointBox">
-                  <li>
-                     <a href="#{translate(substring(.,1,15),' ','-')}">
-                     <xsl:value-of select="."/></a>
-                  </li>
-               </xsl:for-each>
-               <ul>
-                  <xsl:for-each select="KeyPointBox2">
-                  <li type='disc'>
-                     <a href="#{translate(substring(.,1,15),' ','-')}">
-                     <xsl:value-of select="."/></a>
-                  </li>
-               </xsl:for-each>
-               </ul>
-            </ul>
+           <xsl:if test="KeyPointsList !=''">
+           <xsl:apply-templates/>
+           </xsl:if>
+                  
+       
+                   
          </td>
       </tr>
-      </table><br />
-   </xsl:if>
+      </table>
+     <br />
+  </xsl:if>
 </xsl:template>
 
 <!-- =========================================
@@ -335,9 +328,9 @@
 </xsl:template>
 
 <!-- =========================================================
-      don't do anything for Note   =========================================================-->
+      don't do anything for Note   =========================================================
 
-<xsl:template match="entry/Note"/>
+<xsl:template match="entry/Note"/>-->
 
 <!-- =========================================================
         Display as formatted in document 
@@ -367,7 +360,7 @@
 <xsl:template match="KeyPoint">
    <b>
       <a name="{translate(substring(.,1,15),' ','-')}">
-      <xsl:value-of select="."/></a>
+      <xsl:value-of select="."/></a><br /><br />
    </b>
 </xsl:template>
 

@@ -98,56 +98,104 @@
  <!-- ===================================================================
                 Display Itemized Lists
      ================================================================== -->
+     
+    <!-- ===================================================================
+                Display Itemized Lists for KeyPoints
+     ================================================================== -->      
+              
+      <xsl:template match="KeyPointsList[@Style='bullet']">
+      <ul>
+      <xsl:for-each select="ListItem">
+      <li type='disc'>
+      <a href="#{translate(substring(.,1,15),' ','-')}">
+      <xsl:apply-templates/></a>
+      </li>
+      </xsl:for-each>
+      </ul>
+      </xsl:template>
 
- <xsl:template match="ItemizedList">
+       <xsl:template match="KeyPointsList[@Style='dash']">
+      <ul>
+      <xsl:for-each select="ListItem">
+      <li type='square'>
+      <a href="#{translate(substring(.,1,15),' ','-')}">
+      <xsl:apply-templates/></a>
+      </li>
+      </xsl:for-each>
+      </ul>
+      </xsl:template>
+                       
+   <!-- ===================================================================
+                Display Itemized Lists for text 
+     ================================================================== -->                   
 
-       <b><i><xsl:value-of  select="ListTitle"/></i></b>
-
-       <xsl:choose>
-          <xsl:when test="@Style='bullet'">
+ 
+       <xsl:template match="ItemizedList[@Style='bullet']">
+       <xsl:if test="ListTitle">
+        <br />
+        <b><i><xsl:value-of select="ListTitle"/></i></b>
+        </xsl:if>
+           
             <xsl:choose>
            <xsl:when test="@Compact">
            <ul>
            <xsl:for-each select="ListItem">
-           <li><xsl:apply-templates/></li><br />
+           <li><xsl:apply-templates/></li>
+           <xsl:if test="position() !=last()"><br /><br /></xsl:if>
              </xsl:for-each>
              </ul>
             </xsl:when>
             <xsl:otherwise>
               <ul>
      <xsl:for-each select="ListItem">
-<li type='disc'><xsl:apply-templates/></li>
+     <li type='disc'><xsl:apply-templates/></li>
+      <xsl:if test="position() !=last()"><br /></xsl:if>
+                                   
      </xsl:for-each>
-             </ul>
-             </xsl:otherwise>
-             </xsl:choose>
-             </xsl:when>
+     </ul>
+     </xsl:otherwise>
+     </xsl:choose>
+     </xsl:template>    
 
-          <xsl:when test="@Style='dash'">
-           <xsl:choose>
+          <xsl:template match="ItemizedList[@Style='dash']">
+          <xsl:if test="ListTitle">
+          <br />
+         <b><i><xsl:value-of select="ListTitle"/></i></b>
+          </xsl:if>
+           
+            <xsl:choose>
            <xsl:when test="@Compact">
            <ul>
            <xsl:for-each select="ListItem">
-           <li type='square'><xsl:apply-templates/></li><br /><br />
-             </xsl:for-each>
+           <li type='square'><xsl:apply-templates/></li>
+           <xsl:if test="position() !=last()"><br /><br /></xsl:if>
+           </xsl:for-each>
              </ul>
             </xsl:when>
             <xsl:otherwise>
               <ul>
              <xsl:for-each select="ListItem">
              <li type='square'><xsl:apply-templates/></li>
+             <xsl:if test="position() !=last()"><br /></xsl:if>
              </xsl:for-each>
              </ul>
              </xsl:otherwise>
              </xsl:choose>
-             </xsl:when>
+             </xsl:template>
 
-          <xsl:when test="@Style='simple'">
-            <xsl:choose>
+          <xsl:template match="ItemizedList[@Style='simple']">
+           <xsl:if test="ListTitle">
+            <br />
+           <b><i><xsl:value-of select="ListTitle"/></i></b>
+           </xsl:if>
+           
+             <xsl:choose>
            <xsl:when test="@Compact">
            <ul>
            <xsl:for-each select="ListItem">
-           <li class='lnone'><xsl:apply-templates/></li><br /><br />
+           <li class='lnone'><xsl:apply-templates/></li>
+            <xsl:if test="position() !=last()"><br /><br /></xsl:if>
+             
              </xsl:for-each>
              </ul>
             </xsl:when>
@@ -155,18 +203,24 @@
               <ul>
              <xsl:for-each select="ListItem">
              <li class='lnone'><xsl:apply-templates/></li>
+             <xsl:if test="position() !=last()"><br /></xsl:if>
              </xsl:for-each>
              </ul>
              </xsl:otherwise>
              </xsl:choose>
-             </xsl:when>
+             </xsl:template>
        
-             <xsl:when test="@Style=''">
-            <xsl:choose>
+             <xsl:template match="ItemizedList[@Style='']">
+             <xsl:if test="ListTitle">
+            <b><i><xsl:value-of select="ListTitle"/></i></b>
+             </xsl:if>
+             <xsl:choose>
            <xsl:when test="@Compact">
            <ul>
            <xsl:for-each select="ListItem">
-           <li class='lnone'><xsl:apply-templates/></li><br /><br />
+           <li class='lnone'><xsl:apply-templates/></li>
+            <xsl:if test="position() !=last()"><br /><br /></xsl:if>
+             
              </xsl:for-each>
              </ul>
             </xsl:when>
@@ -174,24 +228,15 @@
               <ul>
              <xsl:for-each select="ListItem">
              <li class='lnone'><xsl:apply-templates/></li>
+             <xsl:if test="position() !=last()"><br /></xsl:if>
              </xsl:for-each>
              </ul>
              </xsl:otherwise>
              </xsl:choose>
-             </xsl:when>
+             </xsl:template>
 
          
-         <xsl:otherwise>
-          <ul>
-          <xsl:for-each select="ListItem">
-          <li class='lnone'><xsl:apply-templates/></li>
-          </xsl:for-each>
-          </ul>
-                  
-       </xsl:otherwise>
-       </xsl:choose>
-       </xsl:template>
-
+        
  
    <!-- ==================================================================
                      Display a Subscript 
