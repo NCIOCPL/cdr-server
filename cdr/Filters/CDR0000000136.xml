@@ -35,37 +35,40 @@
 &lt;!DOCTYPE PoliticalSubUnit &gt;</xsl:text>
 
 <xsl:element name='{name()}'>
-<xsl:for-each  select="document('cdrutil:/docid')">
-<xsl:attribute name="id">
-<xsl:value-of select="."/>
+<xsl:for-each             select="document('cdrutil:/docid')">
+<xsl:attribute            name="id">
+<xsl:value-of             select="."/>
 </xsl:attribute>
 </xsl:for-each>
-<xsl:attribute name="LegacyPDQID">
-<xsl:value-of select="PdqKey"/>
+<xsl:attribute            name="LegacyPDQID">
+<xsl:value-of             select="PdqKey"/>
 </xsl:attribute>
 
-<xsl:apply-templates  select="PoliticalSubUnitFullName" mode="copy"/>
-<xsl:apply-templates  select="PoliticalSubUnitShortName" mode="copy"/>
-<xsl:apply-templates  select="PoliticalSubUnitAlternateName" mode="copy"/>
-<xsl:apply-templates  select="CountryName" mode="copy"/>
+<xsl:apply-templates     select="PoliticalSubUnitFullName" mode="copy"/>
+<xsl:apply-templates     select="PoliticalSubUnitShortName" mode="copy"/>
+<xsl:apply-templates     select="PoliticalSubUnitAlternateName" mode="copy"/>
+<xsl:variable name="ref" select="CountryName/@cdr:ref"/>
+<CountryName ref="{$ref}">
+<xsl:value-of            select="CountryName"/> 
+</CountryName>
 
   <xsl:choose>
     <xsl:when                     test = "CdrDocCtl/FirstPub/Date">
       <DateFirstPublished>
-      <xsl:value-of             select = "substring-before (CdrDocCtl/
+      <xsl:value-of               select = "substring-before (CdrDocCtl/
                                             FirstPub/Date,'T')"/>
       </DateFirstPublished>
     </xsl:when>
     <xsl:otherwise>
       <xsl:call-template          name = "getDateFirstPub">
         <xsl:with-param           name = "date"
-                                select = "$DateFirstPub"/>
+                                  select = "$DateFirstPub"/>
       </xsl:call-template>    
     </xsl:otherwise>
   </xsl:choose>
  
 <xsl:if test="DateLastModified">
-<xsl:apply-templates select="DateLastModified" mode="copy"/>
+<xsl:apply-templates              select="DateLastModified" mode="copy"/>
 </xsl:if>
 
 </xsl:element>
