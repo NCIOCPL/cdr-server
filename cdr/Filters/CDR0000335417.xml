@@ -1,0 +1,67 @@
+<CdrDoc Type='Filter' Id='CDR0000335417'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Denormalization Filter: Summary Reference Numbering</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+
+
+<!-- =====================================================================
+      Filter to reformat XML Summary Documents
+     ===================================================================== -->
+<xsl:transform                xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                                version = "1.0"
+                              xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+<xsl:output                      method = "xml" 
+                   omit-xml-declaration = "no"/>
+
+<!-- ====================================================================
+     Filter to create XML data for Hp summary to add references to end of
+     each summary section 
+     ==================================================================== -->
+<!-- Written by Cheryl Burg 8-2-2001 -->
+<!-- Select data elements to be copied and add tags when an incomplete
+     node is copied -->
+ <!-- This filter adds an attribute to number each citation link at the
+       end of each summary section -->
+ 
+ <xsl:template                    match = "*">
+  <xsl:copy>
+   <xsl:apply-templates/>
+  </xsl:copy>
+ </xsl:template>
+
+
+<!-- ==============================================================
+     Add an attribute to the reference tag
+     =============================================================== -->
+ <xsl:template                    match = "ReferenceList/Citation">
+  <xsl:copy>
+   <xsl:apply-templates          select = "@*"/>
+   <xsl:attribute                  name = "refidx">
+    <xsl:value-of                select = "1+count(
+                                             preceding-sibling::Citation)"/>
+   </xsl:attribute>
+   <xsl:apply-templates/>
+  </xsl:copy>
+ </xsl:template>
+
+
+<!-- ====================================================================
+     Template rule used to do XML to XML transformations which
+     copies any attribute node, or node that is child of of something 
+     ==================================================================== -->
+ <xsl:template                    match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates          select = "@*"/>
+   <xsl:apply-templates/>
+  </xsl:copy> 
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
