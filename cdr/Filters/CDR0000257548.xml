@@ -15,32 +15,37 @@
   <xsl:apply-templates/>
 
 <!--<DocId><xsl:value-of select="document('cdrutil:/docid')"/></DocId>-->
+
+ <!--
+ =======================================================================
+ Re-arrange the order of the organization names if so requested.
+ Modified RMK 2002-09-06 to make it work with the output of the
+ protocol denormalization filter.
+ ======================================================================= -->
  </xsl:template>
   
-    <xsl:template match="OrganizationAddressNames"> 
-     <xsl:choose>
-     <xsl:when test="../OrganizationLocation/@OrderParentNameFirst='Yes'">
-          <OrganizationAddressNames>
-          <xsl:for-each select="OrganizationName">
-          <xsl:sort select="position()" order="descending"/>
-          <xsl:copy-of select="."/>
-          </xsl:for-each>
-          </OrganizationAddressNames>
-          </xsl:when>
-     <xsl:when test="../../@OrderParentNameFirst='Yes'">
-          <OrganizationAddressNames>
-          <xsl:for-each select="OrganizationName">
-          <xsl:sort select="position()" order="descending"/>
-          <xsl:copy-of select="."/>
-          </xsl:for-each>
-          </OrganizationAddressNames>
-          </xsl:when>
-
-    <xsl:otherwise>
-    <xsl:copy-of select="."/>
+ <xsl:template              match = "OrganizationAddressNames">
+  <xsl:choose>
+   <xsl:when                 test = "../OrganizationLocation
+                                       /@OrderParentNameFirst = 'Yes'
+                                     or
+                                     ../../@OrderParentNameFirst = 'Yes'
+                                     or
+                                     @OrderParentNameFirst = 'Yes'"/>
+    <OrganizationAddressNames>
+     <xsl:for-each         select = "OrganizationName">
+      <xsl:sort            select = "position()"
+                            order = "descending"/>
+      <xsl:copy-of         select = "."/>
+     </xsl:for-each>
+    </OrganizationAddressNames>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:copy-of           select = "."/>
    </xsl:otherwise>
-   </xsl:choose>
-    </xsl:template>
+  </xsl:choose>
+ </xsl:template>
+
    <!-- ===================================================================
       Template rule used to do XML to XML transformations which
        copies any attribute node, or node that is child of of something 
