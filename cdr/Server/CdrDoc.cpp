@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.4 2000-06-22 19:52:03 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.5 2000-09-28 20:04:42 ameyer Exp $
  *
  */
 
@@ -23,6 +23,9 @@
 #include "CdrDbResultSet.h"
 #include "CdrDoc.h"
 
+// XXX For debugging
+#include <iostream>
+
 static cdr::String CdrPutDoc (cdr::Session& session,
    const cdr::dom::Node& cmdNode, cdr::db::Connection& dbConn, bool newrec);
 
@@ -32,11 +35,11 @@ cdr::CdrDoc::CdrDoc (
     cdr::db::Connection& dbConn,
     cdr::dom::Node& docDom
 ) : docDbConn (dbConn),
-    Comment(true),
-    Blob(true),
-    ValDate(true),
-    Id(0),
-    DocType(0) {
+    Comment (false),
+    BlobData (false),
+    ValDate (false),
+    Id (0),
+    DocType (0) {
 
     // Get doctype and id from CdrDoc attributes
     const cdr::dom::Element& docElement =
@@ -130,7 +133,7 @@ cdr::CdrDoc::CdrDoc (
 
                 // XXXX Need to decode before storing
                 // XXXX NOT STORING YET
-                Blob = cdr::dom::getTextContent (child);
+                // BlobData = cdr::dom::getTextContent (child);
             }
 
             else
@@ -149,6 +152,51 @@ cdr::CdrDoc::CdrDoc (
         throw cdr::Exception (L"CdrDoc: Missing required 'Xml' element");
 
 } // CdrDoc ()
+
+
+// Constructor for a CdrDoc
+// Extracts the various elements from the database by document ID
+cdr::CdrDoc::CdrDoc (
+    cdr::db::Connection& dbConn,
+    int docId
+) : docDbConn (dbConn), Id (docId) {
+
+    // Text version of identifier is from passed id
+    TextId = cdr::stringDocId (Id);
+
+    // Get information from document and related tables
+    std::string query = "          SELECT d.val_status,"
+                        "                 d.val_date,"
+                        "                 d.title,"
+                        "                 d.approved,"
+                        "                 d.doc_type,"
+                        "                 d.xml,"
+                        "                 d.comment,"
+                        "                 t.name,"
+                        "                 b.data"
+                        "            FROM document d"
+                        "            JOIN doc_type t"
+                        "              ON t.id = d.doc_type"
+                        " LEFT OUTER JOIN doc_blob b"
+                        "              ON b.id = d.id"
+                        "           WHERE d.id = ?";
+    cdr::db::PreparedStatement select = docDbConn.prepareStatement(query);
+    select.setInt(1, docId);
+    cdr::db::ResultSet rs = select.executeQuery();
+    if (!rs.next())
+        throw cdr::Exception(L"CdrDoc: Unable to load document " + TextId);
+
+    ValStatus   = rs.getString (1);
+    ValDate     = rs.getString (2);
+    Title       = cdr::entConvert (rs.getString (3));
+    Approved    = rs.getString (4);
+    DocType     = rs.getInt (5);
+    Xml         = rs.getString (6);
+    Comment     = cdr::entConvert (rs.getString (7));
+    TextDocType = rs.getString (8);
+    BlobData    = rs.getBytes (9);
+    select.close();
+}
 
 
 /**
