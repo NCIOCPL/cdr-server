@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.29 2001-06-21 17:59:28 ameyer Exp $
+ * $Id: tables.sql,v 1.30 2001-07-15 22:43:38 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2001/06/21 17:59:28  ameyer
+ * Added title_filter to doc_type.
+ *
  * Revision 1.28  2001/06/05 17:47:22  ameyer
  * Added active_status table to control status values in documents.
  * Modified doc_version replacing approved and active_status with publishable.
@@ -319,7 +322,9 @@ CREATE TABLE active_status
 /* 
  * Unit of storage managed by the Central Database Repository.  There will 
  * be optionally one foreign key reference to this table from either the 
- * url table or the doc_blob table, but not both.
+ * url table or the doc_blob table, but not both.  The all_docs tables
+ * contains all rows, regardless of status.  The document view excludes rows
+ * which have been marked as deleted (active_status of 'D').
  *
  *           id  automatically generated primary key for the document table
  *   val_status  foreign key reference into the doc_status table
@@ -338,7 +343,7 @@ CREATE TABLE active_status
  *active_status  'A' indicates an active document.  'D' = deleted.  Other
  *               values could be added in the future.
  */
-CREATE TABLE document
+CREATE TABLE all_docs
            (id INTEGER IDENTITY PRIMARY KEY,
     val_status CHAR NOT NULL DEFAULT 'U' REFERENCES doc_status,
       val_date DATETIME NULL,
@@ -348,6 +353,8 @@ CREATE TABLE document
            xml NTEXT NOT NULL,
        comment VARCHAR(255) NULL,
  active_status CHAR NOT NULL REFERENCES active_status DEFAULT 'A')
+
+CREATE VIEW document AS SELECT * FROM all_docs WHERE active_status != 'D'
 
 /*
  * Index needed to support a view of the document table which brings all
@@ -802,3 +809,32 @@ CREATE VIEW term_parents
                             CAST(SUBSTRING(value, 4, 10) AS INT) as parent
                        FROM query_term
                       WHERE path = '/Term/TermParent/@cdr:ref'
+
+/*
+ * More efficient view of previous view.
+ */
+CREATE VIEW term_kids
+         AS SELECT DISTINCT q.int_val AS parent,
+                            q.doc_id  AS child,
+                            d.title
+                       FROM query_term q,
+                            document d
+                      WHERE d.id = q.doc_id
+                        AND q.path = '/Term/TermParent/@cdr:ref'
+
+/*
+ * This version tells which nodes are leaves.
+ */
+CREATE VIEW term_children
+         AS SELECT DISTINCT q1.int_val AS parent,
+                            q1.doc_id  AS child,
+                            COUNT(DISTINCT q2.doc_id) AS num_grandchildren,
+                            d.title
+                       FROM query_term q1,
+                            query_term q2,
+                            document d
+                      WHERE d.id = q1.doc_id
+                        AND q1.path = '/Term/TermParent/@cdr:ref'
+                        AND q2.path = '/Term/TermParent/@cdr:ref'
+                        AND q2.int_val =* q1.doc_id
+                   GROUP BY q1.int_val, q1.doc_id, d.title
