@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.48 2002-10-02 10:32:21 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.49 2002-10-17 20:01:54 ameyer Exp $
  *
  */
 
@@ -400,11 +400,16 @@ void cdr::CdrDoc::Store ()
         insBlob.executeUpdate();
     }
 
-    // Update ready_for_review table as required
-    // This table will probably be very small, and in memory all
-    //   the time.  I don't bother trying to figure out if an
-    //   update is required because the cost of trying is low
-    //   and the always-do-it technique is robust.
+    // Update ready_for_review table indicating that initial mailers
+    //   may be sent for this document (the physician, organization or
+    //   protocol person can "review" the doc now.)
+    // Our original conception was that documents could be made
+    //   ready, or not, hence code was written for each kind of
+    //   update.
+    // Our new conception is that once made ready, a document will
+    //   never be made unready except in extraordinary circumstances.
+    //   Hence deleting the flag is removed from the code as a simple
+    //   way to prevent client programs from accidentally deleting it.
     if (NeedsReview) {
         static const char *const revQuery =
             "INSERT INTO ready_for_review (doc_id) VALUES (?)";
@@ -417,9 +422,12 @@ void cdr::CdrDoc::Store ()
         catch (...) {
             // Ignore failure, it means that the doc is already
             //   marked ready for review
+            // There was no significant performance advantage to
+            //   checking first
             ;
         }
     }
+#if WE_EVER_DELETE_ready_for_review_FLAGS
     else {
         // Insure that if it was ready for review, it's not now
         static const char *const revQuery =
@@ -435,8 +443,7 @@ void cdr::CdrDoc::Store ()
             ;
         }
     }
-
-
+#endif
 
 } // Store
 
