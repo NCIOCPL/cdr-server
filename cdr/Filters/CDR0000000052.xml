@@ -3,6 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Person Address Fragment With Name</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 
@@ -28,10 +29,10 @@
  Start at the top.  Get all the personal name info and one address.
  =========================================================================== -->
  <xsl:template                 match = "/">
-  <Address>
+  <AddressElements>
    <xsl:apply-templates       select = "/Person/PersonNameInformation"/>
    <xsl:apply-templates       select = "/Person/PersonLocations"/>
-  </Address>
+  </AddressElements>
  </xsl:template>
 
  <!--
@@ -40,13 +41,11 @@
  we should only use PrivatePractice or OtherPracticeLocation elements.
  =========================================================================== -->
  <xsl:template                 match = "PersonLocations">
-  <PostalAddress>
-   <xsl:apply-templates       select = "PrivatePractice/
+  <xsl:apply-templates        select = "PrivatePractice/
                                         PrivatePracticeLocation
                                         [@cdr:id = $fragId]"/>
-   <xsl:apply-templates       select = "OtherPracticeLocation
+  <xsl:apply-templates        select = "OtherPracticeLocation
                                         [@cdr:id = $fragId]"/>
-  </PostalAddress>
  </xsl:template>
 
  <!--
@@ -54,7 +53,7 @@
  Handle the easy case: a private practice location.
  =========================================================================== -->
  <xsl:template                 match = "PrivatePracticeLocation">
-  <xsl:apply-templates        select = "PostalAddress/*"/>
+  <xsl:apply-templates        select = "PostalAddress"/>
  </xsl:template>
 
  <!--
@@ -96,10 +95,12 @@
   </xsl:if>
   <xsl:choose>
    <xsl:when                    test = "SpecificPostalAddress">
-    <xsl:apply-templates      select = "SpecificPostalAddress/*"/>
+    <PostalAddress>
+     <xsl:apply-templates     select = "SpecificPostalAddress/*"/>
+    </PostalAddress>
    </xsl:when>
    <xsl:otherwise>
-    <xsl:apply-templates      select = "$orgLoc/Location/PostalAddress/*"/>
+    <xsl:apply-templates      select = "$orgLoc/Location/PostalAddress"/>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
@@ -148,9 +149,9 @@
  Grab everything here (well, all the elements anyway).
  =========================================================================== -->
  <xsl:template                 match = "PersonNameInformation">
-  <Name>
+  <PersonName>
    <xsl:apply-templates       select = "node()"/>
-  </Name>
+  </PersonName>
  </xsl:template>
 
  <!--
