@@ -1,9 +1,12 @@
 /*
- * $Id: CdrRegEx.cpp,v 1.3 2002-03-07 18:15:53 bkline Exp $
+ * $Id: CdrRegEx.cpp,v 1.4 2002-05-01 01:07:13 bkline Exp $
  *
  * Implementation of CDR wrapper for regular expression handling.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2002/03/07 18:15:53  bkline
+ * Update for new version of regex package.
+ *
  * Revision 1.2  2002/03/03 14:43:34  bkline
  * Eliminated incompatibility with MSC++ 7.0.
  *
@@ -97,7 +100,7 @@ bool cdr::RegEx::match(const cdr::String& what)
     boost::wcmatch m;
     //boost::regex_match<std::basic_string<wchar_t>::const_iterator,
     //              boost::wregex::alloc_type> m;
-    return boost::regex_match(what, m, *this);
+    return boost::regex_match(what.c_str(), m, *this);
 }
 
 bool cdr::RegEx::match(const char* what)
