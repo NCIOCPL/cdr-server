@@ -118,9 +118,9 @@
       <xsl:if test="contains(@cdr:ref,'CDR')">
      <xsl:variable name="StateID" select="@cdr:ref"/>
      <xsl:variable name="StateInfo" select="document(concat('cdr:',$StateID,'/lastp'))"/>
-    <PoliticalSubUnitRef><xsl:apply-templates select="$StateID"/></PoliticalSubUnitRef>
+    <PoliticalSubUnitRef><xsl:value-of select="$StateID"/></PoliticalSubUnitRef>
       <xsl:apply-templates     select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitShortName" mode="copy"/>
-      <xsl:apply-templates select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName" mode="copy"/> 
+     <PoliticalSubUnitFullName><xsl:value-of select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName"/></PoliticalSubUnitFullName> 
       </xsl:if>
       </xsl:for-each>
       <xsl:for-each select="PostalAddress/Country">
@@ -128,10 +128,10 @@
       <xsl:variable name="CtyID" select="@cdr:ref"/>
       <xsl:variable name="CtyInfo" select="document(concat('cdr:',$CtyID,'/lastp'))"/>
      <xsl:apply-templates select="$CtyInfo/Country/CountryShortName" mode="copy"/>
-    <CountryRef><xsl:apply-templates select="$CtyID"/></CountryRef>
+    <CountryRef><xsl:value-of select="$CtyID"/></CountryRef>
       
-    <xsl:apply-templates select="$CtyInfo/Country/CountryFullName" mode="copy"/> 
-    <xsl:apply-templates select="$CtyInfo/Country/PostalCodePosition" mode="copy"/> 
+  <CountryFullName><xsl:value-of select="$CtyInfo/Country/CountryFullName"/></CountryFullName> 
+ <PostalCodePosition><xsl:value-of select="$CtyInfo/Country/PostalCodePosition"/></PostalCodePosition> 
     </xsl:if>
     </xsl:for-each>
     <xsl:apply-templates select="PostalAddress/PostalCode_ZIP" mode="copy"/>
@@ -165,10 +165,12 @@
     <xsl:if test="contains(@cdr:ref,'CDR')">
      <xsl:variable name="StateID" select="@cdr:ref"/>
      <xsl:variable name="StateInfo" select="document(concat('cdr:',$StateID,'/lastp'))"/>
-    <PoliticalSubUnitRef><xsl:apply-templates select="$StateID"/></PoliticalSubUnitRef>
+    <PoliticalSubUnitRef><xsl:value-of select="$StateID"/></PoliticalSubUnitRef>
     
      <xsl:apply-templates     select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitShortName" mode="copy"/>
-     <xsl:apply-templates select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName" mode="copy"/> 
+  <!--<PoliticalSubUnitFullName><xsl:value-of select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName"/></PoliticalSubUnitFullName> -->
+   <xsl:apply-templates select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName" mode="copy"/>
+
      </xsl:if>
      </xsl:for-each>
      <xsl:for-each select="PostalAddress/Country">
@@ -176,11 +178,11 @@
      <xsl:variable name="CtyID" select="@cdr:ref"/>
      <xsl:variable name="CtyInfo" select="document(concat('cdr:',$CtyID,'/lastp'))"/>
       
-     <CountryRef><xsl:apply-templates select="$CtyID"/></CountryRef>
+     <CountryRef><xsl:value-of select="$CtyID"/></CountryRef>
       
      <xsl:apply-templates select="$CtyInfo/Country/CountryShortName" mode="copy"/>
-     <xsl:apply-templates select="$CtyInfo/Country/CountryFullName" mode="copy"/> 
-     <xsl:apply-templates select="$CtyInfo/Country/PostalCodePosition" mode="copy"/> 
+   <xsl:apply-templates select="$CtyInfo/Country/CountryFullName" mode="copy"/> 
+    <xsl:apply-templates select="$CtyInfo/Country/PostalCodePosition" mode="copy"/> 
      </xsl:if>
      </xsl:for-each>
      <xsl:apply-templates select="PostalAddress/PostalCode_ZIP" mode="copy"/>
@@ -274,30 +276,29 @@
    <SpecificPostalAddress>
    <xsl:for-each select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/PostalAddress">
    <xsl:for-each select="Street">
-   <xsl:apply-templates select="." mode="copy"/>
+   <Street><xsl:value-of select="."/></Street>
    </xsl:for-each>
    </xsl:for-each>
   
 
-  <xsl:apply-templates  select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/PostalAddress/City" mode="copy"/>
+ <City><xsl:value-of select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/PostalAddress/City"/></City>
  <xsl:apply-templates  select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/PostalAddress/CitySuffix" mode="copy"/>
 
 
   <xsl:if test="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/PostalAddress/PoliticalSubUnit_State">
  <PoliticalSubUnitRef><xsl:value-of select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/PostalAddress/PoliticalSubUnit_State/@cdr:ref"/></PoliticalSubUnitRef>
-   <xsl:variable name="StateID" select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/
-       Location[@cdr:id=$OrgID2]/PostalAddress/PoliticalSubUnit_State/@cdr:ref"/>
+   <xsl:variable name="StateID" select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/PostalAddress/PoliticalSubUnit_State/@cdr:ref"/>
    <xsl:variable name="StateInfo" select="document(concat('cdr:',$StateID,'/lastp'))"/>
     <xsl:apply-templates     select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitShortName" mode="copy"/>
-   <xsl:apply-templates select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName" mode="copy"/> 
+ <xsl:apply-templates select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName" mode="copy"/> 
    </xsl:if>
    <xsl:variable name="CtyID" select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location/PostalAddress/Country/@cdr:ref"/> 
    <xsl:variable name="CtyInfo" select="document(concat('cdr:',$CtyID,'/lastp'))"/>
     
     <CountryRef><xsl:value-of select="$CtyID"/></CountryRef>
    <xsl:apply-templates select="$CtyInfo/Country/CountryShortName" mode="copy"/>
-    <xsl:apply-templates select="$CtyInfo/Country/CountryFullName" mode="copy"/>
-    <xsl:apply-templates select="$CtyInfo/Country/PostalCodePosition" mode="copy"/>
+   <CountryFullName><xsl:value-of select="$CtyInfo/Country/CountryFullName"/></CountryFullName>
+  <PostalCodePosition><xsl:value-of select="$CtyInfo/Country/PostalCodePosition"/></PostalCodePosition>
     <xsl:variable name="ZIP" select="$OrgInfo/Organization/OrganizationLocations/OrganizationLocation/Location[@cdr:id=$OrgID2]/PostalAddress/PostalCode_ZIP"/> 
     <PostalCode_ZIP><xsl:value-of select="$ZIP"/></PostalCode_ZIP>
     </SpecificPostalAddress>
@@ -332,7 +333,7 @@
    
      <PoliticalSubUnitRef><xsl:value-of select="$StateID"/></PoliticalSubUnitRef>
      <xsl:apply-templates     select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitShortName" mode="copy"/>
-     <xsl:apply-templates select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName" mode="copy"/> 
+     <xsl:value-of select="$StateInfo/PoliticalSubUnit/PoliticalSubUnitFullName"/> 
 
      </xsl:if>
      </xsl:for-each>
@@ -344,8 +345,8 @@
            
      <xsl:apply-templates select="$CtyInfo/Country/CountryShortName" mode="copy"/>
     <CountryRef><xsl:value-of select="$CtyID"/></CountryRef>
-    <xsl:apply-templates select="$CtyInfo/Country/CountryFullName" mode="copy"/> 
-    <xsl:apply-templates select="$CtyInfo/Country/PostalCodePosition" mode="copy"/> 
+    <xsl:value-of select="$CtyInfo/Country/CountryFullName"/> 
+    <xsl:value-of select="$CtyInfo/Country/PostalCodePosition"/> 
 
     </xsl:if>
     </xsl:for-each>
@@ -410,18 +411,16 @@
 <!-- ================================================================
                  copy status information and PDQ key 
      ================================================================= -->
-    <Status>
+    
     <xsl:apply-templates select="Status/CurrentStatus" mode="copy"/>
     <xsl:apply-templates select="Status/EnteredBy" mode="copy"/>
     <xsl:apply-templates select="Status/EntryDate" mode="copy"/>
-    </Status>
     <xsl:for-each select="DatedAction">
     <DatedAction><ActionDescription><xsl:value-of select="ActionDescription"/></ActionDescription>
     <ActionDate><xsl:value-of select="ActionDate"/></ActionDate></DatedAction>
     </xsl:for-each>
     <xsl:apply-templates select="DateLastModified" mode="copy"/>
     <xsl:apply-templates select="PdqKey" mode="copy"/> 
-    <xsl:apply-templates select="Status/CurrentStatus" mode="copy"/>
     </xsl:copy>
     </xsl:template>
 
