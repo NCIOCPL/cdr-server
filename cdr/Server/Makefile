@@ -1,10 +1,16 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.75 2004-05-06 20:51:58 ameyer Exp $
+# $Id: Makefile,v 1.76 2004-05-14 02:21:24 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.75  2004/05/06 20:51:58  ameyer
+# Eliminated cdrd.lib
+# Eliminated automatic build of the library in the production lib directory.
+# Now builds the library in the current working directory and links to that.
+# Now installs cdr.lib as part of "install" target.
+#
 # Revision 1.74  2004/04/30 01:35:39  ameyer
 # Added CdrTiming.obj.
 #
@@ -315,6 +321,7 @@ HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrVersion.h \
         $(CDRINC)/CdrXsd.h \
         $(CDRINC)/CdrTiming.h \
+        $(CDRINC)/CdrCache.h \
         $(CDRINC)/HeapDebug.h \
         $(CDRINC)/catchexp.h
 LIBOBJS=CdrString.obj \
@@ -325,6 +332,7 @@ LIBOBJS=CdrString.obj \
         CdrDbPreparedStatement.obj \
         CdrDbResultSet.obj \
         CdrFilter.obj \
+        CdrCache.obj \
         CdrGetDoc.obj \
         CdrLog.obj \
         CdrSession.obj \
