@@ -1,20 +1,23 @@
 /*
- * $Id: CdrDbConnection.cpp,v 1.1 2000-04-15 12:22:32 bkline Exp $
+ * $Id: CdrDbConnection.cpp,v 1.2 2000-04-22 09:33:17 bkline Exp $
  *
  * Implementation for ODBC connection wrapper.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2000/04/15 12:22:32  bkline
+ * Initial revision
+ *
  */
 
 #include "CdrDbConnection.h"
+#include "CdrDbResultSet.h"
 #include "CdrException.h"
 
 HENV cdr::db::Connection::henv = SQL_NULL_HENV;
 
-cdr::db::Connection::Connection()
+cdr::db::Connection::Connection() : autoCommit(false), hdbc(SQL_NULL_HDBC)
 {
     SQLRETURN rc;
-    hdbc = SQL_NULL_HDBC;
     if (henv == SQL_NULL_HENV) {
         rc = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &henv);
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
@@ -36,6 +39,7 @@ cdr::db::Connection::Connection()
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
         throw cdr::Exception(L"Failure connecting to database",
                              getErrorMessage(rc, henv, hdbc, 0));
+    setAutoCommit(true);
 }
 
 cdr::db::Connection::~Connection()
@@ -97,4 +101,47 @@ cdr::String cdr::db::Connection::getErrorMessage(SQLRETURN sqlReturn,
         errString += cdr::String(workBuf);
     }
     return errString;
+}
+
+void cdr::db::Connection::setAutoCommit(bool val)
+{
+    if (autoCommit == val)
+        return;
+    SQLUINTEGER setting = val ? SQL_AUTOCOMMIT_ON : SQL_AUTOCOMMIT_OFF;
+    SQLRETURN rc = SQLSetConnectAttr(hdbc, 
+                                     SQL_ATTR_AUTOCOMMIT, 
+                                     reinterpret_cast<SQLPOINTER>(setting), 
+                                     0);
+    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+        throw cdr::Exception(L"Failure setting auto commit",
+                             getErrorMessage(rc, henv, hdbc, 0));
+    autoCommit = val;
+}
+
+void cdr::db::Connection::commit()
+{
+    SQLRETURN rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
+    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+        throw cdr::Exception(L"Commit failure",
+                             getErrorMessage(rc, henv, hdbc, 0));
+}
+
+void cdr::db::Connection::rollback()
+{
+    SQLRETURN rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_ROLLBACK);
+    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+        throw cdr::Exception(L"Rollback failure",
+                             getErrorMessage(rc, henv, hdbc, 0));
+}
+
+int cdr::db::Connection::getLastIdent()
+{
+    cdr::db::Statement s(*this);
+    cdr::db::ResultSet r = s.executeQuery("SELECT @@IDENTITY");
+    if (!r.next())
+        throw cdr::Exception(L"Failure getting last ident value");
+    Int i = r.getInt(1);
+    if (i.isNull())
+        throw cdr::Exception(L"Failure getting last ident value");
+    return i;
 }
