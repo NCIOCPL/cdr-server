@@ -14,9 +14,13 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.4 2000-12-13 01:50:59 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.5 2001-04-17 23:11:24 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2000/12/13 01:50:59  ameyer
+ * Implemented delLinks, added changes for docs deleted by marking them
+ * deleted.
+ *
  * Revision 1.3  2000/09/27 20:25:16  bkline
  * Fixed last argument to findTargetDocTypes().
  *
@@ -104,18 +108,6 @@ cdr::link::CdrLink::CdrLink (
     // Is this a reference to a CDR document?
     if (style == cdr::link::ref || style == cdr::link::href) {
 
-        // Get the id portion of the reference
-        // This also tests for valid 'CDRnnn...' format
-        try {
-            // Extract and restore gets num and string without fragment id
-            trgId    = ref.extractDocId ();
-            trgIdStr = cdr::stringDocId (trgId);
-        }
-        catch (const cdr::Exception& e) {
-            // Probably an invalid format
-            this->addLinkErr (e.what());
-        }
-
         // Get the fragment portion of the reference, if any
         wchar_t *fragptr = wcschr (ref.c_str(), '#');
         if (fragptr) {
@@ -123,10 +115,32 @@ cdr::link::CdrLink::CdrLink (
             // Isolate base reference and fragment
             trgFrag  = cdr::String (fragptr + 1);
             trgIdStr = cdr::String (ref.c_str(), (fragptr - ref.c_str()));
+
+            // If no base reference found, base is the current doc
+            // I.e., reference is to an id inside this document
+            if (trgIdStr.size() == 0)
+                trgIdStr = cdr::stringDocId (srcId);
         }
         else {
             trgFrag  = L"";
             trgIdStr = ref;
+        }
+
+        // Get the id portion of the reference
+        // This also tests for valid 'CDRnnn...' format
+        try {
+            trgId = trgIdStr.extractDocId ();
+        }
+        catch (const cdr::Exception& e) {
+            // Probably an invalid format
+            this->addLinkErr (e.what());
+        }
+
+        // If this is a self-link, we know things about the target
+        if (trgId == srcId) {
+            trgDocType    = srcDocType;
+            trgDocTypeStr = srcDocTypeStr;
+            trgActiveStat = L"A";
         }
     }
 
@@ -153,44 +167,60 @@ cdr::link::CdrLink::CdrLink (
  */
 
 int cdr::link::CdrLink::validateLink (
-    cdr::db::Connection& dbConn
+    cdr::db::Connection& dbConn,
+    cdr::StringSet&      fragSet
 ) {
     std::string qry;        // For database SQL string
 
 
-    // Few if any checks can be made without a target id
+    // None of these checks can be made without a target id
     if (trgId != 0) {
 
-        // Find out if target exists and get its deletion status and type
-        qry = "SELECT doc_type, active_status FROM document WHERE id = ?";
-        cdr::db::PreparedStatement doc_sel = dbConn.prepareStatement (qry);
-        doc_sel.setInt (1, trgId);
-        cdr::db::ResultSet doc_rs = doc_sel.executeQuery();
-        if (!doc_rs.next()) {
-            this->addLinkErr (L"Target document not found in CDR");
+        // Tests are done differently for links to self and links to other
+        if (trgId != srcId) {
+
+            // Find out if target exists and get its deletion status and type
+            qry = "SELECT doc_type, active_status FROM document WHERE id = ?";
+            cdr::db::PreparedStatement doc_sel = dbConn.prepareStatement (qry);
+            doc_sel.setInt (1, trgId);
+            cdr::db::ResultSet doc_rs = doc_sel.executeQuery();
+            if (!doc_rs.next()) {
+                this->addLinkErr (L"Target document not found in CDR");
+            }
+            else {
+                trgDocType    = doc_rs.getInt (1);
+                trgActiveStat = doc_rs.getString (2);
+                if (trgActiveStat == L"D")
+                    this->addLinkErr (L"Target link is to deleted document");
+            }
+
+            // If we found the target, can check the fragment
+            // If a fragment is specified, it must exist in the target doc
+            if (trgDocType != 0 && trgFrag.size() > 0) {
+
+                qry = "SELECT fragment FROM link_fragment "
+                      "WHERE doc_id = ? AND fragment = ?";
+                cdr::db::PreparedStatement frag_sel =
+                            dbConn.prepareStatement (qry);
+                frag_sel.setInt (1, trgId);
+                frag_sel.setString (2, trgFrag);
+                cdr::db::ResultSet frag_rs = frag_sel.executeQuery();
+
+                // Error if it doesn't
+                if (!frag_rs.next())
+                    this->addLinkErr (L"cdr:ref matching fragment '" +
+                            trgFrag + L"' not found in target document");
+            }
         }
+
         else {
-            trgDocType    = doc_rs.getInt (1);
-            trgActiveStat = doc_rs.getString (2);
-            if (trgActiveStat == L"D")
-                this->addLinkErr (L"Target link is to deleted document");
-        }
-
-        // If we found the target, can check the fragment
-        // If a fragment is specified, it must exist in the target doc
-        if (trgDocType != 0 && trgFrag.size() > 0) {
-
-            qry = "SELECT fragment FROM link_fragment "
-                  "WHERE doc_id = ? AND fragment = ?";
-            cdr::db::PreparedStatement frag_sel = dbConn.prepareStatement (qry);
-            frag_sel.setInt (1, trgId);
-            frag_sel.setString (2, trgFrag);
-            cdr::db::ResultSet frag_rs = frag_sel.executeQuery();
-
-            // Error if it doesn't
-            if (!frag_rs.next())
-                this->addLinkErr (L"cdr:ref matching fragment '" +
-                        trgFrag + L"' not found in target document");
+            // Target doc is same as source doc
+            // If this is a link to a fragment, check to be sure it's here
+            if (trgFrag.size() > 0) {
+                if (fragSet.find (trgFrag) == fragSet.end())
+                    this->addLinkErr (L"cdr:ref matching fragment '" +
+                            trgFrag + L"' not found in this document");
+            }
         }
 
         // Validate target doctype for this link
@@ -221,28 +251,8 @@ int cdr::link::CdrLink::validateLink (
                               L" to document type " + trgDocTypeStr +
                               L" is illegal");
 
-#if WE_HAVE_OTHER_LINK_PROPERTIES_TO_VALIDATE
-        // Find any other validation properties of this link
-        qry = "SELECT link_prop.[value], link_prop_type.[name] "
-              "FROM   link_prop "
-              "INNER JOIN link_prop_type "
-              "ON     link_prop.[type] = link_prop_type.[id] "
-              "WHERE  link_prop.[link_id] = ?";
-
-        cdr::db::PreparedStatement prop_sel = dbConn.prepareStatement (qry);
-        prop_sel.setInt (1, type);
-        cdr::db::ResultSet prop_rs = prop_sel.executeQuery();
-
-        // Validate each one
-        while (prop_rs.next()) {
-
-            // Need custom validation code for each property
-            cdr::String prop_value = prop_rs.getString (1);
-            cdr::String prop_name  = prop_rs.getString (2);
-
-            // when we get them ...
-        }
-#endif
+        // Execute any custom link procedures (in CdrLinkProcs.cpp)
+        customLinkCheck (dbConn, this);
     }
 
     return errCount;
@@ -263,16 +273,31 @@ int cdr::link::CdrDelLinks (
 ) {
 
     // Find out if any other documents link to this one
+    // Get the titles and fragment identifiers too for reporting purposes
     std::string breakQry =
-            "SELECT source_doc FROM link_net WHERE target_doc = ?";
+            "SELECT DISTINCT source_doc, title, target_frag "
+            "  FROM link_net, document "
+            " WHERE target_doc = ? "
+            "   AND source_doc = id";
+
     cdr::db::PreparedStatement breakSel = dbConn.prepareStatement (breakQry);
     breakSel.setInt (1, docId);
     cdr::db::ResultSet breakRs = breakSel.executeQuery();
 
-    while (breakRs.next())
-        errList.push_back (L"Document " +
-                           cdr::String::toString (breakRs.getInt (1)) +
-                           L" links to this document");
+    while (breakRs.next()) {
+        // Retrieve info about link
+        cdr::String idStr = cdr::String::toString (breakRs.getInt (1));
+        cdr::String title = breakRs.getString (2);
+        cdr::String frag  = breakRs.getString (3);
+
+        // Construct informative error message
+        cdr::String errMsg = L"Document " + idStr + L": (" + title +
+              L") links to this document";
+        if (frag.size() > 0)
+            errMsg += L" Fragment(" + frag + L")";
+
+        errList.push_back (errMsg);
+    }
 
     // If only validating, or if only updating if valid, then
     // Stop here if there were links to this doc
@@ -320,6 +345,7 @@ cdr::String getLinks (
     while (node != 0) {
 
         if (node.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+            name = node.getNodeName();
             if (name != L"DocId")
                 throw cdr::Exception (L"getLinks: Element '" + name
                                     + L"' in CdrGetLinks request is "
@@ -536,7 +562,7 @@ int cdr::link::CdrSetLinks (
 ) {
     cdr::link::LnkList lnkList;     // List of all link objects from this doc
     cdr::StringSet uniqSet;         // For finding duplicate link info
-    cdr::StringSet fragSet;         // List of all ref fragments found
+    cdr::StringSet fragSet;         // Set of all ref fragments found
     int docType,                    // Internal id of docType
         err_count;                  // Number of errors found
 
@@ -559,14 +585,13 @@ int cdr::link::CdrSetLinks (
     cdr::link::LnkList::iterator i = lnkList.begin();
     err_count = 0;
     while (i != lnkList.end()) {
-        err_count += i->validateLink (dbConn);
+        err_count += i->validateLink (dbConn, fragSet);
         if (i->getErrCount() > 0)
             errList.push_back (i->dumpString (dbConn));
         ++i;
     }
 
     // Check for missing fragments
-    // Also updates remote doc validation status if required
     // This is not part of validateLink because the errors are not
     //   found in a link, but rather in the absence of a fragment
     err_count += checkMissedFrags (dbConn, ui, validRule, fragSet, errList);
@@ -667,7 +692,7 @@ static int linkTree (
             if (refValue.size() > 0)
                 lnkStyle = cdr::link::ref;
 
-            refAttr = element.getAttribute (L"cdr:xref");
+            refAttr = element.getAttribute (L"cdr:href");
             if (refAttr.size() > 0) {
                 if (lnkStyle == cdr::link::not_set) {
                     lnkStyle = cdr::link::href;
@@ -901,6 +926,10 @@ static int checkMissedFrags (
                         L" expects cdr:ref='" + frag +
                         L"' but no such ref found");
 
+#if 0
+THIS ISN'T A GOOD IDEA BECAUSE A USER CAN FIX THE SOURCE RECORD, LEAVING
+THE TARGET MARKED BAD WHEN IT'S NOT.
+THE ONLY RECORD MARKED SHOULD BE THE ONE WE'RE CURRENTLY VALIDATING.
             // Caller may be updating the database even if there are
             //   errors.  If so, must mark the remote source of the
             //   link as in error.
@@ -914,6 +943,7 @@ static int checkMissedFrags (
                 stmt.setInt (2, docId);
                 stmt.executeQuery();
             }
+#endif
 
             ++total_errs;
         }
