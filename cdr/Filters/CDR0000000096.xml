@@ -56,8 +56,8 @@
      ==================================================================== -->
  
  
- <b><xsl:value-of select="document('cdrutil:/docid')"/></b><br />
- 
+ <b><xsl:value-of select="document('cdrutil:/docid')"/></b>
+ <br />
  <b>
  <font size='4'><xsl:text>Name</xsl:text>
     </font>
@@ -611,6 +611,7 @@
       <b><font size='3'>Other Practice Locations</font></b><br /><br />
  
      <xsl:for-each            select="PersonLocations/OtherPracticeLocation">
+     <xsl:variable            name='id' select="@cdr:id"/>
                            
      <xsl:if                  test="../CIPSContact= @cdr:id">
     <b>
@@ -648,6 +649,10 @@
    <xsl:for-each             select="OrganizationLocation/Organization/
                                      OrganizationLocations/
                                      OrganizationLocation/Location">
+  <xsl:variable             name="Loid" select="@cdr:id"/>
+  <xsl:variable      name="OID" select="substring-after(../../../@cdr:ref,'#')"/>
+   
+   <xsl:if                  test="$id = $Loid | $id = $OID"> 
    <xsl:if                   test="PostalAddress/@Public">
    <xsl:text>(Public=No)</xsl:text><br />
    </xsl:if>                   
@@ -780,6 +785,7 @@
    </xsl:if>
  
  <!-- adding end of for loop-->
+  </xsl:if> <!--added this now -->
   </xsl:for-each>
    </xsl:if>
 
@@ -1044,54 +1050,9 @@
 <br /><br />
 <xsl:apply-templates        select="DateLastModified"/><br /><br />
 
-<!-- =================================================================
-        Display most recent Mailer Information
-     ================================================================= -->
-
-<b><font size='4'>Most Recent Mailer</font></b><br /><br />
-
- <table cellpadding='0' width='90%'>
- <tr>
- <th align='left' width='40%'>   
-  <b>
- <font size='3'>Date Sent
- </font>
- </b>
- </th>
- <td  width='60%'>
-   @@MAILER_DATE_SENT@@
-  </td>
-  </tr>
-  <tr>
-  <th align='left' width='40%'>   
-  <b>
-  <font size='3'>Date Received
-  </font>
-  </b>
-  </th>
- <td width='35%'> 
-  @@MAILER_RESPONSE_RECEIVED@@
-  </td>
-  </tr>
-  <tr>
- <th align='left' width='40%'>   
- <b>
- <font size='3'>Type of Change
- </font>
- </b>
- </th>
- <td width='60%'>
-   @@MAILER_TYPE_OF_CHANGE@@
-  </td>
-  </tr>
-  </table>
-   <br />
-   <br />
-
-
- <!-- =====================================================================
+  <!-- =====================================================================
              Display Record Information ( Date created, Modified, and User
-      =====================================================================  -->
+     =====================================================================  -->
               <b><font size='4'>Record</font></b><br /><br />
               <table cellpadding='0' width='90%'>
               <xsl:for-each               select="CdrDocCtl">
@@ -1144,6 +1105,52 @@
               </xsl:for-each>
               </table>
               <br /><br />
+
+
+
+<!-- =================================================================
+        Display most recent Mailer Information
+     ================================================================= -->
+
+<b><font size='4'>Most Recent Mailer</font></b><br /><br />
+
+ <table cellpadding='0' width='90%'>
+ <tr>
+ <th align='left' width='40%'>   
+  <b>
+ <font size='3'>Date Sent
+ </font>
+ </b>
+ </th>
+ <td  width='60%'>
+   @@MAILER_DATE_SENT@@
+  </td>
+  </tr>
+  <tr>
+  <th align='left' width='40%'>   
+  <b>
+  <font size='3'>Date Received
+  </font>
+  </b>
+  </th>
+ <td width='35%'> 
+  @@MAILER_RESPONSE_RECEIVED@@
+  </td>
+  </tr>
+  <tr>
+ <th align='left' width='40%'>   
+ <b>
+ <font size='3'>Type of Change
+ </font>
+ </b>
+ </th>
+ <td width='60%'>
+   @@MAILER_TYPE_OF_CHANGE@@
+  </td>
+  </tr>
+  </table>
+   <br />
+   <br />
    </BODY>
    </xsl:template>
   </xsl:transform>
