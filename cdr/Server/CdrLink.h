@@ -1,10 +1,13 @@
 /*
- * $Id: CdrLink.h,v 1.5 2001-05-17 17:39:50 ameyer Exp $
+ * $Id: CdrLink.h,v 1.6 2002-01-31 16:28:21 ameyer Exp $
  *
  * Header for Link Module software - to maintain the link_net
  * table describing the link relationships among CDR documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2001/05/17 17:39:50  ameyer
+ * Minor changes to comments.
+ *
  * Revision 1.4  2001/04/17 23:14:03  ameyer
  * Added customLinkCheck()
  * Small changes in validation.
@@ -184,6 +187,7 @@ namespace cdr {
             cdr::String srcField;       // Tag of element containing link
             int         srcDocType;     // From doc_type table
             cdr::String srcDocTypeStr;  // Human readable form
+            bool        trgFound;       // True=Target found in database
             int         trgId;          // Doc ID of target doc
             cdr::String trgIdStr;       // String format of target id
             int         trgDocType;     // Doc_type of target doc
