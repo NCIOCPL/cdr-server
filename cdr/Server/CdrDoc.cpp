@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.61 2005-03-04 02:42:57 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.62 2005-04-08 03:39:17 ameyer Exp $
  *
  */
 
@@ -60,6 +60,8 @@ static int deleteDoc(cdr::Session&, int, bool, const cdr::String&,
 // String constants used as substitute titles
 #define MALFORMED_DOC_TITLE L"!Malformed document - no title can be generated"
 #define NO_TITLE_AVAILABLE  L"!No title available for this document"
+
+const int MAX_SQLSERVER_INDEX_SIZE = 800;
 
 // Constructor for a CdrDoc
 // Extracts the various elements from the CdrDoc for database update
@@ -2160,8 +2162,20 @@ void cdr::CdrDoc::collectQueryTerms(
     if (paths.find(fullPath) != paths.end() ||
         paths.find(wildPath) != paths.end()) {
 
-        // Add the absolute path to the content to the query table
+        // Extract value of the element
         cdr::String value = cdr::dom::getTextContent(node);
+
+        // Truncate and notify user if it won't fit in our DBMS indexes
+        if (value.size() > MAX_SQLSERVER_INDEX_SIZE) {
+            value = value.substr(0, MAX_SQLSERVER_INDEX_SIZE);
+            wchar_t msg[400];
+            swprintf(msg, L"Warning: Only the first %d characters of "
+                          L"field %s will be indexed",
+                          MAX_SQLSERVER_INDEX_SIZE, fullPath.c_str());
+            addValidationMessage(msg);
+        }
+
+        // Add the absolute path to the content to the query table
         rememberQueryTerm(Id, fullPath, value, ordPosPathp, qtSet);
     }
 
