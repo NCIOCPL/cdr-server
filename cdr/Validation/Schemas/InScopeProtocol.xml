@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: InScopeProtocol.xml,v 1.48 2005-02-01 13:50:32 bkline Exp $
+      $Id: InScopeProtocol.xml,v 1.49 2005-04-12 11:52:45 bkline Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.48  2005/02/01 13:50:32  bkline
+      Relaxed constraint on external dates (RSS data does not contain dates
+      formatted according to ISO).
+
       Revision 1.47  2004/12/20 22:18:23  bkline
       Made the ExternalSiteContactName's choice optional.
 
@@ -237,7 +241,13 @@
                                         not(UpdateMode
                                             [@MailerType =
                                               "Protocol_Abstract"])'
-     >UpdateMode for prot. abstract only allowed for Primary LeadOrg</assert>
+     >UpdateMode for prot. abstract only allowed for Primary Lead Org</assert>
+     <assert         test            = 'LeadOrgRole = "Primary" or
+                                        not(MailAbstractTo)'
+     >MailAbstractTo only allowed for Primary Lead Org</assert>
+     <assert         test            = 'LeadOrgRole != "Primary" or
+                                        MailAbstractTo'
+     >MailAbstractTo required for Primary Lead Org</assert>
     </rule>
    </pattern>
   </appInfo>
@@ -314,6 +324,9 @@
                      minOccurs       = '0'/>
       <element       name            = 'DateLastModified'
                      type            = 'date'
+                     minOccurs       = '0'/>
+      <element       name            = 'RelatedDocuments'
+                     type            = 'RelatedDocuments'
                      minOccurs       = '0'/>
       <element       name            = 'PdqKey'
                      type            = 'NotEmptyString'
@@ -687,6 +700,9 @@
                      type            = 'PersonFragmentLink'/>
       <element       name            = 'Role'
                      type            = 'SpecificPersonRole'/>
+      <element       name            = 'SpecificPhone'
+                     type            = 'NotEmptyString'
+                     minOccurs       = '0'/>
       <element       name            = 'PrivatePracticeSiteStatus'
                      type            = 'ProtocolStatusName'/>
     </sequence>
@@ -741,6 +757,18 @@
                      type            = 'date'/>
       <element       name            = 'Comment'
                      type            = 'NotEmptyString'
+                     minOccurs       = '0'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'RelatedDocuments'>
+    <sequence>
+      <element       name            = 'SupplementaryInfoLink'
+                     type            = 'SupplementaryInfoLink'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'WarehouseBoxNumber'
+                     type            = 'NonEmptyString'
                      minOccurs       = '0'/>
     </sequence>
   </complexType>
@@ -827,6 +855,7 @@
       <enumeration   value           = 'NIH Clinical Center trial'/>
       <enumeration   value           = 'SPORE trial'/>
       <enumeration   value           = 'Cancer Centers Branch Avon Awardee'/>
+      <enumeration   value           = 'NCI web site featured trial'/>
     </restriction>
   </simpleType>
 
