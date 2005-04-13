@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-     $Id: PersonSchema.xml,v 1.25 2004-03-25 15:32:07 bkline Exp $ 
+     $Id: PersonSchema.xml,v 1.26 2005-04-13 00:03:21 ameyer Exp $ 
 
      $Log: not supported by cvs2svn $
+     Revision 1.25  2004/03/25 15:32:07  bkline
+     Moved comment for CIPSContact.
+
      Revision 1.24  2004/03/11 16:49:02  bkline
      Fixed bugs in new custom validation rule (sense was reversed and check
      for specific PersonRole value was missing).
@@ -124,11 +127,18 @@
  <annotation>
   <appInfo>
    <pattern>
-    <rule            context         = 'PersonLocations'>
+    <rule            context         = '/Person/PersonLocations'>
      <assert         test            = 'not(.//PersonRole
                                         [. = "Protocol update person"])
                                         or UpdateMode'
      >UpdateMode attribute required when PUP role is present</assert>
+    </rule>
+    <rule            context         = '/Person/PersonLocations'>
+     <assert         test            = 'not(CIPSContact)
+                                 or CIPSContact=Home/@cdr:id
+                                 or CIPSContact=PrivatePractice/@cdr:id
+                                 or CIPSContact=OtherPracticeLocation/@cdr:id'
+     >CIPSContact not found among PersonLocation subelements</assert>
     </rule>
    </pattern>
   </appInfo>
