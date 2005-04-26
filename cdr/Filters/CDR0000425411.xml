@@ -23,10 +23,6 @@
     orgSiteId        - CDR Doc ID of organization to be deleted.
                        Requires full "CDR0000012345" format.
 
-    statusVals       - String of one or more site status values.
-                       Only delete the site from the document if it has
-                       a site status equal to one of these values.
-
     leadOrgId        - Optional CDR Doc ID of a lead organization.  If
                        present, only delete the OrgSite if it is found
                        under this lead organization.  The leadOrgId
@@ -49,7 +45,6 @@
 
  ================================================================ -->
  <xsl:param               name = "orgSiteId"/>
- <xsl:param               name = "statusVals"/>
  <xsl:param               name = "leadOrgId"/>
  <xsl:param               name = "piId"/>
 
@@ -85,29 +80,42 @@
   <!-- If it's our organization to delete -->
   <xsl:choose>
    <xsl:when               test = "OrgSiteID/@cdr:ref=$orgSiteId">
+
     <xsl:choose>
 
       <!-- Copy if lead org ID and no match -->
       <xsl:when            test = "$leadOrgId and not(substring(
-                                       ../../LeadOrganizationId/@cdr:ref,
-                                       $leadOrgLen) = $leadOrgId)">
+                                       ../../LeadOrganizationID/@cdr:ref,
+                                       1, $leadOrgLen) = $leadOrgId)">
         <xsl:copy-of     select = "."/>
       </xsl:when>
 
-      <!-- Copy if principal investigator and no match -->
+      <!-- If principal investigator matches but there's more than one PI 
+           for this OrgSite -->
+      <xsl:when            test = "$piId and count(
+                                        OrgSiteContact/SpecificPerson
+                                        [Role='Principal investigator']) > 1
+                                    and
+                                        OrgSiteContact/SpecificPerson/
+                                        Person[substring(@cdr:ref, 1, $piLen)
+                                               = $piId]">
+        <!-- Abort transformation and warn user -->
+        <xsl:message  terminate = 'yes'>
+          More than one principal investigator for this OrgSite
+        </xsl:message>
+      </xsl:when>
+
+      <!-- Copy if principal investigator and no match.
+           To get here, there must only be one PI for this OrgSite,
+           or else there's more than one but none of them match our PI -->
       <xsl:when            test = "$piId and not(
                                      substring(OrgSiteContact/SpecificPerson/
-                                             Person/@cdr:ref, $piLen) =
+                                             Person/@cdr:ref, 1, $piLen) =
                                              $piId
                                     and
                                              OrgSiteContact/SpecificPerson/
-                                             Role != 'Principal investigator'
+                                             Role = 'Principal investigator'
                                    )">
-        <xsl:copy-of     select = "."/>
-      </xsl:when>
-
-      <!-- Copy if no match on one of passed status values -->
-      <xsl:when            test = "not(contains($statusVals, OrgSiteStatus))">
         <xsl:copy-of     select = "."/>
       </xsl:when>
 
