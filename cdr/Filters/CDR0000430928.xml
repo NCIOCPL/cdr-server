@@ -1,0 +1,86 @@
+<CdrDoc Type='Filter' Id='CDR0000430928'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Module: QC Filter Templates</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!--
+================================================================
+$Id: CDR0000430928.xml,v 1.1 2005-04-29 21:39:43 venglisc Exp $
+
+Filter Module to include all general formatting templates for 
+QC Reports
+Volker Englisch, 2005-04-26 
+
+$Log: not supported by cvs2svn $
+================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+ <xsl:output                    method = "html"/>
+
+ <!-- 
+ ===============================================================
+ The PublishedResults elements are being suppressed for the QC
+ Reports.  Instead the PublishedResultsQC elements are used.
+ ================================================================ --> 
+ <xsl:template                   match = "PublishedResults">
+ </xsl:template>
+
+
+ <!--
+ =======================================================================
+ Template to create the email as a clickable link
+ ======================================================================= -->
+ <xsl:template                    name = "createEmailLink">
+  <xsl:element                    name = "a">
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "concat('mailto:', .)"/>
+   </xsl:attribute>
+   <xsl:value-of                select = "."/>
+  </xsl:element> 
+  <xsl:apply-templates          select = "@Public"/>
+ </xsl:template>
+
+
+ <!--
+ =======================================================================
+ Template to create the WebSite as a clickable link
+ ======================================================================= -->
+ <xsl:template                   name = "createWebLink">
+  <xsl:element                   name = "a">
+   <xsl:attribute                name = "href">
+    <xsl:choose>
+     <xsl:when                   test = "contains(@cdr:xref, 'http')">
+      <xsl:value-of            select = "@cdr:xref"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of            select = "concat('http://', @cdr:xref)"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:attribute>
+   <xsl:attribute                name = "target">
+    <xsl:text>new</xsl:text>
+   </xsl:attribute>
+ 
+   <xsl:value-of               select = "@cdr:xref"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Convert the format of the phone numbers provided by RSS from the 
+ form "(123) 456-7890" to the form "123-456-7890"
+ ==================================================================== -->
+ <xsl:template                    name = "convertPhoneNumber">
+  <xsl:value-of                 select = "translate(
+                                           translate(., '()', ' -'), ' ', '')"/>
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
