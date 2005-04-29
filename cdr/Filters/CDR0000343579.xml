@@ -3,17 +3,20 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Module: InScopeProtocol Administrative Details </DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.14: Copy for final RSS test</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000343579.xml,v 1.14 2005-03-09 19:40:16 venglisc Exp $
+$Id: CDR0000343579.xml,v 1.15 2005-04-29 21:29:30 venglisc Exp $
 
 Filter to generate a Protocol Administrative QC Report
 Written by Cheryl Burg - 3/13/2002 
 
 $Log: not supported by cvs2svn $
+Revision 1.14  2005/03/09 19:40:16  venglisc
+Added code to handle external sites.  Also cleaning up code by reformatting (proper indentation). (Bug 1340)
+
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
@@ -472,6 +475,12 @@ $Log: not supported by cvs2svn $
 
   <xsl:apply-templates          select = "LeadOrgPersonnel"/>
   <xsl:apply-templates          select = "ProtocolSites"/>
+  <xsl:apply-templates          select = "MailAbstractTo"/>
+  
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:apply-templates         select = "UpdateMode"/>
+  </table>
+  <p/>
  </xsl:template>
          
 
@@ -2484,8 +2493,14 @@ $Log: not supported by cvs2svn $
     </li>
    </xsl:for-each>
   </ol>
+ </xsl:template>
 
-  <xsl:if                         test = "../MailAbstractTo">
+
+ <!--
+ ==================================================================
+ Template to display the MailAbstractTo element
+ ================================================================== -->
+ <xsl:template                   match = "MailAbstractTo">
    <table       xsl:use-attribute-sets = "table">
     <tr>
      <td        xsl:use-attribute-sets = "cell1of2">
@@ -2496,28 +2511,52 @@ $Log: not supported by cvs2svn $
      </td>
     </tr>
    </table>
-  </xsl:if>
+ </xsl:template>
 
-  <xsl:if                         test = "../UpdateMode">
-   <table       xsl:use-attribute-sets = "table">
-    <xsl:for-each               select = "../UpdateMode">
-     <tr>
-      <td       xsl:use-attribute-sets = "cell1of2">
-       <b>Update Mode</b>
-      </td>
-      <td       xsl:use-attribute-sets = "cell2of2">
-       <xsl:value-of            select = "."/>
-       <b>
-        <xsl:text> (</xsl:text>
-        <xsl:value-of           select = "@MailerType"/>
-        <xsl:text>)</xsl:text>
-       </b>
-      </td>
-     </tr>
-    </xsl:for-each>
-   </table>
-  </xsl:if>
-  <p/>
+
+ <!--
+ ==================================================================
+ Template to display the Update Mode element
+ Also checking to ensure only two possible modes are entered.
+ ================================================================== -->
+ <xsl:template                   match = "UpdateMode">
+  <xsl:choose>
+   <xsl:when                      test = "position() &gt; 2">
+    <tr style="color:red">
+     <td align="center" colspan="2">
+      <b>ERROR: Only two UpdateModes elements are allowed!!!</b>
+     </td>
+    </tr>
+    <tr style="color:red">
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Update Mode</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "."/>
+      <b>
+       <xsl:text> (</xsl:text>
+       <xsl:value-of            select = "@MailerType"/>
+       <xsl:text>)</xsl:text>
+      </b>
+     </td>
+    </tr>
+   </xsl:when>
+   <xsl:otherwise>
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Update Mode</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:value-of               select = "."/>
+    <b>
+     <xsl:text> (</xsl:text>
+     <xsl:value-of              select = "@MailerType"/>
+     <xsl:text>)</xsl:text>
+    </b>
+   </td>
+  </tr>
+  </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
@@ -3357,57 +3396,6 @@ Need to create a template to globally format the QC address block
     </tr>
    </table>
   </xsl:for-each>
- </xsl:template>
-
-
- <!--
- =======================================================================
- Template to create the email as a clickable link
- ======================================================================= -->
- <xsl:template                    name = "createEmailLink">
-  <xsl:element                    name = "a">
-   <xsl:attribute                 name = "href">
-    <xsl:value-of               select = "concat('mailto:', .)"/>
-   </xsl:attribute>
-   <xsl:value-of                select = "."/>
-  </xsl:element> 
-  <xsl:apply-templates          select = "@Public"/>
- </xsl:template>
-
-
- <!--
- =======================================================================
- Template to create the WebSite as a clickable link
- ======================================================================= -->
- <xsl:template                   name = "createWebLink">
-  <xsl:element                   name = "a">
-   <xsl:attribute                name = "href">
-    <xsl:choose>
-     <xsl:when                   test = "contains(@cdr:xref, 'http')">
-      <xsl:value-of            select = "@cdr:xref"/>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:value-of            select = "concat('http://', @cdr:xref)"/>
-     </xsl:otherwise>
-    </xsl:choose>
-   </xsl:attribute>
-   <xsl:attribute                name = "target">
-    <xsl:text>new</xsl:text>
-   </xsl:attribute>
- 
-   <xsl:value-of               select = "@cdr:xref"/>
-  </xsl:element>
- </xsl:template>
-
-
- <!--
- ====================================================================
- Convert the format of the phone numbers provided by RSS from the 
- form "(123) 456-7890" to the form "123-456-7890"
- ==================================================================== -->
- <xsl:template                    name = "convertPhoneNumber">
-  <xsl:value-of                 select = "translate(
-                                           translate(., '()', ' -'), ' ', '')"/>
  </xsl:template>
 
 
