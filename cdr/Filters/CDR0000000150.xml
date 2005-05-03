@@ -8,11 +8,14 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ================================================================
-     $Id: CDR0000000150.xml,v 1.83 2005-01-27 17:03:32 venglisc Exp $
+     $Id: CDR0000000150.xml,v 1.84 2005-05-03 21:05:49 venglisc Exp $
 
      Denormalization Filter: InScopeProtocol
 
      $Log: not supported by cvs2svn $
+     Revision 1.83  2005/01/27 17:03:32  venglisc
+     Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1340)
+
  ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -1317,58 +1320,60 @@
                                           ExternalSitePIID"/>
      </xsl:when>
      <xsl:otherwise>
-      <ProtPerson>
+      <xsl:choose>
+       <xsl:when                  test = "ExternalSitePI">
+        <ProtPerson>
 
-       <xsl:choose>
-        <xsl:when                 test = "ExternalSiteContact/
+         <xsl:choose>
+          <xsl:when               test = "ExternalSiteContact/
                                           ExternalSiteContactName
                                           or
                                           ExternalSiteContact/
                                           ExternalSiteContactTitle">
-         <xsl:call-template       name = "rssClinicalTrialsOffice"/>
-        </xsl:when>
-        <xsl:otherwise>
-         <PersonNameInformation>
-          <GivenName>
-           <xsl:value-of        select = "ExternalSitePI/
+           <xsl:call-template     name = "rssClinicalTrialsOffice"/>
+          </xsl:when>
+          <xsl:otherwise>
+           <PersonNameInformation>
+            <GivenName>
+             <xsl:value-of      select = "ExternalSitePI/
                                           ExternalSitePIName/
                                           PersonFirstName"/>
-          </GivenName>
-          <MiddleInitial>
-           <xsl:value-of        select = "ExternalSitePI/
+            </GivenName>
+            <MiddleInitial>
+             <xsl:value-of      select = "ExternalSitePI/
                                           ExternalSitePIName/
                                           PersonMiddleName"/>
-          </MiddleInitial>
-          <SurName>
-           <xsl:value-of        select = "ExternalSitePI/
+            </MiddleInitial>
+            <SurName>
+             <xsl:value-of      select = "ExternalSitePI/
                                           ExternalSitePIName/
                                           PersonLastName"/>
-          </SurName>
-          <xsl:if                 test = "ExternalSitePI/
+            </SurName>
+            <xsl:if               test = "ExternalSitePI/
                                           ExternalSitePIName/
                                           PersonSuffix">
-           <ProfessionalSuffix>
-            <xsl:value-of       select = "ExternalSitePI/
+             <ProfessionalSuffix>
+              <xsl:value-of     select = "ExternalSitePI/
                                           ExternalSitePIName/
                                           PersonSuffix"/>
-           </ProfessionalSuffix>
-          </xsl:if>
-         </PersonNameInformation>
-         <xsl:apply-templates   select = "Person/PersonNameInformation"/>
-         <PersonRole>
-          <xsl:text>Principal investigator</xsl:text>
-         </PersonRole>
-         <!--
-         The address is always taken from the RSS information as is
-         ==========================================================  -->
-         <Contact>
-          <ContactDetail>
-           <xsl:for-each        select = "ExternalSiteAddress">
-            <xsl:call-template    name = "getExternalAddress"/>
-           </xsl:for-each>
+             </ProfessionalSuffix>
+            </xsl:if>
+           </PersonNameInformation>
+           <xsl:apply-templates select = "Person/PersonNameInformation"/>
+           <PersonRole>
+            <xsl:text>Principal investigator</xsl:text>
+           </PersonRole>
+           <!--
+           The address is always taken from the RSS information as is
+           ==========================================================  -->
+           <Contact>
+            <ContactDetail>
+             <xsl:for-each       select = "ExternalSiteAddress">
+              <xsl:call-template   name = "getExternalAddress"/>
+             </xsl:for-each>
 
-           <xsl:choose>
-            <xsl:when             test = "../ExternalSiteContact/
+             <xsl:choose>
+              <xsl:when            test = "../ExternalSiteContact/
                                              ExternalSiteContactPhone
                                           and 
                                           not(../ExternalSiteContact/
@@ -1376,25 +1381,92 @@
                                           and
                                           not(../ExternalSiteContact/
                                                  ExternalSiteContactTitle)">
-             <Phone>
-              <xsl:value-of     select =  "../ExternalSiteContact/
+               <Phone>
+                <xsl:value-of    select = "../ExternalSiteContact/
                                               ExternalSiteContactPhone"/>
+               </Phone>
+              </xsl:when>
+              <xsl:otherwise>
+               <xsl:for-each     select = "ExternalSitePI/
+                                           ExternalSitePIPhone">
+                <Phone>
+                 <xsl:call-template name = "convertPhoneNumber"/>
+                </Phone>
+               </xsl:for-each> 
+              </xsl:otherwise>
+             </xsl:choose>
+            </ContactDetail>
+           </Contact>
+          </xsl:otherwise>
+         </xsl:choose>
+        </ProtPerson>
+       </xsl:when>
+       <xsl:otherwise>
+        <!-- 
+        The ExternalSitePIID doesn't exist so we have to create the ProtPerson
+        element just like the GenericPerson and OverallContact
+        ====================================================================== -->
+        <ProtPerson>
+         <PersonRole>
+          <xsl:text>Contact Person</xsl:text>
+         </PersonRole>
+         <Contact>
+          <ContactName>
+           <xsl:value-of         select = "ExternalSiteOrg/
+                                           ExternalSiteOrgID/
+                                           Organization/
+                                           OrganizationNameInformation/
+                                           OfficialName/
+                                           Name"/>
+
+          </ContactName>
+          <ContactDetail>
+           <xsl:for-each         select = "ExternalSiteOrg/
+                                           ExternalSiteOrgID/
+                                           Organization/
+                                           OrganizationLocations/
+                                           OrganizationLocation/
+                                           Location
+                                              [@cdr:id = ../../CIPSContact]/
+                                           PostalAddress">
+            <xsl:call-template    name = "getExternalAddress"/>
+           </xsl:for-each>
+           <!--
+           If a ClinicalTrialsOffice exists for the organization use its
+           phone number rather then the fragment phone number
+           ============================================================= -->
+           <xsl:choose>
+            <xsl:when             test = "ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactPhone">
+             <Phone>
+              <xsl:value-of     select = "ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactPhone"/>
              </Phone>
             </xsl:when>
             <xsl:otherwise>
-             <xsl:for-each      select = "ExternalSitePI/
-                                          ExternalSitePIPhone">
-              <Phone>
-               <xsl:call-template name = "convertPhoneNumber"/>
-              </Phone>
-             </xsl:for-each> 
+             <xsl:copy-of       select = "ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location
+                                            [@cdr:id = ../../CIPSContact]/
+                                          Phone"/>
             </xsl:otherwise>
            </xsl:choose>
           </ContactDetail>
          </Contact>
-        </xsl:otherwise>
-       </xsl:choose>
-      </ProtPerson>
+        </ProtPerson>
+       </xsl:otherwise>
+      </xsl:choose>
      </xsl:otherwise>
     </xsl:choose>
    </ProtocolSite>
@@ -1452,7 +1524,7 @@
     <xsl:value-of               select = "PersonTitle"/>
    </PersonRole>
    <Contact>
-     <xsl:apply-templates       select = "GenericPersonContact/
+    <xsl:apply-templates        select = "GenericPersonContact/
                                           ContactName"
                                   mode = "copy"/>
 
@@ -1614,22 +1686,31 @@
 
 
  <!--
- ====================================================================
+ =====================================================================
  Display the RSS provided Address information
- ==================================================================== -->
+ ===================================================================== -->
  <xsl:template                    name = "getExternalAddress">
   <PostalAddress>
+   <!--
+   The Street information is not being displayed for RSS organizations
+   =================================================================== -->
+<!--
    <xsl:if                        test = "Street">
-    <Street>
-     <xsl:value-of              select = "Street"/>
-    </Street>
+    <xsl:for-each               select = "Street">
+     <Street>
+      <xsl:value-of              select = "."/>
+     </Street>
+    </xsl:for-each>
    </xsl:if>
+-->
 
    <City>
     <xsl:value-of               select = "City"/>
    </City>
 
-   <xsl:if                        test = "Street">
+   <xsl:if                        test = "Street
+                                          and
+                                          CitySuffix">
     <CitySuffix>
      <xsl:value-of              select = "CitySuffix"/>
     </CitySuffix>
