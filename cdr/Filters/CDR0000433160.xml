@@ -1,0 +1,106 @@
+<CdrDoc Type='Filter' Id='CDR0000433160'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Denormalization Filter (1/1): Media</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<!-- 
+==================================================================
+Filter to Denormalize Terminology XML
+================================================================== -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+   
+ <xsl:output                    method = "xml" 
+                  omit-xml-declaration = "no" 
+                                indent = "yes"/>
+
+
+ <!-- 
+ =================================================================
+ Copy control information and generate current date
+ ================================================================= -->
+  <xsl:template                   match = "Media">
+   <xsl:copy>
+   <xsl:apply-templates          select = "document('cdrutil:/docid')"/>
+   <xsl:apply-templates          select = "document('cdrx:/*/CdrCtl')"/>
+
+   <xsl:apply-templates/>
+
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ ==============================================================
+ Denormalize terminology which doesn't involve parent hierarchy.
+ ============================================================== -->
+ <xsl:template                   match = "Diagnosis | Topic">
+  <!-- 
+  ========================================================
+  Find the terminology document's preferred name.
+  ======================================================== -->
+  <xsl:variable                   name = "termId" 
+                                select = "@cdr:ref"/>
+  <xsl:variable                   name = "termDoc" 
+                                select = "document(concat('cdr:',
+                                                          $termId, 
+                                                          '/lastp'))"/>
+  <xsl:element                    name = "{name()}">
+   <Term>
+    <xsl:for-each               select = "@*">
+     <xsl:attribute               name = "{name()}">
+      <xsl:value-of             select = "."/>
+     </xsl:attribute>
+    </xsl:for-each>
+    <xsl:copy-of               select = "$termDoc/Term/PreferredName"/>
+   </Term>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ==============================================================
+ Denormalize terminology which doesn't involve parent hierarchy.
+ ============================================================== -->
+ <xsl:template                   match = "Media/Media">
+  <!-- 
+  ========================================================
+  Find the terminology document's preferred name.
+  ======================================================== -->
+  <xsl:variable                   name = "mediaId" 
+                                select = "@cdr:ref"/>
+  <xsl:variable                   name = "mediaDoc" 
+                                select = "document(concat('cdr:',
+                                                          $mediaId, 
+                                                          '/lastp'))"/>
+  <xsl:element                    name = "{name()}">
+   <Media>
+    <xsl:for-each               select = "@*">
+     <xsl:attribute               name = "{name()}">
+      <xsl:value-of             select = "."/>
+     </xsl:attribute>
+    </xsl:for-each>
+    <xsl:copy-of               select = "$mediaDoc/Media/MediaTitle"/>
+   </Media>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Template rule used to do XML to XML transformations which
+ copies any attribute node, or node that is child of of something 
+ ================================================================== -->
+ <xsl:template              match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates    select = "@*|node()"/>
+  </xsl:copy> 
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
