@@ -1,0 +1,794 @@
+<CdrDoc Type='Filter' Id='CDR0000433163'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Media QC Report Filter</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<!--
+ ================================================================
+     $Id: CDR0000433163.xml,v 1.1 2005-05-04 17:24:04 venglisc Exp $
+
+     Filter to create a Media Content QC Report 
+        Written by Volker Englisch
+
+     $Log: not supported by cvs2svn $
+
+ ================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+ <xsl:output                    method = "html"/>
+
+ <xsl:include  href = "cdr:name:Module: Attribute Sets"/>
+
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
+ <xsl:variable                    name = "whoAmI"
+                                select = "'MediaQc'"/>
+ <!-- 
+ ===============================================================
+ Main Template
+ =============================================================== -->
+ <xsl:template                   match = "/">
+  <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+  <HTML>
+   <HEAD>
+    <xsl:variable                 name = "cdrdocs" 
+                                select = "document('cdrx:/*/CdrCtl')"/>
+
+    <TITLE>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+     <xsl:text>: </xsl:text>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/> 
+    </TITLE>
+    <STYLE type='text/css'>
+     .lbold    { font-size: 1.1em;     /* Using 1.2m appears to big on IE */
+                 font-weight: bold; }  /* Using medium to small on FireFx */
+     ul        { margin-left: 16 ; 
+                 padding-left: 0;}
+    </STYLE>
+   </HEAD>
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
+   <xsl:apply-templates         select = "Media"/>
+  </HTML>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Person QC Report
+ =================================================================== -->
+ <xsl:template                   match = "Media">
+  <BODY>
+
+   <!-- 
+   ==================================================================
+   Display Report heading and subheading 
+   ================================================================== -->
+   <span class="lbold">
+    <center>
+     <xsl:text>Media</xsl:text>
+     <br/>
+     <xsl:text>QC Report</xsl:text>
+    </center>
+   </span>
+   <b>
+    <center>
+     <xsl:value-of              select = "document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M% 25p')"/>
+    </center>
+   </b>
+   <p/>
+
+   <!-- 
+   ====================================================================
+   Display Name Header, and PersonNameInformation
+   ==================================================================== -->
+   <span class="lbold">
+    <xsl:value-of               select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+   </span>
+   <p/>
+
+   <!-- 
+   ======================================================================
+   Display the Administrative Information Section
+   ===================================================================== -->
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <span class="lbold">Media Title</span>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "MediaTitle"/>
+     </td>
+    </tr>
+   </table>  
+   <p/>
+
+   <xsl:apply-templates         select = "PhysicalMedia"/>
+   <xsl:apply-templates         select = "MediaSource"/>
+   <xsl:apply-templates         select = "MediaContent"/>
+
+   <xsl:if                        test = "Comment">
+    <p/>
+    <span class="lbold">Comment</span>
+    <br/>
+    <xsl:value-of               select = "Comment"/>
+   </xsl:if>
+   <p/>
+
+   <!--- 
+   ===================================================================
+   Display Date Last Modified
+   =================================================================== -->
+   <span class="lbold">Record Information</span>
+   <br />
+   <table       xsl:use-attribute-sets = "table">
+    <xsl:for-each               select = "CdrDocCtl">
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <b>Created By</b>
+      </td>
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <xsl:value-of            select = "Create/User"/>
+      </td>
+     </tr>
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <b>Date</b>
+      </td>
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <xsl:value-of            select = "substring-before(Create/Date,'T')"/>
+      </td>
+     </tr>
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <b>Updated By</b>
+      </td>
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <xsl:value-of            select = "Modify/User"/><br />
+      </td>
+     </tr>
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <b>Date</b>
+      </td>
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <xsl:value-of            select = "substring-before(Modify/Date,'T')"/>
+      </td>
+     </tr>
+    </xsl:for-each>
+   </table>
+  </BODY>
+ </xsl:template>
+
+
+ <!-- 
+ =======================================================================
+ Template to display Physical Media Information
+ ======================================================================= -->
+ <xsl:template                   match = "PhysicalMedia">
+  <xsl:apply-templates          select = "ImageData |
+                                          VideoData |
+                                          SoundData"/>
+ </xsl:template>
+
+
+ <!-- 
+ =======================================================================
+ Template to display Physical Media Information
+ ======================================================================= -->
+ <xsl:template                   match = "MediaSource">
+  <p/>
+  <span class="lbold">Media Source</span>
+  <xsl:apply-templates          select = "OriginalSource |
+                                          DerivedFrom"/>
+ </xsl:template>
+
+
+ <!-- 
+ =======================================================================
+ Template to display Physical Media Information
+ ======================================================================= -->
+ <xsl:template                   match = "MediaContent">
+  <p/>
+  <span class="lbold">Media Content</span>
+
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Categories</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <ul>
+     <xsl:for-each              select = "Categories/
+                                          Category">
+      <li>
+       <xsl:value-of            select = "."/>
+      </li>
+     </xsl:for-each>
+     </ul>
+    </td>
+   </tr>
+   <xsl:if                        test = "Diagnoses">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Diagnoses</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <ul>
+       <xsl:for-each            select = "Diagnoses/
+                                          Diagnosis">
+        <li>
+         <xsl:value-of          select = "Term/
+                                          PreferredName"/>
+        </li>
+       </xsl:for-each>
+      </ul>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "Topics">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Topics</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <ul>
+       <xsl:for-each            select = "Topics/
+                                          Topic">
+        <li>
+         <xsl:value-of          select = "Term/
+                                          PreferredName"/>
+        </li>
+       </xsl:for-each>
+      </ul>
+     </td>
+    </tr>
+   </xsl:if>
+  </table>
+  <p/>
+
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Content Description</b>
+    </td>
+   </tr>
+   <tr>
+    <table      xsl:use-attribute-sets = "table"
+                                border = "1">
+     <tr>
+      <th>Language</th>
+      <th>Patients</th>
+     </tr>
+     <tr>
+      <td width="5%"  valign="top" align="center">
+       <b>en</b>
+      </td>
+      <td width="40%" valign="top">
+       <xsl:value-of            select = "ContentDescriptions/
+                                          ContentDescription
+                                           [@audience='Patients' 
+                                            and
+                                            @language='en']"/>
+      </td>
+     </tr>
+     <xsl:if                      test = "ContentDescriptions/
+                                          ContentDescription
+                                            [@audience='Patients' 
+                                             and
+                                             @language='es']">
+      <tr>
+       <td width="5%"  valign="top" align="center">
+        <b>es</b>
+       </td>
+       <td width="40%" valign="top">
+        <xsl:value-of           select = "ContentDescriptions/
+                                          ContentDescription
+                                            [@audience='Patients' 
+                                             and
+                                             @language='es']"/>
+       </td>
+      </tr>
+     </xsl:if>
+    </table>
+   </tr>
+   <xsl:if                        test = "ContentDescriptions/
+                                          ContentDescription
+                                          [@audience='Health_professionals']">
+    <tr>
+     <table border="1" xsl:use-attribute-sets = "table">
+      <tr>
+       <th>Language</th>
+       <th>Health Professional</th>
+      </tr>
+      <tr>
+       <td width="5%"  valign="top" align="center">
+        <b>en</b>
+       </td>
+       <td width="40%" valign="top">
+        <xsl:value-of           select = "ContentDescriptions/
+                                          ContentDescription
+                                            [@audience='Health_professionals'
+                                             and 
+                                             @language='en']"/>
+       </td>
+      </tr>
+      <xsl:if                     test = "ContentDescriptions/
+                                          ContentDescription
+                                            [@audience='Health_professionals'
+                                             and
+                                             @language='es']">
+       <tr>
+        <td width="5%"  valign="top" align="center">
+         <b>es</b>
+        </td>
+        <td width="40%" valign="top">
+         <xsl:value-of          select = "ContentDescriptions/
+                                          ContentDescription
+                                            [@audience='Health_professionals'
+                                             and
+                                             @language='es']"/>
+        </td>
+       </tr>
+      </xsl:if>
+     </table>
+    </tr>
+   </xsl:if>
+  </table>
+  <p/>
+
+  <xsl:if                         test = "Captions">
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Caption</b>
+     </td>
+    </tr>
+    <tr>
+     <table     xsl:use-attribute-sets = "table"
+                                border = "1">
+      <tr>
+       <th>Language</th>
+       <th>Patients</th>
+      </tr>
+      <tr>
+       <td width="5%"  valign="top" align="center">
+        <b>en</b>
+       </td>
+       <td width="40%" valign="top">
+        <xsl:value-of           select = "Captions/
+                                          MediaCaption
+                                            [@audience='Patients' 
+                                             and
+                                             @language='en']"/>
+       </td>
+      </tr>
+      <xsl:if                    test = "Captions/
+                                         MediaCaption
+                                           [@audience='Patients' 
+                                            and
+                                            @language='es']">
+       <tr>
+        <td width="5%" valign="top" align="center">
+         <b>es</b>
+        </td>
+        <td width="40%" valign="top">
+         <xsl:value-of          select = "Captions/
+                                          MediaCaption
+                                            [@audience='Patients'
+                                             and
+                                             @language='es']"/>
+        </td>
+       </tr>
+      </xsl:if>
+     </table>
+    </tr>
+    <xsl:if                       test = "Captions/
+                                          MediaCaption
+                                            [@audience='Health_professionals']">
+     <tr>
+      <table    xsl:use-attribute-sets = "table"
+                                border = "1">
+       <tr>
+        <th>Language</th>
+        <th>Health Professional</th>
+       </tr>
+       <tr>
+        <td width="5%"  valign="top" align="center">
+         <b>en</b>
+        </td>
+        <td width="40%" valign="top">
+         <xsl:value-of          select = "Captions/
+                                          MediaCaption
+                                            [@audience='Health_professionals'
+                                             and
+                                             @language='en']"/>
+        </td>
+       </tr>
+       <tr>
+        <td width="5%"  valign="top" align="center">
+         <b>es</b>
+        </td>
+        <td width="40%" valign="top">
+         <xsl:value-of          select = "Captions/
+                                          MediaCaption
+                                            [@audience='Health_professionals'
+                                             and
+                                             @language='es']"/>
+        </td>
+       </tr>
+      </table>
+     </tr>
+    </xsl:if>
+   </table>
+  </xsl:if>
+
+  <xsl:if                         test = "Comment |
+                                          MediaLanguage">
+   <p/>
+   <table       xsl:use-attribute-sets = "table">
+    <xsl:if                       test = "Comment">
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <b>Comment</b>
+      </td>
+      <td>
+       <xsl:value-of            select = "Comment"/>
+      </td>
+     </tr>
+    </xsl:if>
+    <xsl:if                       test = "MediaLanguage">
+     <tr>
+      <td>
+       <b>Media Language</b>
+      </td>
+      <td>
+       <xsl:value-of            select = "MediaLanguage"/>
+      </td>
+     </tr>
+    </xsl:if>
+   </table>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ =======================================================================
+ Template to display Board Membership Information
+ ======================================================================= -->
+ <xsl:template                   match = "ImageData">
+  <span class="lbold">Image Data</span>
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Image Type</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "ImageType"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Image Encoding</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "ImageEncoding"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Color</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Color"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Labeled</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Labeled"/>
+    </td>
+   </tr>
+  </table>
+  <br/>
+
+  <xsl:if                         test = "ImageDimensions/
+                                          HeightPixels">
+   <span class="lbold">Image Dimensions</span>
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Height</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "ImageDimensions/
+                                          HeightPixels"/>
+     </td>
+    </tr>
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Width</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "ImageDimensions/
+                                          WidthPixels"/>
+     </td>
+    </tr>
+    <xsl:if                       test = "MinWidthPixels">
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <b>Width</b>
+      </td>
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <xsl:value-of            select = "ImageDimensions/
+                                          WidthPixels"/>
+      </td>
+     </tr>
+    </xsl:if>
+   </table>
+  </xsl:if>
+
+  <xsl:if                         test = "Inlined">
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Inlined</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "Inlined"/>
+     </td>
+    </tr>
+   </table>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ =======================================================================
+ Template to display Physical Media Information
+ ======================================================================= -->
+ <xsl:template                   match = "VideoData">
+  <span class="lbold">Video Data</span>
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Video Type</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "VideoType"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Video Encoding</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "VideoEncoding"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Color</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Color"/>
+    </td>
+   </tr>
+   <xsl:if                        test = "RunSeconds">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Labeled</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "RunSeconds"/>
+     </td>
+    </tr>
+   </xsl:if>
+  </table>
+  <br/>
+ </xsl:template>
+
+
+ <!-- 
+ =======================================================================
+ Template to display Physical Media Information
+ ======================================================================= -->
+ <xsl:template                   match = "SoundData">
+  <span class="lbold">Sound Data</span>
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Sound Type</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "SoundType"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Sound Encoding</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "SoundEncoding"/>
+    </td>
+   </tr>
+   <xsl:if                        test = "RunSeconds">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Labeled</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "RunSeconds"/>
+     </td>
+    </tr>
+   </xsl:if>
+  </table>
+  <br/>
+
+ </xsl:template>
+
+
+ <!-- 
+ =======================================================================
+ Template to display Physical Media Information
+ ======================================================================= -->
+ <xsl:template                   match = "OriginalSource">
+  <span class="lbold"> (Original)</span>
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:if                        test = "Creator">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Creator</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:for-each             select = "Creator">
+       <xsl:value-of            select = "."/>
+       <br/>
+      </xsl:for-each>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "SourcePublication">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Source Publication</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "SourcePublication"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "DateCreated">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Date Created</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "DateCreated"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "TextDateCreated">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Text Date Created</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "TextDateCreated"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "Acknowledgement">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Acknowledgement</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "Acknowledgement"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "SourceFilename">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Source Filename</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "SourceFilename"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "Comment">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Comment</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "Comment"/>
+     </td>
+    </tr>
+   </xsl:if>
+  </table>
+ </xsl:template>
+
+
+ <!-- 
+ =======================================================================
+ Template to display Physical Media Information
+ ======================================================================= -->
+ <xsl:template                   match = "DerivedFrom">
+  <span class="lbold"> (Derived)</span>
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:choose>
+    <xsl:when                     test = "FromObject/FromCdrMedia">
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <b>From CDR Media</b>
+      </td>
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <xsl:value-of            select = "FromObject/
+                                          FromCdrMedia/
+                                          Media/
+                                          MediaTitle"/>
+      </td>
+     </tr>
+    </xsl:when>
+    <xsl:otherwise>
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <b>From External File</b>
+      </td>
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <xsl:value-of            select = "FromObject/
+                                          FromCdrMedia/
+                                          FromExternalFile"/>
+      </td>
+     </tr>
+    </xsl:otherwise>
+   </xsl:choose>
+   <xsl:if                        test = "FromObject/
+                                          FromMethod">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>From Method File</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "FromObject/
+                                          FromMethod"/>
+      <b>
+       <xsl:text> (</xsl:text>
+       <xsl:value-of            select = "FromObject/
+                                          FromMethod/@method"/>
+       <xsl:text>)</xsl:text>
+      </b>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "Comment">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Comment</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "Comment"/>
+     </td>
+    </tr>
+   </xsl:if>
+  </table>
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
