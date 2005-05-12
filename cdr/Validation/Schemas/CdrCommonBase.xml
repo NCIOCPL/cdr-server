@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<!-- $Id: CdrCommonBase.xml,v 1.24 2005-05-05 21:33:30 bkline Exp $ 
+<!-- $Id: CdrCommonBase.xml,v 1.25 2005-05-12 17:50:26 bkline Exp $ 
 
      $Log: not supported by cvs2svn $
+     Revision 1.24  2005/05/05 21:33:30  bkline
+     Added OrganizationOrPersonLink type; used it for external sites in
+     InScopeProtocol documents.
+
      Revision 1.23  2005/05/04 19:08:21  bkline
      Added ExternalSiteAddress to the list of elements to which the
      custom validation rules are applied for US addresses.
@@ -21,14 +25,16 @@
      that type.
 
      Revision 1.19  2004/11/18 23:23:25  ameyer
-     Added cdr:id to MediaRef.  Will also have to add content, after discussion.
+     Added cdr:id to MediaRef.  Will also have to add content, after
+     discussion.
 
      Revision 1.18  2004/11/18 15:34:33  ameyer
      Deleted Multimedia - now using MediaLink instead.
 
      Revision 1.17  2004/11/16 16:29:25  ameyer
-     Moved cdr:ref attribute from MediaLink (where it would have cause subelement
-     Caption to be denormalized away) to a new subelement "MediaID".
+     Moved cdr:ref attribute from MediaLink (where it would have cause
+     subelement Caption to be denormalized away) to a new subelement
+     "MediaID".
 
      Revision 1.16  2004/11/10 04:30:59  ameyer
      Updated with MediaLink and MediaRef related definitions.
@@ -120,8 +126,9 @@
      Revision 1.36  2002/05/29 18:20:39  arkd
      PhraseLevelWithoutId complexType created.
 
-     Type of Emphasis, Strong, Subscript, Superscript, GeneName, ScientificName,
-     ForeignWord, DrugName, InterventionName changed to PhraseLevelWithoutId.
+     Type of Emphasis, Strong, Subscript, Superscript, GeneName,
+     ScientificName, ForeignWord, DrugName, InterventionName changed to
+     PhraseLevelWithoutId.
 
      Revision 1.35  2001/12/19 15:36:04  bkline
      Added optional PdqKey attributes for elements with cdr:id attributes.
@@ -256,8 +263,7 @@
  <annotation>
   <appInfo>
    <pattern>
-    <rule            context         = 'PostalAddress|SpecificPostalAddress|
-                                        ExternalSiteAddress'>
+    <rule            context         = 'PostalAddress|SpecificPostalAddress'>
      <assert         test            = '@AddressType != "US" or
                                         PoliticalSubUnit_State'
      >U.S. address must have PoliticalSubUnit_State element</assert>
@@ -265,6 +271,17 @@
                                         document(concat("cdrutil:/valid-zip/",
                                                         PostalCode_ZIP)) != ""'
      >U.S. address must have valid ZIP code</assert>
+    </rule>
+   </pattern>
+   <!-- xx used to disable next rules until Lakshmi decides what she wants. -->
+   <pattern>
+    <rule            context         = 'xxExternalSiteAddress'>
+     <assert         test            = '@AddressType != "US" or
+                                        PoliticalSubUnit_State'
+     >U.S. address must have PoliticalSubUnit_State element</assert>
+     <assert         test            = '@AddressType != "US" or
+                                        PostalCode_ZIP'
+     >U.S. address must have ZIP code</assert>
     </rule>
    </pattern>
   </appInfo>
