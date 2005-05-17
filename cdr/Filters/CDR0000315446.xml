@@ -72,18 +72,59 @@
 
  <!-- 
  ===================================================================
- Denormalize the Parent Organization Information
+ Denormalize the Organization Information (Parent, CCOP, etc.)
+ We need to handle the RSS ExternalSiteOrgID separately because it
+ could also refer to a _Person_ document instead of an organization.
  =================================================================== -->
- <xsl:template                   match = "ExternalSiteOrgID  |
-                                          ParentOrganization |
-                                          ResearchBaseFor    |
-                                          MemberOfAdHocGroup |
-                                          CCOP               |
-                                          CooperativeGroup   |
-                                          MainMember         |
+ <xsl:template                   match = "ExternalSiteOrgID      |
+                                          ParentOrganization     |
+                                          ResearchBaseFor        |
+                                          MemberOfAdHocGroup     |
+                                          CCOP                   |
+                                          CooperativeGroup       |
+                                          MainMember             |
                                           OtherPracticeLocation/
                                             OrganizationLocation">
-  <xsl:call-template              name = "getOrganization"/>
+  <xsl:choose>
+   <xsl:when                      test = "name() = 'ExternalSiteOrgID'">
+    <xsl:variable                 name = "orgorpersonID"
+                                select = "@cdr:ref"/>
+    <xsl:variable                 name = "nodeOrgOrPerson"
+                                select = "document(concat('cdr:', 
+                                                           $orgorpersonID, 
+                                                          '/last'))"/>
+    <xsl:choose>
+     <!-- The denormalized document is an organization doc. -->
+     <xsl:when                    test = "$nodeOrgOrPerson/Organization">
+      <xsl:call-template          name = "getOrganization"/>
+     </xsl:when>
+     <!-- The denormalized document is a person doc. -->
+     <xsl:otherwise>
+      <xsl:copy>
+       <Person>
+        <xsl:for-each           select = "@*">
+         <xsl:attribute           name = "{name()}">
+          <xsl:value-of         select = "."/>
+         </xsl:attribute>
+        </xsl:for-each>
+        <xsl:variable             name = "contactID"
+                                select = "@cdr:ref"/>
+        <xsl:variable             name = "contactPerson"
+                                select = "document(concat('cdr:', $contactID, 
+                                                          '/last'))"/>
+        <xsl:call-template        name = "getPerson">
+         <xsl:with-param          name = "contactPerson"
+                                select = "$contactPerson"/>
+        </xsl:call-template>
+       </Person>
+      </xsl:copy>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:call-template            name = "getOrganization"/>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
@@ -259,8 +300,6 @@
                                           name() = 'OrgSiteID'
                                           or
                                           name() = 'LeadOrganizationID'
-                                          or 
-                                          name() = 'ExternalSiteOrgID'
                                           or
                                           name() = 'ClinicalTrialOffice'">
      <xsl:apply-templates       select = "$org/Organization/
@@ -284,6 +323,23 @@
                                           PreferredProtocolOrganization"/> -->
     </xsl:if>
 
+    <!--  
+    The RSS information allows the link of the ExternalSiteOrgID to be
+    an org or a person link.  We handle this situation as a special case
+    ==================================================================== -->
+    <xsl:if                       test = "name() = 'ExternalSiteOrgID'">
+     <xsl:apply-templates       select = "$org/Organization/
+                                          OrganizationLocations"/>
+
+     <!-- 
+     These 2 elements are listed in the Schema but there doesn't exist
+     any data.  Keeping these commented out for the time being.
+     ==================================================================   
+     <xsl:copy-of               select = "$org/Organization/
+                                          ProtocolIDAcronym"/>
+     <xsl:copy-of               select = "$org/Organization/
+                                          PreferredProtocolOrganization"/> -->
+    </xsl:if>
    </Organization>
    <xsl:if                        test = "name() = 'OrgSiteID'">
     <xsl:apply-templates        select = "../OrgSiteStatus"/>
