@@ -8,11 +8,14 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ================================================================
-     $Id: CDR0000000150.xml,v 1.84 2005-05-03 21:05:49 venglisc Exp $
+     $Id: CDR0000000150.xml,v 1.85 2005-05-17 15:44:01 venglisc Exp $
 
      Denormalization Filter: InScopeProtocol
 
      $Log: not supported by cvs2svn $
+     Revision 1.84  2005/05/03 21:05:49  venglisc
+     Added code to deal with RSS sites without ExternalSitePI (Bug 1341)
+
      Revision 1.83  2005/01/27 17:03:32  venglisc
      Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1340)
 
@@ -1137,11 +1140,105 @@
          </Phone>
         </xsl:when>
         <xsl:otherwise>
-         <xsl:for-each          select = "../ExternalSitePIPhone">
-          <Phone>
-           <xsl:call-template     name = "convertPhoneNumber"/>
-          </Phone>
-         </xsl:for-each> 
+         <!--
+         This covers the situation when an ExternalSitePI has been 
+         submitted with an empty phone number.
+         We have to pick up the phone and/or toll free phone from 
+         the organization location fragment that is been 
+         identified as the CIPSContact address.  
+         However, if a clinical trials office phone exists we will
+         pick this up instead of the organization phone number.
+         ========================================================= -->
+         <xsl:choose>
+          <xsl:when               test = "../ExternalSitePIPhone">
+           <xsl:for-each          select = "../ExternalSitePIPhone">
+            <Phone>
+             <xsl:call-template     name = "convertPhoneNumber"/>
+            </Phone>
+           </xsl:for-each> 
+          </xsl:when>
+          <xsl:otherwise>
+           <!--
+           If a ClinicalTrialsOffice exists for the organization use its
+           phone number rather then the fragment phone number
+           ============================================================= -->
+           <xsl:choose>
+            <xsl:when                test = "Person/
+                                             PersonLocations/
+                                             OtherPracticeLocation
+                                                [@cdr:id = ../CIPSContact]/
+                                             OrganizationLocation/
+                                             Organization/
+                                             OrganizationLocations/
+                                             ClinicalTrialsOfficeContact/
+                                             ClinicalTrialsOfficeContactPhone">
+             <Phone>
+              <xsl:value-of        select = "Person/
+                                             PersonLocations/
+                                             OtherPracticeLocation
+                                                [@cdr:id = ../CIPSContact]/
+                                             OrganizationLocation/
+                                             Organization/
+                                             OrganizationLocations/
+                                             ClinicalTrialsOfficeContact/
+                                             ClinicalTrialsOfficeContactPhone"/>
+             </Phone>
+            </xsl:when>
+            <xsl:otherwise>
+             <xsl:if                 test = "Person/
+                                             PersonLocations/
+                                             OtherPracticeLocation
+                                                [@cdr:id = ../CIPSContact]/
+                                             OrganizationLocation/
+                                             Organization/
+                                             OrganizationLocations/
+                                             OrganizationLocation/
+                                             Location
+                                                [@cdr:id = ../../CIPSContact]/
+                                             Phone">
+              <xsl:for-each        select = "Person/
+                                             PersonLocations/
+                                             OtherPracticeLocation
+                                                [@cdr:id = ../CIPSContact]/
+                                             OrganizationLocation/
+                                             Organization/
+                                             OrganizationLocations/
+                                             OrganizationLocation/
+                                             Location
+                                                [@cdr:id = ../../CIPSContact]/
+                                             Phone">
+               <xsl:copy-of        select = "."/>
+              </xsl:for-each>
+             </xsl:if>
+             <xsl:if                 test = "Person/
+                                             PersonLocations/
+                                             OtherPracticeLocation
+                                                [@cdr:id = ../CIPSContact]/
+                                             OrganizationLocation/
+                                             Organization/
+                                             OrganizationLocations/
+                                             OrganizationLocation/
+                                             Location
+                                                [@cdr:id = ../../CIPSContact]/
+                                             TollFreePhone">
+              <xsl:for-each        select = "Person/
+                                             PersonLocations/
+                                             OtherPracticeLocation
+                                                [@cdr:id = ../CIPSContact]/
+                                             OrganizationLocation/
+                                             Organization/
+                                             OrganizationLocations/
+                                             OrganizationLocation/
+                                             Location
+                                                [@cdr:id = ../../CIPSContact]/
+                                             TollFreePhone">
+               <xsl:copy-of         select = "."/>
+              </xsl:for-each>
+             </xsl:if>
+            </xsl:otherwise>
+           </xsl:choose>
+          </xsl:otherwise>
+         </xsl:choose>
         </xsl:otherwise>
        </xsl:choose>
       </ContactDetail>
@@ -1287,16 +1384,33 @@
        <xsl:attribute             name = "ref">
         <xsl:value-of           select = "@cdr:ref"/>
        </xsl:attribute>
-       <xsl:attribute             name = "sitetype">
-        <xsl:value-of           select = "'Organization'"/>
-       </xsl:attribute>
+       <xsl:choose>
+        <xsl:when                 test = "OrganizationNameInformation/
+                                          OfficialName/
+                                          Name">
+         <xsl:attribute           name = "sitetype">
+          <xsl:value-of         select = "'Organization'"/>
+         </xsl:attribute>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:attribute           name = "sitetype">
+          <xsl:value-of         select = "'Person'"/>
+         </xsl:attribute>
+        </xsl:otherwise>
+       </xsl:choose>
 
-       <SiteName>
-        <xsl:apply-templates     
-                                select = "OrganizationNameInformation/
+       <!-- 
+       For sitetype = "Person" don't display the SiteName element
+       ========================================================== -->
+       <xsl:if                    test = "OrganizationNameInformation/
+                                          OfficialName/
+                                          Name">
+        <SiteName>
+         <xsl:apply-templates   select = "OrganizationNameInformation/
                                           OfficialName/
                                           Name"/>
-       </SiteName>
+        </SiteName>
+       </xsl:if>
       </xsl:for-each>
      </xsl:when>
      <xsl:otherwise>
