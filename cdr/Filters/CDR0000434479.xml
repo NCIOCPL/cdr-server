@@ -1,0 +1,65 @@
+<CdrDoc Type='Filter' Id='CDR0000434479'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Strip PDQBoardMembershipDetails</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0" encoding="utf-8"?>
+<xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                              version = "1.0"
+                            xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+ <xsl:output                   method = "xml" />
+
+ <xsl:template                  match = "/">
+  <xsl:apply-templates         select = "Person"/>
+ </xsl:template>
+
+ <!-- 
+  ======================================================================
+  Drop this and its children.
+  2005-05-05: logic more complicated now; users want to keep 
+  information about membership in Voluntary Protocol Review Boards.
+  ====================================================================== -->
+ <xsl:template                  match = "PDQBoardMembershipDetails">
+  <xsl:if                        test = 'PDQVoluntaryProtocolReviewBoard'>
+  <xsl:copy>
+   <xsl:apply-templates        select = "@*|node()|comment()|
+                                         processing-instruction()"/>
+  </xsl:copy>
+  </xsl:if>
+ </xsl:template>
+
+ <!--
+  ======================================================================
+  If the ProfessionalInformation element would be empty after stripping
+  out board information, drop it.
+  ====================================================================== -->
+ <xsl:template                  match = "ProfessionalInformation">
+  <xsl:if                        test = "PhysicianDetails |
+                                         GeneticsProfessionalDetails |
+                                         PDQBoardMembershipDetails/
+                                         PDQVoluntaryProtocolReviewBoard">
+  <xsl:copy>
+   <xsl:apply-templates        select = "@*|node()|comment()|
+                                         processing-instruction()"/>
+  </xsl:copy>
+  </xsl:if>
+ </xsl:template>
+
+ <!-- Drop these. -->
+ <xsl:template                  match = "PDQEditorialBoard|PDQAdvisoryBoard"/>
+
+ <!-- Keep everything else. -->
+ <xsl:template                  match = "@*|node()|comment()|
+                                         processing-instruction()">
+  <xsl:copy>
+   <xsl:apply-templates        select = "@*|node()|comment()|
+                                         processing-instruction()"/>
+  </xsl:copy>
+ </xsl:template>
+
+</xsl:transform>]]>
+</CdrDocXml>
+</CdrDoc>
