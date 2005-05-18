@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000150.xml,v 1.87 2005-05-17 23:30:35 venglisc Exp $
+$Id: CDR0000000150.xml,v 1.88 2005-05-18 00:56:21 venglisc Exp $
 
 Vendor Filter: InScopeProtocol
 
@@ -784,7 +784,9 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                           or
                                           ../../ExternalSiteContact/
                                           ExternalSiteContactTitle">
-     <xsl:call-template           name = "rssClinicalTrialsOffice"/>
+     <xsl:for-each              select = "../..">
+      <xsl:call-template          name = "rssClinicalTrialsOffice"/>
+     </xsl:for-each>
     </xsl:when>
     <xsl:otherwise>
      <xsl:apply-templates       select = "Person/PersonNameInformation"/>
@@ -814,7 +816,13 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
       </PersonRole>
      </xsl:for-each>
     </xsl:when>
-    <xsl:when                     test = "$myScope = 'ExternalSitePIID'">
+    <xsl:when                     test = "$myScope = 'ExternalSitePIID'
+                                          and
+                                          not(../../ExternalSiteContact/
+                                              ExternalSiteContactName)
+                                          and
+                                          not(../../ExternalSiteContact/
+                                          ExternalSiteContactTitle)">
      <PersonRole>
       <xsl:text>Principal investigator</xsl:text>
      </PersonRole>
@@ -890,8 +898,10 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                           OfficialName/Name"/>
          </OrganizationName>
 
-         <!-- Call a template to collect all parent names for the address
-              block display                                               -->
+         <!-- 
+         Call a template to collect all parent names for the address
+         block display
+         =========================================================== -->
          <xsl:if                  test = "Person/PersonLocations/
                                           OtherPracticeLocation
                                            [@cdr:id = $contactFID]/
@@ -1120,155 +1130,154 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
      </Contact>
     </xsl:when>
     <xsl:otherwise>
-     <Contact>
-      <ContactDetail>
-       <xsl:for-each            select = "../../ExternalSiteAddress">
-        <xsl:call-template        name = "getExternalAddress"/>
-       </xsl:for-each>
-       <xsl:choose>
-        <xsl:when                 test = "../../ExternalSiteContact/
-                                             ExternalSiteContactPhone
-                                          and 
-                                          not(../../ExternalSiteContact/
+     <xsl:if                      test = "not(../../ExternalSiteContact/
                                                  ExternalSiteContactName)
                                           and
                                           not(../../ExternalSiteContact/
                                                  ExternalSiteContactTitle)">
-         <Phone>
-          <xsl:value-of         select =  "../../ExternalSiteContact/
+      <Contact>
+       <ContactDetail>
+        <xsl:for-each           select = "../../ExternalSiteAddress">
+         <xsl:call-template       name = "getExternalAddress"/>
+        </xsl:for-each>
+        <xsl:choose>
+         <xsl:when                test = "../../ExternalSiteContact/
+                                             ExternalSiteContactPhone">
+          <Phone>
+           <xsl:value-of        select =  "../../ExternalSiteContact/
                                               ExternalSiteContactPhone"/>
-         </Phone>
-        </xsl:when>
-        <xsl:otherwise>
-         <!--
-         This covers the situation when an ExternalSitePI has been 
-         submitted with an empty phone number.
-         We have to pick up the phone and/or toll free phone from 
-         the organization location fragment that is been 
-         identified as the CIPSContact address of the organization.  
-         However, if a clinical trials office phone exists we will
-         pick this up instead of the organization phone number.
-         Note: In the event that the "institution" specified in 
-               the ExternalSiteOrgID is a person instead of an
-               organization we will have to pick up the 
-               SpecificPhone of the person record or the linked
-               ClinicalTrialsOfficePhone or Phone of the org.
-         ========================================================= -->
-         <xsl:choose>
-          <xsl:when               test = "../ExternalSitePIPhone">
-           <xsl:for-each        select = "../ExternalSitePIPhone">
-            <Phone>
-             <xsl:call-template   name = "convertPhoneNumber"/>
-            </Phone>
-           </xsl:for-each> 
-          </xsl:when>
-          <xsl:otherwise>
-           <xsl:choose>
-            <xsl:when             test = "../../
+          </Phone>
+         </xsl:when>
+         <xsl:otherwise>
+          <!--
+          This covers the situation when an ExternalSitePI has been 
+          submitted with an empty phone number.
+          We have to pick up the phone and/or toll free phone from 
+          the organization location fragment that is been 
+          identified as the CIPSContact address of the organization.  
+          However, if a clinical trials office phone exists we will
+          pick this up instead of the organization phone number.
+          Note: In the event that the "institution" specified in 
+                the ExternalSiteOrgID is a person instead of an
+                organization we will have to pick up the 
+                SpecificPhone of the person record or the linked
+                ClinicalTrialsOfficePhone or Phone of the org.
+          ========================================================= -->
+          <xsl:choose>
+           <xsl:when              test = "../ExternalSitePIPhone">
+            <xsl:for-each       select = "../ExternalSitePIPhone">
+             <Phone>
+              <xsl:call-template  name = "convertPhoneNumber"/>
+             </Phone>
+            </xsl:for-each> 
+           </xsl:when>
+           <xsl:otherwise>
+            <xsl:choose>
+             <xsl:when            test = "../../
                                           ExternalSiteOrg/
                                           ExternalSiteOrgID/
                                           Organization">
 
-             <!--
-             If a ClinicalTrialsOffice exists for the organization use its
-             phone number rather then the fragment phone number
-             ============================================================= -->
-             <xsl:choose>
-              <xsl:when           test = "../../
+              <!--
+              If a ClinicalTrialsOffice exists for the organization use its
+              phone number rather then the fragment phone number
+              ============================================================= -->
+              <xsl:choose>
+               <xsl:when          test = "../../
                                           ExternalSiteOrg/
                                           ExternalSiteOrgID/
                                           Organization/
                                           OrganizationLocations/
                                           ClinicalTrialsOfficeContact/
                                           ClinicalTrialsOfficeContactPhone">
-               <Phone>
-                <xsl:value-of      select = "../../
-                                             ExternalSiteOrg/
-                                             ExternalSiteOrgID/
-                                             Organization/
-                                             OrganizationLocations/
-                                             ClinicalTrialsOfficeContact/
-                                             ClinicalTrialsOfficeContactPhone"/>
-               </Phone>
-              </xsl:when>
-              <xsl:otherwise>
-               <xsl:if                 test = "../../
-                                             ExternalSiteOrg/
-                                             ExternalSiteOrgID/
-                                             Organization/
-                                             OrganizationLocations/
-                                             OrganizationLocation/
-                                             Location
-                                                [@cdr:id = ../../CIPSContact]/
-                                             Phone">
-                <xsl:for-each        select = "../../
-                                             ExternalSiteOrg/
-                                             ExternalSiteOrgID/
-                                             Organization/
-                                             OrganizationLocations/
-                                             OrganizationLocation/
-                                             Location
-                                                [@cdr:id = ../../CIPSContact]/
-                                             Phone">
-                 <xsl:copy-of        select = "."/>
-                </xsl:for-each>
-               </xsl:if>
-               <xsl:if                 test = "../../
-                                             ExternalSiteOrg/
-                                             ExternalSiteOrgID/
-                                             Organization/
-                                             OrganizationLocations/
-                                             OrganizationLocation/
-                                             Location
-                                                [@cdr:id = ../../CIPSContact]/
-                                             TollFreePhone">
-                <xsl:for-each        select = "../../
-                                             ExternalSiteOrg/
-                                             ExternalSiteOrgID/
-                                             Organization/
-                                             OrganizationLocations/
-                                             OrganizationLocation/
-                                             Location
-                                                [@cdr:id = ../../CIPSContact]/
-                                             TollFreePhone">
-                 <xsl:copy-of         select = "."/>
-                </xsl:for-each>
-               </xsl:if>
-              </xsl:otherwise>
-             </xsl:choose>
-            </xsl:when>
-            <!-- 
-            Here we are dealing with the special (strange) case that the 
-            ExternalSiteOrgID is actually pointing to a Person record.
-            For a missing ExternalSitePIPhone number we will have to 
-            pick up the phone from the Person record (SpecialPhone of 
-            the CIPSContact fragment) or - if this doesn't exist - 
-            from the linked organization record (this could be either
-            the ClinicalTrialsOfficePhone or the Phone/TollFreePhone.
-            Note: You would assume that there should always exist a 
-                  Phone number (SpecialPhone) for the Person since this
-                  would be his/her PrivatePracticeLocation or HomeOffice
-                  Location but you can never know with the data coming
-                  from outside sources.
-            ============================================================ -->
-            <xsl:otherwise>
-             <xsl:choose>
-              <xsl:when            test = "../../
+                <Phone>
+                 <xsl:value-of  select = "../../
+                                          ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactPhone"/>
+                </Phone>
+               </xsl:when>
+               <xsl:otherwise>
+                <xsl:if           test = "../../
+                                          ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location
+                                             [@cdr:id = ../../CIPSContact]/
+                                          Phone">
+                 <xsl:for-each  select = "../../
+                                          ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location
+                                             [@cdr:id = ../../CIPSContact]/
+                                          Phone">
+                  <xsl:copy-of  select = "."/>
+                 </xsl:for-each>
+                </xsl:if>
+                <xsl:if           test = "../../
+                                          ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location
+                                             [@cdr:id = ../../CIPSContact]/
+                                          TollFreePhone">
+                 <xsl:for-each  select = "../../
+                                          ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location
+                                             [@cdr:id = ../../CIPSContact]/
+                                          TollFreePhone">
+                  <xsl:copy-of   select = "."/>
+                 </xsl:for-each>
+                </xsl:if>
+               </xsl:otherwise>
+              </xsl:choose>
+             </xsl:when>
+             <!-- 
+             Here we are dealing with the special (strange) case that the 
+             ExternalSiteOrgID is actually pointing to a Person record.
+             For a missing ExternalSitePIPhone number we will have to 
+             pick up the phone from the Person record (SpecialPhone of 
+             the CIPSContact fragment) or - if this doesn't exist - 
+             from the linked organization record (this could be either
+             the ClinicalTrialsOfficePhone or the Phone/TollFreePhone.
+             Note: You would assume that there should always exist a 
+                   Phone number (SpecialPhone) for the Person since this
+                   would be his/her PrivatePracticeLocation or HomeOffice
+                   Location but you can never know with the data coming
+                   from outside sources.
+             ============================================================ -->
+             <xsl:otherwise>
+              <xsl:choose>
+               <xsl:when          test = "../../
                                           ExternalSiteOrg/
                                           ExternalSiteOrgID/
                                           Person/
                                           PersonLocations/
                                           Home[@cdr:id = ../CIPSContact]/
                                           Phone">
-               <xsl:copy-of     select = "../../
+                <xsl:copy-of    select = "../../
                                           ExternalSiteOrg/
                                           ExternalSiteOrgID/
                                           Person/
                                           PersonLocations/
                                           Home[@cdr:id = ../CIPSContact]/
                                           Phone"/>
-              </xsl:when>
-              <xsl:when           test = "../../
+               </xsl:when>
+               <xsl:when          test = "../../
                                           ExternalSiteOrg/
                                           ExternalSiteOrgID/
                                           Person/
@@ -1277,7 +1286,7 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                           PrivatePracticeLocation
                                              [@cdr:id = ../CIPSContact]/
                                           Phone">
-               <xsl:copy-of     select = "../../
+                <xsl:copy-of    select = "../../
                                           ExternalSiteOrg/
                                           ExternalSiteOrgID/
                                           Person/
@@ -1286,8 +1295,8 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                           PrivatePracticeLocation
                                              [@cdr:id = ../CIPSContact]/
                                           Phone"/>
-              </xsl:when>
-              <xsl:when           test = "../../
+               </xsl:when>
+               <xsl:when          test = "../../
                                           ExternalSiteOrg/
                                           ExternalSiteOrgID/
                                           Person/
@@ -1295,8 +1304,8 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                           OtherPracticeLocation
                                              [@cdr:id = ../CIPSContact]/
                                           SpecificPhone">
-               <Phone>
-                <xsl:value-of   select = "../../
+                <Phone>
+                 <xsl:value-of  select = "../../
                                           ExternalSiteOrg/
                                           ExternalSiteOrgID/
                                           Person/
@@ -1304,9 +1313,9 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                           OtherPracticeLocation
                                              [@cdr:id = ../CIPSContact]/
                                           SpecificPhone"/>
-               </Phone>
-              </xsl:when>
-              <xsl:when           test = "../../
+                </Phone>
+               </xsl:when>
+               <xsl:when          test = "../../
                                           ExternalSiteOrg/
                                           ExternalSiteOrgID/
                                           Person/
@@ -1314,8 +1323,8 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                           OtherPracticeLocation
                                              [@cdr:id = ../CIPSContact]/
                                           SpecificTollFreePhone">
-               <TollFreePhone>
-                <xsl:value-of   select = "../../
+                <TollFreePhone>
+                 <xsl:value-of  select = "../../
                                           ExternalSiteOrg/
                                           ExternalSiteOrgID/
                                           Person/
@@ -1323,11 +1332,11 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                           OtherPracticeLocation
                                              [@cdr:id = ../CIPSContact]/
                                           SpecificTollFreePhone"/>
-               </TollFreePhone>
-              </xsl:when>
-              <xsl:otherwise>
-               <xsl:choose>
-                <xsl:when         test = "../../
+                </TollFreePhone>
+               </xsl:when>
+               <xsl:otherwise>
+                <xsl:choose>
+                 <xsl:when        test = "../../
                                           ExternalSiteOrg/
                                           ExternalSiteOrgID/
                                           Person/
@@ -1339,8 +1348,8 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                           OrganizationLocations/
                                           ClinicalTrialsOfficeContact/
                                           ClinicalTrialsOfficeContactPhone">
-                 <Phone>
-                  <xsl:value-of select = "../../
+                  <Phone>
+                   <xsl:value-of select = "../../
                                           ExternalSiteOrg/
                                           ExternalSiteOrgID/
                                           Person/
@@ -1352,40 +1361,10 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                           OrganizationLocations/
                                           ClinicalTrialsOfficeContact/
                                           ClinicalTrialsOfficeContactPhone"/>
-                 </Phone>
-                </xsl:when>
-                <xsl:otherwise>
-                 <Phone>
-                  <xsl:value-of select = "../../
-                                          ExternalSiteOrg/
-                                          ExternalSiteOrgID/
-                                          Person/
-                                          PersonLocations/
-                                          OtherPracticeLocation
-                                             [@cdr:id = ../CIPSContact]/
-                                          OrganizationLocation/
-                                          Organization/
-                                          OrganizationLocations/
-                                          OrganizationLocation/
-                                          Location
-                                             [@cdr:id = ../../CIPSContact]/
-                                          Phone"/>
-                 </Phone>
-                 <xsl:if          test = "../../
-                                          ExternalSiteOrg/
-                                          ExternalSiteOrgID/
-                                          Person/
-                                          PersonLocations/
-                                          OtherPracticeLocation
-                                             [@cdr:id = ../CIPSContact]/
-                                          OrganizationLocation/
-                                          Organization/
-                                          OrganizationLocations/
-                                          OrganizationLocation/
-                                          Location
-                                             [@cdr:id = ../../CIPSContact]/
-                                          TollFreePhone">
-                  <TollFreePhone>
+                  </Phone>
+                 </xsl:when>
+                 <xsl:otherwise>
+                  <Phone>
                    <xsl:value-of select = "../../
                                           ExternalSiteOrg/
                                           ExternalSiteOrgID/
@@ -1399,21 +1378,52 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                           OrganizationLocation/
                                           Location
                                              [@cdr:id = ../../CIPSContact]/
+                                          Phone"/>
+                  </Phone>
+                  <xsl:if         test = "../../
+                                          ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Person/
+                                          PersonLocations/
+                                          OtherPracticeLocation
+                                             [@cdr:id = ../CIPSContact]/
+                                          OrganizationLocation/
+                                          Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location
+                                             [@cdr:id = ../../CIPSContact]/
+                                          TollFreePhone">
+                   <TollFreePhone>
+                    <xsl:value-of select = "../../
+                                          ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Person/
+                                          PersonLocations/
+                                          OtherPracticeLocation
+                                             [@cdr:id = ../CIPSContact]/
+                                          OrganizationLocation/
+                                          Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location
+                                             [@cdr:id = ../../CIPSContact]/
                                           TollFreePhone"/>
-                  </TollFreePhone>
-                 </xsl:if>
-                </xsl:otherwise>
-               </xsl:choose>
-              </xsl:otherwise>
-             </xsl:choose>                                 
-            </xsl:otherwise>
-           </xsl:choose>
-          </xsl:otherwise>
-         </xsl:choose>
-        </xsl:otherwise>
-       </xsl:choose>
-      </ContactDetail>
-     </Contact>
+                   </TollFreePhone>
+                  </xsl:if>
+                 </xsl:otherwise>
+                </xsl:choose>
+               </xsl:otherwise>
+              </xsl:choose>                                 
+             </xsl:otherwise>
+            </xsl:choose>
+           </xsl:otherwise>
+          </xsl:choose>
+         </xsl:otherwise>
+        </xsl:choose>
+       </ContactDetail>
+      </Contact>
+     </xsl:if>
     </xsl:otherwise>
    </xsl:choose>
   </ProtPerson>
