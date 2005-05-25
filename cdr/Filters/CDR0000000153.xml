@@ -7,14 +7,14 @@
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
- ================================================================
-     $Id: CDR0000000153.xml,v 1.58 2005-01-31 22:05:45 venglisc Exp $
+================================================================
+$Id: CDR0000000153.xml,v 1.59 2005-05-25 17:33:52 venglisc Exp $
 
-     Filter to display Bold/Underline Summary QC Reports
-        Written by Volker Englisch, 2004-07-16
+Filter to display Bold/Underline Summary QC Reports
+Written by Volker Englisch, 2004-07-16
 
-     $Log: not supported by cvs2svn $
- ================================================================ -->
+$Log: not supported by cvs2svn $
+================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -23,9 +23,10 @@
  <xsl:output                    method = "html" 
                                 indent = "no"/>
 
+ <xsl:include   href = "cdr:name:Module: QC Filter Templates - Summary"/>
  <xsl:include   href = "cdr:name:Module: InLine Markup Formatter"/>
- <xsl:include   href = "cdr:name:Module: Table Formatter"/>
  <xsl:include   href = "cdr:name:Module: Checkbox Formatter"/>
+ <xsl:include   href = "cdr:name:Module: Table Formatter"/>
  <xsl:include   href = "cdr:name:Module: STYLE Default"/>  
  <xsl:include   href = "cdr:name:Module: STYLE QC Summary"/>  
  <xsl:include   href = "cdr:name:Module: STYLE BU Insertion Deletion"/>  
@@ -70,6 +71,11 @@
  Display summary title
  ================================================================== -->
  <xsl:template                   match = "Summary">
+  <!-- 
+  Do not run this report if this is a newly reformatted patient 
+  summary.  The Patient Summary QC report will need to be used
+  instead
+  ============================================================= -->
   <xsl:choose>
    <xsl:when                      test = "//SummaryAudience='Patients'
                                           and
@@ -106,9 +112,7 @@
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
-          
- <!-- Remove the CdrDocCtl elements from the HTML output -->
- <xsl:template                   match = "CdrDocCtl"/>
+
 
  <!-- 
  ======================================================================
@@ -137,27 +141,61 @@
     <xsl:choose>
      <xsl:when                    test = "@InsertionOrDeletion = 'Insertion'">
       <xsl:choose>
-       <xsl:when                  test = "@RevisionLevel='proposed'">
-        <span class="insertproposed">
-         <xsl:text>[</xsl:text>
-        </span>
+       <xsl:when                  test = "@Source = 'advisory-board'">
+        <xsl:choose>
+         <xsl:when                test = "@RevisionLevel='proposed'">
+          <span class="insertproposed_ad">
+           <xsl:text>[</xsl:text>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="insertapproved_ad">
+           <xsl:text>[</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:when>
        <xsl:otherwise>
-        <span class="insertapproved">
-         <xsl:text>[</xsl:text>
-        </span>
+        <xsl:choose>
+         <xsl:when                test = "@RevisionLevel='proposed'">
+          <span class="insertproposed">
+           <xsl:text>[</xsl:text>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="insertapproved">
+           <xsl:text>[</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:otherwise>
       </xsl:choose>
      </xsl:when>
      <xsl:when                    test = "@InsertionOrDeletion = 'Deletion'">
       <xsl:choose>
-       <xsl:when                  test = "@existing">
-        <xsl:text>[</xsl:text>
+       <xsl:when                  test = "@Source = 'advisory-board'">
+        <xsl:choose>
+         <xsl:when                test = "@existing">
+          <xsl:text>[</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="deleteproposed_ad">
+           <xsl:text>[</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:when>
        <xsl:otherwise>
-        <span class="deleteproposed">
-         <xsl:text>[</xsl:text>
-        </span>
+        <xsl:choose>
+         <xsl:when                test = "@existing">
+          <xsl:text>[</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="deleteproposed">
+           <xsl:text>[</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:otherwise>
       </xsl:choose>
      </xsl:when>
@@ -171,26 +209,54 @@
    Convert the Citation into a number linking to the Reference Section
    =================================================================== -->
    <xsl:choose>
-    <xsl:when                     test = "@InsertionOrDeletion = 'Insertion'">
+    <xsl:when                     test = "@InsertionOrDeletion
+                                            = 'Insertion'">
      <xsl:choose>
-      <xsl:when                   test = "@RevisionLevel='proposed'">
-       <span class="insertproposed">
-        <xsl:value-of           select = "@refidx"/>
-       </span>
-      </xsl:when>
+      <xsl:when                   test = "@Source = 'advisory-board'">
+       <xsl:choose>
+        <xsl:when                 test = "@RevisionLevel = 'proposed'">
+         <span class="insertproposed_ad">
+          <xsl:value-of         select = "@refidx"/>
+         </span>
+        </xsl:when>
+        <xsl:otherwise>
+         <span class="insertapproved_ad">
+          <xsl:value-of         select = "@refidx"/>
+         </span>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:when> 
       <xsl:otherwise>
-       <span class="insertapproved">
-        <xsl:value-of           select = "@refidx"/>
-       </span>
-      </xsl:otherwise>
-     </xsl:choose>
-    </xsl:when> 
+       <xsl:choose>
+        <xsl:when                 test = "@RevisionLevel = 'proposed'">
+         <span class="insertproposed">
+          <xsl:value-of         select = "@refidx"/>
+         </span>
+        </xsl:when>
+        <xsl:otherwise>
+         <span class="insertapproved">
+          <xsl:value-of         select = "@refidx"/>
+         </span>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:otherwise> 
+     </xsl:choose>  	    
+    </xsl:when>
     <xsl:when                     test = "@InsertionOrDeletion = 'Deletion'">
-     <xsl:if                      test = "@RevisionLevel='proposed'">
-      <span class="deleteproposed">
-       <xsl:value-of            select = "@refidx"/>
-      </span>
-     </xsl:if>
+     <!-- xsl:if                      test = "@RevisionLevel = 'proposed'"-->
+      <xsl:choose>
+       <xsl:when                  test = "@Source = 'advisory-board'">
+        <span class="deleteproposed_ad">
+         <xsl:value-of          select = "@refidx"/>
+        </span>
+       </xsl:when>
+       <xsl:otherwise>
+        <span class="deleteproposed">
+         <xsl:value-of          select = "@refidx"/>
+        </span>
+       </xsl:otherwise>
+      </xsl:choose>
+     <!-- /xsl:if -->
     </xsl:when>  
     <xsl:otherwise>
      <xsl:value-of              select = "@refidx"/>
@@ -206,27 +272,61 @@
      <xsl:choose>
       <xsl:when                   test = "@InsertionOrDeletion = 'Insertion'">
        <xsl:choose>
-        <xsl:when                 test = "@RevisionLevel='proposed'">
-         <span class="insertproposed">
-          <xsl:text>, </xsl:text>
-         </span>
+        <xsl:when                 test = "@Source = 'advisory-board'">
+         <xsl:choose>
+          <xsl:when               test = "@RevisionLevel = 'proposed'">
+           <span class="insertproposed_ad">
+            <xsl:text>, </xsl:text>
+           </span>
+          </xsl:when>
+          <xsl:otherwise>
+           <span class="insertapproved_ad">
+            <xsl:text>, </xsl:text>
+           </span>
+          </xsl:otherwise>
+         </xsl:choose>
         </xsl:when>
         <xsl:otherwise>
-         <span class="insertapproved">
-          <xsl:text>, </xsl:text>
-         </span>
+         <xsl:choose>
+          <xsl:when               test = "@RevisionLevel = 'proposed'">
+           <span class="insertproposed">
+            <xsl:text>, </xsl:text>
+           </span>
+          </xsl:when>
+          <xsl:otherwise>
+           <span class="insertapproved">
+           <xsl:text>, </xsl:text>
+           </span>
+          </xsl:otherwise>
+         </xsl:choose>
         </xsl:otherwise>
        </xsl:choose>
       </xsl:when>
       <xsl:when                   test = "@InsertionOrDeletion = 'Deletion'">
        <xsl:choose>
-        <xsl:when                 test = "@existing">
-         <xsl:text>, </xsl:text>
+        <xsl:when                 test = "@Source = 'advisory-board'">
+         <xsl:choose>
+          <xsl:when               test = "@existing">
+           <xsl:text>, </xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+           <span class="deleteproposed_ad">
+            <xsl:text>, </xsl:text>
+           </span>
+          </xsl:otherwise>
+         </xsl:choose>
         </xsl:when>
         <xsl:otherwise>
-         <span class="deleteproposed">
-          <xsl:text>, </xsl:text>
-         </span>
+         <xsl:choose>
+          <xsl:when               test = "@existing">
+           <xsl:text>, </xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+           <span class="deleteproposed">
+            <xsl:text>, </xsl:text>
+           </span>
+          </xsl:otherwise>
+         </xsl:choose>
         </xsl:otherwise>
        </xsl:choose>
       </xsl:when>
@@ -244,27 +344,61 @@
     <xsl:choose>
      <xsl:when                    test = "@InsertionOrDeletion = 'Insertion'">
       <xsl:choose>
-       <xsl:when                  test = "@RevisionLevel='proposed'">
-        <span class="insertproposed">
-         <xsl:text>]</xsl:text>
-        </span>
+       <xsl:when                  test = "@Source = 'advisory-board'">
+        <xsl:choose>
+         <xsl:when                test = "@RevisionLevel='proposed'">
+          <span class="insertproposed_ad">
+           <xsl:text>]</xsl:text>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="insertapproved_ad">
+           <xsl:text>]</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:when>
        <xsl:otherwise>
-        <span class="insertapproved">
-         <xsl:text>]</xsl:text>
-        </span>
+        <xsl:choose>
+         <xsl:when                test = "@RevisionLevel='proposed'">
+          <span class="insertproposed">
+           <xsl:text>]</xsl:text>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="insertapproved">
+           <xsl:text>]</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:otherwise>
       </xsl:choose>
      </xsl:when>
      <xsl:when                    test = "@InsertionOrDeletion = 'Deletion'">
       <xsl:choose>
-       <xsl:when                  test = "@existing">
-        <xsl:text>]</xsl:text>
+       <xsl:when                  test = "@Source = 'advisory-board'">
+        <xsl:choose>
+         <xsl:when                test = "@existing">
+          <xsl:text>]</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="deleteproposed_ad">
+           <xsl:text>]</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:when>
        <xsl:otherwise>
-        <span class="deleteproposed">
-         <xsl:text>]</xsl:text>
-        </span>
+        <xsl:choose>
+         <xsl:when                test = "@existing">
+          <xsl:text>]</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="deleteproposed">
+           <xsl:text>]</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:otherwise>
       </xsl:choose>
      </xsl:when>
@@ -272,7 +406,7 @@
       <xsl:text>]</xsl:text>
      </xsl:otherwise>
     </xsl:choose>
-   </xsl:when>
+    </xsl:when>
    </xsl:choose>
   </xsl:if>
  </xsl:template>
@@ -299,34 +433,68 @@
                                 select = "."/>
       
    <!--
-   Displaying the Left Bracket of a list of citations with marked up 
+   Displaying the Left Bracket of a list of citations with markup 
    ================================================================= -->
    <xsl:if                        test = "name(../node()[$firstRef])
                                                             != 'Citation'">
     <xsl:choose>
      <xsl:when                    test = "@InsertionOrDeletion = 'Insertion'">
       <xsl:choose>
-       <xsl:when                  test = "@RevisionLevel='proposed'">
-        <span class="insertproposed">
-         <xsl:text>[</xsl:text>
-        </span>
+       <xsl:when                  test = "@Source = 'advisory-board'">
+        <xsl:choose>
+         <xsl:when                test = "@RevisionLevel='proposed'">
+          <span class="insertproposed_ad">
+           <xsl:text>[</xsl:text>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="insertapproved_ad">
+           <xsl:text>[</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:when>
        <xsl:otherwise>
-        <span class="insertapproved">
-         <xsl:text>[</xsl:text>
-        </span>
+        <xsl:choose>
+         <xsl:when                test = "@RevisionLevel='proposed'">
+          <span class="insertproposed">
+           <xsl:text>[</xsl:text>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="insertapproved">
+           <xsl:text>[</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:otherwise>
       </xsl:choose>
      </xsl:when>
      <xsl:when                    test = "@InsertionOrDeletion = 'Deletion'">
       <xsl:choose>
-       <xsl:when                  test = "@existing">
-        <xsl:text>[</xsl:text>
+       <xsl:when                  test = "@Source = 'advisory-board'">
+        <xsl:choose>
+         <xsl:when                test = "@existing">
+          <xsl:text>[</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="deleteproposed_ad">
+           <xsl:text>[</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:when>
        <xsl:otherwise>
-        <span class="deleteproposed">
-         <xsl:text>[</xsl:text>
-        </span>
+        <xsl:choose>
+         <xsl:when                test = "@existing">
+          <xsl:text>[</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="deleteproposed">
+           <xsl:text>[</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:otherwise>
       </xsl:choose>
      </xsl:when>
@@ -340,26 +508,54 @@
    Convert the Citation into a number linking to the Reference Section
    =================================================================== -->
    <xsl:choose>
-    <xsl:when                     test = "@InsertionOrDeletion = 'Insertion'">
+    <xsl:when                     test = "@InsertionOrDeletion
+                                            = 'Insertion'">
      <xsl:choose>
-      <xsl:when                   test = "@RevisionLevel='proposed'">
-       <span class="insertproposed">
-        <xsl:value-of           select = "@refidx"/>
-       </span>
-      </xsl:when>
+      <xsl:when                   test = "@Source = 'advisory-board'">
+       <xsl:choose>
+        <xsl:when                 test = "@RevisionLevel = 'proposed'">
+         <span class="insertproposed_ad">
+          <xsl:value-of         select = "@refidx"/>
+         </span>
+        </xsl:when>
+        <xsl:otherwise>
+         <span class="insertapproved_ad">
+          <xsl:value-of         select = "@refidx"/>
+         </span>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:when> 
       <xsl:otherwise>
-       <span class="insertapproved">
-        <xsl:value-of           select = "@refidx"/>
-       </span>
-      </xsl:otherwise>
-     </xsl:choose>
-    </xsl:when> 
+       <xsl:choose>
+        <xsl:when                 test = "@RevisionLevel = 'proposed'">
+         <span class="insertproposed">
+          <xsl:value-of         select = "@refidx"/>
+         </span>
+        </xsl:when>
+        <xsl:otherwise>
+         <span class="insertapproved">
+          <xsl:value-of         select = "@refidx"/>
+         </span>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:otherwise> 
+     </xsl:choose>  	    
+    </xsl:when>
     <xsl:when                     test = "@InsertionOrDeletion = 'Deletion'">
-     <xsl:if                      test = "@RevisionLevel='proposed'">
-      <span class="deleteproposed">
-       <xsl:value-of            select = "@refidx"/>
-      </span>
-     </xsl:if>
+     <!-- xsl:if                      test = "@RevisionLevel = 'proposed'"-->
+      <xsl:choose>
+       <xsl:when                  test = "@Source = 'advisory-board'">
+        <span class="deleteproposed_ad">
+         <xsl:value-of          select = "@refidx"/>
+        </span>
+       </xsl:when>
+       <xsl:otherwise>
+        <span class="deleteproposed">
+         <xsl:value-of          select = "@refidx"/>
+        </span>
+       </xsl:otherwise>
+      </xsl:choose>
+     <!-- /xsl:if -->
     </xsl:when>  
     <xsl:otherwise>
      <xsl:value-of              select = "@refidx"/>
@@ -367,7 +563,7 @@
    </xsl:choose>  	    
 	    	
    <!--
-   Displaying the comma of a list of citations with marked up 
+   Displaying the comma of a list of citations with markup 
    ========================================================== -->
    <xsl:choose>
     <xsl:when                     test = "name(../node()[$nextRef])
@@ -375,27 +571,61 @@
      <xsl:choose>
       <xsl:when                   test = "@InsertionOrDeletion = 'Insertion'">
        <xsl:choose>
-        <xsl:when                 test = "@RevisionLevel='proposed'">
-         <span class="insertproposed">
-          <xsl:text>, </xsl:text>
-         </span>
+        <xsl:when                 test = "@Source = 'advisory-board'">
+         <xsl:choose>
+          <xsl:when               test = "@RevisionLevel = 'proposed'">
+           <span class="insertproposed_ad">
+            <xsl:text>, </xsl:text>
+           </span>
+          </xsl:when>
+          <xsl:otherwise>
+           <span class="insertapproved_ad">
+            <xsl:text>, </xsl:text>
+           </span>
+          </xsl:otherwise>
+         </xsl:choose>
         </xsl:when>
         <xsl:otherwise>
-         <span class="insertapproved">
-          <xsl:text>, </xsl:text>
-         </span>
+         <xsl:choose>
+          <xsl:when               test = "@RevisionLevel = 'proposed'">
+           <span class="insertproposed">
+            <xsl:text>, </xsl:text>
+           </span>
+          </xsl:when>
+          <xsl:otherwise>
+           <span class="insertapproved">
+           <xsl:text>, </xsl:text>
+           </span>
+          </xsl:otherwise>
+         </xsl:choose>
         </xsl:otherwise>
        </xsl:choose>
       </xsl:when>
       <xsl:when                   test = "@InsertionOrDeletion = 'Deletion'">
        <xsl:choose>
-        <xsl:when                 test = "@existing">
-         <xsl:text>, </xsl:text>
+        <xsl:when                 test = "@Source = 'advisory-board'">
+         <xsl:choose>
+          <xsl:when               test = "@existing">
+           <xsl:text>, </xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+           <span class="deleteproposed_ad">
+            <xsl:text>, </xsl:text>
+           </span>
+          </xsl:otherwise>
+         </xsl:choose>
         </xsl:when>
         <xsl:otherwise>
-         <span class="deleteproposed">
-          <xsl:text>, </xsl:text>
-         </span>
+         <xsl:choose>
+          <xsl:when               test = "@existing">
+           <xsl:text>, </xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+           <span class="deleteproposed">
+            <xsl:text>, </xsl:text>
+           </span>
+          </xsl:otherwise>
+         </xsl:choose>
         </xsl:otherwise>
        </xsl:choose>
       </xsl:when>
@@ -406,34 +636,68 @@
    </xsl:when>
           
    <!--
-   Displaying the Right Bracket of a list of citations with marked up 
+   Displaying the Right Bracket of a list of citations with markup 
    ================================================================== -->
    <xsl:when                      test = "name(../node()[$nextRef])
                                             != 'Citation'">
     <xsl:choose>
      <xsl:when                    test = "@InsertionOrDeletion = 'Insertion'">
       <xsl:choose>
-       <xsl:when                  test = "@RevisionLevel='proposed'">
-        <span class="insertproposed">
-         <xsl:text>]</xsl:text>
-        </span>
+       <xsl:when                  test = "@Source = 'advisory-board'">
+        <xsl:choose>
+         <xsl:when                test = "@RevisionLevel='proposed'">
+          <span class="insertproposed_ad">
+           <xsl:text>]</xsl:text>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="insertapproved_ad">
+           <xsl:text>]</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:when>
        <xsl:otherwise>
-        <span class="insertapproved">
-         <xsl:text>]</xsl:text>
-        </span>
+        <xsl:choose>
+         <xsl:when                test = "@RevisionLevel='proposed'">
+          <span class="insertproposed">
+           <xsl:text>]</xsl:text>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="insertapproved">
+           <xsl:text>]</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:otherwise>
       </xsl:choose>
      </xsl:when>
      <xsl:when                    test = "@InsertionOrDeletion = 'Deletion'">
       <xsl:choose>
-       <xsl:when                  test = "@existing">
-        <xsl:text>]</xsl:text>
+       <xsl:when                  test = "@Source = 'advisory-board'">
+        <xsl:choose>
+         <xsl:when                test = "@existing">
+          <xsl:text>]</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="deleteproposed_ad">
+           <xsl:text>]</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:when>
        <xsl:otherwise>
-        <span class="deleteproposed">
-         <xsl:text>]</xsl:text>
-        </span>
+        <xsl:choose>
+         <xsl:when                test = "@existing">
+          <xsl:text>]</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <span class="deleteproposed">
+           <xsl:text>]</xsl:text>
+          </span>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:otherwise>
       </xsl:choose>
      </xsl:when>
@@ -441,67 +705,59 @@
       <xsl:text>]</xsl:text>
      </xsl:otherwise>
     </xsl:choose>
-   </xsl:when>
+    </xsl:when>
    </xsl:choose>
   </xsl:if>
  </xsl:template>
                           
 
  <!-- 
- Note: The insertion/deletion templates for the Redline/Strikeout
-       and the patient summary reports are identical.
-       However, the Bold/Underline report is slightly different.
- ================================================================== 
- Display text with Insertion (Citation text is handled separately)
- ================================================================== -->
- <xsl:template                   match = "Insertion">
-  <xsl:choose>
-   <xsl:when                      test = "@RevisionLevel='proposed'">
-    <span class="insertproposed">
-     <xsl:apply-templates/>
-    </span>
-   </xsl:when>
-   <xsl:otherwise> 
-    <span class="insertapproved">
-     <xsl:apply-templates/>
-    </span>
-   </xsl:otherwise>
-  </xsl:choose>
- </xsl:template>
+ =======================================================================
+ This template deletes data elements not used in the display 
+ ==================================================================== --> 
+ <xsl:template                   match = "DateLastModified | 
+                                          Diagnosis        | 
+                                          DocId            | 
+                                          MainTopics       | 
+                                          PatientVersionOf |
+                                          PDQBoard         | 
+                                          PdqKey           | 
+                                          ReplacementFor   |
+                                          SecondaryTopics  | 
+                                          SectionType      |
+                                          SummaryAudience  |
+                                          SummaryLanguage  |       
+                                          SummaryTitle     |
+                                          SummaryType      |
+                                          TranslationOf"/>
 
  <!-- 
+ Note: The insertion templates for the Redline/Strikeout, 
+       Bold/Underline and the patient summary reports are identical.
+       However, the deletion templates for the Bold/Underline 
+       report are slightly different since deletions are not 
+       displayed in the BU report unless they are marked proposed.
  ==================================================================
  Display text proposed for Deletion (Citation text is handled 
  separately).
  ================================================================== -->
  <xsl:template                   match = "Deletion"> 
   <xsl:if                         test = "@RevisionLevel = 'proposed'">
-   <span class="deleteproposed">
-    <xsl:apply-templates/>
-   </span>  
+   <xsl:choose>
+    <xsl:when                     test = "@Source = 'advisory-board'">
+     <span class="deleteproposed_ad">
+      <xsl:apply-templates/>
+     </span>  
+    </xsl:when>
+    <xsl:otherwise>
+     <span class="deleteproposed">
+      <xsl:apply-templates/>
+     </span>  
+    </xsl:otherwise>
+   </xsl:choose>
   </xsl:if>
  </xsl:template>      
 
-
- <!-- 
- ================================================================== 
- Display text with Insertion (Citation text is handled separately)
- ================================================================== -->
- <xsl:template                   match = "Insertion"
-                                  mode = "compactNo">
-  <xsl:choose>
-   <xsl:when                      test = "@RevisionLevel='proposed'">
-    <span class="insertproposed">
-     <xsl:apply-templates/>
-    </span>
-   </xsl:when>
-   <xsl:otherwise> 
-    <span class="insertapproved">
-     <xsl:apply-templates/>
-    </span>
-   </xsl:otherwise>
-  </xsl:choose>
- </xsl:template>
 
  <!-- 
  ==================================================================
@@ -511,33 +767,21 @@
  <xsl:template                   match = "Deletion"
                                   mode = "compactNo"> 
   <xsl:if                         test = "@RevisionLevel = 'proposed'">
-   <span class="deleteproposed">
-    <xsl:apply-templates/>
-   </span>  
+   <xsl:choose>
+    <xsl:when                     test = "@Source = 'advisory-board'">
+     <span class="deleteproposed_ad">
+      <xsl:apply-templates/>
+     </span>  
+    </xsl:when>
+    <xsl:otherwise>
+     <span class="deleteproposed">
+      <xsl:apply-templates/>
+     </span>  
+    </xsl:otherwise>
+   </xsl:choose>
   </xsl:if>
  </xsl:template>      
 
-
- <!-- 
- ================================================================
- Display a Note
- ================================================================ -->
- <xsl:template                   match = "Note">
-  <xsl:apply-templates          select = "." 
-                                  mode = "BU"/>  
- </xsl:template>  
-
-
- <!--
- ==============================================================
- Display Section Titles 
- Temporary until all Patient summaries are in new format
- ============================================================  -->
- <xsl:template                   match = "Title">
-  <xsl:apply-templates          select = "."
-                                  mode = "RB"/>
- </xsl:template>
-       
 
  <!-- 
  ==================================================================
@@ -548,40 +792,14 @@
 
  
  <!-- 
- =========================================================================== 
- This template deletes data elements not used in the display 
- =========================================================================== -->
- <xsl:template                   match = "PdqKey           | PDQBoard        |
-                                          SectionType      | DocId           |
-                                          Diagnosis        | SummaryLanguage |
-                                          SummaryType      | SummaryAudience | 
-                                          SummaryTitle     | MainTopics      |
-                                          SecondaryTopics  | ReplacementFor  |
-                                          DateLastModified | TranslationOf   |
-                                          PatientVersionOf"/>
+ ================================================================
+ Display a Note
+ ================================================================ -->
+ <xsl:template                   match = "Note">
+  <xsl:apply-templates          select = "." 
+                                  mode = "BU"/>  
+ </xsl:template>  
 
-
- <!-- 
- =====================================================================
- Display Reference Section
- ===================================================================== -->
- <xsl:template                   match = "ReferenceList"> 
-  <xsl:choose>
-   <xsl:when                      test = "//SummaryLanguage='Spanish'">
-    <h3>Bibliograf&#xED;a:</h3>
-   </xsl:when>
-   <xsl:otherwise>
-    <h3>References:</h3>
-   </xsl:otherwise>
-  </xsl:choose>    
-       
-  <ol>
-   <xsl:for-each                select = "Citation">
-    <xsl:call-template            name = "markupCitation"/>
-   </xsl:for-each>
-  </ol>
- </xsl:template>
-     
 
  <!-- 
  =====================================================================
@@ -591,23 +809,58 @@
   <xsl:choose>
    <xsl:when                      test = "@InsertionOrDeletion = 'Insertion'">
     <xsl:choose>
-     <xsl:when                    test = "@RevisionLevel = 'proposed'">
-      <li class="refinsertprop">
-       <span class="insertproposed">
-        <xsl:value-of           select = "."/>
-       </span>
+     <xsl:when                    test = "@existing">
+      <li>
+       <xsl:value-of            select = "."/>
        <br/>
        <br/>
       </li>
      </xsl:when>
      <xsl:otherwise>
-      <li class="refinsertappr">
-       <span class="insertapproved">
-        <xsl:value-of           select = "."/>
-       </span>
-       <br/>
-       <br/>
-      </li>
+      <xsl:choose>
+       <xsl:when                  test = "@Source = 'advisory-board'">
+        <xsl:choose>
+         <xsl:when                test = "@RevisionLevel = 'proposed'">
+          <li class="refinsertprop_ad">
+           <span class="insertproposed_ad">
+            <xsl:value-of       select = "."/>
+           </span>
+           <p></p>
+          </li>
+         </xsl:when>
+         <xsl:otherwise>
+          <li class="refinsertappr_ad">
+           <span class="insertapproved_ad">
+            <xsl:value-of       select = "."/>
+           </span>
+           <p></p>
+          </li>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:choose>
+         <xsl:when                test = "@RevisionLevel = 'proposed'">
+          <li class="refinsertprop">
+           <span class="insertproposed">
+            <xsl:value-of       select = "."/>
+           </span>
+           <br/>
+           <br/>
+          </li>
+         </xsl:when>
+         <xsl:otherwise>
+          <li class="refinsertappr">
+           <span class="insertapproved">
+            <xsl:value-of       select = "."/>
+           </span>
+           <br/>
+           <br/>
+          </li>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:otherwise>
+      </xsl:choose>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:when>
@@ -624,15 +877,25 @@
      <!-- Deletions are not to be displayed in the Bold/Underline Report 
           unless they are proposed only. -->
      <xsl:when                    test = "@RevisionLevel = 'proposed'">
-      <li class="refdeleteprop">
-       <span class="deleteproposed">
-        <xsl:value-of           select = "."/>
-       </span>
-       <br/>
-       <br/>
-      </li>
+      <xsl:choose>
+       <xsl:when                  test = "@Source = 'advisory-board'">
+        <li class="refdeleteprop_ad">
+         <span class="deleteproposed_ad">
+          <xsl:value-of           select = "."/>
+         </span>
+         <p/>
+        </li>
+       </xsl:when>
+       <xsl:otherwise>
+        <li class="refdeleteprop">
+         <span class="deleteproposed">
+          <xsl:value-of           select = "."/>
+         </span>
+         <p/>
+        </li>
+       </xsl:otherwise>
+      </xsl:choose>
      </xsl:when>
-
     </xsl:choose>
    </xsl:when>
    <xsl:otherwise>
@@ -644,42 +907,6 @@
    </xsl:otherwise>
   </xsl:choose>    
  </xsl:template>
-
-
- <!-- 
- ===================================================================
- Display a Glossary Link
- =================================================================== -->
- <!-- xsl:template                   match = "GlossaryTermRef | LOERef">
-  <xsl:choose>
-   <xsl:when                      test = "/Summary/SummaryMetaData/
-                                          SummaryAudience = 
-                                                          'Health professionals'
-                                          and 
-                                         /Summary/SummaryMetaData/
-                                          SummaryType != 
-                                       'Complementary and alternative medicine' 
-                                          and
-                                         /Summary/SummaryMetaData/
-                                          SummaryLanguage = 'English'">
-    <xsl:apply-templates        select = "."  
-                                  mode = "HPE"/>
-   </xsl:when>
-   <xsl:when                      test = "/Summary/
-                                         SummaryMetaData/SummaryAudience =
-                                         'Health professionals' 
-                                         and 
-                                        /Summary/SummaryMetaData/
-                                         SummaryLanguage = 'Spanish'">
-    <xsl:apply-templates        select = "."  
-                                  mode = "HPS"/>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:apply-templates        select = "."  
-                                  mode = "PE"/>
-   </xsl:otherwise>
-  </xsl:choose> 
- </xsl:template -->
 </xsl:transform>
 ]]>
 </CdrDocXml>

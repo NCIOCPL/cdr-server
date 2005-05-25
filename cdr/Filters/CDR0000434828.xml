@@ -1,0 +1,137 @@
+<CdrDoc Type='Filter' Id='CDR0000434828'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Board Markup Filter for QC Report</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0">
+
+ <!-- 
+ ==================================================================
+ Board markup levels are passed in with a string of specific 
+ format such as editorial-board_advisory-board or ????.
+ The default for board is 'editorial'.
+ ================================================================== -->
+ <xsl:param                       name = "displayBoard"
+                                select = "'editorial-board'"/>
+
+ <!-- 
+ ==================================================================
+ For Insertion markup, keep the content only if the board type
+ has been checked.
+ If the Source attribute is not populated (default) it is treated 
+ as editorial board.
+ Note: If the Editorial checkbox is unchecked no markup is being
+       displayed and insertions are removed.
+ ================================================================== -->
+ <xsl:template                   match = "Insertion">
+  <!-- 
+  The contains function always returns TRUE if the Source
+  Attribute does not exists.  We therefore need to check first
+  on it's existence to handle the absense of it individually
+  The first when handles the case when the Source attribute 
+  has been specified, the second if it has not.
+  ================================================================= -->
+  <xsl:choose>
+   <xsl:when                      test = "@Source">
+    <xsl:choose>
+     <xsl:when                    test = "contains($displayBoard, 
+                                                   @Source)">
+      <xsl:element                name = "{name()}">
+       <xsl:apply-templates     select = "@*"/>
+       <xsl:apply-templates/>
+      </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <!-- Do nothing and drop this element -->
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>
+     <xsl:when                    test = "contains($displayBoard, 
+                                                   'editorial-board')">
+      <xsl:element                name = "{name()}">
+       <xsl:apply-templates     select = "@*"/>
+       <xsl:attribute             name = "Source">
+        <xsl:text>editorial-board</xsl:text>
+       </xsl:attribute>
+       <xsl:apply-templates/>
+      </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <!-- Do nothing and drop this element -->
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ For Deletion markup, keep the content if the displayBoard
+ attribute does NOT match, and keep the element and its attributes 
+ if the displayBoard variable does match.
+ ================================================================== -->
+ <xsl:template                   match = "Deletion">
+  <!-- 
+  The contains function always returns TRUE if the Source
+  Attribute does not exists.  We therefore need to check first
+  on it's existence to handle the absense of it individually
+  The first when handles the case when the Source attribute 
+  has been specified, the second if it has not.
+  ============================================================ -->
+  <xsl:choose>
+   <xsl:when                      test = "@Source">
+    <xsl:choose>
+     <xsl:when                    test = "contains($displayBoard, 
+                                                 @Source)">
+      <xsl:element                name = "{name()}">
+       <xsl:apply-templates     select = "@*"/>
+       <xsl:apply-templates/>
+      </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:apply-templates/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>
+     <xsl:when                    test = "contains($displayBoard, 
+                                                   'editorial-board')">
+      <xsl:element                name = "{name()}">
+       <xsl:apply-templates     select = "@*"/>
+       <xsl:attribute             name = "Source">
+        <xsl:text>editorial-board</xsl:text>
+       </xsl:attribute>
+       <xsl:apply-templates/>
+      </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:apply-templates/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Identity rule, copies everything to the output tree.
+ ================================================================== -->
+ <xsl:template                   match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates         select = "@*|node()"/>
+  </xsl:copy>
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>

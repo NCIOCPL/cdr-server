@@ -7,14 +7,14 @@
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
- ================================================================
-     $Id: CDR0000339576.xml,v 1.11 2005-01-31 21:59:21 venglisc Exp $
+================================================================
+$Id: CDR0000339576.xml,v 1.12 2005-05-25 17:35:11 venglisc Exp $
 
-     Filter handling all In-Line Markup elements of Summary Docs
-        Written by Volker Englisch, 2004-07-16
+Filter handling all In-Line Markup elements of Summary Docs
+Written by Volker Englisch, 2004-07-16
 
-     $Log: not supported by cvs2svn $
- ================================================================ -->
+$Log: not supported by cvs2svn $
+================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -38,7 +38,7 @@
  Display a Documentation Reference as a hyperlink
  ====================================================================== -->
  <xsl:template                   match = "DocumentationRef   |
-                                        DocumentationLink">
+                                          DocumentationLink">
   <xsl:variable                   name = "docRef"
                                 select = "@cdr:href"/>
   <a>
@@ -84,21 +84,21 @@
                                           SummaryAudience = 
                                                           'Health professionals'
                                           and 
-                                         /Summary/SummaryMetaData/
+                                          /Summary/SummaryMetaData/
                                           SummaryType != 
-                                       'Complementary and alternative medicine' 
+                                       'Complementary and alternative medicine'
                                           and
-                                         /Summary/SummaryMetaData/
+                                          /Summary/SummaryMetaData/
                                           SummaryLanguage = 'English'">
     <xsl:apply-templates        select = "."  
                                   mode = "HPE"/>
    </xsl:when>
    <xsl:when                      test = "/Summary/
-                                         SummaryMetaData/SummaryAudience =
-                                         'Health professionals' 
-                                         and 
-                                        /Summary/SummaryMetaData/
-                                         SummaryLanguage = 'Spanish'">
+                                          SummaryMetaData/SummaryAudience =
+                                          'Health professionals' 
+                                          and 
+                                          /Summary/SummaryMetaData/
+                                          SummaryLanguage = 'Spanish'">
     <xsl:apply-templates        select = "."  
                                   mode = "HPS"/>
    </xsl:when>
@@ -113,6 +113,10 @@
  <!-- 
  ======================================================================
  Link to glossaryTermRefs - Patients
+ Note: Patient Version Summaries are not being reviewed by an
+       Advisory board according to MB.  I'm not implementing a 
+       different style for advisory-board markup for this template.
+                                                       VE, 2005-05-10
  ====================================================================== -->
  <xsl:template                   match = "GlossaryTermRef | LOERef"
                                   mode = "PE">
@@ -126,9 +130,9 @@
                                                  '+Term+Display+for+Patient',
                                                  '+Summaries')"/>
      </xsl:attribute>
-     <strike>
-      <xsl:value-of             select = "."/>
-     </strike>
+     <span class="deleteGlossaryTerm_ad">
+      <xsl:value-of           select = "."/>
+     </span>
     </a>
    </xsl:when>
    <xsl:otherwise>
@@ -155,30 +159,66 @@
                                   mode = "HPE" >
   <xsl:choose>
    <xsl:when                      test = "Deletion">
-    <a>
-     <xsl:attribute               name = "href">
-      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
+    <xsl:choose>
+     <xsl:when                    test = "Deletion/@Source = 'advisory-board'">
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Filter=name:Glossary',
                                                  '+Term+Display+for+HP',
                                                  '+Summaries')"/>
-     </xsl:attribute>
-     <strike>
-      <xsl:value-of             select = "."/>
-     </strike>
-    </a>
+       </xsl:attribute>
+       <span class="deleteGlossaryTerm_ad">
+        <xsl:value-of           select = "."/>
+       </span>
+      </a>
+     </xsl:when>
+     <xsl:otherwise>
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Filter=name:Glossary',
+                                                 '+Term+Display+for+HP',
+                                                 '+Summaries')"/>
+       </xsl:attribute>
+       <span class="deleteGlossaryTerm">
+        <xsl:value-of           select = "."/>
+       </span>
+      </a>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:when>
    <xsl:otherwise>
-    <a>
-     <xsl:attribute               name = "href">
-      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
+    <xsl:choose>
+     <xsl:when                    test = "Insertion/@Source = 'advisory-board'">
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                 'DocId=', @cdr:href,
                                                  '&amp;Filter=name:Glossary',
                                                  '+Term+Display+for+HP',
                                                  '+Summaries')"/>
-     </xsl:attribute>
-     <xsl:value-of              select = "."/>
-    </a>
+       </xsl:attribute>
+       <span class="insertGlossaryTerm_ad">
+        <xsl:value-of           select = "."/>
+       </span>
+      </a>
+     </xsl:when>
+     <xsl:otherwise>
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                'DocId=', @cdr:href,
+                                                 '&amp;Filter=name:Glossary',
+                                                 '+Term+Display+for+HP',
+                                                 '+Summaries')"/>
+       </xsl:attribute>
+       <xsl:value-of            select = "."/>
+      </a>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
@@ -192,30 +232,66 @@
                                   mode = "HPS" >
   <xsl:choose>
    <xsl:when                      test = "Deletion">
-    <a>
-     <xsl:attribute               name = "href">
-      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
+    <xsl:choose>
+     <xsl:when                    test = "Deletion/@Source = 'advisory-board'">
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Filter=name:Glossary',
                                                  '+Term+Display+for+HPS',
                                                  '+Summaries')"/>
-     </xsl:attribute>
-     <strike>
-      <xsl:value-of             select = "."/>
-     </strike>
-    </a>
+       </xsl:attribute>
+       <span class="deleteGlossaryTerm_ad">
+        <xsl:value-of           select = "."/>
+       </span>
+      </a>
+     </xsl:when>
+     <xsl:otherwise>
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Filter=name:Glossary',
+                                                 '+Term+Display+for+HPS',
+                                                 '+Summaries')"/>
+       </xsl:attribute>
+       <span class="deleteGlossaryTerm">
+        <xsl:value-of           select = "."/>
+       </span>
+      </a>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:when>
    <xsl:otherwise>
-    <a>
-     <xsl:attribute               name = "href">
-      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
+    <xsl:choose>
+     <xsl:when                    test = "Insertion/@Source = 'advisory-board'">
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Filter=name:Glossary',
                                                  '+Term+Display+for+HPS',
                                                  '+Summaries')"/>
-     </xsl:attribute>
-     <xsl:value-of              select = "."/>
-    </a>
+       </xsl:attribute>
+       <span class="insertGlossaryTerm_ad">
+        <xsl:value-of            select = "."/>
+       </span>
+      </a>
+     </xsl:when>
+     <xsl:otherwise>
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Filter=name:Glossary',
+                                                 '+Term+Display+for+HPS',
+                                                 '+Summaries')"/>
+       </xsl:attribute>
+       <xsl:value-of            select = "."/>
+      </a>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
@@ -376,144 +452,364 @@
  <xsl:template                   match = "Note" 
                                   mode = "RS">
   <i>
-  <xsl:choose>
-   <xsl:when                      test = "Insertion/@RevisionLevel='approved'
+   <!-- 
+   Display the left bracket for the Note
+   =================================================================== -->
+   <xsl:choose>
+    <xsl:when                     test = "Insertion/@Source = 'advisory-board'
+                                          or 
+                                          Deletion/@Source = 'advisory-board'">
+     <xsl:choose>
+      <xsl:when                   test = "Insertion/@RevisionLevel='approved'
                                           or
                                           Insertion/@RevisionLevel='publish'">
-    <span class="insertapproved">
-     <xsl:text> [</xsl:text>
-    </span>
-   </xsl:when>
-   <xsl:when                     test  = "Insertion/@RevisionLevel ='proposed'">
-    <span class="insertproposed">
-     <xsl:text> [</xsl:text>
-    </span>
-   </xsl:when>
-   <xsl:when                     test  = "Deletion/@RevisionLevel = 'approved'
+       <span class="insertapproved_ad">
+        <xsl:text> [</xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "Insertion/@RevisionLevel ='proposed'">
+       <span class="insertproposed_ad">
+        <xsl:text> [</xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "Deletion/@RevisionLevel = 'approved'
                                           or
                                           Deletion/@RevisionLevel = 'publish'">
-    <span class="deleteapproved">
-     <xsl:text> [</xsl:text>
-    </span>
-   </xsl:when>
-   <xsl:when                     test  = "Deletion/@RevisionLevel = 'proposed'">
-    <span class="deleteproposed">
-     <xsl:text> [</xsl:text>
-    </span>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:text> [</xsl:text>
-   </xsl:otherwise>
-  </xsl:choose>
-  <xsl:choose>
-   <xsl:when                      test = "//SummaryLanguage ='Spanish'"> 
-    <xsl:choose>
-     <xsl:when                    test = "Insertion/@RevisionLevel = 'approved'
+       <span class="deleteapproved_ad">
+        <xsl:text> [</xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "Deletion/@RevisionLevel = 'proposed'">
+       <span class="deleteproposed_ad">
+        <xsl:text> [</xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text> [</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:choose>
+      <xsl:when                   test = "Insertion/@RevisionLevel='approved'
                                           or
-                                          Insertion/@RevisionLevel = 'publish'">
-      <span class="insertapproved">
-       <xsl:text>Nota: </xsl:text>
-      </span>
-     </xsl:when>
-     <xsl:when                    test = "Insertion/@RevisionLevel ='proposed'">
-      <span class="insertproposed">
-       <xsl:text>Nota: </xsl:text>
-      </span>
-     </xsl:when>
-     <xsl:when                    test = "Deletion/@RevisionLevel = 'approved'
-                                          or
-                                          Deletion/@RevisionLevel = 'publish'">
-      <span class="deleteapproved">
-       <xsl:text>Nota: </xsl:text>
-      </span>
-     </xsl:when>
-     <xsl:when                    test = "Deletion/@RevisionLevel = 'proposed'">
-      <span class="deleteproposed">
-       <xsl:text>Nota: </xsl:text>
-      </span>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:text>Nota: </xsl:text>
-     </xsl:otherwise>
-    </xsl:choose>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:choose>
-     <xsl:when                    test = "Insertion/@RevisionLevel = 'approved'
-                                          or
-                                          Insertion/@RevisionLevel = 'publish'">
-      <span class="insertapproved">
-       <xsl:text>Note: </xsl:text>
-      </span>
-     </xsl:when>
-     <xsl:when                    test = "Insertion/@RevisionLevel 
-                                                                  = 'proposed'">
-      <span class="insertproposed">
-       <xsl:text>Note: </xsl:text>
-      </span>
-     </xsl:when>
-     <xsl:when                   test  = "Deletion/@RevisionLevel = 'approved'
+                                          Insertion/@RevisionLevel='publish'">
+       <span class="insertapproved">
+        <xsl:text> [</xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "Insertion/@RevisionLevel ='proposed'">
+       <span class="insertproposed">
+        <xsl:text> [</xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "Deletion/@RevisionLevel = 'approved'
                                           or
                                           Deletion/@RevisionLevel = 'publish'">
-      <span class="deleteapproved">
-       <xsl:text>Note: </xsl:text>
-      </span>
-     </xsl:when>
-     <xsl:when                   test  = "Deletion/@RevisionLevel = 'proposed'">
-      <span class="deleteproposed">
-       <xsl:text>Note: </xsl:text>
-      </span>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:text>Note: </xsl:text>
-     </xsl:otherwise>
-    </xsl:choose>
-   </xsl:otherwise>
-  </xsl:choose>
-  <xsl:choose>
-   <xsl:when                     test  = "Insertion/@RevisionLevel = 'proposed'
-                                          or
-                                          Deletion/@RevisionLevel = 'proposed'">
-     <span class="insertproposed">
-      <xsl:apply-templates/>
-     </span>
-   </xsl:when>
-   <xsl:otherwise>
-     <xsl:apply-templates/>
-   </xsl:otherwise>
-  </xsl:choose>
+       <span class="deleteapproved">
+        <xsl:text> [</xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "Deletion/@RevisionLevel = 'proposed'">
+       <span class="deleteproposed">
+        <xsl:text> [</xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text> [</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:otherwise>
+   </xsl:choose>
 
-  <xsl:choose>
-   <xsl:when                     test  = "Insertion/@RevisionLevel = 'approved'
+
+   <!--
+   Display the Spanish "Nota: " string properly marked up
+   ========================================================================= -->
+   <xsl:choose>
+    <xsl:when                     test = "//SummaryLanguage ='Spanish'"> 
+     <xsl:choose>
+      <xsl:when                   test = "Insertion/@Source = 'advisory-board'
+                                          or
+                                          Deletion/@Source = 'advisory-board'">
+       <xsl:choose>
+        <xsl:when                 test = "Insertion/@RevisionLevel = 'approved'
                                           or
                                           Insertion/@RevisionLevel = 'publish'">
-    <span class="insertapproved">
-     <xsl:text>] </xsl:text>
-    </span>
-   </xsl:when>
-   <xsl:when                     test  = "Insertion/@RevisionLevel ='proposed'">
-    <span class="insertproposed">
-     <xsl:text>] </xsl:text>
-    </span>
-   </xsl:when>
-   <xsl:when                     test  = "Deletion/@RevisionLevel = 'approved'
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'insertapproved_ad'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Nota: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:when                 test = "Insertion/@RevisionLevel 
+                                                                  = 'proposed'">
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'insertproposed_ad'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Nota: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:when                 test = "Deletion/@RevisionLevel = 'approved'
+                                          or
+                                          Deletion/@RevisionLevel = 'publish'">
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'deleteapproved_ad'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Nota: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:when                 test = "Deletion/@RevisionLevel = 'proposed'">
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'deleteproposed_ad'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Nota: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:text>Nota: </xsl:text>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:choose>
+        <xsl:when                 test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel = 'publish'">
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'insertapproved'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Nota: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:when                 test = "Insertion/@RevisionLevel 
+                                                                  = 'proposed'">
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'insertproposed'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Nota: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:when                 test = "Deletion/@RevisionLevel = 'approved'
+                                          or
+                                          Deletion/@RevisionLevel = 'publish'">
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'deleteapproved'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Nota: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:when                 test = "Deletion/@RevisionLevel = 'proposed'">
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'deleteproposed'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Nota: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:text>Nota: </xsl:text>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:when>
+
+    <!--
+    Display the "Note: " string properly marked up
+    ========================================================================= -->
+    <xsl:otherwise>
+     <xsl:choose>
+      <xsl:when                   test = "Insertion/@Source = 'advisory-board'
+                                          or
+                                          Deletion/@Source = 'advisory-board'">
+       <xsl:choose>
+        <xsl:when                 test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel = 'publish'">
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'insertapproved_ad'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Note: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:when                 test = "Insertion/@RevisionLevel 
+                                                                  = 'proposed'">
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'insertproposed_ad'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Note: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:when                 test = "Deletion/@RevisionLevel = 'approved'
+                                          or
+                                          Deletion/@RevisionLevel = 'publish'">
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'deleteapproved_ad'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Note: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:when                 test = "Deletion/@RevisionLevel = 'proposed'">
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'deleteproposed_ad'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Note: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:text>Note: </xsl:text>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:choose>
+        <xsl:when                 test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel = 'publish'">
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'insertapproved'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Note: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:when                 test = "Insertion/@RevisionLevel 
+                                                                  = 'proposed'">
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'insertproposed'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Note: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:when                 test = "Deletion/@RevisionLevel = 'approved'
+                                          or
+                                          Deletion/@RevisionLevel = 'publish'">
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'deleteapproved'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Note: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:when                 test = "Deletion/@RevisionLevel = 'proposed'">
+         <xsl:call-template       name = "setCSS">
+          <xsl:with-param         name = "myCSS"
+                                select = "'deleteproposed'"/>
+          <xsl:with-param         name = "myString"
+                                select = "'Note: '"/>
+         </xsl:call-template>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:text>Note: </xsl:text>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:otherwise>
+   </xsl:choose>
+
+   <!--
+   Display the text properly marked up
+   ====================================================================== -->
+   <xsl:apply-templates/>
+
+   <!-- 
+   Display the right bracket for the Note
+   =================================================================== -->
+   <xsl:choose>
+    <xsl:when                     test = "Insertion/@Source = 'advisory-board' 
+                                          or
+                                          Deletion/@Source = 'advisory-board'">
+     <xsl:choose>
+      <xsl:when                   test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel = 'publish'">
+       <span class="insertapproved_ad">
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "Insertion/@RevisionLevel ='proposed'">
+       <span class="insertproposed_ad">
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "Deletion/@RevisionLevel = 'approved'
                                           or
                                           Deletion/@RevisionLevel='publish'">
-    <span class="deleteapproved">
-     <xsl:text>] </xsl:text>
-    </span>
-   </xsl:when>
-   <xsl:when                     test  = "Deletion/@RevisionLevel = 'proposed'">
-    <span class="deleteproposed">
-     <xsl:text>] </xsl:text>
-    </span>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:text>] </xsl:text>
-   </xsl:otherwise>
-  </xsl:choose>
+       <span class="deleteapproved_ad">
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "Deletion/@RevisionLevel = 'proposed'">
+       <span class="deleteproposed_ad">
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>] </xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:choose>
+      <xsl:when                   test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel = 'publish'">
+       <span class="insertapproved">
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "Insertion/@RevisionLevel ='proposed'">
+       <span class="insertproposed">
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "Deletion/@RevisionLevel = 'approved'
+                                          or
+                                          Deletion/@RevisionLevel='publish'">
+       <span class="deleteapproved">
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "Deletion/@RevisionLevel = 'proposed'">
+       <span class="deleteproposed">
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>] </xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:otherwise>
+   </xsl:choose>
   </i>
  </xsl:template> 
+
+
+ <!-- 
+ =====================================================================
+ Template to display the text with appropriate markup.
+ ===================================================================== -->
+ <xsl:template                    name = "setCSS">
+  <xsl:param                      name = "myCSS"/>
+  <xsl:param                      name = "myString"/>
+  <span class="{$myCSS}">
+   <xsl:value-of                select = "$myString"/>
+  </span>
+ </xsl:template>
 
 
  <!-- 
@@ -522,169 +818,354 @@
  ===================================================================== -->
  <xsl:template                   match = "Note" 
                                   mode = "BU">
-  <!-- Don't display emply Note elements -->
+  <!-- Don't display empty Note elements -->
   <xsl:if                         test = "not(.='')">
-   <xsl:choose>
-    <xsl:when                     test =  "Insertion/@RevisionLevel = 'approved'
-                                           or
-                                           Insertion/@RevisionLevel ='publish'">
-     <b>
-      <u>
-       <i>
-        <xsl:text> [</xsl:text>
-       </i>
-      </u>
-     </b>
-    </xsl:when>
-    <xsl:when                     test = "Insertion/@RevisionLevel ='proposed'">
-     <b>
-      <i>
-       <xsl:text> [</xsl:text>
-      </i>
-     </b>
-    </xsl:when>
-    <xsl:when                     test = "Deletion/@RevisionLevel = 'proposed'">
-     <strike>
-      <xsl:text> [</xsl:text>
-     </strike>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:if                      test = "not(Deletion/@RevisionLevel 
-                                                = 'approved')
+   <i>
+    <!-- 
+    Display the left bracket for the Note
+    =================================================================== -->
+    <xsl:choose>
+     <xsl:when                    test = "Insertion/@Source = 'advisory-board'
+                                          or
+                                          Deletion/@Source = 'advisory-board'">
+      <xsl:choose>
+       <xsl:when                  test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel ='publish'">
+        <span class="insertapproved_ad">
+         <xsl:text> [</xsl:text>
+        </span>
+       </xsl:when>
+       <xsl:when                  test = "Insertion/@RevisionLevel ='proposed'">
+        <span class="insertproposed_ad">
+         <xsl:text> [</xsl:text>
+        </span>
+       </xsl:when>
+       <xsl:when                  test = "Deletion/@RevisionLevel = 'proposed'">
+        <span class="deleteproposed_ad">
+         <xsl:text> [</xsl:text>
+        </span>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:if                   test = "not(Deletion/@RevisionLevel 
+                                                 = 'approved')
                                           and
                                           not(Deletion/@RevisionLevel 
-                                                = 'publish')">
-      <i>
-       <xsl:text> [</xsl:text>
-      </i>
-     </xsl:if>
-    </xsl:otherwise>
-   </xsl:choose>
+                                                 = 'publish')">
+         <xsl:text> [</xsl:text>
+        </xsl:if>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:choose>
+       <xsl:when                  test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel ='publish'">
+        <span class="insertapproved">
+         <xsl:text> [</xsl:text>
+        </span>
+       </xsl:when>
+       <xsl:when                  test = "Insertion/@RevisionLevel ='proposed'">
+        <span class="insertproposed">
+         <xsl:text> [</xsl:text>
+        </span>
+       </xsl:when>
+       <xsl:when                  test = "Deletion/@RevisionLevel = 'proposed'">
+        <span class="deleteproposed">
+         <xsl:text> [</xsl:text>
+        </span>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:if                   test = "not(Deletion/@RevisionLevel 
+                                                 = 'approved')
+                                          and
+                                          not(Deletion/@RevisionLevel 
+                                                 = 'publish')">
+         <xsl:text> [</xsl:text>
+        </xsl:if>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:otherwise>
+    </xsl:choose>
 
-   <xsl:choose>
-    <xsl:when                     test = "//SummaryLanguage ='Spanish'"> 
-     <xsl:choose>
-      <xsl:when                   test = "Insertion/@RevisionLevel = 'approved'
+    <!--
+    Display the Spanish "Nota: " string properly marked up
+    ========================================================================= -->
+    <xsl:choose>
+     <xsl:when                    test = "//SummaryLanguage ='Spanish'"> 
+      <xsl:choose>
+       <xsl:when                  test = "Insertion/@Source = 'advisory-board'
+                                          or
+                                          Deletion/@Source = 'advisory-board'">
+        <xsl:choose>
+         <xsl:when                test = "Insertion/@RevisionLevel = 'approved'
                                           or
                                           Insertion/@RevisionLevel = 'publish'">
-       <b>
-        <u>
-         <i>
-          <xsl:text>Nota: </xsl:text>
-         </i>
-        </u>
-       </b>
-      </xsl:when>
-      <xsl:when                   test = "Insertion/@RevisionLevel ='proposed'">
-       <b>
-        <i>
-         <xsl:text>Nota: </xsl:text>
-        </i>
-       </b>
-      </xsl:when>
-      <xsl:when                   test = "Deletion/@RevisionLevel = 'proposed'">
-       <strike>
-        <i>
-         <xsl:text>Nota: </xsl:text>
-        </i>
-       </strike>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:if                    test = "not(Deletion/@RevisionLevel 
-                                                = 'approved')
+          <xsl:call-template      name = "setCSS">
+           <xsl:with-param        name = "myCSS"
+                                select = "'insertapproved_ad'"/>
+           <xsl:with-param        name = "myString"
+                                select = "'Nota: '"/>
+          </xsl:call-template>
+         </xsl:when>
+         <xsl:when                test = "Insertion/@RevisionLevel ='proposed'">
+          <xsl:call-template      name = "setCSS">
+           <xsl:with-param        name = "myCSS"
+                                select = "'insertproposed_ad'"/>
+           <xsl:with-param        name = "myString"
+                                select = "'Nota: '"/>
+          </xsl:call-template>
+         </xsl:when>
+         <xsl:when                test = "Deletion/@RevisionLevel = 'proposed'">
+          <xsl:call-template      name = "setCSS">
+           <xsl:with-param        name = "myCSS"
+                                select = "'deleteproposed_ad'"/>
+           <xsl:with-param        name = "myString"
+                                select = "'Nota: '"/>
+          </xsl:call-template>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:if                 test = "not(Deletion/@RevisionLevel 
+                                                 = 'approved')
                                           and
                                           not(Deletion/@RevisionLevel
-                                                = 'publish')">
-       <i>
-         <xsl:text>Nota: </xsl:text>
-        </i>
-       </xsl:if>
-      </xsl:otherwise>
-     </xsl:choose>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:choose>
-      <xsl:when                   test = "Insertion/@RevisionLevel = 'approved'
+                                                 = 'publish')">
+           <xsl:text>Nota: </xsl:text>
+          </xsl:if>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:choose>
+         <xsl:when                test = "Insertion/@RevisionLevel = 'approved'
                                           or
                                           Insertion/@RevisionLevel = 'publish'">
-       <b>
-        <u>
-         <i>
-          <xsl:text>Note: </xsl:text>
-         </i>
-        </u>
-       </b>
-      </xsl:when>
-      <xsl:when                   test = "Insertion/@RevisionLevel ='proposed'">
-       <b>
-        <i>
-         <xsl:text>Note: </xsl:text>
-        </i>
-       </b>
-      </xsl:when>
-      <xsl:when                   test = "Deletion/@RevisionLevel = 'proposed'">
-       <strike>
-        <i>
-         <xsl:text>Note: </xsl:text>
-        </i>
-       </strike>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:if                    test = "not(Deletion/@RevisionLevel
-                                                = 'approved')
+          <xsl:call-template      name = "setCSS">
+           <xsl:with-param        name = "myCSS"
+                                select = "'insertapproved'"/>
+           <xsl:with-param        name = "myString"
+                                select = "'Nota: '"/>
+          </xsl:call-template>
+         </xsl:when>
+         <xsl:when                test = "Insertion/@RevisionLevel ='proposed'">
+          <xsl:call-template      name = "setCSS">
+           <xsl:with-param        name = "myCSS"
+                                select = "'insertproposed'"/>
+           <xsl:with-param        name = "myString"
+                                select = "'Nota: '"/>
+          </xsl:call-template>
+         </xsl:when>
+         <xsl:when                test = "Deletion/@RevisionLevel = 'proposed'">
+          <xsl:call-template      name = "setCSS">
+           <xsl:with-param        name = "myCSS"
+                                select = "'deleteproposed'"/>
+           <xsl:with-param        name = "myString"
+                                select = "'Nota: '"/>
+          </xsl:call-template>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:if                 test = "not(Deletion/@RevisionLevel 
+                                                 = 'approved')
                                           and
-                                          not(Deletion/@RevisionLevel 
-                                                = 'publish')">
-        <i>
-         <xsl:text>Note: </xsl:text>
-        </i>
-       </xsl:if>
-      </xsl:otherwise>
-     </xsl:choose>
-    </xsl:otherwise>
-   </xsl:choose>
+                                          not(Deletion/@RevisionLevel
+                                                 = 'publish')">
+           <xsl:text>Nota: </xsl:text>
+          </xsl:if>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
 
-   <i>
-    <xsl:apply-templates/>
-   </i>
-   <xsl:choose>
-    <xsl:when                     test = "Insertion/@RevisionLevel = 'approved'
+     <!--
+     Display the "Note: " string properly marked up
+     ========================================================================= -->
+     <xsl:otherwise>
+      <xsl:choose>
+       <xsl:when                  test = "Insertion/@Source = 'advisory-board'
+                                          or
+                                          Deletion/@Source = 'advisory-board'">
+        <xsl:choose>
+         <xsl:when                test = "Insertion/@RevisionLevel = 'approved'
                                           or
                                           Insertion/@RevisionLevel = 'publish'">
-     <b>
-      <u>
-       <i>
-        <xsl:text>] </xsl:text>
-       </i>
-      </u>
-     </b>
-    </xsl:when>
-    <xsl:when                     test = "Insertion/@RevisionLevel ='proposed'">
-     <b>
-      <i>
-       <xsl:text>] </xsl:text>
-      </i>
-     </b>
-    </xsl:when>
-    <xsl:when                     test = "Deletion/@RevisionLevel = 'proposed'">
-     <strike>
-      <i>
-       <xsl:text>] </xsl:text>
-      </i>
-     </strike>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:if                      test = "not(Deletion/@RevisionLevel
-                                                = 'approved')
+          <xsl:call-template      name = "setCSS">
+           <xsl:with-param        name = "myCSS"
+                                select = "'insertapproved_ad'"/>
+           <xsl:with-param        name = "myString"
+                                select = "'Note: '"/>
+          </xsl:call-template>
+         </xsl:when>
+         <xsl:when                test = "Insertion/@RevisionLevel ='proposed'">
+          <xsl:call-template      name = "setCSS">
+           <xsl:with-param        name = "myCSS"
+                                select = "'insertproposed_ad'"/>
+           <xsl:with-param        name = "myString"
+                                select = "'Note: '"/>
+          </xsl:call-template>
+         </xsl:when>
+         <xsl:when                test = "Deletion/@RevisionLevel = 'proposed'">
+          <xsl:call-template      name = "setCSS">
+           <xsl:with-param        name = "myCSS"
+                                select = "'deleteproposed_ad'"/>
+           <xsl:with-param        name = "myString"
+                                select = "'Note: '"/>
+          </xsl:call-template>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:if                 test = "not(Deletion/@RevisionLevel
+                                                 = 'approved')
                                           and
                                           not(Deletion/@RevisionLevel 
-                                                = 'publish')">  
-      <i>
-       <xsl:text>] </xsl:text>
-      </i>
-     </xsl:if>
-    </xsl:otherwise>
-   </xsl:choose>
+                                                 = 'publish')">
+           <xsl:text>Note: </xsl:text>
+          </xsl:if>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:choose>
+         <xsl:when                test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel = 'publish'">
+          <xsl:call-template      name = "setCSS">
+           <xsl:with-param        name = "myCSS"
+                                select = "'insertapproved'"/>
+           <xsl:with-param        name = "myString"
+                                select = "'Note: '"/>
+          </xsl:call-template>
+         </xsl:when>
+         <xsl:when                test = "Insertion/@RevisionLevel ='proposed'">
+          <xsl:call-template      name = "setCSS">
+           <xsl:with-param        name = "myCSS"
+                                select = "'insertproposed'"/>
+           <xsl:with-param        name = "myString"
+                                select = "'Note: '"/>
+          </xsl:call-template>
+         </xsl:when>
+         <xsl:when                test = "Deletion/@RevisionLevel = 'proposed'">
+          <xsl:call-template      name = "setCSS">
+           <xsl:with-param        name = "myCSS"
+                                select = "'deleteproposed'"/>
+           <xsl:with-param        name = "myString"
+                                select = "'Note: '"/>
+          </xsl:call-template>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:if                 test = "not(Deletion/@RevisionLevel
+                                                 = 'approved')
+                                          and
+                                          not(Deletion/@RevisionLevel 
+                                                 = 'publish')">
+           <xsl:text>Note: </xsl:text>
+          </xsl:if>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:otherwise>
+    </xsl:choose>
+
+    <!--
+    Display the text properly marked up
+    ====================================================================== -->
+    <xsl:choose>
+     <xsl:when                    test = "Insertion/@Source = 'advisory-board'">
+      <xsl:choose>
+       <xsl:when                  test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel = 'publish'">
+        <span class="insertapproved_ad">
+         <xsl:apply-templates/>
+        </span>
+       </xsl:when>
+       <xsl:otherwise>
+        <span class="insertproposed_ad">
+         <xsl:apply-templates/>
+        </span>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
+     <xsl:when                    test = "Deletion/@Source = 'advisory-board'">
+      <span class="deleteproposed_ad">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:apply-templates/>
+     </xsl:otherwise>
+    </xsl:choose>
+
+    <!-- 
+    Display the right bracket for the Note
+    =================================================================== -->
+    <xsl:choose>
+     <xsl:when                    test = "Insertion/@Source = 'advisory-board'
+                                          or
+                                          Deletion/@Source = 'advisory-board'">
+      <xsl:choose>
+       <xsl:when                  test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel = 'publish'">
+        <span class="insertapproved_ad">
+         <xsl:text>] </xsl:text>
+        </span>
+       </xsl:when>
+       <xsl:when                  test = "Insertion/@RevisionLevel ='proposed'">
+        <span class="insertproposed_ad">
+         <xsl:text>] </xsl:text>
+        </span>
+       </xsl:when>
+       <xsl:when                  test = "Deletion/@RevisionLevel = 'proposed'">
+        <span class="deleteproposed_ad">
+         <xsl:text>] </xsl:text>
+        </span>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:if                   test = "not(Deletion/@RevisionLevel
+                                                 = 'approved')
+                                          and
+                                          not(Deletion/@RevisionLevel 
+                                                 = 'publish')">  
+          <xsl:text>] </xsl:text>
+        </xsl:if>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:choose>
+       <xsl:when                  test = "Insertion/@RevisionLevel = 'approved'
+                                          or
+                                          Insertion/@RevisionLevel = 'publish'">
+        <span class="insertapproved">
+         <xsl:text>] </xsl:text>
+        </span>
+       </xsl:when>
+       <xsl:when                  test = "Insertion/@RevisionLevel ='proposed'">
+        <span class="insertproposed">
+         <xsl:text>] </xsl:text>
+        </span>
+       </xsl:when>
+       <xsl:when                  test = "Deletion/@RevisionLevel = 'proposed'">
+        <span class="deleteproposed">
+         <xsl:text>] </xsl:text>
+        </span>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:if                   test = "not(Deletion/@RevisionLevel
+                                                 = 'approved')
+                                          and
+                                          not(Deletion/@RevisionLevel 
+                                                 = 'publish')">  
+          <xsl:text>] </xsl:text>
+        </xsl:if>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:otherwise>
+    </xsl:choose>
+
+   </i>
   </xsl:if>
  </xsl:template> 
 
@@ -1061,6 +1542,33 @@
 
  <!-- 
  ======================================================================
+ Template to replace the MediaID element with a little table as a 
+ place holder for the image
+ ====================================================================== -->
+ <xsl:template                   match = "MediaID">
+  <center>
+   <table width="100%" border="0" 
+          style="background-color: #CCFFFF" colspacing="3">
+    <tr>
+     <td width="30%" align="right" valign="top">
+      <br/>
+      <b>Image:</b>
+     </td>
+     <td width="70%" align="left">
+      <br/>
+      <xsl:text> </xsl:text>
+      <xsl:value-of             select = "."/>
+      <xsl:text> </xsl:text>
+      <br/><br/>
+     </td>
+    </tr>
+   </table>
+  </center>
+ </xsl:template>
+
+
+ <!-- 
+ ======================================================================
  Default Template
  Any node that is a child of a list or para with mode "compactNo"
  will need to be redirected to he template without a mode.  This task 
@@ -1068,9 +1576,9 @@
  ====================================================================== -->
  <xsl:template                   match = "@*"
                                   mode = "compactNo">
-   <xsl:attribute                 name = "{name()}">
-    <xsl:value-of               select = "."/>
-   </xsl:attribute>
+  <xsl:attribute                  name = "{name()}">
+   <xsl:value-of                select = "."/>
+  </xsl:attribute>
  </xsl:template>
 
  <xsl:template                   match = "*"
