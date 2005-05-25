@@ -1,0 +1,152 @@
+<CdrDoc Type='Filter' Id='CDR0000434822'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Module: QC Filter Templates - Summary</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!--
+================================================================
+$Id: CDR0000434822.xml,v 1.1 2005-05-25 17:18:37 venglisc Exp $
+
+Filter Module to include all general formatting templates for 
+Summary QC Reports 
+(Some of these could maybe moved to the module "QC Filter 
+ Templates" after checking that these would not interfere with 
+ the protocol QC reports.)
+Volker Englisch, 2005-05-11 
+
+$Log: not supported by cvs2svn $
+================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+ <xsl:output                    method = "html"/>
+
+
+ <!-- 
+ ======================================================================
+ Remove the CdrDocCtl elements from the HTML output 
+ ====================================================================== -->
+ <xsl:template                   match = "CdrDocCtl"/>
+
+
+ <!-- 
+ Note: The insertion templates for the Redline/Strikeout, 
+       Bold/Underline and the patient summary reports are identical.
+       However, the deletion templates for the Bold/Underline 
+       report are slightly different since deletions are not 
+       displayed in the BU report unless they are marked proposed.
+ ================================================================== 
+ Display text with Insertion (Citation text is handled separately)
+ ================================================================== -->
+ <xsl:template                   match = "Insertion">
+  <xsl:choose>
+   <xsl:when                      test = "@Source = 'advisory-board'">
+    <xsl:choose>
+     <xsl:when                    test = "@RevisionLevel = 'proposed'">
+      <span class="insertproposed_ad">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:when>
+     <xsl:otherwise> 
+      <span class="insertapproved_ad">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>
+     <xsl:when                    test = "@RevisionLevel = 'proposed'">
+      <span class="insertproposed">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:when>
+     <xsl:otherwise> 
+      <span class="insertapproved">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ================================================================== 
+ Display text with Insertion (Citation text is handled separately)
+ =================================================================== -->
+ <xsl:template                   match = "Insertion"
+                                  mode = "compactNo">
+  <xsl:choose>
+   <xsl:when                      test = "@Source = 'advisory-board'">
+    <xsl:choose>
+     <xsl:when                    test = "@RevisionLevel = 'proposed'">
+      <span class="insertproposed_ad">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:when>
+     <xsl:otherwise>
+      <span class="insertapproved_ad">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>
+     <xsl:when                    test = "@RevisionLevel = 'proposed'">
+      <span class="insertproposed">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:when>
+     <xsl:otherwise>
+      <span class="insertapproved">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ ==============================================================
+ Display Section Titles 
+ Temporary until all Patient summaries are in new format
+ ============================================================  -->
+ <xsl:template                   match ="Title">
+  <xsl:apply-templates          select = "."
+                                  mode = "RB"/>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ Display Reference Section
+ ===================================================================== -->
+ <xsl:template                   match = "ReferenceList"> 
+  <xsl:choose>
+   <xsl:when                      test = "//SummaryLanguage='Spanish'">
+    <h3>Bibliograf&#xED;a:</h3>
+   </xsl:when>
+   <xsl:otherwise>
+    <h3>References:</h3>
+   </xsl:otherwise>
+  </xsl:choose>    
+       
+  <ol>
+   <xsl:for-each                select = "Citation">
+    <xsl:call-template            name = "markupCitation"/>
+   </xsl:for-each>
+  </ol>
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
