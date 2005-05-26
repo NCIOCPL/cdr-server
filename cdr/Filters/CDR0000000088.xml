@@ -6,56 +6,32 @@
 <DocComment>CVS-V1.17: Formatting Changes (Bug 949)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
-<!-- 
-===================================================================
+<!--
+================================================================
+$Id: CDR0000000088.xml,v 1.19 2005-05-26 14:27:56 venglisc Exp $
+
 Filter to create a Terminology Content QC Report
-=================================================================== -->
+   Written      10/18/2001  C.Burg   
+   Made Tabular  6/26/2003  Nanci 
+
+$Log: not supported by cvs2svn $
+================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr">
 
  <xsl:output                    method = "html"/> 
 
- <xsl:include   href = "cdr:name:Module: InLine Markup Formatter"/>
- <xsl:include   href = "cdr:name:Module: Table Formatter"/>
- <xsl:include   href = "cdr:name:Module: STYLE Default"/> 
-
- <!-- Defining standard HTML Attribute Sets -->
- <xsl:attribute-set               name = "table">
-  <xsl:attribute                  name = "border">0</xsl:attribute>
-  <xsl:attribute                  name = "width">100%</xsl:attribute>
-  <xsl:attribute                  name = "cellspacing">0</xsl:attribute>
-  <xsl:attribute                  name = "cellpadding">0</xsl:attribute>
- </xsl:attribute-set>
-
- <xsl:attribute-set               name = "cell1of2">
-  <xsl:attribute                  name = "width">35%</xsl:attribute>
-  <xsl:attribute                  name = "valign">top</xsl:attribute>
- </xsl:attribute-set>
-
- <xsl:attribute-set               name = "cell2of2">
-  <xsl:attribute                  name = "width">65%</xsl:attribute>
-  <xsl:attribute                  name = "valign">top</xsl:attribute>
- </xsl:attribute-set>
-
- <xsl:attribute-set               name = "mcell1of2">
-  <xsl:attribute                  name = "width">30%</xsl:attribute>
-  <xsl:attribute                  name = "valign">top</xsl:attribute>
- </xsl:attribute-set>
-
- <xsl:attribute-set               name = "mcell2of2">
-  <xsl:attribute                  name = "width">70%</xsl:attribute>
-  <xsl:attribute                  name = "valign">top</xsl:attribute>
- </xsl:attribute-set>
+ <xsl:include  href = "cdr:name:Module: Attribute Sets"/>
+ <xsl:include  href = "cdr:name:Module: InLine Markup Formatter"/>
+ <xsl:include  href = "cdr:name:Module: Table Formatter"/>
+ <xsl:include  href = "cdr:name:Module: STYLE Default"/> 
 
  <xsl:variable                    name = "docID"
                                 select = "document('cdrutil:/docid')"/>
  <!--
  ======================================================================
  Main Template
- Filter written by C.Burg   10/18/2001
- Made Tabular - 6/26/2003 - Nanci 
- Added line after CDRID - 8/7/2003 - Nanci
  ====================================================================== -->
  <xsl:template                   match = "/">
   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
@@ -179,10 +155,10 @@ Filter to create a Terminology Content QC Report
       </td>
      </tr>
      <tr>
-      <td width = '40%' valign = "top">
+      <td       xsl:use-attribute-sets = "cell1of2">
        <b>Type</b>
       </td>
-      <td>
+      <td       xsl:use-attribute-sets = "cell2of2">
        <table cellspacing = "0" cellpadding = "0">
         <xsl:for-each           select = "Definition/DefinitionType">
          <tr>
@@ -195,10 +171,10 @@ Filter to create a Terminology Content QC Report
       </td>
      </tr>
      <tr>
-      <td width = '40%' valign = "top">
+      <td       xsl:use-attribute-sets = "cell1of2">
        <b>Source(Name,ID)</b>
       </td>
-      <td>
+      <td       xsl:use-attribute-sets = "cell2of2">
        <table cellspacing = "0" cellpadding = "0">
         <xsl:for-each           select = "Definition/DefinitionSource">
          <tr>
@@ -211,10 +187,10 @@ Filter to create a Terminology Content QC Report
       </td>
      </tr>
      <tr>
-      <td width = '40%' valign = "top">
+      <td       xsl:use-attribute-sets = "cell1of2">
        <b>Comment</b>
       </td>
-      <td>
+      <td       xsl:use-attribute-sets = "cell2of2">
        <xsl:value-of            select = "Definition/Comment"/>
       </td>
      </tr>
@@ -227,6 +203,7 @@ Filter to create a Terminology Content QC Report
     <p/>
    </xsl:otherwise>
   </xsl:choose>
+  <p/>
  
   <!-- 
   =================================================================
@@ -343,10 +320,14 @@ Filter to create a Terminology Content QC Report
      <b>Type</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "OtherNameType"/>
+     <xsl:apply-templates       select = "OtherNameType"/>
     </td>
    </tr>
 
+   <!--
+   If no Source Information is available just add a record to the 
+   table to this effect.  Otherwise create a new table.
+   =============================================================== -->
    <xsl:if                        test = "not(SourceInformation)">
     <tr>
      <td>
@@ -357,13 +338,12 @@ Filter to create a Terminology Content QC Report
    </xsl:if>
   </table>
 
-  <xsl:if test="SourceInformation">
+  <xsl:if                         test = "SourceInformation">
    <table       xsl:use-attribute-sets = "table">
     <tr>
      <td colspan = "2">
       <b>Source Information</b>
      </td>
-     <td/>
     </tr>
 
     <xsl:apply-templates        select = "SourceInformation"/>
@@ -396,6 +376,16 @@ Filter to create a Terminology Content QC Report
 
  <!-- 
  ===================================================================
+ Template to display the OtherNameType values
+ =================================================================== -->
+ <xsl:template                   match = "OtherNameType">
+  <xsl:value-of                 select = "."/>
+  <br/>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
  Template to display the SourceInformation element
  =================================================================== -->
  <xsl:template                   match = "SourceInformation">
@@ -410,8 +400,8 @@ Filter to create a Terminology Content QC Report
  =================================================================== -->
  <xsl:template                   match = "ReferenceSource">
   <tr>
-   <td width = "5%"> </td>
-   <td width = '30%'>
+   <td         xsl:use-attribute-sets = "cell1iof2"> </td>
+   <td         xsl:use-attribute-sets = "cell2iof2">
     <b>Reference Source</b>
    </td>
    <td>
@@ -427,29 +417,29 @@ Filter to create a Terminology Content QC Report
  =================================================================== -->
  <xsl:template                   match = "VocabularySource">
   <tr>
-   <td> </td>
-   <td>
+   <td         xsl:use-attribute-sets = "cell1iof2"> </td>
+   <td         xsl:use-attribute-sets = "cell2iof2">
     <b>Vocabulary Source</b>
    </td>
-   <td>
+   <td         xsl:use-attribute-sets = "cell2of2">
     <xsl:value-of               select = "SourceCode"/>
    </td>
   </tr>
   <tr>
-   <td> </td>
-   <td>
+   <td         xsl:use-attribute-sets = "cell1iof2"> </td>
+   <td         xsl:use-attribute-sets = "cell2iof2">
     <b>Vocabulary Source Term Type</b>
    </td>
-   <td>
+   <td         xsl:use-attribute-sets = "cell2of2">
     <xsl:value-of               select = "SourceTermType"/>
    </td>
   </tr>
   <tr>
-   <td> </td>
-   <td>
+   <td         xsl:use-attribute-sets = "cell1iof2"> </td>
+   <td         xsl:use-attribute-sets = "cell2iof2">
     <b>Vocabulary Source Term ID</b>
    </td>
-   <td>
+   <td         xsl:use-attribute-sets = "cell2of2">
     <xsl:value-of               select = "SourceTermId"/>
    </td>  
   </tr>
