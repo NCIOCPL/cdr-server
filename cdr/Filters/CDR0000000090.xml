@@ -3,21 +3,32 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Glossary Term QC Report filter</DocTitle>
-<DocComment>CVS-V1.14: Include File Name Change (Bug 842)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.18: Title and CDRID Modified (Bug 962)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!--
+================================================================
+$Id: CDR0000000090.xml,v 1.19 2005-06-06 21:39:50 venglisc Exp $
+
+Filter to display Patient Summary QC Reports
+Written by C.Burg 9/25/2001 
+Made Tabular            06/20/2003 - Nanci 
+Glossary Schema changes 08/25/2003 - Nanci 
+
+$Log: not supported by cvs2svn $
+================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr">
 
- <xsl:import    href = "cdr:name:Module: InLine Markup Formatter"/>
- <xsl:include   href = "cdr:name:Module: STYLE Default"/> 
-
  <xsl:output                    method = "html"/>
 
- <!--Filter written by C.Burg 9/25/2001 -->
- <!-- Made Tabular 6/20/2003 - Nanci -->
- <!-- modified due to glossary schema changes 8/25/03 - Nanci -->
+ <xsl:include  href = "cdr:name:Module: Attribute Sets"/>
+ <xsl:include  href = "cdr:name:Module: InLine Markup Formatter"/>
+ <xsl:include  href = "cdr:name:Module: STYLE Default"/> 
+
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
  <!-- 
  ======================================================
  This program is a filter to create a Glossary term
@@ -27,19 +38,17 @@
   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
   <HTML>
    <HEAD>
-    <xsl:variable                 name = "cdrmydoc" 
+    <xsl:variable                 name = "cdrdocs" 
                                 select = "document('cdrx:/*/CdrCtl')"/>
-      
-    <xsl:variable                 name = "docID"
-                                select = "document('cdrutil:/docid')"/>
     <TITLE>
      <xsl:value-of              select = "concat('CDR', 
-                                         number(
-                                         substring-after($docID, 'CDR')))"/>
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
      <xsl:text>: </xsl:text>
-     <xsl:value-of              select = "$cdrmydoc/CdrDocCtl/DocTitle"/>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/> 
     </TITLE>
-
     <STYLE type='text/css'>
      <xsl:call-template           name = "defaultStyle"/>  
     </STYLE>
@@ -61,126 +70,120 @@
   ================================================== -->
   <b>
    <font size='4'>
-    <center>Glossary Term<br />QC Report</center>
+    <center>
+     <xsl:text>Glossary Term</xsl:text>
+     <br/>
+     <xsl:text>QC Report</xsl:text>
+    </center>
    </font>
    <font size='3'>
     <center>
-     <xsl:value-of select="document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M%25p')"/>
+     <xsl:value-of              select = "document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M% 25p')"/>
     </center>
    </font>
   </b>
   <p/>
 
   <b>
-   <font size='3'>
-    <xsl:apply-templates select="PDQKey"/>
+   <xsl:apply-templates         select = "PDQKey"/>
+  </b>
+  <p/>
+
+  <!-- 
+  ====================================================================
+  Display CDR ID
+  ==================================================================== -->
+  <b>
+   <font size='4'>
+    <xsl:value-of               select = "concat('CDR', 
+                                          number(
+                                          substring-after($docID, 'CDR')))"/>
    </font>
   </b>
   <p/>
-    <xsl:variable                name = "docID"
-                                select = "document('cdrutil:/docid')"/>
- <b>
- <font size='4'>
- <xsl:value-of              select = "concat('CDR', 
-                                           number(
-                                           substring-after($docID, 'CDR')))"/>
 
- </font>
- </b>
-
- <br />
-  <br />
-  <xsl:if test="@Dictionary">
-   <b>
-    <font size='3'>Dictionary</font>
-   </b>
-   <xsl:text>......................................</xsl:text>
-   <xsl:apply-templates select="@Dictionary"/>
-   <br />
-   <br />
-  </xsl:if>
-
-  <table width = '90%' cellpadding = "0" cellspacing = "0">
+  <!--
+  ===============================================================
+  Display Name Information
+  =============================================================== -->
+  <table        xsl:use-attribute-sets = "table">
    <tr>
-    <td width = '35%'><b><font size="4">Name</font></b></td>
-    <td width = '65%'><xsl:apply-templates select="TermName"/></td>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>
+      <font size="4">Name</font>
+     </b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "TermName"/>
+    </td>
    </tr>
    <tr>
-    <xsl:choose>
-     <xsl:when test="not(TermPronunciation)">
-      <td><b><font size='3'>Pronunciation</font></b></td>
-     </xsl:when>
-     <xsl:otherwise>
-      <td><b><font size='3'>Pronunciation</font></b></td>
-      <td><xsl:apply-templates select="TermPronunciation"/></td>
-     </xsl:otherwise>
-    </xsl:choose>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Pronunciation</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "TermPronunciation"/>
+    </td>
    </tr>
   </table>           
 
   <hr/>
-  <xsl:apply-templates select = "TermDefinition"/>
-  <xsl:apply-templates select = "SpanishTermName"/>
-  <xsl:apply-templates select = "SpanishTermDefinition"/>
+  <xsl:apply-templates          select = "TermDefinition"/>
+  <xsl:apply-templates          select = "SpanishTermName"/>
+  <xsl:apply-templates          select = "SpanishTermDefinition"/>
 
-  <table width = '90%' cellpadding = "0" cellspacing = "0">
+  <!--
+  ===============================================================
+  Display Source Information
+  =============================================================== -->
+  <table        xsl:use-attribute-sets = "table">
    <tr>
-    <td width = '35%'><b><font size='3'>Source</font></b></td>
-    <td width = '65%'><xsl:apply-templates select="TermSource"/></td>
-   </tr>
-   <tr>
-    <td> </td><td> </td>
-   </tr>
-   <tr>
-    <td><b><font size='3'>Type</font></b></td>
-    <td><xsl:apply-templates select="TermType"/></td>
-   </tr>
-   <tr>
-    <td> </td>
-   </tr>
-   <tr>
-    <td><b><font size='3'>Status</font></b></td>
-    <td><xsl:apply-templates select="TermStatus"/></td>
-   </tr>
-   <tr>
-    <td> </td>
-   </tr>
-   <tr>
-    <td><b><font size='3'>Date</font></b></td>
-    <td><xsl:apply-templates select="StatusDate"/></td>
-   </tr>
-   <tr>
-    <td> </td>
-   </tr>
-   <tr>
-    <td>
-     <b><font size='3'>Comment</font></b>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Source</b>
     </td>
-    <xsl:choose>
-     <xsl:when                   test = "Comment">
-      <td>
-       <xsl:apply-templates select="Comment"/>
-      </td>
-     </xsl:when>
-     <xsl:otherwise>
-      <td> </td>
-     </xsl:otherwise>
-    </xsl:choose>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "TermSource"/>
+    </td>
    </tr>
    <tr>
-    <td>
-     <b><font size='3'>Date Last Modified</font></b>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Type</b>
     </td>
-    <xsl:choose>
-     <xsl:when                   test = "DateLastModified">
-      <td>
-       <xsl:apply-templates select="DateLastModified"/>
-      </td>
-     </xsl:when>
-     <xsl:otherwise>
-      <td> </td>
-     </xsl:otherwise>
-    </xsl:choose>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "TermType"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Status</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "TermStatus"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Date</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "StatusDate"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Comment</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "Comment"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Date Last Modified</b>
+    </td>
+    <td>
+     <xsl:apply-templates       select = "DateLastModified"/>
+    </td>
    </tr>
   </table>
 
@@ -194,35 +197,60 @@
  Template to display individual TermDefinitions
  ================================================================== -->
  <xsl:template                   match = "TermDefinition">
-  <table width = '90%' cellpadding = "0" cellspacing = "0">
+  <table        xsl:use-attribute-sets = "table">
    <tr>
-    <td valign = "top"><b>Definition</b></td>
-    <td><xsl:apply-templates select="DefinitionText"/></td>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Definition</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "DefinitionText"/>
+    </td>
    </tr>
+   <xsl:if                        test = "MediaLink">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Media Link</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "MediaLink/
+                                          MediaID"/>
+     </td>
+    </tr>
+   </xsl:if>
    <tr>
-    <td width = '35%'><b><font size='3'>Dictionary</font></b></td>
-    <td width = '65%'>
-     <xsl:apply-templates select="Dictionary"/>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Dictionary</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "Dictionary"/>
     </td>
    </tr>
    <tr>
-    <td><b><font size='3'>Audience</font></b></td>
-    <td>
-     <xsl:for-each select = "Audience">
-      <xsl:if test = "position() = last()">
-       <xsl:value-of select="."/>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Audience</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each              select = "Audience">
+      <xsl:if                     test = "position() = last()">
+       <xsl:value-of            select = "."/>
       </xsl:if>
-      <xsl:if test = "not(position() = last())">
-       <xsl:value-of select="."/>
+      <xsl:if                     test = "not(position() = last())">
+       <xsl:value-of            select = "."/>
        <xsl:text>; </xsl:text>
       </xsl:if>
      </xsl:for-each> 
     </td>
    </tr>
   </table>
+
+  <!--
+  Separate multiple Term definitions with a small horizontal line
+  =============================================================== -->
   <xsl:choose>
-   <xsl:when  test = "position() != last()">
-    <center><hr width="25%"/></center>
+   <xsl:when                      test = "position() != last()">
+    <center>
+     <hr width="25%"/>
+    </center>
    </xsl:when>
    <xsl:otherwise>
     <hr/>
@@ -237,10 +265,16 @@
  ================================================================== -->
  <xsl:template                   match = "SpanishTermName">
   <p/>
-  <table width = '90%' cellpadding = "0" cellspacing = "0">
+  <table        xsl:use-attribute-sets = "table">
    <tr>
-    <td width = '35%'><b><font size="4">Spanish Name</font></b></td>
-    <td width = '65%'><xsl:value-of select="."/></td>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>
+      <font size="4">Spanish Name</font>
+     </b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "."/>
+    </td>
    </tr>
   </table>
   <p/>
@@ -252,36 +286,52 @@
  Template to display individual SpanishTermDefinitions
  ================================================================== -->
  <xsl:template                   match = "SpanishTermDefinition">
-  <table width = '90%' cellpadding = "0" cellspacing = "0">
+  <table        xsl:use-attribute-sets = "table">
    <tr>  
-    <td width="35%" valign = "top"><b>Spanish Definition</b></td>
-    <td width="65%"><xsl:apply-templates select="DefinitionText"/></td>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Spanish Definition</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "DefinitionText"/>
+    </td>
    </tr>
   </table>
 
-  <table width = '90%' cellpadding = "0" cellspacing = "0">
+  <table        xsl:use-attribute-sets = "table">
    <tr>
-    <td width = '35%'><b>Spanish Dictionary</b></td>
-    <td width = '65%'><xsl:apply-templates select="Dictionary"/></td>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Spanish Dictionary</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "Dictionary"/>
+    </td>
    </tr>
    <tr>
-    <td><b><font size='3'>Spanish Audience</font></b></td>
-    <td>
-     <xsl:for-each select = "Audience">
-      <xsl:if test = "position() = last()">
-       <xsl:value-of select="."/>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Spanish Audience</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each              select = "Audience">
+      <xsl:if                     test = "position() = last()">
+       <xsl:value-of            select = "."/>
       </xsl:if>
-      <xsl:if test = "not(position() = last())">
-       <xsl:value-of select="."/>
+      <xsl:if                     test = "not(position() = last())">
+       <xsl:value-of            select = "."/>
        <xsl:text>; </xsl:text>
       </xsl:if>
      </xsl:for-each> 
     </td>
    </tr>
   </table> 
+
+  <!--
+  Separate multiple Term definitions with a small horizontal line
+  =============================================================== -->
   <xsl:choose>
-   <xsl:when  test = "position() != last()">
-    <center><hr width="25%"/></center>
+   <xsl:when                      test = "position() != last()">
+    <center>
+     <hr width="25%"/>
+    </center>
    </xsl:when>
    <xsl:otherwise>
     <hr/>
