@@ -7,14 +7,14 @@
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
- ================================================================
-     $Id: CDR0000343573.xml,v 1.8 2005-03-18 15:27:46 venglisc Exp $
+================================================================
+$Id: CDR0000343573.xml,v 1.9 2005-06-10 21:37:30 venglisc Exp $
 
-     Filter to process Protocol HP Details
-        Written by Cheryl Burg
+Filter to process Protocol HP Details
+Written by Cheryl Burg
 
-     $Log: not supported by cvs2svn $
- ================================================================ -->
+$Log: not supported by cvs2svn $
+================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -90,6 +90,7 @@
 
   <p/>
       
+  <xsl:if                         test = "$whoAmI != 'ProtCitationQc'">
   <table        xsl:use-attribute-sets = "table">
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
@@ -149,6 +150,7 @@
     </td>
    </tr>
   </table>
+  </xsl:if>
  </xsl:template>
 
 
@@ -320,19 +322,87 @@
 
 
  <!-- 
- ===============================================================
- Display Published Results
+ ================================================================
+ Display Published Results.
  ================================================================ --> 
- <xsl:template                   match = "PublishedResults">
+ <xsl:template                   match = "PublishedResultsQC">
   <xsl:if                         test = "not(
-                                          preceding-sibling::PublishedResults)">
+                                          preceding-sibling::PublishedResults)
+                                          or not(
+                                        preceding-sibling::PublishedResultsQC)">
+   <hr/>
    <b>
     <font size='4'>Published Results</font>
    </b>
    <br />
   </xsl:if>
-  <xsl:apply-templates          select = "." 
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+      <b>Formatted Citation</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "Citation" 
                                   mode = "copy"/>
+    </td>  
+   </tr>    
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+      <b>Citation Source</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "CitationSource" 
+                                  mode = "copy"/>
+
+    </td>
+   </tr>
+   <xsl:if                        test = "SourceWebsite">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+       <b>Source Website</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:for-each             select = "SourceWebsite">
+       <xsl:call-template         name = "createWebLink"/>
+      </xsl:for-each>
+      <br />
+      <xsl:value-of             select = "SourceWebsite"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+      <b>Entered By</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "EnteredBy" 
+                                  mode = "copy"/>
+
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+      <b>EntryDate</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "EntryDate" 
+                                  mode = "copy"/>
+
+    </td>
+   </tr>
+   <xsl:if                        test = "Comment">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+       <b>Comment</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "Comment" 
+                                  mode = "copy"/>
+
+     </td>
+    </tr>
+   </xsl:if>
+  </table>   
   <br />
  </xsl:template>
 </xsl:transform>
