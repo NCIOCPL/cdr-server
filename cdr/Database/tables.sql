@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.103 2005-03-04 22:33:08 bkline Exp $
+ * $Id: tables.sql,v 1.104 2005-06-21 13:02:12 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.103  2005/03/04 22:33:08  bkline
+ * Added external_map_rule table.
+ *
  * Revision 1.102  2005/03/04 22:18:29  bkline
  * Changed import_doc.dropped from CHAR to DATETIME column.
  *
@@ -876,6 +879,7 @@ CREATE TABLE external_map
       doc_id INTEGER           NULL REFERENCES all_docs,
          usr INTEGER           NULL REFERENCES usr,
     last_mod DATETIME      NOT NULL,
+       bogus CHAR          NOT NULL DEFAULT 'N',
 CONSTRAINT external_map_unique UNIQUE (usage, value))
 GO
 
