@@ -1,9 +1,14 @@
 /*
- * $Id: CdrFilter.cpp,v 1.47 2005-03-04 02:53:39 ameyer Exp $
+ * $Id: CdrFilter.cpp,v 1.48 2005-06-21 13:06:20 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.47  2005/03/04 02:53:39  ameyer
+ * Added new parameter to parser constructor to ensure that parser memory
+ * for filters does not hang around beyond its need.  Part of conversion
+ * from xml4c to Xerces.
+ *
  * Revision 1.46  2004/05/14 02:20:54  ameyer
  * Added cdrutil protocol callback for function denormalizeTerm.
  *
@@ -2140,7 +2145,7 @@ string lookupExternalValue(const string& parms,
 
     // Look up the external value.
     cdr::db::PreparedStatement stmt = conn.prepareStatement(
-            "SELECT m.doc_id             "
+            "SELECT m.doc_id, bogus      "
             "  FROM external_map m       "
             "  JOIN external_map_usage u "
             "    ON u.id = m.usage       "
@@ -2162,6 +2167,9 @@ string lookupExternalValue(const string& parms,
     }
 
     int docId = rs.getInt(1);
+    cdr::String bogus = rs.getString(2);
+    if (bogus == L"Y")
+        return "<DocId>DROP</DocId>";
     if (!docId)
         return "<DocId/>";
     cdr::String idString = cdr::stringDocId(docId);
