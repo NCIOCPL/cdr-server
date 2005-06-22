@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.15 2002-08-13 19:41:24 bkline Exp $
+ * $Id: procs.sql,v 1.16 2005-06-22 18:21:15 venglisc Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2002/08/13 19:41:24  bkline
+ * Added find_linked_docs proc.
+ *
  * Revision 1.14  2002/06/09 12:31:43  bkline
  * Further documentation for ADODB bug.
  *
@@ -598,7 +601,10 @@ AS
                            '/InScopeProtocol/ProtocolAdminInfo' +
                            '/ProtocolLeadOrg/ProtocolSites' +
                            '/PrivatePracticeSite' +
-                           '/PrivatePracticeSiteID/@cdr:ref')
+                           '/PrivatePracticeSiteID/@cdr:ref',
+                           '/InScopeProtocol/ProtocolAdminInfo' +
+                           '/ExternalSites/ExternalSite' +
+                           '/ExternalSitePI/ExternalSitePIID/@cdr:ref')
        AND status.path   = '/InScopeProtocol/ProtocolAdminInfo'
                          + '/CurrentProtocolStatus'
        AND person.int_val = @docId
