@@ -1,5 +1,5 @@
 /*
- * $Id: CdrDbConnection.cpp,v 1.10 2005-06-08 19:52:10 ameyer Exp $
+ * $Id: CdrDbConnection.cpp,v 1.11 2005-07-05 14:04:16 ameyer Exp $
  *
  * Implementation for ODBC connection wrapper.
  *
@@ -46,9 +46,6 @@ static int activeConnections;
 static const char* const ActiveConnectionsMutex = "ActiveConnectionsMutex";
 #endif
 
-// ODBC Connection synchronization mutex
-static const char* const OPEN_CONN_MUTEX = "OpenConnectionsMutex";
-
 /**
  * ODBC environment handle shared by all CDR connections.
  */
@@ -61,84 +58,52 @@ HENV cdr::db::Connection::henv = SQL_NULL_HENV;
  *
  *  @exception cdr::Exception if ODBC error encountered.
  */
-cdr::db::Connection::Connection(const SQLCHAR* dsn,
-                                const SQLCHAR* uid,
-                                const SQLCHAR* pwd)
+cdr::db::Connection::Connection(const SQLCHAR* dsn, 
+                                const SQLCHAR* uid, 
+                                const SQLCHAR* pwd) 
     : autoCommit(false), hdbc(SQL_NULL_HDBC), refCount(1)
 {
-    // Synchronize entrance to this constructor
-    // We hypothesize that calling ODBC to create a new connection
-    //   while it is in the midst of creating one is unsafe and has
-    //   caused our publishing system crashes in the multi-threaded
-    //   publishing program.
-    // This should have only a trivial influence on performance
-    HANDLE connMutex = CreateMutex(0, false, OPEN_CONN_MUTEX);
-    if (connMutex != 0) {
-      try {
-        cdr::Lock openLock(connMutex, 3000);
-        if (openLock.m) {
-            master = this;
-            SQLRETURN rc;
-            if (henv == SQL_NULL_HENV) {
-                rc = SQLSetEnvAttr(0, SQL_ATTR_CONNECTION_POOLING,
-                                   (SQLPOINTER)SQL_CP_ONE_PER_HENV, 0);
-                if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
-                    throw cdr::Exception(
-                            L"Failure enabling connection pooling",
-                            getErrorMessage(rc, henv, 0, 0));
-                rc = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &henv);
-                if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
-                    throw cdr::Exception(
-                            L"Failure allocating database environment",
-                                         getErrorMessage(rc, henv, 0, 0));
-                rc = SQLSetEnvAttr(henv, SQL_ATTR_ODBC_VERSION,
-                                   (void *)SQL_OV_ODBC3, 0);
-                if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
-                    throw cdr::Exception(
-                            L"Failure setting database environment",
-                            getErrorMessage(rc, henv, 0, 0));
-            }
-            rc = SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc);
-            if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
-                throw cdr::Exception(
-                        L"Failure allocating database connection",
-                        getErrorMessage(rc, henv, hdbc, 0));
-            rc = SQLConnect(hdbc, const_cast<SQLCHAR*>(dsn), SQL_NTS,
-                                  const_cast<SQLCHAR*>(uid), SQL_NTS,
-                                  const_cast<SQLCHAR*>(pwd), SQL_NTS);
-            if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
-                hdbc = SQL_NULL_HDBC;
-                throw cdr::Exception(L"Failure connecting to database",
-                                     getErrorMessage(rc, henv, hdbc, 0));
-            }
-            setAutoCommit(true);
-#ifdef HEAPDEBUG
-            // This mutex is no longer required now that connMutex synchronizes
-            //   everything, but I'm leaving it in since it is not usually
-            //   compiled and the use of connMutex is still experimental.
-            HANDLE mutex = CreateMutex(0, false, ActiveConnectionsMutex);
-            if (mutex != 0) {
-                cdr::Lock lock(mutex, 1000);
-                if (lock.m) {
-                    ++activeConnections;
-                }
-                CloseHandle(mutex);
-            }
-#endif
-            CloseHandle(connMutex);
-        }
-        else {
-            CloseHandle(connMutex);
-            throw cdr::Exception(L"Timeout on mutex creating connection");
-        }
-      }
-      // Cleanup
-      catch(...) {
-          if (connMutex)
-              CloseHandle(connMutex);
-          throw;
-      }
+    master = this;
+    SQLRETURN rc;
+    if (henv == SQL_NULL_HENV) {
+        rc = SQLSetEnvAttr(0, SQL_ATTR_CONNECTION_POOLING,
+                           (SQLPOINTER)SQL_CP_ONE_PER_HENV, 0);
+        if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+            throw cdr::Exception(L"Failure enabling connection pooling",
+                                 getErrorMessage(rc, henv, 0, 0));
+        rc = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &henv);
+        if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+            throw cdr::Exception(L"Failure allocating database environment",
+                                 getErrorMessage(rc, henv, 0, 0));
+        rc = SQLSetEnvAttr(henv, SQL_ATTR_ODBC_VERSION, 
+                           (void *)SQL_OV_ODBC3, 0);
+        if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+            throw cdr::Exception(L"Failure setting database environment",
+                                 getErrorMessage(rc, henv, 0, 0));
     }
+    rc = SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc);
+    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+        throw cdr::Exception(L"Failure allocating database connection",
+                             getErrorMessage(rc, henv, hdbc, 0));
+    rc = SQLConnect(hdbc, const_cast<SQLCHAR*>(dsn), SQL_NTS,
+                          const_cast<SQLCHAR*>(uid), SQL_NTS, 
+                          const_cast<SQLCHAR*>(pwd), SQL_NTS);
+    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
+        hdbc = SQL_NULL_HDBC;
+        throw cdr::Exception(L"Failure connecting to database",
+                             getErrorMessage(rc, henv, hdbc, 0));
+    }
+    setAutoCommit(true);
+#ifdef HEAPDEBUG
+    HANDLE mutex = CreateMutex(0, false, ActiveConnectionsMutex);
+    if (mutex != 0) {
+        cdr::Lock lock(mutex, 1000);
+        if (lock.m) {
+            ++activeConnections;
+        }
+		CloseHandle(mutex);
+    }
+#endif
 }
 
 /**
@@ -227,7 +192,7 @@ cdr::String cdr::db::Connection::getErrorMessage(SQLRETURN sqlReturn,
     SDWORD          nativeError;
     SWORD           messageLength;
     SQLRETURN       rc;
-
+    
     switch (sqlReturn) {
         case SQL_SUCCESS:
             errString += L"NO ERROR";
@@ -280,9 +245,9 @@ void cdr::db::Connection::setAutoCommit(bool val)
     if (getAutoCommit() == val)
         return;
     SQLUINTEGER setting = val ? SQL_AUTOCOMMIT_ON : SQL_AUTOCOMMIT_OFF;
-    SQLRETURN rc = SQLSetConnectAttr(hdbc,
-                                     SQL_ATTR_AUTOCOMMIT,
-                                     reinterpret_cast<SQLPOINTER>(setting),
+    SQLRETURN rc = SQLSetConnectAttr(hdbc, 
+                                     SQL_ATTR_AUTOCOMMIT, 
+                                     reinterpret_cast<SQLPOINTER>(setting), 
                                      0);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
         throw cdr::Exception(L"Failure setting auto commit",
@@ -338,7 +303,7 @@ int cdr::db::Connection::getLastIdent()
  * Returns a string representing the CDR DBMS's idea of the
  * current time.
  */
-cdr::String cdr::db::Connection::getDateTimeString()
+cdr::String cdr::db::Connection::getDateTimeString() 
 {
     if (isClosed())
         throw cdr::Exception(
@@ -358,7 +323,7 @@ cdr::db::Statement cdr::db::Connection::createStatement()
     return cdr::db::Statement(*this);
 }
 
-cdr::db::PreparedStatement
+cdr::db::PreparedStatement 
 cdr::db::Connection::prepareStatement(const std::string& s)
 {
     if (isClosed())
@@ -378,8 +343,8 @@ cdr::db::Connection::prepareStatement(const std::string& s)
  *  @param  pwd     password for the database account.
  *  @return         new <code>Connection</code> object.
  */
-cdr::db::Connection
-cdr::db::DriverManager::getConnection(const cdr::String& url_,
+cdr::db::Connection 
+cdr::db::DriverManager::getConnection(const cdr::String& url_, 
                                       const cdr::String& uid_,
                                       const cdr::String& pwd_)
 {
