@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000339576.xml,v 1.13 2005-06-02 19:51:47 venglisc Exp $
+$Id: CDR0000339576.xml,v 1.14 2005-07-19 15:37:01 venglisc Exp $
 
 Filter handling all In-Line Markup elements of Summary Docs
 Written by Volker Englisch, 2004-07-16
@@ -103,8 +103,20 @@ $Log: not supported by cvs2svn $
                                   mode = "HPS"/>
    </xsl:when>
    <xsl:otherwise>
-    <xsl:apply-templates        select = "."  
+    <xsl:choose>
+     <xsl:when                    test = "$whoAmI = 'ProtHPQc'">
+      <xsl:apply-templates      select = "."  
+                                  mode = "HPE"/>
+     </xsl:when>
+     <xsl:when                    test = "$whoAmI = 'ProtPatQc'">
+      <xsl:apply-templates      select = "."  
                                   mode = "PE"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:apply-templates      select = "."  
+                                  mode = "PE"/>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:otherwise>
   </xsl:choose> 
  </xsl:template>
@@ -112,7 +124,7 @@ $Log: not supported by cvs2svn $
 
  <!-- 
  ======================================================================
- Link to glossaryTermRefs - Patients
+ Link to glossaryTermRefs - Patients RS and Protocol
  Note: Patient Version Summaries are not being reviewed by an
        Advisory board according to MB.  I'm not implementing a 
        different style for advisory-board markup for this template.
@@ -134,6 +146,49 @@ $Log: not supported by cvs2svn $
       <xsl:value-of           select = "."/>
      </span>
     </a>
+   </xsl:when>
+   <xsl:otherwise>
+    <a>
+     <xsl:attribute               name = "href">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Filter=name:Glossary',
+                                                 '+Term+Display+for+Patient',
+                                                 '+Summaries')"/>
+     </xsl:attribute>
+     <xsl:value-of              select = "."/>
+    </a>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+   
+ <!-- 
+ ======================================================================
+ Link to glossaryTermRefs - Patients BU
+ Note: Patient Version Summaries are not being reviewed by an
+       Advisory board according to MB.  I'm not implementing a 
+       different style for advisory-board markup for this template.
+                                                       VE, 2005-05-10
+ ====================================================================== -->
+ <xsl:template                   match = "GlossaryTermRef | LOERef"
+                                  mode = "PEBU">
+  <xsl:choose>
+   <xsl:when                      test = "Deletion">
+    <xsl:if                       test = "Deletion/@RevisionLevel = 'proposed'">
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Filter=name:Glossary',
+                                                 '+Term+Display+for+Patient',
+                                                 '+Summaries')"/>
+       </xsl:attribute>
+       <span class="deleteGlossaryTerm">
+        <xsl:value-of           select = "."/>
+       </span>
+      </a>
+    </xsl:if>
    </xsl:when>
    <xsl:otherwise>
     <a>
