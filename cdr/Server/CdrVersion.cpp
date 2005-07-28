@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.25 2004-11-10 03:18:47 ameyer Exp $
+ * $Id: CdrVersion.cpp,v 1.26 2005-07-28 20:39:46 ameyer Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2004/11/10 03:18:47  ameyer
+ * Tested retrieval of blob versions.  Now working.
+ *
  * Revision 1.24  2004/11/05 06:02:04  ameyer
  * Introduced numerous changes for new blob handling.
  *
@@ -249,6 +252,19 @@ int cdr::checkIn(cdr::Session& session, int docId,
     cdr::String doc_comment = rs.getString(6);
     cdr::String updated_dt = rs.getString(7);
     cdr::Int blobId = rs.getInt(8);
+
+    // In theory it is illegal to store a non-valid publishable version.
+    // But it is legal for the special document types - schema,
+    //   Filter, and css.
+    // So I added this, but am now commenting it out again.
+    // We either need to remove this, consult a list of exceptions,
+    //   or do something else to avoid rejecting publishable docs
+    //   of these types. - AHM
+    /*
+    if (publishable == L"Y" && val_status != L"V")
+        throw cdr::Exception(L"Attempt to store non-valid publishable version"
+                             L" for doc id=" + cdr::String::toString(docId));
+    */
 
     string newver = "INSERT INTO doc_version "
                     "            (id, num, dt, updated_dt, usr, val_status, "

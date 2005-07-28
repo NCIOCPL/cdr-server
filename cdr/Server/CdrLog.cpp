@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLog.cpp,v 1.8 2002-03-28 22:19:53 ameyer Exp $
+ * $Id: CdrLog.cpp,v 1.9 2005-07-28 20:39:46 ameyer Exp $
  *
  * Implementation of writing info to the log table in the database.
  * If that can't be done, takes an alternative action to write to file.
@@ -7,6 +7,9 @@
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2002/03/28 22:19:53  ameyer
+ * Removed unreferenced variable declaration.
+ *
  * Revision 1.7  2002/03/06 21:57:16  bkline
  * Catching reference to cdr::Exception instead of object.
  *
@@ -59,6 +62,15 @@
  * and find entries from the same thread.
  */
 cdr::log::Log __declspec(thread) * cdr::log::pThreadLog;
+
+/**
+ * Thread global variable to tell us if we're inside logging already.
+ *
+ * Problem we're dealing with here is that if an exception occurs
+ * while processing an exception, we can keep trying to log things
+ * inappropriately.
+ */
+bool __declspec(thread) inLogging = false;
 
 // Class static variables
 int    cdr::log::Log::s_LogId     = 0;
@@ -132,6 +144,11 @@ void cdr::log::Log::Write (
     const cdr::String MsgSrc,   // Name of module or whatever caller wants
     const cdr::String Msg       // Message
 ) {
+    // Avoid looping
+    if (inLogging)
+        return;
+    inLogging = true;
+
     // Create a database connection and write data
     try {
         cdr::db::Connection dbConn =
@@ -150,6 +167,8 @@ void cdr::log::Log::Write (
         WriteFile (L"CdrLog DB Write Failed", L"Unknown exception");
         WriteFile (MsgSrc, Msg);
     }
+
+    inLogging = false;
 }
 
 
@@ -164,6 +183,11 @@ void cdr::log::Log::Write (
     const cdr::String Msg,      // Message
     cdr::db::Connection& dbConn // New or existing connection
 ) {
+    // Avoid looping
+    if (inLogging)
+        return;
+    inLogging = true;
+
     // Copies to handle truncation if necessary
     // Efficient since copy is only deep when truncation occurs
     cdr::String cpySrc = MsgSrc;
@@ -207,6 +231,8 @@ void cdr::log::Log::Write (
 #else
     WriteFile (MsgSrc, Msg);
 #endif
+
+    inLogging = false;
 }
 
 

@@ -19,9 +19,12 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.17 2004-03-06 17:09:01 bkline Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.18 2005-07-28 20:39:46 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2004/03/06 17:09:01  bkline
+ * Removed extraneous ' character from dynamically built SQL queries.
+ *
  * Revision 1.16  2004/02/10 22:15:39  ameyer
  * Added capability to check for the existence or non-existence of an
  * element in a link target.  Required changes to the validation and
@@ -254,8 +257,14 @@ static cdr::link::LinkChkTargContains *findOrMakeRuleTree (
 
     // If this is the first thread in the current process, create a mutex
     //   to control the static array of rule parse trees
-    if (s_LinkContainsMutex == 0)
+    if (s_LinkContainsMutex == 0) {
         s_LinkContainsMutex = CreateMutex (0, false, LinkTargMutex);
+
+        // XXX ATTEMPT TO MAKE INTERPROCESS COMM WORK
+        if (s_LinkContainsMutex == 0)
+            s_LinkContainsMutex = OpenMutex(MUTEX_ALL_ACCESS, true,
+                                            LinkTargMutex);
+    }
 
     // Lock and search array of parse trees to see if we can find
     //   an existing parse of the rule we want
