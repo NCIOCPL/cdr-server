@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLog.cpp,v 1.9 2005-07-28 20:39:46 ameyer Exp $
+ * $Id: CdrLog.cpp,v 1.10 2005-07-28 21:11:03 ameyer Exp $
  *
  * Implementation of writing info to the log table in the database.
  * If that can't be done, takes an alternative action to write to file.
@@ -7,6 +7,9 @@
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2005/07/28 20:39:46  ameyer
+ *
+ *
  * Revision 1.8  2002/03/28 22:19:53  ameyer
  * Removed unreferenced variable declaration.
  *
