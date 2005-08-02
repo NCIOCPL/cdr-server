@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.48 2005-06-21 13:06:20 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.49 2005-08-02 15:00:04 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48  2005/06/21 13:06:20  bkline
+ * Added support for new 'bogus' column in external_map table.
+ *
  * Revision 1.47  2005/03/04 02:53:39  ameyer
  * Added new parameter to parser constructor to ensure that parser memory
  * for filters does not hang around beyond its need.  Part of conversion
@@ -834,10 +837,17 @@ namespace
               startTime = GetTickCount();
 
           try {
-              SablotCreateSituation(&situation);
-              SablotCreateProcessorForSituation(situation, &processor);
-              SablotAddArgBuffer(situation, processor, "sheet", s);
-              SablotAddArgBuffer(situation, processor, "data", d);
+              try {
+                  SablotCreateSituation(&situation);
+                  SablotCreateProcessorForSituation(situation, &processor);
+                  SablotAddArgBuffer(situation, processor, "sheet", s);
+                  SablotAddArgBuffer(situation, processor, "data", d);
+              }
+              catch (...) {
+                  cdr::log::pThreadLog->Write(L"CdrFilter::processStrings",
+                  L"Exception thrown in Sablotron initialization");
+                  throw;
+              }
 
               // Plug in (and remember for cleanup) the parameter strings.
               ParmList parmList;
@@ -866,8 +876,16 @@ namespace
                                        L"scheme handler");
 
               // Perform the XSL/T transformation.
-              rc = SablotRunProcessorGen(situation, processor, "arg:/sheet",
+              try {
+                  rc = SablotRunProcessorGen(situation, processor, "arg:/sheet",
                                          "arg:/data", "arg:/out");
+              }
+              catch (...) {
+                  cdr::log::pThreadLog->Write(L"CdrFilter::processStrings",
+                          L"Exception thrown in SablotRunProcessorGen");
+                  throw;
+              }
+
               if (thread_data->fatalError)
                   throw cdr::Exception(thread_data->errMsg.str());
               if (rc)
@@ -876,18 +894,37 @@ namespace
                   throw cdr::Exception(L"Cannot get XSLT result");
           }
           catch (...) {
+              cdr::log::pThreadLog->Write(L"CdrFilter::processStrings",
+                      L"Exception thrown, Destroying proc and sit");
               SablotDestroyProcessor(processor);
               SablotDestroySituation(situation);
+              cdr::log::pThreadLog->Write(L"CdrFilter::processStrings",
+                      L"Destroying proc and sit successful");
               throw;
           }
           // Clean up and save the output.
-          if ((rc = SablotDestroyProcessor(processor)) != 0)
-              throw cdr::Exception(L"Cannot destroy XSLT processor");
-          if ((rc = SablotDestroySituation(situation)) != 0)
-              throw cdr::Exception(L"Cannot destroy Sablotron situation");
+          try {
+              if ((rc = SablotDestroyProcessor(processor)) != 0)
+                  throw cdr::Exception(L"Cannot destroy XSLT processor");
+              if ((rc = SablotDestroySituation(situation)) != 0)
+                  throw cdr::Exception(L"Cannot destroy Sablotron situation");
+          }
+          catch (...) {
+              cdr::log::pThreadLog->Write(L"CdrFilter::processStrings",
+                      L"Exception thrown in normal proc/sit cleanup");
+              throw;
+          }
 
           result = r;
-          SablotFree(r);
+          try {
+              SablotFree(r);
+          }
+          catch (...) {
+              cdr::log::pThreadLog->Write(L"CdrFilter::processStrings",
+                      L"Exception thrown in normal SablotFree cleanup");
+              throw;
+          }
+
 
           // If profiling filter performance
           if (S_pFltrIdMap) {
@@ -929,6 +966,8 @@ namespace
           return rc;
       }
       catch (...) {
+          cdr::log::pThreadLog->Write(L"CdrFilter::processStrings",
+                  L"An exception was thrown here, or in Sablotron");
           SablotFree(r);
           throw;
       }
