@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbResultSet.cpp,v 1.14 2002-11-13 15:03:06 bkline Exp $
+ * $Id: CdrDbResultSet.cpp,v 1.15 2005-08-02 15:01:21 ameyer Exp $
  *
  * Implementation for ODBC result fetching wrapper (modeled after JDBC).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2002/11/13 15:03:06  bkline
+ * Added code to handle SQL_NO_DATA_FOUND in getString().
+ *
  * Revision 1.13  2002/03/28 18:26:59  bkline
  * Added some support for ResultSetMetaData.
  *
@@ -65,31 +68,47 @@ cdr::db::ResultSet::ResultSet(cdr::db::Statement& s)
     SQLRETURN   rc;
 
     // Move to the first result set (if any).
-    do {
-        rc = SQLNumResultCols(st.hstmt, &nCols);
-        if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
-            throw cdr::Exception(L"Failure determining result columns",
-                                 st.getErrorMessage(rc));
-        if (nCols < 1) {
-            rc = SQLMoreResults(st.hstmt);
-            if (rc != SQL_SUCCESS && 
-                rc != SQL_SUCCESS_WITH_INFO && 
-                rc != SQL_NO_DATA) 
-            {
-                throw cdr::Exception(L"Failure moving to result set",
+    try {
+        do {
+            rc = SQLNumResultCols(st.hstmt, &nCols);
+            if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+                throw cdr::Exception(L"Failure determining result columns",
                                      st.getErrorMessage(rc));
+            if (nCols < 1) {
+                rc = SQLMoreResults(st.hstmt);
+                if (rc != SQL_SUCCESS &&
+                    rc != SQL_SUCCESS_WITH_INFO &&
+                    rc != SQL_NO_DATA)
+                {
+                    throw cdr::Exception(L"Failure moving to result set",
+                                         st.getErrorMessage(rc));
+                }
             }
-        }
-    } while (nCols < 1 && rc != SQL_NO_DATA);
+        } while (nCols < 1 && rc != SQL_NO_DATA);
+    }
+    catch (...) {
+      cdr::log::pThreadLog->Write(L"CdrDbResultSet::constructor",
+      L"Exception thrown positioning to start of result set");
+      throw;
+    }
+
 
     // Extract the column information (if any).
     for (SQLSMALLINT i = 1; i <= nCols; ++i) {
         ResultSetMetaData::Column c;
         char name[1024];
         SQLSMALLINT cbName;
-        rc = SQLDescribeCol(st.hstmt, (SQLSMALLINT)i, (SQLCHAR *)name,
+        try {
+            rc = SQLDescribeCol(st.hstmt, (SQLSMALLINT)i, (SQLCHAR *)name,
                             sizeof name, &cbName, &c.type, &c.size,
                             &c.digits, &c.nullable);
+        }
+        catch (...) {
+            cdr::log::pThreadLog->Write(L"CdrDbResultSet::constructor",
+            L"Exception thrown describing columns");
+            throw;
+        }
+
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
             throw cdr::Exception(L"Database failure fetching column info",
                                  st.getErrorMessage(rc));
