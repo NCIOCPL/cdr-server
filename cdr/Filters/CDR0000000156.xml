@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Copy XML for InScopeProtocol Full/Admin</DocTitle>
-<DocComment>CVS-V1.18: Include Comment Field (Bug 1273)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.20: Add Protocol Elements to Citation QC (Bug 1700)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -100,6 +100,12 @@
                              data-type = "number"/>
     <xsl:sort                   select = "Citation/@authorlist"/>
    </xsl:apply-templates>
+   <xsl:apply-templates         select = "RelatedPublications">
+    <xsl:sort                   select = "Citation/@pubyear"
+                                 order = "descending"
+                             data-type = "number"/>
+    <xsl:sort                   select = "Citation/@authorlist"/>
+   </xsl:apply-templates>
 
 
    <!-- Copy protocol titles-->
@@ -142,14 +148,15 @@
  <!--
  ========================================================================
  ======================================================================== -->
- <xsl:template                   match = "PublishedResults">
+ <xsl:template                   match = "PublishedResults |
+                                          RelatedPublications">
   <xsl:element                    name = "{name()}">
    <xsl:attribute                 name = "cdr:ref">
     <xsl:value-of               select = "Citation/@cdr:ref"/>
    </xsl:attribute>
    <xsl:apply-templates         select = "Citation"/>
   </xsl:element>
-  <PublishedResultsQC>
+  <xsl:element                    name = "{name()}QC">
    <Citation>
     <xsl:apply-templates        select = "Citation"/>
    </Citation>
@@ -159,7 +166,7 @@
                                           EntryDate       |
                                           Comment"
                                   mode = "copy"/>
-  </PublishedResultsQC>
+  </xsl:element>
  </xsl:template>
 
 

@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000124.xml,v 1.11 2005-06-10 21:34:54 venglisc Exp $
+$Id: CDR0000000124.xml,v 1.12 2005-08-12 19:32:50 venglisc Exp $
 
 Filter to generate a Protocol Citations QC Report
 Written by Cheryl Burg
@@ -211,61 +211,21 @@ $Log: not supported by cvs2svn $
     </i>
    </b>
    <p/>
+   <xsl:apply-templates         select = "PublishedResults"/>
+   <hr />
 
-   <xsl:for-each                select = "PublishedResults">
-    <table      xsl:use-attribute-sets = "table">
-     <tr>
-      <td       xsl:use-attribute-sets = "cell1of2">
-       <b>Citation ID</b>
-      </td>
-      <td       xsl:use-attribute-sets = "cell2of2">
-       <xsl:value-of            select = "concat('CDR', number(
-                                          substring-after(@cdr:ref, 'CDR')))"/>
-    
-      </td>
-     </tr>
-    </table>
- 
-    <xsl:if                       test = "@PMID">
-     <table     xsl:use-attribute-sets = "table">
-      <tr>
-       <td      xsl:use-attribute-sets = "cell1of2">
-        <b>PUBMED ID</b>
-       </td>
-       <td      xsl:use-attribute-sets = "cell2of2">
-        <xsl:element              name = "a">
-         <xsl:attribute           name = "href">
-          <xsl:value-of         select = "concat('http://www.ncbi.nlm.nih.gov/',
-                                                 'entrez/query.fcgi?',
-                                                 'cmd=Retrieve',
-                                                 '&amp;db=pubmed',
-                                                 '&amp;dopt=Abstract',
-                                                 '&amp;list_uids=',
-                                                 @PMID)"/>
-         </xsl:attribute>
-         <xsl:attribute           name = "target">
-          <xsl:text>new</xsl:text>
-         </xsl:attribute>
-
-        <xsl:value-of           select = "@PMID"/>
-        </xsl:element>
-       </td>
-      </tr>
-     </table>
-    </xsl:if>
-
-    <table      xsl:use-attribute-sets = "table">
-     <tr>
-      <td       xsl:use-attribute-sets = "cell1of2">
-       <b>Citation</b>
-      </td>
-      <td       xsl:use-attribute-sets = "cell2of2">
-       <xsl:value-of            select = "."/>
-      </td>
-     </tr>
-    </table>
-    <hr />
-   </xsl:for-each>
+   <!-- 
+   ==============================================================
+   Display Published Results/Format Citation 
+   ============================================================== -->
+   <b>
+    <i>
+     <font size='4'>Related Publications</font>
+    </i>
+   </b>
+   <p/>
+   <xsl:apply-templates         select = "RelatedPublications"/>
+   <hr />
 
    <xsl:apply-templates         select = "ProtocolAbstract/
                                           Professional/
@@ -278,20 +238,81 @@ $Log: not supported by cvs2svn $
                                           Outline"/>
    <xsl:apply-templates         select = "ProtocolDetail"/>
    <xsl:apply-templates         select = "ProtocolPhase"/>
-
   </BODY>
  </xsl:template>
 
 
  <!-- 
  ================================================================
- Display a Note
+ Display Citations
  ================================================================ -->
- <xsl:template                  match = "Note">
-  <xsl:apply-templates         select = "." 
-                                 mode = "RS"/>
+ <xsl:template                   match = "PublishedResults |
+                                          RelatedPublications">
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Citation ID</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "concat('CDR', number(
+                                          substring-after(@cdr:ref, 'CDR')))"/>
+    
+    </td>
+   </tr>
+  </table>
+ 
+  <xsl:if                         test = "@PMID">
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>PUBMED ID</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:element                name = "a">
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('http://www.ncbi.nlm.nih.gov/',
+                                                 'entrez/query.fcgi?',
+                                                 'cmd=Retrieve',
+                                                 '&amp;db=pubmed',
+                                                 '&amp;dopt=Abstract',
+                                                 '&amp;list_uids=',
+                                                 @PMID)"/>
+       </xsl:attribute>
+       <xsl:attribute             name = "target">
+        <xsl:text>new</xsl:text>
+       </xsl:attribute>
+
+      <xsl:value-of             select = "@PMID"/>
+      </xsl:element>
+     </td>
+    </tr>
+   </table>
+  </xsl:if>
+
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Citation</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "."/>
+    </td>
+   </tr>
+  </table>
+  <xsl:if                         test = "position() != last()">
+   <hr width="25%"/>
+  </xsl:if>
  </xsl:template>  
 
+
+ <!-- 
+ ================================================================
+ Display a Note
+ ================================================================ -->
+ <xsl:template                   match = "Note">
+  <xsl:apply-templates          select = "." 
+                                  mode = "RS"/>
+ </xsl:template>  
 </xsl:transform>]]>
 </CdrDocXml>
 </CdrDoc>
