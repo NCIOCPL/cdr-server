@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.62 2005-04-08 03:39:17 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.63 2005-08-16 01:12:35 ameyer Exp $
  *
  */
 
@@ -397,7 +397,6 @@ void cdr::CdrDoc::store ()
         sqlStmt =
             "INSERT INTO document ("
             "   val_status,"
-            "   val_date,"
             "   active_status,"
             "   doc_type,"
             "   title,"
@@ -412,7 +411,6 @@ void cdr::CdrDoc::store ()
         sqlStmt =
             "UPDATE document "
             "  SET val_status = ?,"
-            "      val_date = ?,"
             "      active_status = ?,"
             "      doc_type = ?,"
             "      title = ?,"
@@ -426,17 +424,16 @@ void cdr::CdrDoc::store ()
     // Fill in values
     cdr::db::PreparedStatement docStmt = docDbConn.prepareStatement (sqlStmt);
     docStmt.setString (1, valStatus);
-    docStmt.setString (2, valDate);
-    docStmt.setString (3, activeStatus);
-    docStmt.setInt    (4, DocType);
-    docStmt.setString (5, title);
-    docStmt.setString (6, Xml);
-    docStmt.setString (7, comment);
-    docStmt.setInt    (8, lastFragmentId);
+    docStmt.setString (2, activeStatus);
+    docStmt.setInt    (3, DocType);
+    docStmt.setString (4, title);
+    docStmt.setString (5, Xml);
+    docStmt.setString (6, comment);
+    docStmt.setInt    (7, lastFragmentId);
 
     // For existing records, fill in ID
     if (Id) {
-        docStmt.setInt (9, Id);
+        docStmt.setInt (8, Id);
     }
 
     // Do it
@@ -861,7 +858,7 @@ static cdr::String cdrPutDoc (
                     L"unsupported.  Sorry.");
 
         // Perform validation
-        // Will set valid_status and valid_date in the doc object
+        // execValidateDoc will set valStatus in the doc object
         // Will overwrite whatever is there
         cdr::execValidateDoc (doc,cdr::UpdateUnconditionally,validationTypes);
 
@@ -874,6 +871,10 @@ static cdr::String cdrPutDoc (
         }
         SHOW_ELAPSED("validation completed", incrementalTimer);
     }
+    else
+        // Document is unvalidated.
+        // Set status accordingly.  Leaves val_date alone.
+        doc.setValStatus (L"U");
 
     if (cmdSetLinks && !cmdLinkVal && doc.isContentType()) {
         // Update of link tables is part of unconditional link validation
