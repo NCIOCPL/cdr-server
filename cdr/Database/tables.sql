@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.105 2005-08-15 18:16:45 bkline Exp $
+ * $Id: tables.sql,v 1.106 2005-08-16 14:29:11 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.105  2005/08/15 18:16:45  bkline
+ * Added external_map_type table.
+ *
  * Revision 1.104  2005/06/21 13:02:12  bkline
  * Added 'bogus' column to external_map table.
  *
@@ -2162,11 +2165,11 @@ GO
  * Table used to determine whether a mapping is to a document of the
  * correct type.
  *
- *    map_id  foreign key into the external_map table
- *   type_id  foreign key into the doc_type table
+ *     usage  foreign key into the external_map_usage table
+ *  doc_type  foreign key into the doc_type table
  */
 CREATE TABLE external_map_type
-     (map_id INTEGER NOT NULL REFERENCES external_map,
-     type_id INTEGER NOT NULL REFERENCES doc_type,
-PRIMARY KEY (map_id, type_id))
+      (usage INTEGER NOT NULL REFERENCES external_map_usage,
+    doc_type INTEGER NOT NULL REFERENCES doc_type,
+PRIMARY KEY (usage, doc_type))
 GO
