@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.63 2005-08-16 01:12:35 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.64 2005-08-18 15:36:42 ameyer Exp $
  *
  */
 
@@ -403,7 +403,7 @@ void cdr::CdrDoc::store ()
             "   xml,"
             "   comment,"
             "   last_frag_id"
-            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            ") VALUES (?, ?, ?, ?, ?, ?, ?)";
     }
 
     // Existing record
