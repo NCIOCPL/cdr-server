@@ -3,17 +3,17 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Copy XML for Summary Report</DocTitle>
-<DocComment>CVS-V1.10: Summary Report Format Changes (Bug 816)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+<ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
  ================================================================
-     $Id: CDR0000409593.xml,v 1.3 2005-01-20 00:20:25 venglisc Exp $
+ $Id: CDR0000409593.xml,v 1.4 2005-08-29 23:35:56 venglisc Exp $
 
-     Intermediate Filter to prepare for HP QC Summary Report
-        Written by Volker Englisch, 2004-11-23
+ Intermediate Filter to prepare for Patient QC Summary Report
+ Written by Volker Englisch, 2002-05-06
 
-     $Log: not supported by cvs2svn $
+ $Log: not supported by cvs2svn $
  ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
@@ -27,70 +27,113 @@
  ================================================================ -->
  <xsl:template                   match = "Summary">
   <xsl:copy>
+   <!--
+   ==============================================================
+   copy summary meta data, and title
+   ============================================================== -->
    <SummaryMetaData>
-    <xsl:apply-templates        select = "SummaryMetaData/SummaryType" 
+    <xsl:apply-templates        select = "SummaryMetaData/SummaryType"   
                                   mode = "copy"/>
     <xsl:apply-templates        select = "SummaryMetaData/SummaryAudience" 
                                   mode = "copy"/>
     <xsl:apply-templates        select = "SummaryMetaData/SummaryLanguage" 
                                   mode = "copy"/>
    </SummaryMetaData>
-    <!--
-    ==================================
-    copy  title
-    ================================== -->
-    <xsl:apply-templates        select = "SummaryTitle" 
+
+   <!--
+   ======================================================================
+   Copy the Summary title and all the summary sections including Keypoint
+   ====================================================================== -->
+   <xsl:apply-templates         select = "SummaryTitle" 
                                   mode = "copy"/>
 
-    <xsl:for-each               select = "SummarySection"> 
+   <xsl:for-each                select = "SummarySection"> 
+     <!--
+     ======================================================================
+     The top SummarySection title needs to be displayed before the keypoint 
+     section.  It is being renamed here to be able and handle these titles 
+     separately from all other SummarySection titles
+     ====================================================================== -->
+     <SectionTitle>
+      <xsl:apply-templates      select = "Title"
+                                  mode = "copy"/>
+     </SectionTitle>
 
      <!--
-     ============================================================
-     copy summary sections and add references at the end of each 
-     section 
-     ============================================================ -->
-     <xsl:apply-templates       select = "." 
+     ===============================================================
+     Collect Keypoints for keypoints box above each SummarySection
+     =============================================================== -->
+     <KeyPoints>
+      <KeyPointsList             Style = 'bullet'>
+       <xsl:for-each            select = "SummarySection">
+        <xsl:if                   test = "KeyPoint">
+         <ListItem>
+          <xsl:apply-templates  select = "KeyPoint" 
+                                  mode = "copy"/>
+       
+          <xsl:for-each         select = "SummarySection">
+           <xsl:apply-templates select = "Title" 
+                                  mode = "copy"/>     
+           <xsl:if                test = "KeyPoint">
+            <KeyPointsList       Style = 'dash'>
+             <ListItem>
+              <xsl:apply-templates select = "KeyPoint" 
+                                  mode = "copy"/>
+             </ListItem>
+            </KeyPointsList>
+           </xsl:if>
+          </xsl:for-each>
+         </ListItem>
+        </xsl:if>
+       </xsl:for-each> 
+      </KeyPointsList>
+     </KeyPoints>
+      
+    <!--
+    ============================================================
+    copy summary sections and add references at the end of each 
+    section 
+    ============================================================ -->
+    <xsl:apply-templates        select = "." 
                                   mode = "copy"/> 
                                             
-     <xsl:apply-templates       select = "PdqKey" 
+    <xsl:apply-templates        select = "PdqKey" 
                                   mode = "copy"/>
-    </xsl:for-each>
+   </xsl:for-each>
 
-    <GlossaryTerms>
-     <xsl:for-each              select = "//GlossaryTermRef">
-      <GlossaryTerm>
-       <GlossaryTermRef>
-        <xsl:apply-templates      mode = "copy"/>
-       </GlossaryTermRef>
+   <GlossaryTerms>
+    <xsl:for-each               select = "//GlossaryTermRef">
+     <GlossaryTerm>
+      <GlossaryTermRef>
+       <xsl:apply-templates       mode = "copy"/>
+      </GlossaryTermRef>
        
-       <xsl:variable              name = "defID"  
+      <xsl:variable               name = "defID"  
                                 select = "@cdr:href"/>
       
-       <xsl:variable              name = "defInfo" 
+      <xsl:variable               name = "defInfo" 
                                 select = "document(concat('cdrx:', $defID,
                                                           '/last'))"/>
-       <xsl:if                    test = "$defInfo/GlossaryTerm/
+      <xsl:if                     test = "$defInfo/GlossaryTerm/
                                           TermDefinition/
                                           Audience = 'Patient' 
                                           and 
-
-
                                           $defInfo/GlossaryTerm/
                                           TermDefinition/
                                           Dictionary = 'Cancer.gov'"> 
                                            
-        <TermName>
-         <xsl:value-of          select = "$defInfo/GlossaryTerm/
+       <TermName>
+        <xsl:value-of           select = "$defInfo/GlossaryTerm/
                                           TermName"/> 
-        </TermName>
-        <DefinitionText>     
-         <xsl:value-of          select = "$defInfo/GlossaryTerm/
+       </TermName>
+       <DefinitionText>     
+        <xsl:value-of           select = "$defInfo/GlossaryTerm/
                                           TermDefinition/DefinitionText"/>
-        </DefinitionText>
-       </xsl:if>
-      </GlossaryTerm>
-     </xsl:for-each>
-    </GlossaryTerms>
+       </DefinitionText>
+      </xsl:if>
+     </GlossaryTerm>
+    </xsl:for-each>
+   </GlossaryTerms>
   </xsl:copy>  
  </xsl:template>
 
@@ -108,7 +151,6 @@
    <xsl:apply-templates           mode = "copy"/>
   </xsl:copy> 
  </xsl:template>  
-
 </xsl:transform>]]>
 </CdrDocXml>
 </CdrDoc>

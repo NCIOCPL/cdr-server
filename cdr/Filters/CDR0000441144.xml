@@ -3,12 +3,12 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Patient Summary QC Report - Bold/Underline</DocTitle>
-<DocComment>CVS-V1.40: Fixed Title Format (Bug 942)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+<ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-$Id: CDR0000441144.xml,v 1.1 2005-07-19 15:24:08 venglisc Exp $
+$Id: CDR0000441144.xml,v 1.2 2005-08-29 23:39:08 venglisc Exp $
 
 Filter to display Patient Summary QC Reports (Bold/Underline)
 Written by Volker Englisch, 2005-06-28
@@ -23,6 +23,7 @@ $Log: not supported by cvs2svn $
  <xsl:output                  method = "html"
                               indent = "no"/>
 
+ <xsl:include   href = "cdr:name:Module: QC Filter Templates - Summary"/>
  <xsl:include   href = "cdr:name:Module: InLine Markup Formatter"/>
  <xsl:include   href = "cdr:name:Module: Checkbox Formatter"/>  
  <xsl:include   href = "cdr:name:Module: Table Formatter"/>
@@ -36,7 +37,7 @@ $Log: not supported by cvs2svn $
                                 select = "'SummaryPatBU'"/>
  <!--
  ===================================================================
- Main template
+ Main template to create HTML output
  =================================================================== -->
  <xsl:template                   match = "/">
   <HTML>
@@ -54,7 +55,6 @@ $Log: not supported by cvs2svn $
                                                   DocTitle, ';'), ';')"/> 
     </TITLE>
 
-    <!-- Modified 7/14/2003  C.Burg  -->
     <STYLE type='text/css'>
      <xsl:call-template           name = "defaultStyle"/>  
      <xsl:call-template           name = "qcSummaryStyle"/>  
@@ -62,46 +62,39 @@ $Log: not supported by cvs2svn $
     </STYLE>
    </HEAD>
 
-   <BASEFONT FACE='Arial, Helvetica, sans-serif'/>
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif'/> 
    <xsl:apply-templates         select = "Summary"/>
   </HTML>
  </xsl:template>
 
  <!-- 
  =====================================================================
- Produce the HTML BODY 
+ Display summary title
  ===================================================================== -->
- <xsl:template                 match = "Summary">
+ <xsl:template                   match = "Summary">
   <xsl:choose>
-   <xsl:when                    test = "//SummaryAudience='Patients'
-                                        and
-                                        //KeyPoint">
+   <xsl:when                      test = "//SummaryAudience = 'Patients'
+                                          and
+                                          (//KeyPoint
+                                          or
+                                          //SummaryType = 
+                                           concat('Complementary and ',
+                                                  'alternative medicine'))">
     <BODY>
-     <xsl:apply-templates     select = "SummaryTitle" 
-                                mode = "TOC"/>  
+     <xsl:apply-templates       select = "SummaryTitle" 
+                                  mode = "TOC"/>  
     
      <!--
      ======================================================
      Display summary type and audience 
      ======================================================-->
-     <xsl:for-each            select = "SummaryMetaData">
-      <h3>
-       <xsl:value-of          select = "concat(SummaryType,
-                                          ' - ', SummaryAudience)"/>
-      </h3>
-     </xsl:for-each>
+     <xsl:call-template           name = "displayMetaData"/>
 
-     <xsl:if                     test = "SummarySection"> 
-      <ul Class="lnone">
-       <xsl:for-each          select = "SummarySection">
-        <xsl:call-template      name = "TocSummarySection">
-         <xsl:with-param        name = "level"
-                              select = "1"/>
-        </xsl:call-template>  
-       </xsl:for-each>
-      </ul>
-     </xsl:if>
-     <hr/>
+     <!--
+     ==================================================================
+     Display summary type and audience 
+     ================================================================== -->
+     <xsl:call-template           name = "displayTOC"/>
 
      <xsl:apply-templates/>
             
@@ -117,176 +110,39 @@ $Log: not supported by cvs2svn $
   </xsl:choose>  
  </xsl:template>
 
-   
 
-<!-- =====================================================================
-       Display KeyPoints 
-     ===================================================================== --> 
-    <xsl:template              match = "KeyPoints">
-     <xsl:if                    test = "KeyPointsList/ListItem/KeyPoint">
-      <table align='center' border='1'>
-      <tr>
-         <td align='middle'>
-            <b>Key Points for This Section</b>
-         </td>
-      </tr>
-      <tr>
-         <td>
-           <xsl:if              test = "KeyPointsList !=''">
-           <xsl:apply-templates/>
-           </xsl:if>
-         </td>
-      </tr>
-      </table>
-      <br />
-     </xsl:if>
-    </xsl:template>
-
- <!-- 
- Note: The insertion/deletion templates for the Redline/Strikeout
-       and the patient summary reports are identical.
-       However, the Bold/Underline report is slightly different.
- ================================================================== 
- Display text with Insertion (Citation text is handled separately)
- ================================================================== -->
- <xsl:template                   match = "Insertion">
-  <xsl:choose>
-   <xsl:when                      test = "@RevisionLevel = 'proposed'">
-    <span class="insertproposed">
-     <xsl:apply-templates/>
-    </span>
-   </xsl:when>
-   <xsl:otherwise> 
-    <span class="insertapproved">
-     <xsl:apply-templates/>
-    </span>
-   </xsl:otherwise>
-  </xsl:choose>
- </xsl:template>
-
- <!-- 
- ==================================================================
- Display text proposed for Deletion (Citation text is handled 
- separately).
- ================================================================== -->
- <xsl:template                   match = "Deletion"> 
-  <xsl:if                         test = "@RevisionLevel = 'proposed'">
-   <span class="deleteproposed">
-    <xsl:apply-templates/>
-   </span>  
-  </xsl:if>
- </xsl:template>      
-
-
- <!-- 
- ================================================================== 
- Display an Insertion 
- =================================================================== -->
- <xsl:template                   match = "Insertion"
-                                  mode = "compactNo">
-  <xsl:choose>
-   <xsl:when                      test = "@RevisionLevel = 'proposed'">
-    <span class="insertproposed">
-     <xsl:apply-templates/>
-    </span>
-   </xsl:when>
-   <xsl:otherwise>
-    <span class="insertapproved">
-     <xsl:apply-templates/>
-    </span>
-   </xsl:otherwise>
-  </xsl:choose>
- </xsl:template>
-         
- <!-- 
- ==================================================================
- Display a Deletion 
- =================================================================== -->
- <xsl:template                   match = "Deletion"
-                                  mode = "compactNo">
-  <xsl:if                         test = "@RevisionLevel = 'proposed'">
-   <span class="deleteproposed">
-    <xsl:apply-templates/>
-   </span>
-  </xsl:if>
- </xsl:template>
-
-
-<!-- ================================================================
-       This template deletes data elements not used in the display 
-     ================================================================ -->
-    <xsl:template              match = "DocId | PdqKey | PDQBoard | 
-                                        SectionType |Diagnosis |
-                                        SummaryLanguage | SummaryType |
-                                        SummaryAudience | SummaryTitle |
-                                        MainTopics | SecondaryTopics | 
-                                        PatientVersionOf | TranslationOf |
-                                        DateLastModified | ReplacementFor "/>
-
-<!-- =========================================================
-           Display KeyPoint
-     ========================================================= -->         
-    <xsl:template              match = "KeyPoint">
-     <b>
-                               <xsl:apply-templates/>
-     </b>
-     <xsl:if                   test="../SummarySection">
-      <br /><br />
-     </xsl:if>
-    </xsl:template>
-
-
- <!-- 
- ==============================================================
- Display Top SummarySection Title
- ============================================================== -->
- <xsl:template                   match = "SectionTitle/Title">
-  <h2>
-   <xsl:apply-templates/>
-  </h2>
- </xsl:template>
-
- 
  <!-- 
  ==============================================================
  Display a Glossary Link
  ============================================================== -->
- <xsl:template                match = "GlossaryTermRef | LOERef">
-  <xsl:if                     test  = "/Summary/SummaryMetaData/
-                                        SummaryAudience = 'Patients'">
-   <xsl:apply-templates      select = "."  
-                               mode = "PEBU"/>
+ <xsl:template                   match = "GlossaryTermRef | 
+                                          LOERef">
+  <xsl:if                        test  = "/Summary/
+                                           SummaryMetaData/
+                                           SummaryAudience = 'Patients'">
+   <xsl:apply-templates         select = "."  
+                                  mode = "PEBU"/>
   </xsl:if>
  </xsl:template>
-
-
-
- <!-- 
- ================================================================
- Display Comments 
- ================================================================ -->
- <!-- xsl:template                  match = "Comment">
-  <xsl:apply-templates         select = "." 
-                                 mode = "RS"/>  
- </xsl:template -->  
 
 
  <!-- 
  ================================================================
  Display a Note
  ================================================================ -->
- <xsl:template                  match = "Note">
-  <xsl:apply-templates         select = "." 
-                                 mode = "RS"/>
+ <xsl:template                   match = "Note">
+  <xsl:apply-templates          select = "." 
+                                  mode = "RS"/>
  </xsl:template> 
- 
+
+
 <!--
  ================================================================
  Display a  Summary Section Title
  ================================================================ -->
- <xsl:template                  match = "Title">
-  <xsl:apply-templates         select = "." 
-                                 mode = "PT"/>
+ <xsl:template                   match = "Title">
+  <xsl:apply-templates          select = "." 
+                                  mode = "PT"/>
  </xsl:template>  
 </xsl:transform>]]>
 </CdrDocXml>

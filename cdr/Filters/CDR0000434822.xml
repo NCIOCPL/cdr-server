@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000434822.xml,v 1.1 2005-05-25 17:18:37 venglisc Exp $
+$Id: CDR0000434822.xml,v 1.2 2005-08-29 23:37:19 venglisc Exp $
 
 Filter Module to include all general formatting templates for 
 Summary QC Reports 
@@ -34,25 +34,88 @@ $Log: not supported by cvs2svn $
 
 
  <!-- 
+ ================================================================
+ This template deletes data elements not used in the display 
+ ================================================================ -->
+ <xsl:template                   match = "DateLastModified |
+                                          Diagnosis        |
+                                          DocId            | 
+                                          MainTopics       |
+                                          PatientVersionOf |
+                                          PDQBoard         | 
+                                          PdqKey           | 
+                                          ReplacementFor   |
+                                          SecondaryTopics  |
+                                          SectionType      |
+                                          SummaryAudience  |
+                                          SummaryLanguage  | 
+                                          SummaryMetaData  |
+                                          SummaryTitle     |
+                                          SummaryType      |
+                                          TranslationOf"/>
+
+
+ <!-- 
+ ========================================================================
+ Display KeyPoints Box for Patient Summaries
+ ======================================================================== --> 
+ <xsl:template                   match = "KeyPoints">
+  <xsl:if                         test = "KeyPointsList/ListItem/KeyPoint">
+   <table align='center' border='1'>
+    <tr>
+     <td align='middle'>
+      <b>Key Points for This Section</b>
+     </td>
+    </tr>
+    <tr>
+     <td>
+      <xsl:if                     test = "KeyPointsList !=''">
+       <xsl:apply-templates/>
+      </xsl:if>
+     </td>
+    </tr>
+   </table>
+   <br />
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ =========================================================
+ Display KeyPoint
+ ========================================================= -->         
+ <xsl:template                   match = "KeyPoint">
+  <b>
+   <xsl:apply-templates/>
+  </b>
+
+  <xsl:if                         test = "../SummarySection">
+   <br /><br />
+  </xsl:if>
+ </xsl:template>
+
+ 
+ <!-- 
+ ===================================================================
  Note: The insertion templates for the Redline/Strikeout, 
        Bold/Underline and the patient summary reports are identical.
        However, the deletion templates for the Bold/Underline 
        report are slightly different since deletions are not 
        displayed in the BU report unless they are marked proposed.
- ================================================================== 
+ ===================================================================
  Display text with Insertion (Citation text is handled separately)
- ================================================================== -->
+ =================================================================== -->
  <xsl:template                   match = "Insertion">
   <xsl:choose>
-   <xsl:when                      test = "@Source = 'advisory-board'">
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
     <xsl:choose>
-     <xsl:when                    test = "@RevisionLevel = 'proposed'">
+     <xsl:when                    test = "@Source = 'advisory-board'">
       <span class="insertproposed_ad">
        <xsl:apply-templates/>
       </span>
      </xsl:when>
      <xsl:otherwise> 
-      <span class="insertapproved_ad">
+      <span class="insertproposed">
        <xsl:apply-templates/>
       </span>
      </xsl:otherwise>
@@ -60,8 +123,8 @@ $Log: not supported by cvs2svn $
    </xsl:when>
    <xsl:otherwise>
     <xsl:choose>
-     <xsl:when                    test = "@RevisionLevel = 'proposed'">
-      <span class="insertproposed">
+     <xsl:when                    test = "@Source = 'advisory-board'">
+      <span class="insertapproved_ad">
        <xsl:apply-templates/>
       </span>
      </xsl:when>
@@ -83,15 +146,15 @@ $Log: not supported by cvs2svn $
  <xsl:template                   match = "Insertion"
                                   mode = "compactNo">
   <xsl:choose>
-   <xsl:when                      test = "@Source = 'advisory-board'">
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
     <xsl:choose>
-     <xsl:when                    test = "@RevisionLevel = 'proposed'">
+     <xsl:when                    test = "@Source = 'advisory-board'">
       <span class="insertproposed_ad">
        <xsl:apply-templates/>
       </span>
      </xsl:when>
      <xsl:otherwise>
-      <span class="insertapproved_ad">
+      <span class="insertproposed">
        <xsl:apply-templates/>
       </span>
      </xsl:otherwise>
@@ -99,8 +162,8 @@ $Log: not supported by cvs2svn $
    </xsl:when>
    <xsl:otherwise>
     <xsl:choose>
-     <xsl:when                    test = "@RevisionLevel = 'proposed'">
-      <span class="insertproposed">
+     <xsl:when                    test = "@Source = 'advisory-board'">
+      <span class="insertapproved_ad">
        <xsl:apply-templates/>
       </span>
      </xsl:when>
@@ -115,14 +178,99 @@ $Log: not supported by cvs2svn $
  </xsl:template>
 
 
- <!--
- ==============================================================
- Display Section Titles 
- Temporary until all Patient summaries are in new format
- ============================================================  -->
- <xsl:template                   match ="Title">
-  <xsl:apply-templates          select = "."
-                                  mode = "RB"/>
+ <!-- 
+ Note: The insertion templates for the Redline/Strikeout, 
+       Bold/Underline and the patient summary reports are identical.
+       However, the deletion templates for the Bold/Underline 
+       report are slightly different since deletions are not 
+       displayed in the BU report unless they are marked proposed.
+ ==================================================================
+ Display text proposed for Deletion (Citation text is handled 
+ separately).
+ ================================================================== -->
+ <xsl:template                   match = "Deletion"> 
+  <xsl:choose>
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
+    <xsl:choose>
+     <xsl:when                    test = "@Source = 'advisory-board'">
+      <span class="deleteproposed_ad">
+       <xsl:apply-templates/>
+      </span>  
+     </xsl:when>
+     <xsl:otherwise>
+      <span class="deleteproposed">
+       <xsl:apply-templates/>
+      </span>  
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <!--
+    Approved deletions are being applied and not shown at all 
+    in the Bold/Underline reports.
+    ========================================================= -->
+    <xsl:if                       test = "not(contains($whoAmI, 'BU'))"> 
+     <xsl:choose>
+      <xsl:when                   test = "@Source = 'advisory-board'">
+       <span class="deleteapproved_ad">
+        <xsl:apply-templates/>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <span class="deleteapproved">
+        <xsl:apply-templates/>
+       </span>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:if>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>      
+
+
+ <!-- 
+ ==================================================================
+ Display text proposed for Deletion (Citation text is handled 
+ separately).
+ =================================================================== -->
+ <xsl:template                   match = "Deletion"
+                                  mode = "compactNo">
+  <xsl:choose>
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
+    <xsl:choose>
+     <xsl:when                    test = "@Source = 'advisory-board'">
+      <span class="deleteproposed_ad">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:when>
+     <xsl:otherwise>
+      <span class="deleteproposed">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <!--
+    Approved deletions are being applied and not shown at all 
+    in the Bold/Underline reports.
+    ========================================================= -->
+    <xsl:if                       test = "not(contains($whoAmI, 'BU'))"> 
+     <xsl:choose>
+      <xsl:when                   test = "@Source = 'advisory-board'">
+       <span class="deleteapproved_ad">
+        <xsl:apply-templates/>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <span class="deleteapproved">
+        <xsl:apply-templates/>
+       </span>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:if>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
@@ -145,6 +293,219 @@ $Log: not supported by cvs2svn $
     <xsl:call-template            name = "markupCitation"/>
    </xsl:for-each>
   </ol>
+ </xsl:template>
+
+
+ <!-- 
+ ==============================================================
+ Display Top SummarySection Title
+ ============================================================== -->
+ <xsl:template                   match = "SectionTitle/Title">
+  <h2>
+   <xsl:apply-templates/>
+  </h2>
+ </xsl:template>
+
+ 
+ <!--
+ =================================================================
+ Formatting the CAM summary QandA set
+ ================================================================= -->
+ <xsl:template                   match = "QandASet">
+  <OL class="QandA-List">
+   <xsl:apply-templates         select = "QandAEntry"/>
+  </OL>
+ </xsl:template>  
+
+
+ <!--
+ =================================================================
+ Formatting the CAM summary QandA entry (basically the list items)
+ ================================================================= -->
+ <xsl:template                   match = "QandAEntry">
+  <LI class="addspace">
+   <xsl:apply-templates        select = "Question"/>
+   <p/>
+   <span class="answer">
+    <xsl:apply-templates        select = "Answer"/>
+   </span>
+  </LI>
+ </xsl:template>  
+
+
+ <!--
+ ================================================================
+ Name Template Section
+ ================================================================ -->
+ <!-- 
+ =====================================================================
+ Display the Citations in the Reference Section with Markup 
+ ===================================================================== -->
+ <xsl:template                    name = "markupCitation"> 
+  <xsl:choose>
+   <xsl:when                      test = "@InsertionOrDeletion = 'Insertion'">
+    <xsl:choose>
+     <xsl:when                    test = "@existing">
+      <li>
+       <xsl:value-of            select = "."/>
+       <br/>
+       <br/>
+      </li>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:choose>
+       <xsl:when                  test = "@Source = 'advisory-board'">
+        <xsl:choose>
+         <xsl:when                test = "@RevisionLevel = 'proposed'">
+          <li class="refinsertprop_ad">
+           <span class="insertproposed_ad">
+            <xsl:value-of       select = "."/>
+           </span>
+           <p></p>
+          </li>
+         </xsl:when>
+         <xsl:otherwise>
+          <li class="refinsertappr_ad">
+           <span class="insertapproved_ad">
+            <xsl:value-of       select = "."/>
+           </span>
+           <p></p>
+          </li>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:choose>
+         <xsl:when                test = "@RevisionLevel = 'proposed'">
+          <li class="refinsertprop">
+           <span class="insertproposed">
+            <xsl:value-of       select = "."/>
+           </span>
+           <br/>
+           <br/>
+          </li>
+         </xsl:when>
+         <xsl:otherwise>
+          <li class="refinsertappr">
+           <span class="insertapproved">
+            <xsl:value-of       select = "."/>
+           </span>
+           <br/>
+           <br/>
+          </li>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:when                      test = "@InsertionOrDeletion = 'Deletion'">
+    <xsl:choose>
+     <xsl:when                    test = "@existing">
+      <li>
+       <xsl:value-of            select = "."/>
+       <br/>
+       <br/>
+      </li>
+     </xsl:when>
+
+     <xsl:otherwise>
+      <!-- Deletions are only to be displayed in the Bold/Underline Report 
+           when they are proposed. -->
+      <xsl:choose>
+       <xsl:when                  test = "@RevisionLevel = 'proposed'">
+        <xsl:choose>
+         <xsl:when                test = "@Source = 'advisory-board'">
+          <li class="refdeleteprop_ad">
+           <span class="deleteproposed_ad">
+            <xsl:value-of       select = "."/>
+           </span>
+           <p></p>
+          </li>
+         </xsl:when>
+         <xsl:otherwise>
+          <li class="refdeleteprop">
+           <span class="deleteproposed">
+            <xsl:value-of       select = "."/>
+           </span>
+           <br/>
+           <br/>
+          </li>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:choose>
+         <xsl:when                test = "@Source = 'advisory-board'">
+          <li class="refdeleteappr_ad">
+           <span class="deleteapproved_ad">
+            <xsl:value-of       select = "."/>
+           </span>
+           <p></p>
+          </li>
+         </xsl:when>
+         <xsl:otherwise>
+          <!--
+          Approved deletions are being applied and not shown at all 
+          in the Bold/Underline reports.
+          ========================================================= -->
+          <xsl:if                 test = "not(contains($whoAmI, 'BU'))"> 
+           <li class="refdeleteappr">
+            <span class="deleteapproved">
+             <xsl:value-of      select = "."/>
+            </span>
+            <br/>
+            <br/>
+           </li>
+          </xsl:if>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <li>
+     <xsl:value-of              select = "."/>
+     <br/>
+     <br/>
+    </li>
+   </xsl:otherwise>
+  </xsl:choose>    
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Display summary type and audience 
+ =================================================================== -->
+ <xsl:template                    name = "displayMetaData">
+  <h3>
+   <xsl:value-of                select = "concat(
+                                            SummaryMetaData/SummaryType,
+                                            ' - ', 
+                                            SummaryMetaData/SummaryAudience)"/>
+  </h3>
+ </xsl:template>
+
+ <!-- 
+ ==================================================================
+ Display a Contents List of Summary Section Titles 
+ 10/06/2002 - Modified code to remove 4th level titles (CB) 
+ 10/08/2002 - took breaks out at end of titles.
+ =================================================================== -->
+ <xsl:template                    name = "displayTOC">
+  <ul Class="lnone">
+   <xsl:for-each                select = "SummarySection">
+    <xsl:call-template            name = "TocSummarySection">
+     <xsl:with-param              name = "level"
+                                select = "1"/>
+    </xsl:call-template>  
+   </xsl:for-each>
+  </ul>
+  <hr/>
  </xsl:template>
 </xsl:transform>
 ]]>
