@@ -1,9 +1,13 @@
 /*
- * $Id: procs.sql,v 1.16 2005-06-22 18:21:15 venglisc Exp $
+ * $Id: procs.sql,v 1.17 2005-09-09 17:45:57 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/06/22 18:21:15  venglisc
+ * Added path to procedure cdr_get_count_of_links_to_person to include the
+ * External Site information links in the count.
+ *
  * Revision 1.15  2002/08/13 19:41:24  bkline
  * Added find_linked_docs proc.
  *
@@ -101,6 +105,12 @@ IF EXISTS (SELECT *
             WHERE name = 'cdr_get_count_of_links_to_persons'
               AND type = 'P')
     DROP PROCEDURE cdr_get_count_of_links_to_persons
+GO
+IF EXISTS (SELECT *
+             FROM sysobjects
+            WHERE name = 'get_prot_person_connections'
+              AND type = 'P')
+    DROP PROCEDURE get_prot_person_connections
 GO
 
 
@@ -675,3 +685,134 @@ AS
 
     -- Clean up after ourselves.
     DROP TABLE #linked_docs
+
+/*
+ * Determine the counts of active and closed protocols to which a
+ * person is connected, either through a lead organization on the
+ * protocol, or one of the participating sites.
+ *
+ *  @param doc_id       CDR ID of the person for the report
+ */
+CREATE PROC get_prot_person_connections
+    @doc_id INTEGER
+AS
+    -- Local variables.
+    DECLARE @active_trials INTEGER
+    DECLARE @closed_trials INTEGER
+
+    -- Create a temporary table for person as non-PUP lead org person.
+    CREATE TABLE #lead_org_person (prot_id INTEGER,
+                                   lead_org_status VARCHAR(32))
+
+    INSERT INTO #lead_org_person
+SELECT DISTINCT lead_org_stat.doc_id prot_id,
+                lead_org_stat.value lead_org_status
+           FROM query_term lead_org_stat
+           JOIN query_term person
+             ON person.doc_id = lead_org_stat.doc_id
+            AND LEFT(person.node_loc, 8) = LEFT(lead_org_stat.node_loc, 8)
+           JOIN query_term person_role
+             ON person.doc_id = person_role.doc_id
+            AND LEFT(person.node_loc, 12) = LEFT(person_role.node_loc, 12)
+          WHERE lead_org_stat.path = '/InScopeProtocol/ProtocolAdminInfo'
+                                   + '/ProtocolLeadOrg/LeadOrgProtocolStatuses'
+                                   + '/CurrentOrgStatus/StatusName'
+            AND person.path        = '/InScopeProtocol/ProtocolAdminInfo'
+                                   + '/ProtocolLeadOrg/LeadOrgPersonnel'
+                                   + '/Person/@cdr:ref'
+            AND person_role.path   = '/InScopeProtocol/ProtocolAdminInfo'
+                                   + '/ProtocolLeadOrg/LeadOrgPersonnel'
+                                   + '/PersonRole'
+            AND person_role.value <> 'Update Person'
+            AND EXISTS (SELECT *
+                          FROM primary_pub_doc
+                         WHERE doc_id = lead_org_stat.doc_id)
+            AND person.int_val = @doc_id
+
+    -- Create a temporary table for person at private practice site.
+    CREATE TABLE #private_practice_person (prot_id INTEGER)
+
+    INSERT INTO #private_practice_person (prot_id)
+SELECT DISTINCT lead_org_stat.doc_id prot_id
+           FROM query_term lead_org_stat
+           JOIN query_term person
+             ON person.doc_id = lead_org_stat.doc_id
+            AND LEFT(person.node_loc, 8) = LEFT(lead_org_stat.node_loc, 8)
+           JOIN query_term person_status
+             ON person_status.doc_id = person.doc_id
+            AND LEFT(person_status.node_loc, 16) = LEFT(person.node_loc, 16)
+          WHERE lead_org_stat.path = '/InScopeProtocol/ProtocolAdminInfo'
+                                   + '/ProtocolLeadOrg/LeadOrgProtocolStatuses'
+                                   + '/CurrentOrgStatus/StatusName'
+            AND person.path        = '/InScopeProtocol/ProtocolAdminInfo'
+                                   + '/ProtocolLeadOrg/ProtocolSites'
+                                   + '/PrivatePracticeSite'
+                                   + '/PrivatePracticeSiteID/@cdr:ref'
+            AND person_status.path = '/InScopeProtocol/ProtocolAdminInfo'
+                                   + '/ProtocolLeadOrg/ProtocolSites'
+                                   + '/PrivatePracticeSite'
+                                   + '/PrivatePracticeSiteStatus'
+            AND lead_org_stat.value = 'Active'
+            AND person_status.value = 'Active'
+            AND EXISTS (SELECT *
+                          FROM primary_pub_doc
+                         WHERE doc_id = lead_org_stat.doc_id)
+            AND person.int_val = @doc_id
+
+    -- Create temporary table for connections to org sites.
+    CREATE TABLE #org_site_person (prot_id INTEGER)
+
+    INSERT INTO #org_site_person
+SELECT DISTINCT lead_org_stat.doc_id prot_id
+           FROM query_term lead_org_stat
+           JOIN query_term person
+             ON person.doc_id = lead_org_stat.doc_id
+            AND LEFT(person.node_loc, 8) = LEFT(lead_org_stat.node_loc, 8)
+           JOIN query_term site_status
+             ON site_status.doc_id = person.doc_id
+            AND LEFT(site_status.node_loc, 16) = LEFT(person.node_loc, 16)
+          WHERE lead_org_stat.path = '/InScopeProtocol/ProtocolAdminInfo'
+                                   + '/ProtocolLeadOrg/LeadOrgProtocolStatuses'
+                                   + '/CurrentOrgStatus/StatusName'
+            AND person.path        = '/InScopeProtocol/ProtocolAdminInfo'
+                                   + '/ProtocolLeadOrg/ProtocolSites/OrgSite'
+                                   + '/OrgSiteContact/SpecificPerson'
+                                   + '/Person/@cdr:ref'
+            AND site_status.path   = '/InScopeProtocol/ProtocolAdminInfo'
+                                   + '/ProtocolLeadOrg/ProtocolSites/OrgSite'
+                                   + '/OrgSiteStatus'
+            AND lead_org_stat.value = 'Active'
+            AND site_status.value = 'Active'
+            AND EXISTS (SELECT *
+                          FROM primary_pub_doc
+                         WHERE doc_id = lead_org_stat.doc_id)
+            AND person.int_val = @doc_id
+
+    -- Collect the count of active protocols from all three temp tables.
+    SELECT @active_trials = (SELECT COUNT(*) FROM (
+        SELECT prot_id
+          FROM #lead_org_person
+         WHERE lead_org_status IN ('Approved-not yet active', 'Active')
+         UNION
+        SELECT prot_id
+          FROM #private_practice_person
+         UNION
+        SELECT prot_id
+          FROM #org_site_person) AS inner_select)
+
+    -- Get the count of closed trials from the first table.
+    SELECT @closed_trials = (
+    SELECT COUNT(*)
+      FROM #lead_org_person
+     WHERE lead_org_status IN ('Closed',
+                               'Completed',
+                               'Temporarily Closed'))
+
+    -- Return the counts.
+    SELECT @active_trials, @closed_trials
+
+    -- Clean up after ourselves.
+    DROP TABLE #lead_org_person
+    DROP TABLE #private_practice_person
+    DROP TABLE #org_site_person
+GO
