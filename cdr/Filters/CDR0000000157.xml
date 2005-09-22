@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml     version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000157.xml,v 1.48 2005-08-04 14:53:15 venglisc Exp $
+$Id: CDR0000000157.xml,v 1.49 2005-09-22 22:54:03 venglisc Exp $
 
 Filter to create summary vendor output data.
    Written by Volker Englisch, 2003-08-12
@@ -40,7 +40,12 @@ $Log: not supported by cvs2svn $
                                           SummaryMetaData/
                                           SummaryLanguage"/>
  <xsl:variable                   name = "sumType"
-                               select = "/Summary/SummaryMetaData/SummaryType"/>
+                               select = "/Summary/
+                                          SummaryMetaData/
+                                          SummaryType"/>
+ <xsl:variable                   name = "sumId" 
+                               select = "/Summary/
+                                          DocId"/>
  <xsl:variable                   name = "ageGroup">
   <xsl:choose>
    <xsl:when                     test = "contains(/Summary/
@@ -54,6 +59,7 @@ $Log: not supported by cvs2svn $
    </xsl:otherwise>
   </xsl:choose>
  </xsl:variable>
+
  <!-- 
  ===========================================================
  Root element
@@ -126,7 +132,6 @@ $Log: not supported by cvs2svn $
    <xsl:choose>
     <xsl:when                    test = "SummaryMetaData/
                                          SummaryAudience = 'Patients'">
-
      <!--
      The ContactUs template is only being applied to Supportive Care,
      Screening, and Prevention summaries (Patient and HP version).
@@ -134,25 +139,47 @@ $Log: not supported by cvs2svn $
      <xsl:call-template          name = "ContactUs"/>
 
      <xsl:choose>
-      <xsl:when                test   = "SummaryMetaData/
+      <xsl:when                  test = "SummaryMetaData/
                                          SummaryType = 
                                            concat('Complementary and ',
                                                   'alternative medicine')">
-       <xsl:choose>
-        <xsl:when                test = "SummaryMetaData/
-                                         SummaryLanguage = 'English'">
-         <xsl:call-template      name = "AboutPdqEnglish"/>
-        </xsl:when>
-        <xsl:otherwise>
-         <xsl:call-template      name = "AboutPdqSpanish"/>
-        </xsl:otherwise>
-       </xsl:choose>
-
        <!--
-       The CAM patient summaries receive two additional misc documents
-       =============================================================== -->
-       <xsl:call-template        name = "QandACAM"/>
-       <xsl:call-template        name = "ToLearnMore"/>
+       We add the misc. documents to all CAM patient summaries except for 
+       the two Overview summaries (English and Spanish)
+       ================================================================== -->
+       <xsl:if                   test = "$sumId != 'CDR0000446574'
+                                         and
+                                         $sumId != 'CDR0000448614'">
+
+<!--    NOTE  *** NOTE *** NOTE *** NOTE *** NOTE *** NOTE *** NOTE *** NOTE
+        You must replace the IDs of the two CAM Patient Overview summaries 
+        to reflect the BACH IDs before versioning !!!
+        CAM Patient IDs on MAHLER
+                                         and not($sumId = 'CDR0000437936')
+                                         and not($sumId = 'CDR0000437936')
+        CAM Patient IDs on BACH
+                                         and not($sumId = 'CDR0000446574')
+                                         and not($sumId = 'CDR0000448614')
+        This comment can be removed after the next refresh of the CDR database
+        on MAHLER.  VE, 2005-09-22
+        NOTE  *** NOTE *** NOTE *** NOTE *** NOTE *** NOTE *** NOTE *** NOTE
+-->
+        <xsl:choose>
+         <xsl:when               test = "SummaryMetaData/
+                                         SummaryLanguage = 'English'">
+          <xsl:call-template     name = "AboutPdqEnglish"/>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:call-template     name = "AboutPdqSpanish"/>
+         </xsl:otherwise>
+        </xsl:choose>
+
+        <!--
+        The CAM patient summaries receive two additional misc documents
+        =============================================================== -->
+        <xsl:call-template       name = "QandACAM"/>
+        <xsl:call-template       name = "ToLearnMore"/>
+       </xsl:if>
       </xsl:when>
       <xsl:otherwise>
        <xsl:call-template        name = "ToLearnMore"/>
@@ -166,10 +193,10 @@ $Log: not supported by cvs2svn $
          <xsl:call-template      name = "AboutPdqSpanish"/>
         </xsl:otherwise>
        </xsl:choose>
+
       </xsl:otherwise>
      </xsl:choose>
     </xsl:when>
-
     <!-- HP Summaries -->
     <xsl:otherwise>
      <!--
@@ -634,6 +661,21 @@ $Log: not supported by cvs2svn $
 
 
  <!-- 
+ ==================================================================
+ Create the QandAEntry template including the renamed attribute for 
+ the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+ ================================================================== -->
+ <xsl:template                  match = "QandAEntry">
+   <QandAEntry>
+    <xsl:attribute               name = "id">
+     <xsl:value-of             select = "./@cdr:id"/>
+    </xsl:attribute>
+    <xsl:apply-templates/>
+   </QandAEntry>
+ </xsl:template>
+    
+
+ <!-- 
  =========================================================================
  Template for in-line mark-up
  ========================================================================= -->
@@ -641,7 +683,7 @@ $Log: not supported by cvs2svn $
                                          Subscript      | Superscript    |
                                          GeneName       | ScientificName |
                                          ForeignName    | Note           |
-                                         QandASet       | QandAEntry     |
+                                         QandASet       | 
                                          QandADiv       | MarkedUpTitle  |
                                          Question       | Answer">
   <xsl:element                   name = "{name()}">
@@ -1031,14 +1073,6 @@ $Log: not supported by cvs2svn $
       <xsl:with-param            name = "miscDocId"
                                select = "'_ContactUs'"/>
      </xsl:apply-templates>
-<!-- 
-     <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
-                                                  MiscellaneousDocumentText"
-                                 mode = "MiscText">
-      <xsl:with-param            name = "miscDocId"
-                               select = "'_ContactUs'"/>
-     </xsl:apply-templates>
--->
     </xsl:when>
     <!-- English, Patient, Contact Us Section End-->
         
@@ -1048,14 +1082,6 @@ $Log: not supported by cvs2svn $
      <xsl:variable               name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000353206',
                                                          '/lastp'))"/>
-<!-- 
-     <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
-                                                  MiscellaneousDocumentText"
-                                 mode = "MiscText">
-      <xsl:with-param            name = "miscDocId"
-                               select = "'_ContactUs'"/>
-     </xsl:apply-templates>
--->
      <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
       <xsl:with-param            name = "miscDocId"
@@ -1087,6 +1113,7 @@ $Log: not supported by cvs2svn $
                                                          '/lastp'))"/>
       </xsl:when>
       <xsl:otherwise>
+       <!-- Spanish HP CAM summaries currently don't exist -->
        <xsl:copy-of            select = "document(concat('cdr:CDR0000256925',
                                                          '/lastp'))"/>
       </xsl:otherwise>
@@ -1137,8 +1164,19 @@ $Log: not supported by cvs2svn $
                                            concat('Complementary and ',
                                                   'alternative medicine')">
       <xsl:variable              name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000445623',
+                                                         '/lastp'))"/>
+<-- 
+Remove this section after MAHLER has been refreshed.  2005-09-22, VE
+MAHLER ID:
+      <xsl:variable              name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000437912',
                                                          '/lastp'))"/>
+BACH ID:
+      <xsl:variable              name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000445623',
+                                                         '/lastp'))"/>
+-->
       <xsl:apply-templates     select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
        <xsl:with-param           name = "miscDocId"
@@ -1168,8 +1206,19 @@ $Log: not supported by cvs2svn $
                                            concat('Complementary and ',
                                                   'alternative medicine')">
       <xsl:variable              name = "miscDoc" 
-                               select = "document(concat('cdr:CDR0000437912',
+                               select = "document(concat('cdr:CDR0000446984',
                                                          '/lastp'))"/>
+<-- 
+Remove this section after MAHLER has been refreshed.  2005-09-22, VE
+MAHLER ID:
+      <xsl:variable              name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000437917',
+                                                         '/lastp'))"/>
+BACH ID:
+      <xsl:variable              name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000446984',
+                                                         '/lastp'))"/>
+-->
       <xsl:apply-templates     select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
        <xsl:with-param           name = "miscDocId"
@@ -1180,7 +1229,7 @@ $Log: not supported by cvs2svn $
       <xsl:variable              name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000256873',
                                                          '/lastp'))"/>
-
+<!-- XXX -->
       <xsl:apply-templates     select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
        <xsl:with-param           name = "miscDocId"
@@ -1272,8 +1321,19 @@ $Log: not supported by cvs2svn $
                                            concat('Complementary and ',
                                                   'alternative medicine')">
     <xsl:variable                name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000445621',
+                                                         '/lastp'))"/>
+<-- 
+Remove this section after MAHLER has been refreshed.  2005-09-22, VE
+MAHLER ID:
+    <xsl:variable                name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000437910',
                                                          '/lastp'))"/>
+BACH ID:
+    <xsl:variable                name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000445621',
+                                                         '/lastp'))"/>
+-->
     <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
      <xsl:with-param             name = "miscDocId"
@@ -1341,20 +1401,56 @@ $Log: not supported by cvs2svn $
                                select = "'_AboutPDQ'"/>
     </xsl:apply-templates>
    </xsl:when>
+   <xsl:when                     test = "SummaryMetaData/
+                                         SummaryType =
+                                           concat('Complementary and ',
+                                                  'alternative medicine')">
+    <xsl:variable                name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000446985',
+                                                         '/lastp'))"/>
+<-- 
+Remove this section after MAHLER has been refreshed.  2005-09-22, VE    
+MAHLER ID:
+    <xsl:variable                name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000437915',
+                                                         '/lastp'))"/>
+BACH ID
+    <xsl:variable                name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000446985',
+                                                         '/lastp'))"/>
+-->
+    <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+     <xsl:with-param             name = "miscDocId"
+                               select = "'_AboutPDQ'"/>
+    </xsl:apply-templates>
+   </xsl:when>
   </xsl:choose>
  </xsl:template>
 
 
  <!-- 
  =========================================================================
+ Template to add the Q and A misc. document to CAM Patient Summaries
  ========================================================================= -->
  <xsl:template                   name = "QandACAM">
   <xsl:choose>
    <xsl:when                     test = "SummaryMetaData/
                                          SummaryLanguage = 'English'">
     <xsl:variable                name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000445622',
+                                                         '/lastp'))"/>
+<-- 
+Remove this section after MAHLER has been refreshed.  2005-09-22, VE
+MAHLER ID:
+    <xsl:variable                name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000437911',
                                                          '/lastp'))"/>
+BACH ID:
+    <xsl:variable                name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000445622',
+                                                         '/lastp'))"/>
+-->
     <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
      <xsl:with-param             name = "miscDocId"
@@ -1363,8 +1459,19 @@ $Log: not supported by cvs2svn $
    </xsl:when>
    <xsl:otherwise>
     <xsl:variable                name = "miscDoc" 
-                               select = "document(concat('cdr:CDR0000437911',
+                               select = "document(concat('cdr:CDR0000446986',
                                                          '/lastp'))"/>
+<-- 
+Remove this section after MAHLER has been refreshed.  2005-09-22, VE
+MAHLER ID:
+    <xsl:variable                name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000437916',
+                                                         '/lastp'))"/>
+BACH ID:
+    <xsl:variable                name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000446986',
+                                                         '/lastp'))"/>
+-->
     <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
      <xsl:with-param             name = "miscDocId"
@@ -1387,45 +1494,6 @@ $Log: not supported by cvs2svn $
   </xsl:apply-templates>
  </xsl:template>
 
-
- <!-- 
- ==================================================================
- MiscellaneousDocumentText Template
- ================================================================== -->  
-<!-- 
- <xsl:template                  match = "MiscellaneousDocumentText"
-                                 mode = "MoreInfo">
-  <xsl:param                     name = "miscDocId"/>
-
-  <SummarySection>
-   <xsl:attribute                name = "id">
-    <xsl:value-of              select = "$miscDocId"/>
-    <xsl:value-of              select = "Section/@cdr:id"/>
-   </xsl:attribute>
-
-   <xsl:apply-templates        select = "Section/Title"/>
-   <xsl:apply-templates        select = "Section/ItemizedList |
-                                            Section/Para"/>
-  </SummarySection>
- </xsl:template>
--->
-
-
- <!-- 
- ==================================================================
- MiscellaneousDocumentText Template
- ================================================================== -->  
-<!--
- <xsl:template                  match = "MiscellaneousDocumentText"
-                                 mode = "MiscText">
-  <xsl:param                     name = "miscDocId"/>
-
-  <xsl:apply-templates         select = "Section">
-   <xsl:with-param               name = "miscDocId" 
-                               select = "$miscDocId"/>
-  </xsl:apply-templates>
- </xsl:template>
--->
 
  <!-- 
  ==================================================================
@@ -1455,57 +1523,13 @@ $Log: not supported by cvs2svn $
      </xsl:if>
     </xsl:otherwise>
    </xsl:choose>
-
    <xsl:apply-templates          mode = "MiscText">
     <xsl:with-param              name = "miscDocId" 
                                select = "$miscDocId"/>
    </xsl:apply-templates>
-
   </SummarySection>
  </xsl:template>
 
-
- <!-- 
- ==================================================================
- Section Template for 'For More Information' Misc Doc
- Need to pass the parameter of the CDR Doc ID to set the ID 
- attribute properly.  The misc doc can be either the 'To Learn More'
- or the 'About PDQ' section.
- ================================================================== -->  
-<!-- 
- <xsl:template                  match = "Section"
-                                 mode = "ForMoreInfo">
-  <xsl:param                     name = "miscDocId"/>
-
-  <SummarySection>
-   <xsl:choose>
-    <xsl:when                    test = "$miscDocId">
-     <xsl:if                     test = "./@cdr:id">
-      <xsl:attribute             name = "id">
-       <xsl:value-of           select = "$miscDocId"/>
-       <xsl:value-of           select = "./@cdr:id"/>
-      </xsl:attribute>
-     </xsl:if>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:if                     test = "./@cdr:id">
-      <xsl:attribute             name = "id">
-       <xsl:value-of           select = "./@cdr:id"/>
-      </xsl:attribute>
-     </xsl:if>
-    </xsl:otherwise>
-   </xsl:choose>
-
-   <xsl:apply-templates        select = "Title"/>
-   <xsl:apply-templates        select = "Para | ItemizedList"  
-                                 mode = "MiscText">
-    <xsl:with-param              name = "miscDocId" 
-                               select = "$miscDocId"/>
-   </xsl:apply-templates>
-   <xsl:apply-templates        select = "ExternalRef"/>
-  </SummarySection>
- </xsl:template>
--->
 
  <!-- 
  ==============================================================
