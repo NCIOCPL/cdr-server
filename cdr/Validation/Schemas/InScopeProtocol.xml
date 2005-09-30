@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: InScopeProtocol.xml,v 1.56 2005-08-15 15:18:32 venglisc Exp $
+      $Id: InScopeProtocol.xml,v 1.57 2005-09-30 13:34:59 bkline Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.56  2005/08/15 15:18:32  venglisc
+      Change to SpecialCategory enumarated values. (Bug 1791)
+
       Revision 1.55  2005/08/10 20:00:20  venglisc
       Added element RelatedPublications. (Bug 1781)
 
@@ -298,6 +301,9 @@
                      type            = 'ProtocolSources'/>
       <element       name            = 'ProtocolApproval'
                      type            = 'ProtocolApproval'/>
+      <element       name            = 'OversightInfo'
+                     type            = 'OversightInfo'
+                     minOccurs       = '0'/>
       <element       name            = 'ProtocolSponsors'
                      type            = 'ProtocolSponsors'
                      minOccurs       = '0'/>
@@ -319,6 +325,8 @@
       <element       name            = 'ProtocolPhase'
                      type            = 'ProtocolPhase'
                      maxOccurs       = 'unbounded'/>
+      <element       name            = 'ExpectedEnrollment'
+                     type            = 'integer'/>
       <element       name            = 'ProtocolDesign'
                      type            = 'ProtocolDesign'
                      minOccurs       = '0'
@@ -347,6 +355,9 @@
                      type            = 'ProtocolAdminInfo'/>
       <element       name            = 'ProtocolProcessingDetails'
                      type            = 'ProtocolProcessingDetails'
+                     minOccurs       = '0'/>
+      <element       name            = 'VerificationInfo'
+                     type            = 'VerificationInfo'
                      minOccurs       = '0'/>
       <element       name            = 'DateLastModified'
                      type            = 'date'
@@ -428,6 +439,12 @@
                      type            = 'SourceName'/>
       <element       name            = 'DateReceived'
                      type            = 'date'/>
+      <element       name            = 'DateSubmissionComplete'
+                     type            = 'date'
+                     minOccurs       = '0'/>
+      <element       name            = 'MergeByDate'
+                     type            = 'date'
+                     minOccurs       = '0'/>
       <element       name            = 'Comment'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
@@ -440,6 +457,10 @@
                      type            = 'ReviewApprovalType'/>
       <element       name            = 'ReimbursementApprovalType'
                      type            = 'ReimbursementApprovalType'
+                     maxOccurs       = 'unbounded'
+                     minOccurs       = '0'/>
+      <element       name            = 'VoluntaryReview'
+                     type            = 'VoluntaryReview'
                      maxOccurs       = 'unbounded'
                      minOccurs       = '0'/>
       <element       name            = 'Comment'
@@ -471,6 +492,10 @@
 
   <complexType       name            = 'ProtocolAdminInfo'>
     <sequence>
+      <element       name            = 'StartDate'
+                     type            = 'ProtocolStartDate'
+                     minOccurs       = '0'
+                     maxOccurs       = '2'/>
       <element       name            = 'CurrentProtocolStatus'
                      type            = 'NotEmptyString'/>
 
@@ -781,6 +806,8 @@
     <sequence>
       <element       name            = 'ProcessingStatus'
                      type            = 'ProcessingStatus'/>
+      <element       name            = 'EnteredBy'
+                     type            = 'NotEmptyString'/>
       <element       name            = 'ProcessingDate'
                      type            = 'date'/>
       <element       name            = 'Comment'
@@ -798,6 +825,65 @@
       <element       name            = 'WarehouseBoxNumber'
                      type            = 'NonEmptyString'
                      minOccurs       = '0'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'IRBInfo'>
+    <sequence>
+      <element       name            = 'IRBApproved'
+                     type            = 'YesNo'/>
+      <element       name            = 'IRBApprovalForm'
+                     type            = 'SupplementaryInfoLink'/>
+                     minOccurs       = '0'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'ProtocolStartDate'>
+    <simpleContent>
+      <extension     base            = 'date'>
+        <attribute   name            = 'DateType'
+                     type            = 'ProtocolStartDateType'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'OversightInfo'>
+    <sequence>
+      <element       name            = 'RegulatoryAuthority'
+                     type            = 'NonEmptyString'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'IRBInfo'
+                     type            = 'IRBInfo'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'VerificationInfo'>
+    <sequence>
+      <element       name            = 'VerificationDate'
+                     type            = 'date'/>
+      <element       name            = 'Comment'
+                     type            = 'NotEmptyString'/>
+      <element       name            = 'EnteredBy'
+                     type            = 'NotEmptyString'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'VoluntaryReview'>
+    <sequence>
+      <element       name            = 'ReviewStatus'
+                     type            = 'VoluntaryReviewStatus'/>
+      <element       name            = 'ReviewStatusDate'
+                     type            = 'date'/>
+      <element       name            = 'Reviewer'
+                     type            = 'PersonLink'/>
+      <element       name            = 'DateSentForReview'
+                     type            = 'date'/>
+      <element       name            = 'DueDate'
+                     type            = 'date'/>
+      <element       name            = 'Comment'
+                     type            = 'NotEmptyString'/>
+      <element       name            = 'EnteredBy'
+                     type            = 'NotEmptyString'/>
     </sequence>
   </complexType>
 
@@ -898,6 +984,7 @@
       <enumeration   value           = 'Closed'/>
       <enumeration   value           = 'Completed'/>
       <enumeration   value           = 'Withdrawn'/>
+      <enumeration   value           = 'Withdrawn from PDQ'/>
     </restriction>
   </simpleType>
 
@@ -931,7 +1018,7 @@
   </simpleType>
 
   <simpleType        name            = 'ProcessingStatus'>
-    <restriction     base            = 'NotEmptyString'>
+    <restriction     base            = 'string'>
       <enumeration   value           = 'Disapproved by PDQ Editorial Board'/>
       <enumeration   value           = 'Approved by PDQ Editorial Board'/>
       <enumeration   value           = 'Under PDQ Editorial Board review'/>
@@ -940,6 +1027,10 @@
       <enumeration   value           = 'Duplicate'/>
       <enumeration   value           = 'Withdrawn'/>
       <enumeration   value           = 'Hold'/>
+      <enumeration   value           = 'Abstract in Review'/>
+      <enumeration   value           = 'Merged'/>
+      <enumeration   value           = 'Needs Administrative Information'/>
+      <enumeration   value           = 'Research Study'/>
     </restriction>
   </simpleType>
 
@@ -989,6 +1080,23 @@
   <simpleType        name            = 'ExternalSiteRegStatus'>
     <restriction     base            = 'string'>
       <enumeration   value           = 'Approved'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'ProtocolStartDateType'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Projected'/>
+      <enumeration   value           = 'Actual'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'VoluntaryReviewStatus'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Out for review'/>
+      <enumeration   value           = 'Approved'/>
+      <enumeration   value           = 'Approved with Comments'/>
+      <enumeration   value           = 'Disapproved'/>
+      <enumeration   value           = 'Canceled'/>
     </restriction>
   </simpleType>
 
