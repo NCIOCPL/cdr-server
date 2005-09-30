@@ -357,26 +357,78 @@ Filter to create a Citation QC Report
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:if                      test = "PublishedIn">
+      <xsl:variable               name = "cdrId"
+                                select = "concat('CDR', 
+                                           number(
+                                            substring-after(
+                                             substring-before(
+                                              concat(PublishedIn/
+                                               @cdr:ref, '#'), '#'), 'CDR')))"/>
       <xsl:value-of             select = "PublishedIn/Citation/
                                           PDQCitation/CitationTitle"/>
       <xsl:text> (</xsl:text>
-      <xsl:value-of             select = "concat('CDR', 
-                                           number(
-                                            substring-after(
-                                             PublishedIn/@cdr:ref, 'CDR')))"/>
+
+      <xsl:element                name = "a">
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py',
+                                                 '?DocId=',$cdrId,'&amp;',
+                                                 'DocVer=lastp&amp;',
+                                                 'Filter=set:',
+                                                 'QC%20Citation%20Set')"/>
+       </xsl:attribute>
+       <xsl:attribute             name = "target">
+        <xsl:value-of           select = "'new'"/>
+       </xsl:attribute>
+       <xsl:value-of            select = "$cdrId"/>
+      </xsl:element>
+
       <xsl:text>)</xsl:text>
      </xsl:if>
     </td>
    </tr> 
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Other Publication Information</b>
+     <b>Publication Information</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
-      <xsl:value-of             select = "OtherPublicationInformation"/>
-      <br/>
-      <xsl:value-of             select = "OtherPublicationInformation/
+     <xsl:value-of              select = "OtherPublicationInformation/
+                                          PublicationInformation"/>
+    </td>
+   </tr> 
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Internet Information</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "OtherPublicationInformation/
+                                          InternetInformation"/>
+     <br/>
+     <xsl:element                 name = "a">
+      <xsl:attribute              name = "href">
+       <xsl:choose>
+        <xsl:when                 test = "contains(
+                                          OtherPublicationInformation/
+                                          InternetInformation/
+                                          ExternalRef/@cdr:xref,'http')">
+         <xsl:value-of          select = "OtherPublicationInformation/
+                                          InternetInformation/
                                           ExternalRef/@cdr:xref"/>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:value-of          select = "concat('http://',
+                                          OtherPublicationInformation/
+                                          InternetInformation/
+                                          ExternalRef/@cdr:xref)"/>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:attribute>
+      <xsl:attribute              name = "target">
+       <xsl:text>new</xsl:text>
+      </xsl:attribute>
+      <xsl:value-of             select = "OtherPublicationInformation/
+                                          InternetInformation/
+                                          ExternalRef/@cdr:xref"/>
+     </xsl:element>
     </td>
    </tr> 
    <tr>
