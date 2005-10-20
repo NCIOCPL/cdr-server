@@ -1,0 +1,606 @@
+<CdrDoc Type='Filter' Id='CDR0000453830'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Glossary Term QC Report - Redline/Strikeout</DocTitle>
+<DocComment>CVS-V1.18: Title and CDRID Modified (Bug 962)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!--
+================================================================
+$Id: CDR0000453830.xml,v 1.1 2005-10-20 15:17:54 venglisc Exp $
+
+Filter to display Patient Summary QC Reports
+Written by C.Burg 9/25/2001 
+Made Tabular            06/20/2003 - Nanci 
+Glossary Schema changes 08/25/2003 - Nanci 
+
+$Log: not supported by cvs2svn $
+================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+ <xsl:output                    method = "html"/>
+
+ <xsl:include   href = "cdr:name:Module: Attribute Sets"/>
+ <xsl:include   href = "cdr:name:Module: InLine Markup Formatter"/>
+ <xsl:include   href = "cdr:name:Module: STYLE Default"/> 
+ <xsl:include   href = "cdr:name:Module: STYLE RS Insertion Deletion"/>  
+
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
+ <xsl:variable                    name = "whoAmI"
+                                select = "'GlossaryHPRS'"/>
+ <!-- 
+ ======================================================
+ This program is a filter to create a Glossary term
+ Content QC Report 
+ ====================================================== -->
+ <xsl:template                   match = "/">
+  <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+  <HTML>
+   <HEAD>
+    <xsl:variable                 name = "cdrdocs" 
+                                select = "document('cdrx:/*/CdrCtl')"/>
+    <TITLE>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+     <xsl:text>: </xsl:text>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/> 
+    </TITLE>
+    <STYLE type='text/css'>
+     <xsl:call-template           name = "defaultStyle"/>  
+     <xsl:call-template           name = "rsInsertionDeletionStyle"/>  
+    </STYLE>
+   </HEAD>
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' /> 
+   <xsl:apply-templates         select = "GlossaryTerm"/>
+  </HTML>
+ </xsl:template>
+
+ <!-- 
+ ===================================================  
+ Generate the HTML for the glossary term QC Report
+ =================================================== -->
+ <xsl:template                   match = "GlossaryTerm">
+  <BODY>
+  <!-- 
+  ==================================================
+  Display Report heading and subheading 
+  ================================================== -->
+  <b>
+   <font size='4'>
+    <center>
+     <xsl:text>Glossary Term (RS)</xsl:text>
+     <br/>
+     <xsl:text>QC Report</xsl:text>
+    </center>
+   </font>
+   <font size='3'>
+    <center>
+     <xsl:value-of              select = "document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M% 25p')"/>
+    </center>
+   </font>
+  </b>
+  <p/>
+
+  <b>
+   <xsl:apply-templates         select = "PDQKey"/>
+  </b>
+  <p/>
+
+  <!-- 
+  ====================================================================
+  Display CDR ID
+  ==================================================================== -->
+  <b>
+   <font size='4'>
+    <xsl:value-of               select = "concat('CDR', 
+                                          number(
+                                          substring-after($docID, 'CDR')))"/>
+   </font>
+  </b>
+  <p/>
+
+  <!--
+  ===============================================================
+  Display Name Information
+  =============================================================== -->
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>
+      <font size="4">Name</font>
+     </b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "TermName"/>
+    </td>
+   </tr>
+   <xsl:if                        test = "TermPronunciation">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Pronunciation</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "TermPronunciation"/>
+     </td>
+    </tr>
+   </xsl:if>
+  </table>           
+
+  <hr/>
+  <xsl:apply-templates          select = "TermDefinition"/>
+  <xsl:apply-templates          select = "SpanishTermName"/>
+  <xsl:apply-templates          select = "SpanishTermDefinition"/>
+
+  <!--
+  ===============================================================
+  Display Source Information
+  =============================================================== -->
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:if                        test = "MediaLink">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Media Link</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "MediaLink/
+                                          MediaID"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Source</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "TermSource"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Type</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "TermType"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Status</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "TermStatus"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Date</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "StatusDate"/>
+    </td>
+   </tr>
+   <xsl:if                        test = "Comment">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Comment</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "Comment"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "DateLastModified">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Date Last Modified</b>
+     </td>
+     <td>
+      <xsl:apply-templates      select = "DateLastModified"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "DateLastReviewed">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Date Last Reviewed</b>
+     </td>
+     <td>
+      <xsl:apply-templates      select = "DateLastReviewed"/>
+     </td>
+    </tr>
+   </xsl:if>
+  </table>
+
+  <p/>
+  </BODY>  
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template to display individual TermDefinitions
+ ================================================================== -->
+ <xsl:template                   match = "TermDefinition">
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Audience</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <b>
+      <xsl:apply-templates      select = "Audience"/>
+     </b>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Definition</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "DefinitionText"/>
+    </td>
+   </tr>
+   <xsl:if                        test = "MediaLink">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Media Link</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "MediaLink/
+                                          MediaID"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "Dictionary">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Dictionary</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "Dictionary"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "DefinitionStatus">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Definition Status</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "DefinitionStatus"/>
+     </td>
+    </tr>
+   </xsl:if>
+  </table>
+
+  <!--
+  Separate multiple Term definitions with a small horizontal line
+  =============================================================== -->
+  <xsl:choose>
+   <xsl:when                      test = "position() != last()">
+    <center>
+     <hr width="50%"/>
+    </center>
+   </xsl:when>
+   <xsl:otherwise>
+    <hr/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template to display optional SpanishTermName
+ ================================================================== -->
+ <xsl:template                   match = "SpanishTermName">
+  <p/>
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>
+      <font size="4">Spanish Name</font>
+     </b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates/>
+    </td>
+   </tr>
+  </table>
+  <p/>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template to display individual SpanishTermDefinitions
+ ================================================================== -->
+ <xsl:template                   match = "SpanishTermDefinition">
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Spanish Audience</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <b>
+      <xsl:apply-templates       select = "Audience"/>
+     </b>
+    </td>
+   </tr>
+   <tr>  
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Spanish Definition</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "DefinitionText"/>
+    </td>
+   </tr>
+  </table>
+
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:if                        test = "Dictionary">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Spanish Dictionary</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "Dictionary"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "DefinitionStatus">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Definition Status</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "DefinitionStatus"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "TranslationResource">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Tranlation Resource</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "TranslationResource"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "Comment">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Comment</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "Comment"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "StatusDate">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Status Date</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "StatusDate"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "DateLastModified">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Date Last Modified</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "DateLastModified"/>
+     </td>
+    </tr>
+   </xsl:if>
+  </table> 
+
+  <!--
+  Separate multiple Term definitions with a small horizontal line
+  =============================================================== -->
+  <xsl:choose>
+   <xsl:when                      test = "position() != last()">
+    <center>
+     <hr width="25%"/>
+    </center>
+   </xsl:when>
+   <xsl:otherwise>
+    <hr/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Note: The insertion templates for the Redline/Strikeout, 
+       Bold/Underline and the patient summary reports are identical.
+       However, the deletion templates for the Bold/Underline 
+       report are slightly different since deletions are not 
+       displayed in the BU report unless they are marked proposed.
+ ===================================================================
+ Display text with Insertion (Citation text is handled separately)
+ =================================================================== -->
+ <xsl:template                   match = "Insertion">
+  <xsl:choose>
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
+    <xsl:choose>
+     <xsl:when                    test = "@Source = 'advisory-board'">
+      <span class="insertproposed_ad">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:when>
+     <xsl:otherwise> 
+      <span class="insertproposed">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>
+     <xsl:when                    test = "@Source = 'advisory-board'">
+      <span class="insertapproved_ad">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:when>
+     <xsl:otherwise> 
+      <span class="insertapproved">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ================================================================== 
+ Display text with Insertion (Citation text is handled separately)
+ =================================================================== -->
+ <xsl:template                   match = "Insertion"
+                                  mode = "compactNo">
+  <xsl:choose>
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
+    <xsl:choose>
+     <xsl:when                    test = "@Source = 'advisory-board'">
+      <span class="insertproposed_ad">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:when>
+     <xsl:otherwise>
+      <span class="insertproposed">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>
+     <xsl:when                    test = "@Source = 'advisory-board'">
+      <span class="insertapproved_ad">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:when>
+     <xsl:otherwise>
+      <span class="insertapproved">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ Note: The insertion templates for the Redline/Strikeout, 
+       Bold/Underline and the patient summary reports are identical.
+       However, the deletion templates for the Bold/Underline 
+       report are slightly different since deletions are not 
+       displayed in the BU report unless they are marked proposed.
+ ==================================================================
+ Display text proposed for Deletion (Citation text is handled 
+ separately).
+ ================================================================== -->
+ <xsl:template                   match = "Deletion"> 
+  <xsl:choose>
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
+    <xsl:choose>
+     <xsl:when                    test = "@Source = 'advisory-board'">
+      <span class="deleteproposed_ad">
+       <xsl:apply-templates/>
+      </span>  
+     </xsl:when>
+     <xsl:otherwise>
+      <span class="deleteproposed">
+       <xsl:apply-templates/>
+      </span>  
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <!--
+    Approved deletions are being applied and not shown at all 
+    in the Bold/Underline reports.
+    ========================================================= -->
+    <xsl:if                       test = "not(contains($whoAmI, 'BU'))"> 
+     <xsl:choose>
+      <xsl:when                   test = "@Source = 'advisory-board'">
+       <span class="deleteapproved_ad">
+        <xsl:apply-templates/>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <span class="deleteapproved">
+        <xsl:apply-templates/>
+       </span>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:if>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>      
+
+
+ <!-- 
+ ==================================================================
+ Display text proposed for Deletion (Citation text is handled 
+ separately).
+ =================================================================== -->
+ <xsl:template                   match = "Deletion"
+                                  mode = "compactNo">
+  <xsl:choose>
+   <xsl:when                      test = "@RevisionLevel = 'proposed'">
+    <xsl:choose>
+     <xsl:when                    test = "@Source = 'advisory-board'">
+      <span class="deleteproposed_ad">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:when>
+     <xsl:otherwise>
+      <span class="deleteproposed">
+       <xsl:apply-templates/>
+      </span>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <!--
+    Approved deletions are being applied and not shown at all 
+    in the Bold/Underline reports.
+    ========================================================= -->
+    <xsl:if                       test = "not(contains($whoAmI, 'BU'))"> 
+     <xsl:choose>
+      <xsl:when                   test = "@Source = 'advisory-board'">
+       <span class="deleteapproved_ad">
+        <xsl:apply-templates/>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <span class="deleteapproved">
+        <xsl:apply-templates/>
+       </span>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:if>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
