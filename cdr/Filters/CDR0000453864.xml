@@ -1,0 +1,75 @@
+<CdrDoc Type='Filter' Id='CDR0000453864'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Audience Display Filter for QC Report</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0">
+
+ <!-- 
+ ==================================================================
+ The audience display allows the report to be displayed for either 
+ audience type (HP or Patient) to be displayed on its own.
+ The dedault is to display both term definitions (the full QC 
+ report).
+ ================================================================== -->
+ <xsl:param                       name = "displayAudience"
+                                select = "'patient_hp'"/>
+
+ <!-- 
+ ==================================================================
+ Main template to drop either the TermDefinition or 
+ SpanishTermDefinition for a specific audience if the audience has
+ not been checked on the Admin menu.
+ ================================================================== -->
+ <xsl:template                   match = "TermDefinition |
+                                          SpanishTermDefinition">
+  <!-- 
+  Only keep the audience type that has been selected.  Otherwise
+  drop the audience type.
+  ================================================================= -->
+  <xsl:choose>
+   <xsl:when                      test = "contains($displayAudience, 
+                                                   'patient')
+                                          and
+                                          contains(Audience,
+                                                   'Patient')">
+    <xsl:element                  name = "{name()}">
+     <xsl:apply-templates       select = "@*"/>
+     <xsl:apply-templates/>
+    </xsl:element>
+   </xsl:when>
+   <xsl:when                      test = "contains($displayAudience, 
+                                                   'hp')
+                                          and
+                                          contains(Audience,
+                                                   'Health professional')">
+    <xsl:element                  name = "{name()}">
+     <xsl:apply-templates       select = "@*"/>
+     <xsl:apply-templates/>
+    </xsl:element>
+   </xsl:when>
+   <xsl:otherwise>
+    <!-- Do nothing and drop this element -->
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Identity rule, copies everything to the output tree.
+ ================================================================== -->
+ <xsl:template                   match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates         select = "@*|node()"/>
+  </xsl:copy>
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
