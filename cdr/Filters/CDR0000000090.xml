@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000090.xml,v 1.21 2005-07-25 19:36:25 venglisc Exp $
+$Id: CDR0000000090.xml,v 1.22 2005-10-20 15:24:54 venglisc Exp $
 
 Filter to display Patient Summary QC Reports
 Written by C.Burg 9/25/2001 
@@ -23,12 +23,14 @@ $Log: not supported by cvs2svn $
 
  <xsl:output                    method = "html"/>
 
- <xsl:include  href = "cdr:name:Module: Attribute Sets"/>
- <xsl:include  href = "cdr:name:Module: InLine Markup Formatter"/>
- <xsl:include  href = "cdr:name:Module: STYLE Default"/> 
+ <xsl:include   href = "cdr:name:Module: Attribute Sets"/>
+ <xsl:include   href = "cdr:name:Module: InLine Markup Formatter"/>
+ <xsl:include   href = "cdr:name:Module: STYLE Default"/> 
 
  <xsl:variable                    name = "docID"
                                 select = "document('cdrutil:/docid')"/>
+ <xsl:variable                    name = "whoAmI"
+                                select = "'Glossary'"/>
  <!-- 
  ======================================================
  This program is a filter to create a Glossary term
@@ -117,14 +119,16 @@ $Log: not supported by cvs2svn $
      <xsl:apply-templates       select = "TermName"/>
     </td>
    </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Pronunciation</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:apply-templates       select = "TermPronunciation"/>
-    </td>
-   </tr>
+   <xsl:if                        test = "TermPronunciation">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Pronunciation</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "TermPronunciation"/>
+     </td>
+    </tr>
+   </xsl:if>
   </table>           
 
   <hr/>
@@ -180,30 +184,36 @@ $Log: not supported by cvs2svn $
      <xsl:apply-templates       select = "StatusDate"/>
     </td>
    </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Comment</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:apply-templates       select = "Comment"/>
-    </td>
-   </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Date Last Modified</b>
-    </td>
-    <td>
-     <xsl:apply-templates       select = "DateLastModified"/>
-    </td>
-   </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Date Last Reviewed</b>
-    </td>
-    <td>
-     <xsl:apply-templates       select = "DateLastReviewed"/>
-    </td>
-   </tr>
+   <xsl:if                        test = "Comment">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Comment</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "Comment"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "DateLastModified">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Date Last Modified</b>
+     </td>
+     <td>
+      <xsl:apply-templates      select = "DateLastModified"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "DateLastReviewed">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Date Last Reviewed</b>
+     </td>
+     <td>
+      <xsl:apply-templates      select = "DateLastReviewed"/>
+     </td>
+    </tr>
+   </xsl:if>
   </table>
 
   <p/>
@@ -217,6 +227,26 @@ $Log: not supported by cvs2svn $
  ================================================================== -->
  <xsl:template                   match = "TermDefinition">
   <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Audience</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each              select = "Audience">
+      <xsl:if                     test = "position() = last()">
+       <b>
+        <xsl:value-of           select = "."/>
+       </b>
+      </xsl:if>
+      <xsl:if                     test = "not(position() = last())">
+       <b>
+        <xsl:value-of           select = "."/>
+        <xsl:text>; </xsl:text>
+       </b>
+      </xsl:if>
+     </xsl:for-each> 
+    </td>
+   </tr>
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Definition</b>
@@ -236,30 +266,26 @@ $Log: not supported by cvs2svn $
      </td>
     </tr>
    </xsl:if>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Dictionary</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:apply-templates       select = "Dictionary"/>
-    </td>
-   </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Audience</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:for-each              select = "Audience">
-      <xsl:if                     test = "position() = last()">
-       <xsl:value-of            select = "."/>
-      </xsl:if>
-      <xsl:if                     test = "not(position() = last())">
-       <xsl:value-of            select = "."/>
-       <xsl:text>; </xsl:text>
-      </xsl:if>
-     </xsl:for-each> 
-    </td>
-   </tr>
+   <xsl:if                        test = "Dictionary">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Dictionary</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "Dictionary"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "DefinitionStatus">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Definition Status</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "DefinitionStatus"/>
+     </td>
+    </tr>
+   </xsl:if>
   </table>
 
   <!--
@@ -268,7 +294,7 @@ $Log: not supported by cvs2svn $
   <xsl:choose>
    <xsl:when                      test = "position() != last()">
     <center>
-     <hr width="25%"/>
+     <hr width="50%"/>
     </center>
    </xsl:when>
    <xsl:otherwise>
@@ -317,14 +343,16 @@ $Log: not supported by cvs2svn $
   </table>
 
   <table        xsl:use-attribute-sets = "table">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Spanish Dictionary</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:apply-templates       select = "Dictionary"/>
-    </td>
-   </tr>
+   <xsl:if                        test = "Dictionary">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Spanish Dictionary</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "Dictionary"/>
+     </td>
+    </tr>
+   </xsl:if>
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Spanish Audience</b>
@@ -332,15 +360,69 @@ $Log: not supported by cvs2svn $
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:for-each              select = "Audience">
       <xsl:if                     test = "position() = last()">
-       <xsl:value-of            select = "."/>
+       <b>
+        <xsl:value-of           select = "."/>
+       </b>
       </xsl:if>
       <xsl:if                     test = "not(position() = last())">
-       <xsl:value-of            select = "."/>
-       <xsl:text>; </xsl:text>
+       <b>
+        <xsl:value-of           select = "."/>
+        <xsl:text>; </xsl:text>
+       </b>
       </xsl:if>
      </xsl:for-each> 
     </td>
    </tr>
+   <xsl:if                        test = "DefinitionStatus">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Definition Status</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "DefinitionStatus"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "TranslationResource">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Tranlation Resource</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "TranslationResource"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "Comment">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Comment</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "Comment"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "StatusDate">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Status Date</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "StatusDate"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "DateLastModified">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Date Last Modified</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "DateLastModified"/>
+     </td>
+    </tr>
+   </xsl:if>
   </table> 
 
   <!--
@@ -349,7 +431,7 @@ $Log: not supported by cvs2svn $
   <xsl:choose>
    <xsl:when                      test = "position() != last()">
     <center>
-     <hr width="25%"/>
+     <hr width="50%"/>
     </center>
    </xsl:when>
    <xsl:otherwise>
