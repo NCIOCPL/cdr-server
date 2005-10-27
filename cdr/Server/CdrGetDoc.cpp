@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.32 2004-11-10 03:18:20 ameyer Exp $
+ * $Id: CdrGetDoc.cpp,v 1.33 2005-10-27 12:37:58 bkline Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2004/11/10 03:18:20  ameyer
+ * getDoc now tested and working with blob versions.
+ *
  * Revision 1.31  2004/11/05 05:55:26  ameyer
  * Can now retrieve xml, blob, or both.
  *
@@ -513,6 +516,28 @@ cdr::String cdr::getDocCtlString(
 }
 
 /**
+ * Export function to find the data a document was first published.
+ */
+cdr::String cdr::getDateFirstPublished(int docId,
+                                       db::Connection& conn) {
+    
+    std::string query = "SELECT d.first_pub                          "
+                        "  FROM document d                           "
+                        " WHERE d.first_pub IS NOT NULL              "
+                        "   AND d.first_pub_knowable = 'Y'           "
+                        "   AND d.id = ?                             ";
+
+    db::PreparedStatement select = conn.prepareStatement(query);
+    select.setInt(1, docId);
+    db::ResultSet rs = select.executeQuery();
+    String answer(true);
+    if (rs.next())
+        answer = toXmlDate(rs.getString(1));
+    select.close();
+    return answer;
+}
+
+/**
  * Builds the common CdrDocCtl elements
  */
 static cdr::String getCommonCtlString(int docId,
@@ -577,21 +602,9 @@ static cdr::String getCommonCtlString(int docId,
 
   if (elements & cdr::DocCtlComponents::DocFirstPub)
   {
-    std::string query = "SELECT d.first_pub                          "
-                        "  FROM document d                           "
-                        " WHERE NOT d.first_pub IS NULL                  "
-                        "   AND d.first_pub_knowable = 'Y'           "
-                        "   AND d.id = ?                             ";
-
-    cdr::db::PreparedStatement select = conn.prepareStatement(query);
-    select.setInt(1, docId);
-    cdr::db::ResultSet rs = select.executeQuery();
-    if (rs.next())
-    {
-      cdr::String date = cdr::toXmlDate(rs.getString(1));
+    cdr::String date = cdr::getDateFirstPublished(docId, conn);
+    if (!date.isNull())
       cdrDoc += L"<FirstPub><Date>" + date + L"</Date></FirstPub>";
-    }
-    select.close();
   }
 
   return cdrDoc;

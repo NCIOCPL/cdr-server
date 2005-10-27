@@ -1,9 +1,14 @@
 /*
- * $Id: CdrFilter.cpp,v 1.49 2005-08-02 15:00:04 ameyer Exp $
+ * $Id: CdrFilter.cpp,v 1.50 2005-10-27 12:37:58 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.49  2005/08/02 15:00:04  ameyer
+ * Put more try/catch wrappers around Sablotron calls.
+ * Purpose is to better identify any internal Sablotron exceptions for
+ * which identity would be lost if they just bubbled up to the top.
+ *
  * Revision 1.48  2005/06/21 13:06:20  bkline
  * Added support for new 'bogus' column in external_map table.
  *
@@ -224,6 +229,9 @@ static void getFilterSetXml (cdr::db::Connection&, cdr::String, cdr::String,
 static std::string filterVector (cdr::String, cdr::db::Connection&,
                                  vector<cdr::String>&, std::string*,
                                  cdr::FilterParmVector*, cdr::String);
+static string getVerificationDate(const string& parms,
+                                  cdr::db::Connection& conn,
+                                  const cdr::String&);
 
 // Map of filter strings to ids
 // Used only if filter profiling is specified by environment variable
@@ -721,6 +729,11 @@ namespace
       else if (function == "extern-map")
       {
         u.doc = lookupExternalValue(parms, thread_data->connection);
+      }
+      else if (function == "verification-date")
+      {
+        u.doc = getVerificationDate(parms, thread_data->connection,
+                                    thread_data->DocId);
       }
       else
         return 1;
@@ -2165,6 +2178,77 @@ string getValidZip(const string& parms,
     return os.str();
 }
 
+string getVerificationDate(const string& parms, cdr::db::Connection& conn,
+                           const cdr::String& docIdString) {
+    //std::cerr << "getVerificationDate(parms=" << parms.c_str() << ")\n";
+    int docId = docIdString.extractDocId();
+    string latestDate;
+    string verificationDate;
+    string importDate;
+    string mailerResponseDate;
+    string lastModDate;
+    string::size_type idx = parms.find('/');
+    if (idx != string::npos) {
+        string temp = parms.substr(idx + 1);
+        if (!temp.empty())
+            lastModDate = temp;
+        verificationDate = parms.substr(0, idx);
+    }
+    else if (!parms.empty())
+        verificationDate = parms;
+    //std::cerr << "lastModDate=" << lastModDate.c_str() << "\n";
+    //std::cerr << "verificationDate=" << verificationDate.c_str() << "\n";
+    cdr::db::PreparedStatement stmt1 = conn.prepareStatement(
+             " SELECT MAX(j.dt)      "
+             "   FROM import_job j   "
+             "   JOIN import_event e "
+             "     ON e.job = j.id   "
+             "   JOIN import_doc d   "
+             "     ON d.id = e.doc   "
+             "  WHERE d.cdr_id = ?   ");
+    stmt1.setInt(1, docId);
+    cdr::db::ResultSet rs1 = stmt1.executeQuery();
+    if (rs1.next())
+        importDate = rs1.getString(1).toUtf8();
+    stmt1.close();
+    //std::cerr << "importDate=" << importDate.c_str() << "\n";
+    cdr::db::PreparedStatement stmt2 = conn.prepareStatement(
+             " SELECT MAX(r.value)                         "
+             "   FROM query_term r                         "
+             "   JOIN query_term d                         "
+             "     ON d.doc_id = r.doc_id                  "
+             "  WHERE r.path = '/Mailer/Response/Received' "
+             "    AND d.path = '/Mailer/Document/@cdr:ref' "
+             "    AND d.int_val = ?                        ");
+    stmt2.setInt(1, docId);
+    cdr::db::ResultSet rs2 = stmt2.executeQuery();
+    if (rs2.next())
+        mailerResponseDate = rs2.getString(1).toUtf8();
+    stmt2.close();
+    //std::cerr << "mailerResponseDate=" << mailerResponseDate.c_str()
+    //          << "\n";
+    if (!verificationDate.empty())
+        latestDate = verificationDate;
+    if (!importDate.empty() && (latestDate.empty() || importDate > latestDate))
+        latestDate = verificationDate;
+    if (!mailerResponseDate.empty())
+        if (latestDate.empty() || mailerResponseDate > latestDate)
+            latestDate = mailerResponseDate;
+    //std::cerr << "latestDate=" << latestDate.c_str() << "\n";
+    if (!latestDate.empty())
+        return "<VerificationDate>" + latestDate.substr(0, 10)
+             + "</VerificationDate>";
+    if (!lastModDate.empty())
+        return "<VerificationDate>" + lastModDate.substr(0, 10)
+             + "</VerificationDate>";
+    cdr::String dateFirstPub = cdr::getDateFirstPublished(docId, conn);
+    //std::wcerr << L"dateFirstPub=" << dateFirstPub.c_str() << L"\n";
+    if (!dateFirstPub.empty())
+        return "<VerificationDate>" + dateFirstPub.toUtf8().substr(0, 10)
+             + "</VerificationDate>";
+    return "<VerificationDate/>";
+}
+    
 string lookupExternalValue(const string& parms,
                            cdr::db::Connection& conn)
 {

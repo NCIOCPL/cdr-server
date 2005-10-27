@@ -1,9 +1,12 @@
 /*
- * $Id: CdrGetDoc.h,v 1.12 2004-11-05 05:56:08 ameyer Exp $
+ * $Id: CdrGetDoc.h,v 1.13 2005-10-27 12:37:58 bkline Exp $
  *
  * Internal support functions for CDR document retrieval.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2004/11/05 05:56:08  ameyer
+ * Added parameters for getting xml, blob, or both.
+ *
  * Revision 1.11  2002/07/03 12:55:59  bkline
  * Added code to get first publication info.
  *
@@ -185,6 +188,18 @@ namespace cdr {
                                        int elements
                                            = cdr::DocCtlComponents::std);
 
+    /**
+     * Finds the date the specified document was first published, if
+     * known.
+     *
+     *  @param  docId       reference to string containing the document's ID.
+     *  @param  version     int version number of document
+     *  @param  conn        reference to an active connection to the CDR
+     *                      database.
+     *  @return             string containing date document was first
+     *                      published, if known; otherwise NULL object.
+     */
+    extern cdr::String getDateFirstPublished(int, db::Connection&);
 }
 
 #endif
