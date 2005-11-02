@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Vendor Filter: GlossaryTerm</DocTitle>
-<DocComment>CVS-V1.17: Remove Indent=Yes (Bug 1076)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.21: Correct MediaLink (Bug 1403)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
@@ -31,6 +31,8 @@ Filter to create Vendor XML for Glossary
   <xsl:text    disable-output-escaping = "yes">
 &lt;!DOCTYPE GlossaryTerm &gt;</xsl:text>
 
+  <xsl:variable                   name = "termName"
+                                select = "normalize-space(TermName)"/>
   <xsl:element                    name = '{name()}'>
    <xsl:for-each                select = "document('cdrutil:/docid')">
     <xsl:attribute                name = "id">
@@ -42,6 +44,17 @@ Filter to create Vendor XML for Glossary
      <xsl:value-of              select = "PdqKey"/>
     </xsl:attribute>
    </xsl:if>
+   <!--
+   Test to make sure the TermName exists and hasn't been removed
+   because it was within markup
+   ============================================================= -->
+   <xsl:if                        test = "$termName = ''">
+    <xsl:message             terminate = "no">
+     <xsl:text>&lt;LI&gt;&lt;b&gt;Error:&lt;/b&gt; TermName</xsl:text>
+     <xsl:text> does not exist.&lt;BR/&gt;</xsl:text>
+    </xsl:message> 
+   </xsl:if>
+
    <xsl:apply-templates         select = "TermName" 
                                   mode = "copy"/>
   
