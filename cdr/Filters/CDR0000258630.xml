@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Module: Citation Formatting</DocTitle>
-<DocComment>CVS-V1.13: Protocol Title Formatting (Bug 938)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.15: Adding New Schema Elements (Bug 1648)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
  
@@ -702,12 +702,33 @@
  ====================================================================
  Template to create OtherPublicationInformation
  ==================================================================== -->
-<xsl:template                match = "OtherPublicationInformation">
- <!-- xsl:when                    test   = "ExternalRef" -->
- <xsl:apply-templates       select = "node()"/>
- <xsl:text>.</xsl:text>
-</xsl:template>
+ <xsl:template                   match = "OtherPublicationInformation">
+  <xsl:apply-templates          select = "PublicationInformation"/>
 
+  <xsl:apply-templates          select = "InternetInformation"/>
+ </xsl:template>
+
+
+ <!-- 
+ ====================================================================
+ Template to create InternetInformation 
+ This is design so that the "Also available online" text and link is
+ not going to be displayed for a citation referencing the current
+ citation.
+ ==================================================================== -->
+ <xsl:template                   match = "InternetInformation">
+  <xsl:choose>
+   <xsl:when                      test = "not(ancestor::PublishedIn)">
+    <xsl:text> </xsl:text>
+    <xsl:apply-templates/>
+    <xsl:text>.</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <!-- Suppress the display of the InternetInformation content
+         for the parent of the citation -->
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
 </xsl:transform>
 ]]>
 </CdrDocXml>
