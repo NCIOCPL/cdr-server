@@ -1,9 +1,13 @@
 /*
- * $Id: CdrFilter.cpp,v 1.50 2005-10-27 12:37:58 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.51 2005-12-09 17:03:01 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.50  2005/10/27 12:37:58  bkline
+ * Support for new function to calculate an artificial "verification
+ * date" added.
+ *
  * Revision 1.49  2005/08/02 15:00:04  ameyer
  * Put more try/catch wrappers around Sablotron calls.
  * Purpose is to better identify any internal Sablotron exceptions for
@@ -2230,7 +2234,7 @@ string getVerificationDate(const string& parms, cdr::db::Connection& conn,
     if (!verificationDate.empty())
         latestDate = verificationDate;
     if (!importDate.empty() && (latestDate.empty() || importDate > latestDate))
-        latestDate = verificationDate;
+        latestDate = importDate;
     if (!mailerResponseDate.empty())
         if (latestDate.empty() || mailerResponseDate > latestDate)
             latestDate = mailerResponseDate;
