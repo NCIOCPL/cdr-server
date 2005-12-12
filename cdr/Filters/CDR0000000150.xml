@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000150.xml,v 1.91 2005-06-06 18:21:31 venglisc Exp $
+$Id: CDR0000000150.xml,v 1.92 2005-12-12 19:12:14 venglisc Exp $
 
 Vendor Filter: InScopeProtocol
 
@@ -123,6 +123,9 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
     </xsl:otherwise>
    </xsl:choose>
 
+   <xsl:if                        test = "VerificationDateCalculated">
+    <xsl:apply-templates        select = "VerificationDateCalculated"/>
+   </xsl:if>
    <xsl:apply-templates         select = "DateLastModified"
                                   mode = "copy"/>
   </Protocol>
@@ -588,6 +591,7 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
  ==================================================================== -->
  <xsl:template                   match = "ProtocolAdminInfo">
   <xsl:element                    name = "{name()}">
+
    <xsl:apply-templates         select = "CurrentProtocolStatus"
                                   mode = "copy"/>
 
@@ -1768,6 +1772,18 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
  <xsl:template                    name = "convertPhoneNumber">
   <xsl:value-of                 select = "translate(
                                            translate(., '()', ' -'), ' ', '')"/>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Convert the format of the phone numbers provided by RSS from the 
+ form "(123) 456-7890" to the form "123-456-7890"
+ ==================================================================== -->
+ <xsl:template                   match = "VerificationDateCalculated">
+  <VerificationDate>
+   <xsl:value-of                select = "."/>
+  </VerificationDate>
  </xsl:template>
 
 
