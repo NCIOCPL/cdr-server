@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ================================================================
-     $Id: CDR0000000108.xml,v 1.68 2005-08-12 19:28:39 venglisc Exp $
+     $Id: CDR0000000108.xml,v 1.69 2005-12-12 18:59:30 venglisc Exp $
 
      Denormalization Filter: InScopeProtocol
         Written by Volker Englisch, 2002-04-01
@@ -59,6 +59,11 @@
                                                      ProtocolIDs/
                                                      PrimaryID/
                                                      IDString, ', ', '__')"/>
+ <xsl:variable                    name = "docVerifDate"
+                                select = "/InScopeProtocol/VerificationInfo
+                                           /VerificationDate"/>
+ <xsl:variable                    name = "lastModDate"
+                                select = "/InScopeProtocol/DateLastModified"/>
 
  <!-- *
  ==================================================================
@@ -71,6 +76,17 @@
    <xsl:apply-templates         select = "document('cdr:/*/CdrCtl')"/>
 
    <xsl:apply-templates/>
+
+   <xsl:variable                  name = "url"
+                                select = "concat('cdrutil:/verification-date/',
+                                                 $docVerifDate, '/',
+                                                 $lastModDate)"/>
+
+   <xsl:variable                  name = "calcVerifDate"
+                                select = "document($url)"/>
+   <VerificationDateCalculated>
+    <xsl:value-of               select = "$calcVerifDate"/>
+   </VerificationDateCalculated>
   </xsl:copy>
  </xsl:template>
 
