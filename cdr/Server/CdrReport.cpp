@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.19 2004-11-03 19:14:03 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.20 2006-01-05 16:05:11 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2004/11/03 19:14:03  bkline
+ * Fixed code formatting.
+ *
  * Revision 1.18  2004/11/03 19:00:07  venglisc
  * Modified SQL query for creating the Menu Hierarchy Report by adding the
  * SortOrder attribute value to the output. (Bug 1363)
@@ -308,6 +311,21 @@ namespace
     public:
       MenuTermTree() : 
           cdr::Report("Menu Term Tree") {}
+
+    private:
+      virtual cdr::String execute(cdr::Session& session,
+                                  cdr::db::Connection& dbConnection,
+                                  cdr::Report::ReportParameters parm);
+  };
+
+  /*************************************************************************/
+  /* Find corresponding translation of English summary.                    */
+  /*************************************************************************/
+  class TranslatedSummary : public cdr::Report
+  {
+    public:
+      TranslatedSummary() :
+          cdr::Report("Translated Summary") {}
 
     private:
       virtual cdr::String execute(cdr::Session& session,
@@ -937,10 +955,42 @@ struct TargetDoc {
   ParticipatingOrgs             participatingOrgs;
   DatedActions                  datedActions;
   MenuTermTree                  menuTermTree;
+  TranslatedSummary             translatedSummary;
 #if 0
   PublishLinkedDocs             publishLinkedDocs;
 #endif
 }
+
+  cdr::String TranslatedSummary::execute(cdr::Session& session,
+                                         cdr::db::Connection& dbConnection,
+                                         cdr::Report::ReportParameters parm)
+  {
+    ReportParameters::iterator i = parm.find(L"EnglishSummary");
+    if (i == parm.end())
+      throw cdr::Exception(L"Must specify EnglishSummary");
+    cdr::String englishSummary = i->second;
+
+    string query = "SELECT doc_id                                   "
+                   "  FROM query_term                               "
+                   " WHERE path = '/Summary/TranslationOf/@cdr:ref' "
+                   "   AND int_val = ?                              ";
+      
+    cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
+    select.setInt(1, englishSummary.extractDocId());
+    cdr::db::ResultSet rs = select.executeQuery();
+
+    wostringstream result;
+    result << L"<ReportBody><![CDATA[\n"
+              L"<ReportName>" << getName() << L"</ReportName>\n";
+    if (!rs.next())
+      throw cdr::Exception(L"No translated summary found for " +
+                           englishSummary);
+    int id = rs.getInt(1);
+    result << L"<TranslatedSummary>"
+           << cdr::stringDocId(id)
+           << L"</TranslatedSummary>\n]]></ReportBody>\n";
+    return result.str();
+  }
 
 /**
  * Get XML for a filter by name.
