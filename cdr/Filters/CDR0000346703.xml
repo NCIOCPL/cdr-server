@@ -9,7 +9,7 @@
 
 <!--
  ================================================================
-     $Id: CDR0000346703.xml,v 1.4 2003-12-14 19:13:25 bkline Exp $
+     $Id: CDR0000346703.xml,v 1.5 2006-01-06 20:48:38 venglisc Exp $
 
      Filter to create a CTGovProtocol QC Report.
      Input: from Denormalization Filter: CTGovProtocol
@@ -27,43 +27,84 @@
  <xsl:output                    method = 'html'
                         doctype-public = '-//IETF//DTD HTML//EN'/>
 
+ <xsl:include  href = "cdr:name:Module: Attribute Sets"/>
+ <xsl:include  href = "cdr:name:Module: Protocol Processing Details"/>
+
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
+ <xsl:variable                    name = "whoAmI"
+                                select = "'CTGovQc'"/>
+ <!-- 
+ =================================================================
+ Template to display the CTGovProtocol QC Report
+ ================================================================= -->
  <xsl:template                   match = "/">
   <html>
    <head>
-    <title>CT.Gov Protocol Content QC Report</title>
+    <xsl:variable                 name = "cdrdocs" 
+                                select = "document('cdrx:/*/CdrCtl')"/>
+
+    <TITLE>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+     <xsl:text>: </xsl:text>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/> 
+    </TITLE>
     <style                        type = 'text/css'>
-     body { font-family: Arial; font-size: 12pt; line-height: 18pt; }
+     body { font-family: Arial; font-size: 12pt; line-height: 14pt; }
      h1   { font-size: 13.5pt; font-weight: bold; }
      h2   { font-size: 12pt; font-weight: bold; }
      tr   { margin-top: 45em; }
      th   { text-align: left; font-weight: bold; font-size: 12pt; 
-            line-height: 18pt; }
+            line-height: 14pt; }
      th.h { text-align: left; font-weight: bold; font-size: 13.5pt; }
-     td   { font-size: 12pt; line-heignt: 18pt; }
-     p    { font-size: 12pt; line-height: 18pt; }
+     td   { font-size: 12pt; line-heignt: 14pt; }
+     p    { font-size: 12pt;  }
+     tr.intervention
+          { padding-bottom: 5pt; }
      li   { font-size: 12pt; }
+     .big { font-size: 14pt; font-weight: bold; }
+     .sum { font-size: 14pt; font-weight: bold; padding-bottom: -10pt; }
     </style>
    </head>
    <body>
-    <center>
-     <h1>CT.Gov Protocol Content</h1>
-     <h1>QC Report</h1>
-     <h2>
+   <b>
+     <center class="big">
+      <xsl:text>CT.Gov Protocol Content</xsl:text>
+      <br/>
+      <xsl:text>QC Report</xsl:text>
+     </center>
+     <center>
       <xsl:value-of             select = 'document(concat("cdrutil:/date/",
                                                           "%25B %25#d, %25Y ",
                                                           "%25#I:%25M%25p"))'/>
-     </h2>
-    </center>@@NOPDQINDEXING@@
-    <br />
-    <br />
-    <h1>
-     <xsl:value-of              select = 'document("cdrutil:/docid")'/>
-    </h1>
-    <xsl:apply-templates        select = 'CTGovProtocol'/>
+     </center>@@NOPDQINDEXING@@
+   </b>
+   <p/>
+
+   <!-- 
+   ====================================================================
+   Display Name Header, and PersonNameInformation
+   ==================================================================== -->
+   <span class="big">
+    <xsl:value-of               select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+   </span>
+   <p/>
+
+   <xsl:apply-templates        select = 'CTGovProtocol'/>
+
    </body>
   </html>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'CTGovProtocol'>
   <xsl:apply-templates          select = 'RequiredHeader'/>
   <xsl:apply-templates          select = 'IDInfo'/>
@@ -72,11 +113,8 @@
   <xsl:apply-templates          select = 'BriefSummary'/>
   <xsl:apply-templates          select = 'DetailedDescription'/>
   <xsl:apply-templates          select = 'CTEligibility'/>
-  <br />
-  <br />
-  <br />
-  <table                        border = '0'
-                                 width = '100%'>
+  <p/>
+  <table        xsl:use-attribute-sets = "table">
    <xsl:call-template             name = 'makeTableRow'>
     <xsl:with-param               name = 'label'
                                 select = '"Start Date"'/>
@@ -90,12 +128,12 @@
                                 select = 'EndDate'/>
    </xsl:call-template>
   </table>
+  <p/>
+
   <xsl:apply-templates          select = 'CTGovIndexing'/>
+
   <xsl:if                         test = 'Phase'>
-   <br />
-   <br />
-   <table                       border = '0'
-                                 width = '100%'>
+  <table        xsl:use-attribute-sets = "table">
     <xsl:for-each               select = 'Phase'>
      <xsl:call-template           name = 'makeTableRow'>
       <xsl:with-param             name = 'label'
@@ -103,17 +141,22 @@
      </xsl:call-template>
     </xsl:for-each>
    </table>
+   <p/>
   </xsl:if>
+
   <xsl:apply-templates          select = 'PDQIndexing'/>
   <xsl:apply-templates          select = 'Sponsors'/>
   <xsl:apply-templates          select = 'OverallStatus'/>
   <xsl:apply-templates          select = 'Location'/>
+  <xsl:apply-templates          select = 'ProtocolProcessingDetails'/>
   <xsl:call-template              name = 'recordInfo'/>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'RequiredHeader'>
-  <table                        border = '0'
-                                 width = '100%'>
+  <table        xsl:use-attribute-sets = "table">
    <xsl:call-template             name = 'makeTableRow'>
     <xsl:with-param               name = 'label'
                                 select = '"Download Date"'/>
@@ -121,14 +164,15 @@
                                 select = 'DownloadDate'/>
    </xsl:call-template>
   </table>
+  <p/>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'IDInfo'>
-  <br />
-  <br />
-  <h1>ID Information</h1>
-  <table                        border = '0'
-                                 width = '100%'>
+  <span class="big">ID Information</span>
+  <table        xsl:use-attribute-sets = "table">
    <xsl:for-each                select = 'OrgStudyID'>
     <xsl:call-template            name = 'makeTableRow'>
      <xsl:with-param              name = 'label'
@@ -148,48 +192,58 @@
     </xsl:call-template>
    </xsl:for-each>
   </table>
+  <p/>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'BriefTitle'>
   <xsl:if                         test = 'normalize-space() != ""'>
-   <br />
-   <br />
-   <br />
-   <h1>Brief Title</h1>
+  <span class="big">Brief Title</span>
+   <br/>
    <xsl:value-of                select = 'normalize-space()'/>
+   <p/>
   </xsl:if>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'OfficialTitle'>
   <xsl:if                         test = 'normalize-space() != ""'>
-   <br />
-   <br />
-   <br />
-   <h1>Official Title</h1>
+  <span class="big">Official Title</span>
+   <br/>
    <xsl:value-of                select = 'normalize-space()'/>
+   <p/>
   </xsl:if>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'BriefSummary'>
   <xsl:if                         test = 'normalize-space() != ""'>
-   <br />
-   <br />
-   <br />
-   <h1>Brief Summary</h1>
+  <span class="big">Brief Summary</span>
    <xsl:apply-templates         select = 'Para | ItemizedList'/>
+   <p/>
   </xsl:if>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'DetailedDescription'>
   <xsl:if                         test = 'normalize-space() != ""'>
-   <br />
-   <br />
-   <br />
-   <h1>Detailed Description</h1>
+  <span class="big">Detailed Description</span>
    <xsl:apply-templates         select = 'Para | ItemizedList'/>
+   <p/>
   </xsl:if>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'Para'>
   <xsl:if                         test = 'normalize-space() != ""'>
    <p>
@@ -198,12 +252,18 @@
   </xsl:if>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'ItemizedList'>
   <ul>
    <xsl:apply-templates         select = 'ListItem'/>
   </ul>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'ListItem'>
   <xsl:if                         test = 'normalize-space() != ""'>
    <li>
@@ -212,18 +272,19 @@
   </xsl:if>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'CTEligibility'>
-  <br />
-  <br />
-  <br />
-  <h1>CTGov Eligibility</h1>
+  <span class="big">CTGov Eligibility</span> 
+  <br/>
   <xsl:for-each                 select = 'CTCriteria'>
-   <h2>Criteria</h2>
+   <b>Criteria</b>
+   <br/>
    <xsl:apply-templates         select = 'Para | ItemizedList'/>
   </xsl:for-each>
-  <br />
-  <table                        border = '0'
-                                 width = '100%'>
+
+  <table        xsl:use-attribute-sets = "table">
    <xsl:for-each                select = 'CTExpectedEnrollment'>
     <xsl:call-template            name = 'makeTableRow'>
      <xsl:with-param              name = 'label'
@@ -239,25 +300,26 @@
    <xsl:for-each                select = 'CTMinimumAge'>
     <xsl:call-template            name = 'makeTableRow'>
      <xsl:with-param              name = 'label'
-                                select = '"Minimum Age:"'/>
+                                select = '"Minimum Age"'/>
     </xsl:call-template>
    </xsl:for-each>
    <xsl:for-each                select = 'CTMaximumAge'>
     <xsl:call-template            name = 'makeTableRow'>
      <xsl:with-param              name = 'label'
-                                select = '"Maximum Age:"'/>
+                                select = '"Maximum Age"'/>
     </xsl:call-template>
    </xsl:for-each>
   </table>
+  <p/>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'CTGovIndexing'>
-  <br />
-  <br />
-  <br />
-  <h1>CTGov Indexing</h1>
-  <table                        border = '0'
-                                 width = '100%'>
+  <span class="big">CTGov Indexing</span> 
+
+  <table        xsl:use-attribute-sets = "table">
    <xsl:for-each                select = 'CTStudyDesign'>
     <xsl:call-template            name = 'makeTableRow'>
      <xsl:with-param              name = 'label'
@@ -270,16 +332,55 @@
                                 select = '"Condition"'/>
     </xsl:call-template>
    </xsl:for-each>
+
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td colspan="2">
+      <b>CT Intervention</b>
+     </td>
+    </tr>
+    <xsl:apply-templates        select = 'CTIntervention'/>
+   </table>
   </table>
+  <p/>
  </xsl:template>
 
+
+ <!-- 
+ =================================================================
+ Template to display the multiple occurring CTIntervention
+ ================================================================= -->
+ <xsl:template                   match = "CTIntervention">
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1iof2">
+   </td>
+   <td          xsl:use-attribute-sets = "cell2iof2">
+    <b>Intervention Type</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:value-of               select = "CTInterventionType"/>
+   </td>
+  </tr>
+  <tr class="intervention">
+   <td          xsl:use-attribute-sets = "cell1iof2">
+   </td>
+   <td          xsl:use-attribute-sets = "cell2iof2">
+    <b>Intervention Name</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:value-of               select = "CTInterventionName"/>
+   </td>
+  </tr>
+ </xsl:template>
+
+ 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'PDQIndexing'>
-  <br />
-  <br />
-  <br />
-  <h1>PDQ Indexing</h1>
-  <table                        border = '0'
-                                 width = '100%'>
+  <span class="big">PDQ Indexing</span> 
+
+  <table        xsl:use-attribute-sets = "table">
    <xsl:for-each                select = 'StudyType'>
     <xsl:call-template            name = 'makeTableRow'>
      <xsl:with-param              name = 'label'
@@ -380,11 +481,15 @@
                                 select = 'EntryDate'/>
    </xsl:call-template>
   </table>
+  <p/>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'Eligibility'>
   <xsl:call-template              name = 'blankRow'/>
-  <xsl:call-template              name = 'blankRow'/>
+  <!-- xsl:call-template              name = 'blankRow'/ -->
   <tr>
    <th                         colspan = '2'
                                  class = 'h'>Eligibility Criteria</th>
@@ -413,7 +518,7 @@
    <xsl:with-param                name = 'data'
                                 select = 'AgeText'/>
   </xsl:call-template>
-  <xsl:call-template              name = 'blankRow'/>
+  <!-- xsl:call-template              name = 'blankRow'/ -->
   <xsl:if                         test = 'Diagnosis/Term/PreferredName'>
    <xsl:call-template             name = 'blankRow'/>
    <tr>
@@ -459,12 +564,13 @@
   </tr>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'Sponsors'>
-  <br />
-  <br />
-  <h1>Sponsors</h1>
-  <table                        border = '0'
-                                 width = '100%'>
+  <span class="big">Sponsors</span>
+
+  <table        xsl:use-attribute-sets = "table">
    <xsl:call-template             name = 'makeTableRow'>
     <xsl:with-param               name = 'label'
                                 select = '"Lead Sponsor"'/>
@@ -556,13 +662,14 @@
                                 select = 'PDQSponsorship'/>
    </xsl:call-template>
   </table>
+  <p/>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'OverallStatus'>
-  <br />
-  <br />
-  <table                        border = '0'
-                                 width = '100%'>
+  <table        xsl:use-attribute-sets = "table">
    <tr>
     <th                          class = 'h'
                                  width = '35%'>Overall Status</th>
@@ -571,14 +678,16 @@
     </td>
    </tr>
   </table>
+  <p/>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                   match = 'Location'>
-  <br />
-  <br />
-  <h1>Location</h1>
-  <table                        border = '0'
-                                 width = '100%'>
+  <span class="big">Location</span>
+
+  <table        xsl:use-attribute-sets = "table">
    <xsl:call-template             name = 'makeTableRow'>
     <xsl:with-param               name = 'label'
                                 select = '"Facility Name"'/>
@@ -594,7 +703,7 @@
     </xsl:with-param>
    </xsl:call-template>
    <tr>
-    <th                        colspan = '2'>Address:</th>
+    <th                        colspan = '2'>Address</th>
    </tr>
    <xsl:for-each                select = 'Facility/PostalAddress'>
     <xsl:for-each               select = 'Street'>
@@ -692,6 +801,9 @@
   </table>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                    name = 'getContactRows'>
   <xsl:for-each                 select = 'Phone'>
    <xsl:call-template             name = 'makeIndentedRow'>
@@ -725,6 +837,9 @@
   </xsl:for-each>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                    name = 'makeIndentedRow'>
   <xsl:param                      name = 'label'/>
   <xsl:param                      name = 'data'
@@ -739,12 +854,19 @@
   </xsl:call-template>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                    name = 'blankRow'>
   <tr>
    <td                         colspan = '2'>&#160;</td>
   </tr>
  </xsl:template>
 
+
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                    name = 'makeTableRow'>
   <xsl:param                      name = 'label'/>
   <xsl:param                      name = 'data'
@@ -767,6 +889,9 @@
   </tr>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                    name = 'assemblePersonalName'>
   <xsl:for-each                 select = 'PersonNameInformation'>
    <xsl:variable                  name = 'firstTwo'
@@ -793,14 +918,15 @@
   </xsl:if>
  </xsl:template>
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                    name = 'recordInfo'>
-  <table                        border = '0'
-                                 width = '100%'>
-   <xsl:call-template             name = 'blankRow'/>
-   <xsl:call-template             name = 'blankRow'/>
-   <xsl:call-template             name = 'blankRow'/>
+  <table        xsl:use-attribute-sets = "table">
    <tr>
-    <th                        colspan = '2'>Record Information</th>
+    <th                        colspan = '2'>
+     <span class="big">Record Information</span>
+    </th>
    </tr>
    <xsl:call-template             name = 'makeTableRow'>
     <xsl:with-param               name = 'label'
@@ -814,8 +940,6 @@
     <xsl:with-param               name = 'data'
                                 select = '"@@UPDATEDDATE@@"'/>
    </xsl:call-template>
-   <xsl:call-template             name = 'blankRow'/>
-   <xsl:call-template             name = 'blankRow'/>
    <xsl:call-template             name = 'blankRow'/>
    <xsl:call-template             name = 'makeTableRow'>
     <xsl:with-param               name = 'label'
@@ -831,7 +955,6 @@
    </xsl:call-template>
   </table>
  </xsl:template>
-
 </xsl:transform>]]>
 </CdrDocXml>
 </CdrDoc>
