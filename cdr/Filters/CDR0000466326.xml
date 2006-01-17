@@ -1,0 +1,446 @@
+<CdrDoc Type='Filter' Id='CDR0000466326'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Module: InScopeProtocol HP Eligibility</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!--
+================================================================
+$Id: CDR0000466326.xml,v 1.1 2006-01-17 22:19:27 venglisc Exp $
+
+Filter to process Protocol HP Details
+Written by Cheryl Burg
+
+$Log: not supported by cvs2svn $
+================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+               exclude-result-prefixes = "cdr">
+ 
+ <!-- 
+ ===================================================================
+ Display Protocol Details
+ =================================================================== -->
+ <xsl:template                   match = "ProtocolDetail">
+  <hr />
+  <b>
+   <font size='4'>Protocol Details</font>
+  </b>
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Study Type</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "StudyType"/>
+   </td>
+   </tr>
+  </table>
+
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:for-each                select = "StudyCategory">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Information Category Type</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "StudyCategoryType"/>
+     </td>
+    </tr>
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Information Category Name</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "StudyCategoryName"/>
+     </td>
+    </tr>
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Study Focus</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <table cellpadding='0' cellspacing='0'>
+       <tr>
+        <td>  
+         <ul class="term">
+          <xsl:apply-templates  select = "StudyFocus"/>
+         </ul>
+        </td>
+       </tr>
+      </table>
+     </td>
+    </tr>
+
+    <xsl:apply-templates        select = "Intervention"/>
+   </xsl:for-each>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Comment</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "StudyCategory/
+                                          Comment"/>
+    </td>
+   </tr>
+  </table>
+
+  <p/>
+      
+  <xsl:if                         test = "$whoAmI != 'ProtCitationQc'">
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Condition</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each              select = "Condition/Term/PreferredName">
+      <table cellpadding='0' cellspacing='0'>
+       <tr>
+        <td>  
+         <xsl:sort              select = "."/>
+         <xsl:value-of          select = "."/>
+        </td>
+       </tr>
+      </table>
+     </xsl:for-each>
+    </td>
+   </tr>
+  </table>
+  <br />     
+
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Gene</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each              select = "Gene">
+      <table cellpadding='0' cellspacing='0'>
+       <tr>
+        <td>
+         <xsl:value-of          select = "Term/PreferredName"/>
+        </td>
+       </tr>
+      </table>
+     </xsl:for-each>
+    </td>
+   </tr>
+  </table>
+  <br />
+ 
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Entered By</b>
+    </td> 
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "EnteredBy"/> 
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Entry Date</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "EntryDate"/>
+    </td>
+   </tr>
+  </table>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ =================================================================== -->
+ <xsl:template                   match = "Intervention">
+  <xsl:apply-templates          select = "InterventionType"/>
+  <xsl:choose>
+   <xsl:when                      test = "InterventionNameLink">
+    <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Intervention Name</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <table      xsl:use-attribute-sets = "table">
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <ul class='term'>
+        <xsl:apply-templates    select = "InterventionNameLink"/>
+       </ul>
+      </td>
+     </tr>
+    </table>
+   </td>
+    </tr>
+   </xsl:when>
+   <xsl:otherwise>
+    <tr>
+     <td><xsl:text> </xsl:text></td>
+     <td><br/></td>
+    </tr>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ =================================================================== -->
+ <xsl:template                   match = "InterventionType">
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Intervention Type</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:value-of               select = "Term/PreferredName"/>
+   </td>
+  </tr>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ =================================================================== -->
+ <xsl:template                   match = "InterventionNameLink |
+                                          StudyFocus">
+  <li>
+   <xsl:value-of                select = "translate(.,'/','-')"/>
+  </li>
+ </xsl:template>
+
+
+ <!-- 
+ ================================================================
+ Display Eligibilty Information
+ ================================================================= -->
+ <xsl:template                   match = "Eligibility">
+  <br />
+  <b>
+   <font size='4'>Eligibility Criteria</font>
+  </b>
+  <br />
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Healthy Volunteers?</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "HealthyVolunteers"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Low Age</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "LowAge"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>High Age</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <xsl:apply-templates       select = "HighAge"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Age Range</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <xsl:apply-templates       select = "AgeText"/>
+    </td>
+   </tr> 
+  </table> 
+  
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Diagnosis</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <table     xsl:use-attribute-sets = "table">
+      <tr>
+       <td      xsl:use-attribute-sets = "cell1of2">
+        <ul class='term'>
+         <xsl:for-each          select = "Diagnosis/Term/PreferredName">
+          <xsl:sort            select = "."/>
+          <li>
+           <xsl:value-of        select = "."/>
+          </li>
+         </xsl:for-each>
+        </ul>
+       </td>
+      </tr>
+     </table>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Comment</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Comment"/>
+    </td>
+   </tr>
+  </table>
+  <br/>
+
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Exclusion Criteria</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <table    xsl:use-attribute-sets = "table">
+       <tr>
+        <td> 
+         <ul class='term'>
+          <xsl:for-each         select = "ExclusionCriteria/
+                                          Term/
+                                          PreferredName">
+           <xsl:sort            select = "."/>
+           <li>
+            <xsl:value-of       select = "."/>
+           </li>
+          </xsl:for-each>
+         </ul>
+       </td>
+      </tr>
+     </table>
+    </td>
+   </tr>
+  </table>
+  <p/>
+ </xsl:template>
+
+
+ <!-- 
+ ================================================================
+ Display Published Results.
+ ================================================================ --> 
+ <xsl:template                   match = "PublishedResultsQC">
+
+  <xsl:if                         test = "not(
+                                          preceding-sibling::PublishedResults)
+                                          or 
+                                          not(
+                                        preceding-sibling::PublishedResultsQC)">
+   <hr/>
+   <b>
+    <font size='4'>Published Results</font>
+   </b>
+   <br />
+  </xsl:if>
+
+
+  <xsl:call-template              name = "displayCitation"/>
+ </xsl:template>
+
+
+ <!-- 
+ ================================================================
+ Display Published Results.
+ ================================================================ --> 
+ <xsl:template                   match = "RelatedPublicationsQC">
+
+  <xsl:if                         test = "not(
+                                         preceding-sibling::RelatedPublications)
+                                          or 
+                                          not(
+                                    preceding-sibling::RelatedPublicationsQC)">
+   <hr/>
+   <b>
+    <font size='4'>Related Publications</font>
+   </b>
+   <br />
+  </xsl:if>
+
+  <xsl:call-template              name = "displayCitation"/>
+ </xsl:template>
+
+
+ <!-- 
+ ================================================================
+ Display Published Results.
+ ================================================================ --> 
+ <xsl:template                   name = "displayCitation">
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+      <b>Formatted Citation</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "Citation" 
+                                  mode = "copy"/>
+    </td>  
+   </tr>    
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+      <b>Citation Source</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "CitationSource" 
+                                  mode = "copy"/>
+
+    </td>
+   </tr>
+   <xsl:if                        test = "SourceWebsite">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+       <b>Source Website</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:for-each             select = "SourceWebsite">
+       <xsl:call-template         name = "createWebLink"/>
+      </xsl:for-each>
+      <br />
+      <xsl:value-of             select = "SourceWebsite"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+      <b>Entered By</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "EnteredBy" 
+                                  mode = "copy"/>
+
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+      <b>EntryDate</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "EntryDate" 
+                                  mode = "copy"/>
+
+    </td>
+   </tr>
+   <xsl:if                        test = "Comment">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+       <b>Comment</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "Comment" 
+                                  mode = "copy"/>
+
+     </td>
+    </tr>
+   </xsl:if>
+  </table>   
+  <br />
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
