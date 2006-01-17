@@ -266,39 +266,51 @@ Filter to create the vendor Terminology XML
 
  <!--
  ===================================================================
- Copy Term Relationship (Parent TermId,PreferredName,ParentType
+ Template to display the MenuInformation element
  =================================================================== -->
  <xsl:template                   match = "MenuInformation">
-  <xsl:if                         test = "MenuItem[MenuStatus = 'Online']">
+  <!--
+  Testing if a MenuStatus = 'Online' child element exists and if the 
+  number of Public menuitems is not zero in order to determine if we will
+  need the MenuInformation wrapper element.
+  ======================================================================= -->
+  <xsl:if                         test = "MenuItem[MenuStatus = 'Online']
+                                          and
+                                          count(MenuItem) &gt; 
+                                           count(MenuItem[@Public])">
   <MenuInformation>
    <xsl:apply-templates         select = "MenuItem[MenuStatus = 'Online']"/>
   </MenuInformation>
   </xsl:if>
  </xsl:template>
 
+
  <!--
  ===================================================================
- Copy Term Relationship (Parent TermId,PreferredName,ParentType
+ Template to display the MenuItem element as long as it is public.
  =================================================================== -->
  <xsl:template                   match = "MenuItem">
-  <MenuItem>
-   <xsl:if                        test = "@SortOrder">
-    <xsl:attribute                name = "SortOrder">
-     <xsl:value-of              select = "@SortOrder"/>
-    </xsl:attribute>
-   </xsl:if>
+  <xsl:if                         test = "not(@Public)">
+   <MenuItem>
+    <xsl:if                       test = "@SortOrder">
+     <xsl:attribute               name = "SortOrder">
+      <xsl:value-of             select = "@SortOrder"/>
+     </xsl:attribute>
+    </xsl:if>
 
-   <xsl:apply-templates         select = "MenuType" 
+    <xsl:apply-templates        select = "MenuType" 
                                   mode = "copy"/>
-   <xsl:apply-templates         select = "MenuParent"/>
-   <xsl:apply-templates         select = "DisplayName" 
+    <xsl:apply-templates        select = "MenuParent"/>
+    <xsl:apply-templates        select = "DisplayName" 
                                   mode = "copy"/>
-  </MenuItem>
+   </MenuItem>
+  </xsl:if>
  </xsl:template>
+
 
  <!--
  ===================================================================
- Copy Term Relationship (Parent TermId,PreferredName,ParentType
+ Template to display the MenuParent element
  =================================================================== -->
  <xsl:template                   match = "MenuParent">
   <MenuParent>
