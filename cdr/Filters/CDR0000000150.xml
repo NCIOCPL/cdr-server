@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000150.xml,v 1.92 2005-12-12 19:12:14 venglisc Exp $
+$Id: CDR0000000150.xml,v 1.93 2006-01-18 14:09:35 venglisc Exp $
 
 Vendor Filter: InScopeProtocol
 
@@ -123,9 +123,11 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
     </xsl:otherwise>
    </xsl:choose>
 
+<!-- Temporarily Removed *****************
    <xsl:if                        test = "VerificationDateCalculated">
     <xsl:apply-templates        select = "VerificationDateCalculated"/>
    </xsl:if>
+     Temporarily Removed ***************** -->
    <xsl:apply-templates         select = "DateLastModified"
                                   mode = "copy"/>
   </Protocol>
@@ -780,7 +782,7 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
 
    <!-- 
    If the RSS information contains an ExternalSiteContactName or Title
-   element the address needs to be formatted for a ClinicalTrialOffice
+   element the address needs to be formatted like a ClinicalTrialOffice
    and the PI information must be ignored
    =================================================================== -->
    <xsl:choose>
@@ -794,7 +796,28 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
      </xsl:for-each>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:apply-templates       select = "Person/PersonNameInformation"/>
+     <!--
+     * If the SpecificPerson has a SpecificPhone, use the specific info.
+     * If the SpecificPerson does not have a SpecificPhone but the Org has
+       a CTO phone, use the CTO info
+     * If the SpecificPerson does not have a SpecificPhone and the Org does
+       not have a CTO phone use the phone of the Person record, if available
+       otherwise use the Org phone.
+     ===================================================================== -->
+     <xsl:choose>
+      <xsl:when                   test = "$myScope = 'SpecificPerson'">
+       <xsl:if                    test = "SpecificPhone
+                                          or
+                                          not(../../Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact)">
+        <xsl:apply-templates    select = "Person/PersonNameInformation"/>
+       </xsl:if>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:apply-templates       select = "Person/PersonNameInformation"/>
+      </xsl:otherwise>
+     </xsl:choose>
     </xsl:otherwise>
    </xsl:choose>
 
@@ -813,6 +836,30 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
       <xsl:apply-templates      select = "."
                                   mode = "copy"/>
      </xsl:for-each>
+    </xsl:when>
+    <xsl:when                     test = "$myScope = 'SpecificPerson'
+                                          and
+                                          ../../Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact
+                                          and
+                                          not(SpecificPhone)">
+     <PersonRole>
+      <xsl:choose>
+       <xsl:when                  test = "../../Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactName">
+        <xsl:value-of           select = "../../Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactName"/>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:text>Clinical Trials Office</xsl:text>
+       </xsl:otherwise>
+      </xsl:choose>
+     </PersonRole>
     </xsl:when>
     <xsl:when                     test = "$myScope = 'PrivatePracticePerson'">
      <xsl:for-each              select = "../Role">
@@ -841,6 +888,9 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
     </xsl:otherwise>
    </xsl:choose>
 
+   <!--
+   Section to collect the Contact information
+   ===================================================================== -->
    <xsl:choose>
     <xsl:when                     test = "$myScope != 'ExternalSitePIID'">
      <Contact>
@@ -866,6 +916,56 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
           <xsl:call-template      name = "getHomePrivatePractice"/>
          </xsl:for-each>
         </xsl:when>
+        <!-- 
+        Pick up the address block and phone numbers for the 
+        SpecificPerson that does not have a SpecificPhone for which 
+        the CTO information does exist.
+        ============================================================= -->
+        <xsl:when                 test = "$myScope = 'SpecificPerson'
+                                          and
+                                          ../../Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact
+                                          and
+                                          not(SpecificPhone)">
+         <xsl:for-each          select = "../../Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location[@cdr:id = ../../CIPSContact]/
+                                          PostalAddress">
+          <!-- 
+          We are reusing the getExternalAddress template here even though
+          this section has nothing to do with the External Sites!     -->
+          <xsl:call-template      name = "getExternalAddress"/>
+         </xsl:for-each>
+         <Phone>
+          <xsl:for-each         select = "../../Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactPhone">
+           <xsl:value-of        select = "."/>
+           <xsl:if                test = "position() != last()">
+            <xsl:text>; </xsl:text>
+           </xsl:if>
+          </xsl:for-each>
+         </Phone>
+
+         <xsl:if                  test = "../../Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactEmail">
+          <Email>
+           <xsl:value-of        select = "../../Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactEmail"/>
+          </Email>
+         </xsl:if>
+        </xsl:when>
+        <!--
+        The fall-back section:  No protocol specific information is 
+        specified and there doesn't exist any CTO information
+        ================================================================ -->
         <xsl:otherwise>
          <OrganizationName>
           <!--
@@ -1080,6 +1180,10 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
             elsewhere 
             ===================================================== -->
             <xsl:otherwise>
+             <!--
+             When no SpecificPhone exists we get the phone number 
+             from the person record
+             ========================================================= -->
              <xsl:for-each      select = "Person/PersonLocations/
                                           OtherPracticeLocation
                                            [@cdr:id = $contactFID]">
@@ -1141,6 +1245,24 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
          <xsl:call-template       name = "getExternalAddress"/>
         </xsl:for-each>
         <xsl:choose>
+         <!-- 
+         Let's first see if a CTO Contact exists since this would 
+         overwrite an existing ExternalSiteContactPhone
+         ================================================================ -->
+         <xsl:when                test = "../../ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact">
+          <Phone>
+           <xsl:value-of        select = "../../ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactPhone"/>
+          </Phone>
+         </xsl:when>
          <xsl:when                test = "../../ExternalSiteContact/
                                              ExternalSiteContactPhone">
           <Phone>
@@ -1345,11 +1467,16 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
   <xsl:for-each                 select = "ExternalSite">
    <ProtocolSite>
     <!--
+    Display ProtocolSite attributes and SiteName element:
     If the ExternalSiteOrgID exists, we are using the denormalized 
-    Organization information to display the name, otherwise display
-    the ExternalSiteName
+    Organization information to display the name from the CDR, 
+    otherwise display the ExternalSiteName provided from the RSS
+    Information.
     =============================================================== -->
     <xsl:choose>
+     <!-- 
+     Yes, the ExternalSiteOrgID exists
+     ================================= -->     
      <xsl:when                    test = "ExternalSiteOrg/
                                           ExternalSiteOrgID/
                                           Organization
@@ -1396,6 +1523,9 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
        </xsl:if>
       </xsl:for-each>
      </xsl:when>
+     <!-- 
+     No, the ExternalSiteOrgID does not exists
+     ========================================= -->     
      <xsl:otherwise>
       <SiteName>
        <xsl:apply-templates     select = "ExternalSiteOrg/
@@ -1405,72 +1535,162 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
     </xsl:choose>
 
     <!--
-    If the ExternalSitePIID exists, we are using the denormalized 
-    Person information to display the name, otherwise display
-    the ExternalSitePIName
+    If the ExternalSiteOrgID[Org] exists and the org has CTO 
+    information, we are using this information rather then the RSS
+    info.  Without the CTO info we are using the RSS info.
     =============================================================== -->
     <xsl:choose>
-     <xsl:when                    test = "ExternalSitePI/
+     <xsl:when                    test = "ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact">
+      <ProtPerson>
+       <PersonRole>
+        <xsl:choose>
+         <xsl:when                test = "ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactName">
+          <xsl:value-of         select = "ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactName"/>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:value-of         select = "'Clinical Trials Office'"/>
+         </xsl:otherwise>
+        </xsl:choose>
+       </PersonRole>
+
+       <Contact>
+        <ContactDetail>
+         <xsl:for-each          select = "ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location[@cdr:id = ../../CIPSContact]/
+                                          PostalAddress">
+          <!-- 
+          We are reusing the getExternalAddress template here even though
+          this section has nothing to do with the External Sites!     -->
+          <xsl:call-template      name = "getExternalAddress"/>
+         </xsl:for-each>
+         <Phone>
+          <xsl:for-each         select = "ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactPhone">
+           <xsl:value-of        select = "."/>
+           <xsl:if                test = "position() != last()">
+            <xsl:text>; </xsl:text>
+           </xsl:if>
+          </xsl:for-each>
+         </Phone>
+
+         <xsl:if                  test = "ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactEmail">
+          <Email>
+           <xsl:value-of        select = "ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactEmail"/>
+          </Email>
+         </xsl:if>
+        </ContactDetail>
+       </Contact>
+      </ProtPerson>
+     </xsl:when>
+     <!--
+     There isn't any CTO information available and we will have to 
+     create the ProtPerson record from what is provided by RSS
+     ============================================================== -->
+     <xsl:otherwise>
+      <!--
+      If the ExternalSitePIID exists, we are using the denormalized 
+      Person information to display the name from the CDR, otherwise 
+      display the ExternalSitePIName as provided.
+      =============================================================== -->
+      <xsl:choose>
+       <!-- 
+       Yes, the ExternalSitePIID exists
+       ================================ -->          
+       <xsl:when                  test = "ExternalSitePI/
                                           ExternalSitePIID/
                                           Person">
-      <xsl:apply-templates      select = "ExternalSitePI/
+        <xsl:apply-templates    select = "ExternalSitePI/
                                           ExternalSitePIID"/>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:choose>
-       <xsl:when                  test = "ExternalSitePI">
-        <ProtPerson>
-
-         <xsl:choose>
-          <xsl:when               test = "ExternalSiteContact/
+       </xsl:when>
+       <!-- 
+       No, the ExternalSitePIID does not exists
+       ======================================== -->     
+       <xsl:otherwise>
+        <xsl:choose>
+         <xsl:when                test = "ExternalSitePI">
+          <ProtPerson>
+           <xsl:choose>
+            <xsl:when             test = "ExternalSiteContact/
                                           ExternalSiteContactName
                                           or
                                           ExternalSiteContact/
                                           ExternalSiteContactTitle">
-           <xsl:call-template     name = "rssClinicalTrialsOffice"/>
-          </xsl:when>
-          <xsl:otherwise>
-           <PersonNameInformation>
-            <GivenName>
-             <xsl:value-of      select = "ExternalSitePI/
+             <xsl:call-template   name = "rssClinicalTrialsOffice"/>
+            </xsl:when>
+            <xsl:otherwise>
+             <PersonNameInformation>
+              <GivenName>
+               <xsl:value-of    select = "ExternalSitePI/
                                           ExternalSitePIName/
                                           PersonFirstName"/>
-            </GivenName>
-            <MiddleInitial>
-             <xsl:value-of      select = "ExternalSitePI/
+              </GivenName>
+              <MiddleInitial>
+               <xsl:value-of    select = "ExternalSitePI/
                                           ExternalSitePIName/
                                           PersonMiddleName"/>
-            </MiddleInitial>
-            <SurName>
-             <xsl:value-of      select = "ExternalSitePI/
+              </MiddleInitial>
+              <SurName>
+               <xsl:value-of    select = "ExternalSitePI/
                                           ExternalSitePIName/
                                           PersonLastName"/>
-            </SurName>
-            <xsl:if               test = "ExternalSitePI/
+              </SurName>
+              <xsl:if             test = "ExternalSitePI/
                                           ExternalSitePIName/
                                           PersonSuffix">
-             <ProfessionalSuffix>
-              <xsl:value-of     select = "ExternalSitePI/
+               <ProfessionalSuffix>
+                <xsl:value-of   select = "ExternalSitePI/
                                           ExternalSitePIName/
                                           PersonSuffix"/>
-             </ProfessionalSuffix>
-            </xsl:if>
-           </PersonNameInformation>
-           <xsl:apply-templates select = "Person/PersonNameInformation"/>
-           <PersonRole>
-            <xsl:text>Principal investigator</xsl:text>
-           </PersonRole>
-           <!--
-           The address is always taken from the RSS information as is
-           ==========================================================  -->
-           <Contact>
-            <ContactDetail>
-             <xsl:for-each       select = "ExternalSiteAddress">
-              <xsl:call-template   name = "getExternalAddress"/>
-             </xsl:for-each>
+               </ProfessionalSuffix>
+              </xsl:if>
+             </PersonNameInformation>
+             <xsl:apply-templates select = "Person/PersonNameInformation"/>
+             <PersonRole>
+              <xsl:text>Principal investigator</xsl:text>
+             </PersonRole>
+             <!--
+             The address is always taken from the RSS information as is
+             ==========================================================  -->
+             <Contact>
+              <ContactDetail>
+               <xsl:for-each     select = "ExternalSiteAddress">
+                <xsl:call-template name = "getExternalAddress"/>
+               </xsl:for-each>
 
-             <xsl:choose>
-              <xsl:when            test = "../ExternalSiteContact/
+               <xsl:choose>
+                <xsl:when          test = "../ExternalSiteContact/
                                              ExternalSiteContactPhone
                                           and 
                                           not(../ExternalSiteContact/
@@ -1478,83 +1698,85 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                           and
                                           not(../ExternalSiteContact/
                                                  ExternalSiteContactTitle)">
-               <Phone>
-                <xsl:value-of    select = "../ExternalSiteContact/
+                 <Phone>
+                  <xsl:value-of  select = "../ExternalSiteContact/
                                               ExternalSiteContactPhone"/>
-               </Phone>
-              </xsl:when>
-              <xsl:when            test = "ExternalSitePI/
+                 </Phone>
+                </xsl:when>
+                <xsl:when          test = "ExternalSitePI/
                                            ExternalSitePIPhone">
-               <xsl:for-each     select = "ExternalSitePI/
+                 <xsl:for-each   select = "ExternalSitePI/
                                            ExternalSitePIPhone">
-                <Phone>
-                 <xsl:call-template name = "convertPhoneNumber"/>
-                </Phone>
-               </xsl:for-each> 
-              </xsl:when>
-              <!--
-              If we cannot find a phone number as part of the external
-              site information (CTO or SitePIPhone information) we 
-              will need to denormalize and pick up a phone from the 
-              org document.
-              ======================================================== -->
-              <xsl:otherwise>
-               <xsl:for-each    select = "ExternalSiteOrg/
+                  <Phone>
+                   <xsl:call-template name = "convertPhoneNumber"/>
+                  </Phone>
+                 </xsl:for-each> 
+                </xsl:when>
+                <!--
+                If we cannot find a phone number as part of the external
+                site information (CTO or SitePIPhone information) we 
+                will need to denormalize and pick up a phone from the 
+                org document.
+                ======================================================== -->
+                <xsl:otherwise>
+                 <xsl:for-each  select = "ExternalSiteOrg/
                                           ExternalSiteOrgID/
                                           Organization">
-                <xsl:call-template name = "rssGetPhoneFromOrgID"/>
-               </xsl:for-each>
-              </xsl:otherwise>
-             </xsl:choose>
-            </ContactDetail>
-           </Contact>
-          </xsl:otherwise>
-         </xsl:choose>
-        </ProtPerson>
-       </xsl:when>
-       <xsl:otherwise>
-        <!-- 
-        The ExternalSitePIID doesn't exist so we have to create the 
-        ProtPerson element just like the GenericPerson and OverallContact
-        ================================================================= -->
-        <ProtPerson>
-         <PersonRole>
-          <xsl:text>Contact Person</xsl:text>
-         </PersonRole>
-         <Contact>
-          <ContactName>
-           <xsl:value-of         select = "ExternalSiteOrg/
+                  <xsl:call-template name = "rssGetPhoneFromOrgID"/>
+                 </xsl:for-each>
+                </xsl:otherwise>
+               </xsl:choose>
+              </ContactDetail>
+             </Contact>
+            </xsl:otherwise>
+           </xsl:choose>
+          </ProtPerson>
+         </xsl:when>
+         <xsl:otherwise>
+          <!-- 
+          The ExternalSitePIID doesn't exist so we have to create the 
+          ProtPerson element just like the GenericPerson and OverallContact
+          ================================================================= -->
+          <ProtPerson>
+           <PersonRole>
+            <xsl:text>Contact Person</xsl:text>
+           </PersonRole>
+           <Contact>
+            <ContactName>
+             <xsl:value-of      select = "ExternalSiteOrg/
                                            ExternalSiteOrgID/
                                            Organization/
                                            OrganizationNameInformation/
                                            OfficialName/
                                            Name"/>
 
-          </ContactName>
-          <ContactDetail>
-           <xsl:for-each         select = "ExternalSiteOrg/
-                                           ExternalSiteOrgID/
-                                           Organization/
-                                           OrganizationLocations/
-                                           OrganizationLocation/
-                                           Location
-                                              [@cdr:id = ../../CIPSContact]/
-                                           PostalAddress">
-            <xsl:call-template    name = "getExternalAddress"/>
-           </xsl:for-each>
+            </ContactName>
+            <ContactDetail>
+             <xsl:for-each      select = "ExternalSiteOrg/
+                                          ExternalSiteOrgID/
+                                          Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location
+                                             [@cdr:id = ../../CIPSContact]/
+                                          PostalAddress">
+              <xsl:call-template  name = "getExternalAddress"/>
+             </xsl:for-each>
 
-           <!--
-           Pick up the phone number from the Organization since it is 
-           not provided for the PI.
-           ============================================================= -->
-           <xsl:for-each        select = "ExternalSiteOrg/
+             <!--
+             Pick up the phone number from the Organization since it is 
+             not provided for the PI.
+             ============================================================= -->
+             <xsl:for-each      select = "ExternalSiteOrg/
                                           ExternalSiteOrgID/
                                           Organization">
-            <xsl:call-template    name = "rssGetPhoneFromOrgID"/>
-           </xsl:for-each>
-          </ContactDetail>
-         </Contact>
-        </ProtPerson>
+              <xsl:call-template  name = "rssGetPhoneFromOrgID"/>
+             </xsl:for-each>
+            </ContactDetail>
+           </Contact>
+          </ProtPerson>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:otherwise>
       </xsl:choose>
      </xsl:otherwise>
@@ -1687,26 +1909,7 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
     <xsl:attribute                name = "ctOffice">
      <xsl:text>Yes</xsl:text>
     </xsl:attribute>
-<!--
-    The ClinicalTrialsOfficeContactName is an optional element in the 
-    schema.
-    The ContactName is optional in the DTD but the Role is mandatory.
-    Therefore the ClinicalTrialsOfficeContactName will be mapped to the 
-    Role element if it exists.  Otherwise the string 'Clinical Trials
-    Office' will be set as the Role.
-    ====================================================================
-    <xsl:if                       test = "Organization/
-                                          OrganizationLocations/
-                                          ClinicalTrialsOfficeContact/
-                                          ClinicalTrialsOfficeContactName">
-     <ContactName>
-      <xsl:value-of             select = "Organization/
-                                          OrganizationLocations/
-                                          ClinicalTrialsOfficeContact/
-                                          ClinicalTrialsOfficeContactName"/>
-     </ContactName>
-    </xsl:if>
--->
+
     <ContactDetail>
      <xsl:apply-templates       select = "Organization/
                                           OrganizationLocations/
@@ -1780,12 +1983,13 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
  Convert the format of the phone numbers provided by RSS from the 
  form "(123) 456-7890" to the form "123-456-7890"
  ==================================================================== -->
+<!-- Temporarily Removed *********************
  <xsl:template                   match = "VerificationDateCalculated">
   <VerificationDate>
    <xsl:value-of                select = "."/>
   </VerificationDate>
  </xsl:template>
-
+     Temporarily Removed ********************* --> 
 
  <!--
  =====================================================================
