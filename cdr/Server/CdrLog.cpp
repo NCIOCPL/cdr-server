@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLog.cpp,v 1.10 2005-07-28 21:11:03 ameyer Exp $
+ * $Id: CdrLog.cpp,v 1.11 2006-01-25 01:47:47 ameyer Exp $
  *
  * Implementation of writing info to the log table in the database.
  * If that can't be done, takes an alternative action to write to file.
@@ -7,6 +7,11 @@
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/07/28 21:11:03  ameyer
+ * Removed erroneous CVS comment on previous version.
+ * Real change was to protect logging from inadvertent recursion - attempt
+ * to log an exception fails, calling the logging function to try again.
+ *
  * Revision 1.9  2005/07/28 20:39:46  ameyer
  *
  *
@@ -73,7 +78,7 @@ cdr::log::Log __declspec(thread) * cdr::log::pThreadLog;
  * while processing an exception, we can keep trying to log things
  * inappropriately.
  */
-bool __declspec(thread) inLogging = false;
+static bool __declspec(thread) inLogging = false;
 
 // Class static variables
 int    cdr::log::Log::s_LogId     = 0;
@@ -147,11 +152,6 @@ void cdr::log::Log::Write (
     const cdr::String MsgSrc,   // Name of module or whatever caller wants
     const cdr::String Msg       // Message
 ) {
-    // Avoid looping
-    if (inLogging)
-        return;
-    inLogging = true;
-
     // Create a database connection and write data
     try {
         cdr::db::Connection dbConn =
@@ -170,8 +170,6 @@ void cdr::log::Log::Write (
         WriteFile (L"CdrLog DB Write Failed", L"Unknown exception");
         WriteFile (MsgSrc, Msg);
     }
-
-    inLogging = false;
 }
 
 
@@ -186,6 +184,7 @@ void cdr::log::Log::Write (
     const cdr::String Msg,      // Message
     cdr::db::Connection& dbConn // New or existing connection
 ) {
+
     // Avoid looping
     if (inLogging)
         return;
