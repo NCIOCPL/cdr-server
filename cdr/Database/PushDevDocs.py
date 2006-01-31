@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #
-# $Id: PushDevDocs.py,v 1.4 2004-09-08 17:31:38 venglisc Exp $
+# $Id: PushDevDocs.py,v 1.5 2006-01-31 21:34:37 bkline Exp $
 #
 # Replaces copies of CDR control documents which have been preserved
 # from the development server, after a refresh of the database on
@@ -93,7 +93,7 @@ for name in glob.glob("RepDocs/*.xml"):
                 continue
         doc = open(name, 'rb').read()
         resp = cdr.repDoc(session, doc = doc, checkIn = 'Y', ver = 'Y', 
-                reason = reason, host = server)
+                          reason = reason, host = server, val = 'Y')
         if not resp.startswith("CDR"):
             log("Failure saving %s: %s" % (idString, resp), 1)
         else:
@@ -113,7 +113,7 @@ for name in glob.glob("AddDocs/*.xml"):
         idString = "CDR%010d" % id
         doc = open(name, 'rb').read()
         resp = cdr.addDoc(session, doc = doc, checkIn = 'N', 
-                reason = reason, host = server)
+                          reason = reason, host = server)
         if not resp.startswith("CDR"):
             log("Failure saving %s: %s" % (idString, resp), 1)
             continue
@@ -122,7 +122,7 @@ for name in glob.glob("AddDocs/*.xml"):
             log("Failure locking %s: %s" % (idString, doc), 1)
             continue
         resp = cdr.repDoc(session, doc = doc, checkIn = 'Y', ver = 'Y', 
-                reason = reason, host = server)
+                          reason = reason, host = server, val = 'Y')
         if not resp.startswith("CDR"):
             log("Failure saving %s: %s" % (idString, resp), 1)
         else:
