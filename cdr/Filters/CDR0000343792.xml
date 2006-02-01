@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Person at Org - Org Location</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.1: Filter Title Change (Bug 1175)</DocComment><ReadyForReview readonly="yes">Y</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -135,23 +135,41 @@
  ===================================================================
  Assemble the miscellaneous data elements as HTML.
  =================================================================== -->
- <xsl:template                 match = "Phone|
-                                        TollFreePhone|
-                                        Fax|
-                                        Email|
-                                        WebSite">
+ <xsl:template                   match = "Phone         |
+                                          TollFreePhone |
+                                          Fax           |
+                                          Email         |
+                                          WebSite">
   <tr>
-   <td width="35%">
-     <xsl:value-of           select = "name()"/>
+   <td width="35%" valign="top">
+     <xsl:value-of              select = "name()"/>
      <xsl:text>:&#160;&#160;</xsl:text>
    </td>
    <td width="65%">
      <xsl:choose>
-      <xsl:when                test = "name() = 'WebSite'">
-       <xsl:value-of         select = "@cdr:xref"/>
+      <xsl:when                   test = "name() = 'WebSite'">
+       <xsl:value-of            select = "."/>
+       <br/>
+       <xsl:element               name = "a">
+        <xsl:attribute            name = "href">
+         <xsl:choose>
+          <xsl:when               test = "contains(@xref, 'http://')">
+           <xsl:value-of        select = "@xref"/>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:text>http://</xsl:text>
+           <xsl:value-of        select = "@xref"/>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:attribute>
+        <xsl:attribute            name = "target">
+         <xsl:text>new</xsl:text>
+        </xsl:attribute>
+        <xsl:value-of           select = "@xref"/>
+       </xsl:element>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:value-of         select = "."/>
+       <xsl:value-of            select = "."/>
       </xsl:otherwise>
      </xsl:choose>
    </td>
