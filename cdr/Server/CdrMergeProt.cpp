@@ -1,9 +1,12 @@
 /*
- * $Id: CdrMergeProt.cpp,v 1.4 2005-03-04 02:54:56 ameyer Exp $
+ * $Id: CdrMergeProt.cpp,v 1.5 2006-02-06 00:47:13 bkline Exp $
  *
  * Merge scientific protocol information into main in-scope protocol document.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2005/03/04 02:54:56  ameyer
+ * Converted to new Xerces based DOM parser.
+ *
  * Revision 1.3  2002/08/23 20:28:52  bkline
  * Changed ProtocolDetails to ProtocolDetail.
  *
@@ -327,6 +330,7 @@ cdr::StringSet getScientificElemNames()
         L"ProtocolRelatedLinks",
         L"PublishedResults",
         L"ProtocolPhase",
+        L"ExpectedEnrollment",
         L"ProtocolDesign"
     };
     cdr::StringSet nameSet;
