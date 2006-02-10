@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
-      $Id: Media.xml,v 1.8 2005-01-04 21:58:16 bkline Exp $
+      $Id: Media.xml,v 1.9 2006-02-10 21:17:51 bkline Exp $
 
      $Log: not supported by cvs2svn $
+     Revision 1.8  2005/01/04 21:58:16  bkline
+     Made the DerivationMethod type into an NMTOKEN type at Lakshmi's request.
+
      Revision 1.7  2004/12/16 21:39:56  ameyer
      Changed "Health professional" to "Health_professional".
      Fixed broken attribute definition within FromMethod.
@@ -63,12 +66,53 @@
                      minOccurs       = '0'/>
       <element       name            = 'MediaContent'
                      type            = 'MediaContent'/>
+      <element       name            = 'ProposedUse'
+                     type            = 'ProposedUse'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'DatedAction'
+                     type            = 'DatedAction'
+                     minOccurs       = '0'/>
+      <element       name            = 'ProcessingStatuses'
+                     type            = 'MediaProcessingStatuses'
+                     minOccurs       = '0'/>
       <element       name            = 'Comment'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
     </sequence>
     <attribute       name            = 'xmlns:cdr'
                      type            = 'anyURI'/>
+  </complexType>
+
+  <complexType       name            = 'ProposedUse'>
+    <sequence>
+      <element       name            = 'Summary'
+                     type            = 'SummaryLink'/>
+      <element       name            = 'Glossary'
+                     type            = 'GlossaryLink'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'MediaProcessingStatuses'>
+    <sequence>
+      <element       name            = 'ProcessingStatus'
+                     type            = 'MediaProcessingStatus'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'MediaProcessingStatus'>
+    <sequence>
+      <element       name            = 'ProcessingStatusValue'
+                     type            = 'MediaProcessingStatusValue'/>
+      <element       name            = 'ProcessingStatusDate'
+                     type            = 'date'/>
+      <element       name            = 'EnteredBy'
+                     type            = 'NotEmptyString'/>
+      <element       name            = 'Comment'
+                     type            = 'NotEmptyString'
+                     minOccurs       = '0'/>
+    </sequence>
   </complexType>
 
 <!--=====================================================================
@@ -141,6 +185,10 @@
                      type            = 'Color'/>
       <element       name            = 'Labeled'
                      type            = 'YesNo'/>
+      <element       name            = 'LabelName'
+                     type            = 'LabelName'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'ImageDimensions'
                      type            = 'ImageDimensions'
                      minOccurs       = '0'/>
@@ -188,11 +236,20 @@
     </sequence>
   </complexType>
 
+  <complexType       name            = 'LabelName'>
+    <simpleContent>
+      <extension     base            = 'NotEmptyString'>
+        <attribute   name            = 'language'
+                     type            = 'Language'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
 
             <!-- Physical media simple types -->
 
   <simpleType        name            = 'ImageType'>
-    <restriction     base            = 'NotEmptyString'>
+    <restriction     base            = 'string'>
       <enumeration   value           = 'drawing'/>
       <enumeration   value           = 'photo'/>
       <enumeration   value           = 'chart'/>
@@ -201,7 +258,7 @@
   </simpleType>
 
   <simpleType        name            = 'ImageEncoding'>
-    <restriction     base            = 'NotEmptyString'>
+    <restriction     base            = 'string'>
       <enumeration   value           = 'GIF'/>
       <enumeration   value           = 'JPEG'/>
       <enumeration   value           = 'PSD'/>
@@ -209,19 +266,19 @@
   </simpleType>
 
   <simpleType        name            = 'Color'>
-    <restriction     base            = 'NotEmptyString'>
+    <restriction     base            = 'string'>
       <enumeration   value           = 'BW'/>
       <enumeration   value           = 'Color'/>
     </restriction>
   </simpleType>
 
   <simpleType        name            = 'VideoType'>
-    <restriction     base            = 'NotEmptyString'/>
+    <restriction     base            = 'string'/>
     <!-- Enumeration to be determined -->
   </simpleType>
 
   <simpleType        name            = 'VideoEncoding'>
-    <restriction     base            = 'NotEmptyString'>
+    <restriction     base            = 'string'>
       <enumeration   value           = 'AVI'/>
       <enumeration   value           = 'MPEG2'/>
       <enumeration   value           = 'MJPG'/>
@@ -234,7 +291,7 @@
   </simpleType>
 
   <simpleType        name            = 'SoundEncoding'>
-    <restriction     base            = 'NotEmptyString'>
+    <restriction     base            = 'string'>
       <enumeration   value           = 'MP3'/>
       <enumeration   value           = 'WMA'/>
       <enumeration   value           = 'WAV'/>
@@ -307,7 +364,7 @@
   </complexType>
 
   <simpleType        name            = 'DerivationMethod'>
-    <restriction     base            = 'NMTOKEN'>
+    <restriction     base            = 'string'>
       <enumeration   value           = 'autogenerate'/>
       <enumeration   value           = 'crop'/>
       <enumeration   value           = 'edit'/>
@@ -332,7 +389,7 @@
   </complexType>
 
   <simpleType        name            = 'Category'>
-    <restriction     base            = 'NotEmptyString'>
+    <restriction     base            = 'string'>
       <enumeration   value           = 'abnormal cells or tissues'/>
       <enumeration   value           = 'anatomy'/>
       <enumeration   value           = 'medical device'/>
@@ -403,9 +460,26 @@
   </complexType>
 
   <simpleType        name            = 'Language'>
-    <restriction     base            = 'NotEmptyString'>
+    <restriction     base            = 'string'>
       <enumeration   value           = 'en'/>
       <enumeration   value           = 'es'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'MediaProcessingStatusValue'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Sample illustrations sent to artist'/>
+      <enumeration   value           = 'Reference photos pending'/>
+      <enumeration   value           = 'Draft illustration from artist'/>
+      <enumeration   value           = 'Illustration review by group'/>
+      <enumeration   value           = 'Caption and content pending'/>
+      <enumeration   value           = 'Caption and content approved'/>
+      <enumeration   value           = 'Sent to expert reviewer'/>
+      <enumeration   value           = 'Translation pending'/>
+      <enumeration   value           = 'Spanish labels sent to artist'/>
+      <enumeration   value           = 'Approved by expert reviewer'/>
+      <enumeration   value           = 'Approved by expert reviewer with changes'/>
+      <enumeration   value           = 'Disapproved by expert reviewer'/>
     </restriction>
   </simpleType>
 
@@ -413,7 +487,7 @@
        in different places.  This is unfortunate, but more trouble
        to fix than it seems to be worth -->
   <simpleType        name            = 'Audience'>
-    <restriction     base            = 'NotEmptyString'>
+    <restriction     base            = 'string'>
       <enumeration   value           = 'Health_professionals'/>
       <enumeration   value           = 'Patients'/>
     </restriction>
