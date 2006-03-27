@@ -8,13 +8,12 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
  ================================================================
-     $Id: CDR0000433163.xml,v 1.1 2005-05-04 17:24:04 venglisc Exp $
+ $Id: CDR0000433163.xml,v 1.2 2006-03-27 17:35:01 venglisc Exp $
 
-     Filter to create a Media Content QC Report 
-        Written by Volker Englisch
+ Filter to create a Media Content QC Report 
+ Written by Volker Englisch
 
-     $Log: not supported by cvs2svn $
-
+ $Log: not supported by cvs2svn $
  ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
@@ -116,6 +115,8 @@
    <xsl:apply-templates         select = "PhysicalMedia"/>
    <xsl:apply-templates         select = "MediaSource"/>
    <xsl:apply-templates         select = "MediaContent"/>
+   <xsl:apply-templates         select = "ProposedUse"/>
+   <xsl:apply-templates         select = "ProcessingStatuses"/>
 
    <xsl:if                        test = "Comment">
     <p/>
@@ -271,10 +272,10 @@
       <th>Patients</th>
      </tr>
      <tr>
-      <td width="5%"  valign="top" align="center">
+      <td width="15%"  valign="top" align="center">
        <b>en</b>
       </td>
-      <td width="40%" valign="top">
+      <td width="85%" valign="top">
        <xsl:value-of            select = "ContentDescriptions/
                                           ContentDescription
                                            [@audience='Patients' 
@@ -288,10 +289,10 @@
                                              and
                                              @language='es']">
       <tr>
-       <td width="5%"  valign="top" align="center">
+       <td width="15%"  valign="top" align="center">
         <b>es</b>
        </td>
-       <td width="40%" valign="top">
+       <td width="85%" valign="top">
         <xsl:value-of           select = "ContentDescriptions/
                                           ContentDescription
                                             [@audience='Patients' 
@@ -306,16 +307,17 @@
                                           ContentDescription
                                           [@audience='Health_professionals']">
     <tr>
-     <table border="1" xsl:use-attribute-sets = "table">
+     <table     xsl:use-attribute-sets = "table"
+                                border = "1" >
       <tr>
        <th>Language</th>
        <th>Health Professional</th>
       </tr>
       <tr>
-       <td width="5%"  valign="top" align="center">
+       <td width="15%"  valign="top" align="center">
         <b>en</b>
        </td>
-       <td width="40%" valign="top">
+       <td width="85%" valign="top">
         <xsl:value-of           select = "ContentDescriptions/
                                           ContentDescription
                                             [@audience='Health_professionals'
@@ -329,10 +331,10 @@
                                              and
                                              @language='es']">
        <tr>
-        <td width="5%"  valign="top" align="center">
+        <td width="15%"  valign="top" align="center">
          <b>es</b>
         </td>
-        <td width="40%" valign="top">
+        <td width="85%" valign="top">
          <xsl:value-of          select = "ContentDescriptions/
                                           ContentDescription
                                             [@audience='Health_professionals'
@@ -362,10 +364,10 @@
        <th>Patients</th>
       </tr>
       <tr>
-       <td width="5%"  valign="top" align="center">
+       <td width="15%"  valign="top" align="center">
         <b>en</b>
        </td>
-       <td width="40%" valign="top">
+       <td width="85%" valign="top">
         <xsl:value-of           select = "Captions/
                                           MediaCaption
                                             [@audience='Patients' 
@@ -379,10 +381,10 @@
                                             and
                                             @language='es']">
        <tr>
-        <td width="5%" valign="top" align="center">
+        <td width="15%" valign="top" align="center">
          <b>es</b>
         </td>
-        <td width="40%" valign="top">
+        <td width="85%" valign="top">
          <xsl:value-of          select = "Captions/
                                           MediaCaption
                                             [@audience='Patients'
@@ -404,10 +406,10 @@
         <th>Health Professional</th>
        </tr>
        <tr>
-        <td width="5%"  valign="top" align="center">
+        <td width="15%"  valign="top" align="center">
          <b>en</b>
         </td>
-        <td width="40%" valign="top">
+        <td width="85%" valign="top">
          <xsl:value-of          select = "Captions/
                                           MediaCaption
                                             [@audience='Health_professionals'
@@ -416,10 +418,10 @@
         </td>
        </tr>
        <tr>
-        <td width="5%"  valign="top" align="center">
+        <td width="15%"  valign="top" align="center">
          <b>es</b>
         </td>
-        <td width="40%" valign="top">
+        <td width="85%" valign="top">
          <xsl:value-of          select = "Captions/
                                           MediaCaption
                                             [@audience='Health_professionals'
@@ -501,6 +503,46 @@
      <xsl:value-of              select = "Labeled"/>
     </td>
    </tr>
+   <xsl:if                        test = "LabelName">
+    <tr>
+     <table     xsl:use-attribute-sets = "table">
+      <tr>
+       <td      xsl:use-attribute-sets = "cell1of2">
+        <b>Label Name</b>
+       </td>
+      </tr>
+      <tr>
+       <table   xsl:use-attribute-sets = "table"
+                                border = "1">
+        <tr>
+         <th>Language</th>
+         <th>Label</th>
+        </tr>
+        <xsl:for-each           select = "LabelName[@language='en']">
+         <tr>
+          <td width="15%" valign="top" align="center">
+           <b>en</b>
+          </td>
+          <td width="85%" valign="top">
+           <xsl:value-of        select = "."/>
+          </td>
+         </tr>
+        </xsl:for-each>
+        <xsl:for-each           select = "LabelName[@language='es']">
+         <tr>
+          <td width="15%" valign="top" align="center">
+           <b>es</b>
+          </td>
+          <td width="85%" valign="top">
+           <xsl:value-of        select = "."/>
+          </td>
+         </tr>
+        </xsl:for-each>
+       </table>
+      </tr>
+     </table>
+    </tr>
+   </xsl:if>
   </table>
   <br/>
 
@@ -787,6 +829,141 @@
     </tr>
    </xsl:if>
   </table>
+ </xsl:template>
+
+
+ <!-- 
+ =======================================================================
+ Template to display the Proposed Use Information
+ ======================================================================= -->
+ <xsl:template                   match = "ProposedUse">
+  <p/>
+
+  <span class="lbold">Proposed Use</span>
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Summary</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "Summary"/>
+    </td>
+   </tr>
+   <tr>
+    <td><br/></td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Glossary</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "Glossary"/>
+    </td>
+   </tr>
+  </table>
+ </xsl:template>
+
+
+ <!-- 
+ =======================================================================
+ Template to display the Processing Statuses
+ ======================================================================= -->
+ <xsl:template                   match = "ProcessingStatuses">
+  <p/>
+
+  <span class="lbold">Processing Statuses</span>
+  <table border="1" xsl:use-attribute-sets = "table">
+   <tr>
+    <th width="15%" valign="top" align="left">
+     <b>Status Date</b>
+    </th>
+    <th width="60%" valign="top" align="left">
+     <b>Status Value</b>
+    </th>
+    <th valign="top" align="left">
+     <b>Entered By</b>
+    </th>
+   </tr>
+  <xsl:apply-templates          select = "ProcessingStatus"/>
+  </table>
+ </xsl:template>
+
+ <!-- 
+ =======================================================================
+ Template to display the Proposed Use Information
+ ======================================================================= -->
+ <xsl:template                   match = "ProcessingStatus">
+   <tr>
+    <td >
+     <xsl:value-of              select = "ProcessingStatusDate"/>
+    </td>
+    <td>
+     <xsl:value-of              select = "ProcessingStatusValue"/>
+    </td>
+    <td>
+     <xsl:value-of              select = "EnteredBy"/>
+    </td>
+   </tr>
+   <xsl:if                        test = "Comment">
+    <tr>
+     <td> </td>
+     <td valign="top" align="left" colspan="2">
+      <table    xsl:use-attribute-sets = "table">
+       <tr>
+        <td width="15%" valign="top" align="left">
+         <i>Comments</i>
+         <xsl:text>: </xsl:text>
+        </td>
+        <td valign="top" align="left">
+         <xsl:value-of          select = "Comment"/>
+        </td>
+       </tr>
+      </table>
+     </td>
+    </tr>
+   </xsl:if>
+ </xsl:template>
+
+
+ <!--
+ ======================================================================
+ Template to add the proposed use and the CDR-ID to the report
+ ====================================================================== -->
+ <xsl:template                   match = "Summary |
+                                          Glossary">
+   <xsl:value-of              select = "."/>
+   <xsl:apply-templates       select = "@cdr:ref"/>
+   <br/>
+ </xsl:template>
+
+
+ <!--
+ ======================================================================
+ Template to add CDR-ID and fragment ID to the display
+ The CDR-ID should be displayed without leading zeros.
+ ====================================================================== -->
+ <xsl:template                   match = "@cdr:ref">
+  <xsl:variable                   name = "cdrId"
+                                select = "concat('CDR', 
+                                           number(
+                                            substring-after(
+                                             substring-before(
+                                              concat(., '#'), '#'), 'CDR')))"/>
+  <xsl:text> (</xsl:text>
+  <xsl:element                    name = "a">
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "concat('/cgi-bin/cdr/QcReport.py',
+                                                 '?Session=guest',
+                                                 '&amp;DocId=',
+                                                 $cdrId)"/>
+   </xsl:attribute>
+   <xsl:value-of                select = "$cdrId"/>
+  </xsl:element>
+  <xsl:if                         test = "contains( . , '#')">
+   <xsl:text> - </xsl:text>
+   <xsl:value-of                select = "substring-after(., '#')"/>
+  </xsl:if>
+  <xsl:text>)</xsl:text>
  </xsl:template>
 </xsl:transform>
 ]]>
