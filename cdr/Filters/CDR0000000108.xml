@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ================================================================
-     $Id: CDR0000000108.xml,v 1.69 2005-12-12 18:59:30 venglisc Exp $
+     $Id: CDR0000000108.xml,v 1.70 2006-04-04 21:54:25 venglisc Exp $
 
      Denormalization Filter: InScopeProtocol
         Written by Volker Englisch, 2002-04-01
@@ -49,11 +49,21 @@
                                           'Abstract Disclaimer;Protocol ',
                                           'health professional abstract ',
                                           'disclaimer')"/>
+ <xsl:variable                    name = "hpResearchDisc"
+                                select = "concat(
+                                          'Professional Disclaimer;',
+                                          'Research study disclaimer ',
+                                          '- Professional')"/>
  <xsl:variable                    name = "patDisc"
                                 select = "concat(
                                           'Protocol patient abstract ',
                                           'disclaimer;Protocol patient ',
                                           'abstract disclaimer')"/>
+ <xsl:variable                    name = "patResearchDisc"
+                                select = "concat(
+                                          'Patient Disclaimer;',
+                                          'Research study disclaimer ',
+                                          '- Patient')"/>
  <xsl:variable                    name = "protNum"
                                 select = "translate(/InScopeProtocol/
                                                      ProtocolIDs/
@@ -102,18 +112,36 @@
     <xsl:copy-of                select = "."/>
    </xsl:for-each>
 
-  <!-- Adding the Professional Disclaimer from the Misc Documents 
-       ========================================================== -->
+   <!-- 
+   Adding the Professional Disclaimer from the Misc Documents 
+   ========================================================== -->
    <ProfessionalDisclaimer>
-    <xsl:variable                 name = "miscDoc1" 
+    <xsl:choose>
+     <xsl:when                    test = "/InScopeProtocol/
+                                           ProtocolDetail/
+                                           StudyType = 'Research study'">
+      <xsl:variable               name = "miscDoc1" 
+                                select = "document(concat('cdr:name:',
+                                                          $hpResearchDisc,
+                                                          '/lastp'))"/>
+      <xsl:apply-templates      select = "$miscDoc1/MiscellaneousDocument
+                                                   /MiscellaneousDocumentText">
+       <xsl:with-param            name = "miscDocId"
+                                select = "'_ProtHPDisclaimer'"/>
+      </xsl:apply-templates>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:variable               name = "miscDoc1" 
                                 select = "document(concat('cdr:name:',
                                                           $hpDisc,
                                                           '/lastp'))"/>
-    <xsl:apply-templates        select = "$miscDoc1/MiscellaneousDocument
+      <xsl:apply-templates      select = "$miscDoc1/MiscellaneousDocument
                                                    /MiscellaneousDocumentText">
-     <xsl:with-param              name = "miscDocId"
+       <xsl:with-param            name = "miscDocId"
                                 select = "'_ProtHPDisclaimer'"/>
-    </xsl:apply-templates>
+      </xsl:apply-templates>
+     </xsl:otherwise>
+    </xsl:choose>
    </ProfessionalDisclaimer>
   </xsl:element>
  </xsl:template>
@@ -180,18 +208,36 @@
     </xsl:choose>
    </xsl:for-each>
 
-  <!-- Adding the Patient Disclaimer from the Misc Documents 
-       ========================================================== -->
+   <!-- 
+   Adding the Patient Disclaimer from the Misc Documents 
+   ========================================================== -->
    <PatientDisclaimer>
-    <xsl:variable                 name = "miscDoc2" 
+    <xsl:choose>
+     <xsl:when                    test = "/InScopeProtocol/
+                                           ProtocolDetail/
+                                           StudyType = 'Research study'">
+      <xsl:variable               name = "miscDoc2" 
+                                select = "document(concat('cdr:name:',
+                                                          $patResearchDisc,
+                                                          '/lastp'))"/>
+      <xsl:apply-templates      select = "$miscDoc2/MiscellaneousDocument
+                                                   /MiscellaneousDocumentText">
+       <xsl:with-param            name = "miscDocId"
+                                select = "'_ProtPatientDisclaimer'"/>
+      </xsl:apply-templates>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:variable               name = "miscDoc2" 
                                 select = "document(concat('cdr:name:',
                                                           $patDisc,
                                                           '/lastp'))"/>
-    <xsl:apply-templates        select = "$miscDoc2/MiscellaneousDocument
+      <xsl:apply-templates      select = "$miscDoc2/MiscellaneousDocument
                                                    /MiscellaneousDocumentText">
-     <xsl:with-param              name = "miscDocId"
+       <xsl:with-param            name = "miscDocId"
                                 select = "'_ProtPatientDisclaimer'"/>
-    </xsl:apply-templates>
+      </xsl:apply-templates>
+     </xsl:otherwise>
+    </xsl:choose>
    </PatientDisclaimer>
   </xsl:element>
  </xsl:template>

@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000150.xml,v 1.93 2006-01-18 14:09:35 venglisc Exp $
+$Id: CDR0000000150.xml,v 1.94 2006-04-04 21:51:31 venglisc Exp $
 
 Vendor Filter: InScopeProtocol
 
@@ -41,7 +41,7 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
  <!-- For the purpose of output layout. This is fine only when used with
       indent='yes'. -->
  <xsl:strip-space             elements = "*"/>
- <xsl:preserve-space          elements = "Para ProtocolTitle"/>
+ <xsl:preserve-space          elements = "Para PDQProtocolTitle ProtocolTitle"/>
 
  <!-- *
  ====================================================================
@@ -78,12 +78,8 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
    Output only the Professional and Patient title
    The Type attribute is being renamed to Audience elsewhere. 
    ========================================================== -->
-   <xsl:apply-templates         select = "ProtocolTitle[@Type='Professional']"
-                                  mode = "copy"/>
-   <xsl:apply-templates         select = "ProtocolTitle[@Type='Patient']"
-                                  mode = "copy"/>
-   <xsl:apply-templates         select = "ProtocolTitle[@Type='Original']"
-                                  mode = "copy"/>
+   <xsl:apply-templates         select = "ProtocolTitle[@Type='Professional']"/>
+   <xsl:apply-templates         select = "ProtocolTitle[@Type='Patient']"/>
  
    <xsl:apply-templates         select = "ProtocolAbstract"/>
    <xsl:apply-templates         select = "ProtocolDetail"/>
@@ -95,7 +91,15 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                              data-type = "number"/>
     <xsl:sort                   select = "Citation/@authorlist"/>
    </xsl:apply-templates>
+   <xsl:apply-templates         select = "RelatedPublications">
+    <xsl:sort                   select = "Citation/@pubyear"
+                                 order = "descending"
+                             data-type = "number"/>
+    <xsl:sort                   select = "Citation/@authorlist"/>
+   </xsl:apply-templates>
    <xsl:apply-templates         select = "ProtocolPhase"
+                                  mode = "copy"/>
+   <xsl:apply-templates         select = "ExpectedEnrollment"
                                   mode = "copy"/>
    <xsl:apply-templates         select = "ProtocolDesign"
                                   mode = "copy"/>
@@ -103,6 +107,8 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
    <xsl:apply-templates         select = "ProtocolSpecialCategory"/>
 
    <xsl:apply-templates         select = "ProtocolAdminInfo"/>
+
+   <xsl:call-template             name = "createRegistryInfo"/>
 
    <!-- 
    ===================================================================
@@ -123,14 +129,49 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
     </xsl:otherwise>
    </xsl:choose>
 
-<!-- Temporarily Removed *****************
+   <xsl:apply-templates         select = "DateLastModified"
+                                  mode = "copy"/>
+
    <xsl:if                        test = "VerificationDateCalculated">
     <xsl:apply-templates        select = "VerificationDateCalculated"/>
    </xsl:if>
-     Temporarily Removed ***************** -->
-   <xsl:apply-templates         select = "DateLastModified"
-                                  mode = "copy"/>
   </Protocol>
+ </xsl:template>
+
+
+ <!-- *
+ ====================================================================
+ Template to create the element PDQProtocolTitle
+ ==================================================================== -->
+ <xsl:template                   match = "ProtocolTitle">
+   <PDQProtocolTitle>
+    <xsl:attribute                name = "Audience">
+     <xsl:value-of              select = "@Type"/>
+    </xsl:attribute>
+    <xsl:apply-templates/>
+   </PDQProtocolTitle>
+ </xsl:template>
+
+
+ <!-- *
+ ====================================================================
+ Template to create the element PDQProtocolTitle
+ ==================================================================== -->
+ <xsl:template                   match = "ProtocolTitle"
+                                  mode = "original">
+   <xsl:element                   name = "{name()}">
+    <xsl:attribute                name = "Type">
+     <xsl:choose>
+      <xsl:when                   test = "@Type = 'Original'">
+       <xsl:text>Official</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>Short</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:attribute>
+    <xsl:apply-templates/>
+   </xsl:element>
  </xsl:template>
 
 
@@ -236,6 +277,8 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
   <xsl:element                    name = "{name()}">
    <xsl:apply-templates         select = "Objectives"
                                   mode = "copy"/>
+   <xsl:apply-templates         select = "Outcome"
+                                  mode = "copy"/>
    <xsl:apply-templates         select = "Outline"
                                   mode = "copy"/>
    <xsl:apply-templates         select = "EntryCriteria"
@@ -270,8 +313,7 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                   mode = "copy"/>
    <xsl:apply-templates         select = "TreatmentIntervention"
                                   mode = "copy"/>
-   <xsl:apply-templates         select = "PatientDisclaimer"
-                                  mode = "copy"/>
+   <xsl:apply-templates         select = "PatientDisclaimer"/>
   </xsl:element>
  </xsl:template>
 
@@ -312,6 +354,17 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
 
  <!--
  ====================================================================
+ Add the default Patient disclaimer and an additional disclaimer
+ ==================================================================== -->
+ <xsl:template                   match = "PatientDisclaimer">
+  <xsl:element                    name = "{name()}">
+   <xsl:apply-templates           mode = "copy"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
  Template to create the Para element for the NCI supported clinical 
  trials Disclaimer and modify the Para id.
  ==================================================================== -->
@@ -338,6 +391,8 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
    <xsl:apply-templates         select = "StudyType"
                                   mode = "copy"/>
    <xsl:apply-templates         select = "StudyCategory"/>
+   <xsl:apply-templates         select = "/InScopeProtocol/
+                                           ProtocolDesign"/>
    <xsl:apply-templates         select = "Condition"/>
    <xsl:apply-templates         select = "Gene"/>
   </xsl:element>
@@ -363,6 +418,17 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
    </xsl:for-each>
 
   </xsl:element>
+ </xsl:template>
+
+
+ <!-- *
+ ====================================================================
+ Add citation IDs as attributes
+ ==================================================================== -->
+ <xsl:template                   match = "ProtocolDesign">
+  <StudyDesign>
+   <xsl:apply-templates/>
+  </StudyDesign>
  </xsl:template>
 
 
@@ -561,7 +627,8 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
  ====================================================================
  Add citation IDs as attributes
  ==================================================================== -->
- <xsl:template                   match = "PublishedResults">
+ <xsl:template                   match = "PublishedResults | 
+                                          RelatedPublications">
   <xsl:element                    name = "{name()}">
    <xsl:attribute                 name = "ref">
     <xsl:value-of               select = "./Citation/@cdr:ref"/>
@@ -594,6 +661,7 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
  <xsl:template                   match = "ProtocolAdminInfo">
   <xsl:element                    name = "{name()}">
 
+   <xsl:apply-templates         select = "StartDate"/>
    <xsl:apply-templates         select = "CurrentProtocolStatus"
                                   mode = "copy"/>
 
@@ -647,6 +715,44 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
    </xsl:if>
   </xsl:element>
  </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Template to display the StartDate.
+ According to the specification there should only be one StartDate
+ with the attribute of Projected and only one with the attribute of 
+ Actual.  If the Actual attribute exists this is the one to be 
+ displayed.  Otherwise display the StartDate with the Projected one.  
+ ==================================================================== -->
+ <xsl:template                   match = "StartDate">
+   <xsl:choose>
+    <xsl:when                     test = "count(../StartDate) = 2
+                                          and
+                                          @DateType = 'Actual'">
+     <xsl:element                 name = "{name()}">
+      <xsl:attribute              name = "DateType">
+       <xsl:value-of            select = "@DateType"/>
+      </xsl:attribute>
+      <xsl:value-of             select = "."/>
+     </xsl:element>
+    </xsl:when>
+    <xsl:when                     test = "count(../StartDate) = 2
+                                          and
+                                          @DateType = 'Projected'">
+     <!-- do nothing, we will pick up the Actual instead -->
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:element                 name = "{name()}">
+     <xsl:attribute               name = "DateType">
+      <xsl:value-of             select = "@DateType"/>
+     </xsl:attribute>
+     <xsl:value-of              select = "."/>
+     </xsl:element>
+    </xsl:otherwise>
+   </xsl:choose>
+ </xsl:template>
+
 
  <!--
  ====================================================================
@@ -1949,6 +2055,59 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
 
  <!--
  ====================================================================
+ Template to create RegistryInfo block
+ ==================================================================== -->
+ <xsl:template                    name = "createRegistryInfo">
+  <RegistryInfo>
+   <xsl:apply-templates         select = "ProtocolTitle[@Type='Original']"
+                                  mode = "original"/>
+   <DateSubmittedtoPDQ>
+    <xsl:choose>
+     <xsl:when                    test = "ProtocolSources/
+                                          ProtocolSource/
+                                          DateSubmissionComplete">
+      <xsl:value-of             select = "ProtocolSources/
+                                          ProtocolSource/
+                                          DateSubmissionComplete"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "ProtocolSources/
+                                          ProtocolSource/
+                                          DateReceived"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </DateSubmittedtoPDQ>
+   <ClinicalTrialsGovID>
+    <xsl:attribute                name = "xref">
+     <xsl:text>http://clinicaltrials.gov/ct/show/</xsl:text>
+    <xsl:apply-templates        select = "ProtocolIDs/
+                                          OtherID/
+                                          IDType"
+                                  mode = "reginfo"/>
+    </xsl:attribute>
+    <xsl:apply-templates        select = "ProtocolIDs/
+                                          OtherID/
+                                          IDType"
+                                  mode = "reginfo"/>
+   </ClinicalTrialsGovID>
+  </RegistryInfo>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Template to create IDString element
+ ==================================================================== -->
+ <xsl:template                   match = "IDType"
+                                  mode = "reginfo">
+  <xsl:if                         test = ". = 'ClinicalTrials.gov ID'">
+   <xsl:value-of                select = "../IDString"/>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
  Named Templates
  ==================================================================== -->
  <!-- *
@@ -1983,13 +2142,12 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
  Convert the format of the phone numbers provided by RSS from the 
  form "(123) 456-7890" to the form "123-456-7890"
  ==================================================================== -->
-<!-- Temporarily Removed *********************
  <xsl:template                   match = "VerificationDateCalculated">
-  <VerificationDate>
+  <DateLastVerified>
    <xsl:value-of                select = "."/>
-  </VerificationDate>
+  </DateLastVerified>
  </xsl:template>
-     Temporarily Removed ********************* --> 
+
 
  <!--
  =====================================================================
