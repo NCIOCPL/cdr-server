@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.106 2005-08-16 14:29:11 bkline Exp $
+ * $Id: tables.sql,v 1.107 2006-04-20 20:54:11 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.106  2005/08/16 14:29:11  bkline
+ * Renamed the column names for the external_map_type table.
+ *
  * Revision 1.105  2005/08/15 18:16:45  bkline
  * Added external_map_type table.
  *
@@ -881,7 +884,7 @@ GO
 CREATE TABLE external_map
          (id INTEGER       IDENTITY PRIMARY KEY,
        usage INTEGER       NOT NULL REFERENCES external_map_usage,
-       value NVARCHAR(256) NOT NULL,
+       value NVARCHAR(356) NOT NULL,
       doc_id INTEGER           NULL REFERENCES all_docs,
          usr INTEGER           NULL REFERENCES usr,
     last_mod DATETIME      NOT NULL,
