@@ -1,0 +1,67 @@
+<CdrDoc Type='Filter' Id='CDR0000482943'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Module: Summary Denormalization</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!--
+================================================================
+ $Id: CDR0000482943.xml,v 1.1 2006-04-27 16:49:42 venglisc Exp $
+
+ Filter to denormalize Summary elements.
+ Written by Volker Englisch, 2006-04-12
+
+ This denormalization filter is called by the Media Denorm 
+ filter.  It's purpose is to identify if a Summary link is 
+ referencing a reformatted patient (KeyPoints = Yes) or not
+ (KeyPoints = No) in order to create the propper QC report link
+ in the Media QC report.
+
+ $Log: not supported by cvs2svn $
+================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0">
+
+ <xsl:output                    method = "xml" 
+                  omit-xml-declaration = "no"
+                              encoding = "UTF-8"/>
+
+
+ <!-- 
+ =================================================================
+ Template to denormalize the Summary elements
+ ================================================================= -->
+ <xsl:template                   match = "Summary">
+  <xsl:variable                   name = "docID" 
+                                select = "@cdr:ref"/>
+  <xsl:variable                   name = "docInfo" 
+                                select = "document(concat('cdr:',$docID,
+                                                           '/last'))"/>
+  <xsl:element                    name = "Summary">
+   <xsl:attribute                 name = "cdr:ref">
+    <xsl:value-of               select = "@cdr:ref"/>
+   </xsl:attribute>
+   <Summary>
+   <xsl:copy-of                  select = "$docInfo/Summary/SummaryTitle"/>
+    <xsl:choose>
+    <xsl:when                     test = "$docInfo//KeyPoint">
+     <KeyPoints>
+      <xsl:text>Yes</xsl:text>
+     </KeyPoints>
+    </xsl:when>
+    <xsl:otherwise>
+     <KeyPoints>
+      <xsl:text>No</xsl:text>
+     </KeyPoints>
+    </xsl:otherwise>
+   </xsl:choose>
+   </Summary>
+  </xsl:element>
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
