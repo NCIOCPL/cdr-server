@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.h,v 1.5 2004-04-30 01:34:21 ameyer Exp $
+ * $Id: CdrFilter.h,v 1.6 2006-05-04 22:48:19 ameyer Exp $
  *
  * Internal support functions for CDR filter
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2004/04/30 01:34:21  ameyer
+ * Prototype declaration for cdr::buildFilterString2IdMap().
+ *
  * Revision 1.4  2004/02/19 22:10:46  ameyer
  * Added filterDocumentByScriptSetName().  Filled out some more comments.
  *
@@ -29,6 +32,7 @@
 
 #include "CdrString.h"
 #include "CdrDbConnection.h"
+#include "CdrVersion.h"
 
 /**@#-*/
 
@@ -68,6 +72,11 @@ namespace cdr {
      *
      * Loads the script via the ID and calls the regular version.
      *
+     * LIMITATION:
+     *   The filter is in the document table.  There is no ability to
+     *   get a version of a filter, or limit the version to a particular
+     *   maximum date.
+     *
      *  @param  document    cdr::String document to be filtered
      *  @param  filterId    int filter identifier - key to document table
      *  @param  connection  reference to an active connection to the CDR
@@ -95,6 +104,11 @@ namespace cdr {
      *
      * Loads the script via the title and calls the regular version.
      *
+     * LIMITATION:
+     *   The filter is in the document table.  There is no ability to
+     *   get a version of a filter, or limit the version to a particular
+     *   maximum date.
+     *
      *  @param  document    cdr::String document to be filtered
      *  @param  filterTitle filter title in document table
      *  @param  connection  reference to an active connection to the CDR
@@ -121,6 +135,11 @@ namespace cdr {
      *
      * Loads the scripts via the set name and calls lower level version.
      *
+     * LIMITATION:
+     *   The filter is in the document table.  There is no ability to
+     *   get a version of a filter, or limit the version to a particular
+     *   maximum date.
+     *
      *  @param  document    cdr::String document to be filtered
      *  @param  setName     Name of filter set in document table
      *  @param  version     Version number (string) or symbolic name, or empty
@@ -143,6 +162,7 @@ namespace cdr {
                                       const cdr::String&     version = "",
                                       cdr::FilterParmVector* parms = 0,
                                       cdr::String            doc_id = "");
+
 
     /**
      * Build a map of filter strings to IDs to use in timing filters
