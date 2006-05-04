@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.51 2005-12-09 17:03:01 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.52 2006-05-04 22:45:47 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.51  2005/12/09 17:03:01  bkline
+ * Fixed typo (was assigning the wrong value to verificationDate variable).
+ *
  * Revision 1.50  2005/10/27 12:37:58  bkline
  * Support for new function to calculate an artificial "verification
  * date" added.
@@ -229,10 +232,18 @@ static string getValidZip(const string&,
 static string lookupExternalValue(const string&,
                                   cdr::db::Connection&);
 static void getFilterSetXml (cdr::db::Connection&, cdr::String, cdr::String,
-                             vector<cdr::String>&  filters);
-static std::string filterVector (cdr::String, cdr::db::Connection&,
-                                 vector<cdr::String>&, std::string*,
-                                 cdr::FilterParmVector*, cdr::String);
+                             vector<cdr::String>&  filters,
+                             const cdr::String& maxFilterDate =
+                                   cdr::DFT_VERSION_DATE);
+static std::string filterVector (
+        cdr::String            document,
+        cdr::db::Connection&   connection,
+        vector<cdr::String>&   filterSet,
+        std::string*           messages,
+        cdr::FilterParmVector* parms,
+        cdr::String            doc_id,
+        const cdr::String&     maxDocDate = cdr::DFT_VERSION_DATE,
+        const cdr::String&     maxFilterDate = cdr::DFT_VERSION_DATE);
 static string getVerificationDate(const string& parms,
                                   cdr::db::Connection& conn,
                                   const cdr::String&);
@@ -276,12 +287,20 @@ namespace
     return result;
   }
 
+  // What follows is Mike's humorous trick for creating two
+  //   constants.  The values are the same, but the addresses
+  //   are different.
+  // CdrDocType != CdrFilterType because the names refer to addresses,
+  //   not values.
+
   // unique type used to get CdrDocCtl
   const wchar_t CdrDocType[] = L"";
 
   // unique type used to get filter by name
   const wchar_t CdrFilterType[] = L"";
 
+  // Class used as to hold a vector of pairs of parameter name + value.
+  // Provides automatic cleanup.
   class ParmList
   {
     public:
@@ -306,7 +325,8 @@ namespace
 
   /***************************************************************************/
   /* returns pointer to UTF-8 string of data in s.  Note that this string    */
-  /* is owned by the caller and must be delete[]ed.                          */
+  /* is owned by the caller and must be delete[]ed.  (This happens           */
+  /* automatically in the ParmList destructor - AHM.)                        */
   /***************************************************************************/
   char* parmstr(const cdr::String& s)
   {
@@ -329,10 +349,17 @@ namespace
   cdr::String getDocument(cdr::String ui,
                           int version,
                           cdr::db::Connection& connection,
-                          const wchar_t* type = NULL)
+                          const wchar_t* type = NULL,
+                          const cdr::String& maxDate = cdr::DFT_VERSION_DATE)
   {
-    if (type == CdrDocType)
-      return cdr::getDocString(ui, connection, version, true, false);
+// DEBUG
+//std::cout << "In getDocument1, ui="<<ui.toUtf8()<<" version="<<version<<" maxDate=" << maxDate.toUtf8() << "\n";
+
+    if (type == CdrDocType) {
+      //std::cout << "Returning getDocString with maxDate\n"; // DEBUG
+      return cdr::getDocString(ui, connection, version, true, false,
+                               true, false, maxDate);
+    }
 
     cdr::String docstring(cdr::getDocString(ui, connection, version, true,
                                             //type != CdrFilterType));
@@ -383,7 +410,9 @@ namespace
   /***************************************************************************/
   cdr::String getFilterByName(cdr::String name,
                               cdr::db::Connection& connection,
-                              cdr::String* docui)
+                              cdr::String* docui,
+                              int version = 0,
+                              const cdr::String& maxDate=cdr::DFT_VERSION_DATE)
   {
     cdr::String::size_type idx = name.find(L"@@DOCTYPE@@");
     if (idx != cdr::String::npos)
@@ -408,50 +437,115 @@ namespace
 
     int id = getDocIdFromTitle(name, connection);
 
-    return getDocument(cdr::stringDocId(id), 0, connection, CdrFilterType);
+    return getDocument(cdr::stringDocId(id), version, connection,
+                       CdrFilterType, maxDate);
   }
 
 
-  /***************************************************************************/
-  /* get document from document spec (XML)                                   */
-  /* If type is not null and document is retrieved from CDR, its DocType     */
-  /* must match type.  If ui is not null, the ui will be returned in it.     */
-  /* docui is used when getting a filter -- it contains the ui of the        */
-  /* document to which the filter will be applied                            */
-  /***************************************************************************/
+  /***********************************************************************
+   * Get document from CdrFilter XML transaction.
+   *
+   * May be called to get either a document to be filter, or a filter itself.
+   * Caller passes either a "Document" or a "Filter" node respectively.
+   *
+   *  @param docspec    The node to examine.
+   *  @param connection Database access.
+   *  @param type       Address of CdrFilterType or CdrDocType, or 0=any.
+   *  @param ui         If non-zero, return CDR ID here.
+   *  @param docui      If non-zero, ptr to doc id of doc to be filtered.
+   *                    Used to find the doctype of the document to be
+   *                    filtered, to replace an @@DOCTYPE@@ macro.
+   *                    [Don't know why this is a pointer - AHM]
+   *  @param maxDateBuf If non-zero, return the max date here.
+   ***********************************************************************/
   cdr::String getDocument(cdr::dom::Node docspec,
                           cdr::db::Connection& connection,
                           const wchar_t* type = NULL,
-                          cdr::String* ui = NULL, cdr::String* docui = NULL)
+                          cdr::String* ui = NULL,
+                          cdr::String* docui = NULL,
+                          cdr::String* maxDateBuf = NULL)
   {
+// DEBUG
+//std::cout << "In getDocument2\n";
+    cdr::String docIdStr  = L"";
+    cdr::String verString = L"";
+    int version           = 0;
+    cdr::String maxDate   = cdr::DFT_VERSION_DATE;
+
+    // Get attributes of the Document or Filter node
     cdr::dom::NamedNodeMap attributes = docspec.getAttributes();
 
+// DEBUG
+/*
+int alen = attributes.getLength();
+std::cout<<"Attribute count="<<alen<<std::endl;
+for (int i=0; i<alen; i++) {
+ cdr::dom::Node attr=attributes.item(i);
+ std::cout<<"Name="<<attr.getNodeName().toUtf8()<<" Value="<<attr.getNodeValue().toUtf8()<<std::endl;
+}
+*/
+    // If there's an href, it's a request by doc (or filter) ui
+    cdr::dom::Node href = attributes.getNamedItem("href");
+    if (href != NULL)
+    {
+      docIdStr = href.getNodeValue();
+      if (ui != NULL)
+        *ui = docIdStr;
+//std::cout<<"docIdStr="<<docIdStr.toUtf8()<<std::endl;
+    }
+
+    // Is there a limiting date for version retrieval?
+    cdr::dom::Node dateNode = attributes.getNamedItem("maxDate");
+    if (dateNode != NULL)
+      maxDate = dateNode.getNodeValue();
+
+    // Tell caller what maximum date we found or defaulted to
+    if (maxDateBuf)
+      *maxDateBuf = maxDate;
+
+    // Is there a version number, or last/lastp?
+    cdr::dom::Node verAttr = attributes.getNamedItem("version");
+    if (verAttr != NULL)
+    {
+      verString = verAttr.getNodeValue();
+      if (verString.size()) {
+        // Version only makes sense if a docId given
+        if (docIdStr == L"")
+          throw cdr::Exception(L"CdrFilter:getDocument2: "
+                  L"Version specified with no href=document ID");
+        // Resolve last version
+        if (verString == L"last")
+          version = cdr::getVersionNumber(docIdStr.extractDocId(), connection,
+                                          0, maxDate);
+        // Resolve last publishable version
+        else if (verString == L"lastp")
+          version = cdr::getLatestPublishableVersion(docIdStr.extractDocId(),
+                                  connection, 0, maxDate);
+
+        // Else it should be an actual version number
+        else
+          version = verString.getInt();
+
+//std::cout<<"In getDocument2, version num="<<version<<std::endl;
+      }
+    }
+
+    // If there's a name, it's a request for a filter
     cdr::dom::Node name = attributes.getNamedItem("Name");
     if (name != NULL)
       return getFilterByName(name.getNodeValue(), connection, docui);
 
-    cdr::dom::Node href = attributes.getNamedItem("href");
-    if (href != NULL)
-    {
-      cdr::String u = href.getNodeValue();
-      if (ui != NULL)
-        *ui = u;
+    // Else if there's a document id
+    if (docIdStr != L"")
+      return getDocument(docIdStr, version, connection, type, maxDate);
 
-      int version = 0;
-      cdr::dom::Node verAttr = attributes.getNamedItem("version");
-      if (verAttr != NULL)
-      {
-        cdr::String verString = verAttr.getNodeValue();
-        if (verString.size())
-          version = verString.getInt();
-      }
-
-      return getDocument(u, version, connection, type);
-    }
-
+    // Else the xml was embedded in the transaction itself
+    // There better be a CDATA section containing the data
+    // Get it out of the transaction and return it to the caller
     cdr::dom::Node f = docspec.getFirstChild();
     if (f == NULL || f.getNodeType() != cdr::dom::Node::CDATA_SECTION_NODE)
-      throw cdr::Exception(L"Invalid filter specification");
+      throw cdr::Exception(L"CdrFilter:getDocument2: "
+                           L"Invalid filter specification");
 
     return f.getNodeValue();
   }
@@ -471,13 +565,25 @@ namespace
 
   struct ThreadData
   {
-      ThreadData(cdr::db::Connection& c, cdr::String id)
-        : connection(c), DocId(id), fatalError(false)
-        {}
+      ThreadData(cdr::db::Connection& c, cdr::String id,
+                 const cdr::String& maxDocDt=cdr::DFT_VERSION_DATE,
+                 const cdr::String& maxFilterDt=cdr::DFT_VERSION_DATE)
+        : connection(c), DocId(id), maxDocDate(maxDocDt),
+          maxFilterDate(maxFilterDt), fatalError(false)
+        {
+            // If a max filter date is not specified, the default
+            //   is to use the max document date, which may or may
+            //   not be the default version date
+            if (maxFilterDate == cdr::DFT_VERSION_DATE)
+                maxFilterDate = maxDocDate;
+        }
+
       string filter_messages;
       vector<UriInfo> uri_list;
       cdr::db::Connection& connection;
       cdr::String DocId;
+      cdr::String maxDocDate;
+      cdr::String maxFilterDate;
 
       // These two are added to avoid the exception Mike was throwing in
       // the message handler for fatal errors.  The exception was causing
@@ -555,6 +661,7 @@ namespace
 
     ThreadData* thread_data = static_cast<ThreadData*>(data);
     UriInfo u;
+//std::cout<<"ThreadData maxDocDate="<<thread_data->maxDocDate.toUtf8()<<" maxFilterDate="<<thread_data->maxFilterDate.toUtf8()<<std::endl;
 
     bool conditional = (strcmp(scheme, "cdrx") == 0);
     if (conditional || strcmp(scheme, "cdr") == 0)
@@ -580,6 +687,7 @@ namespace
         cdr::String version_str;
         cdr::String type;
         cdr::String::size_type sep = spec.find('/');
+        cdr::String maxDate = thread_data->maxDocDate;
         if (sep != string::npos)
         {
           uid = spec.substr(0, sep);
@@ -596,6 +704,13 @@ namespace
         // 21May2002 RMK: Added capability to resolve URI with DocTitle.
         if (uid.find(L"name:") == 0)
         {
+          // If we're here, we're getting a filter
+          // XXX - FOR FILTER DATE LIMITING - XXX
+          // Limit by filter date using the following technique:
+          if (thread_data->maxFilterDate != cdr::DFT_VERSION_DATE) {
+            version_str = "last"; // or lastp?
+            maxDate = thread_data->maxFilterDate;
+          }
           cdr::String::size_type pos = uid.find(L"@@SLASH@@");
           while (pos != uid.npos)
           {
@@ -632,14 +747,17 @@ namespace
         int version = 0;
         if (version_str == L"last")
         {
-          version = cdr::getVersionNumber(uid.extractDocId(), connection);
+//std::cout<<"uri_open last id="<<uid.extractDocId()<<" date="<<thread_data->maxDocDate.toUtf8()<<"\n";
+          version = cdr::getVersionNumber(uid.extractDocId(), connection,
+                                          0, maxDate);
           if (version < 1)
             throw cdr::Exception(L"No version found for document", uid);
         }
         else if (version_str == L"lastp")
         {
+//std::cout<<"uri_open lastP id="<<uid.extractDocId()<<" date="<<thread_data->maxDocDate.toUtf8()<<"\n";
           version = cdr::getLatestPublishableVersion(uid.extractDocId(),
-                                                     connection);
+                                                     connection, 0, maxDate);
           if (version < 1)
             throw cdr::Exception(L"No publishable version found for document",
                                  uid);
@@ -659,7 +777,9 @@ namespace
                 + "</CdrDocTitle>";
         }
         else
+{ //std::cout<<"Fetching document="<<uid.toUtf8()<<" verNum="<<version<<std::endl;
           u.doc = getDocument(uid, version, connection).toUtf8();
+}
       }
       catch (...)
       {
@@ -1002,13 +1122,16 @@ cdr::String cdr::filterDocumentByScriptId (
 
 {
   // Convert filterId to filter itself
+  // This is NOT maxDate limit capable!
+  // Currently used only by CdrDoc routines
   std::string qry = "SELECT xml FROM document WHERE id = ?";
   cdr::db::PreparedStatement stmt = connection.prepareStatement (qry);
   stmt.setInt (1, filterId);
   cdr::db::ResultSet rs = stmt.executeQuery();
   if (!rs.next())
-      throw cdr::Exception (L"filterDocument: can't find filter for id="
-                            + cdr::String::toString (filterId));
+      throw cdr::Exception (
+              L"filterDocumentByScriptId: can't find filter for id="
+              + cdr::String::toString (filterId));
   cdr::String filterXml = rs.getString (1);
 
   // Invoke existing function, passing the script
@@ -1128,6 +1251,7 @@ cdr::String cdr::filterDocument(const cdr::String& document,
   return result;
 }
 
+// Entry point for CdrServer clients.
 cdr::String cdr::filter(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
                         cdr::db::Connection& connection)
@@ -1135,6 +1259,8 @@ cdr::String cdr::filter(cdr::Session& session,
   vector<cdr::String> filters;
   cdr::String document;
   cdr::String ui;
+  cdr::String maxDocDate;
+  cdr::String maxFilterDate;
 
   // check if we're to do output
   bool output = true;
@@ -1158,6 +1284,9 @@ cdr::String cdr::filter(cdr::Session& session,
         cdr::String name = child.getNodeName();
         if (name == L"Document")
         {
+          const cdr::dom::Element& e =
+              static_cast<const cdr::dom::Element&>(child);
+
           const wchar_t* type = NULL;
           cdr::dom::NamedNodeMap attributes = child.getAttributes();
           cdr::dom::Node ctl = attributes.getNamedItem("ctl");
@@ -1168,8 +1297,14 @@ cdr::String cdr::filter(cdr::Session& session,
               type = CdrDocType;
           }
 
-          document = getDocument(child, connection, type, &ui);
-
+          // Document may be in the command itself, or referred to
+          //   in the command href.
+          // If in the href, it may or may not have a numeric or
+          //   symbolic version number and possibly a maxDate limit.
+          // getDocument() parses the "Document" node to find out and
+          //   get what we need.
+          document = getDocument(child, connection, type, &ui, 0,
+                                 &maxDocDate);
           break; // only one document allowed
         }
       }
@@ -1189,22 +1324,32 @@ cdr::String cdr::filter(cdr::Session& session,
         cdr::String name = child.getNodeName();
         if (name == L"Filter")
           filters.push_back(getDocument(child, connection, CdrFilterType,
-                                        NULL, &ui));
+                                        NULL, &ui, &maxFilterDate));
         else
         if (name == L"FilterSet")
         {
           // Extract name and version of filter set
           const cdr::dom::Element& e =
               static_cast<const cdr::dom::Element&>(child);
-          String setName = e.getAttribute("Name");
+          String setName    = e.getAttribute("Name");
           String versionStr = e.getAttribute("Version");
 
+          // Limiting date on filters
+          maxFilterDate = e.getAttribute("maxDate");
+//std::cout<<"In cdr::filter, maxFilterDate="<<maxFilterDate.toUtf8()<<std::endl;
+          if (maxFilterDate == L"")
+              // If filter date not specified, use document date
+              // If that's not explicitly specified, both are defaulted
+              maxFilterDate = maxDocDate;
+
           // Get XML strings for each filter into the filterSet vector
-          getFilterSetXml (connection, setName, versionStr, filters);
+          getFilterSetXml (connection, setName, versionStr, filters,
+                           maxFilterDate);
         }
         else
         if (name == L"Parms")
         {
+          // Assemble parameters into a vector of name/value pairs
           for (cdr::dom::Node pchild = child.getFirstChild();
                pchild != NULL;
                pchild = pchild.getNextSibling())
@@ -1243,9 +1388,13 @@ cdr::String cdr::filter(cdr::Session& session,
   // Create string to receive any messages
   std::string messages;
 
+  // We now have the XML strings for document and all filters
   // Process doc through all filters
+//std::cout<<"CdrFilter maxDocDate="<<maxDocDate.toUtf8()<<std::endl;
+//std::cout<<"CdrFilter maxFilterDate="<<maxFilterDate.toUtf8()<<std::endl;
   std::string result = filterVector (document, connection, filters,
-                                     &messages, &pvector, ui);
+                                     &messages, &pvector, ui,
+                                     maxDocDate, maxFilterDate);
 
   // Package results into XML transacton response
   result = output ? "<Document><![CDATA[" + result + "]]></Document>\n" : "";
@@ -1273,12 +1422,14 @@ static void getFilterSetXml (
     cdr::db::Connection&  connection,
     cdr::String           setName,
     cdr::String           version,
-    vector<cdr::String>&  filters
+    vector<cdr::String>&  filters,
+    const cdr::String&    maxFilterDate
 ) {
+//std::cout<<"In getFilterSetXml, setName="<<setName.toUtf8()<<" version="<<version.toUtf8()<<" maxFilterDate="<<maxFilterDate.toUtf8()<<std::endl;
     // Vector of doc ids for each filter in the set
     std::vector<int> filterSet;
 
-    // Fill in filterSet
+    // Fill in filterSet with filter document IDs
     getFiltersInSet(setName, filterSet, connection);
 
     // For each one, find the document string
@@ -1288,15 +1439,26 @@ static void getFilterSetXml (
         int ver = 0;
         cdr::String idStr = cdr::stringDocId(id);
 
+        // XXX Possibly controversial decision?
+        // If a maxFilterDate is specified, get the last version from
+        //   the version table, not the CWD from the document table
+        if (maxFilterDate != cdr::DFT_VERSION_DATE && version.empty())
+{
+//std::cout<<"Setting version='last'"<<std::endl;
+            version = L"last";
+}
+
         // Resolve version
         if (version == L"last")
-          ver = cdr::getVersionNumber(id, connection);
+          ver = cdr::getVersionNumber(id, connection, 0, maxFilterDate);
         else if (version == L"lastp")
-          ver = cdr::getLatestPublishableVersion(id, connection);
+          ver = cdr::getLatestPublishableVersion(id, connection, 0,
+                                                 maxFilterDate);
         else if (!version.empty())
           throw cdr::Exception(L"Invalid value for Version attribute",
                                version);
 
+//std::cout<<"About to fetch filter, id="<<idStr.toUtf8()<<" verNum="<<ver<<std::endl;
         // Fetch from the database
         cdr::String doc = getDocument (idStr, ver, connection, CdrFilterType);
 
@@ -1327,7 +1489,9 @@ static std::string filterVector (
     vector<cdr::String>&  filterSet,
     std::string           *messages,
     cdr::FilterParmVector *parms,
-    cdr::String           doc_id
+    cdr::String           doc_id,
+    const cdr::String&    maxDocDate,
+    const cdr::String&    maxFilterDate
 ) {
     // Convert input doc to utf8 for filtering
     string dString = document.toUtf8();
@@ -1335,7 +1499,7 @@ static std::string filterVector (
     std::string result(doc);
 
     // Create struct for Sablotron callbacks
-    ThreadData threadData (connection, doc_id);
+    ThreadData threadData (connection, doc_id, maxDocDate, maxFilterDate);
 
     // Apply each filter in the vector
     for (std::vector<cdr::String>::iterator i = filterSet.begin();
@@ -2252,7 +2416,7 @@ string getVerificationDate(const string& parms, cdr::db::Connection& conn,
              + "</VerificationDate>";
     return "<VerificationDate/>";
 }
-    
+
 string lookupExternalValue(const string& parms,
                            cdr::db::Connection& conn)
 {
