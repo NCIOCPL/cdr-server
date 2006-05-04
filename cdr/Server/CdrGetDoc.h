@@ -1,9 +1,13 @@
 /*
- * $Id: CdrGetDoc.h,v 1.13 2005-10-27 12:37:58 bkline Exp $
+ * $Id: CdrGetDoc.h,v 1.14 2006-05-04 22:54:40 ameyer Exp $
  *
  * Internal support functions for CDR document retrieval.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/10/27 12:37:58  bkline
+ * Support for new function to calculate an artificial "verification
+ * date" added.
+ *
  * Revision 1.12  2004/11/05 05:56:08  ameyer
  * Added parameters for getting xml, blob, or both.
  *
@@ -93,6 +97,8 @@ namespace cdr {
      *  @param  getXml      if true, fetch xml, else not.
      *  @param  getBlob     if true, fetch blob in base64, else not.
      *  @param  denormalize if true, link denormalization filter is applied.
+     *  @param  maxDate     version must have been updated earlier than
+     *                      this date.
      *  @return             wide-character String object containing XML
      *                      for the document.
      */
@@ -128,7 +134,9 @@ namespace cdr {
                                     bool usecdata = true,
                                     bool denormalize = true,
                                     bool getXml = true,
-                                    bool getBlob = true);
+                                    bool getBlob = true,
+                                    const cdr::String& maxDate=
+                                               cdr::DFT_VERSION_DATE);
 
     /**@#-*/
 
@@ -192,14 +200,23 @@ namespace cdr {
      * Finds the date the specified document was first published, if
      * known.
      *
-     *  @param  docId       reference to string containing the document's ID.
-     *  @param  version     int version number of document
-     *  @param  conn        reference to an active connection to the CDR
-     *                      database.
-     *  @return             string containing date document was first
-     *                      published, if known; otherwise NULL object.
+     *  @param  docId       Integer document ID.
+     *  @param  conn        Reference to an active connection to the CDR
+     *                       database.
+     *  @return             String containing date document was first
+     *                       published, if known; otherwise NULL object.
      */
     extern cdr::String getDateFirstPublished(int, db::Connection&);
+
+    /**
+     * Gets the document type name for a document, by ID.
+     *
+     *  @param  docId       Reference to string containing the document's ID.
+     *  @param  conn        Reference to an active connection to the CDR
+     *                       database.
+     *  @return             String containing docs doctype name.
+     */
+    extern cdr::String getDocTypeName(const cdr::String&, cdr::db::Connection&);
 }
 
 #endif
