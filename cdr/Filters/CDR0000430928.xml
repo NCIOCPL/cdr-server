@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000430928.xml,v 1.2 2005-08-12 19:32:18 venglisc Exp $
+$Id: CDR0000430928.xml,v 1.3 2006-05-16 20:59:10 venglisc Exp $
 
 Filter Module to include all general formatting templates for 
 QC Reports
@@ -69,6 +69,47 @@ $Log: not supported by cvs2svn $
  
    <xsl:value-of               select = "@cdr:xref"/>
   </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ =======================================================================
+ Template to create the link to a CDR Document QC report
+ ======================================================================= -->
+ <xsl:template                   name = "createCdrQcLink">
+     <xsl:variable                name = "docRef"
+                                select = "@cdr:ref"/>
+     <xsl:variable                name = "fragmentRef" 
+                                select = "substring-after($docRef,'#')"/>
+     <xsl:variable                name = "cdrId"
+                                select = "concat('CDR', 
+                                           number(
+                                            substring-after(
+                                             substring-before(
+                                              concat($docRef, '#'), '#'), 
+                                                                   'CDR')))"/>
+     <xsl:text> (</xsl:text>
+     <xsl:element                 name = "a">
+      <xsl:attribute              name = "href">
+       <xsl:value-of            select = "concat('/cgi-bin/cdr/QcReport.py',
+                                                 '?Session=guest',
+                                                 '&amp;DocId=',
+                                                 $cdrId)"/>
+      </xsl:attribute>
+      <xsl:attribute              name = "target">
+       <xsl:text>new</xsl:text>
+      </xsl:attribute>
+      <xsl:value-of             select = "$cdrId"/>
+      </xsl:element>
+     <xsl:text>)</xsl:text>
+
+     <xsl:if                      test = "$fragmentRef">
+     <xsl:text> [</xsl:text>
+     <xsl:value-of              select = "$fragmentRef"/>
+     <xsl:text>]</xsl:text>
+     </xsl:if>
+
+     <xsl:apply-templates       select = "../@Public"/>
  </xsl:template>
 
 
