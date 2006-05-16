@@ -1,0 +1,357 @@
+<CdrDoc Type='Filter' Id='CDR0000486311'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">DrugInformationSummary QC Report Filter</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<!--
+================================================================
+$Id: CDR0000486311.xml,v 1.1 2006-05-16 20:57:15 venglisc Exp $
+
+Filter to create the DrugInformationSummary QC Report
+   Written      2006-04-03
+
+$Log: not supported by cvs2svn $
+================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+ <xsl:output                    method = "html"/> 
+
+ <xsl:include  href = "cdr:name:Module: Attribute Sets"/>
+ <xsl:include  href = "cdr:name:Module: InLine Markup Formatter"/>
+ <xsl:include  href = "cdr:name:Module: QC Filter Templates"/>
+ <xsl:include  href = "cdr:name:Module: Table Formatter"/>
+ <xsl:include  href = "cdr:name:Module: STYLE Default"/> 
+
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
+ <xsl:variable                    name = "whoAmI"
+                                select = "'DrugInfoSummary'"/>
+ <!--
+ ======================================================================
+ Main Template
+ ====================================================================== -->
+ <xsl:template                   match = "/">
+  <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+  <HTML>
+   <HEAD>
+    <xsl:variable                 name = "cdrdocs" 
+                                select = "document('cdrx:/*/CdrCtl')"/>
+    <TITLE>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+     <xsl:text>: </xsl:text>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/> 
+    </TITLE>
+    <STYLE type='text/css'>
+     .miscdoc   { background-color: DFDFDF; }
+     <xsl:call-template           name = "defaultStyle"/>  
+    </STYLE>
+   </HEAD>
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
+   <xsl:apply-templates         select = "DrugInformationSummary"/>
+  </HTML>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Terminology QC Report
+ =================================================================== -->
+ <xsl:template                   match = "DrugInformationSummary">
+  <BODY>
+
+  <!-- 
+  ==================================================================
+  Display Report heading and subheading 
+  ================================================================== -->
+  <b>
+   <font size='4'>
+    <center>
+     <xsl:text>Drug Information Summary</xsl:text>
+     <br/>
+     <xsl:text>QC Report</xsl:text>
+    </center>
+   </font>
+   <font size='3'>
+    <center>
+     <xsl:value-of              select = "document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M% 25p')"/>
+    </center>
+   </font>
+  </b>
+  <p/>
+
+  <!-- 
+  ====================================================================
+  Display CDR ID
+  ==================================================================== -->
+  <b>
+   <font size='4'>
+    <xsl:value-of               select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+   </font>
+  </b>
+  <p/>
+
+  <!-- 
+  ===================================================================
+  Display Document Title 
+  =================================================================== -->
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>
+      <font size="4">Title</font>
+     </b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Title"/>
+    </td>
+   </tr>
+  </table>
+  <p/>
+
+  <!-- 
+  ===================================================================
+  Display Drug Information Meta Data 
+  =================================================================== -->
+  <b>
+   <font size="4">Drug Info Meta Data</font>
+  </b>
+  <xsl:apply-templates          select = "DrugInfoMetaData"/>
+
+  <!-- 
+  ===================================================================
+  Display Drug Information Summary Data 
+  =================================================================== -->
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>
+      <font size="4">Drug Info Summary</font>
+     </b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates          select = "SummarySection"/>
+    </td>
+   </tr>
+  </table>
+  <p/>
+
+  <!-- 
+  ===================================================================
+  Display Drug Information Administrative Data 
+  =================================================================== -->
+  <xsl:apply-templates          select = "DrugReference"/>
+  <p/>
+
+  <xsl:call-template              name = "adminSection"/>
+  </BODY>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Template to display the Other Name elements
+ =================================================================== -->
+ <xsl:template                   match = "DrugInfoMetaData">
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Description</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Description"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>URL</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "URL"/>
+     <br/>
+     <xsl:for-each              select = "URL">
+      <xsl:call-template          name = "createWebLink"/>
+     </xsl:for-each>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Audience</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Audience"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Drug Info Type</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "DrugInfoType"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>FDA Approved</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "FDAApproved"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Term Link</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "TerminologyLink/
+                                          Term/
+                                          PreferredName"/>
+     <xsl:for-each              select = "TerminologyLink/Term">
+      <xsl:call-template          name = "createCdrQcLink"/>
+     </xsl:for-each>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Glossary Link</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "GlossaryLink/
+                                          GlossaryTerm/
+                                          TermName"/>
+     <xsl:for-each              select = "GlossaryLink/
+                                          GlossaryTerm">
+      <xsl:call-template          name = "createCdrQcLink"/>
+     </xsl:for-each>
+    </td>
+   </tr>
+  </table>
+  <p/>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Template to display the OtherNameType values
+ =================================================================== -->
+ <xsl:template                   match = "DrugReference">
+  <xsl:variable                   name = "fracID"
+                                select = "substring-after(
+                                            DrugReferenceDescription/
+                                            MiscellaneousDocument/
+                                            @cdr:ref, '#')"/>
+  
+  <b>
+   <font size="4">
+    <xsl:text>Drug Reference - </xsl:text>
+    <xsl:value-of               select = "DrugReferenceType"/>
+   </font>
+  </b>
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Link</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "DrugReferenceLink"/>
+     <br/>
+     <xsl:for-each              select = "DrugReferenceLink">
+      <xsl:call-template          name = "createWebLink"/>
+     </xsl:for-each>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Description</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "DrugReferenceDescription/
+                                          MiscellaneousDocument/
+                                          MiscellaneousDocumentTitle"/>
+     <xsl:for-each              select = "DrugReferenceDescription/
+                                          MiscellaneousDocument">
+      <xsl:call-template          name = "createCdrQcLink"/>
+     </xsl:for-each>
+     <br/>
+     <i>
+<!--
+      <xsl:value-of             select = "DrugReferenceDescription/
+                                          MiscellaneousDocument/
+                                          MiscellaneousDocumentText/
+                                          Section/*[@cdr:id = $fracID]"/>
+-->
+<div class="miscdoc">
+      <xsl:apply-templates      select = "DrugReferenceDescription//*[@cdr:id 
+                                                                 = $fracID]"/>
+</div>
+     </i>
+    </td>
+   </tr>
+  </table>
+  <p/>
+ </xsl:template>
+
+ <!-- 
+ ===================================================================
+ Template to display the OtherNameType values
+ =================================================================== -->
+ <xsl:template                   name = "adminSection">
+  <hr width="35%"/>
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Entered By</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "EnteredBy"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Entry Date</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "EntryDate"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Date Last Modified</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "DateLastModified"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Processing Status</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "ProcessingStatus"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Comments</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Comment"/>
+    </td>
+   </tr>
+  </table>
+  <p/>
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
