@@ -19,9 +19,13 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.19 2005-07-28 21:03:30 ameyer Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.20 2006-05-17 01:52:29 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2005/07/28 21:03:30  ameyer
+ * Attempting to fix fumbled cvs command that added experimental version
+ * 1.18 by mistake.
+ *
  * Revision 1.17  2004/03/06 17:09:01  bkline
  * Removed extraneous ' character from dynamically built SQL queries.
  *
@@ -475,9 +479,17 @@ static cdr::link::LinkChkRelator parseRelator (const char **stringpp)
         *stringpp += 2;
         return cdr::link::relEqual;
     }
-    if (!strncmp (p, "!=", 2)) {
+    else if (!strncmp (p, "!=", 2)) {
         *stringpp += 2;
         return cdr::link::relNotEqual;
+    }
+    else if (!strncmp (p, "+=", 2)) {
+        *stringpp += 2;
+        return cdr::link::pickListEqual;
+    }
+    else if (!strncmp (p, "-=", 2)) {
+        *stringpp += 2;
+        return cdr::link::pickListNotEqual;
     }
 
     // No match where one was required
@@ -714,6 +726,12 @@ bool cdr::link::LinkChkRelation::evalRelation (
     cdr::db::Connection& dbConn,
     int                  docId
 ) {
+    // These evaluations are only done in the context of validation,
+    //   not picklist generation.
+    // Always evaluate picklist operators as true.
+    if (relator == pickListEqual || relator == pickListNotEqual)
+        return true;
+
     // Check query terms for at least one of this field + value + docId.
     std::string qry = "SELECT TOP 1 doc_id "
                       "  FROM query_term "
@@ -966,9 +984,14 @@ void cdr::link::LinkChkNode::makeSubQueries (
 
             // Value
             query += "qt.value";
-            if (node->getRelator() == cdr::link::relEqual)
+
+            // This function supports picklist generation
+            // Use the picklist as well as validation functions
+            if ((node->getRelator() == cdr::link::relEqual) ||
+                (node->getRelator() == cdr::link::pickListEqual))
                 query += "=";
-            else if (node->getRelator() == cdr::link::relNotEqual)
+            else if ((node->getRelator() == cdr::link::relNotEqual) ||
+                     (node->getRelator() == cdr::link::pickListNotEqual))
                 query += "<>";
             query += "'";
             query += node->getValue();
@@ -1064,6 +1087,8 @@ cdr::String cdr::link::getSearchLinksRespWithProp (
     qry += ")";
     qry += " ORDER BY d.title";
 
+// DEBUG
+// cdr::log::WriteFile(L"getSearchLinksRespWithProp", cdr::String(qry));
     // Submit the query to the DBMS.
     cdr::db::PreparedStatement stmt = conn.prepareStatement(qry);
     stmt.setString(1, titlePattern);
