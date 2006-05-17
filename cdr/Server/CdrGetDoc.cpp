@@ -1,10 +1,14 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.33 2005-10-27 12:37:58 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.34 2006-05-17 03:48:13 ameyer Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2005/10/27 12:37:58  bkline
+ * Support for new function to calculate an artificial "verification
+ * date" added.
+ *
  * Revision 1.32  2004/11/10 03:18:20  ameyer
  * getDoc now tested and working with blob versions.
  *
@@ -332,20 +336,36 @@ cdr::String cdr::getDocString(
         bool usecdata,
         bool denormalize,
         bool getXml,
-        bool getBlob
+        bool getBlob,
+        const cdr::String& maxDate
 ) {
-  if (version == 0)
+  // If no version number, and no max date, get it from the document table
+  if (version == 0 && maxDate == cdr::DFT_VERSION_DATE)
     return cdr::getDocString(docIdString, conn, usecdata, denormalize,
                              getXml, getBlob);
 
+  // We're going to search for a version
+  // getVersion() will fill in the CdrVerDoc struct with all info
   cdr::CdrVerDoc v;
 
+  // Else if there's a max date, get the highest version
+  //   with that max date
+  // Uses the date checking overload of getVersion
+  // Note: No check for publishability.  Is that a problem? XXX
+  if (maxDate != cdr::DFT_VERSION_DATE)
+    if (!getVersion(docIdString.extractDocId(), conn, maxDate, &v))
+      throw cdr::Exception(L"  : Unable to find document "
+                               + docIdString + L" with date < " + maxDate);
+
+  // Else get the requested version by version number
   if (!getVersion(docIdString.extractDocId(), conn, version, &v))
     throw cdr::Exception(L"getDocString: Unable to find document "
                              + docIdString
                              + L", version: "
                              + cdr::String::toString(version));
 
+  // Everything is now in the CdrVerDoc structure
+  // Format a <CdrDoc> XML object to return
   return cdr::getDocString(docIdString, conn, &v, usecdata, denormalize,
                            getXml, getBlob);
 }
@@ -520,7 +540,7 @@ cdr::String cdr::getDocCtlString(
  */
 cdr::String cdr::getDateFirstPublished(int docId,
                                        db::Connection& conn) {
-    
+
     std::string query = "SELECT d.first_pub                          "
                         "  FROM document d                           "
                         " WHERE d.first_pub IS NOT NULL              "
@@ -648,8 +668,10 @@ cdr::String denormalizeLinks(const cdr::String& xml,
     return denormXml;
 }
 
-cdr::String getDocTypeName(const cdr::String& docId, cdr::db::Connection& conn)
-{
+cdr::String cdr::getDocTypeName(
+    const cdr::String& docId,
+    cdr::db::Connection& conn
+) {
     // Look in the database for the document type.
     const static char* query =
         " SELECT name "
