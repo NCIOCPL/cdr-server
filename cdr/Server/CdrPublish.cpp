@@ -1,10 +1,14 @@
 /*
- * $Id: CdrPublish.cpp,v 1.8 2005-03-04 02:55:49 ameyer Exp $
+ * $Id: CdrPublish.cpp,v 1.9 2006-05-17 03:31:42 ameyer Exp $
  *
  * Commands to create a new publishing job and retrieve status for an
  * existing publishing job.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2005/03/04 02:55:49  ameyer
+ * Minor change to ensure new DOM parser does not release DOM tree
+ * memory prematurely.
+ *
  * Revision 1.7  2002/10/29 21:03:39  pzhang
  * Added allowInActive to cdr::publish() to handle Hotfix-Remove.
  *
@@ -238,6 +242,8 @@ cdr::String cdr::publish(Session& session,
         jobParms[name] = value;
         ++parmIter;
     }
+    // If a default parm found that isn't in the user entered parm list
+    //   add it to the jobParms
     parmIter = controlParms.begin();
     while (parmIter != controlParms.end()) {
         String name  = parmIter->first;
@@ -285,13 +291,30 @@ cdr::String cdr::publish(Session& session,
         ++parmIter;
     }
 
+    // Document versions for Hotfix are selected here in CdrPublish
+    //   rather than in the SubsetSelection queries.
+    // The new (2006) approach to publishing allows documents to
+    //   be selected as of a particular date-time.  We support that
+    //   here by substituting the MaxDocUpdatedDate for the jobTime
+    //   in the call to insertDocument(), if the user has specified
+    //   such a date.
+    String maxDocDate = jobTime;
+    parmIter = jobParms.begin();
+    while (parmIter != jobParms.end()) {
+        if (parmIter->first == L"MaxDocUpdatedDate") {
+            if (parmIter->second != L"JobStartDateTime")
+                maxDocDate = parmIter->second;
+        }
+        ++parmIter;
+    }
+
     // Create the rows for the user-listed documents.
     std::map<int, int>::const_iterator docIter = docList.begin();
     while (docIter != docList.end()) {
         int docId  = docIter->first;
         int docVer = docIter->second;
         insertDocument(jobId, docId, docVer, allowNonPub, allowInActive,
-                       jobTime, conn);
+                       maxDocDate, conn);
         docIter++;
     }
 
@@ -661,8 +684,9 @@ void insertDocument(
         docVersion = rs.getInt(1);
     if (docVersion.isNull() || docVersion < 1) {
         if (userDocVersion < 1)
-            throw cdr::Exception(L"No publishable version found for document ",
-                                 cdr::stringDocId(docId));
+            throw cdr::Exception(
+                    L"CdrPublish: No publishable version found for document ",
+                      cdr::stringDocId(docId));
         else
             throw cdr::Exception(L"Version " +
                                  cdr::String::toString(userDocVersion) +
