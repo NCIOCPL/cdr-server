@@ -1,5 +1,5 @@
 /*
- * $Id: tables.sql,v 1.107 2006-04-20 20:54:11 bkline Exp $
+ * $Id: tables.sql,v 1.108 2006-05-17 02:16:26 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
@@ -880,6 +880,9 @@ GO
  *       doc_id  identifies the document which this external value matches
  *          usr  identifies user who created or modified this entry
  *     last_mod  date/time the entry was created or modified
+ *        bogus  'Y' = a known invalid value found in input data
+ *     mappable  'N' = value is not an actual field value, often it's
+ *                a comment explaining why no value is available.
  */
 CREATE TABLE external_map
          (id INTEGER       IDENTITY PRIMARY KEY,
@@ -889,6 +892,7 @@ CREATE TABLE external_map
          usr INTEGER           NULL REFERENCES usr,
     last_mod DATETIME      NOT NULL,
        bogus CHAR          NOT NULL DEFAULT 'N',
+    mappable CHAR          NOT NULL DEFUALT 'Y',
 CONSTRAINT external_map_unique UNIQUE (usage, value))
 GO
 
