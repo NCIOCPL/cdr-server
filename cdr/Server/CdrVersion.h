@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.h,v 1.8 2004-11-05 05:59:01 ameyer Exp $
+ * $Id: CdrVersion.h,v 1.9 2006-05-17 03:35:14 ameyer Exp $
  *
  * Internal support functions for CDR verison control
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2004/11/05 05:59:01  ameyer
+ * Added some blob related information.
+ *
  * Revision 1.7  2002/06/07 13:52:41  bkline
  * Added support for last publishable linked document retrieval.
  *
@@ -32,6 +35,7 @@
 #define CDR_VERSION_
 
 #include "CdrString.h"
+#include "CdrSession.h"
 #include "CdrDbConnection.h"
 
 /**@#-*/
@@ -41,6 +45,13 @@ namespace cdr {
 /**@#+*/
 
     /** @pkg cdr */
+
+    /**
+     * Default date limit for retrieving version of documents,
+     * set far into the future.  The default retrieval is therefore,
+     * in effect, the current date.
+     */
+    const cdr::String DFT_VERSION_DATE = L"9000-01-01";
 
     /**
      * Checks in a document
@@ -168,38 +179,57 @@ namespace cdr {
                          CdrVerDoc*             verdoc = 0);
 
     /**
-     * Gets version number of document
+     * Gets "last" version number of document, i.e., the highest numbered
+     * version, whether publishable or not.
+     *
+     * If caller passes a date-time limit, the number of the last version
+     * updated on or before the passed date-time is retrieved.
      *
      *  @param  docId       int document ID.
      *  @param  conn        reference to an active connection to the CDR
      *                      database.
      *  @param  date        pointer to cdr::String.  If not null, date of
      *                      most recent checked in version is stored.
+     *  @param  maxDate     reference to cdr::String.  It's a date-time
+     *                      in ISO "YYYY-MM-DD ..." format.
+     *                      It may be right truncated.
+     *                      The retrieved version must have been updated
+     *                      before this date.
      *
      *  @return             current version number.  -1 if document does
      *                      not exist
      *
      */
-  int getVersionNumber(int                    docId,
-                       cdr::db::Connection&   conn,
-                       cdr::String* date = 0);
+  int getVersionNumber(int                  docId,
+                       cdr::db::Connection& conn,
+                       cdr::String*         date = 0,
+                       const cdr::String&   maxDate = DFT_VERSION_DATE);
 
     /**
      * Gets version number of latest publishable version of document.
      *
+     * May be date limited, as for getVersionNumber().
+     *
      *  @param  docId       int document ID.
      *  @param  conn        reference to an active connection to the CDR
      *                      database.
      *  @param  date        pointer to cdr::String.  If not null, date of
      *                      most recent checked in version is stored.
+     *  @param  maxDate     reference to cdr::String.  It's a date-time
+     *                      in ISO "YYYY-MM-DD ..." format.
+     *                      It may be right truncated.
+     *                      The retrieved version must have been updated
+     *                      before this date.
      *
      *  @return             current version number.  -1 if document does
      *                      not exist
      *
      */
-  int getLatestPublishableVersion(int                    docId,
-                                  cdr::db::Connection&   conn,
-                                  cdr::String*           date = 0);
+  int getLatestPublishableVersion(int                  docId,
+                                  cdr::db::Connection& conn,
+                                  cdr::String*         date = 0,
+                                  const cdr::String&   maxDate =
+                                                       DFT_VERSION_DATE);
 
     /**
      * Checks if document has changed since last version in control
