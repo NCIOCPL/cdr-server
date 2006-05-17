@@ -1,9 +1,13 @@
 /*
- * $Id: CdrVersion.cpp,v 1.27 2005-07-28 21:15:00 ameyer Exp $
+ * $Id: CdrVersion.cpp,v 1.28 2006-05-17 03:41:49 ameyer Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2005/07/28 21:15:00  ameyer
+ * Backing out some code and comments added inadvertently in
+ * fumbled CVS command.
+ *
  * Revision 1.25  2004/11/10 03:18:47  ameyer
  * Tested retrieval of blob versions.  Now working.
  *
@@ -111,6 +115,7 @@ using std::string;
 using std::auto_ptr;
 using std::wostringstream;
 using std::wistringstream;
+
 
 static void cdr::getVerBlob(cdr::db::Connection& conn, CdrVerDoc* verdoc);
 
@@ -539,51 +544,71 @@ bool cdr::getLabelVersion(int docId, cdr::db::Connection& conn,
 }
 
 int cdr::getVersionNumber(int docId, cdr::db::Connection& conn,
-                          cdr::String* date)
+                          cdr::String* date, const cdr::String& maxDate)
 {
-  string query = "SELECT v.num, v.dt "
-                 "FROM document d "
-                 "LEFT OUTER JOIN doc_version v "
-                 "  ON d.id = v.id "
-                 "WHERE d.id = ? "
-                 "  AND (v.num = (SELECT MAX(num) FROM doc_version vv "
-                                 "WHERE vv.id = ?) "
-                           "OR v.num IS NULL)";
-  cdr::db::PreparedStatement select = conn.prepareStatement(query);
-  select.setInt(1, docId);
-  select.setInt(2, docId);
-  cdr::db::ResultSet rs = select.executeQuery();
-  if (rs.next())
-  {
-    if (date != NULL)
-      *date = cdr::toXmlDate(rs.getString(2));
+  string qry=
+    "SELECT v.num, v.updated_dt FROM document d "
+    "  LEFT OUTER JOIN doc_version v "
+    "    ON v.id = d.id AND v.num = (SELECT MAX(num) FROM doc_version "
+    "                        WHERE (id = d.id and updated_dt <= ?)) "
+    "  WHERE d.id = ?";
 
-    return rs.getInt(1);
+  // A simpler, faster version below, but could retrieve a deleted doc
+  // string qry="select max(num) from doc_version where id=? and updated_dt<?";
+
+  cdr::db::PreparedStatement stmt = conn.prepareStatement(qry);
+  stmt.setString(1, maxDate);
+  stmt.setInt(2, docId);
+
+  try {
+    cdr::db::ResultSet rs = stmt.executeQuery();
+    if (rs.next())
+    {
+      if (date != NULL)
+        *date = cdr::toXmlDate(rs.getString(2));
+      int verNum = rs.getInt(1);
+      return verNum;
+    }
+  }
+  catch(const cdr::Exception &e) {
+    // Rethrow, but with information about where it happened
+    throw cdr::Exception(L"getVersionNumber failure: " + e.what());
   }
 
   return -1;
 }
 
 int cdr::getLatestPublishableVersion(int docId, cdr::db::Connection& conn,
-                                     cdr::String* date)
+                                     cdr::String* date,
+                                     const cdr::String& maxDate)
 {
-  string query = "SELECT v.num, v.dt                       "
-                 "  FROM doc_version v                     "
-                 " WHERE v.id = ?                          "
-                 "   AND v.num = (SELECT MAX(num)          "
-                 "                  FROM doc_version       "
-                 "                 WHERE id = v.id         "
-                 "                   AND val_status = 'V'  "
-                 "                   AND publishable = 'Y')";
+  string query = "SELECT v.num, v.dt                      "
+                 "  FROM doc_version v                    "
+                 " WHERE v.id = ?                         "
+                 "   AND v.num = (SELECT MAX(num)         "
+                 "                  FROM doc_version      "
+                 "                 WHERE id = v.id        "
+                 "                   AND val_status = 'V' "
+                 "                   AND publishable = 'Y'";
+
+  // Add date limit if requested
+  if (maxDate == DFT_VERSION_DATE)
+      query += ")";
+  else
+      query += " AND updated_dt <= ?)";
+
   cdr::db::PreparedStatement select = conn.prepareStatement(query);
   select.setInt(1, docId);
+  if (maxDate != DFT_VERSION_DATE)
+      select.setString(2, maxDate);
   cdr::db::ResultSet rs = select.executeQuery();
   if (rs.next())
   {
     if (date != NULL)
       *date = cdr::toXmlDate(rs.getString(2));
 
-    return rs.getInt(1);
+      int verNum = rs.getInt(1);
+    return verNum;
   }
 
   return -1;
