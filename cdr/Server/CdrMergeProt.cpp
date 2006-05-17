@@ -1,9 +1,12 @@
 /*
- * $Id: CdrMergeProt.cpp,v 1.5 2006-02-06 00:47:13 bkline Exp $
+ * $Id: CdrMergeProt.cpp,v 1.6 2006-05-17 03:57:10 ameyer Exp $
  *
  * Merge scientific protocol information into main in-scope protocol document.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/02/06 00:47:13  bkline
+ * Added an element to be preserved.
+ *
  * Revision 1.4  2005/03/04 02:54:56  ameyer
  * Converted to new Xerces based DOM parser.
  *
@@ -29,22 +32,20 @@
 #include "CdrDbResultSet.h"
 #include "CdrDbPreparedStatement.h"
 #include "CdrXsd.h"
+#include "CdrGetDoc.h"
 
 // Local functions.
-static cdr::String getDocTypeName(
-        const cdr::String&,
-        cdr::db::Connection&);
 static cdr::StringList getTargElemSequence(
         cdr::db::Connection&);
 static cdr::StringSet getScientificElemNames();
 static void getElementNames(
         cdr::StringList&,
         const cdr::xsd::Node*);
-static cdr::dom::Element checkOut(
+static cdr::dom::Element mpCheckOut(
         const cdr::String&,
         cdr::Session&,
         cdr::db::Connection&);
-static void checkIn(
+static void mpCheckIn(
         const cdr::String&,
         const cdr::String&,
         const cdr::String&,
@@ -91,10 +92,10 @@ cdr::String cdr::mergeProt(Session& session,
         throw Exception(L"SourceDoc and TargetDoc elements both required");
 
     // Make sure we got the right document types.
-    String docTypeString = getDocTypeName(sourceDocIdStr, conn);
+    String docTypeString = cdr::getDocTypeName(sourceDocIdStr, conn);
     if (docTypeString != L"ScientificProtocolInfo")
         throw Exception(L"Source document has type", docTypeString);
-    docTypeString = getDocTypeName(targetDocIdStr, conn);
+    docTypeString = cdr::getDocTypeName(targetDocIdStr, conn);
     if (docTypeString != L"InScopeProtocol")
         throw Exception(L"Source document has type", docTypeString);
 
@@ -108,11 +109,11 @@ cdr::String cdr::mergeProt(Session& session,
     conn.setAutoCommit(false);
 
     // Check out the two documents.
-    dom::Element sourceDoc = checkOut(sourceDocIdStr, session, conn);
+    dom::Element sourceDoc = mpCheckOut(sourceDocIdStr, session, conn);
     if (sourceDoc == NULL)
         throw Exception(L"Unable to check out source document",
                 sourceDocIdStr);
-    dom::Element targetDoc = checkOut(targetDocIdStr, session, conn);
+    dom::Element targetDoc = mpCheckOut(targetDocIdStr, session, conn);
     if (targetDoc == NULL)
         throw Exception(L"Unable to check out target document",
                 targetDocIdStr);
@@ -220,28 +221,11 @@ cdr::String cdr::mergeProt(Session& session,
     // ... and the target gets saved with the new elements.
     os << L"</" << topElementName << L">";
     String docString = os.str();
-    checkIn(targetDocIdStr, sourceDocIdStr, docString,
+    mpCheckIn(targetDocIdStr, sourceDocIdStr, docString,
             L"InScopeProtocol", session, conn);
 
     // Report success.
     return L"<CdrMergeProt/>";
-}
-
-cdr::String getDocTypeName(const cdr::String& docId, cdr::db::Connection& conn)
-{
-    // Look in the database for the document type.
-    const static char* query =
-        " SELECT name "
-        "   FROM doc_type "
-        "   JOIN document "
-        "     ON document.doc_type = doc_type.id "
-        "  WHERE document.id = ?";
-    cdr::db::PreparedStatement stmt = conn.prepareStatement(query);
-    stmt.setInt(1, docId.extractDocId());
-    cdr::db::ResultSet rslt = stmt.executeQuery();
-    if (!rslt.next())
-        throw cdr::Exception(L"Cannot find document type for document", docId);
-    return rslt.getString(1);
 }
 
 cdr::StringList getTargElemSequence(cdr::db::Connection& conn)
@@ -391,7 +375,7 @@ void checkForErrorResponse(const cdr::String& rsp, const cdr::String& where)
     throw cdr::Exception(where, L"Undetermined error");
 }
 
-cdr::dom::Element checkOut(
+static cdr::dom::Element mpCheckOut(
         const cdr::String& docId,
         cdr::Session& session,
         cdr::db::Connection& conn)
@@ -437,7 +421,7 @@ cdr::dom::Element checkOut(
     return docParser.getDocument().getDocumentElement();
 }
 
-void checkIn(
+static void mpCheckIn(
         const cdr::String& docId,
         const cdr::String& otherDocId,
         const cdr::String& docString,
@@ -468,5 +452,5 @@ void checkIn(
     // Execute it.
     cdr::String rsp = cdr::repDoc(session, cmdNode, conn);
     if (session.getStatus() == L"error")
-        checkForErrorResponse(rsp, L"checkIn");
+        checkForErrorResponse(rsp, L"mpCheckIn");
 }
