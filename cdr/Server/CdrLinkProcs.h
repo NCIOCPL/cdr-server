@@ -6,9 +6,13 @@
  *                                      @author Alan Meyer
  *                                      @date February 2001
  *
- * $Id: CdrLinkProcs.h,v 1.6 2004-02-10 22:13:02 ameyer Exp $
+ * $Id: CdrLinkProcs.h,v 1.7 2006-05-17 01:53:26 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2004/02/10 22:13:02  ameyer
+ * Removed definitions of obsolete functions - makeWhere() and
+ * getLinkTargetRestrictions().  Neither was ever in production.
+ *
  * Revision 1.5  2004/02/06 03:13:54  ameyer
  * Added info to linkChkNode to say whether a link target check is looking
  * for a specific value, or for just the existence or non-existence of the
@@ -51,6 +55,25 @@ namespace cdr {
  * should hold onto and re-use the created object rather than re-create
  * the parse tree each time.
  *
+ * These classes are used for two different purposes that turn out to
+ * have slightly different needs.  One purpose is validation.  Rules
+ * can be specified that only allow links to documents meeting certain
+ * criteria.  The other is picklist generation.  When a user enters
+ * data that must pass validation rules, the rules can be used to generate
+ * a picklist of valid values from which to select.
+ *
+ * These two uses turn out to be slightly different because it has become
+ * necessary to restrict the domain of values that people may enter into
+ * a field without invalidating old data.  To do that, we produce an
+ * inclusive validation rule and a more restrictive picklist generator.
+ * Old data remains valid, but new data is entered using the more
+ * restrictive rules.
+ *
+ * This capability was implemented in order to eliminate drug combinations
+ * from index term selections, without invalidating old documents that
+ * linked to drug combinations.  It may or may not ever be needed for
+ * anything else.
+ *
  * <pre>
  * The management of rules is as follows:
  *
@@ -70,7 +93,13 @@ namespace cdr {
  *      One of the following relationships between tag and value:
  *        ==   Equal, by string matching.
  *        !=   Not equal, by string matching.
- *      More relators can be added if required.
+ *      Two parallel relators are used for picklist generation:
+ *        +=   Equal by string matching.
+ *        -=   Not equal, by string matching.
+ *      The picklist relators always evaluate to true in a validation
+ *      context but are actually evaluated in a picklist generation
+ *      context.
+ *
  *      Note: Equality tests are currently performed in SQLServer,
  *            using the default comparison, which is currently configured
  *            as case insensitive.
@@ -129,7 +158,9 @@ namespace cdr {
  */
 typedef enum LinkChkRelator {
     relEqual,           // Equal
-    relNotEqual         // Not equal
+    relNotEqual,        // Not equal
+    pickListEqual,      // Equal for picklist purposes only
+    pickListNotEqual    // Not equal for picklist purposes only
 } LinkChkRelator;
 
 typedef enum LinkChkBoolOp {
