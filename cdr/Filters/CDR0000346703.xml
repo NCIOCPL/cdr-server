@@ -9,7 +9,7 @@
 
 <!--
  ================================================================
-     $Id: CDR0000346703.xml,v 1.5 2006-01-06 20:48:38 venglisc Exp $
+     $Id: CDR0000346703.xml,v 1.6 2006-05-24 19:08:59 venglisc Exp $
 
      Filter to create a CTGovProtocol QC Report.
      Input: from Denormalization Filter: CTGovProtocol
@@ -28,6 +28,7 @@
                         doctype-public = '-//IETF//DTD HTML//EN'/>
 
  <xsl:include  href = "cdr:name:Module: Attribute Sets"/>
+ <xsl:include  href = "cdr:name:Module: QC Filter Templates"/>
  <xsl:include  href = "cdr:name:Module: Protocol Processing Details"/>
 
  <xsl:variable                    name = "docID"
@@ -68,6 +69,7 @@
      li   { font-size: 12pt; }
      .big { font-size: 14pt; font-weight: bold; }
      .sum { font-size: 14pt; font-weight: bold; padding-bottom: -10pt; }
+   li.org { vertical-align: top; }
     </style>
    </head>
    <body>
@@ -134,12 +136,17 @@
 
   <xsl:if                         test = 'Phase'>
   <table        xsl:use-attribute-sets = "table">
-    <xsl:for-each               select = 'Phase'>
-     <xsl:call-template           name = 'makeTableRow'>
-      <xsl:with-param             name = 'label'
-                                select = '"Phase"'/>
-     </xsl:call-template>
-    </xsl:for-each>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Phase</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each              select = "Phase">
+      <xsl:value-of             select = "."/>
+      <br/>
+     </xsl:for-each>
+    </td>
+   </tr>
    </table>
    <p/>
   </xsl:if>
@@ -147,7 +154,13 @@
   <xsl:apply-templates          select = 'PDQIndexing'/>
   <xsl:apply-templates          select = 'Sponsors'/>
   <xsl:apply-templates          select = 'OverallStatus'/>
-  <xsl:apply-templates          select = 'Location'/>
+
+  <hr/>
+  <span class="big">Location</span>
+   <ol bottom-margin="0">
+    <xsl:apply-templates          select = 'Location'/>
+   </ol>
+  <hr/>
   <xsl:apply-templates          select = 'ProtocolProcessingDetails'/>
   <xsl:call-template              name = 'recordInfo'/>
  </xsl:template>
@@ -406,28 +419,14 @@
                                 select = '"Study Focus"'/>
      </xsl:call-template>
     </xsl:for-each>
-    <xsl:for-each               select = 'Intervention'>
-     <xsl:for-each              select = 'InterventionType/Term/PreferredName'>
-      <xsl:call-template          name = 'makeTableRow'>
-       <xsl:with-param            name = 'label'
-                                select = '"Intervention Type"'/>
-      </xsl:call-template>
-     </xsl:for-each>
-     <tr>
-      <th                      colspan = '2'>Intervention Name</th>
-     </tr>
-     <xsl:for-each              select = 'InterventionNameLink/Term/
-                                          PreferredName'>
-      <xsl:if                     test = 'normalize-space() != ""'>
-       <tr>
-        <td                    colspan = '2'>
-         <xsl:value-of          select = 'normalize-space()'/>
-        </td>
-       </tr>
-      </xsl:if>
-     </xsl:for-each>
-    </xsl:for-each>
    </xsl:for-each>
+  </table>
+
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:apply-templates         select = "StudyCategory/Intervention"/>
+  </table>
+
+  <table        xsl:use-attribute-sets = "table">
    <xsl:if                        test = 'Condition/Term/PreferredName'>
     <xsl:call-template            name = 'blankRow'/>
     <xsl:call-template            name = 'blankRow'/>
@@ -465,8 +464,12 @@
      </xsl:call-template>
     </xsl:for-each>
    </xsl:if>
-   <xsl:apply-templates         select = 'Eligibility'/>
-   <xsl:call-template             name = 'blankRow'/>
+  </table>
+  <p/>
+
+  <xsl:apply-templates         select = 'Eligibility'/>
+
+  <table        xsl:use-attribute-sets = "table">
    <xsl:call-template             name = 'blankRow'/>
    <xsl:call-template             name = 'makeTableRow'>
     <xsl:with-param               name = 'label'
@@ -488,80 +491,95 @@
  =================================================================
  ================================================================= -->
  <xsl:template                   match = 'Eligibility'>
-  <xsl:call-template              name = 'blankRow'/>
-  <!-- xsl:call-template              name = 'blankRow'/ -->
-  <tr>
-   <th                         colspan = '2'
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <th                         colspan = '2'
                                  class = 'h'>Eligibility Criteria</th>
-  </tr>
-  <xsl:call-template              name = 'makeTableRow'>
-   <xsl:with-param                name = 'label'
+   </tr>
+   <xsl:call-template              name = 'makeTableRow'>
+    <xsl:with-param                name = 'label'
                                 select = '"Healthy Volunteers?"'/>
-   <xsl:with-param                name = 'data'
+    <xsl:with-param                name = 'data'
                                 select = 'HealthyVolunteers'/>
-  </xsl:call-template>
-  <xsl:call-template              name = 'makeTableRow'>
-   <xsl:with-param                name = 'label'
+   </xsl:call-template>
+   <xsl:call-template              name = 'makeTableRow'>
+    <xsl:with-param                name = 'label'
                                 select = '"Low Age"'/>
-   <xsl:with-param                name = 'data'
+    <xsl:with-param                name = 'data'
                                 select = 'LowAge'/>
-  </xsl:call-template>
-  <xsl:call-template              name = 'makeTableRow'>
-   <xsl:with-param                name = 'label'
+   </xsl:call-template>
+   <xsl:call-template              name = 'makeTableRow'>
+    <xsl:with-param                name = 'label'
                                 select = '"High Age"'/>
-   <xsl:with-param                name = 'data'
+    <xsl:with-param                name = 'data'
                                 select = 'HighAge'/>
-  </xsl:call-template>
-  <xsl:call-template              name = 'makeTableRow'>
-   <xsl:with-param                name = 'label'
+   </xsl:call-template>
+   <xsl:call-template              name = 'makeTableRow'>
+    <xsl:with-param                name = 'label'
                                 select = '"Age Range"'/>
-   <xsl:with-param                name = 'data'
+    <xsl:with-param                name = 'data'
                                 select = 'AgeText'/>
-  </xsl:call-template>
-  <!-- xsl:call-template              name = 'blankRow'/ -->
-  <xsl:if                         test = 'Diagnosis/Term/PreferredName'>
-   <xsl:call-template             name = 'blankRow'/>
-   <tr>
-    <th                        colspan = '2'>Diagnosis</th>
-   </tr>
-   <xsl:for-each                select = 'Diagnosis/Term/PreferredName'>
-    <xsl:sort                   select = 'normalize-space()'/>
+   </xsl:call-template>
+  </table>
+  <p/>
+
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:if                        test = 'Diagnosis/
+                                          Term/
+                                          PreferredName'>
     <tr>
-     <td                       colspan = '2'>
-      <xsl:value-of             select = 'normalize-space()'/>
+     <td          xsl:use-attribute-sets = "cell1of2">
+      <b>Diagnosis</b>
+     </td>
+     <td          xsl:use-attribute-sets = "cell2of2">
+      <xsl:for-each               select = "Diagnosis/Term/PreferredName">
+       <xsl:sort                   select = 'normalize-space()'/>
+       <li>
+        <xsl:value-of             select = "."/>
+       </li>
+      </xsl:for-each>
      </td>
     </tr>
-   </xsl:for-each>
-  </xsl:if>
-  <xsl:if                         test = 'ExclusionCriteria/Term/PreferredName'>
-   <xsl:call-template             name = 'blankRow'/>
-   <tr>
-    <th                        colspan = '2'>Exclusion Criteria</th>
-   </tr>
-   <xsl:for-each                select = 'ExclusionCriteria/Term/PreferredName'>
+   </xsl:if>
+  </table>
+  <p/>
+
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:if                        test = 'ExclusionCriteria/
+                                          Term/
+                                          PreferredName'>
     <tr>
-     <td                       colspan = '2'>
-      <xsl:value-of             select = 'normalize-space()'/>
-     </td>
+     <th                       colspan = '2'>Exclusion Criteria</th>
     </tr>
-   </xsl:for-each>
-  </xsl:if>
-  <xsl:call-template              name = 'blankRow'/>
-  <tr>
-   <th                         colspan = '2'>Comment</th>
-  </tr>
-  <tr>
-   <td                         colspan = '2'>
-    <xsl:choose>
-     <xsl:when                    test = 'normalize-space(Comment) != ""'>
-      <xsl:value-of             select = 'normalize-space(Comment)'/>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:text>No comments at this time</xsl:text>
-     </xsl:otherwise>
-    </xsl:choose>
-   </td>
-  </tr>
+    <xsl:for-each               select = 'ExclusionCriteria/
+                                          Term/
+                                          PreferredName'>
+     <tr>
+      <td                      colspan = '2'>
+       <xsl:value-of            select = 'normalize-space()'/>
+      </td>
+     </tr>
+    </xsl:for-each>
+   </xsl:if>
+  </table>
+ 
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+     <td          xsl:use-attribute-sets = "cell1of2">
+     <b>Comment</b>
+    </td>
+     <td          xsl:use-attribute-sets = "cell2of2">
+     <xsl:choose>
+      <xsl:when                   test = 'normalize-space(Comment) != ""'>
+       <xsl:value-of            select = 'normalize-space(Comment)'/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>No comments at this time</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </td>
+   </tr>
+  </table>
  </xsl:template>
 
  <!-- 
@@ -571,20 +589,21 @@
   <span class="big">Sponsors</span>
 
   <table        xsl:use-attribute-sets = "table">
-   <xsl:call-template             name = 'makeTableRow'>
-    <xsl:with-param               name = 'label'
-                                select = '"Lead Sponsor"'/>
-    <xsl:with-param               name = 'data'>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Lead Sponsor</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = 'LeadSponsor/Organization/
                                           OrganizationNameInformation/
                                           OfficialName/Name'/>
-     <xsl:if                      test = 'LeadSponsor/Organization/
-                                          @cdr:ref != ""'>
-      <xsl:value-of             select = 'concat(" [", LeadSponsor/
-                                          Organization/@cdr:ref, "]")'/>
-     </xsl:if>
-    </xsl:with-param>
-   </xsl:call-template>
+     <xsl:for-each              select = "LeadSponsor/Organization">
+      <xsl:call-template          name = "createCdrQcLink"/>
+     </xsl:for-each>
+    </td>
+   </tr>
+
+
    <xsl:choose>
     <xsl:when                     test = 'Collaborator'>
      <xsl:for-each              select = 'Collaborator'>
@@ -685,156 +704,317 @@
  =================================================================
  ================================================================= -->
  <xsl:template                   match = 'Location'>
-  <span class="big">Location</span>
-
-  <table        xsl:use-attribute-sets = "table">
-   <xsl:call-template             name = 'makeTableRow'>
-    <xsl:with-param               name = 'label'
-                                select = '"Facility Name"'/>
-    <xsl:with-param               name = 'data'>
-     <xsl:value-of              select = 'Facility/Name/Organization/
+  <li class="org">
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Facility Name</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <!--
+      This little trick of sticking the table data into an extra table
+      is necessary to align the label of the list (the numbering) to 
+      the top of the line if a cell contains multiple lines
+                                                        VE, 2006-04-07
+      ================================================================ -->
+      <table       xsl:use-attribute-sets = "table">
+       <tr>
+        <td>
+         <xsl:value-of          select = 'Facility/Name/Organization/
                                           OrganizationNameInformation/
                                           OfficialName/Name'/>
-     <xsl:if                      test = 'Facility/Name/Organization/
-                                          @cdr:ref != ""'>
-      <xsl:value-of             select = 'concat(" [", Facility/Name/
-                                          Organization/@cdr:ref, "]")'/>
-     </xsl:if>
-    </xsl:with-param>
-   </xsl:call-template>
-   <tr>
-    <th                        colspan = '2'>Address</th>
-   </tr>
-   <xsl:for-each                select = 'Facility/PostalAddress'>
-    <xsl:for-each               select = 'Street'>
-     <xsl:call-template           name = 'makeIndentedRow'>
-      <xsl:with-param             name = 'label'
-                                select = '"Street"'/>
-     </xsl:call-template>
-    </xsl:for-each>
-    <xsl:for-each               select = 'City'>
-     <xsl:call-template           name = 'makeIndentedRow'>
-      <xsl:with-param             name = 'label'
-                                select = '"City"'/>
-     </xsl:call-template>
-    </xsl:for-each>
-    <xsl:for-each               select = 'PoliticalSubUnit_State/
-                                          PoliticalSubUnitFullName'>
-     <xsl:call-template           name = 'makeIndentedRow'>
-      <xsl:with-param             name = 'label'
-                                select = '"State/Political Unit"'/>
-      <xsl:with-param             name = 'data'>
-       <xsl:value-of            select = 'normalize-space()'/>
-       <xsl:if                    test = '../@cdr:ref != ""'>
-        <xsl:value-of           select = 'concat(" [", ../@cdr:ref, "]")'/>
-       </xsl:if>
-      </xsl:with-param>
-     </xsl:call-template>
-    </xsl:for-each>
-    <xsl:for-each               select = 'Country/CountryFullName'>
-     <xsl:call-template           name = 'makeIndentedRow'>
-      <xsl:with-param             name = 'label'
-                                select = '"Country"'/>
-      <xsl:with-param             name = 'data'>
-       <xsl:value-of            select = 'normalize-space()'/>
-       <xsl:if                    test = '../@cdr:ref != ""'>
-        <xsl:value-of           select = 'concat(" [", ../@cdr:ref, "]")'/>
-       </xsl:if>
-      </xsl:with-param>
-     </xsl:call-template>
-    </xsl:for-each>
-    <xsl:for-each               select = 'PostalCode_ZIP'>
-     <xsl:call-template           name = 'makeIndentedRow'>
-      <xsl:with-param             name = 'label'
-                                select = '"Zip/Postal Code"'/>
-     </xsl:call-template>
-    </xsl:for-each>
-    <xsl:call-template            name = 'blankRow'/>
-   </xsl:for-each>
-   <xsl:call-template             name = 'makeTableRow'>
-    <xsl:with-param               name = 'label'
-                                select = '"Facility Status"'/>
-    <xsl:with-param               name = 'data'
-                                select = 'Status'/>
-   </xsl:call-template>
-   <xsl:call-template             name = 'blankRow'/>
-   <xsl:for-each                select = 'Contact'>
-    <tr>
-     <th                         width = '35%'>
-      <u>CTGOVContact</u>
-     </th>
-     <td                         width = '65%'>
-      <xsl:call-template          name = 'assemblePersonalName'/>
+         <xsl:if                  test = "Facility/Name/Organization/@cdr:ref">
+          <xsl:for-each         select = "Facility/Name/Organization">
+           <xsl:call-template     name = "createCdrQcLink"/>
+          </xsl:for-each>
+         </xsl:if>
+        </td>
+       </tr>
+      </table>
      </td>
     </tr>
-    <xsl:call-template            name = 'getContactRows'/>
-   </xsl:for-each>
-   <xsl:for-each                select = 'ContactBackup'>
+   </table>
+
+   <table       xsl:use-attribute-sets = "table">
     <tr>
-     <th                         width = '35%'>
-      <u>CTGOVContactBackup</u>
-     </th>
-     <td                         width = '65%'>
-      <xsl:call-template          name = 'assemblePersonalName'/>
+     <th                       colspan = '3'>Address</th>
+    </tr>
+    <xsl:if                       test = "Facility/PostalAddress/
+                                          Street">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1iof2">
+     </td>
+     <td        xsl:use-attribute-sets = "cell2iof2">
+      <b>Street</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:for-each             select = "Facility/PostalAddress/
+                                          Street">
+       <xsl:value-of            select = "."/>
+      </xsl:for-each>
      </td>
     </tr>
-    <xsl:call-template            name = 'getContactRows'/>
-   </xsl:for-each>
-   <xsl:for-each                select = 'Investigator'>
-    <tr>
-     <th                         width = '35%'>
-      <u>INVESTIGATOR</u>
-     </th>
-     <td                         width = '65%'>
-      <xsl:call-template          name = 'assemblePersonalName'/>
-     </td>
-    </tr>
-    <xsl:if                       test = 'normalize-space(Role) != ""'>
-     <xsl:call-template           name = 'makeTableRow'>
-      <xsl:with-param             name = 'label'
-                                select = '"&#160;"'/>
-      <xsl:with-param             name = 'data'
-                                select = 'Role'/>
-     </xsl:call-template>
     </xsl:if>
-   </xsl:for-each>
-  </table>
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1iof2">
+     </td>
+     <td        xsl:use-attribute-sets = "cell2iof2">
+      <b>City</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "Facility/PostalAddress/
+                                          City"/>
+     </td>
+    </tr>
+    <xsl:if                       test = "Facility/PostalAddress/
+                                          PoliticalSubUnit_State">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1iof2">
+     </td>
+     <td        xsl:use-attribute-sets = "cell2iof2">
+      <b>State/Political Unit</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "Facility/PostalAddress/
+                                          PoliticalSubUnit_State/
+                                          PoliticalSubUnitFullName"/>
+
+        <xsl:for-each           select = "Facility/
+                                           PostalAddress/
+                                           PoliticalSubUnit_State">
+         <xsl:call-template       name = "createCdrQcLink"/>
+        </xsl:for-each>
+     </td>
+    </tr>
+    </xsl:if>
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1iof2">
+     </td>
+     <td        xsl:use-attribute-sets = "cell2iof2">
+      <b>Country</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "Facility/PostalAddress/
+                                          Country/
+                                          CountryFullName"/>
+
+        <xsl:for-each           select = "Facility/
+                                          PostalAddress/
+                                          Country">
+         <xsl:call-template       name = "createCdrQcLink"/>
+        </xsl:for-each>
+     </td>
+    </tr>
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1iof2">
+     </td>
+     <td        xsl:use-attribute-sets = "cell2iof2">
+      <b>ZIP/Postal Code</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:for-each             select = "Facility/PostalAddress/
+                                          PostalCode_ZIP">
+       <xsl:value-of            select = "."/>
+      </xsl:for-each>
+     </td>
+    </tr>
+   </table>
+   <p/>
+
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Facility Status</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "Status"/>
+     </td>
+    </tr>
+   </table>
+   <p/>
+
+   <xsl:apply-templates         select = "Contact"/>
+   <xsl:apply-templates         select = "ContactBackup"/>
+
+
+    <table      xsl:use-attribute-sets = "table">
+     <xsl:for-each              select = 'Investigator'>
+      <tr>
+       <td      xsl:use-attribute-sets = "cell1of2">
+        <u>INVESTIGATOR</u>
+       </td>
+       <td      xsl:use-attribute-sets = "cell2of2">
+        <xsl:call-template        name = 'assemblePersonalName'/>
+       </td>
+      </tr>
+      <xsl:if                     test = 'normalize-space(Role) != ""'>
+       <xsl:call-template         name = 'makeTableRow'>
+        <xsl:with-param           name = 'label'
+                                select = '"&#160;"'/>
+        <xsl:with-param           name = 'data'
+                                select = 'Role'/>
+       </xsl:call-template>
+      </xsl:if>
+     </xsl:for-each>
+    </table>
+
+  </li>
  </xsl:template>
 
  <!-- 
  =================================================================
  ================================================================= -->
+ <xsl:template                   match = 'Intervention'>
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Intervention Type</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:value-of               select = "InterventionType/
+                                          Term/
+                                          PreferredName"/>
+   </td>
+  </tr>
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Intervention Name</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:for-each               select = "InterventionNameLink/
+                                          Term/
+                                          PreferredName">
+     <li>
+      <xsl:value-of             select = "."/>
+      <!-- xsl:value-of         select = 'normalize-space()'/ -->
+     </li>
+    </xsl:for-each>
+   </td>
+  </tr>
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ Display the Facility Contact information
+ ================================================================= -->
+ <xsl:template                   match = "Contact |
+                                          ContactBackup">
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <u>
+      <b>
+       <xsl:choose>
+        <xsl:when                 test = "name() = 'Contact'">
+         <xsl:text>CTGov Contact</xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:text>CTGov Contact Backup</xsl:text>
+        </xsl:otherwise>
+       </xsl:choose>
+      </b>
+     </u>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each              select = 'PersonNameInformation'>
+      <xsl:variable               name = 'firstTwo'
+                                select = 'normalize-space(
+                                          concat(GivenName, " ", 
+                                                 MiddleInitial))'/>
+      <xsl:variable               name = 'firstThree'
+                                select = 'normalize-space(
+                                          concat($firstTwo, " ",
+                                                 Surname,
+                                                 SurName))'/>
+      <xsl:variable               name = 'combo'>
+       <xsl:value-of            select = '$firstThree'/>
+       <xsl:if                    test = 'normalize-space(ProfessionalSuffix)
+                                           != "" and $firstThree != ""'>
+        <xsl:text>, </xsl:text>
+       </xsl:if>
+       <xsl:value-of            select = 'ProfessionalSuffix'/>
+      </xsl:variable>
+      <xsl:value-of             select = 'normalize-space($combo)'/>
+     </xsl:for-each>
+
+     <xsl:if                      test = "../Contact/@cdr:ref |
+                                          ../ContactBackup/@cdr:ref">
+      <xsl:for-each             select = "../Contact |
+                                          ../ContactBackup">
+       <xsl:call-template         name = "createCdrQcLink"/>
+      </xsl:for-each>
+     </xsl:if>
+    </td>
+   </tr>
+  </table>
+
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:call-template             name = 'getContactRows'/>
+  </table>
+  <p/>
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ ================================================================= -->
  <xsl:template                    name = 'getContactRows'>
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1iof2">
+   </td>
+   <td          xsl:use-attribute-sets = "cell2iof2">
+    <b>Phone</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
   <xsl:for-each                 select = 'Phone'>
-   <xsl:call-template             name = 'makeIndentedRow'>
-    <xsl:with-param               name = 'label'
-                                select = '"Phone"'/>
-    <xsl:with-param               name = 'data'>
      <xsl:value-of              select = 'normalize-space()'/>
      <xsl:if                      test = 'normalize-space(../PhoneExt) != ""'>
       <xsl:value-of             select = 'concat(" ext. ", ../PhoneExt)'/>
      </xsl:if>
-    </xsl:with-param>
-   </xsl:call-template>
   </xsl:for-each>
-  <xsl:for-each                 select = 'Fax'>
-   <xsl:call-template             name = 'makeIndentedRow'>
-    <xsl:with-param               name = 'label'
-                                select = '"Fax"'/>
-   </xsl:call-template>
-  </xsl:for-each>
-  <xsl:for-each                 select = 'TollFreePhone'>
-   <xsl:call-template             name = 'makeIndentedRow'>
-    <xsl:with-param               name = 'label'
-                                select = '"Toll Free Phone"'/>
-   </xsl:call-template>
-  </xsl:for-each>
-  <xsl:for-each                 select = 'Email'>
-   <xsl:call-template             name = 'makeIndentedRow'>
-    <xsl:with-param               name = 'label'
-                                select = '"Email"'/>
-   </xsl:call-template>
-  </xsl:for-each>
+   </td>
+  </tr>
+  <xsl:if                         test = "Fax">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1iof2">
+    </td>
+    <td         xsl:use-attribute-sets = "cell2iof2">
+     <b>Fax</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Fax"/>
+    </td>
+   </tr>
+   </xsl:if>
+   <xsl:if                        test = "TollFreePhone">
+    <tr>
+    <td         xsl:use-attribute-sets = "cell1iof2">
+    </td>
+    <td         xsl:use-attribute-sets = "cell2iof2">
+     <b>Toll Free Phone</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "TollFreePhone"/>
+    </td>
+   </tr>
+  </xsl:if>
+  <xsl:if                         test = "Email">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1iof2">
+    </td>
+    <td         xsl:use-attribute-sets = "cell2iof2">
+     <b>Email</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each              select = 'Email'>
+      <xsl:call-template          name = "createEmailLink">
+       <xsl:with-param            name = "email"
+                                select = "."/>
+      </xsl:call-template>
+     </xsl:for-each>
+    </td>
+   </tr>
+  </xsl:if>
  </xsl:template>
 
  <!-- 
