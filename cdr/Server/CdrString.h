@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.h,v 1.29 2005-03-04 02:58:18 ameyer Exp $
+ * $Id: CdrString.h,v 1.30 2006-05-25 23:02:00 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2005/03/04 02:58:18  ameyer
+ * Changed namespace names for new Xerces DOM parser.
+ *
  * Revision 1.28  2004/11/05 05:57:36  ameyer
  * Added hashBytes().  Not currently used, but there it is.
  *
@@ -339,6 +342,20 @@ namespace cdr {
          *                      UTF-8 encoding of the object's value.
          */
         std::string toUtf8() const;
+
+        /**
+         * Return a new string as an upper cased version of this string.
+         *
+         *  @return             Upper cased version.
+         */
+        cdr::String toUpperCase() const;
+
+        /**
+         * Return a new string as a lower cased version of this string.
+         *
+         *  @return             Lowercased version.
+         */
+        String toLowerCase() const;
 
         /**
          * Skips past the 'CDR' prefix and extracts the integer id for the

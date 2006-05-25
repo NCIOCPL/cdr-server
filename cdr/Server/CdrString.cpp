@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.24 2004-11-05 05:58:01 ameyer Exp $
+ * $Id: CdrString.cpp,v 1.25 2006-05-25 23:02:31 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2004/11/05 05:58:01  ameyer
+ * Added hashBytes().
+ *
  * Revision 1.23  2004/05/13 15:43:18  ameyer
  * Optimized case of no space to trim in trimWhiteSpace().
  * Trivially optimized construction of output String in trimWhiteSpace().
@@ -160,6 +163,60 @@ void cdr::String::utf8ToUtf16(const char* s)
             s += 3;
         }
     }
+}
+
+/**
+ * Return upper case version of string.
+ */
+cdr::String cdr::String::toUpperCase() const {
+
+    // Create output buffer
+    wchar_t *outChars = new wchar_t[size() + 1];
+
+    // Copy chars
+    const wchar_t *srcp  = c_str();
+    wchar_t       *destp = outChars;
+    while (*srcp) {
+        if (iswlower(*srcp))
+            *destp = towupper(*srcp);
+        else
+            *destp = *srcp;
+        ++srcp;
+        ++destp;
+    }
+
+    // C string terminator
+    *destp = 0;
+
+    // Convert to String for return
+    cdr::String outStr = cdr::String(outChars);
+
+    delete outChars;
+    return outStr;
+}
+
+/**
+ * Return lower case version of string.
+ */
+cdr::String cdr::String::toLowerCase() const {
+
+    // Same as toUpperCase
+    wchar_t       *outChars = new wchar_t[size() + 1];
+    const wchar_t *srcp     = c_str();
+    wchar_t       *destp    = outChars;
+    while (*srcp) {
+        if (iswupper(*srcp))
+            *destp = towlower(*srcp);
+        else
+            *destp = *srcp;
+        ++srcp;
+        ++destp;
+    }
+
+    *destp = 0;
+    cdr::String outStr = cdr::String(outChars);
+    delete outChars;
+    return outStr;
 }
 
 /**
