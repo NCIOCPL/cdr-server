@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.108 2006-05-17 02:16:26 ameyer Exp $
+ * $Id: tables.sql,v 1.109 2006-07-12 18:35:44 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.108  2006/05/17 02:16:26  ameyer
+ * Updated external_map table.  Added column mappable and updated comments.
+ *
  * Revision 1.106  2005/08/16 14:29:11  bkline
  * Renamed the column names for the external_map_type table.
  *
@@ -1805,6 +1808,24 @@ CREATE TABLE pub_proc_cg
          (id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs,
     pub_proc INTEGER NOT NULL REFERENCES pub_proc,
          xml NTEXT   NOT NULL)
+GO
+
+/*
+ * Table used to remember trials we have sent to ClinicalTrials.gov
+ * at NLM.
+ *
+ *                id  primary key of document sent to NLM.
+ *               xml  copy of the filtered document sent to NLM.
+ *         last_sent  date/time of the most recent export to NLM.
+ * drop_notification  date/time we last told NLM the trial has been pulled
+ *                    from Cancer.gov.
+ *              
+ */
+     CREATE TABLE pub_proc_nlm
+              (id INTEGER  NOT NULL PRIMARY KEY REFERENCES all_docs,
+              xml NTEXT    NOT NULL,
+        last_sent DATETIME NOT NULL,
+drop_notification DATETIME NULL)
 GO
 
 /*
