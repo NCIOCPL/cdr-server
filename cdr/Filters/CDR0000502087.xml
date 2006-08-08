@@ -1,0 +1,1258 @@
+<CdrDoc Type='Filter' Id='CDR0000502087'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">CTGov Export Filter</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+======================================================================
+==
+== $Id: CDR0000502087.xml,v 1.1 2006-08-08 14:32:06 bkline Exp $
+==
+== This filter transforms vendor output for active protocols into
+== a structure which conforms to the NLM DTD for clinical_study
+== documents.  The approach taken here is crude and the results
+== are in many cases much less sophisticated than the original
+== input documents, due to the rudimentary nature of the NLM
+== document structure.  In particular, inline markup for running
+== text and lists are obscured.  We have been assured that the
+== script will only be needed for the next two months.  Because
+== of this, and because of the emergency nature of the need for this
+== transformation (we only have a couple of days to come up with
+== something we can pass on to NLM) shortcuts have been taken which
+== take advantage of assumptions about the combinations of elements
+== which will appear in the input data.  Therefore, portions of 
+== this script are very fragile and will almost certainly break if
+== these assumptions are violated.  One example of how the original
+== markup is obscured is the requirement that list items be prefixed
+== with a hyphen, regardless of the nature of the list in the input
+== document.
+==
+== [Subsequent note:] As happens from time to time, the "assurances"
+== that this script would only be used for two months were not in
+== fact based in reality.  We have since been told that it will be
+== used for the indefinite future.
+==
+== $Log: not supported by cvs2svn $
+== Revision 1.23  2006/05/22 22:39:36  venglisc
+== Changed element name ProtocolTitle to PDQProtocolTitle and element
+== VerificationDate to DateLastVerified. (Bug 2185)
+==
+== Revision 1.22  2006/04/18 20:12:42  venglisc
+== Removed duplicated 'or' for StudyCategoryName.
+==
+== Revision 1.21  2006/04/14 14:48:44  bkline
+== Expanded intervention mapping.
+==
+== Revision 1.20  2006/03/27 22:12:29  venglisc
+== Adjusted StudyCategoryName string for Natural History to match schema
+== value.
+==
+== Revision 1.19  2005/10/25 21:00:57  bkline
+== Modified VerificationDate extraction (request #1798).
+==
+== Revision 1.18  2005/06/20 15:16:54  bkline
+== Stripped leading and trailing whitespace from middle initials.
+==
+== Revision 1.17  2005/06/10 15:55:44  bkline
+== Stripped out NCT protocol IDs.
+==
+== Revision 1.16  2004/06/19 12:28:54  bkline
+== Added code to strip space from IDs.
+==
+== Revision 1.15  2004/03/22 22:02:08  bkline
+== Corrected capitalization errors in FDAINDInfo; added mapping of spaces
+== and commas to underscores in pretty URLs.
+==
+== Revision 1.14  2004/03/17 13:09:14  bkline
+== Added support for FDAINDInfo elements.
+==
+== Revision 1.13  2004/02/24 14:01:20  bkline
+== Added code to insert <link> element for Cancer.gov URL (request #1110).
+==
+== Revision 1.12  2003/04/30 20:49:27  bkline
+== Added support for protocol sponsors other than NCI.  Added code to
+== handle missing city or phone.  Added code to use DateFirstPublished
+== if DateLastModified is not present.
+==
+== Revision 1.11  2003/01/08 23:36:07  bkline
+== Added some missing wrapper elements; added logic to pick up
+== toll-free phone when phone is not present; dropped textblock
+== in citation element to match change in NLM DTD.
+==
+== Revision 1.10  2002/12/19 21:07:12  bkline
+== Added changes to filter logic received from Lakshmi.
+==
+== Revision 1.9  2002/12/19 19:42:38  bkline
+== Version which emits warnings for truncated data.
+==
+== Revision 1.8  2002/12/16 19:37:02  bkline
+== Added remaining substring() calls.  Modified logic to match
+== latest mapping document.
+==
+== Revision 1.7  2002/12/14 13:58:32  bkline
+== Fixed typos.  Dropped unused template.
+==
+== Revision 1.6  2002/12/14 13:38:30  bkline
+== Code cleanup.
+==
+== Revision 1.5  2002/12/13 23:28:17  bkline
+== First complete draft.
+==
+== Revision 1.4  2002/12/13 12:19:57  bkline
+== Added support for the professional abstract.
+==
+====================================================================== -->
+
+<xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                         xmlns:cdr = "cips.nci.nih.gov/cdr"
+           exclude-result-prefixes = "cdr"
+                           version = "1.0">
+
+ <xsl:output                method = "xml"
+              omit-xml-declaration = "no"
+                          encoding = "UTF-8"
+                            indent = 'yes'/>
+
+ <xsl:strip-space         elements = "ItemizedList OrderedList "/>
+
+ <!--
+ ====================================================================
+ Root element.
+ ==================================================================== -->
+ <xsl:template               match = "/">
+  <clinical_study>
+   <xsl:apply-templates     select = "Protocol"/>
+  </clinical_study>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Document element.
+ ==================================================================== -->
+ <xsl:template               match = "Protocol">
+  <xsl:call-template          name = "get_id_info"/>
+  <xsl:call-template          name = "get_is_ind_study"/>
+  <xsl:call-template          name = "get_has_irb_approval"/>
+  <xsl:call-template          name = "get_ind_info"/>
+  <xsl:call-template          name = "get_medicare_info"/>
+  <xsl:call-template          name = "get_brief_title"/>
+  <xsl:call-template          name = "get_official_title"/>
+  <xsl:call-template          name = "get_sponsors"/>
+  <xsl:call-template          name = "get_oversight_info"/>
+  <xsl:call-template          name = "get_brief_summary"/>
+  <xsl:call-template          name = "get_detailed_description"/>
+  <xsl:call-template          name = "get_overall_status"/>
+  <xsl:call-template          name = "get_start_date"/>
+  <xsl:call-template          name = "get_end_date"/>
+  <xsl:call-template          name = "get_last_follow_up_date"/>
+  <xsl:call-template          name = "get_last_data_entry_date"/>
+  <xsl:call-template          name = "get_phase"/>
+  <xsl:call-template          name = "get_study_design"/>
+  <xsl:call-template          name = "get_condition"/>
+  <xsl:call-template          name = "get_intervention"/>
+  <xsl:call-template          name = "get_eligibility"/>
+  <xsl:call-template          name = "get_overall_official"/>
+  <xsl:call-template          name = "get_overall_contact"/>
+  <xsl:call-template          name = "get_overall_contact_backup"/>
+  <xsl:call-template          name = "get_location"/>
+  <xsl:call-template          name = "get_link"/>
+  <xsl:call-template          name = "get_reference"/>
+  <xsl:call-template          name = "get_keyword"/>
+  <xsl:call-template          name = "get_verification_date"/>
+  <xsl:call-template          name = "get_lastchanged_date"/>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing id_info element.
+ ==================================================================== -->
+ <xsl:template                name = "get_id_info">
+  <id_info>
+   <provider_name>National Cancer Institute</provider_name>
+   <provider_study_id>
+    <xsl:value-of           select = "@id"/>
+   </provider_study_id>
+   <org_name>NCI</org_name>
+   <org_study_id>
+    <xsl:value-of           select = "@id"/>
+   </org_study_id>
+   <xsl:for-each            select = "ProtocolIDs/PrimaryID |
+                                      ProtocolIDs/OtherID">
+    <xsl:if                   test = "name() = 'PrimaryID' or
+                                      IDType = 'Secondary' or
+                                      IDType = 'Alternate' or
+                                      IDType = 'NCI alternate'">
+     <xsl:variable            name = "idString"
+                            select = "normalize-space(IDString)"/>
+     <xsl:if                  test = "string-length($idString) &gt; 30">
+      <xsl:message>
+       <xsl:value-of        select = "concat('IDString length: ',
+                                             string-length($idString),
+                                             ' value: ', $idString)"/>
+      </xsl:message>
+     </xsl:if>
+     <secondary_id>
+      <xsl:value-of         select = "substring($idString, 1, 30)"/>
+     </secondary_id>
+    </xsl:if>
+   </xsl:for-each>
+  </id_info>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing is_ind_study element.
+ ==================================================================== -->
+ <xsl:template                name = "get_is_ind_study">
+  <is_ind_study>
+   <xsl:choose>
+    <xsl:when                 test = "FDAINDInfo">
+     <xsl:text>yes</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>none</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </is_ind_study>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing has_irb_approval element.
+ ==================================================================== -->
+ <xsl:template                name = "get_has_irb_approval">
+  <!-- optional, omitted -->
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing ind_info element.
+ ==================================================================== -->
+ <xsl:template                name = "get_ind_info">
+  <xsl:for-each             select = "FDAINDInfo">
+   <ind_info>
+    <ind_grantor>
+     <xsl:value-of          select = "INDGrantor"/>
+    </ind_grantor>
+    <ind_number>
+     <xsl:value-of          select = "INDNumber"/>
+    </ind_number>
+    <!-- optional in CDR Schema, but not in NLM DTD -->
+    <ind_serial_number>
+     <xsl:value-of          select = "INDSerialNumber"/>
+    </ind_serial_number>
+   </ind_info>
+  </xsl:for-each>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing medicare_info element.
+ ==================================================================== -->
+ <xsl:template                name = "get_medicare_info">
+  <!-- optional, obsolete, omitted -->
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing brief_title element.
+ XXX There is currently some confusion about where to get the
+ values for the brief_title and official_title elements.
+ Lakshmi, in her instructions for re-writing the export software,
+ has told us "If there is a ProtocolTitle with a @Type=Brief
+ use that; else use the PDQProtocolTitle with the Patient attribute.
+ .... [for official_title] If the OriginalTitle exists use it; else
+ use the PDQProtocolTitle with Health Professional attribute.
+ (please check the schema for the appropriate attribute values."
+ The CDR document does not contain a PDQProtocolTitle element.  That
+ element is created only in the vendor output version of the
+ protocol document.  There is no OriginalTitle element in either
+ the CDR document or in the vendor output.  There is a ProtocolTitle
+ element in the CDR document with a Type attribute whose allowable
+ values are Professional, Patient, and Original.  There is a
+ ProtocolTitle element in the vendor output as a child element
+ of the optional RegistryInfo element (which according to Volker
+ will only be present if there is a ClinicalTrials.gov ID for the
+ protocol), with a Type attribute whose allowable values are
+ Official and Short.  There is a PDQProtocolTitle element in the
+ vendor output with an Audience attribute, whose allowable values
+ are Professional and Patient.  For now I'm getting the title
+ information from the vendor output.  This may be changed when
+ Lakshmi returns from India.
+ XXX 2006-07-24: changing the software to use the title information
+ in the CDR documents instead of the vendor output from those
+ documents (at Lakshmi's request).
+ ==================================================================== -->
+ <xsl:template                name = "get_brief_title">
+  <!--
+  <xsl:variable               name = "title">
+   <xsl:choose>
+    <xsl:when                 test = "RegistryInfo/ProtocolTitle
+                                      [@Type = 'Short']">
+     <xsl:value-of          select = "RegistryInfo/ProtocolTitle
+                                      [@Type = 'Short']"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of          select = "PDQProtocolTitle
+                                      [@Audience = 'Patient']"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+  <brief_title>
+   <xsl:value-of            select = "$title"/>
+  </brief_title>
+  -->
+  <xsl:text>@@TITLES@@</xsl:text>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing official_title element.
+ XXX See note above.
+ ==================================================================== -->
+ <xsl:template                name = "get_official_title">
+  <!--
+  <xsl:variable               name = "title">
+   <xsl:choose>
+    <xsl:when                 test = "RegistryInfo/ProtocolTitle
+                                      [@Type = 'Official']">
+     <xsl:value-of          select = "RegistryInfo/ProtocolTitle
+                                      [@Type = 'Official']"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of          select = "PDQProtocolTitle
+                                      [@Audience = 'Professional']"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+  <official_title>
+   <xsl:value-of            select = "$title"/>
+  </official_title>
+  -->
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing sponsors element.
+ ==================================================================== -->
+ <xsl:template                name = "get_sponsors">
+  <xsl:variable               name = "leadSponsor">
+   <xsl:value-of            select = "ProtocolAdminInfo/ProtocolLeadOrg
+                                      [LeadOrgRole = 'Primary']/
+                                      LeadOrgName"/>
+  </xsl:variable>
+  <xsl:if                     test = "string-length($leadSponsor) &gt; 160">
+   <xsl:message>
+    <xsl:value-of           select = "concat('lead sponsor length: ',
+                                      string-length($leadSponsor),
+                                      ' value: ',
+                                      substring($leadSponsor, 1, 50),
+                                      ' ....')"/>
+   </xsl:message>
+  </xsl:if>
+  <sponsors>
+   <lead_sponsor>
+    <agency>
+     <xsl:value-of          select = "substring($leadSponsor, 1, 160)"/>
+    </agency>
+   </lead_sponsor>
+   <xsl:for-each            select = "ProtocolSponsor[. = 'NCI'   or
+                                                      . = 'NCCAM' or
+                                                      . = 'NHLBI' or
+                                                      . = 'NEI'   or
+                                                      . = 'NIA'   or
+                                                      . = 'NIAID' or
+                                                      . = 'NICHD' or
+                                                      . = 'NIDCD' or
+                                                      . = 'NIAMS' or
+                                                      . = 'NIDDK' or
+                                                      . = 'NIGMS' or
+                                                      . = 'NIMH'  or
+                                                      . = 'NINDS' or
+                                                      . = 'NIDCR' or
+                                                      . = 'NINR']">
+    
+    <collaborator>
+     <agency>
+      <xsl:value-of         select = "."/>
+     </agency>
+    </collaborator>
+   </xsl:for-each>
+   <xsl:for-each            select = "ProtocolAdminInfo/
+                                      ProtocolLeadOrg
+                                      [LeadOrgRole = 'Secondary']">
+    <xsl:if                   test = "string-length(LeadOrgName) &gt; 160">
+     <xsl:message>
+      <xsl:value-of         select = "concat('collaborator length: ',
+                                      string-length(LeadOrgName),
+                                      ' value: ',
+                                      substring(LeadOrgName, 1, 50),
+                                      ' ....')"/>
+     </xsl:message>
+    </xsl:if>
+    <collaborator>
+     <agency>
+      <xsl:value-of         select = "substring(LeadOrgName, 1, 160)"/>
+     </agency>
+    </collaborator>
+   </xsl:for-each>
+  </sponsors>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing oversight_info element.
+ XXX Lakshmi has indicated that we will implement the support
+ for regulatory authority in phase 2, and that we are not required
+ to supply the IRB info.  She has also asked us to export empty
+ elements for data we are not exporting, but which are required
+ elements in NLM's DTD.
+ ==================================================================== -->
+ <xsl:template                name = "get_oversight_info">
+  <oversight_info>
+   <regulatory_authority/>
+   <irb_info>
+    <name/>
+    <affiliation/>
+    <phone/>
+    <phone_ext/>
+    <email/>
+    <full_address/>
+   </irb_info>
+  </oversight_info>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing brief_summary element.
+ ==================================================================== -->
+ <xsl:template                name = "get_brief_summary">
+  <xsl:variable               name = "rationale">
+   <xsl:value-of            select = "ProtocolAbstract/Patient/Rationale"/>
+  </xsl:variable>
+  <xsl:variable               name = "purpose">
+   <xsl:value-of            select = "ProtocolAbstract/Patient/Purpose"/>
+  </xsl:variable>
+  <brief_summary>
+   <textblock>
+    <xsl:if                   test = "$rationale">
+     <xsl:value-of          select = "concat('RATIONALE: ',
+                                             normalize-space($rationale))"/>
+    </xsl:if>
+    <xsl:if                   test = "$rationale and $purpose">
+     <xsl:text>&#10;&#10;</xsl:text>
+    </xsl:if>
+    <xsl:if                   test = "$purpose">
+     <xsl:value-of          select = "concat('PURPOSE: ',
+                                             normalize-space($purpose))"/>
+    </xsl:if>
+   </textblock>
+  </brief_summary>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing detailed_description element.
+ ==================================================================== -->
+ <xsl:template                name = "get_detailed_description">
+  <xsl:variable               name = "objectives">
+   <xsl:apply-templates     select = "ProtocolAbstract/Professional
+                                                      /Objectives"/>
+  </xsl:variable>
+  <xsl:variable               name = "outline">
+   <xsl:apply-templates     select = "ProtocolAbstract/Professional
+                                                      /Outline"/>
+  </xsl:variable>
+  <xsl:variable               name = "accrual">
+   <xsl:apply-templates     select = "ProtocolAbstract/Professional
+                                                      /ProjectedAccrual"/>
+  </xsl:variable>
+  <detailed_description>
+   <textblock>
+    <xsl:if                   test = "$objectives">
+     <xsl:value-of          select = "concat('OBJECTIVES: ', $objectives)"/>
+     <xsl:if                  test = "$outline or $accrual">
+      <xsl:text>&#10;</xsl:text>
+     </xsl:if>
+    </xsl:if>
+    <xsl:if                   test = "$outline">
+     <xsl:value-of          select = "concat('OUTLINE: ', $outline)"/>
+     <xsl:if                  test = "$accrual">
+      <xsl:text>&#10;</xsl:text>
+     </xsl:if>
+    </xsl:if>
+    <xsl:if                   test = "$accrual">
+     <xsl:value-of          select = "concat('PROJECTED ACCRUAL: ',
+                                             $accrual)"/>
+    </xsl:if>
+   </textblock>
+  </detailed_description>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing overall_status element.
+ Added new test for absence of any protocol sites, for which condition
+ NLM wants the value 'Not yet recruiting'; also added mapping from
+ Withdrawn to Terminated.
+ ==================================================================== -->
+ <xsl:template                name = "get_overall_status">
+  <overall_status>
+   <xsl:choose>
+    <xsl:when                 test = "not(ProtocolAdminInfo
+                                          /ProtocolSites/ProtocolSite)">
+     <xsl:text>Not yet recruiting</xsl:text>
+    </xsl:when>
+    <xsl:when                 test = "ProtocolAdminInfo/CurrentProtocolStatus =
+                                      'Active'">
+     <xsl:text>Recruiting</xsl:text>
+    </xsl:when>
+    <xsl:when                 test = "ProtocolAdminInfo/CurrentProtocolStatus =
+                                      'Approved-not yet active'">
+     <xsl:text>Not yet recruiting</xsl:text>
+    </xsl:when>
+    <xsl:when                 test = "ProtocolAdminInfo/CurrentProtocolStatus =
+                                      'Withdrawn'">
+     <xsl:text>Terminated</xsl:text>
+    </xsl:when>
+   </xsl:choose>
+  </overall_status>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing start_date element.
+ ==================================================================== -->
+ <xsl:template                name = "get_start_date">
+  <xsl:for-each             select = "ProtocolAdminInfo/StartDate">
+   <start_date>
+    <xsl:value-of           select = "substring(., 1, 7)"/>
+   </start_date>
+  </xsl:for-each>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing end_date element.
+ ==================================================================== -->
+ <xsl:template                name = "get_end_date">
+  <!-- optional, omitted -->
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing last_follow_up_date element.
+ ==================================================================== -->
+ <xsl:template                name = "get_last_follow_up_date">
+  <!-- optional, omitted -->
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing last_data_entry_date element.
+ ==================================================================== -->
+ <xsl:template                name = "get_last_data_entry_date">
+  <!-- optional, omitted -->
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing phase element.
+ ==================================================================== -->
+ <xsl:template                name = "get_phase">
+  <phase>
+   <xsl:choose>
+    <xsl:when                 test = "ProtocolPhase = 'Phase I'">
+     <xsl:choose>
+      <xsl:when               test = "ProtocolPhase = 'Phase II'">
+       <xsl:text>1/2</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>1</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:when>
+    <xsl:when                 test = "ProtocolPhase = 'Phase II'">
+     <xsl:choose>
+      <xsl:when               test = "ProtocolPhase = 'Phase III'">
+       <xsl:text>2/3</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>2</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:when>
+    <xsl:when                 test = "ProtocolPhase = 'Phase III'">
+     <xsl:text>3</xsl:text>
+    </xsl:when>
+    <xsl:when                 test = "ProtocolPhase = 'Phase IV'">
+     <xsl:text>4</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>N/A</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </phase>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing study_design element.
+ This will be handled by post-processing.
+ ==================================================================== -->
+ <xsl:template                name = "get_study_design">
+  <xsl:text>@@STUDY-DESIGN-START@@</xsl:text>
+  <StudyDesignInfo>
+   <xsl:for-each            select = "ProtocolDetail/StudyDesign">
+    <xsl:copy-of            select = "."/>
+   </xsl:for-each>
+   <xsl:for-each            select = "ProtocolAbstract/Professional/Outcome">
+    <xsl:copy-of            select = "."/>
+   </xsl:for-each>
+  </StudyDesignInfo>
+  <xsl:text>@@STUDY-DESIGN-END@@</xsl:text>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing condition elements.
+ Modified at Lakshmi's request:
+ "If vendor data has element ProtocolDetail/StudyCondition/SpecificCondition
+ or Eligibility/Diagnosis/SpecificDiagnosis then use the logic to
+ climb the terminology tree to the node that has the MenuType of
+ Clinical Trials[dash]CancerType and the MenuParent = Disease/diagnosis;
+ output the value of the PreferredTerm for that term record in the
+ Condition element."
+ ==================================================================== -->
+ <xsl:template                name = "get_condition">
+  <xsl:text>@@CONDITIONS@@</xsl:text>
+   <Conditions>
+    <xsl:for-each           select = "ProtocolDetail/StudyCondition/
+                                      SpecificCondition |
+                                      Eligibility/Diagnosis/SpecificDiagnosis">
+     <Condition>
+      <xsl:value-of         select = "@ref"/>
+     </Condition>
+    </xsl:for-each>
+   </Conditions>
+  <xsl:text>@@CONDITIONS@@</xsl:text>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing intervention elements.  We just
+ remember what the original document had here, because an external
+ Python filter will post-process the documents to create the final
+ output based on lookups of information in the CDR repository
+ which isn't carried in the vendor output (semantic type information
+ for the terminology).
+ ==================================================================== -->
+ <xsl:template                name = "get_intervention">
+  <xsl:text>@@INTERVENTIONS-START@@</xsl:text>
+  <Interventions>
+   <xsl:for-each            select = "ProtocolDetail/StudyCategory/
+                                      Intervention">
+    <xsl:copy-of            select = "."/>
+   </xsl:for-each>
+  </Interventions>
+  <xsl:text>@@INTERVENTIONS-END@@</xsl:text>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing eligibility element.
+ ==================================================================== -->
+ <xsl:template                name = "get_eligibility">
+  <eligibility>
+   <criteria>
+    <textblock>
+     <xsl:apply-templates   select = "ProtocolAbstract/Professional/
+                                      EntryCriteria"/>
+    </textblock>
+   </criteria>
+   <healthy_volunteers>
+    <xsl:choose>
+     <xsl:when                test = "Eligibility/HealthyVolunteers = 'Yes'">
+      <xsl:text>yes</xsl:text>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>no</xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+   </healthy_volunteers>
+   <xsl:for-each            select = "ExpectedEnrollment">
+    <expected_enrollment>
+     <xsl:value-of          select = "normalize-space()"/>
+    </expected_enrollment>
+   </xsl:for-each>
+   <gender>Both</gender> <!-- Per Lakshmi 2002-12-19. -->
+   <minimum_age>
+    <xsl:value-of           select = "normalize-space(Eligibility/LowAge)"/>
+   </minimum_age>
+   <maximum_age>
+    <xsl:value-of           select = "normalize-space(Eligibility/HighAge)"/>
+   </maximum_age>
+  </eligibility>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing overall_official elements.
+ ==================================================================== -->
+ <xsl:template                name = "get_overall_official">
+  <xsl:for-each             select = "ProtocolAdminInfo/
+                                      ProtocolLeadOrg/
+                                      LeadOrgPersonnel/
+                                      ProtPerson/
+                                      PersonNameInformation">
+   <overall_official>
+    <xsl:if                   test = "GivenName">
+     <xsl:if                  test = "string-length(GivenName) &gt; 62">
+      <xsl:message>
+       <xsl:value-of        select = "concat('GivenName length: ',
+                                      string-length(GivenName),
+                                      ' value: ', GivenName)"/>
+      </xsl:message>
+     </xsl:if>
+     <first_name>
+      <xsl:value-of         select = "substring(GivenName, 1, 62)"/>
+     </first_name>
+    </xsl:if>
+    <xsl:if                   test = "normalize-space(MiddleInitial)">
+     <middle_name>
+      <xsl:value-of         select = "concat('@@MIDDLE-NAME-START@@',
+                                             normalize-space(MiddleInitial),
+                                             '@@MIDDLE-NAME-END@@')"/>
+     </middle_name>
+    </xsl:if>
+    <xsl:if                   test = "string-length(SurName) &gt; 62">
+     <xsl:message>
+      <xsl:value-of         select = "concat('SurName length: ',
+                                      string-length(SurName),
+                                      ' value: ', SurName)"/>
+     </xsl:message>
+    </xsl:if>
+    <last_name>
+     <xsl:value-of          select = "substring(SurName, 1, 62)"/>
+    </last_name>
+    <xsl:variable             name = "degrees">
+     <xsl:for-each          select = "ProfessionalSuffix">
+      <xsl:if                 test = "position() != 1">
+       <xsl:text>, </xsl:text>
+      </xsl:if>
+      <xsl:value-of         select = "."/>
+     </xsl:for-each>
+    </xsl:variable>
+    <xsl:if                   test = "$degrees != ''">
+     <xsl:if                  test = "string-length($degrees) &gt; 30">
+      <xsl:message>
+       <xsl:value-of        select = "concat('degrees length: ',
+                                      string-length($degrees),
+                                      ' value: ', $degrees)"/>
+      </xsl:message>
+     </xsl:if>
+     <degrees>
+      <xsl:value-of         select = "substring($degrees, 1, 30)"/>
+     </degrees>
+    </xsl:if>
+    <xsl:choose>
+     <xsl:when                test = "../PersonRole = 'Protocol chair'">
+      <role>Study Chair</role>
+     </xsl:when>
+     <xsl:when                test = "../PersonRole =
+                                        'Principal investigator'">
+      <role>Principal Investigator</role>
+     </xsl:when>
+    </xsl:choose>
+    <xsl:if                   test = "../Contact/ContactDetail
+                                        /OrganizationName">
+     <xsl:variable            name = "orgName">
+      <xsl:value-of         select = "../Contact/ContactDetail
+                                        /OrganizationName[1]"/>
+     </xsl:variable>
+     <xsl:if                  test = "string-length($orgName) &gt; 160">
+      <xsl:message>
+       <xsl:value-of        select = "concat('affiliation length: ',
+                                      string-length($orgName),
+                                      ' value: ',
+                                      substring($orgName, 1, 50),
+                                      ' ....')"/>
+      </xsl:message>
+     </xsl:if>
+     <affiliation>
+      <xsl:value-of         select = "substring($orgName, 1, 160)"/>
+     </affiliation>
+    </xsl:if>
+   </overall_official>
+  </xsl:for-each>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing overall_contact element.
+ ==================================================================== -->
+ <xsl:template                name = "get_overall_contact">
+  <!-- Omitted 2002-12-13 per Lakshmi's mapping document. -->
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing overall_contact_backup element.
+ ==================================================================== -->
+ <xsl:template                name = "get_overall_contact_backup">
+  <!-- Omitted 2002-12-13 per Lakshmi's mapping document. -->
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing location elements.
+ ==================================================================== -->
+ <xsl:template                name = "get_location">
+  <xsl:for-each             select = "ProtocolAdminInfo/
+                                      ProtocolSites/
+                                      ProtocolSite">
+   <xsl:if                    test = "string-length(SiteName) &gt; 254">
+    <xsl:message>
+     <xsl:value-of          select = "concat('protocol site name length: ',
+                                      string-length(SiteName),
+                                      ' value: ',
+                                      substring(SiteName, 1, 50),
+                                      ' ....')"/>
+    </xsl:message>
+   </xsl:if>
+   <location>
+    <facility>
+     <name>
+      <xsl:value-of         select = "substring(SiteName, 1, 254)"/>
+     </name>
+     <address>
+      <xsl:for-each         select = "ProtPerson[Contact/ContactDetail/
+                                                 PostalAddress][1]/
+                                                 Contact/ContactDetail/
+                                                 PostalAddress">
+       <city>
+        <xsl:choose>
+         <xsl:when            test = "City">
+          <xsl:value-of     select = "City"/>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text>Not Available</xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
+       </city>
+       <xsl:if                test = "PoliticalSubUnitName">
+        <state>
+         <xsl:value-of      select = "PoliticalSubUnitName"/>
+        </state>
+       </xsl:if>
+       <xsl:if                test = "PostalCode_ZIP">
+        <zip>
+         <xsl:value-of      select = "PostalCode_ZIP"/>
+        </zip>
+       </xsl:if>
+       <country>
+        <xsl:value-of       select = "CountryName"/>
+       </country>
+      </xsl:for-each>
+     </address>
+    </facility>
+    <status>Recruiting</status>
+    <xsl:for-each           select = "ProtPerson[1]">
+     <contact>
+      <xsl:choose>
+       <xsl:when              test = "PersonNameInformation">
+        <xsl:variable         name = "givenName">
+         <xsl:value-of      select = "PersonNameInformation/GivenName"/>
+        </xsl:variable>
+        <xsl:variable         name = "surName">
+         <xsl:value-of      select = "PersonNameInformation/SurName"/>
+        </xsl:variable>
+        <xsl:if               test = "$givenName != ''">
+         <xsl:if              test = "string-length($givenName) &gt; 62">
+          <xsl:message>
+           <xsl:value-of    select = "concat('given name length: ',
+                                      string-length($givenName),
+                                      ' value: ', $givenName)"/>
+          </xsl:message>
+         </xsl:if>
+         <first_name>
+          <xsl:value-of     select = "substring($givenName, 1, 62)"/>
+         </first_name>
+        </xsl:if>
+        <xsl:if               test = "normalize-space(
+                                      PersonNameInformation/MiddleInitial)">
+         <middle_name>
+          <xsl:value-of     select = "normalize-space(
+                                      PersonNameInformation/MiddleInitial)"/>
+         </middle_name>
+        </xsl:if>
+        <xsl:if               test = "string-length($surName) &gt; 62">
+         <xsl:message>
+          <xsl:value-of     select = "concat('surname length: ',
+                                      string-length($surName),
+                                      ' value: ', $surName)"/>
+         </xsl:message>
+        </xsl:if>
+        <last_name>
+         <xsl:value-of      select = "substring($surName, 1, 62)"/>
+        </last_name>
+        <xsl:variable         name = "degrees">
+         <xsl:value-of      select = "PersonNameInformation/
+                                      ProfessionalSuffix"/>
+        </xsl:variable>
+        <xsl:if               test = "$degrees != ''">
+         <xsl:if              test = "string-length($degrees) &gt; 30">
+          <xsl:message>
+           <xsl:value-of    select = "concat('ProfessionalSuffix length: ',
+                                      string-length($degrees),
+                                      ' value: ', $degrees)"/>
+          </xsl:message>
+         </xsl:if>
+         <degrees>
+          <xsl:value-of     select = "substring($degrees, 1, 30)"/>
+         </degrees>
+        </xsl:if>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:if               test = "string-length(PersonRole) &gt; 62">
+         <xsl:message>
+          <xsl:value-of     select = "concat('PersonRole length: ',
+                                      string-length(PersonRole),
+                                      ' value: ', PersonRole)"/>
+         </xsl:message>
+        </xsl:if>
+        <last_name>
+         <xsl:value-of      select = "substring(PersonRole, 1, 62)"/>
+        </last_name>
+       </xsl:otherwise>
+      </xsl:choose>
+      <xsl:variable         name = "phone">
+       <xsl:choose>
+        <xsl:when           test = "Contact/ContactDetail/Phone">
+         <xsl:value-of    select = "Contact/ContactDetail/Phone"/>
+        </xsl:when>
+        <xsl:when           test = "Contact/ContactDetail/TollFreePhone">
+         <xsl:value-of    select = "Contact/ContactDetail/TollFreePhone"/>
+        </xsl:when>
+       </xsl:choose>
+      </xsl:variable>
+      <xsl:variable         name = "email">
+       <xsl:value-of      select = "Contact/ContactDetail/Email"/>
+      </xsl:variable>
+      <xsl:choose>
+       
+       <xsl:when            test = "$phone != ''">
+        <xsl:if             test = "string-length($phone) &gt; 30">
+         <xsl:message>
+          <xsl:value-of   select = "concat('Phone length: ',
+                                    string-length($phone),
+                                    ' value: ', $phone)"/>
+         </xsl:message>
+        </xsl:if>
+        <phone>
+         <xsl:value-of    select = "substring($phone, 1, 30)"/>
+        </phone>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:message>
+         <xsl:value-of    select = "'Missing phone'"/>
+        </xsl:message>
+        <phone>Not Available</phone>
+       </xsl:otherwise>
+      </xsl:choose>
+      <xsl:if               test = "$email != ''">
+       <xsl:if              test = "string-length($email) &gt; 254">
+        <xsl:message>
+         <xsl:value-of    select = "concat('Email length: ',
+                                    string-length($email),
+                                    ' value: ', email)"/>
+        </xsl:message>
+       </xsl:if>
+       <email>
+        <xsl:value-of     select = "substring($email, 1, 254)"/>
+       </email>
+      </xsl:if>
+     </contact>
+    </xsl:for-each>
+   </location>
+  </xsl:for-each>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing link elements.
+ ==================================================================== -->
+ <xsl:template                name = "get_link">
+  <xsl:for-each             select = "ProtocolIDs/PrimaryID/IDString">
+   <link>
+    <url>
+     <xsl:value-of          select = "concat(
+                                      'http://cancer.gov/clinicaltrials/',
+                                      translate(normalize-space(),
+                                                ', ', '__'))"/>
+    </url>
+    <description>
+     <xsl:text>Clinical trial summary from the National Cancer </xsl:text>
+     <xsl:text>Institute's PDQ&#x00AE; database</xsl:text>
+    </description>
+   </link>
+  </xsl:for-each>
+  <xsl:for-each             select = "ProtocolRelatedLinks/RelatedWebsites">
+   <link>
+    <url>
+     <xsl:value-of          select = "@xref"/>
+    </url>
+    <xsl:if                   test = ". != ''">
+     <xsl:if                  test = "string-length(.) &gt; 254">
+      <xsl:message>
+       <xsl:value-of        select = "concat('ReleatedWebsites length: ',
+                                      string-length(.),
+                                      ' value: ',
+                                      substring(., 1, 50),
+                                      ' ....')"/>
+      </xsl:message>
+     </xsl:if>
+     <description>
+      <xsl:value-of         select = "substring(., 1, 254)"/>
+     </description>
+    </xsl:if>
+   </link>
+  </xsl:for-each>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing reference elements.
+ ==================================================================== -->
+ <xsl:template                name = "get_reference">
+  <xsl:for-each             select = "PublishedResults | RelatedPublications">
+   <reference>
+    <xsl:choose>
+     <xsl:when                test = "@PMID">
+      <pubmed_id>
+       <xsl:value-of        select = "@PMID"/>
+      </pubmed_id>
+     </xsl:when>
+     <xsl:otherwise>
+      <citation>
+       <xsl:value-of        select = "."/>
+      </citation>
+     </xsl:otherwise>
+    </xsl:choose>
+    <xsl:choose>
+     <xsl:when                test = "name() = 'PublishedResults'">
+      <is_results_ref>yes</is_results_ref>
+     </xsl:when>
+     <xsl:otherwise>
+      <is_results_ref>no</is_results_ref>
+     </xsl:otherwise>
+    </xsl:choose>
+   </reference>
+  </xsl:for-each>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing keyword elements.
+ ==================================================================== -->
+ <xsl:template                name = "get_keyword">
+  <!-- optional, omit -->
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing verification_date element.
+ ==================================================================== -->
+ <xsl:template                name = "get_verification_date">
+  <verification_date>
+   <xsl:value-of            select = "DateLastVerified"/>
+  </verification_date>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Named template for producing lastchanged_date element.
+ [NLM DTD now says this is optional and "unused".]
+ ==================================================================== -->
+ <xsl:template                name = "get_lastchanged_date">
+  <!--
+  <lastchanged_date>
+   <xsl:value-of            select = "DateLastModified"/>
+  </lastchanged_date>
+   -->
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Extract specific information for the eligibility/criteria element.
+ ==================================================================== -->
+ <xsl:template               match = "EntryCriteria">
+  <xsl:variable               name = "diseaseCharacteristics">
+   <xsl:apply-templates     select = "DiseaseCharacteristics"/>
+  </xsl:variable>
+  <xsl:variable               name = "patientCharacteristics">
+   <xsl:apply-templates     select = "PatientCharacteristics"/>
+  </xsl:variable>
+  <xsl:variable               name = "priorConcurrentTherapy">
+   <xsl:apply-templates     select = "PriorConcurrentTherapy"/>
+  </xsl:variable>
+  <xsl:if                     test = "$diseaseCharacteristics">
+   <xsl:value-of            select = "concat('DISEASE CHARACTERISTICS: ',
+                                              $diseaseCharacteristics)"/>
+   <xsl:if                    test = "$patientCharacteristics or
+                                      $priorConcurrentTherapy">
+    <xsl:text>&#10;</xsl:text>
+   </xsl:if>
+  </xsl:if>
+  <xsl:if                     test = "$patientCharacteristics">
+   <xsl:value-of            select = "concat('PATIENT CHARACTERISTICS: ',
+                                              $patientCharacteristics)"/>
+   <xsl:if                    test = "$priorConcurrentTherapy">
+    <xsl:text>&#10;</xsl:text>
+   </xsl:if>
+  </xsl:if>
+  <xsl:if                     test = "$priorConcurrentTherapy">
+   <xsl:value-of            select = "concat('PRIOR CONCURRENT THERAPY: ',
+                                              $priorConcurrentTherapy)"/>
+  </xsl:if>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Collapse down structured elements into text representation.
+ ==================================================================== -->
+ <xsl:template               match = "Objectives | Outline | ProjectedAccrual |
+                                      DiseaseCharacteristics |
+                                      PatientCharacteristics |
+                                      PriorConcurrentTherapy">
+  <xsl:for-each             select = "Para | ItemizedList | OrderedList">
+   <xsl:apply-templates     select = ".">
+    <xsl:with-param           name = "indent"
+                            select = "''"/>
+   </xsl:apply-templates>
+  </xsl:for-each>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Normalize a Para element.
+ ==================================================================== -->
+ <xsl:template               match = "Para">
+  <xsl:param                  name = "indent"/>
+  <xsl:variable               name = "content">
+   <xsl:apply-templates     select = "text() | Superscript | Subscript |
+                                               Note"/>
+  </xsl:variable>
+  <xsl:value-of             select = "concat($indent,
+                                             normalize-space($content),
+                                             '&#10;&#10;')"/>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Insert a caret before superscripted text.  Note that there is no
+ indication in the output of how many of the following characters
+ are superscripted (but fortunately there are no multi-character
+ superscripts in the data, at least not at the time of this writing).
+ ==================================================================== -->
+ <xsl:template               match = "Superscript">
+  <xsl:value-of             select = "concat('^', .)"/>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Insert an underscore before subscripted text.  Note that there is 
+ no indication in the output of how many of the following characters
+ are subscripted (but fortunately there are no multi-character
+ subscripts in the data, at least not at the time of this writing).
+ ==================================================================== -->
+ <xsl:template               match = "Subscript">
+  <xsl:value-of             select = "concat('_', .)"/>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Decorate a note with a prefix.  Assumption: Note elements contain
+ no other markup.
+ ==================================================================== -->
+ <xsl:template               match = "Note">
+  <xsl:value-of             select = "concat('NOTE: ', .)"/>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Try to do something mildly intelligent with lists.  Note that the
+ specs for the NLM documents require that we suppress the distinction
+ between ordered and itemized lists.
+ ==================================================================== -->
+ <xsl:template               match = "ItemizedList | OrderedList">
+  <xsl:param                  name = "indent"/>
+  <xsl:text>&#10;</xsl:text>
+  <xsl:for-each             select = "ListTitle">
+   <xsl:value-of            select = "concat($indent,
+                                             normalize-space(.),
+                                             '&#10;')"/>
+  </xsl:for-each>
+  <xsl:apply-templates      select = "ListItem">
+   <xsl:with-param            name = "indent"
+                            select = "$indent"/>
+  </xsl:apply-templates>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Indent list items with two spaces and a hyphen.  We're extrapolating
+ from the spec embedded in the DTD, assuming that nested lists should
+ be represented with cumulative indentation (otherwise the nesting
+ information is lost completely instead of just being obscured).
+ ==================================================================== -->
+ <xsl:template               match = "ListItem">
+  <xsl:param                  name = "indent"/>
+  <xsl:choose>
+   <xsl:when                  test = "Para | ItemizedList | OrderedList">
+    <xsl:for-each           select = "Para | ItemizedList | OrderedList |
+                                      text()">
+     <xsl:choose> <!-- This is getting very ugly! -->
+      <xsl:when               test = "name() = 'Para' or
+                                      name() = 'ItemizedList' or
+                                      name() = 'OrderedList'">
+       <xsl:apply-templates select = ".">
+        <xsl:with-param       name = "indent"
+                            select = "concat($indent, '    ')"/>
+       </xsl:apply-templates>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:variable          name = "normalizedContent"
+                            select = "normalize-space(.)"/>
+       <xsl:if                test = "$normalizedContent != ''">
+        <xsl:value-of       select = "concat($indent, '  - ',
+                                             $normalizedContent, '&#10;')"/>
+       </xsl:if>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:for-each>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:variable             name = "content">
+     <xsl:apply-templates   select = "text() | Superscript | Subscript |
+                                               Strong | Emphasis"/>
+    </xsl:variable>
+    <xsl:variable             name = "normalizedContent"
+                            select = "normalize-space($content)"/>
+    <xsl:if                   test = "$normalizedContent != ''">
+     <xsl:value-of          select = "concat($indent, '  - ',
+                                             $normalizedContent,
+                                             '&#10;')"/>
+    </xsl:if>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
