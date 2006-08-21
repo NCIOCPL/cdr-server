@@ -1,0 +1,169 @@
+<CdrDoc Type='Filter' Id='CDR0000505579'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Copy XML for DrugInfoSummary</DocTitle>
+<DocComment>N/A</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!-- 
+===================================================================
+Filter to create the vendor Terminology XML 
+=================================================================== -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0">
+    
+ <xsl:include  href = "cdr:name:Module: Global Filter Templates"/>
+
+ <xsl:output                    method = "xml" 
+                  omit-xml-declaration = "no"/>
+
+ <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
+ <xsl:param                       name = "DateFirstPub"
+                                select = "''"/> 
+
+ <!-- *
+ ====================================================================
+ Root element.
+ ==================================================================== -->
+ <xsl:template                   match = "*">
+  <xsl:copy>
+   <xsl:apply-templates           mode = "copy"/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to create wrapper element for Manufacturer.
+ ===================================================================== -->
+ <xsl:template                   match = "DrugInfoMetaData"
+                                  mode = "copy">
+  <xsl:copy>
+   <Manufacturers>
+    <xsl:copy-of                select = "Manufacturer"/>
+   </Manufacturers>
+
+   <xsl:apply-templates           mode = "copy"/>
+
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to drop the Manufacturer elements since these will be 
+ repeated within the Manufacturers wrapper.
+ ===================================================================== -->
+ <xsl:template                   match = "Manufacturer" 
+                                  mode = "copy"/>
+
+
+ <!--
+ =====================================================================
+ Template to drop the Manufacturer elements since these will be 
+ repeated within the Manufacturers wrapper.
+ ===================================================================== -->
+ <xsl:template                   match = "URL"
+                                  mode = "copy">
+  <xsl:copy-of                  select = "."/>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to create wrapper elements for US Brand Name and Synonym.
+ ===================================================================== -->
+ <xsl:template                   match = "Term"
+                                  mode = "copy">
+  <xsl:copy>
+   <xsl:for-each                select = "@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+
+   <xsl:if                        test = "OtherName/
+                                          OtherNameType = 'US brand name'">
+    <USBrandNames>
+     <xsl:apply-templates       select = "OtherName"
+                                  mode = "brandname">
+      <xsl:sort/>
+     </xsl:apply-templates>
+    </USBrandNames>
+   </xsl:if>
+
+<!-- =====================================================================
+     Synonyms are not to be displayed anymore
+     (per LG, 2008-08-17)
+     =====================================================================
+   <xsl:if                        test = "OtherName/
+                                          OtherNameType = 'Code name'
+                                          or
+                                          OtherName/
+                                          OtherNameType = 'Foreign brand name'
+                                          or
+                                          OtherName/
+                                          OtherNameType = 'Abbreviation'">
+    <Synonyms>
+     <xsl:apply-templates       select = "OtherName"
+                                  mode = "synonym"/>
+    </Synonyms>
+   </xsl:if>
+     End Synonym
+     =====================================================================
+-->
+
+   <xsl:copy-of                 select = "*[not(self::OtherName)]"/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to create US Brand Name
+ ===================================================================== -->
+ <xsl:template                   match = "OtherName"
+                                  mode = "brandname">
+  <xsl:if                         test = "OtherNameType = 'US brand name'">
+  <xsl:copy>
+   <xsl:apply-templates/>
+  </xsl:copy>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to create US Brand Name
+ ===================================================================== -->
+ <xsl:template                   match = "OtherName"
+                                  mode = "synonym">
+  <xsl:if                         test = "OtherNameType = 'Code name'
+                                          or
+                                          OtherNameType = 'Foreign brand name'
+                                          or
+                                          OtherNameType = 'Abbreviation'">
+  <xsl:copy>
+   <xsl:apply-templates/>
+  </xsl:copy>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ =======================================================
+ Default template to copy all elements and attributes
+ ======================================================= -->
+ <xsl:template               match = "@* | node()" 
+                              mode = "copy">
+  <xsl:copy>
+   <xsl:apply-templates     select = "@* | node()" 
+                              mode = "copy"/>
+  </xsl:copy>
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>

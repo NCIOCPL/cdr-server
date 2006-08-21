@@ -1,0 +1,624 @@
+<CdrDoc Type='Filter' Id='CDR0000505580'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Vendor Filter: DrugInfoSummary</DocTitle>
+<DocComment>N/A</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml  version = "1.0"?>
+<!-- 
+===================================================================
+Filter to create the vendor Terminology XML 
+=================================================================== -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0">
+    
+ <xsl:output                    method = "xml" 
+                  omit-xml-declaration = "no"/>
+
+ <xsl:include  href = "cdr:name:Module: Vendor Filter Templates"/>
+   
+ <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
+ <xsl:param                       name = "DateFirstPub"
+                                select = "''"/> 
+
+ <!-- *
+ ====================================================================
+ Root element.
+ ==================================================================== -->
+ <xsl:template                   match = "*">
+  <xsl:apply-templates/>
+ </xsl:template>
+
+
+ <!-- 
+ ======================================================================
+ Copy DocId, PreferredName, OtherTermName, OtherNameType
+ ====================================================================== -->
+ <xsl:template                   match = "DrugInformationSummary">
+  <xsl:element                    name = '{name()}'>   
+   <xsl:attribute                 name = "id">
+    <xsl:value-of               select = "DocId"/>
+   </xsl:attribute>
+
+   <xsl:apply-templates         select = "DrugInfoMetaData"/>
+
+   <DrugInfoTitle>
+    <xsl:value-of               select = "Title"/>
+   </DrugInfoTitle>
+
+   <xsl:apply-templates         select = "SummarySection"/>
+
+   <xsl:apply-templates         select = "DrugReference"/>
+               
+   <xsl:call-template             name = "trialSection"/>
+
+   <!--
+   Add a Disclaimer document based on the DrugInfoType
+   =================================================== -->
+   <xsl:choose>
+    <xsl:when                     test = "DrugInfoMetaData/
+                                          DrugInfoType = 'Brief'">
+     <xsl:call-template           name = "briefDisclaimer"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:call-template           name = "detailedDisclaimer"/>
+    </xsl:otherwise>
+   </xsl:choose>
+
+
+   <!-- 
+   ===================================================================
+   Copy Date First Published and Date Last Modified
+   =================================================================== -->
+   <xsl:choose>
+    <xsl:when                     test = "CdrDocCtl/FirstPub/Date">
+     <DateFirstPublished>
+      <xsl:value-of             select = "substring-before(CdrDocCtl/
+                                            FirstPub/Date,'T')"/>
+     </DateFirstPublished>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:call-template           name = "getDateFirstPub">
+      <xsl:with-param             name = "date"
+                                select = "$DateFirstPub"/>
+     </xsl:call-template>    
+    </xsl:otherwise>
+   </xsl:choose>
+ 
+   <xsl:if                        test = "DateLastModified">
+    <xsl:apply-templates        select = "DateLastModified" 
+                                  mode = "copy"/>
+   </xsl:if>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Template to display the OtherName elements.
+ Only display the other name if it is not identical to the Preferred
+ Name.
+ =================================================================== -->
+ <xsl:template                   match = "OtherName">
+  <xsl:if                         test = "translate(OtherTermName, 
+                                             'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                                             'abcdefghijklmnopqrstuvwxyz') != 
+                                          translate(../PreferredName,
+                                             'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                                             'abcdefghijklmnopqrstuvwxyz')">
+   <OtherName>
+    <OtherTermName>
+     <xsl:value-of              select = "normalize-space(OtherTermName)"/>
+    </OtherTermName>
+    <OtherNameType>
+     <xsl:value-of              select = "OtherNameType"/>
+    </OtherNameType>
+   </OtherName>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Template to display the Definition node but only if the 
+ ReviewStatus is "Reviewed".
+ =================================================================== -->
+ <xsl:template                   match = "DrugInfoMetaData">
+  <xsl:copy>
+   <xsl:apply-templates         select = "DrugInfoType"
+                                  mode = "copy"/>
+   <DrugInfoAudience>
+    <xsl:value-of               select = "Audience"/>
+   </DrugInfoAudience>
+   <DrugInfoDescription>
+    <xsl:value-of               select = "Description"/>
+   </DrugInfoDescription>
+   <DrugInfoURL>
+    <xsl:attribute                name = "xref">
+     <xsl:value-of              select = "URL/@cdr:xref"/>
+    </xsl:attribute>
+    <xsl:value-of               select = "URL"/>
+   </DrugInfoURL>
+
+   <xsl:apply-templates         select = "Manufacturers"/>
+
+   <xsl:apply-templates         select = "FDAApproved"
+                                  mode = "copy"/>
+
+   <TerminologyLink>
+    <xsl:attribute                name = "ref">
+     <xsl:value-of              select = "TerminologyLink/
+                                          Term/@cdr:ref"/>
+    </xsl:attribute>
+    <xsl:value-of               select = "TerminologyLink/
+                                          Term/
+                                          PreferredName"/>
+   </TerminologyLink>
+   <GlossaryLink>
+    <xsl:attribute                name = "ref">
+     <xsl:value-of              select = "GlossaryLink/
+                                          GlossaryTerm/@cdr:ref"/>
+    </xsl:attribute>
+    <xsl:value-of               select = "GlossaryLink/
+                                          GlossaryTerm/
+                                          TermName"/>
+   </GlossaryLink>
+
+   <xsl:apply-templates         select = "TerminologyLink/
+                                          Term/
+                                          USBrandNames"/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Template to display the Definition node but only if the 
+ ReviewStatus is "Reviewed".
+ =================================================================== -->
+ <xsl:template                   match = "DrugReference">
+  <xsl:param                      name = "drugRefType"
+                                select = "DrugReferenceType"/>
+  <xsl:param                      name = "miscDocFracId"
+                                select = "substring-after(
+                                            DrugReferenceDescription/
+                                            MiscellaneousDocument/
+                                              @cdr:ref, '#')"/>
+  <Section>
+   <xsl:attribute                 name = "cdr:id">
+    <xsl:text>_</xsl:text>
+    <xsl:value-of               select = "$drugRefType"/>
+    <xsl:value-of               select = "$miscDocFracId"/>
+   </xsl:attribute>
+
+     <Title>
+      <xsl:text>Information from the </xsl:text>
+      <xsl:value-of             select = "$drugRefType"/>
+     </Title>
+
+   <xsl:apply-templates         select = "DrugReferenceLink">
+    <xsl:with-param               name = "drugRefType"
+                                select = "$drugRefType"/>
+    <xsl:with-param               name = "miscDocFracId"
+                                select = "$miscDocFracId"/>
+   </xsl:apply-templates>
+
+   <xsl:apply-templates         select = "DrugReferenceDescription">
+    <xsl:with-param               name = "drugRefType"
+                                select = "$drugRefType"/>
+    <xsl:with-param               name = "miscDocFracId"
+                                select = "$miscDocFracId"/>
+   </xsl:apply-templates>
+
+   <xsl:if                        test = "$drugRefType = 'NCI'">
+    <Para>
+     <xsl:attribute               name = "cdr:id">
+      <xsl:text>_</xsl:text>
+      <xsl:value-of             select = "$drugRefType"/>
+      <xsl:text>_0</xsl:text>
+     </xsl:attribute>
+
+     <xsl:element                 name = "ExternalRef">
+      <xsl:attribute              name = "xref">
+       <xsl:text>http://www.cancer.gov/Templates/drugdictionary.aspx</xsl:text>
+       <xsl:text>?CdrID=</xsl:text>
+       <xsl:value-of            select = "number(
+                                           substring(
+                                            /DrugInformationSummary/
+                                            DrugInfoMetaData/
+                                            TerminologyLink/
+                                            Term/@cdr:ref, 4))"/>
+      </xsl:attribute>
+      <xsl:text>Definition from the NCI Drug Dictionary</xsl:text>
+     </xsl:element>
+     <xsl:text>- Detailed scientific definition and other names </xsl:text>
+     <xsl:text>for this drug.</xsl:text>
+    </Para>
+   </xsl:if>
+  </Section>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to create US Brand Name
+ ===================================================================== -->
+ <xsl:template                   match = "DrugReferenceLink">
+  <xsl:param                      name = "drugRefType"/>
+  <xsl:param                      name = "miscDocFracId"/>
+
+  <Para>
+   <xsl:attribute                 name = "cdr:id">
+    <xsl:text>_</xsl:text>
+    <xsl:value-of               select = "$drugRefType"/>
+    <xsl:value-of               select = "$miscDocFracId"/>
+    <xsl:text>a</xsl:text>
+   </xsl:attribute>
+   <ExternalRef>
+    <xsl:attribute                name = "xref">
+     <xsl:value-of              select = "@cdr:xref"/>
+    </xsl:attribute>
+    <xsl:value-of               select = "."/>
+   </ExternalRef>
+  </Para>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to create US Brand Name
+ ===================================================================== -->
+ <xsl:template                   match = "DrugReferenceDescription">
+  <xsl:param                      name = "drugRefType"/>
+  <xsl:param                      name = "miscDocFracId"/>
+  <xsl:variable                   name = "fracID"
+                                select = "substring-after(
+                                            MiscellaneousDocument/
+                                              @cdr:ref, '#')"/>
+  <xsl:for-each                 select = "MiscellaneousDocument/
+                                          MiscellaneousDocumentText">
+   <xsl:apply-templates         select = "*[@cdr:id = $fracID]"
+                                  mode = "description">
+    <xsl:with-param               name = "drugRefType"
+                                select = "$drugRefType"/>
+   </xsl:apply-templates>
+  </xsl:for-each>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to create US Brand Name
+ ===================================================================== -->
+ <xsl:template                   match = "Para         | 
+                                          ItemizedList |
+                                          OrderedList">
+  <xsl:param                      name = "drugRefType"/>
+
+  <xsl:element                    name = "{name()}">
+   <xsl:attribute                 name = "cdr:id">
+    <xsl:text>_</xsl:text>
+    <xsl:value-of               select = "$drugRefType"/>
+    <xsl:value-of               select = "@cdr:id"/>
+   </xsl:attribute>
+   <xsl:apply-templates           mode = "copy"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to suppress the Title element of the Misc Documents since
+ this will be replaced by the Section Title.
+ This template does not effect the Disclaimer title
+ ===================================================================== -->
+ <xsl:template                   match = "Title"/>
+
+
+ <!--
+ =====================================================================
+ Template to rename the SummarySection to a Section and remove the 
+ element tags of elements that are allowed in the Schema as a 
+ SummarySection but not in the DTD as a Section.
+ ===================================================================== -->
+ <xsl:template                   match = "SummarySection">
+  <Section>
+   <xsl:attribute                 name = "cdr:id">
+    <xsl:value-of               select = "@cdr:id"/>
+   </xsl:attribute>
+
+  <xsl:apply-templates            mode = "copy"/>
+  </Section>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to rename the SummarySection to a Section and remove the 
+ element tags of elements that are allowed in the Schema as a 
+ SummarySection but not in the DTD as a Section.
+ ===================================================================== -->
+ <xsl:template                   match = "SummarySection" 
+                                  mode = "copy">
+  <Para>
+   <xsl:value-of                select = "."/>
+  </Para>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to suppress the AltTitle element tags
+ ===================================================================== -->
+ <xsl:template                   match = "AltTitle"
+                                  mode = "copy">
+  <Para>
+   <xsl:value-of                select = "."/>
+  </Para>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to suppress the KeyPoint element tags
+ ===================================================================== -->
+ <xsl:template                   match = "KeyPoint"
+                                  mode = "copy">
+  <Para>
+   <xsl:value-of                select = "."/>
+  </Para>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to create US Brand Name
+ ===================================================================== -->
+ <xsl:template                   match = "Manufacturers">
+  <xsl:copy>
+  <xsl:for-each                 select = "Manufacturer">
+   <Manufacturer>
+    <xsl:attribute                name = "ref">
+     <xsl:value-of              select = "Organization/@cdr:ref"/>
+    </xsl:attribute>
+    <xsl:value-of               select = "Organization/
+                                          OrganizationNameInformation/
+                                          OfficialName/
+                                          Name"/>
+   </Manufacturer>
+  </xsl:for-each>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to create US Brand Name
+ ===================================================================== -->
+ <xsl:template                   match = "USBrandNames">
+  <xsl:copy>
+   <xsl:apply-templates         select = "OtherName"/>
+  </xsl:copy>
+ </xsl:template>
+
+ <!--
+ =====================================================================
+ Template to dedup US Brand Name (the names are coming in sorted)
+ ===================================================================== -->
+ <xsl:template                   match = "OtherName">
+  <xsl:if                         test = "OtherTermName
+                                           [not(normalize-space(.) =  
+                                                normalize-space
+                                                (following::OtherTermName))]">
+    <USBrandName>
+     <xsl:value-of              select = "normalize-space(OtherTermName)"/>
+    </USBrandName>
+  </xsl:if>
+ </xsl:template>
+
+ <!--
+ =====================================================================
+ Template to create Synonyms
+ (Deleted per LG, 2008-08-17)
+ =====================================================================
+ <xsl:template                   match = "Synonyms">
+  <xsl:copy>
+   <xsl:for-each                select = "OtherName"> 
+    <Synonym>
+     <xsl:value-of              select = "OtherTermName"/>
+    </Synonym>
+   </xsl:for-each>
+  </xsl:copy>
+ </xsl:template>
+ =====================================================================
+ -->
+
+
+ <!-- 
+ ==================================================================
+ Section Template for Misc Docs
+ Need to pass the parameter of the CDR Doc ID to set the ID 
+ attribute properly.  The misc doc can be either the 'To Learn More'
+ or the 'About PDQ' section.
+ ================================================================== -->  
+ <xsl:template                  match = "Section"
+                                 mode = "description">
+  <xsl:param                     name = "drugRefType"/>
+
+  <xsl:apply-templates>
+   <xsl:with-param               name = "drugRefType" 
+                               select = "$drugRefType"/>
+
+  </xsl:apply-templates>
+
+ </xsl:template> 
+ <!-- 
+ ==================================================================
+ Section Template for Misc Docs
+ Need to pass the parameter of the CDR Doc ID to set the ID 
+ attribute properly.  The misc doc can be either the 'To Learn More'
+ or the 'About PDQ' section.
+ ================================================================== -->  
+ <xsl:template                  match = "Section">
+  <xsl:param                     name = "miscDocId"/>
+
+  <DrugInfoDisclaimer>
+<!--
+   <xsl:choose>
+    <xsl:when                    test = "$miscDocId">
+     <xsl:if                     test = "./@cdr:id">
+      <xsl:attribute             name = "id">
+       <xsl:value-of           select = "$miscDocId"/>
+       <xsl:value-of           select = "./@cdr:id"/>
+      </xsl:attribute>
+     </xsl:if>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:if                     test = "./@cdr:id">
+      <xsl:attribute             name = "id">
+       <xsl:value-of           select = "./@cdr:id"/>
+      </xsl:attribute>
+     </xsl:if>
+    </xsl:otherwise>
+   </xsl:choose>
+-->
+   <xsl:apply-templates          mode = "disclaimer">
+    <xsl:with-param              name = "miscDocId" 
+                               select = "$miscDocId"/>
+   </xsl:apply-templates>
+  </DrugInfoDisclaimer>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Main MiscellaneousDocumentText Template
+ ================================================================== -->  
+ <xsl:template                  match = "MiscellaneousDocumentText">
+  <xsl:param                     name = "miscDocId"/>
+  <xsl:apply-templates>
+   <xsl:with-param               name = "miscDocId" 
+                               select = "$miscDocId"/>
+  </xsl:apply-templates>
+ </xsl:template>
+
+
+ <!-- 
+ ============================================================= 
+ Create the Title template for the Misc Text section
+ ============================================================= -->
+ <xsl:template                  match = "Title"
+                                 mode = "disclaimer"/>
+<!--
+  AAA<xsl:apply-templates         select = "." 
+                                 mode = "copy"/>
+ </xsl:template>
+-->
+
+ <!-- 
+ ============================================================= 
+ Create the Para template including the renamed attribute for 
+ the paragraph IDs.
+ Displaying by default the 'To Learn More' misc document.
+ ============================================================= -->
+ <xsl:template                  match = "Para"
+                                 mode = "disclaimer">
+  <xsl:param                     name = "miscDocId"/>
+  <Para>
+   <xsl:attribute                name = "id">
+    <xsl:value-of              select = "concat($miscDocId, ./@cdr:id)"/>
+   </xsl:attribute>
+   <xsl:apply-templates        select = "Para" 
+                                 mode = "copy"/>
+   <xsl:apply-templates/>
+  </Para>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to create US Brand Name
+ ===================================================================== -->
+ <xsl:template                    name = "trialSection">
+  <Section>
+   <xsl:attribute                 name = "id">
+    <xsl:text>_ClinicalTrial_1</xsl:text>
+   </xsl:attribute>
+
+   <Title>Clinical Trials</Title>
+   <Para id="_ClinicalTrial_2">
+     <xsl:element                 name = "ExternalRef">
+      <xsl:attribute              name = "xref">
+       <xsl:text>http://www.cancer.gov/Search/ClinicalTrialsLink.aspx</xsl:text>
+       <xsl:text>?id=</xsl:text>
+       <xsl:value-of            select = "number(
+                                           substring(
+                                            /DrugInformationSummary/
+                                            DrugInfoMetaData/
+                                            TerminologyLink/
+                                            Term/@cdr:ref, 4))"/>
+       <xsl:text>&amp;idtype=1</xsl:text>
+      </xsl:attribute>
+      <xsl:text>Clinical Trials for </xsl:text>
+       <xsl:value-of            select = "concat(
+                                           translate(
+                                            substring(
+                                             /DrugInformationSummary/
+                                             DrugInfoMetaData/
+                                             TerminologyLink/
+                                             Term/
+                                             PreferredName,1,1), 
+                                             'abcdefghijklmnopqrstuvwxyz',
+                                             'ABCDEFGHIJKLMNOPQRSTUVWXYZ'),
+                                           substring(
+                                            /DrugInformationSummary/
+                                            DrugInfoMetaData/
+                                            TerminologyLink/
+                                            Term/
+                                            PreferredName,2))"/>
+     </xsl:element>
+     <xsl:text> - List of trials from NCI's PDQ Cancer Clinical </xsl:text>
+     <xsl:text>Trials Registry now accepting patients.</xsl:text>
+   </Para>
+  </Section>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to create US Brand Name
+ ===================================================================== -->
+ <xsl:template                    name = "briefDisclaimer">
+      <xsl:variable               name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000466802',
+                                                         '/lastp'))"/>
+
+     <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+      <xsl:with-param            name = "miscDocId"
+                               select = "'_Disclaimer'"/>
+     </xsl:apply-templates>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to create US Brand Name
+ ===================================================================== -->
+ <xsl:template                    name = "detailedDisclaimer">
+      <xsl:variable               name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000466803',
+                                                         '/lastp'))"/>
+
+     <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+      <xsl:with-param            name = "miscDocId"
+                               select = "'_Disclaimer'"/>
+     </xsl:apply-templates>
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
