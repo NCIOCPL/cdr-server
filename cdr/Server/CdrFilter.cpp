@@ -1,9 +1,16 @@
 /*
- * $Id: CdrFilter.cpp,v 1.52 2006-05-04 22:45:47 ameyer Exp $
+ * $Id: CdrFilter.cpp,v 1.53 2006-09-01 02:07:54 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.52  2006/05/04 22:45:47  ameyer
+ * Numerous changes were introduced to support date-time limited filtering.
+ * This is an interim release of these changes.  It appears to work and,
+ * as far as we know, can be put into production, but more changes will come.
+ * Some debugging statements for date-time limits have been left in the
+ * source, but commented out.
+ *
  * Revision 1.51  2005/12/09 17:03:01  bkline
  * Fixed typo (was assigning the wrong value to verificationDate variable).
  *
@@ -2417,6 +2424,17 @@ string getVerificationDate(const string& parms, cdr::db::Connection& conn,
     return "<VerificationDate/>";
 }
 
+/**
+ * Search the external_map table for a value in a specific usage.
+ * If found, tell caller how to map the value.
+ * If not found, create an entry in the table for it.
+ *
+ * @param parms     Usage/Value, slash separated string.
+ *
+ * @return          DocID to which value should map.
+ *                  Empty if data not mapped.
+ *                  "DROP" if data is "bogus".
+ */
 string lookupExternalValue(const string& parms,
                            cdr::db::Connection& conn)
 {
@@ -2436,7 +2454,7 @@ string lookupExternalValue(const string& parms,
 
     // Look up the external value.
     cdr::db::PreparedStatement stmt = conn.prepareStatement(
-            "SELECT m.doc_id, bogus      "
+            "SELECT m.doc_id, bogus, mappable "
             "  FROM external_map m       "
             "  JOIN external_map_usage u "
             "    ON u.id = m.usage       "
@@ -2459,10 +2477,20 @@ string lookupExternalValue(const string& parms,
 
     int docId = rs.getInt(1);
     cdr::String bogus = rs.getString(2);
+    cdr::String mappable = rs.getString(3);
+
+    // Bogus records are known false values sometimes seen in docs
     if (bogus == L"Y")
         return "<DocId>DROP</DocId>";
-    if (!docId)
+
+    // If not mapped, or non-mappable, return an empty doc id.
+    // Not mapped are values encountered but not yet mapped.
+    // Non-mappable are values such as notes or comments entered by
+    //   an external source in lieu of a real value, e.g., "call ...
+    //   for contact information"
+    if (mappable == L"N" || !docId)
         return "<DocId/>";
+
     cdr::String idString = cdr::stringDocId(docId);
     std::ostringstream os;
     os << "<DocId>" << idString.toUtf8() << "</DocId>";
