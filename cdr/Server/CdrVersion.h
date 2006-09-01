@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.h,v 1.9 2006-05-17 03:35:14 ameyer Exp $
+ * $Id: CdrVersion.h,v 1.10 2006-09-01 02:09:51 ameyer Exp $
  *
  * Internal support functions for CDR verison control
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2006/05/17 03:35:14  ameyer
+ * Support for date limited version retrieval.
+ *
  * Revision 1.8  2004/11/05 05:59:01  ameyer
  * Added some blob related information.
  *
@@ -262,6 +265,23 @@ namespace cdr {
                     cdr::db::Connection&    conn,
                     int*                    usr = 0,
                     cdr::String*            dt_out = 0);
+
+    /**
+     * Determine whether the current working and the last publishable
+     * versions of a document are the same.  They are the same if and
+     * only if a publishable version exists and its updated_dt value
+     * is the same as the dt value in the audit_trail for the last
+     * add or modify transaction.
+     *
+     *  @param  docId       int document ID.
+     *  @param  conn        reference to an active connection to the CDR
+     *                      database.
+     *
+     *  @return             true if CWD == last pub version, else false
+     */
+  bool isCWDLastPub(int                     docId,
+                    cdr::db::Connection&    conn);
+
 
     /**
      * Checks if versioning is supported for this document
