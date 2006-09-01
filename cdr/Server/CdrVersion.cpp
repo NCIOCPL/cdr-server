@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.28 2006-05-17 03:41:49 ameyer Exp $
+ * $Id: CdrVersion.cpp,v 1.29 2006-09-01 02:10:13 ameyer Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2006/05/17 03:41:49  ameyer
+ * Modifications for date limited version retrieval.
+ *
  * Revision 1.27  2005/07/28 21:15:00  ameyer
  * Backing out some code and comments added inadvertently in
  * fumbled CVS command.
@@ -132,7 +135,10 @@ bool cdr::allowVersion(int docId, cdr::db::Connection& conn)
     if (!rs.next())
       throw cdr::Exception(L"Error getting document type");
 
-    return rs.getString(1) == L"Y";
+    bool allow = rs.getString(1) == L"Y";
+    select.close();
+
+    return allow;
 }
 
 int cdr::checkIn(cdr::Session& session, int docId,
@@ -1152,6 +1158,53 @@ cdr::String cdr::lastVersions(Session& session,
 
   return response.str();
 }
+
+
+/*
+ * Return true if CWD and last publishable version are the same.
+ * See CdrVersion.h.
+ */
+bool isCWDLastPub(int docId, cdr::db::Connection& conn)
+{
+    // Select the date of the last publishable version, and the date
+    //   of the last action of any update type on the document.
+    // Note that we are joining audit_trail and action, but the select
+    //   from doc_version is completely independent.
+    // Checking 'DELETE DOCUMENT' because the publishable version
+    //   should not match a deleted document.
+    string qry = "SELECT max(ver.updated_dt), max(adt.dt) "
+                 "  FROM doc_version ver, audit_trail adt, action act "
+                 " WHERE ver.id = ? "
+                 "   AND ver.publishable = 'Y' "
+                 "   AND adt.document = ver.id "
+                 "   AND adt.action = act.id "
+                 "   AND act.name in ('ADD DOCUMENT', "
+                 "                    'MODIFY DOCUMENT', "
+                 "                    'DELETE DOCUMENT')";
+
+    cdr::db::PreparedStatement select = conn.prepareStatement(qry);
+    select.setInt(1, docId);
+    cdr::db::ResultSet rs = select.executeQuery();
+    if (!rs.next()) {
+        cdr::String msg = L"Unable to find docID="
+                      + cdr::stringDocId(docId)
+                      + L" for isCWDLastPub";
+        throw cdr::Exception(msg);
+    }
+
+    // Compare
+    bool sameVersion = false;
+    cdr::String lastPubDate = rs.getString(1);
+    cdr::String cwdDate     = rs.getString(2);
+    if (!lastPubDate.isNull()) {
+        if (lastPubDate == cwdDate)
+            sameVersion = true;
+    }
+    select.close();
+
+    return sameVersion;
+}
+
 
 /*
  * Fill in the blob data in a CdrVerDoc structure, if and only if
