@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.64 2005-08-18 15:36:42 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.65 2006-09-05 15:06:05 bkline Exp $
  *
  */
 
@@ -1886,7 +1886,7 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
         if (statusSet.find(L"Active") != statusSet.end())
             status = L"Active";
         else if (statusSet.find(L"Temporarily closed") != statusSet.end())
-            status = L"Temporarily Closed";
+            status = L"Temporarily closed";
         else if (statusSet.find(L"Completed") != statusSet.end())
             status = L"Completed";
         else if (statusSet.find(L"Closed") != statusSet.end())
