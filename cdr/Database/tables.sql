@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.109 2006-07-12 18:35:44 bkline Exp $
+ * $Id: tables.sql,v 1.110 2006-09-08 03:46:10 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.109  2006/07/12 18:35:44  bkline
+ * Added table pub_proc_nlm.
+ *
  * Revision 1.108  2006/05/17 02:16:26  ameyer
  * Updated external_map table.  Added column mappable and updated comments.
  *
@@ -1266,6 +1269,28 @@ GO
 CREATE INDEX ix_query_term3 ON query_term(doc_id, node_loc)
 GO
 CREATE INDEX ix_query_term4 ON query_term(int_val, doc_id)
+GO
+
+/*
+ * Contains searchable element data for the last publishable version
+ * of each document.
+ *
+ * The structure and meaning of the fields is identical to query_term, q.v.
+ */
+CREATE TABLE query_term_pub
+     (doc_id INTEGER       NOT NULL REFERENCES all_docs,
+        path VARCHAR(512)  NOT NULL,
+       value VARCHAR(800)  NOT NULL,
+     int_val INTEGER           NULL,
+    node_loc VARCHAR(160)  NOT NULL)
+GO
+CREATE INDEX ix_query_term_pub1 ON query_term_pub(value, doc_id)
+GO
+CREATE INDEX ix_query_term_pub2 ON query_term_pub(path, doc_id)
+GO
+CREATE INDEX ix_query_term_pub3 ON query_term_pub(doc_id, node_loc)
+GO
+CREATE INDEX ix_query_term_pub4 ON query_term_pub(int_val, doc_id)
 GO
 
 /*
