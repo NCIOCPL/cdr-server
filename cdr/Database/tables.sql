@@ -1,14 +1,20 @@
 /*
- * $Id: tables.sql,v 1.110 2006-09-08 03:46:10 ameyer Exp $
+ * $Id: tables.sql,v 1.111 2006-09-11 13:12:00 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.110  2006/09/08 03:46:10  ameyer
+ * Added query_term_pub table and indexes.
+ *
  * Revision 1.109  2006/07/12 18:35:44  bkline
  * Added table pub_proc_nlm.
  *
  * Revision 1.108  2006/05/17 02:16:26  ameyer
  * Updated external_map table.  Added column mappable and updated comments.
+ *
+ * Revision 1.107  2006/04/20 20:54:11  bkline
+ * Bumped up size of external_map.value column to 356 characters (from 256).
  *
  * Revision 1.106  2005/08/16 14:29:11  bkline
  * Renamed the column names for the external_map_type table.
@@ -1847,10 +1853,11 @@ GO
  *              
  */
      CREATE TABLE pub_proc_nlm
-              (id INTEGER  NOT NULL PRIMARY KEY REFERENCES all_docs,
-              xml NTEXT    NOT NULL,
-        last_sent DATETIME NOT NULL,
-drop_notification DATETIME NULL)
+              (id INTEGER      NOT NULL PRIMARY KEY REFERENCES all_docs,
+              xml NTEXT        NOT NULL,
+        last_sent DATETIME     NOT NULL,
+      last_status VARCHAR(255)     NULL,
+drop_notification DATETIME         NULL)
 GO
 
 /*
