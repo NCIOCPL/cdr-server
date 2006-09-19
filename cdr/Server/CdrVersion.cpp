@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.29 2006-09-01 02:10:13 ameyer Exp $
+ * $Id: CdrVersion.cpp,v 1.30 2006-09-19 22:32:34 ameyer Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2006/09/01 02:10:13  ameyer
+ * Added isCWDLastPub().
+ *
  * Revision 1.28  2006/05/17 03:41:49  ameyer
  * Modifications for date limited version retrieval.
  *
@@ -1164,7 +1167,7 @@ cdr::String cdr::lastVersions(Session& session,
  * Return true if CWD and last publishable version are the same.
  * See CdrVersion.h.
  */
-bool isCWDLastPub(int docId, cdr::db::Connection& conn)
+bool cdr::isCWDLastPub(int docId, cdr::db::Connection& conn)
 {
     // Select the date of the last publishable version, and the date
     //   of the last action of any update type on the document.
