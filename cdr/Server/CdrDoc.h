@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.21 2004-11-05 05:22:40 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.22 2006-09-19 22:26:50 ameyer Exp $
  *
  */
 
@@ -69,6 +69,17 @@ namespace cdr {
         control         // Doc contains programmer produced control data
     } ContentOrControl;
 
+    /**
+     * Indications of the status of a CdrDoc object with respect to
+     * publishability.  Does this object represent a publishable
+     * version or not.
+     */
+    typedef enum VerPubStatus {
+        publishable,        // Version is known to be publishable
+        nonPublishable,     // Version known to be non-publishable
+        unknown             // Don't currently know the status
+    } VerPubStatus;
+
     // Object to represent one row in the query_term table.
     struct QueryTerm {
         int         doc_id;
@@ -129,6 +140,24 @@ namespace cdr {
             CdrDoc (cdr::db::Connection& dbConn, const int docId);
 
             /**
+             * Create a CdrDoc object using a passed document ID and
+             * version number.  The document is present in the database.
+             *
+             * NOTE: Partly limited version for use in query_term_pub
+             *    updating.  Beef it up if we need it for other purposes.
+             *
+             *  @param  dbConn      Reference to database connection allowing
+             *                      access to doc in database.
+             *
+             *  @param  docId       CDR document ID for a document currently
+             *                      in the database.
+             *
+             *  @param  verNum      Version number, 0 = CWD.
+             */
+            CdrDoc (cdr::db::Connection& dbConn, const int docId,
+                    const int verNum);
+
+            /**
              * Delete a CdrDoc object
              */
             ~CdrDoc () {}
@@ -141,10 +170,17 @@ namespace cdr {
             void store ();
 
             /**
-             * Replaces the rows in the query_term table for the current
+             * Replaces the rows in the query_term tables for the current
              * document.
+             *
+             * The update can be to the query_term table for current working
+             * documents, the query_term_pub table for last publishable
+             * versions, or both (the default).
+             *
+             * @param doCWD         True=update query_term
+             * @param doPUB         True=update query_term_pub
              */
-            void updateQueryTerms();
+            void updateQueryTerms(bool doCWD=true, bool doPUB=true);
 
             /**
              * Tell whether a parse tree is available for the (possibly
@@ -283,7 +319,9 @@ namespace cdr {
             cdr::Blob   getBlobData()      {return blobData;}
             cdr::db::Connection& getConn() {return docDbConn;}
             cdr::dom::Element& getDocumentElement() {return docElem;}
-            void setValStatus(const cdr::String& vs) { valStatus = vs; }
+            void setValStatus(const cdr::String& vs) {valStatus = vs;}
+            cdr::VerPubStatus getVerPubStatus() {return verPubStatus;}
+            void setVerPubStatus(cdr::VerPubStatus pvs) {verPubStatus=pvs;}
 
             // Get errors as an STL list of strings
             cdr::StringList& getErrList() {return errList;}
@@ -344,6 +382,7 @@ namespace cdr {
             cdr::String valDate;        // Datetime
             cdr::String activeStatus;   // 'A', 'I', 'D' - may change
             cdr::String dbActiveStatus; // activeStatus in database, before chg
+            VerPubStatus verPubStatus;  // Object XML publishbility
             cdr::String textDocType;    // Form used in document tag
             cdr::String title;          // External title
             cdr::String Xml;            // Actual document as XML, not CDATA
