@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.h,v 1.10 2006-09-01 02:09:51 ameyer Exp $
+ * $Id: CdrVersion.h,v 1.11 2006-09-19 22:29:00 ameyer Exp $
  *
  * Internal support functions for CDR verison control
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2006/09/01 02:09:51  ameyer
+ * Added isCWDLastPub.
+ *
  * Revision 1.9  2006/05/17 03:35:14  ameyer
  * Support for date limited version retrieval.
  *
@@ -217,12 +220,14 @@ namespace cdr {
      *  @param  conn        reference to an active connection to the CDR
      *                      database.
      *  @param  date        pointer to cdr::String.  If not null, date of
-     *                      most recent checked in version is stored.
+     *                      most recent checked in version is copied here.
+     *                      Default = do not fetch date.
      *  @param  maxDate     reference to cdr::String.  It's a date-time
      *                      in ISO "YYYY-MM-DD ..." format.
      *                      It may be right truncated.
      *                      The retrieved version must have been updated
      *                      before this date.
+     *                      Default = no date limit.
      *
      *  @return             current version number.  -1 if document does
      *                      not exist
