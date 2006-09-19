@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.65 2006-09-05 15:06:05 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.66 2006-09-19 22:25:10 ameyer Exp $
  *
  */
 
@@ -32,8 +32,8 @@
 
 #include <set>
 
-// XXXX For debugging
 #include <iostream>
+#include <string>
 //#define CDR_TIMINGS 1 // Uncomment line to activate timing code.
 #include "CdrTiming.h"
 
@@ -43,7 +43,7 @@ static cdr::String cdrPutDoc (cdr::Session&, const cdr::dom::Node&,
 static void auditDoc (cdr::db::Connection&, int, int, cdr::String,
                       cdr::String, cdr::String);
 
-static void delQueryTerms (cdr::db::Connection&, int);
+static void delQueryTerms (cdr::db::Connection&, int, char *);
 
 static cdr::String createFragIdTransform (cdr::db::Connection&, int);
 
@@ -78,6 +78,7 @@ cdr::CdrDoc::CdrDoc (
     DocType (0),
     activeStatus (L"A"),
     dbActiveStatus (L"A"),
+    verPubStatus (unknown),
     valStatus (L"U"),
     Xml (L""),
     schemaDocId (0),
@@ -345,6 +346,10 @@ cdr::CdrDoc::CdrDoc (
     // Content or control type document
     conType = not_set;
 
+    // Don't know yet if this is a publishable version
+    // Won't check database to find out unless we need that information
+    verPubStatus = unknown;
+
     // There may not be schema or filter ids, default is 0
     if (tfi.isNull())
         titleFilterId = 0;
@@ -375,6 +380,70 @@ cdr::CdrDoc::CdrDoc (
     revFilterFailed = false;
 }
 
+// Constructor for a CdrDoc
+// Extracts xml from the doc_version table
+// NOTE BENE:
+//    This version was written for re-indexing publishable versions
+//    I have not attempted to fill out every possible field at this time -
+//    Maybe I'll do that in the future.
+//    In the meantime, check all fields below before using this for other
+//    purposes to be sure the CdrDoc fields you need are properly set.
+//       AHM
+cdr::CdrDoc::CdrDoc (
+    cdr::db::Connection& dbConn,
+    int docId,
+    int verNum
+) : docDbConn (dbConn),
+    comment (true),
+    blobData (true),
+    valDate (true),
+    parsed (false),
+    malformed (false),
+    Id (docId),
+    DocType (0),
+    activeStatus (L"A"),
+    dbActiveStatus (L"A"),
+    verPubStatus (unknown),
+    valStatus (L"U"),
+    Xml (L""),
+    schemaDocId (0),
+    lastFragmentId (0),
+    blobId(0),
+    revisedXml (L""),
+    revFilterFailed (false),
+    revFilterLevel (DEFAULT_REVISION_LEVEL),
+    needsReview (false),
+    titleFilterId (0),
+    title (L""),
+    conType (not_set),
+    warningCount (0)
+{
+    // Get info from version control
+    std::string qry =
+        "SELECT v.val_status, v.val_date, v.publishable, v.title, v.xml, "
+        "       v.doc_type, t.name "
+        "  FROM doc_version v "
+        "  JOIN doc_type t "
+        "    ON v.doc_type = t.id "
+        " WHERE v.id = ? AND v.num = ?";
+
+    cdr::db::PreparedStatement stmt = docDbConn.prepareStatement(qry);
+    stmt.setInt(1, Id);
+    stmt.setInt(2, verNum);
+    cdr::db::ResultSet rs = stmt.executeQuery();
+
+    if (!rs.next())
+        throw cdr::Exception(L"CdrDoc: Unable to load document " + textId);
+
+    // Copy info into this object
+    valStatus    = rs.getString(1);
+    valDate      = rs.getString(2);
+    verPubStatus = (rs.getString(3) == L"Y") ? publishable : nonPublishable;
+    title        = cdr::entConvert (rs.getString(4));
+    Xml          = rs.getString(5);
+    DocType      = rs.getInt(6);
+    textDocType  = rs.getString(7);
+}
 
 /**
  * Store a document.
@@ -862,12 +931,24 @@ static cdr::String cdrPutDoc (
         // Will overwrite whatever is there
         cdr::execValidateDoc (doc,cdr::UpdateUnconditionally,validationTypes);
 
-        // If the user was hoping for a publishable version, set him straight.
-        if (cmdPublishVersion && doc.getValStatus() != L"V") {
-            doc.getErrList().push_back(L"Non-publishable version will "
-                                       L"be created.");
-            cmdPublishVersion = false;
-            cmdVersion = true;
+        if (cmdPublishVersion) {
+            // Set publishable status based on results
+            // Note: Logic above has forced both schema and link validation
+            //       or we won't get this far
+            if (doc.getValStatus() == L"V")
+                doc.setVerPubStatus(cdr::publishable);
+
+            else {
+                // Doc failed validation
+                doc.setVerPubStatus(cdr::nonPublishable);
+
+                // If the user was hoping for a publishable version,
+                //   set him straight.
+                doc.getErrList().push_back(L"Non-publishable version will "
+                                           L"be created.");
+                cmdPublishVersion = false;
+                cmdVersion = true;
+            }
         }
         SHOW_ELAPSED("validation completed", incrementalTimer);
     }
@@ -1015,7 +1096,8 @@ int deleteDoc (
 
         // Proceed with deletion
         // Begin by deleting all query terms pointing to this doc
-        delQueryTerms (conn, docId);
+        delQueryTerms (conn, docId, "query_term");
+        delQueryTerms (conn, docId, "query_term_pub");
 
         // The document itself is not removed from the database, it
         //   is simply marked as deleted
@@ -1499,18 +1581,162 @@ cdr::String cdr::reIndexDoc (
     // Construct CdrDoc for this document
     cdr::CdrDoc doc(dbConnection, docId);
 
+    // Is it a publishable version?
+    if (doc.getVerPubStatus() == unknown) {
+        if (isCWDLastPub(docId, dbConnection))
+            doc.setVerPubStatus(publishable);
+        else
+            doc.setVerPubStatus(nonPublishable);
+    }
+
     // Update the index table
     doc.updateQueryTerms();
+
+    // If doc was not publishable, only query_term was updated, not
+    //   query_term_pub.
+    // Check for a publishable version and index it too
+    if (doc.getVerPubStatus() != publishable) {
+        int lastPubVer = cdr::getLatestPublishableVersion(docId, dbConnection);
+        // If there was a publishable version
+        if (lastPubVer > 0) {
+            // Load it and index, but only for the query_term_pub table
+            cdr::CdrDoc pubDoc(dbConnection, docId, lastPubVer);
+            pubDoc.updateQueryTerms(false, true);
+        }
+    }
 
     // Failures are impossible - except for internal exceptions
     return (L"<CdrReindexDocResp/>");
 }
 
 /**
- * Replaces the rows in the query_term table for the current document.
+ * Gather all query terms from the database for either the current
+ * working document, or the last publishable version.  They will later
+ * be compared to terms in the new document to find changes.
+ *
+ * @param conn      Database connection.
+ * @param termSet   Reference to STL set in which to store the terms.
+ * @param docId     CDR ID for doc
+ * @param tblName   "query_term" or "query_term_pub" naming the stored
+ *                  collection to retrieve.
  */
-void cdr::CdrDoc::updateQueryTerms()
-{
+static void getExistingTerms(
+    cdr::db::Connection& conn,
+    cdr::QueryTermSet& termSet,
+    int docId,
+    char* tblName
+) {
+    std::ostringstream qry;
+    qry << "SELECT path, value, int_val, node_loc FROM "
+        << tblName
+        << " WHERE doc_id="
+        << docId;
+
+    cdr::db::Statement selTerms = conn.createStatement();
+    cdr::db::ResultSet rs       = selTerms.executeQuery(qry.str().c_str());
+
+    while (rs.next()) {
+        cdr::String path     = rs.getString(1);
+        cdr::String value    = rs.getString(2);
+        cdr::Int    int_val  = rs.getInt(3);
+        cdr::String node_loc = rs.getString(4);
+        cdr::QueryTerm qt(docId, path, value, int_val, node_loc);
+        termSet.insert(qt);
+    }
+    selTerms.close();
+}
+
+/**
+ * Update one of the query term tables - deleting existing terms that
+ * are not in the new document and adding new terms that are not in the
+ * old document.
+ *
+ * Either the query_term table for current working documents, or the
+ * query_term_pub table for publishable versions, can be updated.
+ *
+ * @param conn      Database connection.
+ * @param oldTerms  Reference to STL set for terms for old version of doc.
+ * @param newTerms  Reference for terms for new version.
+ * @param docId     CDR ID for doc
+ * @param tblName   "query_term" or "query_term_pub" naming the stored
+ *                  collection to update.
+ */
+void updateQueryTermTable(
+    cdr::db::Connection& conn,
+    cdr::QueryTermSet& oldTerms,
+    cdr::QueryTermSet& newTerms,
+    int   docId,
+    char* tblName
+) {
+    // Determine which rows need to be deleted, which need to be added.
+    cdr::QueryTermSet wantedTerms, unwantedTerms;
+    cdr::QueryTermSet::const_iterator i;
+    cdr::QueryTermSet* termsToInsert = &wantedTerms;
+    for (i = newTerms.begin(); i != newTerms.end(); ++i)
+        if (oldTerms.find(*i) == oldTerms.end())
+            wantedTerms.insert(*i);
+    for (i = oldTerms.begin(); i != oldTerms.end(); ++i)
+        if (newTerms.find(*i) == newTerms.end())
+            unwantedTerms.insert(*i);
+
+    // Sometimes it's just faster to wipe out the rows and start fresh.
+    if (unwantedTerms.size() > 1000 &&
+        unwantedTerms.size() > newTerms.size() / 2) {
+        delQueryTerms(conn, docId, tblName);
+        termsToInsert = &newTerms;
+        SHOW_ELAPSED("finished wholesale term deletion", queryTermsTimer);
+    }
+    else {
+
+        // Prepare query to delete a single unwanted term
+        std::ostringstream qry;
+        qry << " DELETE FROM " << tblName <<
+               "       WHERE doc_id   = ? "
+               "         AND path     = ? "
+               "         AND value    = ? "
+               "         AND node_loc = ? ";
+        cdr::db::PreparedStatement delStmt =
+            conn.prepareStatement(qry.str().c_str());
+
+        // Wipe out the unwanted rows one by one.
+        for (i = unwantedTerms.begin(); i != unwantedTerms.end(); ++i) {
+            delStmt.setInt   (1, i->doc_id);
+            delStmt.setString(2, i->path);
+            delStmt.setString(3, i->value);
+            delStmt.setString(4, i->node_loc);
+            delStmt.executeUpdate();
+        }
+    }
+
+    // Insert new rows.
+    std::ostringstream qry;
+    qry << " INSERT INTO " << tblName <<
+           "             (doc_id, path, value, int_val, node_loc) "
+           "      VALUES (?, ?, ?, ?, ?)";
+    cdr::db::PreparedStatement insStmt =
+            conn.prepareStatement(qry.str().c_str());
+    for (i = termsToInsert->begin(); i != termsToInsert->end(); ++i) {
+        insStmt.setInt   (1, i->doc_id);
+        insStmt.setString(2, i->path);
+        insStmt.setString(3, i->value);
+        insStmt.setInt   (4, i->int_val);
+        insStmt.setString(5, i->node_loc);
+        insStmt.executeUpdate();
+    }
+    SHOW_ELAPSED((cdr::String("finished inserting ") +
+                  cdr::String::toString(termsToInsert->size()) +
+                  cdr::String(" new terms")).toUtf8().c_str(),
+                  queryTermsTimer);
+}
+
+/**
+ * Replaces the rows in the query_term table and/or query_term_pub table
+ * for the current document.
+ */
+void cdr::CdrDoc::updateQueryTerms(
+    bool doCWD,
+    bool doPUB
+) {
     MAKE_TIMER(queryTermsTimer);
     QueryTermSet oldTerms, newTerms;
 
@@ -1536,24 +1762,11 @@ void cdr::CdrDoc::updateQueryTerms()
     }
     SHOW_ELAPSED("getting query_term defs", queryTermsTimer);
 
-    // Gather existing query term rows.
-    cdr::db::PreparedStatement oqtStmt = docDbConn.prepareStatement(
-            "SELECT path, value, int_val, node_loc"
-            "  FROM query_term                    "
-            " WHERE doc_id = ?                    ");
-    oqtStmt.setInt(1, Id);
-    cdr::db::ResultSet oqtResultSet = oqtStmt.executeQuery();
-    while (oqtResultSet.next()) {
-        cdr::String path = oqtResultSet.getString(1);
-        cdr::String value = oqtResultSet.getString(2);
-        cdr::Int    int_val = oqtResultSet.getInt(3);
-        cdr::String node_loc = oqtResultSet.getString(4);
-        QueryTerm qt(Id, path, value, int_val, node_loc);
-        oldTerms.insert(qt);
-    }
-    SHOW_ELAPSED("gathered old query terms", queryTermsTimer);
-
     // Find out which rows need to be in the query_term table now.
+    // We could just return if paths are empty, but we'll continue
+    //   in case of the unlikely event that there was once a set of
+    //   query term definitions for a document type and there aren't
+    //   now, so we want to continue to delete the existing data.
     if (!paths.empty()) {
 
         // Find or create a parse of the document
@@ -1581,60 +1794,20 @@ void cdr::CdrDoc::updateQueryTerms()
         }
     }
 
-    // Determine which rows need to be deleted, which need to be added.
-    QueryTermSet wantedTerms, unwantedTerms;
-    QueryTermSet::const_iterator i;
-    QueryTermSet* termsToInsert = &wantedTerms;
-    for (i = newTerms.begin(); i != newTerms.end(); ++i)
-        if (oldTerms.find(*i) == oldTerms.end())
-            wantedTerms.insert(*i);
-    for (i = oldTerms.begin(); i != oldTerms.end(); ++i)
-        if (newTerms.find(*i) == newTerms.end())
-            unwantedTerms.insert(*i);
-
-    // Sometimes it's just faster to wipe out the rows and start fresh.
-    if (unwantedTerms.size() > 1000 &&
-        unwantedTerms.size() > newTerms.size() / 2) {
-        delQueryTerms(docDbConn, Id);
-        termsToInsert = &newTerms;
-        SHOW_ELAPSED("finished wholesale term deletion", queryTermsTimer);
-    }
-    else {
-
-        // Wipe out the unwanted rows one by one.
-        cdr::db::PreparedStatement delStmt = docDbConn.prepareStatement(
-                " DELETE FROM query_term   "
-                "       WHERE doc_id   = ? "
-                "         AND path     = ? "
-                "         AND value    = ? "
-                "         AND node_loc = ? ");
-        for (i = unwantedTerms.begin(); i != unwantedTerms.end(); ++i) {
-            delStmt.setInt   (1, i->doc_id);
-            delStmt.setString(2, i->path);
-            delStmt.setString(3, i->value);
-            delStmt.setString(4, i->node_loc);
-            delStmt.executeUpdate();
-        }
-        SHOW_ELAPSED("finished selective term deletion", queryTermsTimer);
+    // Gather all the old terms from the old CWD and process them
+    if (doCWD) {
+        getExistingTerms(docDbConn, oldTerms, Id, "query_term");
+        updateQueryTermTable(docDbConn, oldTerms, newTerms, Id, "query_term");
     }
 
-    // Insert new rows.
-    cdr::db::PreparedStatement insStmt = docDbConn.prepareStatement(
-            " INSERT INTO query_term                               "
-            "             (doc_id, path, value, int_val, node_loc) "
-            "      VALUES (?, ?, ?, ?, ?)                          ");
-    for (i = termsToInsert->begin(); i != termsToInsert->end(); ++i) {
-        insStmt.setInt   (1, i->doc_id);
-        insStmt.setString(2, i->path);
-        insStmt.setString(3, i->value);
-        insStmt.setInt   (4, i->int_val);
-        insStmt.setString(5, i->node_loc);
-        insStmt.executeUpdate();
+    // If the version we're saving is publishable, do it for query_term_pub
+    if (doPUB && verPubStatus == publishable) {
+        // Uses the same new terms but gets (possibly) different old terms
+        oldTerms.clear();
+        getExistingTerms(docDbConn, oldTerms, Id, "query_term_pub");
+        updateQueryTermTable(docDbConn, oldTerms, newTerms, Id,
+                             "query_term_pub");
     }
-    SHOW_ELAPSED((cdr::String("finished inserting ") +
-                  cdr::String::toString(termsToInsert->size()) +
-                  cdr::String(" new terms")).toUtf8().c_str(),
-                  queryTermsTimer);
 }
 
 // Routines to modify the document before saving or validating.
@@ -2080,13 +2253,17 @@ static cdr::String createFragIdTransform (cdr::db::Connection& conn,
  *
  *  @param conn         Connection string
  *  @param doc_id       Document id
+ *  @param tblName      Name of table, "query_term" or "query_term_pub"
  */
 
-static void delQueryTerms (cdr::db::Connection& conn, int doc_id)
-{
+static void delQueryTerms (
+    cdr::db::Connection& conn,
+    int doc_id,
+    char *tblName
+) {
     cdr::db::Statement delStmt = conn.createStatement();
     char delQuery[80];
-    sprintf(delQuery, "DELETE query_term WHERE doc_id = %d", doc_id);
+    sprintf(delQuery, "DELETE %s WHERE doc_id = %d", tblName, doc_id);
     delStmt.executeUpdate(delQuery);
 }
 
