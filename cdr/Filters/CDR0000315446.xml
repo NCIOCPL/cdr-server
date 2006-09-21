@@ -6,6 +6,15 @@
 <DocComment>CVS-V1.9: Fix Clinical Trials Office (Bug 1187)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!--
+================================================================
+$Id: CDR0000315446.xml,v 1.13 2006-09-21 15:50:06 venglisc Exp $
+
+Module: PersonLocations Denormalization
+Written by Volker Englisch, 2002-04-01
+
+$Log: not supported by cvs2svn $
+================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
                                version = "1.0">
@@ -254,6 +263,11 @@
    <xsl:variable                  name = "org"
                                 select = "document(concat('cdr:', $orgID, 
                                                           '/last'))"/>
+   <xsl:variable                  name = "contactFrag"
+                                select = "$org/Organization/
+                                          OrganizationLocations/
+                                          CIPSContact"/>
+
    <Organization>
     <xsl:for-each               select = "@*">
      <xsl:attribute               name = "{name()}">
@@ -340,6 +354,48 @@
      <xsl:copy-of               select = "$org/Organization/
                                           PreferredProtocolOrganization"/> -->
     </xsl:if>
+
+    <!--  
+    CTGov Address Band-Aid:
+    For CTGov sites located in the US we want to pick up the Org
+    address ZIP code (using CIPSContact fragment ID) if the 
+    PostalCode_Zip element is missing.  This is only possible if a 
+    cdr:ref exists for this organization (which is already garanteed 
+    once we are in this template).
+    The missing org ZIP code will then be inserted frin the CDR ZIP code.
+                                             2006-08-25, VE (Bug 2414)
+    ===================================================================  -->
+    <xsl:if                       test = "name() = 'Name'
+                                          and
+                                          (
+                                          ../PostalAddress/
+                                             Country = 'United States'
+                                          or
+                                          ../PostalAddress/
+                                             Country = 'U.S.A.')
+                                          and
+                                          not(../PostalAddress/
+                                                 PostalCode_ZIP)">
+     <OrganizationLocations>
+      <OrganizationLocation>
+       <Location>
+        <PostalAddress>
+         <xsl:copy-of           select = "$org/Organization/
+                                          OrganizationLocations/
+                                          OrganizationLocation/
+                                          Location
+                                           [@cdr:id=$contactFrag]/
+                                          PostalAddress/
+                                          PostalCode_ZIP"/>
+        </PostalAddress>
+       </Location>
+      </OrganizationLocation>
+      <xsl:copy-of              select = "$org/Organization/
+                                          OrganizationLocations/
+                                          CIPSContact"/>
+     </OrganizationLocations>
+    </xsl:if>
+
    </Organization>
    <xsl:if                        test = "name() = 'OrgSiteID'">
     <xsl:apply-templates        select = "../OrgSiteStatus"/>

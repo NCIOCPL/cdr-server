@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Module: Vendor Address Templates</DocTitle>
-<DocComment>Restored after refresh of CDR database on Mahler</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.8: Add Board Manager Info (Bug 1154)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
  
@@ -50,8 +50,30 @@
                                   mode = "copy"/>
    <xsl:apply-templates         select = "PoliticalSubUnit_State"/>
    <xsl:apply-templates         select = "Country"/>
-   <xsl:apply-templates         select = "PostalCode_ZIP"
+
+   <!--
+   The denormalization filter inserts the organization's ZIP code if
+   it is not part of the original US located address block and the
+   organization's cdr:ref exists.
+   Otherwise, just insert the ZIP that's provided.
+   ================================================================= -->
+   <xsl:choose>
+    <xsl:when                     test = "../Name/
+                                             Organization/
+                                             OrganizationLocations">
+     <xsl:copy-of               select = "../Name/
+                                             Organization/
+                                             OrganizationLocations/
+                                             OrganizationLocation/
+                                             Location/
+                                             PostalAddress/
+                                             PostalCode_ZIP"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates       select = "PostalCode_ZIP"
                                   mode = "copy"/>
+    </xsl:otherwise>
+   </xsl:choose>
    <xsl:apply-templates         select = "Country/PostalCodePosition"
                                   mode = "copy"/>
   </xsl:element>
