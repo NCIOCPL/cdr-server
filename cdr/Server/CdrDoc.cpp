@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.66 2006-09-19 22:25:10 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.67 2006-09-21 21:20:22 bkline Exp $
  *
  */
 
@@ -1061,6 +1061,20 @@ int deleteDoc (
     cdr::StringList&     errList,
     cdr::db::Connection& conn
 ) {
+    // Check added to make sure the document isn't published.
+    cdr::String docIdString = cdr::stringDocId(docId);
+    std::string pQry = "SELECT COUNT(*) FROM pub_proc_cg WHERE id = ?";
+    cdr::db::PreparedStatement pSel = conn.prepareStatement (pQry);
+    pSel.setInt(1, docId);
+    cdr::db::ResultSet pRs = pSel.executeQuery();
+    if (!pRs.next())
+        throw cdr::Exception(L"deleteDoc: Unable to check publication for " +
+                             docIdString);
+    int count = pRs.getInt(1);
+    if (count > 0)
+        throw cdr::Exception(L"deleteDoc: Cannot delete published doc " +
+                             docIdString);
+    
     // From now on, do everything or nothing
     // setAutoCommit() checks state first, so it won't end an existing
     //   transaction
