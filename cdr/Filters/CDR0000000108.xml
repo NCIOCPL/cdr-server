@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ================================================================
-     $Id: CDR0000000108.xml,v 1.70 2006-04-04 21:54:25 venglisc Exp $
+     $Id: CDR0000000108.xml,v 1.71 2006-09-22 18:46:11 venglisc Exp $
 
      Denormalization Filter: InScopeProtocol
         Written by Volker Englisch, 2002-04-01
@@ -74,6 +74,8 @@
                                            /VerificationDate"/>
  <xsl:variable                    name = "lastModDate"
                                 select = "/InScopeProtocol/DateLastModified"/>
+ <xsl:variable                    name = "pubProcDate"
+                                select = "'XXXXXXXX'"/>
 
  <!-- *
  ==================================================================
@@ -94,8 +96,23 @@
 
    <xsl:variable                  name = "calcVerifDate"
                                 select = "document($url)"/>
+   <!-- 
+   We need to populate a new element that is a calculated value for
+   the verification date.  If this value comes back as NULL because
+   the published document is a brand new publishing event for this
+   document we need to populate the date with the date of the 
+   publishing event from the pub_proc table.  This value is passed
+   to the filter as a parameter.
+   ================================================================ -->
    <VerificationDateCalculated>
-    <xsl:value-of               select = "$calcVerifDate"/>
+    <xsl:choose>
+     <xsl:when                    test = "$calcVerifDate != ''">
+      <xsl:value-of             select = "$calcVerifDate"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "$pubProcDate"/>YYYYY
+     </xsl:otherwise>
+    </xsl:choose>
    </VerificationDateCalculated>
   </xsl:copy>
  </xsl:template>
