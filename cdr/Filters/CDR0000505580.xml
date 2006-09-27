@@ -31,7 +31,6 @@ Filter to create the vendor Terminology XML
   <xsl:apply-templates/>
  </xsl:template>
 
-
  <!-- 
  ======================================================================
  Copy DocId, PreferredName, OtherTermName, OtherNameType
@@ -50,7 +49,114 @@ Filter to create the vendor Terminology XML
 
    <xsl:apply-templates         select = "SummarySection"/>
 
-   <xsl:apply-templates         select = "DrugReference"/>
+   <!--
+   The DrugReference elements will have to be displayed in this 
+   particular sort order:  FDA, NCI, NLM.
+   ================================================================= -->
+   <!--
+   Collect all of the FDA DrugReference elements within a single FDA
+   display section.
+   ================================================================= -->
+   <xsl:if                        test = "DrugReference
+                                           [DrugReferenceType='FDA']">
+    <xsl:variable                 name = "drugRefTypeFDA"
+                                select = "DrugReference
+                                           [DrugReferenceType='FDA']/
+                                          DrugReferenceType"/>
+    <xsl:variable                 name = "miscDocFracIdFDA"
+                                select = "substring-after(
+                                            DrugReference
+                                             [DrugReferenceType='FDA']/
+                                            DrugReferenceDescription/
+                                            MiscellaneousDocument/
+                                              @cdr:ref, '#')"/>
+
+    <Section>
+     <xsl:attribute               name = "cdr:id">
+      <xsl:text>_</xsl:text>
+      <xsl:value-of             select = "$drugRefTypeFDA"/>
+      <xsl:value-of             select = "$miscDocFracIdFDA"/>
+     </xsl:attribute>
+
+     <Title>
+      <xsl:text>Information from the </xsl:text>
+      <xsl:value-of             select = "$drugRefTypeFDA"/>
+     </Title>
+
+     <xsl:apply-templates       select = "DrugReference
+                                           [DrugReferenceType='FDA']"/>
+    </Section>
+   </xsl:if>
+
+   <!--
+   Collect all of the FDA DrugReference elements within a single FDA
+   display section.
+   ================================================================= -->
+   <xsl:if                        test = "DrugReference
+                                           [DrugReferenceType='NCI']">
+    <xsl:variable                 name = "drugRefTypeNCI"
+                                select = "DrugReference
+                                           [DrugReferenceType='NCI']/
+                                          DrugReferenceType"/>
+    <xsl:variable                 name = "miscDocFracIdNCI"
+                                select = "substring-after(
+                                            DrugReference
+                                              [DrugReferenceType='NCI']/
+                                            DrugReferenceDescription/
+                                            MiscellaneousDocument/
+                                              @cdr:ref, '#')"/>
+
+    <Section>
+     <xsl:attribute               name = "cdr:id">
+      <xsl:text>_</xsl:text>
+      <xsl:value-of             select = "$drugRefTypeNCI"/>
+      <xsl:value-of             select = "$miscDocFracIdNCI"/>
+     </xsl:attribute>
+
+     <Title>
+      <xsl:text>Information from the </xsl:text>
+      <xsl:value-of             select = "$drugRefTypeNCI"/>
+     </Title>
+
+     <xsl:apply-templates       select = "DrugReference
+                                           [DrugReferenceType='NCI']"/>
+    </Section>
+   </xsl:if>
+
+   <!--
+   Collect all of the FDA DrugReference elements within a single FDA
+   display section.
+   ================================================================= -->
+   <xsl:if                        test = "DrugReference
+                                           [DrugReferenceType='NLM']">
+    <xsl:variable                 name = "drugRefTypeNLM"
+                                select = "DrugReference
+                                           [DrugReferenceType='NLM']/
+                                          DrugReferenceType"/>
+    <xsl:variable                 name = "miscDocFracIdNLM"
+                                select = "substring-after(
+                                            DrugReference
+                                             [DrugReferenceType='NLM']/
+                                            DrugReferenceDescription/
+                                            MiscellaneousDocument/
+                                              @cdr:ref, '#')"/>
+
+    <Section>
+     <xsl:attribute               name = "cdr:id">
+      <xsl:text>_</xsl:text>
+      <xsl:value-of             select = "$drugRefTypeNLM"/>
+      <xsl:value-of             select = "$miscDocFracIdNLM"/>
+     </xsl:attribute>
+
+     <Title>
+      <xsl:text>Information from the </xsl:text>
+      <xsl:value-of             select = "$drugRefTypeNLM"/>
+     </Title>
+
+     <xsl:apply-templates       select = "DrugReference
+                                           [DrugReferenceType='NLM']"/>
+    </Section>
+   </xsl:if>
                
    <xsl:call-template             name = "trialSection"/>
 
@@ -186,32 +292,11 @@ Filter to create the vendor Terminology XML
                                             DrugReferenceDescription/
                                             MiscellaneousDocument/
                                               @cdr:ref, '#')"/>
-  <Section>
-   <xsl:attribute                 name = "cdr:id">
-    <xsl:text>_</xsl:text>
-    <xsl:value-of               select = "$drugRefType"/>
-    <xsl:value-of               select = "$miscDocFracId"/>
-   </xsl:attribute>
 
-     <Title>
-      <xsl:text>Information from the </xsl:text>
-      <xsl:value-of             select = "$drugRefType"/>
-     </Title>
-
-   <xsl:apply-templates         select = "DrugReferenceLink">
-    <xsl:with-param               name = "drugRefType"
-                                select = "$drugRefType"/>
-    <xsl:with-param               name = "miscDocFracId"
-                                select = "$miscDocFracId"/>
-   </xsl:apply-templates>
-
-   <xsl:apply-templates         select = "DrugReferenceDescription">
-    <xsl:with-param               name = "drugRefType"
-                                select = "$drugRefType"/>
-    <xsl:with-param               name = "miscDocFracId"
-                                select = "$miscDocFracId"/>
-   </xsl:apply-templates>
-
+   <!-- 
+   Make the Definition from the NCI Drug Dictionary the first para 
+   within the Information from the NCI section
+   =============================================================== -->
    <xsl:if                        test = "$drugRefType = 'NCI'">
     <Para>
      <xsl:attribute               name = "cdr:id">
@@ -233,11 +318,25 @@ Filter to create the vendor Terminology XML
       </xsl:attribute>
       <xsl:text>Definition from the NCI Drug Dictionary</xsl:text>
      </xsl:element>
-     <xsl:text>- Detailed scientific definition and other names </xsl:text>
+     <xsl:text> - Detailed scientific definition and other names </xsl:text>
      <xsl:text>for this drug.</xsl:text>
     </Para>
    </xsl:if>
-  </Section>
+
+   <xsl:apply-templates         select = "DrugReferenceLink">
+    <xsl:with-param               name = "drugRefType"
+                                select = "$drugRefType"/>
+    <xsl:with-param               name = "miscDocFracId"
+                                select = "$miscDocFracId"/>
+   </xsl:apply-templates>
+
+   <xsl:apply-templates         select = "DrugReferenceDescription">
+    <xsl:with-param               name = "drugRefType"
+                                select = "$drugRefType"/>
+    <xsl:with-param               name = "miscDocFracId"
+                                select = "$miscDocFracId"/>
+   </xsl:apply-templates>
+
  </xsl:template>
 
 
@@ -424,29 +523,12 @@ Filter to create the vendor Terminology XML
                                            [not(normalize-space(.) =  
                                                 normalize-space
                                                 (following::OtherTermName))]">
-    <USBrandName>
-     <xsl:value-of              select = "normalize-space(OtherTermName)"/>
-    </USBrandName>
+   <USBrandName>
+    <xsl:value-of               select = "normalize-space(OtherTermName)"/>
+   </USBrandName>
   </xsl:if>
  </xsl:template>
 
- <!--
- =====================================================================
- Template to create Synonyms
- (Deleted per LG, 2008-08-17)
- =====================================================================
- <xsl:template                   match = "Synonyms">
-  <xsl:copy>
-   <xsl:for-each                select = "OtherName"> 
-    <Synonym>
-     <xsl:value-of              select = "OtherTermName"/>
-    </Synonym>
-   </xsl:for-each>
-  </xsl:copy>
- </xsl:template>
- =====================================================================
- -->
-
 
  <!-- 
  ==================================================================
@@ -455,17 +537,18 @@ Filter to create the vendor Terminology XML
  attribute properly.  The misc doc can be either the 'To Learn More'
  or the 'About PDQ' section.
  ================================================================== -->  
- <xsl:template                  match = "Section"
-                                 mode = "description">
-  <xsl:param                     name = "drugRefType"/>
+ <xsl:template                   match = "Section"
+                                  mode = "description">
+  <xsl:param                      name = "drugRefType"/>
 
   <xsl:apply-templates>
-   <xsl:with-param               name = "drugRefType" 
-                               select = "$drugRefType"/>
+   <xsl:with-param                name = "drugRefType" 
+                                select = "$drugRefType"/>
 
   </xsl:apply-templates>
+ </xsl:template>
 
- </xsl:template> 
+
  <!-- 
  ==================================================================
  Section Template for Misc Docs
@@ -473,32 +556,13 @@ Filter to create the vendor Terminology XML
  attribute properly.  The misc doc can be either the 'To Learn More'
  or the 'About PDQ' section.
  ================================================================== -->  
- <xsl:template                  match = "Section">
-  <xsl:param                     name = "miscDocId"/>
+ <xsl:template                   match = "Section">
+  <xsl:param                      name = "miscDocId"/>
 
   <DrugInfoDisclaimer>
-<!--
-   <xsl:choose>
-    <xsl:when                    test = "$miscDocId">
-     <xsl:if                     test = "./@cdr:id">
-      <xsl:attribute             name = "id">
-       <xsl:value-of           select = "$miscDocId"/>
-       <xsl:value-of           select = "./@cdr:id"/>
-      </xsl:attribute>
-     </xsl:if>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:if                     test = "./@cdr:id">
-      <xsl:attribute             name = "id">
-       <xsl:value-of           select = "./@cdr:id"/>
-      </xsl:attribute>
-     </xsl:if>
-    </xsl:otherwise>
-   </xsl:choose>
--->
-   <xsl:apply-templates          mode = "disclaimer">
-    <xsl:with-param              name = "miscDocId" 
-                               select = "$miscDocId"/>
+   <xsl:apply-templates           mode = "disclaimer">
+    <xsl:with-param               name = "miscDocId" 
+                                select = "$miscDocId"/>
    </xsl:apply-templates>
   </DrugInfoDisclaimer>
  </xsl:template>
@@ -508,11 +572,11 @@ Filter to create the vendor Terminology XML
  ==================================================================
  Main MiscellaneousDocumentText Template
  ================================================================== -->  
- <xsl:template                  match = "MiscellaneousDocumentText">
-  <xsl:param                     name = "miscDocId"/>
+ <xsl:template                   match = "MiscellaneousDocumentText">
+  <xsl:param                      name = "miscDocId"/>
   <xsl:apply-templates>
-   <xsl:with-param               name = "miscDocId" 
-                               select = "$miscDocId"/>
+   <xsl:with-param                name = "miscDocId" 
+                                select = "$miscDocId"/>
   </xsl:apply-templates>
  </xsl:template>
 
@@ -521,13 +585,9 @@ Filter to create the vendor Terminology XML
  ============================================================= 
  Create the Title template for the Misc Text section
  ============================================================= -->
- <xsl:template                  match = "Title"
-                                 mode = "disclaimer"/>
-<!--
-  AAA<xsl:apply-templates         select = "." 
-                                 mode = "copy"/>
- </xsl:template>
--->
+ <xsl:template                   match = "Title"
+                                  mode = "disclaimer"/>
+
 
  <!-- 
  ============================================================= 
@@ -535,15 +595,15 @@ Filter to create the vendor Terminology XML
  the paragraph IDs.
  Displaying by default the 'To Learn More' misc document.
  ============================================================= -->
- <xsl:template                  match = "Para"
-                                 mode = "disclaimer">
-  <xsl:param                     name = "miscDocId"/>
+ <xsl:template                   match = "Para"
+                                  mode = "disclaimer">
+  <xsl:param                      name = "miscDocId"/>
   <Para>
-   <xsl:attribute                name = "id">
-    <xsl:value-of              select = "concat($miscDocId, ./@cdr:id)"/>
+   <xsl:attribute                 name = "id">
+    <xsl:value-of               select = "concat($miscDocId, ./@cdr:id)"/>
    </xsl:attribute>
-   <xsl:apply-templates        select = "Para" 
-                                 mode = "copy"/>
+   <xsl:apply-templates         select = "Para" 
+                                  mode = "copy"/>
    <xsl:apply-templates/>
   </Para>
  </xsl:template>
@@ -561,20 +621,20 @@ Filter to create the vendor Terminology XML
 
    <Title>Clinical Trials</Title>
    <Para id="_ClinicalTrial_2">
-     <xsl:element                 name = "ExternalRef">
-      <xsl:attribute              name = "xref">
-       <xsl:text>http://www.cancer.gov/Search/ClinicalTrialsLink.aspx</xsl:text>
-       <xsl:text>?id=</xsl:text>
-       <xsl:value-of            select = "number(
+    <xsl:element                  name = "ExternalRef">
+     <xsl:attribute               name = "xref">
+      <xsl:text>http://www.cancer.gov/Search/ClinicalTrialsLink.aspx</xsl:text>
+      <xsl:text>?id=</xsl:text>
+      <xsl:value-of             select = "number(
                                            substring(
                                             /DrugInformationSummary/
                                             DrugInfoMetaData/
                                             TerminologyLink/
                                             Term/@cdr:ref, 4))"/>
-       <xsl:text>&amp;idtype=1</xsl:text>
-      </xsl:attribute>
-      <xsl:text>Clinical Trials for </xsl:text>
-       <xsl:value-of            select = "concat(
+      <xsl:text>&amp;idtype=1</xsl:text>
+     </xsl:attribute>
+     <xsl:text>Clinical Trials for </xsl:text>
+      <xsl:value-of             select = "concat(
                                            translate(
                                             substring(
                                              /DrugInformationSummary/
@@ -590,9 +650,9 @@ Filter to create the vendor Terminology XML
                                             TerminologyLink/
                                             Term/
                                             PreferredName,2))"/>
-     </xsl:element>
-     <xsl:text> - List of trials from NCI's PDQ Cancer Clinical </xsl:text>
-     <xsl:text>Trials Registry now accepting patients.</xsl:text>
+    </xsl:element>
+    <xsl:text> - List of trials from NCI's PDQ Cancer Clinical </xsl:text>
+    <xsl:text>Trials Registry now accepting patients.</xsl:text>
    </Para>
   </Section>
  </xsl:template>
@@ -605,21 +665,21 @@ Filter to create the vendor Terminology XML
  <xsl:template                    name = "briefDisclaimer">
 <!-- **********************************************************************
      Remove after Mahler CDR has been refreshed
+-->
       <xsl:variable               name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000466802',
                                                          '/lastp'))"/>
--->
 <!--
      **********************************************************************
 -->
 <!-- **********************************************************************
      Misc Doc ID on FRANCK only!!!!!
      **********************************************************************
--->
 
       <xsl:variable               name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000510121',
                                                          '/lastp'))"/>
+-->
 
      <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
@@ -636,10 +696,10 @@ Filter to create the vendor Terminology XML
  <xsl:template                    name = "detailedDisclaimer">
 <!-- **********************************************************************
      Remove after Mahler CDR has been refreshed
+-->
       <xsl:variable               name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000466803',
                                                          '/lastp'))"/>
--->
 <!--
      **********************************************************************
 -->
@@ -647,10 +707,10 @@ Filter to create the vendor Terminology XML
 <!-- **********************************************************************
      Misc Doc ID on FRANCK only!!!!!
      **********************************************************************
--->
       <xsl:variable               name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000510122',
                                                          '/lastp'))"/>
+-->
 
      <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
