@@ -8,11 +8,21 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000150.xml,v 1.96 2006-07-28 14:15:56 bkline Exp $
+$Id: CDR0000000150.xml,v 1.97 2006-09-27 18:44:41 venglisc Exp $
 
 Vendor Filter: InScopeProtocol
 
 $Log: not supported by cvs2svn $
+Revision 1.96  2006/07/28 14:15:56  bkline
+Captured OfficialProtocolTitle for mailers; will be stripped out for 
+vendor document; see request #2333.
+
+Revision 1.95  2006/05/11 19:29:04  venglisc
+Modifications to only create a RegistryInfo block if a CTGov ID exists.  
+Corrected problem of empty address block for some external sites when a 
+person had been indicated as an organization.  Additional minor cleanup.
+(Bug 1786)
+
 Revision 1.84  2005/05/03 21:05:49  venglisc
 Added code to deal with RSS sites without ExternalSitePI (Bug 1341)
 
@@ -1761,7 +1771,11 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
        ======================================== -->     
        <xsl:otherwise>
         <xsl:choose>
-         <xsl:when                test = "ExternalSitePI">
+         <xsl:when                test = "ExternalSitePI
+                                          and
+                                          not(ExternalSitePI/
+                                          ExternalSitePIName/
+                                          PersonLastName = '')">
           <ProtPerson>
            <xsl:choose>
             <xsl:when             test = "ExternalSiteContact/
@@ -1773,16 +1787,24 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
             </xsl:when>
             <xsl:otherwise>
              <PersonNameInformation>
-              <GivenName>
-               <xsl:value-of    select = "ExternalSitePI/
+              <xsl:if             test = "ExternalSitePI/
+                                          ExternalSitePIName/
+                                          PersonFirstName">
+               <GivenName>
+                <xsl:value-of   select = "ExternalSitePI/
                                           ExternalSitePIName/
                                           PersonFirstName"/>
-              </GivenName>
-              <MiddleInitial>
-               <xsl:value-of    select = "ExternalSitePI/
+               </GivenName>
+              </xsl:if>
+              <xsl:if             test = "ExternalSitePI/
+                                          ExternalSitePIName/
+                                          PersonMiddleName">
+               <MiddleInitial>
+                <xsl:value-of   select = "ExternalSitePI/
                                           ExternalSitePIName/
                                           PersonMiddleName"/>
-              </MiddleInitial>
+               </MiddleInitial>
+              </xsl:if>
               <SurName>
                <xsl:value-of    select = "ExternalSitePI/
                                           ExternalSitePIName/
