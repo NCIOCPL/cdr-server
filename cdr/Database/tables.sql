@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.111 2006-09-11 13:12:00 bkline Exp $
+ * $Id: tables.sql,v 1.112 2006-09-29 03:19:30 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.111  2006/09/11 13:12:00  bkline
+ * Added last_status column to pub_proc_nlm table.
+ *
  * Revision 1.110  2006/09/08 03:46:10  ameyer
  * Added query_term_pub table and indexes.
  *
@@ -1096,12 +1099,17 @@ GO
  *
  *     id       Unique id used in other tables.
  *     name     Human readable name
+ *     chk_type Which table to check links in:
+ *                'C' = Current active docs in document table
+ *                'P' = Publishable active docs in doc_version
+ *                'V' = Any doc in doc_version
  *     comment  Optional free text notes
  */
 CREATE TABLE link_type (
-          id INTEGER     IDENTITY PRIMARY KEY,
-        name VARCHAR(32) UNIQUE NOT NULL,
-     comment VARCHAR(255)           NULL
+          id INTEGER      IDENTITY PRIMARY KEY,
+        name VARCHAR(32)  UNIQUE NOT NULL,
+    chk_type CHAR         NOT NULL DEFAULT 'C',
+     comment VARCHAR(255) NULL
 )
 GO
 
