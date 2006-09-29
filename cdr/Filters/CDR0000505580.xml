@@ -75,7 +75,6 @@ Filter to create the vendor Terminology XML
      <xsl:attribute               name = "cdr:id">
       <xsl:text>_</xsl:text>
       <xsl:value-of             select = "$drugRefTypeFDA"/>
-      <xsl:value-of             select = "$miscDocFracIdFDA"/>
      </xsl:attribute>
 
      <Title>
@@ -89,15 +88,13 @@ Filter to create the vendor Terminology XML
    </xsl:if>
 
    <!--
-   Collect all of the FDA DrugReference elements within a single FDA
+   Collect all of the NCI DrugReference elements within a single NCI
    display section.
+   Even if no NCI DrugReference exists we still need to create a 
+   section for this type.
    ================================================================= -->
-   <xsl:if                        test = "DrugReference
-                                           [DrugReferenceType='NCI']">
     <xsl:variable                 name = "drugRefTypeNCI"
-                                select = "DrugReference
-                                           [DrugReferenceType='NCI']/
-                                          DrugReferenceType"/>
+                                select = "'NCI'"/>
     <xsl:variable                 name = "miscDocFracIdNCI"
                                 select = "substring-after(
                                             DrugReference
@@ -110,7 +107,6 @@ Filter to create the vendor Terminology XML
      <xsl:attribute               name = "cdr:id">
       <xsl:text>_</xsl:text>
       <xsl:value-of             select = "$drugRefTypeNCI"/>
-      <xsl:value-of             select = "$miscDocFracIdNCI"/>
      </xsl:attribute>
 
      <Title>
@@ -118,10 +114,33 @@ Filter to create the vendor Terminology XML
       <xsl:value-of             select = "$drugRefTypeNCI"/>
      </Title>
 
+    <Para>
+     <xsl:attribute               name = "cdr:id">
+      <xsl:text>_</xsl:text>
+      <xsl:value-of             select = "$drugRefTypeNCI"/>
+      <xsl:text>_1</xsl:text>
+     </xsl:attribute>
+
+     <xsl:element                 name = "ExternalRef">
+      <xsl:attribute              name = "xref">
+       <xsl:text>http://www.cancer.gov/Templates/drugdictionary.aspx</xsl:text>
+       <xsl:text>?CdrID=</xsl:text>
+       <xsl:value-of            select = "number(
+                                           substring(
+                                            /DrugInformationSummary/
+                                            DrugInfoMetaData/
+                                            TerminologyLink/
+                                            Term/@cdr:ref, 4))"/>
+      </xsl:attribute>
+      <xsl:text>Definition from the NCI Drug Dictionary</xsl:text>
+     </xsl:element>
+     <xsl:text> - Detailed scientific definition and other names </xsl:text>
+     <xsl:text>for this drug.</xsl:text>
+    </Para>
+
      <xsl:apply-templates       select = "DrugReference
                                            [DrugReferenceType='NCI']"/>
     </Section>
-   </xsl:if>
 
    <!--
    Collect all of the FDA DrugReference elements within a single FDA
@@ -145,7 +164,6 @@ Filter to create the vendor Terminology XML
      <xsl:attribute               name = "cdr:id">
       <xsl:text>_</xsl:text>
       <xsl:value-of             select = "$drugRefTypeNLM"/>
-      <xsl:value-of             select = "$miscDocFracIdNLM"/>
      </xsl:attribute>
 
      <Title>
@@ -177,6 +195,15 @@ Filter to create the vendor Terminology XML
    <!-- 
    ===================================================================
    Copy Date First Published and Date Last Modified
+   If the FirstPub date is populated in the CDRDocCtl use this.
+   If that doesn't exist use the passed DateFirstPub parameter.
+   If that doesn't exist use the element DatePubProc populated by the 
+      denormalization filter from the pub_proc processing date.
+      This is typically only necessary for brand new docs since they
+      don't have the FirstPub date populated yet.
+      If the document is not created via a publishing process the 
+      DateFirstPublished is listing a text message to allow validation.
+      (VE, 2006-09-29)
    =================================================================== -->
    <xsl:choose>
     <xsl:when                     test = "CdrDocCtl/FirstPub/Date">
@@ -185,18 +212,28 @@ Filter to create the vendor Terminology XML
                                             FirstPub/Date,'T')"/>
      </DateFirstPublished>
     </xsl:when>
-    <xsl:otherwise>
+    <xsl:when                     test = "$DateFirstPub">
      <xsl:call-template           name = "getDateFirstPub">
       <xsl:with-param             name = "date"
                                 select = "$DateFirstPub"/>
      </xsl:call-template>    
+    </xsl:when>
+    <xsl:otherwise>
+     <DateFirstPublished>
+      <xsl:choose>
+       <xsl:when                  test = "DatePubProc">
+        <xsl:value-of           select = "DatePubProc"/>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:text>Date set by publishing process</xsl:text>
+       </xsl:otherwise>
+      </xsl:choose>
+     </DateFirstPublished>
     </xsl:otherwise>
    </xsl:choose>
 
-     <DateLastModified>
-      <xsl:text>2006-01-01</xsl:text>
-     </DateLastModified>
-   
+   <xsl:apply-templates         select = "DateLastModified"
+                                  mode = "copy"/>
   </xsl:element>
  </xsl:template>
 
@@ -207,6 +244,7 @@ Filter to create the vendor Terminology XML
  Only display the other name if it is not identical to the Preferred
  Name.
  =================================================================== -->
+<!--
  <xsl:template                   match = "OtherName">
   <xsl:if                         test = "translate(OtherTermName, 
                                              'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
@@ -224,6 +262,7 @@ Filter to create the vendor Terminology XML
    </OtherName>
   </xsl:if>
  </xsl:template>
+-->
 
 
  <!--
@@ -248,7 +287,9 @@ Filter to create the vendor Terminology XML
     <xsl:value-of               select = "URL"/>
    </DrugInfoURL>
 
-   <xsl:apply-templates         select = "Manufacturers"/>
+   <xsl:if                        test = "Manufacturers">
+    <xsl:apply-templates        select = "Manufacturers"/>
+   </xsl:if>
 
    <xsl:apply-templates         select = "FDAApproved"
                                   mode = "copy"/>
@@ -292,37 +333,6 @@ Filter to create the vendor Terminology XML
                                             DrugReferenceDescription/
                                             MiscellaneousDocument/
                                               @cdr:ref, '#')"/>
-   <!-- 
-   Make the Definition from the NCI Drug Dictionary the first para 
-   within the Information from the NCI section
-   =============================================================== -->
-   <xsl:if                        test = "$drugRefType = 'NCI'
-                                          and
-                                          position() = 1">
-    <Para>
-     <xsl:attribute               name = "cdr:id">
-      <xsl:text>_</xsl:text>
-      <xsl:value-of             select = "$drugRefType"/>
-      <xsl:text>_0</xsl:text>
-     </xsl:attribute>
-
-     <xsl:element                 name = "ExternalRef">
-      <xsl:attribute              name = "xref">
-       <xsl:text>http://www.cancer.gov/Templates/drugdictionary.aspx</xsl:text>
-       <xsl:text>?CdrID=</xsl:text>
-       <xsl:value-of            select = "number(
-                                           substring(
-                                            /DrugInformationSummary/
-                                            DrugInfoMetaData/
-                                            TerminologyLink/
-                                            Term/@cdr:ref, 4))"/>
-      </xsl:attribute>
-      <xsl:text>Definition from the NCI Drug Dictionary</xsl:text>
-     </xsl:element>
-     <xsl:text> - Detailed scientific definition and other names </xsl:text>
-     <xsl:text>for this drug.</xsl:text>
-    </Para>
-   </xsl:if>
 
    <xsl:apply-templates         select = "DrugReferenceDescription">
     <xsl:with-param               name = "drugRefType"
@@ -524,10 +534,20 @@ Filter to create the vendor Terminology XML
  Template to dedup US Brand Name (the names are coming in sorted)
  ===================================================================== -->
  <xsl:template                   match = "OtherName">
+<!--
   <xsl:if                         test = "OtherTermName
                                            [not(normalize-space(.) =  
                                                 normalize-space
                                                 (following::OtherTermName))]">
+-->
+  <xsl:if                         test = "OtherTermName
+                                           [not(normalize-space(translate(.,
+                                             'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                                             'abcdefghijklmnopqrstuvwxyz')) =  
+                                                normalize-space(translate
+                                                (following::OtherTermName,
+                                             'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                                             'abcdefghijklmnopqrstuvwxyz')))]">
    <USBrandName>
     <xsl:value-of               select = "normalize-space(OtherTermName)"/>
    </USBrandName>
@@ -656,7 +676,7 @@ Filter to create the vendor Terminology XML
                                             Term/
                                             PreferredName,2))"/>
     </xsl:element>
-    <xsl:text> - List of trials from NCI's PDQ Cancer Clinical </xsl:text>
+    <xsl:text> - Check for trials from NCI's PDQ Cancer Clinical </xsl:text>
     <xsl:text>Trials Registry now accepting patients.</xsl:text>
    </Para>
   </Section>
@@ -670,10 +690,10 @@ Filter to create the vendor Terminology XML
  <xsl:template                    name = "briefDisclaimer">
 <!-- **********************************************************************
      Remove after Mahler CDR has been refreshed
+-->
       <xsl:variable               name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000466802',
                                                          '/lastp'))"/>
--->
 
 <!--
      **********************************************************************
@@ -681,11 +701,11 @@ Filter to create the vendor Terminology XML
 <!-- **********************************************************************
      Misc Doc ID on FRANCK only!!!!!
      **********************************************************************
--->
 
       <xsl:variable               name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000510121',
                                                          '/lastp'))"/>
+-->
 
      <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
@@ -702,10 +722,10 @@ Filter to create the vendor Terminology XML
  <xsl:template                    name = "detailedDisclaimer">
 <!-- **********************************************************************
      Remove after Mahler CDR has been refreshed
+-->
       <xsl:variable               name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000466803',
                                                          '/lastp'))"/>
--->
 <!--
      **********************************************************************
 -->
@@ -713,10 +733,10 @@ Filter to create the vendor Terminology XML
 <!-- **********************************************************************
      Misc Doc ID on FRANCK only!!!!!
      **********************************************************************
--->
       <xsl:variable               name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000510122',
                                                          '/lastp'))"/>
+-->
 
      <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
