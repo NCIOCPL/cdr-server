@@ -1,6 +1,8 @@
 #pragma warning(disable : 4786) // While including iostream
 #include <iostream> // DEBUG
 
+// #include <Windows.h> // if we need security descriptor
+#include <process.h>    // For _getpid()
 #include <string>
 #include <vector>
 #include "CdrDbConnection.h"
@@ -19,9 +21,13 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.20 2006-05-17 01:52:29 ameyer Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.21 2006-10-04 03:46:45 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2006/05/17 01:52:29  ameyer
+ * Added support for custom picklist processing on top of custom link
+ * validation.
+ *
  * Revision 1.19  2005/07/28 21:03:30  ameyer
  * Attempting to fix fumbled cvs command that added experimental version
  * 1.18 by mistake.
@@ -215,6 +221,10 @@ static void freePropVector (
  *  this kind of link.)
  **********************************************************************/
 
+// Mutex name to prevent concurrent, conflicting updates
+//   of our saved rule array.
+static char s_LinkTargetMutexName[32];
+
 /**
  * Find or create a parse tree for a link target contains rule.
  *
@@ -228,13 +238,13 @@ static void freePropVector (
  * @return              Top of the parse tree.
  * @throws CdrException If rule cannot be parsed.
  */
-
 static cdr::link::LinkChkTargContains *findOrMakeRuleTree (
     cdr::String& rule
 ) {
-    // Mutex name to prevent concurrent, conflicting updates
-    //   of our saved rule array.
-    const static char *LinkTargMutex = "LinkTargetMutex";
+    // Create mutex name, process specific
+    // It's protecting data stored per process, not per machine
+    if (*s_LinkTargetMutexName == 0)
+        sprintf (s_LinkTargetMutexName, "LinkTargetMutex%d", _getpid());
 
     // We allow this many rules
     // I don't use an expandable structure like vector or list because
@@ -245,7 +255,7 @@ static cdr::link::LinkChkTargContains *findOrMakeRuleTree (
 
     // Static array of parsed rule objects
     static cdr::link::LinkChkTargContains *s_parsedRule[maxRules];
-    static int                 s_parsedCount = 0;
+    static int s_parsedCount = 0;
 
     // Named mutex used for synchronizing access to array of
     // LinkChkTargContains objects
@@ -258,11 +268,20 @@ static cdr::link::LinkChkTargContains *findOrMakeRuleTree (
     // Non-standard MSVC extension is responsible
     int i;
 
+    // Windows requires a security descriptor
+    // This is what we have to do if we wanted a mutex that worked
+    //   across processes.
+    // 0 as security descriptor doesn't work right - causing failure
+    //   to create or acquire the mutex
+    // SECURITY_DESCRIPTOR sd;
+    // InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION);
+    // SECURITY_ATTRIBUTES sa = {sizeof sa, &sd, FALSE};
+    //  s_LinkContainsMutex = CreateMutex (&sa, FALSE, s_LinkTargMutex);
 
     // If this is the first thread in the current process, create a mutex
     //   to control the static array of rule parse trees
     if (s_LinkContainsMutex == 0)
-        s_LinkContainsMutex = CreateMutex (0, false, LinkTargMutex);
+        s_LinkContainsMutex = CreateMutex (0, FALSE, s_LinkTargetMutexName);
 
     // Lock and search array of parse trees to see if we can find
     //   an existing parse of the rule we want
@@ -312,9 +331,6 @@ static cdr::link::LinkChkTargContains *findOrMakeRuleTree (
     return ruleTree;
 }
 
-
-const static char *LinkTargMutex = "LinkTargetMutex";
-
 /**
  * Top level routine to find out if a target document contains one or
  * more fields matching a particular custom link check rule.
@@ -331,7 +347,6 @@ const static char *LinkTargMutex = "LinkTargetMutex";
  * @return              True=Link passes rule, else false.
  * @throws CdrException if any system failure occurs.
  */
-
 static bool linkTargetContainsCheck (
     cdr::db::Connection& dbConn,
     cdr::link::CdrLink*  link,
@@ -357,7 +372,6 @@ static bool linkTargetContainsCheck (
 /*
  * Constructor for LinkChkTargContains.
  */
-
 cdr::link::LinkChkTargContains::LinkChkTargContains (cdr::String linkRule)
 {
     // Save full copy of the rule
@@ -590,6 +604,14 @@ static cdr::link::LinkChkBoolOp parseBoolOp (const char **stringpp)
     else if (!strnicmp (p, "and", 3)) {
          p += 3;
          op = cdr::link::boolAnd;
+
+         // Is it an "and not"?
+         const char *q = p;
+         skipSpace(&q);
+         if (!strnicmp (q, "not", 3)) {
+             p = q + 3;
+             op = cdr::link::boolAndNot;
+         }
     }
     else if (!strnicmp (p, "or", 2)) {
          p += 2;
@@ -787,6 +809,8 @@ bool cdr::link::LinkChkPair::evalRule (
         return result;
     if (connector == cdr::link::boolAnd && result == false)
         return result;
+    if (connector == cdr::link::boolAndNot && result == false)
+        return result;
     if (connector == cdr::link::boolOr && result == true)
         return result;
 
@@ -964,8 +988,8 @@ void cdr::link::LinkChkNode::makeSubQueries (
 
         // If node tests for not equal or not exists, we need
         //   be sure the value does not exist in selected docs
-        if (node->getRelator() == cdr::link::relNotEqual)
-            query += " NOT";
+        // if (node->getRelator() == cdr::link::relNotEqual)
+        //     query += " NOT";
 
         // Subquery for doc ids
         query += " EXISTS (SELECT qt.doc_id FROM query_term qt "
@@ -1020,6 +1044,8 @@ void cdr::link::LinkChkNode::makeSubQueries (
             // Output the appropriate boolean operator between nodes
             if (node->getConnector() == cdr::link::boolAnd)
                 query += " AND ";
+            else if (node->getConnector() == cdr::link::boolAndNot)
+                query += " AND NOT ";
             else if (node->getConnector() == cdr::link::boolOr)
                 query += " OR ";
             else
@@ -1029,6 +1055,7 @@ void cdr::link::LinkChkNode::makeSubQueries (
 
         query += ")";
     }
+// DEBUG std::cout << "LinkProcsQry=\"" << query << "\"" << std::endl;
 }
 
 /**
@@ -1065,7 +1092,7 @@ cdr::String cdr::link::getSearchLinksRespWithProp (
         sprintf(buf, "TOP %d ", maxRows);
         qry += buf;
     }
-    qry += "       d.id, d.title"
+    qry += " d.id, d.title"
            "  FROM document d, link_target lt"
            " WHERE d.doc_type = lt.target_doc_type"
            "   AND d.title LIKE ?"
@@ -1089,6 +1116,8 @@ cdr::String cdr::link::getSearchLinksRespWithProp (
 
 // DEBUG
 // cdr::log::WriteFile(L"getSearchLinksRespWithProp", cdr::String(qry));
+// std::cout <<"getSearchLinksRespWithProp, qry=\"" <<qry <<"\"" <<std::endl;
+
     // Submit the query to the DBMS.
     cdr::db::PreparedStatement stmt = conn.prepareStatement(qry);
     stmt.setString(1, titlePattern);
@@ -1118,4 +1147,3 @@ cdr::String cdr::link::getSearchLinksRespWithProp (
 
     return response;
 }
-
