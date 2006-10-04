@@ -6,9 +6,13 @@
  *                                      @author Alan Meyer
  *                                      @date February 2001
  *
- * $Id: CdrLinkProcs.h,v 1.7 2006-05-17 01:53:26 ameyer Exp $
+ * $Id: CdrLinkProcs.h,v 1.8 2006-10-04 03:46:06 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2006/05/17 01:53:26  ameyer
+ * Added definitions for "+=" and "-=" picklist relators.
+ * Modified documentation to explain what this does.
+ *
  * Revision 1.6  2004/02/10 22:13:02  ameyer
  * Removed definitions of obsolete functions - makeWhere() and
  * getLinkTargetRestrictions().  Neither was ever in production.
@@ -165,7 +169,8 @@ typedef enum LinkChkRelator {
 
 typedef enum LinkChkBoolOp {
     boolAnd,
-    boolOr
+    boolOr,
+    boolAndNot
 } LinkChkBoolOp;
 
 /**
@@ -227,8 +232,7 @@ class LinkChkNode {
          * @param  cdrId      A table alias followed by column name for CDR Id.
          * @throws            CdrException if syntax or other error.
          */
-        void makeSubQueries (std::string& query,
-                             std::string& cdrid);
+        void makeSubQueries (std::string& query, std::string& cdrid);
 };
 
 
