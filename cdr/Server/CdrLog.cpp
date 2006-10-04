@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLog.cpp,v 1.11 2006-01-25 01:47:47 ameyer Exp $
+ * $Id: CdrLog.cpp,v 1.12 2006-10-04 03:45:20 ameyer Exp $
  *
  * Implementation of writing info to the log table in the database.
  * If that can't be done, takes an alternative action to write to file.
@@ -7,6 +7,11 @@
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2006/01/25 01:47:47  ameyer
+ * Fixed bug introduced in last version.  I was checking whether we were
+ * inside the logger in one place too many - guaranteeing that we were.
+ * Now fixed.
+ *
  * Revision 1.10  2005/07/28 21:11:03  ameyer
  * Removed erroneous CVS comment on previous version.
  * Real change was to protect logging from inadvertent recursion - attempt
@@ -43,6 +48,7 @@
  *
  */
 
+#include <Windows.h> // For security descriptors for mutex
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
@@ -100,8 +106,17 @@ cdr::log::Log::Log ()
 
     // If this is the first thread in the current process, create a mutex
     //   to control the static thread id counter.
+    // Windows requires a security descriptor.
+    // This is what we have to do if we want a mutex that works
+    //   across processes.
+    // 0 as security descriptor doesn't work right - causing failure
+    //   to create or acquire the mutex if a second CdrServer starts.
+    SECURITY_DESCRIPTOR sd;
+    InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION);
+    SetSecurityDescriptorDacl(&sd, TRUE, 0, FALSE);
+    SECURITY_ATTRIBUTES sa = {sizeof sa, &sd, FALSE};
     if (s_hLogMutex == 0)
-        s_hLogMutex = CreateMutex (0, false, "CdrLogMutex");
+        s_hLogMutex = CreateMutex (&sa, false, "CdrLogMutex");
 
     // Create unique id for this log object
     if (s_hLogMutex != 0) {
