@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.82 2005-03-24 22:13:51 ameyer Exp $
+# $Id: Makefile,v 1.83 2006-10-04 03:47:25 ameyer Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.82  2005/03/24 22:13:51  ameyer
+# Eliminated dependency on specific xerces version path.
+#
 # Revision 1.81  2005/03/23 01:17:58  ameyer
 # My original Xerces conversion was for debug versions only.  This adds
 # support for non-debug versions needed for our test and production servers.
@@ -309,7 +312,8 @@ CFLAGS =$(INC) -W3 -GX -EHa -MD -GR -nologo
 LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
         /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/$(REVER)
 CDRLIB =cdr.lib
-LIBS   =$(CDRLIB) $(XERLIB).lib sablot.lib wsock32.lib odbc32.lib user32.lib 
+LIBS   =$(CDRLIB) $(XERLIB).lib sablot.lib wsock32.lib odbc32.lib user32.lib \
+        AdvAPI32.lib
 SVCFLGS=-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT \
         -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MT
 !IF "$(DBG)" == ""
