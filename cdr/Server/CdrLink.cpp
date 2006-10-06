@@ -23,9 +23,13 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.26 2004-02-10 22:11:20 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.27 2006-10-06 02:40:42 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2004/02/10 22:11:20  ameyer
+ * Added check to be sure a target document type has been specified if a new
+ * link type is created.
+ *
  * Revision 1.25  2003/12/30 22:49:16  ameyer
  * Added more error checking for creation of link types.  Also added
  * a cheap runtime check.
@@ -227,6 +231,7 @@ cdr::link::CdrLink::CdrLink (
     trgDocType    = 0;
     trgDocTypeStr = L"";
     trgActiveStat = L"";
+    chkType       = L"C";
     trgFrag       = cdr::link::NO_FRAGMENT;
     hasData       = false;
     errCount      = 0;
@@ -242,6 +247,34 @@ cdr::link::CdrLink::CdrLink (
              = static_cast<const cdr::dom::Element&> (fldNode);
     srcField = fldNode.getNodeName ();
 
+    // Get link type for this link based on doctype and field
+    // Also finds out what table to check against
+    qry = "SELECT x.link_id, t.chk_type "
+          "  FROM link_xml x "
+          "  JOIN link_type t "
+          "    ON x.link_type = t.id "
+          " WHERE doc_type = ? AND element = ?";
+    cdr::db::PreparedStatement select = conn.prepareStatement (qry);
+    select.setInt (1, srcDocType);
+    select.setString (2, srcField);
+    cdr::db::ResultSet rs = select.executeQuery();
+
+    if (!rs.next()) {
+        // No link type defined for this doctype + element
+        // Error will be caught again and reported later
+        saveLink = false;
+    }
+    else {
+        type    = rs.getInt (1);
+        chkType = rs.getString(2);
+
+        // Runtime check of table integrity
+        // Should never be more than one definition for a doctype + element
+        if (rs.next())
+            throw cdr::Exception (
+              L"System Error - More than one link type defined for doctype=\""
+              + srcDocTypeStr + L"\" element=\"" + srcField + L"\"");
+    }
     // Is this a reference to a CDR document?
     if (style == cdr::link::ref || style == cdr::link::href) {
 
@@ -283,13 +316,38 @@ cdr::link::CdrLink::CdrLink (
             trgActiveStat = L"A";
         }
         else {
+            // Setup query for current working doc, any pub version, or any
+            //   version.  Also check that doc is active, not blocked or
+            //   deleted.
+            if (chkType == L"C")
+                // Current working doc
+                qry = "SELECT doc_type, active_status "
+                      "  FROM all_docs WHERE id = ?";
+            else if (chkType == L"P")
+                // Publishable doc, at least one required
+                qry = "SELECT top 1 d.docType, d.active_status "
+                      "  FROM all_docs d "
+                      "  JOIN doc_version v "
+                      "    ON d.id = v.id "
+                      "   AND v.publishable = 'Y' "
+                      "   AND id = ?";
+            else if (chkType == L"V")
+                // Any version at exists, any one okay
+                qry = "SELECT top 1 d.docType, d.active_status "
+                      "  FROM all_docs d "
+                      "  JOIN doc_version v "
+                      "    ON d.id = v.id "
+                      "   AND id = ?";
+            else
+                throw cdr::Exception(
+                 L"link_type table chk_type has illegal value - can't happen");
+
             // Find out if target exists, get its type & deletion status
             // This is needed whether or not we validate the link because
             //   we can't save a link that doesn't point to an existing
             //   document
             // Note that if trgId==NO_DOC_ID, this will (correctly) get
             //   no hits
-            qry = "SELECT doc_type, active_status FROM all_docs WHERE id = ?";
             cdr::db::PreparedStatement doc_sel = conn.prepareStatement (qry);
             doc_sel.setInt (1, trgId);
             cdr::db::ResultSet doc_rs = doc_sel.executeQuery();
@@ -317,29 +375,6 @@ cdr::link::CdrLink::CdrLink (
                 ref + L"' too large for database table");
         saveLink = false;
     }
-
-    // Find the link type expected for this doctype/fieldtag
-    qry = "SELECT link_id FROM link_xml WHERE doc_type = ? AND element = ?";
-    cdr::db::PreparedStatement select = conn.prepareStatement (qry);
-    select.setInt (1, srcDocType);
-    select.setString (2, srcField);
-    cdr::db::ResultSet rs = select.executeQuery();
-
-    if (!rs.next()) {
-        // Error will be caught again and reported later
-        saveLink = false;
-    }
-    else {
-        type = rs.getInt (1);
-
-        // Runtime check of table integrity
-        // Should never be more than one definition for a doctype + element
-        if (rs.next())
-            throw cdr::Exception (
-              L"System Error - More than one link type defined for doctype=\""
-              + srcDocTypeStr + L"\" element=\"" + srcField + L"\"");
-    }
-
 } // Constructor
 
 
@@ -356,8 +391,17 @@ int cdr::link::CdrLink::validateLink (
 
 
     // If linked document not found, no other validation possible
-    if (!trgFound)
-        this->addLinkErr (L"Target document not found in CDR");
+    if (!trgFound) {
+        // Generate appropriate error message based on link chkType
+        cdr::String notFoundMsg;
+        if (chkType == L"C")
+            notFoundMsg = L"No current document found for link target";
+        else if (chkType == L"P")
+            notFoundMsg = L"No publishable document found for link target";
+        else if (chkType == L"V")
+            notFoundMsg = L"No document version found for link target";
+        this->addLinkErr (notFoundMsg);
+    }
 
     // None of these checks can be made without a link type or target id
     else if (type != 0 && trgId != cdr::link::NO_DOC_ID) {
@@ -847,6 +891,7 @@ cdr::String cdr::putLinkType (
                    cmdName,         // Name of command CdrAdd... or CdrMod...
                    typeName = L"",  // Link type name
                    newName  = L"",  // For renaming link type
+                   chkType  = L"",  // 'P'ub, 'V'er, or 'C'wd
                    comment  = L"",  // Description of link type
                    action;          // Check this in authorization check
     std::string    updqry;          // Update query string
@@ -854,7 +899,6 @@ cdr::String cdr::putLinkType (
 
     // Use this for simple queries
     cdr::db::Statement stmt = conn.createStatement();
-
 
     // Top level command node is always an element
     if (node.getNodeType() != cdr::dom::Node::ELEMENT_NODE)
@@ -892,6 +936,9 @@ cdr::String cdr::putLinkType (
             else if (name == L"NewName")
                 newName = content;
 
+            else if (name == L"LinkChkType")
+                chkType = content;
+
             else if (name == L"Comment")
                 comment = content;
         }
@@ -907,6 +954,15 @@ cdr::String cdr::putLinkType (
     if (newName.size() > 0 && newType)
         throw cdr::Exception (L"Attempt to rename link type '" + typeName +
                               L"' and create it at the same time");
+
+    // Validate type of version we check against
+    if (chkType.size() == 0)
+        throw cdr::Exception(
+                L"Missing target version type of 'P', 'V', or 'C'");
+    else if (chkType != L"P" && chkType != L"V" && chkType != L"C")
+        throw cdr::Exception(
+                L"Expecting target version type=P V or C \"" + chkType +
+                L"\" invalid");
 
     // Rest of operations must be processed as a unit
     autoCommitted = conn.getAutoCommit();
@@ -926,7 +982,7 @@ cdr::String cdr::putLinkType (
                                   + typeName + L"'");
 
         // Create insertion statement for new link type
-        updqry = "INSERT INTO link_type (name, comment) VALUES (?, ?)";
+        updqry="INSERT INTO link_type (name, chk_type, comment) VALUES (?, ?)";
     }
     else {
         // Validate that caller thinks he's modifying an existing link type
@@ -938,7 +994,8 @@ cdr::String cdr::putLinkType (
         linkId = rs.getInt (1);
 
         // Create update statement for new link type
-        updqry = "UPDATE link_type SET name = ?, comment = ? WHERE id = ?";
+        updqry = "UPDATE link_type SET name = ?, chk_type = ?, comment = ? "
+                 " WHERE id = ?";
     }
     tstmt.close();
 
@@ -946,12 +1003,14 @@ cdr::String cdr::putLinkType (
     cdr::db::PreparedStatement ustmt = conn.prepareStatement (updqry);
     if (newType) {
         ustmt.setString (1, typeName);
-        ustmt.setString (2, comment);
+        ustmt.setString (2, chkType);
+        ustmt.setString (3, comment);
     }
     else {
         ustmt.setString (1, typeName);
-        ustmt.setString (2, comment);
-        ustmt.setInt    (3, linkId);
+        ustmt.setString (2, chkType);
+        ustmt.setString (3, comment);
+        ustmt.setInt    (4, linkId);
     }
     ustmt.executeUpdate();
     ustmt.close();
@@ -1027,11 +1086,12 @@ cdr::String cdr::getLinkType (
     const cdr::dom::Node& node,     // DOM tree for transaction
     cdr::db::Connection&  conn      // Connection to CDR database
 ) {
-    cdr::dom::Node        child;    // Element in command
-    cdr::String           linkName, // Name of the link type
-                          comment;  // Comment in link_type table
-    int                   linkId,   // Internal link type id
-                          count;    // Count of names, must be 1
+    cdr::dom::Node child;       // Element in command
+    cdr::String    linkName,    // Name of the link type
+                   linkChkType, // Comment in link_type table
+                   comment;     // Comment in link_type table
+    int            linkId,      // Internal link type id
+                   count;       // Count of names, must be 1
 
     // Get the name of the type for which the user wants info
     count = 0;
@@ -1051,7 +1111,7 @@ cdr::String cdr::getLinkType (
 
     // Find internal link type id and comment for this name
     cdr::db::PreparedStatement istmt = conn.prepareStatement (
-            "SELECT id, name, comment FROM link_type WHERE name = ?");
+        "SELECT id, name, chk_type, comment FROM link_type WHERE name = ?");
     istmt.setString (1, linkName);
     cdr::db::ResultSet trs = istmt.executeQuery ();
 
@@ -1059,13 +1119,15 @@ cdr::String cdr::getLinkType (
     if (!trs.next())
         throw cdr::Exception (
                 L"Name '" + linkName + L"' not found in link types");
-    linkId   = trs.getInt (1);
-    linkName = trs.getString (2);
-    comment  = trs.getString (3);
+    linkId      = trs.getInt(1);
+    linkChkType = trs.getString(2);
+    linkName    = trs.getString(3);
+    comment     = trs.getString(4);
 
     // Output transaction header and definining elements
     cdr::String resp = "<CdrGetLinkTypeResp>\n";
     resp += L"  <Name>" + linkName + L"</Name>\n";
+    resp += L"  <LinkChkType>" + linkName + L"</LinkChkType>\n";
     if (!comment.isNull())
         resp += L"  <LinkTypeComment>" + comment +  L"</LinkTypeComment>\n";
 
