@@ -1,10 +1,14 @@
 /*
- * $Id: CdrLink.h,v 1.9 2002-08-29 21:53:07 ameyer Exp $
+ * $Id: CdrLink.h,v 1.10 2006-10-06 02:41:27 ameyer Exp $
  *
  * Header for Link Module software - to maintain the link_net
  * table describing the link relationships among CDR documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2002/08/29 21:53:07  ameyer
+ * Added constants for some initial values that can be set or read in different
+ * places for CdrLink members.
+ *
  * Revision 1.8  2002/08/14 01:36:51  ameyer
  * Added constants for max sizes in link references.
  *
@@ -199,6 +203,7 @@ namespace cdr {
             cdr::String getTrgDocTypeStr (void) { return trgDocTypeStr; }
             cdr::String getRef           (void) { return ref; }
             cdr::String getTrgFrag       (void) { return trgFrag; }
+            cdr::String getChkType       (void) { return chkType; }
             cdr::dom::Node& getFldNode   (void) { return fldNode; }
             bool        getHasData       (void) { return hasData; }
             StringList  getErrList       (void) { return errList; }
@@ -221,7 +226,8 @@ namespace cdr {
             cdr::String trgDocTypeStr;  // String format
             cdr::String trgActiveStat;  // 'A'=active, 'D'=deleted target doc
             cdr::String ref;            // Full reference as string
-            cdr::String trgFrag;        // #Fragment part of ref, if any
+            cdr::String chkType;        // Check for P)ub V)er or C)WD target
+            cdr::String trgFrag;        // #Fragment part of ref, if ay
             cdr::dom::Node& fldNode;    // Reference to DOM node in parsed xml
             bool        hasData;        // True=denormalized data in node
             LinkStyle   style;          // cdr:ref, cdr:href, xlink:href
@@ -309,7 +315,7 @@ namespace cdr {
                                     std::vector<int>&    typeList);
 
     /**
-     * Return the CdrSearchLinksResp element that represent target links
+     * Return the CdrSearchLinksResp element that represents target links
      * made from a particular element type in a given source document type.
      * It contains only the documents satisfying the link_properties. It
      * is designed for task: picklists with server-side filtering, and
@@ -335,7 +341,7 @@ namespace cdr {
                                     int                  maxRows);
 
     /**
-     * This hanles the complex case for getSearchLinksResp with link
+     * This handles the complex case for getSearchLinksResp with link
      * properties present. Wanted to split the code for clarity.
      * The properties could have only ids without values, which has
      * not yet been implemented.
