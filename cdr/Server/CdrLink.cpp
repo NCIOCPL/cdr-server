@@ -23,9 +23,14 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.27 2006-10-06 02:40:42 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.28 2006-10-18 20:32:45 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2006/10/06 02:40:42  ameyer
+ * Modifications for link target version type handling.
+ * Affects link validation, getLinkType, putLinkType, and the external
+ * XML transactions that drive them.
+ *
  * Revision 1.26  2004/02/10 22:11:20  ameyer
  * Added check to be sure a target document type has been specified if a new
  * link type is created.
@@ -252,7 +257,7 @@ cdr::link::CdrLink::CdrLink (
     qry = "SELECT x.link_id, t.chk_type "
           "  FROM link_xml x "
           "  JOIN link_type t "
-          "    ON x.link_type = t.id "
+          "    ON x.link_id = t.id "
           " WHERE doc_type = ? AND element = ?";
     cdr::db::PreparedStatement select = conn.prepareStatement (qry);
     select.setInt (1, srcDocType);
