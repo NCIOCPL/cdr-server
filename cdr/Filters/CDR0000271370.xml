@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ===========================================================================
- $Id: CDR0000271370.xml,v 1.25 2006-10-18 23:30:26 venglisc Exp $
+ $Id: CDR0000271370.xml,v 1.26 2006-10-20 21:48:13 venglisc Exp $
 
  Filter including misc Vendor filter templates.
 
@@ -78,9 +78,67 @@
  Template for MediaLink element (used by Summary and GlossaryTerm)
  ========================================================================= -->
  <xsl:template                   match = "MediaLink">
-  <!-- 
-  Define language variable to select the caption and alt text
-  =========================================================== -->     
+
+  <!--
+  This block is for a GlossaryTerm document with a MediaLink element 
+  shared between the English and Spanish version
+  ======================================================================= -->
+  <xsl:choose>
+  <xsl:when                       test = "$whoAmI = 'GlossaryTerm'
+                                          and
+                                          name(..) = 'GlossaryTerm'">
+   <xsl:variable                  name = "mediaCdrRef"
+                                select = "MediaID/@cdr:ref"/>
+
+   <xsl:variable                  name = "mediaLinkAlt"
+                                select = "@AlternativeText"/>
+   <xsl:variable                  name = "mediaLinkInline"
+                                select = "@Inline"/>
+   <xsl:variable                  name = "mediaLinkMinWidth"
+                                select = "@MinWidth"/>
+   <xsl:variable                  name = "mediaLinkUseCaption"
+                                select = "@UseCaption"/>
+   <xsl:variable                  name = "mediaLinkId"
+                                select = "@cdr:id"/>
+   <xsl:variable                  name = "mediaLinkSize"
+                                select = "@size"/>
+   <xsl:variable                  name = "mediaLinkThumb"
+                                select = "@thumb"/>
+
+   <xsl:for-each                select = "MediaID/
+                                          Media/
+                                          MediaContent/
+                                          Captions/
+                                          MediaCaption">
+    <xsl:call-template            name = "createMediaLink">
+     <xsl:with-param              name = "mediaRef"
+                                select = "$mediaCdrRef"/>
+
+     <xsl:with-param              name = "mediaAlt"
+                                select = "$mediaLinkAlt"/>
+     <xsl:with-param              name = "mediaInline"
+                                select = "$mediaLinkInline"/>
+     <xsl:with-param              name = "mediaMinWidth"
+                                select = "$mediaLinkMinWidth"/>
+     <xsl:with-param              name = "mediaUseCaption"
+                                select = "$mediaLinkUseCaption"/>
+     <xsl:with-param              name = "mediaId"
+                                select = "$mediaLinkId"/>
+     <xsl:with-param              name = "mediaSize"
+                                select = "$mediaLinkSize"/>
+     <xsl:with-param              name = "mediaThumb"
+                                select = "$mediaLinkThumb"/>
+    </xsl:call-template>
+    
+   </xsl:for-each>
+  </xsl:when>
+  <xsl:otherwise>
+   <!-- 
+   Define language variable to select the caption and alt text
+   Note:  This only applies for summary document and GlossaryTerm
+          document with a MediaLink child element of the 
+          TermDefinition or SpanishTermDefinition
+   =========================================================== --> 
   <xsl:variable                   name = "docLanguage">
    <xsl:choose>
     <xsl:when                     test = "/Summary/
@@ -90,16 +148,12 @@
                                           name(..) = 'SpanishTermDefinition'">
      <xsl:text>es</xsl:text>
     </xsl:when>
-    <xsl:when                     test = "../TermDefinition
-                                          and
-                                          ../SpanishTermDefinition">
-     <xsl:text>en es</xsl:text>
-    </xsl:when>
     <xsl:otherwise>
      <xsl:text>en</xsl:text>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
+
   <!-- 
   Define audience variable to select the alt text
   =============================================== -->     
@@ -108,7 +162,10 @@
     <xsl:when                     test = "/Summary/
                                           SummaryMetaData/
                                           SummaryAudience 
-                                            = 'Health professionals'">
+                                            = 'Health professionals'
+                                          or
+                                          ../Audience 
+                                            = 'Health professional'">
      <xsl:text>Health_professionals</xsl:text>
     </xsl:when>
     <xsl:otherwise>
@@ -159,19 +216,15 @@
    The above decision has been revised per request from Cancer.gov.
    The language attribute will always be displayed.
    =================================================================== -->
-   <!-- xsl:if                        test = "$docLanguage != MediaID/
-                                                          Media/
-                                                          MediaContent/
-                                                          MediaLanguage" -->
     <xsl:attribute                name = "language">
      <xsl:value-of              select = "$docLanguage"/>
     </xsl:attribute>
-   <!-- /xsl:if -->
 
    <!--
-   Per request from Cancer.gov the thumb attribute will always be set to
-   a default of thumb=Yes if it has not been specified.
-   Additionally, we were asked to set thumb=No if the specified size of 
+   If the thumb attribute is set to 'No' display it.
+   Additionally, per request from Cancer.gov the thumb attribute will 
+   always be set to a default of thumb='Yes' if it has not been specified.
+   Additionally, we were asked to set thumb='No' if the specified size of 
    the image is equal or greater then the actual size of the image so 
    that making the image clickable wouldn't result in a larger image size.
    ======================================================================= -->
@@ -276,16 +329,6 @@
     </xsl:attribute>
    </xsl:if>
 
-   <!--
-   The thumb attribute is only being displayed if its value is set to No.
-   By default all images are clickable thumbs.
-   ====================================================================== -->
-   <xsl:if                        test = "@thumb = 'No'">
-    <xsl:attribute                name = "thumb">
-     <xsl:value-of              select = "@thumb"/>
-    </xsl:attribute>
-   </xsl:if>
-
    <!-- 
    The UseCaption attibute turns existing captions on or off
    No UseCaption attribute defaults to UseCaption = 'Yes'
@@ -319,6 +362,8 @@
     </xsl:choose>
    </xsl:if>
   </xsl:element>
+  </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
@@ -343,7 +388,179 @@
      </xsl:attribute>
     </xsl:otherwise>
    </xsl:choose>
+
    <xsl:apply-templates/>
+
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ======================================================================
+ Named template to create the media captions for GlossaryTerm documents
+ ====================================================================== -->
+ <xsl:template                    name = "createMediaLink">
+  <xsl:param                      name = "mediaRef"/>
+  <xsl:param                      name = "mediaAlt"/>
+  <xsl:param                      name = "mediaInline"/>
+  <xsl:param                      name = "mediaMinWidth"/>
+  <xsl:param                      name = "mediaUseCaption"/>
+  <xsl:param                      name = "mediaId"/>
+  <xsl:param                      name = "mediaSize"/>
+  <xsl:param                      name = "mediaThumb"/>
+
+  <xsl:variable                      name = "capLanguage"
+                                select = "@language"/>
+  <xsl:variable                      name = "capAudience"
+                                select = "@audience"/>
+
+  <!--
+  Create MediaLink Element and attributes
+  ======================================== -->
+  <xsl:element                    name = "MediaLink">
+   <xsl:attribute                 name = "ref">
+    <xsl:value-of               select = "$mediaRef"/>
+   </xsl:attribute>
+
+   <!--
+   alt text is taken from summary AlternativeText attribute or
+   from the Media Content description matching the audience and
+   language of the document type
+   ============================================================ -->
+   <xsl:choose>
+    <xsl:when                     test = "$mediaAlt">
+     <xsl:attribute               name = "alt">
+      <xsl:value-of             select = "$mediaAlt"/>
+     </xsl:attribute>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:attribute               name = "alt">
+      <xsl:value-of             select = "../../
+                                          ContentDescriptions/
+                                          ContentDescription
+                                            [@language=$capLanguage
+                                             and
+                                             @audience=$capAudience]"/>
+     </xsl:attribute>
+    </xsl:otherwise>
+   </xsl:choose>
+
+    <xsl:attribute                name = "language">
+     <xsl:value-of              select = "$capLanguage"/>
+    </xsl:attribute>
+
+   <!--
+   Per request from Cancer.gov the thumb attribute will always be set to
+   a default of thumb=Yes if it has not been specified.
+   Additionally, we were asked to set thumb=No if the specified size of 
+   the image is equal or greater then the actual size of the image so 
+   that making the image clickable wouldn't result in a larger image size.
+   ======================================================================= -->
+   <xsl:choose>
+    <xsl:when                     test = "$mediaThumb = 'No'">
+     <xsl:attribute               name = "thumb">
+      <xsl:value-of             select = "$mediaThumb"/>
+     </xsl:attribute>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:variable                name = "displaySize">
+      <xsl:choose>
+       <xsl:when                  test = "$mediaSize = 'full'">
+        <xsl:text>571</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "$mediaSize = 'half'">
+        <xsl:text>274</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "$mediaSize = 'third'">
+        <xsl:text>179</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "$mediaSize = 'quarter'">
+        <xsl:text>131</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "$mediaSize = 'fifth'">
+        <xsl:text>103</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "$mediaSize = 'sixth'">
+        <xsl:text>84</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "$mediaSize = 'as-is'">
+        <xsl:text>99999</xsl:text>
+       </xsl:when>
+       <xsl:otherwise>
+       <!--
+       If no size attribute has been specified the default size is
+          - summaries is half=274
+       ============================================================ -->
+        <xsl:if                   test = "/Summary">
+         <xsl:text>274</xsl:text>
+        </xsl:if>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:variable>
+     
+     <xsl:choose>
+      <xsl:when                   test = "../../../
+                                          PhysicalMedia/
+                                          ImageData/
+                                          ImageDimensions/
+                                          WidthPixels &lt; $displaySize">
+       <xsl:attribute             name = "thumb">
+        <xsl:value-of           select = "'No'"/>
+       </xsl:attribute>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:attribute             name = "thumb">
+        <xsl:value-of           select = "'Yes'"/>
+       </xsl:attribute>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:otherwise>
+   </xsl:choose>
+
+   <!-- Optional Attributes -->
+   <xsl:if                        test = "$mediaId">
+    <xsl:attribute                name = "id">
+     <xsl:value-of              select = "$mediaId"/>
+    <xsl:text>.</xsl:text>
+    <xsl:number                  level = "any"
+                                 count = "MediaCaption"/>
+    </xsl:attribute>
+
+   </xsl:if>
+
+   <xsl:if                        test = "$mediaInline">
+    <xsl:attribute                name = "inline">
+     <xsl:value-of              select = "$mediaInline"/>
+    </xsl:attribute>
+   </xsl:if>
+
+   <xsl:if                        test = "$mediaSize">
+    <xsl:attribute                name = "size">
+     <xsl:value-of              select = "$mediaSize"/>
+    </xsl:attribute>
+   </xsl:if>
+
+
+   <!-- 
+   The UseCaption attibute turns existing captions on or off
+   No UseCaption attribute defaults to UseCaption = 'Yes'
+   ========================================================= -->
+   <xsl:if                        test = "not($mediaUseCaption)
+                                          or 
+                                          $mediaUseCaption = 'Yes'">
+    <xsl:choose>
+     <xsl:when                    test = "Caption">
+      <xsl:apply-templates      select = "Caption">
+       <xsl:with-param            name = "capLanguage"
+                                select = "$docLanguage"/>
+      </xsl:apply-templates>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:apply-templates      select = "."/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:if>
+
   </xsl:element>
  </xsl:template>
 
