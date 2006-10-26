@@ -1,0 +1,78 @@
+<CdrDoc Type='Filter' Id='CDR0000517206'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">CTGov Export: Remove Inline Markup</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version='1.0' encoding='utf-8'?>
+
+<!--
+======================================================================
+==
+== $Id: CDR0000517206.xml,v 1.1 2006-10-26 10:16:23 bkline Exp $
+==
+== Pre-filter to strip inline markup from vendor output in preparation
+== for converting to exportable document for NLM's ClinicalTrials.gov.
+==
+== $Log: not supported by cvs2svn $
+====================================================================== -->
+
+<xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                         xmlns:cdr = "cips.nci.nih.gov/cdr"
+           exclude-result-prefixes = "cdr"
+                           version = "1.0">
+
+ <xsl:output                method = "xml"
+              omit-xml-declaration = "yes"
+                          encoding = "UTF-8"
+                            indent = 'yes'/>
+
+ <xsl:template               match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates     select = "@*"/>
+   <xsl:apply-templates/>
+  </xsl:copy>
+ </xsl:template>
+
+ <xsl:template               match = "Strong | Emphasis | GeneName |
+                                      ScientificName | ProtocolRef |
+                                      GlossaryRef | ForeignWord | TT">
+  <xsl:value-of             select = "."/>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Insert a caret before superscripted text.  Note that there is no
+ indication in the output of how many of the following characters
+ are superscripted (but fortunately there are no multi-character
+ superscripts in the data, at least not at the time of this writing).
+ ==================================================================== -->
+ <xsl:template               match = "Superscript">
+  <xsl:value-of             select = "concat('^', .)"/>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Insert an underscore before subscripted text.  Note that there is 
+ no indication in the output of how many of the following characters
+ are subscripted (but fortunately there are no multi-character
+ subscripts in the data, at least not at the time of this writing).
+ ==================================================================== -->
+ <xsl:template               match = "Subscript">
+  <xsl:value-of             select = "concat('_', .)"/>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Decorate a note with a prefix.  Assumption: Note elements contain
+ no other markup.
+ ==================================================================== -->
+ <xsl:template               match = "Note">
+  <xsl:value-of             select = "concat('NOTE: ', .)"/>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
