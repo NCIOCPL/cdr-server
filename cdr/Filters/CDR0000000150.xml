@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000150.xml,v 1.97 2006-09-27 18:44:41 venglisc Exp $
+$Id: CDR0000000150.xml,v 1.98 2006-11-06 22:41:00 venglisc Exp $
 
 Vendor Filter: InScopeProtocol
 
@@ -872,9 +872,17 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
     </xsl:if>
    </xsl:if>
 
-   <xsl:attribute                 name = "ref">
-    <xsl:value-of               select = "Person/@cdr:ref"/>
-   </xsl:attribute>
+   <!--
+   We do not want to display the person's cdr:ref attribute if the 
+   ProtocolSite element is displaying the CTO information
+   =============================================================== -->
+   <xsl:if                        test = "not(../../Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact)">
+    <xsl:attribute                name = "ref">
+     <xsl:value-of              select = "Person/@cdr:ref"/>
+    </xsl:attribute>
+   </xsl:if>
 
    <xsl:variable                  name = "contactFID"
                                 select = "substring-after(
