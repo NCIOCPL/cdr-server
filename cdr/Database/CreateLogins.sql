@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.24 2005-09-09 17:45:57 bkline Exp $
+ * $Id: CreateLogins.sql,v 1.25 2006-11-06 18:27:18 venglisc Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2005/09/09 17:45:57  bkline
+ * Added get_prot_person_connections.
+ *
  * Revision 1.23  2005/08/15 18:31:23  bkline
  * Added GRANT statement for external_map_type table.
  *
@@ -282,6 +285,10 @@ GO
 GRANT SELECT ON query_term_def TO CdrGuest
 GO
 GRANT SELECT ON query_term_def TO CdrPublishing
+GO
+GRANT SELECT ON query_term_pub TO CdrGuest
+GO
+GRANT SELECT ON query_term_pub TO CdrPublishing
 GO
 GRANT SELECT ON dev_task_status TO CdrGuest
 GO
