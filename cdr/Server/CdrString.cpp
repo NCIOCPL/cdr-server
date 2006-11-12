@@ -1,7 +1,10 @@
 /*
- * $Id: CdrString.cpp,v 1.25 2006-05-25 23:02:31 ameyer Exp $
+ * $Id: CdrString.cpp,v 1.26 2006-11-12 13:49:34 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2006/05/25 23:02:31  ameyer
+ * Added toUpperCase() and toLowerCase().
+ *
  * Revision 1.24  2004/11/05 05:58:01  ameyer
  * Added hashBytes().
  *
@@ -511,13 +514,13 @@ cdr::Blob::Blob(const cdr::String& base64) : null(true)
                 break;
             else if (c < 0 || c >= getDecodingTableSize()) {
                 wchar_t err[80];
-                wsprintf(err, L"Invalid base-64 character: %u", c);
+                swprintf(err, L"Invalid base-64 character: %u", c);
                 throw cdr::Exception(err);
             }
             wchar_t bits = table[c];
             if (bits == invalidBits()) {
                 wchar_t err[80];
-                wsprintf(err, L"Invalid base-64 character: %u", c);
+                swprintf(err, L"Invalid base-64 character: %u", c);
                 throw cdr::Exception(err);
             }
             switch (state) {

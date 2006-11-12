@@ -1,9 +1,12 @@
 /*
- * $Id: CdrRegEx.cpp,v 1.5 2002-06-12 20:25:25 bkline Exp $
+ * $Id: CdrRegEx.cpp,v 1.6 2006-11-12 13:49:34 bkline Exp $
  *
  * Implementation of CDR wrapper for regular expression handling.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2002/06/12 20:25:25  bkline
+ * Adjusted embedded dot pattern to not match newline.
+ *
  * Revision 1.4  2002/05/01 01:07:13  bkline
  * Added ".c_str()" to CdrString to disambiguate constructor call.
  *
@@ -52,7 +55,7 @@ cdr::String cdr::RegEx::getPattern() const
 
 void cdr::RegEx::set(const wchar_t* pattern)
 {
-    unsigned flags = boost::regbase::normal | boost::regbase::use_except;
+    unsigned flags = boost::regbase::normal;
     if (caseFlag)
         flags |= boost::regbase::icase;
     try {
@@ -68,7 +71,7 @@ void cdr::RegEx::set(const wchar_t* pattern)
 
 void cdr::RegEx::set(const cdr::String& pattern)
 {
-    unsigned flags = boost::regbase::normal | boost::regbase::use_except;
+    unsigned flags = boost::regbase::normal;
     if (caseFlag)
         flags |= boost::regbase::icase;
     try {

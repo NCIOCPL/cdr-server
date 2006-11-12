@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.40 2005-03-04 02:59:44 ameyer Exp $
+ * $Id: CdrXsd.cpp,v 1.41 2006-11-12 13:49:34 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.40  2005/03/04 02:59:44  ameyer
+ * Significant changes to implement new Xerces DOM parser.
+ *
  * Revision 1.39  2003/09/16 15:00:04  bkline
  * Added code to custom rule XSL/T template to handle rules for nested
  * elements.
@@ -1703,8 +1706,11 @@ bool matchPattern(
         const wchar_t*                  pattern,
         const cdr::String&              value)
 {
+    std::wcerr << L"pattern: " << pattern << std::endl;
+    std::wcerr << L"value: " << value.c_str() << std::endl;
     cdr::RegEx re(pattern);
     bool result = re.match(value);
+    std::wcerr << L"result: " << result << std::endl;
     return result;
 }
 

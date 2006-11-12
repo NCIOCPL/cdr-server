@@ -1,10 +1,13 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.83 2006-10-04 03:47:25 ameyer Exp $
+# $Id: Makefile,v 1.84 2006-11-12 13:49:34 bkline Exp $
 #
 # Rules for building CDR server.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.83  2006/10/04 03:47:25  ameyer
+# Added AdvAPI.lib needed for security attributes in CdrLog.cpp.
+#
 # Revision 1.82  2005/03/24 22:13:51  ameyer
 # Eliminated dependency on specific xerces version path.
 #
@@ -293,7 +296,7 @@ XERLIB =$(XERCES)/lib/xerces-c_2D
 !ENDIF
 SABLOT =$(DRV)/usr/sablot
 REGEX  =$(DRV)/usr/regex
-VCVER  =7
+VCVER  =71
 REVER  =vc$(VCVER)
 CDRINC =.
 INC    =-I$(XERINC) -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)
