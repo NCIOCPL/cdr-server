@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000150.xml,v 1.98 2006-11-06 22:41:00 venglisc Exp $
+$Id: CDR0000000150.xml,v 1.99 2006-11-13 19:01:18 venglisc Exp $
 
 Vendor Filter: InScopeProtocol
 
@@ -878,7 +878,9 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
    =============================================================== -->
    <xsl:if                        test = "not(../../Organization/
                                           OrganizationLocations/
-                                          ClinicalTrialsOfficeContact)">
+                                          ClinicalTrialsOfficeContact)
+                                          or
+                                          SpecificPhone">
     <xsl:attribute                name = "ref">
      <xsl:value-of              select = "Person/@cdr:ref"/>
     </xsl:attribute>
@@ -946,14 +948,59 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
      ===================================================================== -->
      <xsl:choose>
       <xsl:when                   test = "$myScope = 'SpecificPerson'">
-       <xsl:if                    test = "SpecificPhone
+       <xsl:choose>
+        <!--
+        Specific Information overwrites CTO information
+        =============================================== -->
+        <xsl:when                 test = "not(../../Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactPhone)
                                           or
+                                          SpecificPhone">
+         <xsl:apply-templates   select = "Person/PersonNameInformation"/>
+        </xsl:when>
+        <!--
+        CTO information exists but without phone number.  Display a
+        a warning message and continue
+        =========================================================== -->
+        <xsl:when                 test = "../../Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact
+                                          and 
                                           not(../../Organization/
                                           OrganizationLocations/
-                                          ClinicalTrialsOfficeContact)">
-        <xsl:apply-templates    select = "Person/PersonNameInformation"/>
-       </xsl:if>
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactPhone)">
+         <xsl:message        terminate = "no">
+          <xsl:text>CTO Office Contact Phone missing &lt;BR/&gt;</xsl:text>
+          <xsl:value-of         select = "@cdr:href"/>
+         </xsl:message> 
+
+         <xsl:apply-templates   select = "Person/PersonNameInformation"/>
+
+        </xsl:when>
+        <xsl:when                 test = "../../Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact
+                                          and 
+                                          ../../Organization/
+                                          OrganizationLocations/
+                                          ClinicalTrialsOfficeContact/
+                                          ClinicalTrialsOfficeContactPhone">
+         <!-- Do Nothing -->
+        </xsl:when>
+        <!--
+        No CTO Information available
+        ============================ -->
+        <xsl:otherwise>
+         <xsl:apply-templates   select = "Person/PersonNameInformation"/>
+        </xsl:otherwise>
+       </xsl:choose>
       </xsl:when>
+      <!-- 
+      Private Practice Site 
+      ===================== -->
       <xsl:otherwise>
        <xsl:apply-templates       select = "Person/PersonNameInformation"/>
       </xsl:otherwise>
