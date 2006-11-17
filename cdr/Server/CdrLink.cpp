@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.28 2006-10-18 20:32:45 bkline Exp $
+ * $Id: CdrLink.cpp,v 1.29 2006-11-17 05:29:30 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2006/10/18 20:32:45  bkline
+ * Fixed name of link_xml table's foreign key into link_type table.
+ *
  * Revision 1.27  2006/10/06 02:40:42  ameyer
  * Modifications for link target version type handling.
  * Affects link validation, getLinkType, putLinkType, and the external
@@ -258,7 +261,7 @@ cdr::link::CdrLink::CdrLink (
           "  FROM link_xml x "
           "  JOIN link_type t "
           "    ON x.link_id = t.id "
-          " WHERE doc_type = ? AND element = ?";
+          " WHERE x.doc_type = ? AND x.element = ?";
     cdr::db::PreparedStatement select = conn.prepareStatement (qry);
     select.setInt (1, srcDocType);
     select.setString (2, srcField);
@@ -330,19 +333,19 @@ cdr::link::CdrLink::CdrLink (
                       "  FROM all_docs WHERE id = ?";
             else if (chkType == L"P")
                 // Publishable doc, at least one required
-                qry = "SELECT top 1 d.docType, d.active_status "
+                qry = "SELECT top 1 d.doc_type, d.active_status "
                       "  FROM all_docs d "
                       "  JOIN doc_version v "
                       "    ON d.id = v.id "
                       "   AND v.publishable = 'Y' "
-                      "   AND id = ?";
+                      "   AND d.id = ?";
             else if (chkType == L"V")
                 // Any version at exists, any one okay
-                qry = "SELECT top 1 d.docType, d.active_status "
+                qry = "SELECT top 1 d.doc_type, d.active_status "
                       "  FROM all_docs d "
                       "  JOIN doc_version v "
                       "    ON d.id = v.id "
-                      "   AND id = ?";
+                      "   AND d.id = ?";
             else
                 throw cdr::Exception(
                  L"link_type table chk_type has illegal value - can't happen");
@@ -423,18 +426,32 @@ int cdr::link::CdrLink::validateLink (
                 // Does the target contain the expected fragment id, if any?
                 if (trgFrag != cdr::link::NO_FRAGMENT) {
 
-                    qry = "SELECT fragment FROM link_fragment "
-                          "WHERE doc_id = ? AND fragment = ?";
+                    // Check link fragments against publishable or
+                    //   current working docs, depending on chkType
+                    // We don't have a special table just for last version
+                    if (chkType == L"P")
+                        qry = "SELECT 0 FROM query_term_pub "
+                              " WHERE value=? AND doc_id=?";
+                    else
+                        qry = "SELECT 0 FROM query_term "
+                              " WHERE value=? AND doc_id=?";
                     cdr::db::PreparedStatement frag_sel =
                                 dbConn.prepareStatement (qry);
-                    frag_sel.setInt (1, trgId);
-                    frag_sel.setString (2, trgFrag);
+                    frag_sel.setString (1, trgFrag);
+                    frag_sel.setInt (2, trgId);
                     cdr::db::ResultSet frag_rs = frag_sel.executeQuery();
 
                     // Error if it doesn't
-                    if (!frag_rs.next())
-                        this->addLinkErr (L"cdr:id matching fragment '" +
-                                trgFrag + L"' not found in target document");
+                    if (!frag_rs.next()) {
+                        if (chkType == L"P")
+                            this->addLinkErr (L"cdr:id matching fragment '" +
+                                trgFrag + L"' not found in publishable"
+                                          L" target document");
+                        else
+                            this->addLinkErr (L"cdr:id matching fragment '" +
+                                trgFrag + L"' not found in current working"
+                                          L" target document");
+                    }
                 }
             }
         }
@@ -513,8 +530,8 @@ int cdr::link::CdrDelLinks (
     std::string breakQry =
             "SELECT DISTINCT source_doc, title, target_frag "
             "  FROM link_net, document "
-            " WHERE target_doc = ? "
-            "   AND source_doc = id";
+            " WHERE link_net.target_doc = ? "
+            "   AND link_net.source_doc = document.id";
 
     cdr::db::PreparedStatement breakSel = dbConn.prepareStatement (breakQry);
     breakSel.setInt (1, docId);
