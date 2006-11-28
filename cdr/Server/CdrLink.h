@@ -1,10 +1,13 @@
 /*
- * $Id: CdrLink.h,v 1.10 2006-10-06 02:41:27 ameyer Exp $
+ * $Id: CdrLink.h,v 1.11 2006-11-28 22:42:19 ameyer Exp $
  *
  * Header for Link Module software - to maintain the link_net
  * table describing the link relationships among CDR documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2006/10/06 02:41:27  ameyer
+ * Minor modifications to support link target version type distinctions.
+ *
  * Revision 1.9  2002/08/29 21:53:07  ameyer
  * Added constants for some initial values that can be set or read in different
  * places for CdrLink members.
@@ -88,6 +91,17 @@ namespace cdr {
         href,           // cdr:href - retains element content
         xhref           // xlink:href - no validation
     } LinkStyle;
+
+    /**
+     * Three different kinds of versions and link can point to.
+     *
+     * These guide indexing in query_term_def
+     */
+    typedef enum LinkChkVersion {
+        CHK_CWD = 'C',  // Check against current working document
+        CHK_PUB = 'P',  // Check against last published version
+        CHK_VER = 'V'   // Check against last any version
+    } LinkChkVersion;
 
     /**
      * List of CdrLink objects.
