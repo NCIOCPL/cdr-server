@@ -22,6 +22,8 @@ Filter to create the vendor Terminology XML
  <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
  <xsl:param                       name = "DateFirstPub"
                                 select = "''"/> 
+ <xsl:param                       name = "setCase"
+                                select = "'proper'"/>
 
  <!-- *
  ====================================================================
@@ -666,23 +668,18 @@ Filter to create the vendor Terminology XML
                                             Term/@cdr:ref, 4))"/>
       <xsl:text>&amp;idtype=1</xsl:text>
      </xsl:attribute>
+
      <xsl:text>Clinical Trials for </xsl:text>
-      <xsl:value-of             select = "concat(
-                                           translate(
-                                            substring(
-                                             /DrugInformationSummary/
-                                             DrugInfoMetaData/
-                                             TerminologyLink/
-                                             Term/
-                                             PreferredName,1,1), 
-                                             'abcdefghijklmnopqrstuvwxyz',
-                                             'ABCDEFGHIJKLMNOPQRSTUVWXYZ'),
-                                           substring(
-                                            /DrugInformationSummary/
-                                            DrugInfoMetaData/
-                                            TerminologyLink/
-                                            Term/
-                                            PreferredName,2))"/>
+     <xsl:call-template           name = "convertCase">
+      <xsl:with-param             name = "convString" 
+                                select = "/DrugInformationSummary/
+                                          DrugInfoMetaData/
+                                          TerminologyLink/
+                                          Term/
+                                          PreferredName"/>
+      <xsl:with-param             name = "convertTo"
+                                select = "$setCase"/>
+     </xsl:call-template>
     </xsl:element>
     <xsl:text> - Check for trials from NCI's PDQ Cancer Clinical </xsl:text>
     <xsl:text>Trials Registry now accepting patients.</xsl:text>
@@ -696,20 +693,6 @@ Filter to create the vendor Terminology XML
  Template to create US Brand Name
  ===================================================================== -->
  <xsl:template                    name = "briefDisclaimer">
-<!-- **********************************************************************
-     Remove after Mahler CDR has been refreshed
--->
-<!--
-      <xsl:variable               name = "miscDoc" 
-                               select = "document(concat('cdr:CDR0000466802',
-                                                         '/lastp'))"/>
-
-     **********************************************************************
--->
-<!-- **********************************************************************
-     Misc Doc ID on FRANCK only!!!!!
-     **********************************************************************
--->
       <xsl:variable               name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000510121',
                                                          '/lastp'))"/>
@@ -727,21 +710,7 @@ Filter to create the vendor Terminology XML
  Template to create US Brand Name
  ===================================================================== -->
  <xsl:template                    name = "detailedDisclaimer">
-<!-- **********************************************************************
-     Remove after Mahler CDR has been refreshed
--->
-<!--
       <xsl:variable               name = "miscDoc" 
-                               select = "document(concat('cdr:CDR0000466803',
-                                                         '/lastp'))"/>
-     **********************************************************************
--->
-
-<!-- **********************************************************************
-     Misc Doc ID on FRANCK only!!!!!
-     **********************************************************************
-      <xsl:variable               name = "miscDoc" 
--->
                                select = "document(concat('cdr:CDR0000510122',
                                                          '/lastp'))"/>
 
