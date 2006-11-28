@@ -3,9 +3,25 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Module: Global Filter Templates</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.4: Global Address Template (Bug 601)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
+<!--
+================================================================
+$RCSfile: CDR0000306482.xml,v $
+
+Filter modules for general use (string conversion, etc.)
+$Author: venglisc $
+Created: Volker Englisch
+
+$Source: /usr/local/cvsroot/cdr/Filters/CDR0000306482.xml,v $
+$Revision: 1.5 $
+
+History
+=======
+$Log: not supported by cvs2svn $
+
+================================================================ -->
 <xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                          xmlns:cdr = "cips.nci.nih.gov/cdr"
            exclude-result-prefixes = "cdr"
@@ -95,6 +111,7 @@
     </xsl:if>    
   </xsl:template>
 
+
 <!-- ======================================================================
      Drop white space node between 2 consecutive CitationLink/ProtocolLink
      elements.
@@ -112,6 +129,83 @@
       <xsl:value-of    select = "."/>                           
     </xsl:if>
   </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to convert a text string
+ In the calling template you need to specify a parameter 
+   setCase = 'value'
+ with valid value entries upper, lower, proper.
+ ===================================================================== -->
+ <xsl:template                    name = "convertCase">
+  <xsl:param                      name = "convString"/>
+  <xsl:param                      name = "convertTo"/>
+ <xsl:variable name = "lcLetters">abcdefghijklmnopqrstuvwxyz</xsl:variable>
+ <xsl:variable name = "ucLetters">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
+
+
+  <xsl:choose>
+   <xsl:when                      test = "$convertTo = 'lower'">
+    <xsl:value-of               select = "translate($convString,
+                                                    $ucLetters,$lcLetters)" />
+   </xsl:when>
+   <xsl:when                      test = "$convertTo = 'upper'">
+    <xsl:value-of               select = "translate($convString,
+                                                    $lcLetters,$ucLetters)" />
+   </xsl:when>
+   <xsl:when                      test = "$convertTo = 'proper'">
+    <xsl:call-template            name = "convertProperCase">
+     <xsl:with-param              name = "convString">
+      <xsl:value-of             select = "translate($convString,
+                                                    $ucLetters,$lcLetters)" />
+     </xsl:with-param>
+    </xsl:call-template>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:value-of               select = "$convString"/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to convert a text string to propper case
+ ===================================================================== -->
+ <xsl:template                    name = "convertProperCase">
+  <xsl:param                      name = "convString"/>
+
+  <xsl:if                         test = "string-length($convString) > 0">
+   <xsl:variable                  name = "firstChar"
+                                select = "substring($convString, 1, 1)"/>
+   <xsl:variable                  name = "nextChars"
+                                select = "substring($convString, 2)"/>
+
+   <xsl:call-template             name = "convertCase">
+    <xsl:with-param               name = "convString" 
+                                select = "$firstChar" />
+    <xsl:with-param               name = "convertTo"
+                                select = "'upper'"/>
+   </xsl:call-template>
+
+   <xsl:choose>
+    <xsl:when                     test = "contains($nextChars,' ')">
+     <xsl:value-of              select = "substring-before($nextChars,' ')"/>
+     <xsl:text> </xsl:text>
+     <xsl:call-template           name = "convertProperCase">
+      <xsl:with-param             name = "convString"
+                                select = "substring-after($nextChars,' ')"/>
+     </xsl:call-template>
+    </xsl:when>
+
+    <xsl:otherwise>
+     <xsl:value-of              select = "$nextChars"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:if>
+ </xsl:template>
+
 
 <!-- ======================================================================
      Template rule used to do XML to XML transformations which
