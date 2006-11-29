@@ -1,10 +1,19 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.84 2006-11-12 13:49:34 bkline Exp $
+# $Id: Makefile,v 1.85 2006-11-29 16:31:29 bkline Exp $
 #
 # Rules for building CDR server.
 #
+# The 'VCVER' macro is created so that we can point the linker to the
+# correct location for the regular expression libraries.  The values
+# track the versions of the Microsoft runtime libraries (e.g., 7 or
+# 71 or 8), not the version numbers for the C++ compiler (which jump
+# around with a less predictable pattern).
+#
 # $Log: not supported by cvs2svn $
+# Revision 1.84  2006/11/12 13:49:34  bkline
+# Modifications for upgrade of Boost::Regex++ package to 1.33.1.
+#
 # Revision 1.83  2006/10/04 03:47:25  ameyer
 # Added AdvAPI.lib needed for security attributes in CdrLog.cpp.
 #
