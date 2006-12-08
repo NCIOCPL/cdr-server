@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-$Id: CDR0000315588.xml,v 1.26 2006-07-29 01:01:18 bkline Exp $
+$Id: CDR0000315588.xml,v 1.27 2006-12-08 18:29:02 venglisc Exp $
 
 Module: Vendor Cleanup Templates
 
@@ -578,10 +578,35 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
     </xsl:element>
    </xsl:otherwise>
   </xsl:choose>
-
  </xsl:template>
 
 
+ <!-- 
+ =====================================================================
+ Add a bullet to the Eligibility Criteria list of InScopeProtocols
+ The new ListItem element is being added to each top level Itemized
+ list as the last element.
+ ===================================================================== -->
+ <xsl:template               match = "Protocol/
+                                      ProtocolAbstract/
+                                      Patient/
+                                      EligibilityText/
+                                      ItemizedList"
+                              mode = "copy">
+  <xsl:copy>
+   <xsl:for-each             select = "@*">
+    <xsl:attribute             name = "{name()}">
+     <xsl:value-of           select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+   <xsl:apply-templates        mode = "copy"/>
+   <ListItem>
+    <xsl:text>For more information about the eligibility criteria </xsl:text>
+    <xsl:text>for this trial, refer to the </xsl:text>
+    <xsl:text>Health Professional version.</xsl:text>
+   </ListItem>
+  </xsl:copy>
+ </xsl:template>
 </xsl:transform>
 ]]>
 </CdrDocXml>
