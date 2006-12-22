@@ -10,7 +10,7 @@
 <!--
 ======================================================================
 ==
-== $Id: CDR0000502087.xml,v 1.3 2006-09-24 19:43:20 bkline Exp $
+== $Id: CDR0000502087.xml,v 1.4 2006-12-22 20:46:59 bkline Exp $
 ==
 == This filter transforms vendor output for active protocols into
 == a structure which conforms to the NLM DTD for clinical_study
@@ -37,6 +37,9 @@
 == used for the indefinite future.
 ==
 == $Log: not supported by cvs2svn $
+== Revision 1.3  2006/09/24 19:43:20  bkline
+== Version moved into production.
+==
 == Revision 1.2  2006/08/08 20:56:21  bkline
 == Expanded set of inline markup to be handled in paras and lists.
 ==
@@ -130,8 +133,20 @@
  Root element.
  ==================================================================== -->
  <xsl:template               match = "/">
+  <xsl:variable               name = 'overallStatus'>
+   <xsl:call-template         name = 'get_overall_status'/>
+  </xsl:variable>
   <clinical_study>
-   <xsl:apply-templates     select = "Protocol"/>
+   <xsl:if                    test = "$overallStatus != 'Recruiting' and
+                                      $overallStatus != 'Not yet recruiting'">
+    <xsl:attribute            name = "partial_upload">
+     <xsl:value-of          select = "'true'"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:apply-templates     select = "Protocol">
+    <xsl:with-param           name = "overallStatus"
+                            select = "$overallStatus"/>
+   </xsl:apply-templates>
   </clinical_study>
  </xsl:template>
 
@@ -140,6 +155,7 @@
  Document element.
  ==================================================================== -->
  <xsl:template               match = "Protocol">
+  <xsl:param                  name = "overallStatus"/>
   <xsl:call-template          name = "get_id_info"/>
   <xsl:call-template          name = "get_is_ind_study"/>
   <xsl:call-template          name = "get_has_irb_approval"/>
@@ -151,7 +167,9 @@
   <xsl:call-template          name = "get_oversight_info"/>
   <xsl:call-template          name = "get_brief_summary"/>
   <xsl:call-template          name = "get_detailed_description"/>
-  <xsl:call-template          name = "get_overall_status"/>
+  <overall_status>
+   <xsl:value-of            select = "$overallStatus"/>
+  </overall_status>
   <xsl:call-template          name = "get_start_date"/>
   <xsl:call-template          name = "get_end_date"/>
   <xsl:call-template          name = "get_last_follow_up_date"/>
@@ -485,56 +503,53 @@
  Added new test for absence of any protocol sites, for which condition
  NLM wants the value 'Not yet recruiting'; also added mapping from
  Withdrawn to Terminated.
+ RMK 2006-12-19: modified to return the status value rather than
+ insert the overall_status element, so we can use the value to 
+ determine whether to stick a 'partial_upload' attribute on the
+ top-level element (see request #2818).
  ==================================================================== -->
  <xsl:template                name = "get_overall_status">
-  <overall_status>
-   <xsl:choose>
-    <xsl:when                 test = "ProtocolAdminInfo/CurrentProtocolStatus =
-                                      'Active'">
-     <xsl:choose>
-      <xsl:when               test = "not(ProtocolAdminInfo
+  <xsl:variable               name = "status"
+                            select = "/Protocol/ProtocolAdminInfo
+                                      /CurrentProtocolStatus"/>
+  <xsl:choose>
+   <xsl:when                  test = "$status = 'Active'">
+    <xsl:choose>
+     <xsl:when                test = "not(/Protocol/ProtocolAdminInfo
                                           /ProtocolSites/ProtocolSite)">
-       <xsl:text>Not yet recruiting</xsl:text>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:text>Recruiting</xsl:text>
-      </xsl:otherwise>
-     </xsl:choose>
-    </xsl:when>
-    <xsl:when                 test = "ProtocolAdminInfo/CurrentProtocolStatus =
-                                      'Approved-not yet active'">
-     <xsl:text>Not yet recruiting</xsl:text>
-    </xsl:when>
-    <xsl:when                 test = "ProtocolAdminInfo/CurrentProtocolStatus =
-                                      'Withdrawn'">
-     <xsl:text>Terminated</xsl:text>
-    </xsl:when>
-    <xsl:when                 test = "ProtocolAdminInfo/CurrentProtocolStatus =
-                                      'Completed'">
-     <xsl:text>Completed</xsl:text>
-    </xsl:when>
-    <xsl:when                 test = "ProtocolAdminInfo/CurrentProtocolStatus =
-                                      'Closed'">
-     <xsl:text>No longer recruiting</xsl:text>
-    </xsl:when>
-    <xsl:when                 test = "ProtocolAdminInfo/CurrentProtocolStatus =
-                                      'Temporarily Closed'">
-     <xsl:text>Suspended</xsl:text>
-    </xsl:when>
-    <xsl:when                 test = "ProtocolAdminInfo/CurrentProtocolStatus =
-                                      'Temporarily closed'">
-     <xsl:text>Suspended</xsl:text>
-    </xsl:when>
-    <xsl:when                 test = "ProtocolAdminInfo/CurrentProtocolStatus =
-                                      'Withdrawn from PDQ'">
-     <xsl:if                  test = "not(BlockedFromCTGov)">
-      <xsl:message       terminate = "yes">
-       <xsl:value-of        select = "'BlockedFromCTGov element missing'"/>
-      </xsl:message>
-     </xsl:if>
-    </xsl:when>
-   </xsl:choose>
-  </overall_status>
+      <xsl:value-of         select = "'Not yet recruiting'"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of         select = "'Recruiting'"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:when                  test = "$status = 'Approved-not yet active'">                               
+    <xsl:value-of           select = "'Not yet recruiting'"/>
+   </xsl:when>
+   <xsl:when                  test = "$status = 'Withdrawn'">
+    <xsl:value-of           select = "'Terminated'"/>
+   </xsl:when>
+   <xsl:when                  test = "$status = 'Completed'">
+    <xsl:value-of           select = "'Completed'"/>
+   </xsl:when>
+   <xsl:when                  test = "$status = 'Closed'">
+    <xsl:value-of           select = "'No longer recruiting'"/>
+   </xsl:when>
+   <xsl:when                  test = "$status = 'Temporarily Closed'">
+    <xsl:value-of           select = "'Suspended'"/>
+   </xsl:when>
+   <xsl:when                  test = "$status = 'Temporarily closed'">
+    <xsl:value-of           select = "'Suspended'"/>
+   </xsl:when>
+   <xsl:when                  test = "$status = 'Withdrawn from PDQ'">
+    <xsl:if                   test = "not(BlockedFromCTGov)">
+     <xsl:message        terminate = "yes">
+      <xsl:value-of         select = "'BlockedFromCTGov element missing'"/>
+     </xsl:message>
+    </xsl:if>
+   </xsl:when>
+  </xsl:choose>
  </xsl:template>
 
  <!--
@@ -703,7 +718,9 @@
      <xsl:value-of          select = "normalize-space()"/>
     </expected_enrollment>
    </xsl:for-each>
-   <gender>Both</gender> <!-- Per Lakshmi 2002-12-19. -->
+   <gender>
+    <xsl:value-of           select = "Eligibility/Gender"/>
+   </gender>
    <minimum_age>
     <xsl:value-of           select = "normalize-space(Eligibility/LowAge)"/>
    </minimum_age>
@@ -1176,46 +1193,9 @@
  ==================================================================== -->
  <xsl:template               match = "Para">
   <xsl:param                  name = "indent"/>
-  <xsl:variable               name = "content">
-   <xsl:apply-templates     select = "text() | Superscript | Subscript |
-                                      Note | ProtocolRef | GlossaryRef |
-                                      GeneName | ScientificName | TT |
-                                      ForeignWord"/>
-  </xsl:variable>
   <xsl:value-of             select = "concat($indent,
-                                             normalize-space($content),
+                                             normalize-space(.),
                                              '&#10;&#10;')"/>
- </xsl:template>
-
- <!--
- ====================================================================
- Insert a caret before superscripted text.  Note that there is no
- indication in the output of how many of the following characters
- are superscripted (but fortunately there are no multi-character
- superscripts in the data, at least not at the time of this writing).
- ==================================================================== -->
- <xsl:template               match = "Superscript">
-  <xsl:value-of             select = "concat('^', .)"/>
- </xsl:template>
-
- <!--
- ====================================================================
- Insert an underscore before subscripted text.  Note that there is 
- no indication in the output of how many of the following characters
- are subscripted (but fortunately there are no multi-character
- subscripts in the data, at least not at the time of this writing).
- ==================================================================== -->
- <xsl:template               match = "Subscript">
-  <xsl:value-of             select = "concat('_', .)"/>
- </xsl:template>
-
- <!--
- ====================================================================
- Decorate a note with a prefix.  Assumption: Note elements contain
- no other markup.
- ==================================================================== -->
- <xsl:template               match = "Note">
-  <xsl:value-of             select = "concat('NOTE: ', .)"/>
  </xsl:template>
 
  <!--
@@ -1247,47 +1227,31 @@
  ==================================================================== -->
  <xsl:template               match = "ListItem">
   <xsl:param                  name = "indent"/>
-  <xsl:choose>
-   <xsl:when                  test = "Para | ItemizedList | OrderedList">
-    <xsl:for-each           select = "Para | ItemizedList | OrderedList |
+  <xsl:for-each             select = "Para | ItemizedList | OrderedList |
                                       text()">
-     <xsl:choose> <!-- This is getting very ugly! -->
-      <xsl:when               test = "name() = 'Para' or
+   <xsl:choose>
+    <xsl:when                 test = "name() = 'Para' or
                                       name() = 'ItemizedList' or
                                       name() = 'OrderedList'">
-       <xsl:apply-templates select = ".">
-        <xsl:with-param       name = "indent"
+     <xsl:apply-templates   select = ".">
+      <xsl:with-param         name = "indent"
                             select = "concat($indent, '    ')"/>
-       </xsl:apply-templates>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:variable          name = "normalizedContent"
+     </xsl:apply-templates>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:variable            name = "i"
+                            select = "(string-length($indent) div 4) mod 5"/>
+     <xsl:variable            name = "bulletChar"
+                            select = "substring('*-+=o', $i + 1, 1)"/>
+     <xsl:variable            name = "normalizedContent"
                             select = "normalize-space(.)"/>
-       <xsl:if                test = "$normalizedContent != ''">
-        <xsl:value-of       select = "concat($indent, '  - ',
+     <xsl:if                  test = "$normalizedContent != ''">
+      <xsl:value-of         select = "concat($indent, '  ', $bulletChar, ' ',
                                              $normalizedContent, '&#10;')"/>
-       </xsl:if>
-      </xsl:otherwise>
-     </xsl:choose>
-    </xsl:for-each>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:variable             name = "content">
-     <xsl:apply-templates   select = "text() | Superscript | Subscript |
-                                               Strong | Emphasis |
-                                               GeneName | ScientificName |
-                                               ProtocolRef | GlossaryRef |
-                                               ForeignWord"/>
-    </xsl:variable>
-    <xsl:variable             name = "normalizedContent"
-                            select = "normalize-space($content)"/>
-    <xsl:if                   test = "$normalizedContent != ''">
-     <xsl:value-of          select = "concat($indent, '  - ',
-                                             $normalizedContent,
-                                             '&#10;')"/>
-    </xsl:if>
-   </xsl:otherwise>
-  </xsl:choose>
+     </xsl:if>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:for-each>
  </xsl:template>
 
 </xsl:transform>
