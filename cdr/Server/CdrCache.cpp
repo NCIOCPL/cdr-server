@@ -1,9 +1,11 @@
-/*
- * $Id: CdrCache.cpp,v 1.7 2005-03-04 02:41:06 ameyer Exp $
+/* * $Id: CdrCache.cpp,v 1.8 2007-01-03 19:39:53 ameyer Exp $
  *
  * Specialized cacheing for performance optimization, where useful.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2005/03/04 02:41:06  ameyer
+ * Minor modification for new Xerces DOM parser.
+ *
  * Revision 1.6  2004/07/02 03:21:21  ameyer
  * Changed set to map to insure that ordering is always the same, by term ID.
  * Before that I was just storing pointers to Term objects - which causes
@@ -180,7 +182,7 @@ std::string cdr::cache::Term::denormalizeTermId(
         }
 
         else {
-            HANDLE mutex = CreateMutex(0, false, termCacheMutexName);
+            mutex = CreateMutex(0, false, termCacheMutexName);
             if (mutex != 0) {
                 cdr::Lock lock(mutex, 3000);
                 if (lock.m) {
