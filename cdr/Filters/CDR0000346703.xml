@@ -9,7 +9,7 @@
 
 <!--
  ================================================================
-     $Id: CDR0000346703.xml,v 1.6 2006-05-24 19:08:59 venglisc Exp $
+     $Id: CDR0000346703.xml,v 1.7 2007-01-29 17:11:49 venglisc Exp $
 
      Filter to create a CTGovProtocol QC Report.
      Input: from Denormalization Filter: CTGovProtocol
@@ -389,6 +389,7 @@
  
  <!-- 
  =================================================================
+ Template to display the PDQIndexing information
  ================================================================= -->
  <xsl:template                   match = 'PDQIndexing'>
   <span class="big">PDQ Indexing</span> 
@@ -399,32 +400,12 @@
      <xsl:with-param              name = 'label'
                                 select = '"Study Type"'/>
     </xsl:call-template>
-   </xsl:for-each>
-   <xsl:for-each                select = 'StudyCategory'>
-    <xsl:for-each               select = 'StudyCategoryType'>
-     <xsl:call-template           name = 'makeTableRow'>
-      <xsl:with-param             name = 'label'
-                                select = '"Information Category Type"'/>
-     </xsl:call-template>
-    </xsl:for-each>
-    <xsl:for-each               select = 'StudyCategoryName'>
-     <xsl:call-template           name = 'makeTableRow'>
-      <xsl:with-param             name = 'label'
-                                select = '"Information Category Name"'/>
-     </xsl:call-template>
-    </xsl:for-each>
-    <xsl:for-each               select = 'StudyFocus'>
-     <xsl:call-template           name = 'makeTableRow'>
-      <xsl:with-param             name = 'label'
-                                select = '"Study Focus"'/>
-     </xsl:call-template>
-    </xsl:for-each>
+    <xsl:call-template            name = 'blankRow'/>
    </xsl:for-each>
   </table>
 
-  <table        xsl:use-attribute-sets = "table">
-   <xsl:apply-templates         select = "StudyCategory/Intervention"/>
-  </table>
+  <xsl:apply-templates          select = "StudyCategory"/>
+  <p/>
 
   <table        xsl:use-attribute-sets = "table">
    <xsl:if                        test = 'Condition/Term/PreferredName'>
@@ -486,6 +467,32 @@
   </table>
   <p/>
  </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ ================================================================= -->
+ <xsl:template                   match = 'StudyCategory'>
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:call-template             name = 'makeTableRow'>
+    <xsl:with-param               name = 'label'
+                                select = '"Study Category Type"'/>
+    <xsl:with-param               name = 'data'
+                                select = 'StudyCategoryType'/>
+   </xsl:call-template>
+   <xsl:call-template             name = 'makeTableRow'>
+    <xsl:with-param               name = 'label'
+                                select = '"Study Category Name"'/>
+    <xsl:with-param               name = 'data'
+                                select = 'StudyCategoryName'/>
+   </xsl:call-template>
+
+   <xsl:apply-templates         select = 'Intervention'/>
+
+  </table>
+  <hr width = "15%"/>
+ </xsl:template>
+
 
  <!-- 
  =================================================================
