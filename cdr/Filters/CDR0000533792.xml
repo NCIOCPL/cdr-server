@@ -1,0 +1,45 @@
+<CdrDoc Type='Filter' Id='CDR0000533792'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">EVS Concept Filter</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<xsl:transform       xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                       version = "1.0">
+ <xsl:output            method = "xml"/>
+ <xsl:param               name = "conceptClass"
+                        select = "'gov.nih.nci.evs.domain.DescLogicConcept'"/>
+ <xsl:param               name = "propertyClass"
+                        select = "'gov.nih.nci.evs.domain.Property'"/>
+ <xsl:template           match = "/">
+  <xsl:apply-templates  select = "*/queryResponse"/>
+ </xsl:template>
+
+ <xsl:template           match = "queryResponse">
+  <xsl:apply-templates  select = "class[@name = $conceptClass]"/>
+ </xsl:template>
+
+ <xsl:template           match = "class">
+  <xsl:variable           name = "code"
+                        select = "field[@name = 'Code']"/>
+  <Concept                code = "$code">
+   <xsl:for-each        select = "field[@name = 'PropertyCollection']">
+    <xsl:for-each       select = "class[@name = $propertyClass]">
+     <Property>
+      <Name>
+       <xsl:value-of    select = "field[@name = 'Name']"/>
+      </Name>
+      <Value>
+       <xsl:value-of    select = "field[@name = 'Value']"/>
+      </Value>
+     </Property>
+    </xsl:for-each>
+   </xsl:for-each>
+  </Concept>
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
