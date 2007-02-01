@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!--
-    $Id: GlossaryTermName.xml,v 1.1 2007-01-23 15:43:58 bkline Exp $
+    $Id: GlossaryTermName.xml,v 1.2 2007-02-01 21:02:46 bkline Exp $
 
     $Log: not supported by cvs2svn $
+    Revision 1.1  2007/01/23 15:43:58  bkline
+    Added for issue #2604.
+
   -->
 
 <schema              xmlns           = 'http://www.w3.org/2001/XMLSchema'>
@@ -25,29 +28,10 @@
   <complexType       name            = 'GlossaryTermName'>
     <sequence>
       <element       name            = 'TermName'
-                     type            = 'TermName'/>
+                     type            = 'TermNameType'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'GlossaryTermConcept'
                      type            = 'GlossaryConceptLink'/>
-      <element       name            = 'TermPronunciation'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      <element       name            = 'PronunciationResource'
-                     type            = 'string'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'SpanishTermName'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      <element       name            = 'TermNameStatus'
-                     type            = 'TermNameStatus'/>
-      <element       name            = 'TermNameStatusDate'
-                     type            = 'date'/>
-      <element       name            = 'TermNameSourceVerification'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
     </sequence>
     <attribute       name            = 'xmlns:cdr'
                      type            = 'anyURI'
@@ -59,20 +43,79 @@
 <!--                         SIMPLE TYPES                            -->
 <!--=================================================================-->
 
-  <complexType       name            = 'TermName'>
-    <simpleContent>
-      <extension     base            = 'string'>
-        <attribute   name            = 'entry'
-                     type            = 'Yes'
+  <complexType       name            = 'TermNameType'>
+    <sequence>
+      <element       name            = 'TermNameString'
+                     type            = 'string'/>
+      <element       name            = 'TermPronunciation'
+                     type            = 'string'
                      minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
+      <element       name            = 'PronunciationResource'
+                     type            = 'string'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'TermNameStatus'
+                     type            = 'TermNameStatus'/>
+      <element       name            = 'TermNameStatusDate'
+                     type            = 'date'/>
+      <element       name            = 'TermNameSourceVerification'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+      <element       name            = 'Comment'
+                     type            = 'Comment'
+                     minOccurs       = '0'/>
+    </sequence>
+
+    <!-- e.g.: language='en sp' -->
+    <attribute       name            = 'language'
+                     type            = 'NMTOKENS'/>
+
+    <!-- Used as a flag to identify translated names other than the
+         one to which the user interface from the English name.
+         For example:
+          <TermName language='en'>
+           <TermNameString>breast</TermNameString>
+           <TermNameStatus>Approved</TermNameStatus>
+           <TermNameStatusDate>2007-02-01</TermNameStatusDate>
+          </TermName>
+          <TermName language='sp'>
+           <TermNameString>seno</TermNameString>
+           <TermNameStatus>Approved</TermNameStatus>
+           <TermNameStatusDate>2007-02-01</TermNameStatusDate>
+          </TermName>
+          <TermName language='sp' NameType='alternate'>
+           <TermNameString>mama</TermNameString>
+           <TermNameStatus>Approved</TermNameStatus>
+           <TermNameStatusDate>2007-02-01</TermNameStatusDate>
+          </TermName>
+
+         In this fragment, 'mama' is recognized as an alternate
+         Spanish translation of the English term 'breast' but
+         user interface software will know that when asked for
+         the Spanish equivalent of 'breast' it should use the
+         other Spanish name ('seno').
+     -->
+    <attribute       name            = 'NameType'
+                     type            = 'NameTypeValue'
+                     minOccurs       = '0'/>
   </complexType>
 
   <simpleType        name            = 'TermNameStatus'>
     <restriction     base            = 'string'>
       <enumeration   value           = 'Approved'/>
       <enumeration   value           = 'Pending'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'NameTypeValue'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'alternate'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'NMTOKENS'>
+    <restriction     base            = 'string'>
+      <pattern       value           = '\S+(\s+\S+)*'/>
     </restriction>
   </simpleType>
 
