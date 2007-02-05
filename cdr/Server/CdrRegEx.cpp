@@ -1,9 +1,12 @@
 /*
- * $Id: CdrRegEx.cpp,v 1.6 2006-11-12 13:49:34 bkline Exp $
+ * $Id: CdrRegEx.cpp,v 1.7 2007-02-05 03:05:01 bkline Exp $
  *
  * Implementation of CDR wrapper for regular expression handling.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2006/11/12 13:49:34  bkline
+ * Modifications for upgrade of Boost::Regex++ package to 1.33.1.
+ *
  * Revision 1.5  2002/06/12 20:25:25  bkline
  * Adjusted embedded dot pattern to not match newline.
  *
@@ -97,17 +100,17 @@ void cdr::RegEx::set(const std::string& pattern)
 
 bool cdr::RegEx::match(const wchar_t* what)
 {
-    boost::wcmatch m;
-    return boost::regex_match(what, m, *this, 
+    // boost::wcmatch m;
+    return boost::regex_match(what, /* m, */ *this, 
                               boost::match_not_dot_newline);
 }
 
 bool cdr::RegEx::match(const cdr::String& what)
 {
-    boost::wcmatch m;
+    // boost::wcmatch m;
     //boost::regex_match<std::basic_string<wchar_t>::const_iterator,
     //              boost::wregex::alloc_type> m;
-    return boost::regex_match(what.c_str(), m, *this, 
+    return boost::regex_match(what, /* m, */ *this, 
                               boost::match_not_dot_newline);
 }
 
