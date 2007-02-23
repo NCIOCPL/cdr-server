@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-$Id: CDR0000335166.xml,v 1.3 2005-05-25 17:36:47 venglisc Exp $
+$Id: CDR0000335166.xml,v 1.4 2007-02-23 22:53:32 venglisc Exp $
 
 Filter to display Summary elements selected by Checkbox
 Written by Volker Englisch, 2004-07-16
@@ -170,29 +170,60 @@ $Log: not supported by cvs2svn $
  The comments are being displayed without insertion/deletion 
  markup for insertions but _with_ markup for deletions
  ================================================================ -->
- <xsl:template               match = "Comment" 
+ <xsl:template               match = "Comment |
+                                      ResponseToComment" 
                               mode = "RS">
-  <xsl:if                     test = "$DisplayComments = 'Y'">
+
+  <xsl:variable               name = "myScope"
+                            select = "name()"/>
+
+  <xsl:if                     test = "substring(@audience, 1, 1) = 
+                                                          $DisplayComments
+                                      or
+                                      not(@audience) and $DisplayComments = 'I'
+                                      or
+                                      $DisplayComments = 'A'">
    <xsl:choose>
     <xsl:when                 test = "Deletion">
      <xsl:choose>
       <xsl:when               test = "Deletion/@RevisionLevel = 'approved'">
        <span class="comdeleteappr">
-        <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
       </xsl:when>   
       <xsl:when                 test = "Deletion/@RevisionLevel = 'proposed'">
        <span class="comdeleteprop">
-        <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
       </xsl:when>
       <xsl:otherwise>
        <span class="commentnormal">
-        <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
@@ -203,21 +234,42 @@ $Log: not supported by cvs2svn $
      <xsl:choose>
       <xsl:when               test = "Insertion/@RevisionLevel = 'approved'">
        <span class="cominsertappr">
-        <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
       </xsl:when>   
       <xsl:when                 test = "Insertion/@RevisionLevel = 'proposed'">
        <span class="cominsertprop">
-        <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
       </xsl:when>
       <xsl:otherwise>
        <span class="commentnormal">
-        <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
@@ -227,18 +279,29 @@ $Log: not supported by cvs2svn $
     <xsl:when                 test = "Deletion">
       <xsl:if                   test = "Deletion/@RevisionLevel = 'proposed'">
        <span class="comdeleteprop">
-        <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
       </xsl:if>
     </xsl:when>
-
-
-
     <xsl:otherwise>
      <span class="commentnormal">
-      <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
       <xsl:apply-templates/>
       <xsl:text>] </xsl:text>
      </span>
@@ -256,28 +319,59 @@ $Log: not supported by cvs2svn $
  markup within insertion and are not displayed by default for 
  the deletions.
  ================================================================ -->
- <xsl:template               match = "Comment">
-  <xsl:if                     test = "$DisplayComments = 'Y'">
+ <xsl:template               match = "Comment |
+                                      ResponseToComment">
+
+  <xsl:variable               name = "myScope"
+                            select = "name()"/>
+
+  <xsl:if                     test = "substring(@audience, 1, 1) = 
+                                                $DisplayComments
+                                      or
+                                      not(@audience) and $DisplayComments = 'I'
+                                      or
+                                      $DisplayComments = 'A'">
    <xsl:choose>
     <xsl:when                 test = "Insertion">
      <xsl:choose>
       <xsl:when               test = "Insertion/@RevisionLevel = 'approved'">
        <span class="cominsertappr">
-        <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
       </xsl:when>   
       <xsl:when                 test = "Insertion/@RevisionLevel = 'proposed'">
        <span class="cominsertprop">
-        <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
       </xsl:when>
       <xsl:otherwise>
        <span class="commentnormal">
-        <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
@@ -287,7 +381,14 @@ $Log: not supported by cvs2svn $
     <xsl:when                 test = "Deletion">
      <xsl:if                   test = "Deletion/@RevisionLevel = 'proposed'">
       <span class="comdeleteprop">
-       <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
        <xsl:apply-templates/>
        <xsl:text>] </xsl:text>
       </span>
@@ -295,7 +396,14 @@ $Log: not supported by cvs2svn $
     </xsl:when>
     <xsl:otherwise>
      <span class="commentnormal">
-      <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
       <xsl:apply-templates/>
       <xsl:text>] </xsl:text>
      </span>
@@ -313,29 +421,60 @@ $Log: not supported by cvs2svn $
  markup within insertion and are not displayed by default for 
  the deletions.
  ================================================================ -->
- <xsl:template               match = "Comment"
+ <xsl:template               match = "Comment |
+                                      ResponseToComment"
                               mode = "compactNo">
-  <xsl:if                     test = "$DisplayComments = 'Y'">
+
+  <xsl:variable               name = "myScope"
+                            select = "name()"/>
+
+  <xsl:if                     test = "substring(@audience, 1, 1) = 
+                                                          $DisplayComments
+                                      or
+                                      not(@audience) and $DisplayComments = 'I'
+                                      or
+                                      $DisplayComments = 'A'">
    <xsl:choose>
     <xsl:when                 test = "Insertion">
      <xsl:choose>
       <xsl:when               test = "Insertion/@RevisionLevel = 'approved'">
        <span class="cominsertappr">
-        <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
       </xsl:when>   
       <xsl:when                 test = "Insertion/@RevisionLevel = 'proposed'">
        <span class="cominsertprop">
-        <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
       </xsl:when>
       <xsl:otherwise>
        <span class="commentnormal">
-        <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
@@ -345,7 +484,14 @@ $Log: not supported by cvs2svn $
     <xsl:when                  test = "Deletion">
      <xsl:if                   test = "Deletion/@RevisionLevel = 'proposed'">
       <span class="comdeleteprop">
-       <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
        <xsl:apply-templates/>
        <xsl:text>] </xsl:text>
       </span>
@@ -353,7 +499,14 @@ $Log: not supported by cvs2svn $
     </xsl:when>
     <xsl:otherwise>
      <span class="commentnormal">
-      <xsl:text> [Comment: </xsl:text>
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
       <xsl:apply-templates/>
       <xsl:text>] </xsl:text>
      </span>
