@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.54 2007-03-14 23:10:38 ameyer Exp $
+ * $Id: CdrFilter.cpp,v 1.55 2007-03-14 23:58:23 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.54  2007/03/14 23:10:38  ameyer
+ * Added cdrutil:/sql-query, plus some additional documentation.
+ *
  * Revision 1.53  2006/09/01 02:07:54  ameyer
  * Added minor safety check on mappability.
  *
@@ -2455,7 +2458,7 @@ string getVerificationDate(const string& parms, cdr::db::Connection& conn,
  * Supports "cdrutil:sql-query" XSLT extension function callback.
  *
  * Example parms in call:
- *   "cdrutil:/sql-query/SELECT id, title FROM document WHERE id=?/12345".
+ *   "cdrutil:/sql-query/SELECT id, title FROM document WHERE id=?~12345".
  *
  * Example return:
  *   <?xml version='1.0' encoding='UTF-8'?>
@@ -2470,9 +2473,12 @@ string getVerificationDate(const string& parms, cdr::db::Connection& conn,
  * "null" = "Y", for example:
  *     <col id='2' name='title' null='Y'/>
  *
- * @params parms    Forward slash delimited string.
+ * @params parms    Tilde delimited string.
+ *                  We use tildes rather than slashes because slashes
+ *                  may be needed in SQL queries (e.g., in query_term
+ *                  path selections.)
  *                  The first piece of the string is the SQL query itself.
- *                  Optional subsequent slashes delimit question mark
+ *                  Optional subsequent tildes delimit question mark
  *                  subsitution parameters.
  *
  * @params conn     Database connection.
@@ -2500,7 +2506,7 @@ static string execXsltSqlQuery(const string& parms,
     // First string piece is always the query string, parm count is
     //   count of string pieces after that
     int pos;
-    if ((pos = parms.find("/")) == string::npos)
+    if ((pos = parms.find("~")) == string::npos)
         qry = parms;
     else
         qry = parms.substr(0, pos);
@@ -2517,11 +2523,11 @@ static string execXsltSqlQuery(const string& parms,
     // Make individual strings from parms
     if (pos != string::npos) {
         int start = pos + 1;
-        while ((pos = parms.find_first_of("/", start)) != string::npos) {
+        while ((pos = parms.find_first_of("~", start)) != string::npos) {
             qryParms.push_back(parms.substr(start, pos-start));
             start = pos + 1;
         }
-        // Parm found after last '/'
+        // Parm found after last '~'
         qryParms.push_back(parms.substr(start, string::npos));
 
         qryParmCount = qryParms.size();
