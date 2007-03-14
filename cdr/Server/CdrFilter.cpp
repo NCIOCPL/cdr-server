@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.53 2006-09-01 02:07:54 ameyer Exp $
+ * $Id: CdrFilter.cpp,v 1.54 2007-03-14 23:10:38 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.53  2006/09/01 02:07:54  ameyer
+ * Added minor safety check on mappability.
+ *
  * Revision 1.52  2006/05/04 22:45:47  ameyer
  * Numerous changes were introduced to support date-time limited filtering.
  * This is an interim release of these changes.  It appears to work and,
@@ -208,6 +211,7 @@
 #include "CdrGetDoc.h"
 #include "CdrString.h"
 #include "CdrVersion.h"
+#include "CdrRegEx.h"
 #include "CdrTiming.h"
 #include "CdrCache.h"
 
@@ -242,6 +246,7 @@ static void getFilterSetXml (cdr::db::Connection&, cdr::String, cdr::String,
                              vector<cdr::String>&  filters,
                              const cdr::String& maxFilterDate =
                                    cdr::DFT_VERSION_DATE);
+static string execXsltSqlQuery(const string&, cdr::db::Connection&);
 static std::string filterVector (
         cdr::String            document,
         cdr::db::Connection&   connection,
@@ -258,6 +263,12 @@ static string getVerificationDate(const string& parms,
 // Map of filter strings to ids
 // Used only if filter profiling is specified by environment variable
 static std::map<std::string, int> *S_pFltrIdMap = 0;
+
+// RegEx pattern for finding SQL commands that can modify the
+//  database.  Searches case insensitively for keyword+whitespace
+static cdr::RegEx S_unsafeWordsPat(
+        ".*(insert\\s|update\\s|delete\\s|create\\s"
+            "|alter\\s|exec[\(\\s]|execute[\(\\s]).*", true);
 
 namespace
 {
@@ -359,9 +370,6 @@ namespace
                           const wchar_t* type = NULL,
                           const cdr::String& maxDate = cdr::DFT_VERSION_DATE)
   {
-// DEBUG
-//std::cout << "In getDocument1, ui="<<ui.toUtf8()<<" version="<<version<<" maxDate=" << maxDate.toUtf8() << "\n";
-
     if (type == CdrDocType) {
       //std::cout << "Returning getDocString with maxDate\n"; // DEBUG
       return cdr::getDocString(ui, connection, version, true, false,
@@ -657,9 +665,22 @@ for (int i=0; i<alen; i++) {
     return 0;
   }
 
-  /***************************************************************************/
-  /* Sablotron error/message handling callbacks                              */
-  /***************************************************************************/
+  /***************************************************************************
+   * Sablotron error/message handling callbacks
+   *
+   * The "scheme" is a URI protocol identifier.  In theory, it could be
+   * something like "http://".  For our purposes, the following schemes are
+   * supported:
+   *    cdr:/       Used for retrieving documents:
+   *                cdr:/1234 - gets doc with id 1234.
+   *                cdr:/1234/CdrCtl - gets it with CdrCtl wrapper.
+   *                cdr:/\* - gets doc by id in ThreadData context.
+   *    cdrx:/      Don't think this means anything different anymore?
+   *    cdrutil:/   Get various things depending on what follows.
+   *                Many different functions are supported.
+   *
+   * See Sablotron docs for callback interfaces.
+   ***************************************************************************/
   int uri_open(void* data, SablotHandle, const char* scheme,
                const char* rest, int* handle)
   {
@@ -865,6 +886,10 @@ for (int i=0; i<alen; i++) {
       {
         u.doc = getVerificationDate(parms, thread_data->connection,
                                     thread_data->DocId);
+      }
+      else if (function == "sql-query")
+      {
+        u.doc = execXsltSqlQuery(parms, thread_data->connection);
       }
       else
         return 1;
@@ -2422,6 +2447,149 @@ string getVerificationDate(const string& parms, cdr::db::Connection& conn,
         return "<VerificationDate>" + dateFirstPub.toUtf8().substr(0, 10)
              + "</VerificationDate>";
     return "<VerificationDate/>";
+}
+
+/**
+ * Execute an SQL query on behalf of an XSLT filter request.
+ *
+ * Supports "cdrutil:sql-query" XSLT extension function callback.
+ *
+ * Example parms in call:
+ *   "cdrutil:/sql-query/SELECT id, title FROM document WHERE id=?/12345".
+ *
+ * Example return:
+ *   <?xml version='1.0' encoding='UTF-8'?>
+ *   <SqlResult>
+ *    <row id='1'>
+ *     <col id='1' name='id'>12345</col>
+ *     <col id='2' name='title'>Title of this particular doc</col>
+ *    </row>
+ *   </SqlResult>
+ *
+ * Nulls are handled by returning an empty element with an attribute
+ * "null" = "Y", for example:
+ *     <col id='2' name='title' null='Y'/>
+ *
+ * @params parms    Forward slash delimited string.
+ *                  The first piece of the string is the SQL query itself.
+ *                  Optional subsequent slashes delimit question mark
+ *                  subsitution parameters.
+ *
+ * @params conn     Database connection.
+ *
+ * @return          Serial SqlResult document, as described above.
+ *
+ * @throw           cdr::Exception from lower level database calls.
+ */
+static string execXsltSqlQuery(const string& parms,
+                               cdr::db::Connection& conn) {
+
+// DEBUG
+// std::cout << "SqlQuery parms=\"" << parms << "\"" << std::endl;
+
+    // Hold the query's optional parms
+    vector<string> qryParms;
+
+    // Output goes here
+    string result("<?xml version='1.0' encoding='UTF-8'?>\n<SqlResult>");
+
+    string qry;             // Query, isolated from its parameters
+    int qmarkCount   = 0;   // Number of question mark parameters in query
+    int qryParmCount = 0;   // Number of corresponding parms, must match
+
+    // First string piece is always the query string, parm count is
+    //   count of string pieces after that
+    int pos;
+    if ((pos = parms.find("/")) == string::npos)
+        qry = parms;
+    else
+        qry = parms.substr(0, pos);
+
+    // Empty query?
+    if (qry.size() < 1)
+        throw cdr::Exception(L"CdrFilter execXsltSqlQuery: Empty query");
+
+    // Refuse query containing possible SQL update commands
+    if (S_unsafeWordsPat.match(qry.c_str()))
+        throw cdr::Exception(L"CdrFilter execXsltSqlQuery: "
+            L" Query contains disallowed SQL keywords, sorry.");
+
+    // Make individual strings from parms
+    if (pos != string::npos) {
+        int start = pos + 1;
+        while ((pos = parms.find_first_of("/", start)) != string::npos) {
+            qryParms.push_back(parms.substr(start, pos-start));
+            start = pos + 1;
+        }
+        // Parm found after last '/'
+        qryParms.push_back(parms.substr(start, string::npos));
+
+        qryParmCount = qryParms.size();
+    }
+
+    // Count question mark placeholders in the query
+    pos = 0;
+    while ((pos = qry.find_first_of("?", pos)) != string.npos) {
+        ++qmarkCount;
+        ++pos;
+    }
+
+    // Counts need to match
+    if (qmarkCount != qryParmCount)
+          throw cdr::Exception(L"CdrFilter::execXsltSqlQuery:"
+                L" qmark, qryParm count mismatch in query: " +
+                cdr::String(parms));
+
+    // Prepare and execute the query
+    cdr::db::PreparedStatement qryStmt = conn.prepareStatement(qry);
+    for (int i=0; i<qmarkCount; i++)
+        qryStmt.setString(i+1, qryParms[i]);
+    cdr::db::ResultSet rs = qryStmt.executeQuery();
+
+    // Analyze results
+    cdr::db::ResultSetMetaData metaData = rs.getMetaData();
+    int colCount = metaData.getColumnCount();
+    vector<string> colNames;
+    for (int i=1; i<=colCount; i++) {
+        string colName(metaData.getColumnName(i).toUtf8());
+        colNames.push_back(colName);
+    }
+
+    // Put the results into XML
+    int rowId = 1;
+    while (rs.next()) {
+        // New row
+        char buf[1024];
+        sprintf(buf, "\n <row id='%d'>", rowId);
+        result += buf;
+
+        // All columns
+        for (int i=1; i<= colCount; i++) {
+            cdr::String wValue = rs.getString(i);
+            sprintf(buf, "\n  <col id='%d' name='%s'", i,
+                    colNames[i-1].c_str());
+            // sprintf(buf, "\n  <col id='%d'", i);
+            result += buf;
+            if (wValue.isNull())
+                // Show difference between empty string and null
+                result += " null='Y'/>";
+            else
+                // Copy in full value
+                result += ">" + wValue.toUtf8() + "</col>";
+        }
+
+        // Row termination
+        result += "\n </row>";
+        ++ rowId;
+    }
+
+    // Final XML terminator
+    result += "\n</SqlResult>";
+
+// DEBUG
+// std::cout << "End result=\n" << result << std::endl;
+
+    return result;
 }
 
 /**
