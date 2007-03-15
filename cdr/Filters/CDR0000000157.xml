@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml     version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000157.xml,v 1.53 2007-03-13 18:50:44 venglisc Exp $
+$Id: CDR0000000157.xml,v 1.54 2007-03-15 01:11:51 venglisc Exp $
 
 Filter to create summary vendor output data.
    Written by Volker Englisch, 2003-08-12
@@ -349,9 +349,38 @@ $Log: not supported by cvs2svn $
   <xsl:choose>
    <xsl:when                     test = "(name() = 'SummaryRef') or
                                          (name() = 'SummaryFragmentRef')">
+    <xsl:variable                name = "hrefId"
+                               select = "@cdr:href"/>
+    <xsl:variable                name = "hrefNormId"
+                               select = "number(
+                                           substring-after(@cdr:href, 'CDR'))"/>
+    <xsl:variable                name = "sqlQuery">
+     SELECT value 
+       FROM query_term_pub 
+      WHERE doc_id = ?
+        AND path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
+    </xsl:variable>
+
     <SummaryRef>
      <xsl:attribute              name = "href">
-      <xsl:value-of            select = "@cdr:href"/>
+      <xsl:value-of            select = "$hrefId"/>
+     </xsl:attribute>
+     <xsl:attribute              name = "url">
+      <xsl:variable              name = "prettyUrl"
+                               select = "normalize-space(
+                                          document(
+                                          concat('cdrutil:/sql-query/',
+                                                  $sqlQuery,
+                                                  '~',
+                                                  $hrefNormId)))"/>
+      <xsl:choose>
+       <xsl:when                 test = "starts-with($prettyUrl, 'http')">
+        <xsl:value-of          select = "substring-after($prettyUrl, '.gov')"/>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:value-of          select = "$prettyUrl"/>
+       </xsl:otherwise>
+      </xsl:choose>
      </xsl:attribute>
      <xsl:apply-templates/>
     </SummaryRef>
@@ -620,10 +649,10 @@ $Log: not supported by cvs2svn $
  text.
  ============================================================= -->
  <xsl:template                  match = "Citation">
-  <xsl:if                      test = "not(name(..) = 'ReferenceList')">
+  <xsl:if                        test = "not(name(..) = 'ReferenceList')">
    <Reference>
-    <xsl:attribute              name = "refidx">
-     <xsl:value-of            select = "./@refidx"/>
+    <xsl:attribute               name = "refidx">
+     <xsl:value-of             select = "./@refidx"/>
     </xsl:attribute>
    </Reference>
   </xsl:if>
@@ -632,17 +661,17 @@ $Log: not supported by cvs2svn $
 
  <!-- 
  ============================================================= 
- Create the GlossaryTermRef template and rename the attribute 
+ Create the elements and rename the attribute 
  (cdr:href ID needs to be renamed to href).
  ============================================================= -->
  <xsl:template                  match = "GlossaryTermRef |
                                          MediaRef">
-    <xsl:element              name = "{name()}">
-      <xsl:attribute          name = "href">
-        <xsl:value-of       select = "./@cdr:href"/>
-      </xsl:attribute>
-      <xsl:value-of         select = "."/>
-    </xsl:element>
+  <xsl:element                   name = "{name()}">
+   <xsl:attribute                name = "href">
+    <xsl:value-of              select = "./@cdr:href"/>
+   </xsl:attribute>
+   <xsl:value-of               select = "."/>
+  </xsl:element>
  </xsl:template>
 
 
