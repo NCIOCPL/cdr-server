@@ -8,16 +8,17 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000137.xml,v 1.24 2006-10-30 21:15:03 venglisc Exp $
+$Id: CDR0000000137.xml,v 1.25 2007-03-15 01:53:11 venglisc Exp $
 
 Filter to create Vendor XML for Glossary
 
 $Log: not supported by cvs2svn $
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                               version = "1.0"
-                             xmlns:cdr = "cips.nci.nih.gov/cdr">
-    
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+               exclude-result-prefixes = "cdr"
+                               version = "1.0">
+
  <xsl:include href = "cdr:name:Module: Vendor Filter Templates"/>
     
  <xsl:output                    method = "xml" 
@@ -136,6 +137,49 @@ $Log: not supported by cvs2svn $
   <xsl:element                     name = "{name()}">
    <xsl:apply-templates            mode = "copy"/>
   </xsl:element>
+ </xsl:template>
+
+ <!-- 
+ ===================================================================
+ Template for extracting SummaryRef Definition
+ =================================================================== -->
+ <xsl:template                  match = "SummaryRef"
+                                 mode = "copy">
+    <xsl:variable                name = "hrefId"
+                               select = "@cdr:href"/>
+    <xsl:variable                name = "hrefNormId"
+                               select = "number(
+                                           substring-after(@cdr:href, 'CDR'))"/>
+    <xsl:variable                name = "sqlQuery">
+     SELECT value 
+       FROM query_term_pub 
+      WHERE doc_id = ?
+        AND path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
+    </xsl:variable>
+
+    <SummaryRef>
+     <xsl:attribute              name = "href">
+      <xsl:value-of            select = "$hrefId"/>
+     </xsl:attribute>
+     <xsl:attribute              name = "url">
+      <xsl:variable              name = "prettyUrl"
+                               select = "normalize-space(
+                                          document(
+                                          concat('cdrutil:/sql-query/',
+                                                  $sqlQuery,
+                                                  '~',
+                                                  $hrefNormId)))"/>
+      <xsl:choose>
+       <xsl:when                 test = "starts-with($prettyUrl, 'http')">
+        <xsl:value-of          select = "substring-after($prettyUrl, '.gov')"/>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:value-of          select = "$prettyUrl"/>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:attribute>
+     <xsl:apply-templates/>
+    </SummaryRef>
  </xsl:template>
 </xsl:transform>]]>
 </CdrDocXml>
