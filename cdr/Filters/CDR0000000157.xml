@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml     version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000157.xml,v 1.54 2007-03-15 01:11:51 venglisc Exp $
+$Id: CDR0000000157.xml,v 1.55 2007-03-15 20:39:40 venglisc Exp $
 
 Filter to create summary vendor output data.
    Written by Volker Englisch, 2003-08-12
@@ -353,7 +353,10 @@ $Log: not supported by cvs2svn $
                                select = "@cdr:href"/>
     <xsl:variable                name = "hrefNormId"
                                select = "number(
-                                           substring-after(@cdr:href, 'CDR'))"/>
+                                           substring-before(
+                                           concat(
+                                           substring-after(@cdr:href, 'CDR'),
+                                                               '#'), '#'))"/>
     <xsl:variable                name = "sqlQuery">
      SELECT value 
        FROM query_term_pub 
@@ -361,14 +364,14 @@ $Log: not supported by cvs2svn $
         AND path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
     </xsl:variable>
 
-    <SummaryRef>
+  <SummaryRef>
      <xsl:attribute              name = "href">
       <xsl:value-of            select = "$hrefId"/>
      </xsl:attribute>
      <xsl:attribute              name = "url">
       <xsl:variable              name = "prettyUrl"
                                select = "normalize-space(
-                                          document(
+                                         document(
                                           concat('cdrutil:/sql-query/',
                                                   $sqlQuery,
                                                   '~',
