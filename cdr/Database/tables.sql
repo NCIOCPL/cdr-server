@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.112 2006-09-29 03:19:30 ameyer Exp $
+ * $Id: tables.sql,v 1.113 2007-03-22 13:47:38 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.112  2006/09/29 03:19:30  ameyer
+ * Added chk_type column to link_type table.
+ *
  * Revision 1.111  2006/09/11 13:12:00  bkline
  * Added last_status column to pub_proc_nlm table.
  *
@@ -2014,7 +2017,8 @@ CREATE TABLE ctgov_import
      changed DATETIME          NULL,
       cdr_id INTEGER           NULL REFERENCES all_docs,
      dropped CHAR          NOT NULL DEFAULT 'N',
-     comment NTEXT             NULL)
+     comment NTEXT             NULL,
+       phase VARCHAR(20)       NULL)
 GO
 CREATE INDEX ctgov_import_title ON ctgov_import(title)
 GO
