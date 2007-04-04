@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.113 2007-03-22 13:47:38 bkline Exp $
+ * $Id: tables.sql,v 1.114 2007-04-04 18:59:17 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.113  2007/03/22 13:47:38  bkline
+ * Added 'phase' column to ctgov_import table.
+ *
  * Revision 1.112  2006/09/29 03:19:30  ameyer
  * Added chk_type column to link_type table.
  *
@@ -2244,4 +2247,22 @@ CREATE TABLE external_map_type
       (usage INTEGER NOT NULL REFERENCES external_map_usage,
     doc_type INTEGER NOT NULL REFERENCES doc_type,
 PRIMARY KEY (usage, doc_type))
+GO
+
+/*
+ * Sets of GENETICSPROFESSIONAL documents to be imported from CIAT-maintained
+ * external database.
+ *
+ *           id  primary key for table
+ *         path  location of zipfile containing gp document set
+ *     uploaded  date/time the set was submitted by CIAT
+ *     imported  date/time the set was imported into the repository
+ *       errors  description of failure, if imported did not succeed
+ */
+CREATE TABLE gp_import_set
+         (id INTEGER       IDENTITY PRIMARY KEY,
+        path VARCHAR(1024) NOT NULL,
+    uploaded DATETIME      NOT NULL,
+    imported DATETIME          NULL,
+      errors NTEXT             NULL)
 GO
