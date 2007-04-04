@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.114 2007-04-04 18:59:17 bkline Exp $
+ * $Id: tables.sql,v 1.115 2007-04-04 19:09:27 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.114  2007/04/04 18:59:17  bkline
+ * Added table for GENETICSPROFESSIONAL document set imports.
+ *
  * Revision 1.113  2007/03/22 13:47:38  bkline
  * Added 'phase' column to ctgov_import table.
  *
@@ -2254,6 +2257,7 @@ GO
  * external database.
  *
  *           id  primary key for table
+ * submitted_by  foreign key into usr table for user submitting set
  *         path  location of zipfile containing gp document set
  *     uploaded  date/time the set was submitted by CIAT
  *     imported  date/time the set was imported into the repository
@@ -2261,6 +2265,7 @@ GO
  */
 CREATE TABLE gp_import_set
          (id INTEGER       IDENTITY PRIMARY KEY,
+submitted_by INTEGER       NOT NULL REFERENCES usr,
         path VARCHAR(1024) NOT NULL,
     uploaded DATETIME      NOT NULL,
     imported DATETIME          NULL,
