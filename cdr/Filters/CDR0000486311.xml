@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-$Id: CDR0000486311.xml,v 1.3 2006-07-03 21:44:22 venglisc Exp $
+$Id: CDR0000486311.xml,v 1.4 2007-04-09 20:33:46 venglisc Exp $
 
 Filter to create the DrugInformationSummary QC Report
    Written      2006-04-03
@@ -24,8 +24,10 @@ $Log: not supported by cvs2svn $
  <xsl:include  href = "cdr:name:Module: Attribute Sets"/>
  <xsl:include  href = "cdr:name:Module: InLine Markup Formatter"/>
  <xsl:include  href = "cdr:name:Module: QC Filter Templates"/>
+ <xsl:include  href = "cdr:name:Module: QC Filter Templates - Summary"/>
  <xsl:include  href = "cdr:name:Module: Table Formatter"/>
  <xsl:include  href = "cdr:name:Module: STYLE Default"/> 
+ <xsl:include  href = "cdr:name:Module: STYLE RS Insertion Deletion"/> 
 
  <xsl:variable                    name = "docID"
                                 select = "document('cdrutil:/docid')"/>
@@ -48,11 +50,12 @@ $Log: not supported by cvs2svn $
      <xsl:text>: </xsl:text>
      <xsl:value-of              select = "substring-before(
                                            concat($cdrdocs/CdrDocCtl/
-                                                  DocTitle, ';'), ';')"/> 
+                                                  DocTitle, ';'), ';')"/>
     </TITLE>
     <STYLE type='text/css'>
      .miscdoc   { background-color: DFDFDF; }
      <xsl:call-template           name = "defaultStyle"/>  
+     <xsl:call-template           name = "rsInsertionDeletionStyle"/>
     </STYLE>
    </HEAD>
    <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
@@ -82,7 +85,9 @@ $Log: not supported by cvs2svn $
    </font>
    <font size='3'>
     <center>
-     <xsl:value-of              select = "document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M% 25p')"/>
+     <xsl:value-of              select = "document(
+                                           concat('cdrutil:/date/%25B %25#d,',
+                                                  ' %25Y %25#I:%25M% 25p'))"/>
     </center>
    </font>
   </b>
@@ -113,7 +118,7 @@ $Log: not supported by cvs2svn $
      </b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "Title"/>
+     <xsl:apply-templates       select = "Title"/>
     </td>
    </tr>
   </table>
@@ -140,7 +145,7 @@ $Log: not supported by cvs2svn $
      </b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:apply-templates          select = "SummarySection"/>
+     <xsl:apply-templates       select = "SummarySection"/>
     </td>
    </tr>
   </table>
@@ -169,7 +174,7 @@ $Log: not supported by cvs2svn $
      <b>Description</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "Description"/>
+     <xsl:apply-templates       select = "Description"/>
     </td>
    </tr>
    <tr>
@@ -262,6 +267,15 @@ $Log: not supported by cvs2svn $
 
  <!-- 
  ===================================================================
+ Display Description information with insertion/deletion markup 
+ =================================================================== -->
+ <xsl:template                   match = "Description">
+  <xsl:apply-templates/>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
  Template to display the OtherNameType values
  =================================================================== -->
  <xsl:template                   match = "DrugReference">
@@ -283,7 +297,7 @@ $Log: not supported by cvs2svn $
      <b>Link</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "DrugReferenceLink"/>
+     <xsl:apply-templates       select = "DrugReferenceLink"/>
      <br/>
      <xsl:for-each              select = "DrugReferenceLink">
       <xsl:call-template          name = "createWebLink"/>
@@ -295,7 +309,7 @@ $Log: not supported by cvs2svn $
      <b>Description</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "DrugReferenceDescription/
+     <xsl:apply-templates       select = "DrugReferenceDescription/
                                           MiscellaneousDocument/
                                           MiscellaneousDocumentTitle"/>
      <xsl:for-each              select = "DrugReferenceDescription/
@@ -303,17 +317,11 @@ $Log: not supported by cvs2svn $
       <xsl:call-template          name = "createCdrQcLink"/>
      </xsl:for-each>
      <br/>
-     <i>
-<!--
-      <xsl:value-of             select = "DrugReferenceDescription/
-                                          MiscellaneousDocument/
-                                          MiscellaneousDocumentText/
-                                          Section/*[@cdr:id = $fracID]"/>
--->
-<div class="miscdoc">
-      <xsl:apply-templates      select = "DrugReferenceDescription//*[@cdr:id 
+     <i><br/>
+      <div class="miscdoc">
+       <xsl:apply-templates     select = "DrugReferenceDescription//*[@cdr:id 
                                                                  = $fracID]"/>
-</div>
+      </div>
      </i>
     </td>
    </tr>
@@ -365,12 +373,13 @@ $Log: not supported by cvs2svn $
      <b>Comments</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "Comment"/>
+     <xsl:apply-templates       select = "Comment"/>
     </td>
    </tr>
   </table>
   <p/>
  </xsl:template>
+
 </xsl:transform>
 ]]>
 </CdrDocXml>
