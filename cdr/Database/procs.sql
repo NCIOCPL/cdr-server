@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.17 2005-09-09 17:45:57 bkline Exp $
+ * $Id: procs.sql,v 1.18 2007-04-11 03:53:14 ameyer Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2005/09/09 17:45:57  bkline
+ * Added get_prot_person_connections.
+ *
  * Revision 1.16  2005/06/22 18:21:15  venglisc
  * Added path to procedure cdr_get_count_of_links_to_person to include the
  * External Site information links in the count.
@@ -816,3 +819,54 @@ SELECT DISTINCT lead_org_stat.doc_id prot_id
     DROP TABLE #private_practice_person
     DROP TABLE #org_site_person
 GO
+
+/*
+ * Select publishable versions of non-active protocols that were
+ * created (the versions that is) after the last publishing job.
+ *
+ * Referenced in the publishing control document, 178.xml, for
+ * nightly "Interim-Export" publishing.
+ *
+ * Returns:
+ *   Result set of doc IDs + version numbers for publishable non-active
+ *   protocol versions that need to be published.
+ *
+ * Temporary tables are cleaned up automatically.
+ */
+CREATE PROC select_changed_non_active_protocols
+
+AS
+    -- Create temporary table containing docId + version num of
+    --   all currently published docs sent to cancer.gov
+    SELECT doc_id AS id, MAX(doc_version) AS num
+      INTO #pubver_prot
+      FROM pub_proc_doc
+     WHERE failure <> 'Y'
+        OR failure IS NULL
+     GROUP BY doc_id
+
+    -- Create temporary table containing latest non-active protocol
+    --   publishable version ids and version numbers
+    SELECT v.id AS vid, max(v.num) AS vnum
+      INTO #latestver_prot
+      FROM doc_version v
+      JOIN all_docs d
+        ON v.id = d.id
+      JOIN query_term_pub q
+        ON q.doc_id = d.id
+     WHERE q.path = 
+           '/InScopeProtocol/ProtocolAdminInfo/CurrentProtocolStatus'
+       AND q.value IN ('Closed', 'Completed', 'Temporarily Closed')
+       AND d.active_status = 'A'
+       AND v.publishable = 'Y'
+       AND v.val_status = 'V'
+     GROUP BY v.id
+
+    -- Select those non-active protocol ids and versions for which
+    --   there is no publishable version at all, or only an older one
+    SELECT #latestver_prot.vid, #latestver_prot.vnum
+      FROM #latestver_prot
+      LEFT OUTER JOIN #pubver_prot
+        ON #latestver_prot.vid = #pubver_prot.id
+     WHERE #pubver_prot.id IS NULL
+        OR #latestver_prot.vnum > #pubver_prot.num
