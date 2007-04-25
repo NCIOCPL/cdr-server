@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-$Id: CDR0000315588.xml,v 1.30 2007-03-15 01:30:34 venglisc Exp $
+$Id: CDR0000315588.xml,v 1.31 2007-04-25 23:02:05 venglisc Exp $
 
 Module: Vendor Cleanup Templates
 
@@ -282,6 +282,23 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  <xsl:template               match = "@cdr:xref"
                               mode = "copy">
    <xsl:attribute             name = "xref">
+    <xsl:value-of           select = "."/>
+   </xsl:attribute>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Drop the cdr namespace in cdr:href with/without mode = "copy".
+ ==================================================================== -->
+ <xsl:template               match = "@cdr:href"
+                              mode = "copy">
+   <xsl:attribute             name = "href">
+    <xsl:value-of           select = "."/>
+   </xsl:attribute>
+ </xsl:template>
+ <xsl:template               match = "@cdr:href">
+   <xsl:attribute             name = "href">
     <xsl:value-of           select = "."/>
    </xsl:attribute>
  </xsl:template>
@@ -572,9 +589,18 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
    <xsl:otherwise>
     <xsl:element              name = "{name()}">
      <xsl:for-each             select = "@*">
-      <xsl:attribute             name = "{name()}">
-       <xsl:value-of           select = "."/>
-      </xsl:attribute>
+      <xsl:choose>
+       <xsl:when                 test = "starts-with(name(), 'cdr:')">
+        <xsl:attribute             name = "{substring-after(name(),':')}">
+         <xsl:value-of           select = "."/>
+        </xsl:attribute>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:attribute             name = "{name()}">
+         <xsl:value-of           select = "."/>
+        </xsl:attribute>
+       </xsl:otherwise>
+      </xsl:choose>
      </xsl:for-each>
      <!-- xsl:attribute           name = "href">
       <xsl:value-of         select = "@cdr:href | @href"/>
