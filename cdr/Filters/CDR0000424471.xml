@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Insert External Sites</DocTitle>
-<DocComment>CVS-V1.3: Modify Date Last Modified (Bug 1800)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.4: Correcting Dropped StartDate (Bug 2178)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version='1.0' encoding='UTF-8'?>
  
@@ -19,6 +19,8 @@
  ==================================================================== -->
  <xsl:param                   name = "source"/>
  <xsl:param                   name = "lastModified"/>
+ <xsl:param                   name = "status"/>
+ <xsl:param                   name = "user"/>
 
  <!--
  =======================================================================
@@ -48,6 +50,46 @@
 
  <!-- 
  ======================================================================
+ Request #2655: adjust the lead org's protocol status where appropriate.
+ ====================================================================== -->
+ <xsl:template                 match = "LeadOrgProtocolStatuses/
+                                        CurrentOrgStatus">
+  <xsl:choose>
+   <xsl:when                    test = "../../UpdateMode[@MailerType=
+                                        'Protocol_SandP']=$source
+                                        and not(StatusName=$status)
+                                        and not($status='')">
+    <CurrentOrgStatus>
+     <StatusName>
+      <xsl:value-of           select = "$status"/>
+     </StatusName>
+     <StatusDate>
+      <xsl:value-of           select = "$lastModified"/>
+     </StatusDate>
+     <Comment>Status adjusted by external S and P import program.</Comment>
+     <EnteredBy>
+      <xsl:value-of           select = "$user"/>
+     </EnteredBy>
+     <EntryDate>
+      <xsl:value-of           select = "$lastModified"/>
+     </EntryDate>
+    </CurrentOrgStatus>
+    <PreviousOrgStatus>
+     <xsl:apply-templates     select = '@*|node()|comment()|
+                                         processing-instruction()'/>
+    </PreviousOrgStatus>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:copy>
+     <xsl:apply-templates     select = '@*|node()|comment()|
+                                         processing-instruction()'/>
+    </xsl:copy>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+ <!-- 
+ ======================================================================
  Request #1800: update DateLastModified value if present.
  ====================================================================== -->
  <xsl:template                 match = "DateLastModified">
@@ -64,7 +106,7 @@
   <xsl:if                       test = "not(../UpdateMode[@MailerType=
                                         'Protocol_SandP']=$source)">
    <xsl:copy>
-    <xsl:apply-templates       select = '@*|node()|comment()|
+    <xsl:apply-templates      select = '@*|node()|comment()|
                                          processing-instruction()'/>
    </xsl:copy>
   </xsl:if>
