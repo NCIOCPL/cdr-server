@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.115 2007-04-04 19:09:27 bkline Exp $
+ * $Id: tables.sql,v 1.116 2007-05-02 21:04:04 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.115  2007/04/04 19:09:27  bkline
+ * Added submitted_by column to gp_import_set table.
+ *
  * Revision 1.114  2007/04/04 18:59:17  bkline
  * Added table for GENETICSPROFESSIONAL document set imports.
  *
@@ -1851,11 +1854,25 @@ GO
  *           id  primary key of document sent to Cancer.Gov.
  *     pub_proc  identifies job which sent the document to Cancer.Gov.
  *          xml  copy of the filtered document sent to Cancer.Gov.
+ *   force_push  flag indicating that the document can be pushed
+ *               to Cancer.gov even if it is identical with what
+ *               we sent with the previous job.
+ *       cg_new  indicates whether this document is missing from 
+ *               the live Cancer.gov site or the Cancer.gov Preview
+ *               stage; set to 'N' in the normal case; set to 'Y'
+ *               for documents which were pushed to Cancer.gov
+ *               but later failed processing; this allows the 
+ *               module which groups published documents which
+ *               must all fail together to recognize which documents
+ *               aren't really available on Cancer.gov, even though
+ *               they have rows in the pub_proc_cg table.
  */
 CREATE TABLE pub_proc_cg
          (id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs,
     pub_proc INTEGER NOT NULL REFERENCES pub_proc,
-         xml NTEXT   NOT NULL)
+         xml NTEXT   NOT NULL,
+  force_push CHAR    NOT NULL,
+      cg_new CHAR    NOT NULL)
 GO
 
 /*
