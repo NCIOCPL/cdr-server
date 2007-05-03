@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.41 2006-11-12 13:49:34 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.42 2007-05-03 18:26:28 kidderc Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.41  2006/11/12 13:49:34  bkline
+ * Modifications for upgrade of Boost::Regex++ package to 1.33.1.
+ *
  * Revision 1.40  2005/03/04 02:59:44  ameyer
  * Significant changes to implement new Xerces DOM parser.
  *
@@ -329,6 +332,8 @@ cdr::xsd::Schema::Schema(const cdr::dom::Node& schemaElement,
         topElement = 0;
         seedBuiltinTypes();
         parseSchema(schemaElement, conn);
+		if (!topElement)
+           throw cdr::Exception(L"No top-level element found in CDR schema");
         resolveGroupRefs();
         resolveKeys();
         resolveKeyRefs();
