@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000150.xml,v 1.100 2006-11-27 22:40:05 venglisc Exp $
+$Id: CDR0000000150.xml,v 1.101 2007-05-04 15:55:11 venglisc Exp $
 
 Vendor Filter: InScopeProtocol
 
@@ -716,7 +716,13 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
           ProtocolSites as well as ExternalSites fragments.  VE
    ==================================================================== -->
     <xsl:if                       test = "ExternalSites/
-                                          ExternalSite                      |
+                                          ExternalSite
+                                                [ExternalSiteRegStatus
+                                                   = 'Active']              |
+                                          ExternalSites/
+                                          ExternalSite
+                                                [ExternalSiteRegStatus
+                                                   = 'Approved']            |
                                           (ProtocolLeadOrg
                                                 [LeadOrgProtocolStatuses/
                                                  CurrentOrgStatus/
@@ -1649,9 +1655,17 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
  The ExternalSites are only populated if the CurrentProtocolStatus
  is Active.  However, since the RSS does not keep track of 
  participanting organization status all organizations will be displayed
+ The last sentence is still correct, however, we are now receiving 
+ external site information from outside sources other then RSS.  We 
+ needed to modify the template to only select sites with a status of 
+ Active or Approved.
  ====================================================================== -->
  <xsl:template                   match = "ExternalSites">
-  <xsl:for-each                 select = "ExternalSite">
+  <xsl:for-each                 select = "ExternalSite
+                                            [ExternalSiteRegStatus = 'Active'] |
+                                          ExternalSite
+                                            [ExternalSiteRegStatus
+                                                                 = 'Approved']">
    <ProtocolSite>
     <!--
     Display ProtocolSite attributes and SiteName element:
