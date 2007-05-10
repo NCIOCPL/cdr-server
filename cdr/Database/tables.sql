@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.116 2007-05-02 21:04:04 bkline Exp $
+ * $Id: tables.sql,v 1.117 2007-05-10 21:23:29 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.116  2007/05/02 21:04:04  bkline
+ * Added new columns force_push and cg_new to pub_proc_cg table.
+ *
  * Revision 1.115  2007/04/04 19:09:27  bkline
  * Added submitted_by column to gp_import_set table.
  *
@@ -1480,8 +1483,8 @@ GO
  *   output_dir  output directory (without .username.datetime.status).
  *      started  date/time processing commenced.
  *    completed  date/time processing was finished.
- *       status  one of "in process," waiting user approval," "fail," or 
- *               "succeed."
+ *       status  see list of valid status values enumerated at the top
+ *               of the class definition for Publish in cdrpub.py.
  *     messages  messages generated during processing.
  *     external  flag indicating whether the publishing event took place
  *               outside the CDR (such as historical publications imported
