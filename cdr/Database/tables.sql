@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.117 2007-05-10 21:23:29 bkline Exp $
+ * $Id: tables.sql,v 1.118 2007-05-12 04:35:49 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.117  2007/05/10 21:23:29  bkline
+ * Updated comment for pub_proc_status.
+ *
  * Revision 1.116  2007/05/02 21:04:04  bkline
  * Added new columns force_push and cg_new to pub_proc_cg table.
  *
@@ -2280,6 +2283,7 @@ GO
  * submitted_by  foreign key into usr table for user submitting set
  *         path  location of zipfile containing gp document set
  *     uploaded  date/time the set was submitted by CIAT
+ *       status  U (uploaded), P (processing), I (imported), or E (error)
  *     imported  date/time the set was imported into the repository
  *       errors  description of failure, if imported did not succeed
  */
@@ -2288,6 +2292,7 @@ CREATE TABLE gp_import_set
 submitted_by INTEGER       NOT NULL REFERENCES usr,
         path VARCHAR(1024) NOT NULL,
     uploaded DATETIME      NOT NULL,
+      status CHAR          NOT NULL DEFAULT 'U',
     imported DATETIME          NULL,
       errors NTEXT             NULL)
 GO
