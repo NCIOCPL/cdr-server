@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+     $Id: Trial.xsd,v 1.1 2007-05-21 22:40:04 bkline Exp $
+  -->
+
+<xsd:schema                  xmlns:xsd = 'http://www.w3.org/2001/XMLSchema'>
+
+ <!--
+ ======================================================================
+ Top-level document element.
+ ====================================================================== -->
+ <xsd:element                     name = 'Trial'
+                                  type = 'Trial'/>
+
+ <xsd:complexType                 name = 'Trial'>
+  <xsd:sequence>
+
+   <!-- Protocol IDs -->
+   <xsd:element                   name = 'PrimaryID'
+                                  type = 'xsd:string'/>
+
+   <xsd:element                   name = 'AlternateID'
+                                  type = 'xsd:string'
+                             minOccurs = '0'
+                             maxOccurs = 'unbounded'/>
+
+   <!-- Protocol Titles -->
+   <xsd:element                   name = 'OfficialTitle'
+                                  type = 'xsd:string'/>
+
+   <xsd:element                   name = 'ShortTitle'
+                                  type = 'xsd:string'
+                             minOccurs = '0'/>
+
+   <!-- Information for FDA Investigational New Drug (IND) registration -->
+   <xsd:element                   name = 'FDAINDInfo'
+                                  type = 'FDAINDInfo'
+                             minOccurs = '0'
+                             maxOccurs = 'unbounded'/>
+
+   <!-- Phase I, Phase II, Phase III, Phase IV, or No Phase -->
+   <xsd:element                   name = 'ProtocolPhase'
+                                  type = 'ProtocolPhase'
+                             maxOccurs = '2'/>
+
+   <!-- Current protocol status & date (YYYY-MM-DD) status became effective -->
+   <xsd:element                   name = 'ProtocolStatus'
+                                  type = 'ProtocolStatus'/>
+   <xsd:element                   name = 'StatusDate'
+                                  type = 'xsd:date'/>
+
+   <!-- Date the trial became (or will become) active (YYYY-MM-DD) -->
+   <xsd:element                   name = 'StartDate'
+                                  type = 'StartDate'/>
+
+   <!-- Information on funding and industry sponsorship -->
+   <xsd:element                   name = 'FundingInfo'
+                                  type = 'FundingInfo'/>
+
+   <xsd:element                   name = 'IndustrySponsorInfo'
+                                  type = 'IndustrySponsorInfo'/>
+
+   <!-- Flags indicating types of review used for protocol -->
+   <xsd:element                   name = 'ReviewInfo'
+                                  type = 'ReviewInfo'/>
+
+   <!-- Submitting organization -->
+   <xsd:element                   name = 'LeadOrg'
+                                  type = 'LeadOrg'/>
+
+   <!-- Protocol personnel (including update person) -->
+   <xsd:element                   name = 'Person'
+                                  type = 'Person'
+                             maxOccurs = 'unbounded'/>
+
+   <!-- Trial contact information for patients -->
+   <xsd:element                   name = 'ContactInfo'
+                                  type = 'ContactInfo'
+                             minOccurs = '0'/>
+
+   <!-- Participating protocol sites -->
+   <xsd:element                   name = 'Site'
+                                  type = 'Site'
+                             minOccurs = '0'
+                             maxOccurs = 'unbounded'/>
+
+  </xsd:sequence>
+
+  <!-- External system database ID for the protocol -->
+  <xsd:attribute                  name = 'id'
+                                  type = 'xsd:string'
+                                   use = 'required'/>
+ </xsd:complexType>
+
+ <!--
+ ======================================================================
+ Information for FDA Investigational New Drug (IND) registration.
+ ====================================================================== -->
+ <xsd:complexType                 name = 'FDAINDInfo'>
+  <xsd:sequence>
+   <xsd:element                   name = 'INDGrantor'
+                                  type = 'xsd:string'/>
+   <xsd:element                   name = 'INDNumber'
+                                  type = 'xsd:string'/>
+   <xsd:element                   name = 'INDSubmissionDate'
+                                  type = 'xsd:date'/>
+  </xsd:sequence>
+ </xsd:complexType>
+
+ <!--
+ ======================================================================
+ Use multiple occurrences if more than one phase.
+ ====================================================================== -->
+ <xsd:simpleType                  name = 'ProtocolPhase'>
+  <xsd:restriction                base = 'xsd:string'>
+   <xsd:enumeration              value = 'Phase I'/>
+   <xsd:enumeration              value = 'Phase II'/>
+   <xsd:enumeration              value = 'Phase III'/>
+   <xsd:enumeration              value = 'Phase IV'/>
+   <xsd:enumeration              value = 'No Phase'/>
+  </xsd:restriction>
+ </xsd:simpleType>
+
+ <!--
+ ======================================================================
+ Current overall status for the protocol.
+ ====================================================================== -->
+ <xsd:simpleType                  name = 'ProtocolStatus'>
+  <xsd:restriction                base = 'xsd:string'>
+   <xsd:enumeration              value = 'Active'/>
+   <xsd:enumeration              value = 'Approved-not yet active'/>
+   <xsd:enumeration              value = 'Closed'/>
+   <xsd:enumeration              value = 'Completed'/>
+   <xsd:enumeration              value = 'Temporarily closed'/>
+  </xsd:restriction>
+ </xsd:simpleType>
+
+ <!--
+ ======================================================================
+ Current overall status for the protocol.
+ ====================================================================== -->
+ <xsd:complexType                 name = 'StartDate'>
+  <xsd:simpleContent>
+   <xsd:extension                 base = 'xsd:date'>
+    <xsd:attribute                name = 'DateType'
+                                  type = 'StartDateType'
+                                   use = 'optional'/>
+   </xsd:extension>
+  </xsd:simpleContent>
+ </xsd:complexType>
+ <xsd:simpleType                  name = 'StartDateType'>
+  <xsd:restriction                base = 'xsd:string'>
+   <xsd:enumeration              value = 'Actual'/>
+   <xsd:enumeration              value = 'Estimated'/>
+  </xsd:restriction>
+ </xsd:simpleType>
+
+ <!--
+ ======================================================================
+ Information on NIH contract grants, including flag for radio buttons.
+ ====================================================================== -->
+ <xsd:complexType                 name = 'FundingInfo'>
+  <xsd:sequence>
+   <xsd:element                   name = 'NIHGrantContract'
+                                  type = 'NIHGrantContract'
+                             minOccurs = '0'
+                             maxOccurs = 'unbounded'/>
+  </xsd:sequence>
+  <xsd:attribute                  name = 'flag'
+                                  type = 'YN'
+                                   use = 'required'/>
+ </xsd:complexType>
+ <xsd:complexType                 name = 'NIHGrantContract'>
+  <xsd:sequence>
+   <xsd:element                   name = 'NIHGrantContractType'
+                                  type = 'xsd:string'/>
+   <xsd:element                   name = 'GrantContractNo'
+                                  type = 'xsd:string'/>
+  </xsd:sequence>
+ </xsd:complexType>
+ <xsd:simpleType                  name = 'YN'>
+  <xsd:restriction                base = 'xsd:string'>
+   <xsd:enumeration              value = 'Y'/>
+   <xsd:enumeration              value = 'N'/>
+  </xsd:restriction>
+ </xsd:simpleType>
+
+ <!--
+ ======================================================================
+ Identification of industry sponsor, if any; includes flag reflecting
+ radio buttons on web form (required, so that we get positive confir-
+ mation that there is no sponsor in such cases, instead of just rely-
+ ing on the absence of the Sponsor element).
+ ====================================================================== -->
+ <xsd:complexType                 name = 'IndustrySponsorInfo'>
+  <xsd:sequence>
+   <xsd:element                   name = 'Sponsor'
+                                  type = 'Sponsor'
+                             minOccurs = '0'/>
+  </xsd:sequence>
+  <xsd:attribute                  name = 'flag'
+                                  type = 'YN'
+                                   use = 'required'/>
+ </xsd:complexType>
+ <xsd:complexType                 name = 'Sponsor'>
+  <xsd:simpleContent>
+   <xsd:extension                 base = 'xsd:string'>
+    <xsd:attribute                name = 'id'
+                                  type = 'xsd:string'
+                                   use = 'optional'/>
+   </xsd:extension>
+  </xsd:simpleContent>
+ </xsd:complexType>
+
+ <!--
+ ======================================================================
+ Flags indicating types of review used for the protocol.
+ ====================================================================== -->
+ <xsd:complexType                 name = 'ReviewInfo'>
+  <xsd:attribute                  name = 'prms'
+                                  type = 'YN'
+                                   use = 'optional'/>
+  <xsd:attribute                  name = 'other'
+                                  type = 'YN'
+                                   use = 'optional'/>
+ </xsd:complexType>
+
+ <!--
+ ======================================================================
+ Information about the submitting organization.  Required Country
+ element must use two-letter ISO codes.
+ ====================================================================== -->
+ <xsd:complexType                 name = 'LeadOrg'>
+  <xsd:sequence>
+   <xsd:element                   name = 'Name'
+                                  type = 'xsd:string'/>
+   <xsd:element                   name = 'Address'
+                                  type = 'Address'
+                             minOccurs = '0'/>
+   <xsd:element                   name = 'Phone'
+                                  type = 'Phone'
+                             minOccurs = '0'
+                             maxOccurs = 'unbounded'/>
+   <xsd:element                   name = 'Fax'
+                                  type = 'xsd:string'
+                             minOccurs = '0'/>
+   <xsd:element                   name = 'Email'
+                                  type = 'xsd:string'
+                             minOccurs = '0'/>
+   <xsd:element                   name = 'Comment'
+                                  type = 'xsd:string'
+                             minOccurs = '0'/>
+  </xsd:sequence>
+  <xsd:attribute                  name = 'id'
+                                  type = 'xsd:string'
+                                   use = 'optional'/>
+ </xsd:complexType>
+ <xsd:complexType                 name = 'Address'>
+  <xsd:sequence>
+   <xsd:element                   name = 'StreetAddress'
+                                  type = 'xsd:string'
+                             maxOccurs = 'unbounded'/>
+   <xsd:element                   name = 'SuitePOBox'
+                                  type = 'xsd:string'
+                             minOccurs = '0'/>
+   <xsd:element                   name = 'City'
+                                  type = 'xsd:string'/>
+   <xsd:element                   name = 'State'
+                                  type = 'xsd:string'
+                             minOccurs = '0'/>
+   <xsd:element                   name = 'Zip'
+                                  type = 'xsd:string'
+                             minOccurs = '0'/>
+   <xsd:element                   name = 'Country'
+                                  type = 'xsd:string'/>
+  </xsd:sequence>
+ </xsd:complexType>
+ <xsd:complexType                 name = 'Phone'>
+  <xsd:simpleContent>
+   <xsd:extension                 base = 'xsd:string'>
+    <xsd:attribute                name = 'type'
+                                  type = 'PhoneType'
+                                   use = 'optional'/>
+   </xsd:extension>
+  </xsd:simpleContent>
+ </xsd:complexType>
+ <xsd:simpleType                  name = 'PhoneType'>
+  <xsd:restriction                base = 'xsd:string'>
+   <xsd:enumeration              value = 'clinical-trial-office'/>
+   <xsd:enumeration              value = 'toll-free'/>
+  </xsd:restriction>
+ </xsd:simpleType>
+ 
+ <!--
+ ======================================================================
+ Protocol personnel (including update person).
+ ====================================================================== -->
+ <xsd:complexType                 name = 'Person'>
+  <xsd:sequence>
+   <xsd:element                   name = 'Role'
+                                  type = 'ProtocolPersonRole'/>
+   <xsd:element                   name = 'PersonalName'
+                                  type = 'PersonalName'/>
+   <xsd:element                   name = 'Phone'
+                                  type = 'Phone'/>
+   <xsd:element                   name = 'Email'
+                                  type = 'xsd:string'
+                             minOccurs = '0'/>
+  </xsd:sequence>
+  <xsd:attribute                  name = 'id'
+                                  type = 'xsd:string'
+                                   use = 'optional'/>
+ </xsd:complexType>
+ <xsd:simpleType                  name = 'ProtocolPersonRole'>
+  <xsd:restriction                base = 'xsd:string'>
+   <xsd:enumeration              value = 'Principal investigator'/>
+   <xsd:enumeration              value = 'Protocol chair'/>
+   <xsd:enumeration              value = 'Research coordinator'/>
+   <xsd:enumeration              value = 'Study coordinator'/>
+   <xsd:enumeration              value = 'Update person'/>
+  </xsd:restriction>
+ </xsd:simpleType>
+ <xsd:complexType                 name = 'PersonalName'>
+  <xsd:sequence>
+   <xsd:element                   name = 'GivenName'
+                                  type = 'xsd:string'
+                             minOccurs = '0'/>
+   <xsd:element                   name = 'Surname'
+                                  type = 'xsd:string'/>
+   <xsd:element                   name = 'ProfessionalSuffix'
+                                  type = 'xsd:string'
+                             minOccurs = '0'
+                             maxOccurs = 'unbounded'/>
+  </xsd:sequence>
+ </xsd:complexType>
+
+ <!--
+ ======================================================================
+ Trial contact information for patients.
+ ====================================================================== -->
+ <xsd:complexType                 name = 'ContactInfo'>
+  <xsd:sequence>
+   <xsd:choice>
+    <xsd:element                  name = 'PersonalName'
+                                  type = 'PersonalName'/>
+    <xsd:element                  name = 'Title'
+                                  type = 'xsd:string'/>
+   </xsd:choice>
+   <xsd:element                   name = 'Phone'
+                                  type = 'Phone'
+                             maxOccurs = 'unbounded'/>
+   <xsd:element                   name = 'Email'
+                                  type = 'xsd:string'
+                             minOccurs = '0'/>
+  </xsd:sequence>
+ </xsd:complexType>
+
+ <!--
+ ======================================================================
+ Participating protocol sites.
+ ====================================================================== -->
+ <xsd:complexType                 name = 'Site'>
+  <xsd:sequence>
+   <xsd:element                   name = 'Name'
+                                  type = 'xsd:string'/>
+   <xsd:element                   name = 'City'
+                                  type = 'xsd:string'/>
+   <xsd:element                   name = 'State'
+                                  type = 'xsd:string'
+                             minOccurs = '0'/>
+   <xsd:element                   name = 'Country'
+                                  type = 'xsd:string'/>
+   <xsd:element                   name = 'Contact'
+                                  type = 'xsd:string'/>
+   <xsd:element                   name = 'Role'
+                                  type = 'ProtocolPersonRole'/>
+   <xsd:element                   name = 'Phone'
+                                  type = 'Phone'/>
+   <xsd:element                   name = 'Email'
+                                  type = 'xsd:string'
+                             minOccurs = '0'/>
+   <xsd:element                   name = 'Comment'
+                                  type = 'xsd:string'
+                             minOccurs = '0'/>
+  </xsd:sequence>
+  <xsd:attribute                  name = 'id'
+                                  type = 'xsd:string'
+                                   use = 'optional'/>
+  <xsd:attribute                  name = 'Participating'
+                                  type = 'YN'
+                                   use = 'optional'/>
+ </xsd:complexType>
+
+</xsd:schema>
