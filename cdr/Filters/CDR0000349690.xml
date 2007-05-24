@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version='1.0'?>
 
 <!--
-     $Id: CDR0000349690.xml,v 1.3 2004-08-05 21:20:31 ameyer Exp $
+     $Id: CDR0000349690.xml,v 1.4 2007-05-24 13:29:56 bkline Exp $
 
      $Log: not supported by cvs2svn $
      Revision 1.2  2004/01/08 23:02:11  bkline
@@ -65,7 +65,7 @@
   <xsl:apply-templates           select = 'location'/>
   <xsl:apply-templates           select = 'brief_summary'/>
   <xsl:apply-templates           select = 'detailed_description'/>
-  <xsl:apply-templates           select = 'phase'/>
+  <xsl:call-template               name = 'extractPhase'/>
   <xsl:apply-templates           select = 'eligibility'/>
   <CTGovIndexing>
    <xsl:apply-templates          select = 'study_design'/>
@@ -459,11 +459,11 @@
   </xsl:if>
  </xsl:template>
 
- <xsl:template                    match = 'phase'>
+ <xsl:template                     name = 'extractPhase'>
   <xsl:variable                    name = 'phase'
-                                 select = 'normalize-space()'/>
+                                 select = 'normalize-space(phase)'/>
   <xsl:choose>
-   <xsl:when                       test = '$phase = "N/A"'>
+   <xsl:when                       test = '($phase = "N/A") or ($phase = "")'>
     <Phase>No phase specified</Phase>
    </xsl:when>
    <xsl:when                       test = '$phase = "Phase 1"'>
@@ -486,11 +486,11 @@
    <xsl:when                       test = '$phase = "Phase 4"'>
     <Phase>Phase IV</Phase>
    </xsl:when>
-   <xsl:when                       test = '$phase != ""'>
+   <xsl:otherwise>
     <Phase>
      <xsl:value-of               select = '$phase'/>
     </Phase>
-   </xsl:when>
+   </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
 
