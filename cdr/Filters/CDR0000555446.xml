@@ -1,0 +1,177 @@
+<CdrDoc Type='Filter' Id='CDR0000555446'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Board Member Address Fragment With Name</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+
+ <!--
+ ===========================================================================
+ Derived from "Person Address Fragment With Name" filter.
+ =========================================================================== -->
+<xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                           xmlns:cdr = "cips.nci.nih.gov/cdr"
+                             version = "1.0">
+
+ <xsl:import href = "cdr:name:Person Address Fragment With Name"/>
+
+ <!--
+ ===========================================================================
+ Start at the top.
+ =========================================================================== -->
+ <xsl:template                 match = "/">
+  <AddressElements>
+   <xsl:apply-templates       select = "/PDQBoardMemberInfo"/>
+  </AddressElements>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Pull out the personal name information and the specific address info.
+ =========================================================================== -->
+ <xsl:template                 match = "PDQBoardMemberInfo">
+  <xsl:variable                 name = "docId"
+                              select = "BoardMemberName/@cdr:ref"/>
+  <xsl:variable                 name = "uri"
+                              select = "concat('cdrx:', $docId, '/last')"/>
+  <xsl:variable                 name = "doc"
+                              select = "document($uri)"/>
+  <xsl:apply-templates        select = "$doc/Person/PersonNameInformation"/>
+  <xsl:apply-templates        select = "BoardMemberContact">
+   <xsl:with-param              name = "doc"
+                              select = "$doc"/>
+  </xsl:apply-templates>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Drop down to the specific contact element.
+ =========================================================================== -->
+ <xsl:template                 match = "BoardMemberContact">
+  <xsl:param                    name = "doc"/>
+  <xsl:apply-templates        select = "SpecificBoardMemberContact"/>
+  <xsl:apply-templates        select = "PersonContactID">
+   <xsl:with-param              name = "doc"
+                              select = "$doc"/>
+  </xsl:apply-templates>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Pull out the org name (if present) and the postal address
+ =========================================================================== -->
+ <xsl:template                 match = "SpecificBoardMemberContact">
+  <xsl:for-each               select = "BoardContactOrganizationName">
+   <OrgName>
+    <xsl:value-of             select = "normalize-space()"/>
+   </OrgName>
+  </xsl:for-each>
+  <xsl:if                       test = "BoardContactPostalAddress">
+   <PostalAddress>
+    <xsl:apply-templates      select = "BoardContactPostalAddress/*"/>
+   </PostalAddress>
+  </xsl:if>
+ </xsl:template>
+
+ <!--
+ ===========================================================================
+ Identity rule, copies everything to the output tree.
+ ===========================================================================
+ <xsl:template                 match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates       select = "@*|node()"/>
+  </xsl:copy>
+ </xsl:template>
+ -->
+ <!--
+ ===========================================================================
+ Grab everything here (well, all the elements anyway).
+ ===========================================================================
+ <xsl:template                 match = "PersonNameInformation">
+  <PersonName>
+   <xsl:apply-templates       select = "node()"/>
+  </PersonName>
+ </xsl:template>
+ -->
+ <!--
+ ===========================================================================
+ Get the country name(s) for the country document.
+ ===========================================================================
+ <xsl:template                 match = "Country">
+  <xsl:variable                 name = "docId"
+                              select = "@cdr:ref"/>
+  <xsl:variable                 name = "uri"
+                              select = "concat('cdrx:', $docId)"/>
+  <xsl:variable                 name = "doc"
+                              select = "document($uri)"/>
+  <xsl:choose>
+   <xsl:when                    test = "$doc/Country/CountryShortName">
+    <Country>
+     <xsl:value-of            select = "$doc/Country/CountryShortName"/>
+    </Country>
+   </xsl:when>
+   <xsl:when                    test = "$doc/Country/CountryFullName">
+    <Country>
+     <xsl:value-of            select = "$doc/Country/CountryFullName"/>
+    </Country>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:template>
+ -->
+ <!--
+ ===========================================================================
+ Ditto for the state.
+ ===========================================================================
+ <xsl:template                 match = "PoliticalSubUnit_State">
+  <xsl:variable                 name = "docId"
+                              select = "@cdr:ref"/>
+  <xsl:variable                 name = "uri"
+                              select = "concat('cdrx:', $docId)"/>
+  <xsl:variable                 name = "doc"
+                              select = "document($uri)"/>
+  <xsl:choose>
+   <xsl:when                    test = "$doc/PoliticalSubUnit
+                                            /PoliticalSubUnitShortName">
+    <State>
+     <xsl:value-of            select = "$doc/PoliticalSubUnit
+                                            /PoliticalSubUnitShortName"/>
+    </State>
+   </xsl:when>
+   <xsl:when                    test = "$doc/PoliticalSubUnit
+                                            /PoliticalSubUnitFullName">
+    <State>
+     <xsl:value-of            select = "$doc/PoliticalSubUnit
+                                            /PoliticalSubUnitFullName"/>
+    </State>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:template>
+ -->
+ <xsl:template                 match = "PersonContactID">
+  <xsl:param                    name = "doc"/>
+  <xsl:variable                 name = "fragId"
+                              select = "normalize-space()"/>
+  <xsl:if                       test = "$fragId">
+   <xsl:apply-templates       select = "$doc/Person/PersonLocations">
+    <xsl:with-param             name = "fragId"
+                              select = "$fragId"/>
+   </xsl:apply-templates>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                 match = "PersonLocations">
+  <xsl:param                    name = "fragId"/>
+  <xsl:apply-templates        select = "PrivatePractice/
+                                        PrivatePracticeLocation
+                                        [@cdr:id = $fragId]"/>
+  <xsl:apply-templates        select = "OtherPracticeLocation
+                                        [@cdr:id = $fragId]"/>
+  <xsl:apply-templates        select = "Home[@cdr:id = $fragId]"/>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
