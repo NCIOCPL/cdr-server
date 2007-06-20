@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000137.xml,v 1.25 2007-03-15 01:53:11 venglisc Exp $
+$Id: CDR0000000137.xml,v 1.26 2007-06-20 17:33:37 venglisc Exp $
 
 Filter to create Vendor XML for Glossary
 
@@ -78,15 +78,26 @@ $Log: not supported by cvs2svn $
     </TermDefinition>
    </xsl:for-each>
 
+   <!--
+   Make sure we only have either a shared MediaLink for both, English and
+   Spanish or we have individual once but not both
+   ====================================================================== -->
+   <xsl:if                        test = "MediaLink
+                                          and
+                                          (TermDefinition/MediaLink
+                                           or
+                                           SpanishTermDefinition/MediaLink)">
+    <xsl:message              terminate = "no">
+     <xsl:text>&lt;LI class="error" &gt;</xsl:text>
+     <xsl:text>&lt;b&gt;Error:&lt;/b&gt; Invalid </xsl:text>
+     <xsl:text>use of MediaLink.&lt;BR/&gt;</xsl:text>
+    </xsl:message>
+   </xsl:if>
    <xsl:apply-templates         select = "MediaLink |
                                           TermDefinition/
                                           MediaLink |
                                           SpanishTermDefinition/
                                           MediaLink"/>
-  
-   <!-- xsl:for-each                select = "MediaLink">
-    <xsl:apply-templates        select = "."/>
-   </xsl:for-each -->
 
    <xsl:apply-templates         select = "SpanishTermName"
                                   mode = "copy"/>
@@ -145,41 +156,41 @@ $Log: not supported by cvs2svn $
  =================================================================== -->
  <xsl:template                  match = "SummaryRef"
                                  mode = "copy">
-    <xsl:variable                name = "hrefId"
+  <xsl:variable                  name = "hrefId"
                                select = "@cdr:href"/>
-    <xsl:variable                name = "hrefNormId"
+  <xsl:variable                  name = "hrefNormId"
                                select = "number(
                                            substring-after(@cdr:href, 'CDR'))"/>
-    <xsl:variable                name = "sqlQuery">
+  <xsl:variable                  name = "sqlQuery">
      SELECT value 
        FROM query_term_pub 
       WHERE doc_id = ?
         AND path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
-    </xsl:variable>
+  </xsl:variable>
 
-    <SummaryRef>
-     <xsl:attribute              name = "href">
-      <xsl:value-of            select = "$hrefId"/>
-     </xsl:attribute>
-     <xsl:attribute              name = "url">
-      <xsl:variable              name = "prettyUrl"
+  <SummaryRef>
+   <xsl:attribute                name = "href">
+    <xsl:value-of              select = "$hrefId"/>
+   </xsl:attribute>
+   <xsl:attribute                name = "url">
+    <xsl:variable                name = "prettyUrl"
                                select = "normalize-space(
                                           document(
                                           concat('cdrutil:/sql-query/',
                                                   $sqlQuery,
                                                   '~',
                                                   $hrefNormId)))"/>
-      <xsl:choose>
-       <xsl:when                 test = "starts-with($prettyUrl, 'http')">
-        <xsl:value-of          select = "substring-after($prettyUrl, '.gov')"/>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:value-of          select = "$prettyUrl"/>
-       </xsl:otherwise>
-      </xsl:choose>
-     </xsl:attribute>
-     <xsl:apply-templates/>
-    </SummaryRef>
+    <xsl:choose>
+     <xsl:when                   test = "starts-with($prettyUrl, 'http')">
+      <xsl:value-of            select = "substring-after($prettyUrl, '.gov')"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of            select = "$prettyUrl"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:attribute>
+   <xsl:apply-templates/>
+  </SummaryRef>
  </xsl:template>
 </xsl:transform>]]>
 </CdrDocXml>
