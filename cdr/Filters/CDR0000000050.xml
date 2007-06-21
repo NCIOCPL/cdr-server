@@ -3,9 +3,18 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Organization QC Report Filter</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.26: Misc Formatting Changes (Bug 1516)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!--
+ ================================================================
+ $Id: CDR0000000050.xml,v 1.27 2007-06-21 23:03:09 venglisc Exp $
+
+ Filter to create a Person Content QC Report 
+ Written by Volker Englisch
+
+ $Log: not supported by cvs2svn $
+ ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr">
@@ -48,6 +57,9 @@
     <STYLE type='text/css'>
      <xsl:call-template           name = "defaultStyle"/>  
      ul {margin-left: 16 ; padding-left: 0;}
+     .attribute  { font-weight: bold; }
+     .even       { background-color: #EEEEEE; }
+     .odd        { background-color: #BBBBBB; }
     </STYLE>
    </HEAD>
    <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
@@ -122,6 +134,29 @@
      <td        xsl:use-attribute-sets = "cell2of2">
       <xsl:for-each             select = "OrganizationParent">
        <xsl:apply-templates     select = "."/>
+
+       <xsl:variable              name = "cdrId"
+                                select = "concat('CDR', 
+                                           number(
+                                            substring-after(
+                                             substring-before(
+                                              concat(@cdr:ref, '#'), '#'), 
+                                                                   'CDR')))"/>
+         <xsl:text> (</xsl:text>
+         <xsl:element             name = "a">
+          <xsl:attribute          name = "href">
+           <xsl:value-of        select = "concat('/cgi-bin/cdr/QcReport.py',
+                                                 '?Session=guest',
+                                                 '&amp;DocId=',
+                                                 $cdrId)"/>
+          </xsl:attribute>
+          <xsl:attribute          name = "target">
+           <xsl:text>new</xsl:text>
+          </xsl:attribute>
+          <xsl:value-of         select = "$cdrId"/>
+          </xsl:element>
+
+       <xsl:text>)</xsl:text>
       </xsl:for-each>
      </td>
     </tr>
@@ -398,10 +433,27 @@
          <xsl:value-of          select = "GivenName"/>
          <xsl:text> </xsl:text>
          <xsl:value-of          select = "SurName"/>
-         <xsl:text> (CDR</xsl:text>
-         <xsl:value-of          select = "number(
-                                          substring-after(../@cdr:ref, 
-                                                                 'CDR'))"/>
+
+         <xsl:variable            name = "cdrId"
+                                select = "concat('CDR', 
+                                           number(
+                                            substring-after(
+                                             substring-before(
+                                              concat(../@cdr:ref, '#'), '#'), 
+                                                                   'CDR')))"/>
+         <xsl:text> (</xsl:text>
+         <xsl:element             name = "a">
+          <xsl:attribute          name = "href">
+           <xsl:value-of        select = "concat('/cgi-bin/cdr/QcReport.py',
+                                                 '?Session=guest',
+                                                 '&amp;DocId=',
+                                                 $cdrId)"/>
+          </xsl:attribute>
+          <xsl:attribute          name = "target">
+           <xsl:text>new</xsl:text>
+          </xsl:attribute>
+          <xsl:value-of         select = "$cdrId"/>
+          </xsl:element>
          <xsl:text>)</xsl:text>
 
         </td>
@@ -475,17 +527,46 @@
      </td>
     </tr>
    </xsl:if>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Comment</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "Comment"/>
-    </td>
-   </tr>
+   <xsl:apply-templates         select = "Comment"
+                                  mode = "admininfo"/>
   </table>
  </xsl:template>
 
+ <!--
+ =======================================================================
+ Template for Admin Information Comments
+ ======================================================================= -->
+ <xsl:template                   match = "Comment"
+                                  mode = "admininfo">
+  <tr>
+   <td         xsl:use-attribute-sets = "cell1of2">
+    <b>Comment</b>
+   </td>
+   <td         xsl:use-attribute-sets = "cell2of2">
+    <span class="attribute">
+     <xsl:if                     test = "@audience">
+      <xsl:text>audience=</xsl:text>
+      <xsl:value-of            select = "@audience"/>
+     </xsl:if>
+     <xsl:if                     test = "@date">
+      <xsl:text> date=</xsl:text>
+      <xsl:value-of            select = "@date"/>
+     </xsl:if>
+     <xsl:if                     test = "@user">
+      <xsl:text> user=</xsl:text>
+      <xsl:value-of            select = "@user"/>
+     </xsl:if>
+    </span>
+   </td>
+  </tr>
+  <tr>
+   <td><xsl:text> </xsl:text></td>
+   <td>
+    <xsl:value-of              select = "."/>
+    <p/>
+   </td>
+  </tr>
+ </xsl:template>
 
  <!--
  =======================================================================
