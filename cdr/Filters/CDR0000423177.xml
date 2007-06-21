@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ==================================================================
-     $Id: CDR0000423177.xml,v 1.1 2005-02-22 22:11:42 venglisc Exp $
+     $Id: CDR0000423177.xml,v 1.2 2007-06-21 23:04:38 venglisc Exp $
 
      Common Templates shared between Organization QC Report Filters
         Written by Volker Englisch, 2004-07-30
@@ -276,7 +276,25 @@
    </xsl:when>
   </xsl:choose>
   <br/>
-  <xsl:value-of                 select = "CountryName"/>
+  <xsl:variable                   name = "cdrId"
+                                select = "concat('CDR', 
+                                           number(
+                                            substring-after(
+                                            substring-before(
+                                            concat(CountryName/@ref, '#'), '#'), 
+                                                                   'CDR')))"/>
+  <xsl:element                    name = "a">
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "concat('/cgi-bin/cdr/Filter.py',
+                                                 '?DocId=', $cdrId, 
+                                                 '&amp;Filter=name:Country ', 
+                                                 'QC Report Filter')"/>
+   </xsl:attribute>
+   <xsl:attribute                 name = "target">
+    <xsl:text>new</xsl:text>
+   </xsl:attribute>
+   <xsl:value-of                select = "CountryName"/>
+  </xsl:element>
   <br/>
  </xsl:template>
 
