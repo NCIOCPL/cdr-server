@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.118 2007-05-12 04:35:49 bkline Exp $
+ * $Id: tables.sql,v 1.119 2007-06-29 03:30:29 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.118  2007/05/12 04:35:49  bkline
+ * Added status column to gp_import_set table.
+ *
  * Revision 1.117  2007/05/10 21:23:29  bkline
  * Updated comment for pub_proc_status.
  *
@@ -1002,7 +1005,9 @@ GO
  *     document  identifies the document which this version represents
  *          num  sequential number of the version of the document; numbering
  *               starts with 1
- *           dt  date/time the document was checked in
+ *           dt  date/time the document was checked in - by GETDATE()
+ *               in checkin transaction
+ *   updated_dt  date/time identical to what's in the the audit_trail
  *          usr  identifies the user account that checked in the document
  *   val_status  copied from document table
  *     val_date  copied from document table
