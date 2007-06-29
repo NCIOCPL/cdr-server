@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.119 2007-06-29 03:30:29 ameyer Exp $
+ * $Id: tables.sql,v 1.120 2007-06-29 03:32:55 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.119  2007/06/29 03:30:29  ameyer
+ * Added comments to distinguish dt / updated_dt in doc_version.
+ *
  * Revision 1.118  2007/05/12 04:35:49  bkline
  * Added status column to gp_import_set table.
  *
@@ -1007,7 +1010,10 @@ GO
  *               starts with 1
  *           dt  date/time the document was checked in - by GETDATE()
  *               in checkin transaction
+ *               don't know if it's used for anything at all
  *   updated_dt  date/time identical to what's in the the audit_trail
+ *               this is the important date needed to match a version to
+ *               an action recorded in the audit_trail or wherever.
  *          usr  identifies the user account that checked in the document
  *   val_status  copied from document table
  *     val_date  copied from document table
