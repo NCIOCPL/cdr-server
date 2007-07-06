@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.34 2006-05-17 03:48:13 ameyer Exp $
+ * $Id: CdrGetDoc.cpp,v 1.35 2007-07-06 04:16:09 bkline Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2006/05/17 03:48:13  ameyer
+ * Added support for maximum document updated date limitation.
+ *
  * Revision 1.33  2005/10/27 12:37:58  bkline
  * Support for new function to calculate an artificial "verification
  * date" added.
@@ -270,6 +273,7 @@ cdr::String cdr::getDocString(
                              + L", version: "
                              + versionStr);
     cdr::String typName = typRs.getString (1);
+    typSel.close();
 
     // Get human readable user identifier
     std::string usrQry = "SELECT name FROM usr WHERE id = ?";
@@ -284,6 +288,7 @@ cdr::String cdr::getDocString(
                              + L", version: "
                              + versionStr);
     cdr::String usrName = usrRs.getString (1);
+    usrSel.close();
 
     // Create a string to return
     cdr::String cdrDoc = L"<CdrDoc Type='"
@@ -682,9 +687,13 @@ cdr::String cdr::getDocTypeName(
     cdr::db::PreparedStatement stmt = conn.prepareStatement(query);
     stmt.setInt(1, docId.extractDocId());
     cdr::db::ResultSet rslt = stmt.executeQuery();
-    if (!rslt.next())
+    if (!rslt.next()) {
+        stmt.close();
         throw cdr::Exception(L"Cannot find document type for document", docId);
-    return rslt.getString(1);
+    }
+    cdr::String s = rslt.getString(1);
+    stmt.close();
+    return s;
 }
 
 /**
@@ -924,7 +933,7 @@ bool isReadyForReview(int id, cdr::db::Connection& conn)
       cdr::db::PreparedStatement stmt = conn.prepareStatement(query);
       stmt.setInt(1, id);
       cdr::db::ResultSet rs = stmt.executeQuery();
-      if (rs.next())
-          return true;
-      return false;
+      bool result = rs.next() ? true : false;
+      stmt.close();
+      return result;
 }

@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.67 2006-09-21 21:20:22 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.68 2007-07-06 04:16:09 bkline Exp $
  *
  */
 
@@ -120,10 +120,13 @@ cdr::CdrDoc::CdrDoc (
         cdr::db::PreparedStatement select = dbConn.prepareStatement(qry);
         select.setInt(1, Id);
         cdr::db::ResultSet rs = select.executeQuery();
-        if (!rs.next())
+        if (!rs.next()) {
+            select.close();
             throw cdr::Exception(L"CdrDoc: Unable to find document " + textId);
+        }
         dbActiveStatus = rs.getString (1);
-        lastFragmentId  = rs.getInt (2);
+        lastFragmentId = rs.getInt (2);
+        select.close();
 
         // We know the original status, here's a copy that might change
         activeStatus = dbActiveStatus;
@@ -139,12 +142,15 @@ cdr::CdrDoc::CdrDoc (
     cdr::db::PreparedStatement select = dbConn.prepareStatement(qry);
     select.setString (1, textDocType);
     cdr::db::ResultSet rs = select.executeQuery();
-    if (!rs.next())
+    if (!rs.next()) {
+        select.close();
         throw cdr::Exception(L"CdrDoc: DocType '" + textDocType +
                              L"' is invalid");
+    }
     DocType       = rs.getInt(1);
     cdr::Int tfi  = rs.getInt(2);
     cdr::Int sdi  = rs.getInt(3);
+    select.close();
 
     // There may not be title filter and/or schemas for all doc types,
     //   so we need to check
@@ -278,10 +284,13 @@ cdr::CdrDoc::CdrDoc (
             "SELECT xml FROM document WHERE id = ?");
         getXML.setInt(1, Id);
         cdr::db::ResultSet rs = getXML.executeQuery();
-        if (!rs.next())
+        if (!rs.next()) {
+            getXML.close();
             throw cdr::Exception(L"CdrDoc: Unable to fetch document " +
                                   textId + L" for constructor");
+        }
         Xml = rs.getString(1);
+        getXML.close();
     }
 
     // Generate a title, or use an existing one, or create an error title
@@ -323,8 +332,10 @@ cdr::CdrDoc::CdrDoc (
     cdr::db::PreparedStatement select = docDbConn.prepareStatement(query);
     select.setInt(1, docId);
     cdr::db::ResultSet rs = select.executeQuery();
-    if (!rs.next())
+    if (!rs.next()) {
+        select.close();
         throw cdr::Exception(L"CdrDoc: Unable to load document " + textId);
+    }
 
     // Copy info into this object
     valStatus      = rs.getString (1);
@@ -339,6 +350,7 @@ cdr::CdrDoc::CdrDoc (
     cdr::Int tfi   = rs.getInt (10);
     cdr::Int sdi   = rs.getInt (11);
     cdr::Int rvRdy = rs.getInt (12);
+    select.close();
 
     // Modifiable copy of status, must be initialized
     activeStatus = dbActiveStatus;
@@ -432,8 +444,10 @@ cdr::CdrDoc::CdrDoc (
     stmt.setInt(2, verNum);
     cdr::db::ResultSet rs = stmt.executeQuery();
 
-    if (!rs.next())
+    if (!rs.next()) {
+        stmt.close();
         throw cdr::Exception(L"CdrDoc: Unable to load document " + textId);
+    }
 
     // Copy info into this object
     valStatus    = rs.getString(1);
@@ -443,6 +457,7 @@ cdr::CdrDoc::CdrDoc (
     Xml          = rs.getString(5);
     DocType      = rs.getInt(6);
     textDocType  = rs.getString(7);
+    stmt.close();
 }
 
 /**
@@ -820,10 +835,13 @@ static cdr::String cdrPutDoc (
         cdr::db::PreparedStatement st = dbConn.prepareStatement(query);
         st.setInt(1, doc.getId());
         cdr::db::ResultSet rs = st.executeQuery();
-        if (!rs.next())
+        if (!rs.next()) {
+            st.close();
             throw cdr::Exception(L"Failure determining publishable version "
                                  L"count for document");
+        }
         int nPublishableVersions = rs.getInt(1);
+        st.close();
         if (!nPublishableVersions
                 && !session.canDo(dbConn, L"PUBLISH DOCUMENT", doctype))
             throw cdr::Exception(L"User not authorized to create the first "
@@ -891,14 +909,17 @@ static cdr::String cdrPutDoc (
                 cdr::db::ResultSet rs = stmt.executeQuery();
 
                 // Should never happen
-                if (!rs.next())
+                if (!rs.next()) {
+                    stmt.close();
                     throw cdr::Exception (L"Document is checked out but "
                                           L"user not identified!");
+                }
 
                 // Report who has it, and when
                 // Give brief user name and full name ifwe have it
                 cdr::String lockUserName     = rs.getString (1);
                 cdr::String lockUserFullName = rs.getString (2);
+                stmt.close();
                 if (lockUserFullName.size() > 0)
                     lockUserFullName = L" (" + lockUserFullName + L"";
                 throw cdr::Exception (
@@ -1473,11 +1494,14 @@ static void auditDoc (
     cdr::db::PreparedStatement actStmt = dbConn.prepareStatement(actQry);
     actStmt.setString (1, action);
     cdr::db::ResultSet actRs = actStmt.executeQuery();
-    if (!actRs.next())
+    if (!actRs.next()) {
+        actStmt.close();
         throw cdr::Exception (L"auditDoc: Bad action string '"
                               + action
                               + L"'  Can't happen.");
+    }
     actionId = actRs.getInt (1);
+    actStmt.close();
 
     // Insert
     std::string qry = "INSERT INTO audit_trail (document, dt, usr, action, "
@@ -1489,6 +1513,7 @@ static void auditDoc (
     stmt.setString (4, program);
     stmt.setString (5, comment);
     cdr::db::ResultSet rs = stmt.executeQuery();
+    stmt.close();
 }
 
 
@@ -1542,10 +1567,10 @@ cdr::String cdr::setDocStatus(Session&         session,
     if (!r1.next())
         throw Exception(L"Invalid document ID " + docIdStr);
     String docType = r1.getString(1);
+    s1.close();
     if (!session.canDo(conn, L"PUBLISH DOCUMENT", docType))
         throw Exception(L"User not authorized to change the status of " +
                         docType + L" documents");
-    s1.close();
 
     // Do it.
     db::PreparedStatement s2 = conn.prepareStatement(
@@ -1720,6 +1745,7 @@ void updateQueryTermTable(
             delStmt.setString(4, i->node_loc);
             delStmt.executeUpdate();
         }
+        delStmt.close();
     }
 
     // Insert new rows.
@@ -1737,6 +1763,7 @@ void updateQueryTermTable(
         insStmt.setString(5, i->node_loc);
         insStmt.executeUpdate();
     }
+    insStmt.close();
     SHOW_ELAPSED((cdr::String("finished inserting ") +
                   cdr::String::toString(termsToInsert->size()) +
                   cdr::String(" new terms")).toUtf8().c_str(),
@@ -2209,8 +2236,10 @@ static cdr::String createFragIdTransform (cdr::db::Connection& conn,
     cdr::db::PreparedStatement select = conn.prepareStatement(query);
     select.setInt(1, schemaDocId);
     cdr::db::ResultSet rs = select.executeQuery();
-    if (!rs.next())
+    if (!rs.next()) {
+        select.close();
         throw cdr::Exception(L"createFragIdTransform: Unable to load schema");
+    }
     cdr::String schemaXml = rs.getString (1);
     select.close();
 
@@ -2454,9 +2483,12 @@ void checkForDuplicateTitle(
     if (id)
         s.setInt(2, id);
     cdr::db::ResultSet r = s.executeQuery();
-    if (!r.next())
+    if (!r.next()) {
+        s.close();
         throw cdr::Exception(L"Internal error checking for duplicate title");
+    }
     int count = r.getInt(1);
+    s.close();
     if (count > 0)
         throw cdr::Exception(L"Duplicate title (" + title + L"); not allowed "
                              L"for documents of type " + docType);

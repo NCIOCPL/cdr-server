@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.30 2006-09-19 22:32:34 ameyer Exp $
+ * $Id: CdrVersion.cpp,v 1.31 2007-07-06 04:16:09 bkline Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2006/09/19 22:32:34  ameyer
+ * Change to namespace for isCWDLastPub().
+ *
  * Revision 1.29  2006/09/01 02:10:13  ameyer
  * Added isCWDLastPub().
  *
@@ -193,6 +196,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
           u << checked_out_usr;
           usrname = u.str();
         }
+        ch_select.close();
         throw cdr::Exception(L"Document not checked out to current user"
                              L".  Checked out to"
                              + usrname
@@ -212,7 +216,9 @@ int cdr::checkIn(cdr::Session& session, int docId,
       up.setInt(1, abandon ? Int(true) : version);
       up.setString(2, *comment);
       up.setInt(3, docId);
-      up.executeQuery();    }
+      up.executeQuery();
+      up.close();
+    }
     else
     {
       string update = "UPDATE checkout "
@@ -222,6 +228,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
       up.setInt(1, abandon ? Int(true) : version);
       up.setInt(2, docId);
       up.executeQuery();
+      up.close();
     }
   }
   else
@@ -256,7 +263,10 @@ int cdr::checkIn(cdr::Session& session, int docId,
     select.setInt(2, docId);
     cdr::db::ResultSet rs = select.executeQuery();
     if (!rs.next())
+    {
+      select.close();
       throw cdr::Exception(L"Error getting document data");
+    }
 
     cdr::String val_status = rs.getString(1);
     cdr::String val_date = rs.getString(2);
@@ -266,6 +276,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
     cdr::String doc_comment = rs.getString(6);
     cdr::String updated_dt = rs.getString(7);
     cdr::Int blobId = rs.getInt(8);
+    select.close();
 
     string newver = "INSERT INTO doc_version "
                     "            (id, num, dt, updated_dt, usr, val_status, "
@@ -285,6 +296,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
     insert.setString(10, doc_comment);
     insert.setString(11, publishable);
     insert.executeQuery();
+    insert.close();
 
     // If there was a blob, version it too
     if (!blobId.isNull())
@@ -327,6 +339,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
     ps.setInt   (2, usr);
     ps.setString(3, comment ? *comment : nullString);
     ps.executeUpdate();
+    ps.close();
   }
 
   conn.setAutoCommit(autocommitted);
@@ -362,6 +375,7 @@ int cdr::checkOut(cdr::Session& session,
     // someone already has it checked out
     if (force)
     {
+      select.close();
       if (!session.canDo(conn, "FORCE CHECKOUT", docId))
         throw cdr::Exception(L"User not authorized to force checkout");
       // Note forced checkins do not create new versions
@@ -371,6 +385,7 @@ int cdr::checkOut(cdr::Session& session,
     {
       cdr::String dt_out = rs.getString(1);
       int checked_out_usr = rs.getInt(2);
+      select.close();
 
       string ch_query = "SELECT name, fullname from usr "
         "WHERE id = ?";
@@ -392,6 +407,7 @@ int cdr::checkOut(cdr::Session& session,
         u << checked_out_usr;
         usrname = u.str();
       }
+      ch_select.close();
       throw cdr::Exception(L"Document already checked out to "
                            + usrname
                            + fullname
@@ -412,6 +428,7 @@ int cdr::checkOut(cdr::Session& session,
   stmt.setInt(2, usr);
   stmt.setString(3, (comment.size() == 0) ? cdr::String(false) : comment);
   stmt.executeQuery();
+  stmt.close();
 
   conn.setAutoCommit(autocommitted);
   return version;
@@ -433,7 +450,10 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn, int num,
   cdr::db::ResultSet rs = select.executeQuery();
 
   if (!rs.next())
+  {
+    select.close();
     return false;
+  }
 
   if (verdoc != NULL)
   {
@@ -450,10 +470,13 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn, int num,
     verdoc->blob_id = rs.getInt(9);
     verdoc->comment = rs.getString(10);
     verdoc->publishable = rs.getString(11);
+    select.close();
 
     // Check for blob id and get bytes if there are any
     getVerBlob(conn, verdoc);
   }
+  else
+    select.close();
 
   return true;
 }
@@ -479,7 +502,10 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn,
   cdr::db::ResultSet rs = select.executeQuery();
 
   if (!rs.next())
+  {
+    select.close();
     return false;
+  }
 
   if (verdoc != NULL)
   {
@@ -496,10 +522,13 @@ bool cdr::getVersion(int docId, cdr::db::Connection& conn,
     verdoc->blob_id = rs.getInt(10);
     verdoc->comment = rs.getString(11);
     verdoc->publishable = rs.getString(12);
+    select.close();
 
     // Search for blob data, if needed
     getVerBlob(conn, verdoc);
   }
+  else
+    select.close();
 
   return true;
 }
@@ -526,8 +555,10 @@ bool cdr::getLabelVersion(int docId, cdr::db::Connection& conn,
   select.setString(2, label_name);
   cdr::db::ResultSet rs = select.executeQuery();
 
-  if (!rs.next())
+  if (!rs.next()) {
+    select.close();
     return false;
+  }
 
   if (verdoc != NULL)
   {
@@ -544,10 +575,13 @@ bool cdr::getLabelVersion(int docId, cdr::db::Connection& conn,
     verdoc->blob_id = rs.getInt(10);
     verdoc->comment = rs.getString(11);
     verdoc->publishable = rs.getString(12);
+    select.close();
 
     // Check for blob id and get bytes if there are any
     getVerBlob(conn, verdoc);
   }
+  else
+    select.close();
 
   return true;
 }
@@ -576,14 +610,17 @@ int cdr::getVersionNumber(int docId, cdr::db::Connection& conn,
       if (date != NULL)
         *date = cdr::toXmlDate(rs.getString(2));
       int verNum = rs.getInt(1);
+      stmt.close();
       return verNum;
     }
   }
   catch(const cdr::Exception &e) {
+    stmt.close();
     // Rethrow, but with information about where it happened
     throw cdr::Exception(L"getVersionNumber failure: " + e.what());
   }
 
+  stmt.close();
   return -1;
 }
 
@@ -616,10 +653,12 @@ int cdr::getLatestPublishableVersion(int docId, cdr::db::Connection& conn,
     if (date != NULL)
       *date = cdr::toXmlDate(rs.getString(2));
 
-      int verNum = rs.getInt(1);
+    int verNum = rs.getInt(1);
+    select.close();
     return verNum;
   }
 
+  select.close();
   return -1;
 }
 
@@ -645,7 +684,9 @@ bool cdr::isChanged(int docId, cdr::db::Connection& conn)
   select.setInt(2, docId);
   select.setInt(3, docId);
   cdr::db::ResultSet rs = select.executeQuery();
-  return !rs.next();
+  bool retVal = !rs.next();
+  select.close();
+  return retVal;
 }
 
 bool cdr::isCheckedOut(int docId, cdr::db::Connection& conn, int* usr,
@@ -658,12 +699,18 @@ bool cdr::isCheckedOut(int docId, cdr::db::Connection& conn, int* usr,
   select.setInt(1, docId);
   cdr::db::ResultSet rs = select.executeQuery();
   if (!rs.next())
+  {
+    select.close();
     return false;
+  }
 
+  cdr::String dateCheckedOut = rs.getString(1);
+  int         userId         = rs.getInt(2);
+  select.close();
   if (dt_out != NULL)
-    *dt_out = rs.getString(1);
+    *dt_out = dateCheckedOut;
   if (usr != NULL)
-    *usr = rs.getInt(2);
+    *usr = userId;
 
   return true;
 }
@@ -836,6 +883,7 @@ cdr::String cdr::createLabel(cdr::Session& session,
   insert.setString(1, label_name);
   insert.setString(2, label_comment);
   insert.executeQuery();
+  insert.close();
 
   return L"<CdrCreateLabelResp/>";
 }
@@ -879,6 +927,7 @@ cdr::String cdr::deleteLabel(cdr::Session& session,
     throw cdr::Exception(L"Label does not exist");
 
   int label_id = rs.getInt(1);
+  select.close();
 
   string delete_sql = "DELETE FROM doc_version_label "
                       "WHERE label = ?";
@@ -886,6 +935,7 @@ cdr::String cdr::deleteLabel(cdr::Session& session,
         = dbConnection.prepareStatement(delete_sql);
   del.setInt(1, label_id);
   del.executeQuery();
+  del.close();
 
   string delete2_sql = "DELETE FROM version_label "
                       "WHERE id = ?";
@@ -893,6 +943,7 @@ cdr::String cdr::deleteLabel(cdr::Session& session,
         = dbConnection.prepareStatement(delete2_sql);
   del2.setInt(1, label_id);
   del2.executeQuery();
+  del2.close();
 
   dbConnection.setAutoCommit(autocommitted);
 
@@ -963,6 +1014,7 @@ cdr::String cdr::labelDocument(cdr::Session& session,
   insert.setInt(2, version);
   insert.setString(3, label_name);
   insert.executeQuery();
+  insert.close();
 
   return L"<CdrLabelDocumentResp/>";
 }
@@ -1013,6 +1065,7 @@ cdr::String cdr::unlabelDocument(cdr::Session& session,
   del.setInt(1, document_id);
   del.setString(2, label_name);
   del.executeQuery();
+  del.close();
 
   return L"<CdrUnlabelDocumentResp/>";
 }
@@ -1081,6 +1134,7 @@ cdr::String cdr::listVersions(Session& session,
                << L"</Comment>";
     response << L"</Version>";
   }
+  ps.close();
   response << L"</ListVersionsResp>";
 
   return response.str();
@@ -1129,6 +1183,7 @@ cdr::String cdr::lastVersions(Session& session,
     if (lastAny == 0)
         lastAny = -1;
   }
+  anyPs.close();
 
   response << L" <LastVersionNum>"
            << String::toString (lastAny)
@@ -1145,6 +1200,7 @@ cdr::String cdr::lastVersions(Session& session,
     if (lastPub == 0)
         lastPub = -1;
   }
+  pubPs.close();
 
   response << L" <LastPubVersionNum>"
            << String::toString (lastPub)
@@ -1192,6 +1248,7 @@ bool cdr::isCWDLastPub(int docId, cdr::db::Connection& conn)
         cdr::String msg = L"Unable to find docID="
                       + cdr::stringDocId(docId)
                       + L" for isCWDLastPub";
+        select.close();
         throw cdr::Exception(msg);
     }
 
