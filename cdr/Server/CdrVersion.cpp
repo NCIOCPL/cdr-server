@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.31 2007-07-06 04:16:09 bkline Exp $
+ * $Id: CdrVersion.cpp,v 1.32 2007-07-08 16:33:21 bkline Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2007/07/06 04:16:09  bkline
+ * Added missing close() calls for db prepared statements.
+ *
  * Revision 1.30  2006/09/19 22:32:34  ameyer
  * Change to namespace for isCWDLastPub().
  *
@@ -342,6 +345,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
     ps.close();
   }
 
+  conn.commit();
   conn.setAutoCommit(autocommitted);
   return abandon ? -1 : version;
 }
@@ -430,6 +434,7 @@ int cdr::checkOut(cdr::Session& session,
   stmt.executeQuery();
   stmt.close();
 
+  conn.commit();
   conn.setAutoCommit(autocommitted);
   return version;
 }
@@ -945,6 +950,7 @@ cdr::String cdr::deleteLabel(cdr::Session& session,
   del2.executeQuery();
   del2.close();
 
+  dbConnection.commit();
   dbConnection.setAutoCommit(autocommitted);
 
   return L"<CdrDeleteLabelResp/>";
