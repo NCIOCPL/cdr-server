@@ -1,9 +1,12 @@
 /*
- * $Id: CdrDbConnection.h,v 1.9 2000-06-23 15:30:21 bkline Exp $
+ * $Id: CdrDbConnection.h,v 1.10 2007-07-10 20:07:13 bkline Exp $
  *
  * Interface for CDR wrapper for an ODBC database connection.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2000/06/23 15:30:21  bkline
+ * Added constants for logon strings.
+ *
  * Revision 1.8  2000/05/21 00:53:35  bkline
  * Replaced public constructor with DriverManager::getConnection().
  *
@@ -154,7 +157,8 @@ namespace cdr {
              * which can be committed or rolled back.  A new connection
              * is started with auto-commit turned on, effectively making 
              * each query into a self-contained transaction, committed
-             * if successful.
+             * if successful.  When auto-commit is turned off, any
+             * open transactions on the connection are committed.
              *
              *  @param  setting     <code>true</code> if subsequent queries
              *                      are to be treated as separate
@@ -175,13 +179,21 @@ namespace cdr {
 
             /**
              * Causes the outstanding SQL statements for the current
-             * transaction to be committed to the database.
+             * transaction to be committed to the database.  Unlike
+             * an explicit "COMMIT WORK" query (which will fail if
+             * no transaction is active), this operation is a safe
+             * no-op if no transaction is open when <code>commit()</code>
+             * is invoked.
              */
             void commit();
 
             /**
              * Causes the outstanding SQL statements for the current
-             * transaction to be discarded.
+             * transaction to be discarded.  Unlike an explicit
+             * "ROLLBACK WORK" query (which will fail if no
+             * transaction is active), this operation is a safe
+             * no-op if no transaction is open when <code>rollback()</code>
+             * is invoked.
              */
             void rollback();
 
@@ -189,7 +201,7 @@ namespace cdr {
              * Extracts the current @@IDENTITY value from SQL Server for
              * the current connection.
              *
-             *  @return             current <code>@@IDENTITY</code value.
+             *  @return             current <code>@@IDENTITY</code> value.
              */
             int getLastIdent();
 
