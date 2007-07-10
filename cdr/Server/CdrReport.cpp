@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.20 2006-01-05 16:05:11 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.21 2007-07-10 14:01:21 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2006/01/05 16:05:11  bkline
+ * Added support for finding document for summary translation.
+ *
  * Revision 1.19  2004/11/03 19:14:03  bkline
  * Fixed code formatting.
  *
@@ -92,6 +95,10 @@ static cdr::String applyNamedFilter(const cdr::String&,
                                     cdr::db::Connection& dbConnection);
 static cdr::String getDocumentXml(
               int                    docId,
+              cdr::db::Connection&   dbConnection);
+static cdr::String getDocVersionXml(
+              int                    docId,
+              int                    docVersion,
               cdr::db::Connection&   dbConnection);
 static cdr::String getNamedFilter(
         const cdr::String&           filterName,
@@ -333,6 +340,21 @@ namespace
                                   cdr::Report::ReportParameters parm);
   };
 
+  /*************************************************************************/
+  /* Collect named sets of CDR terms.                                      */
+  /*************************************************************************/
+  class TermSets : public cdr::Report
+  {
+    public:
+      TermSets() :
+          cdr::Report("Term Sets") {}
+
+    private:
+      virtual cdr::String execute(cdr::Session& session,
+                                  cdr::db::Connection& dbConnection,
+                                  cdr::Report::ReportParameters parm);
+  };
+
 #if 0
   /*************************************************************************/
   /* Find linked documents (direct or indirect) except Citations.          */
@@ -429,6 +451,7 @@ namespace
     }
 
     result << L"]]></ReportBody>\n";
+    select.close();
     return result.str();
   }
 
@@ -511,6 +534,7 @@ namespace
         }
       }
     }
+    select.close();
 
     // Write out the last organization.
     if (currentId)
@@ -571,6 +595,7 @@ namespace
     }
 
     result << L"]]></ReportBody>\n";
+    select.close();
     return result.str();
   }
 
@@ -860,6 +885,56 @@ namespace
     return result.str();
   }
 
+  cdr::String TermSets::execute(cdr::Session& session,
+                                cdr::db::Connection& dbConnection,
+                                cdr::Report::ReportParameters parm)
+  {
+    // See if the client wants to restrict the report to one set type.
+    cdr::String setType = "%";
+    ReportParameters::iterator parmIterator = parm.find(L"SetType");
+    if (parmIterator != parm.end())
+      setType = parmIterator->second;
+
+    // Retrieve the filter used to extract set names and members.
+    cdr::String filterXml = getNamedFilter(L"Get TermSet Name and Members",
+                                           dbConnection);
+
+    // Find the sets of the type requested.
+    char* query =
+        "   SELECT v.id, MAX(v.num)                 "
+        "     FROM doc_version v                    "
+        "     JOIN query_term t                     "
+        "       ON t.doc_id = v.id                  "
+        "    WHERE t.path = '/TermSet/TermSetType'  "
+        "      AND t.value LIKE ?                   "
+        "      AND v.publishable = 'Y'              "
+        " GROUP BY v.id;                            ";
+      
+    cdr::db::PreparedStatement ps = dbConnection.prepareStatement(query);
+    ps.setString(1, setType);
+    cdr::db::ResultSet rs = ps.executeQuery();
+    std::wostringstream result;
+    result << L"<ReportBody><![CDATA[\n"
+              L"<ReportName>" << getName() << L"</ReportName>\n";
+    std::vector<int> docIds;
+    std::vector<int> docVersions;
+    while (rs.next())
+    {
+      docIds.push_back(rs.getInt(1));
+      docVersions.push_back(rs.getInt(2));
+    }
+    for (int i = 0; i < docIds.size(); ++i)
+    {
+      int docId          = docIds[i];
+      int docVersion     = docVersions[i];
+      cdr::String docXml = getDocVersionXml(docId, docVersion, dbConnection);
+      result << cdr::filterDocument(docXml, filterXml, dbConnection);
+    }
+    ps.close();
+    result << L"]]></ReportBody>\n";
+    return result.str();
+  }
+
 #if 0
 struct TargetDoc { 
     int id; 
@@ -956,6 +1031,7 @@ struct TargetDoc {
   DatedActions                  datedActions;
   MenuTermTree                  menuTermTree;
   TranslatedSummary             translatedSummary;
+  TermSets                      termSets;
 #if 0
   PublishLinkedDocs             publishLinkedDocs;
 #endif
@@ -989,6 +1065,7 @@ struct TargetDoc {
     result << L"<TranslatedSummary>"
            << cdr::stringDocId(id)
            << L"</TranslatedSummary>\n]]></ReportBody>\n";
+    select.close();
     return result.str();
   }
 
@@ -1013,6 +1090,7 @@ cdr::String getNamedFilter(
     cdr::String filterXml = rs.getString(1);
     if (rs.next())
       throw cdr::Exception(L"Duplicate filter documents", filterName);
+    ps.close();
     return filterXml;
 }
 
@@ -1027,9 +1105,34 @@ cdr::String getDocumentXml(
     cdr::db::PreparedStatement ps = dbConnection.prepareStatement(query);
     ps.setInt(1, docId);
     cdr::db::ResultSet rs = ps.executeQuery();
-    if (!rs.next())
-      throw cdr::Exception(L"Cannot find document", cdr::stringDocId(docId));
+    if (!rs.next()) {
+        ps.close();
+        throw cdr::Exception(L"Cannot find document", cdr::stringDocId(docId));
+    }
     cdr::String docXml = rs.getString(1);
+    ps.close();
+    return docXml;
+}
+
+/**
+ * Get XML for a document by ID and Version.
+ */
+cdr::String getDocVersionXml(
+              int                    docId,
+              int                    docVersion,
+              cdr::db::Connection&   dbConnection)
+{
+    string query = "SELECT xml FROM doc_version WHERE id = ? AND num = ?";
+    cdr::db::PreparedStatement ps = dbConnection.prepareStatement(query);
+    ps.setInt(1, docId);
+    ps.setInt(2, docVersion);
+    cdr::db::ResultSet rs = ps.executeQuery();
+    if (!rs.next()) {
+        ps.close();
+        throw cdr::Exception(L"Cannot find document", cdr::stringDocId(docId));
+    }
+    cdr::String docXml = rs.getString(1);
+    ps.close();
     return docXml;
 }
 
