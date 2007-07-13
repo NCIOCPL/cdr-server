@@ -23,9 +23,14 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.29 2006-11-17 05:29:30 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.30 2007-07-13 00:39:51 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2006/11/17 05:29:30  ameyer
+ * Added link fragment validation using the query_term and query_term_pub
+ * tables instead of the link_fragment table.  Did not yet remove update
+ * of the link_fragment table.  We can do that after more testing.
+ *
  * Revision 1.28  2006/10/18 20:32:45  bkline
  * Fixed name of link_xml table's foreign key into link_type table.
  *
@@ -1004,7 +1009,7 @@ cdr::String cdr::putLinkType (
                                   + typeName + L"'");
 
         // Create insertion statement for new link type
-        updqry="INSERT INTO link_type (name, chk_type, comment) VALUES (?, ?)";
+        updqry="INSERT INTO link_type (name,chk_type,comment) VALUES (?,?,?)";
     }
     else {
         // Validate that caller thinks he's modifying an existing link type
