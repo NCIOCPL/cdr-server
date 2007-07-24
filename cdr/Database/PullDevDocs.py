@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #
-# $Id: PullDevDocs.py,v 1.2 2003-06-10 17:30:02 bkline Exp $
+# $Id: PullDevDocs.py,v 1.3 2007-07-24 20:48:22 venglisc Exp $
 #
 # Pulls control document which need to be preserved from the
 # development server in preparation for refreshing the CDR
@@ -8,6 +8,9 @@
 # with PushDevDocs.py.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.2  2003/06/10 17:30:02  bkline
+# Added code to preserve filter set information on the development server.
+#
 # Revision 1.1  2002/09/07 14:12:49  bkline
 # Tools for preserving development versions of control docs.
 #
@@ -104,6 +107,28 @@ devConn   = cdrdb.connect(user = 'CdrGuest', dataSource = devServer)
 prdCursor = prdConn.cursor()
 devCursor = devConn.cursor()
 pattern   = re.compile(r"""\s+Id\s*=\s*['"]CDR\d+['"]""")
+
+# ---------------------------------------------------------------------
+# Check if any new docTypes exist on the development server.
+# We select the ID of the docType last created and preserve all 
+# docTypes on MAHLER that have an ID greater then this lastDocTypeId.
+# ---------------------------------------------------------------------
+prdCursor.execute("""\
+    SELECT max(id)
+      FROM doc_type
+     WHERE active = 'Y'""")
+lastDocTypeId = prdCursor.fetchone()
+
+devCursor.execute("""\
+    select id, name
+      FROM doc_type
+     WHERE id > ?""", lastDocTypeId)
+
+rows = devCursor.fetchall()
+
+for id, newDocType in rows:
+    docTypes += str(newDocType),
+    log('Preserving new docType: %s' % newDocType)
 
 #----------------------------------------------------------------------
 # Preserve the filter sets from the development server.
