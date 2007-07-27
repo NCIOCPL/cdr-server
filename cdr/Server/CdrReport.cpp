@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.21 2007-07-10 14:01:21 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.22 2007-07-27 21:35:05 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2007/07/10 14:01:21  bkline
+ * Added new Term Sets report.
+ *
  * Revision 1.20  2006/01/05 16:05:11  bkline
  * Added support for finding document for summary translation.
  *
@@ -333,6 +336,21 @@ namespace
     public:
       TranslatedSummary() :
           cdr::Report("Translated Summary") {}
+
+    private:
+      virtual cdr::String execute(cdr::Session& session,
+                                  cdr::db::Connection& dbConnection,
+                                  cdr::Report::ReportParameters parm);
+  };
+
+  /*************************************************************************/
+  /* Find GlossaryTermName documents linked to a GlossaryTermConcept doc.
+  /*************************************************************************/
+  class GlossaryTermNames : public cdr::Report
+  {
+    public:
+      GlossaryTermNames() :
+          cdr::Report("Glossary Term Names") {}
 
     private:
       virtual cdr::String execute(cdr::Session& session,
@@ -1031,6 +1049,7 @@ struct TargetDoc {
   DatedActions                  datedActions;
   MenuTermTree                  menuTermTree;
   TranslatedSummary             translatedSummary;
+  GlossaryTermNames             glossaryTermNames;
   TermSets                      termSets;
 #if 0
   PublishLinkedDocs             publishLinkedDocs;
@@ -1065,6 +1084,45 @@ struct TargetDoc {
     result << L"<TranslatedSummary>"
            << cdr::stringDocId(id)
            << L"</TranslatedSummary>\n]]></ReportBody>\n";
+    select.close();
+    return result.str();
+  }
+
+  cdr::String GlossaryTermNames::execute(cdr::Session& session,
+                                         cdr::db::Connection& dbConnection,
+                                         cdr::Report::ReportParameters parm)
+  {
+    ReportParameters::iterator i = parm.find(L"ConceptId");
+    if (i == parm.end())
+      throw cdr::Exception(L"Must specify document ID for glossary term "
+                           L"concept document");
+    cdr::String conceptId = i->second;
+
+    string query = "SELECT DISTINCT d.id, d.title                            "
+                   "           FROM document d                               "
+                   "           JOIN query_term n                             "
+                   "             ON n.doc_id = d.id                          "
+                   "          WHERE n.path = '/GlossaryTermName'             "
+                   "                       + '/GlossaryTermConcept/@cdr:ref' "
+                   "            AND n.int_val = ?                            ";
+      
+    cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
+    select.setInt(1, conceptId.extractDocId());
+    cdr::db::ResultSet rs = select.executeQuery();
+
+    wostringstream result;
+    result << L"<ReportBody><![CDATA[\n"
+              L"<ReportName>" << getName() << L"</ReportName>\n";
+    while (rs.next()) {
+        int id = rs.getInt(1);
+        cdr::String name = rs.getString(2);
+        result << L"<GlossaryTermName ref='"
+               << cdr::stringDocId(id)
+               << L"'>"
+               << cdr::entConvert(name)
+               << L"</GlossaryTermName>\n";
+    }
+    result << L"]]></ReportBody>\n";
     select.close();
     return result.str();
   }
