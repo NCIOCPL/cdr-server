@@ -1,9 +1,13 @@
 /*
- * $Id: CdrFilter.cpp,v 1.55 2007-03-14 23:58:23 ameyer Exp $
+ * $Id: CdrFilter.cpp,v 1.56 2007-08-03 19:06:11 bkline Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.55  2007/03/14 23:58:23  ameyer
+ * Changed slashes to tildes to delimit query arguments in execXsltSqlQuery.
+ * We need to be able to pass strings with slashes into SQL Server.
+ *
  * Revision 1.54  2007/03/14 23:10:38  ameyer
  * Added cdrutil:/sql-query, plus some additional documentation.
  *
@@ -352,7 +356,7 @@ namespace
   char* parmstr(const cdr::String& s)
   {
     string us = s.toUtf8();
-    char* p = new char[s.length() + 1];
+    char* p = new char[us.length() + 1];
     strcpy(p, us.c_str());
     return p;
   }
