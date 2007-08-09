@@ -1,0 +1,44 @@
+<CdrDoc Type='Filter' Id='CDR0000562211'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Get TermSet Name and Members</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                            xmlns:cdr = "cips.nci.nih.gov/cdr"
+                              version = "1.0"
+              exclude-result-prefixes = "cdr">
+
+ <xsl:output                   method = "xml"
+                 omit-xml-declaration = "yes" />
+
+ <xsl:template                  match = "/">
+  <xsl:apply-templates         select = "TermSet"/>
+ </xsl:template>
+
+ <xsl:template                  match = "TermSet">
+  <xsl:variable                  name = "members">
+   <xsl:call-template            name = "getMembers"/>
+  </xsl:variable>
+  <TermSet>
+   <Name>
+    <xsl:value-of              select = "TermSetName"/>
+   </Name>
+   <Members>
+    <xsl:value-of              select = "normalize-space($members)"/>
+   </Members>
+  </TermSet>
+ </xsl:template>
+
+ <xsl:template                   name = "getMembers">
+  <xsl:for-each                select = "TermSetMember">
+   <xsl:value-of               select = "concat(@cdr:ref, ' ')"/>
+  </xsl:for-each>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
