@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
  ================================================================
-     $Id: CDR0000000096.xml,v 1.30 2005-02-24 21:01:36 venglisc Exp $
+     $Id: CDR0000000096.xml,v 1.31 2007-08-09 16:54:38 venglisc Exp $
 
      Filter to create a Person Content QC Report 
         Written by Volker Englisch
@@ -52,6 +52,11 @@
     </TITLE>
     <STYLE type='text/css'>
      ul {margin-left: 16 ; padding-left: 0;}
+     .attribute  { font-weight: normal; 
+                   font-style: italic; 
+                   background-color: #FFFFFF; }
+     .even       { background-color: #EEEEEE; }
+     .odd        { background-color: #BBBBBB; }
     </STYLE>
    </HEAD>
    <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
@@ -145,14 +150,11 @@
       <xsl:value-of             select = "Status/EntryDate"/>
      </td>
     </tr>  
-    <tr>
-     <td        xsl:use-attribute-sets = "cell1of2">
-      <b>Comment</b>
-     </td>
-     <td        xsl:use-attribute-sets = "cell2of2">
-      <xsl:value-of             select = "Status/Comment"/>
-     </td>
-    </tr>  
+    <xsl:apply-templates        select = "Status/Comment"
+                                  mode = "withAttribute">
+     <xsl:with-param              name = "label"
+                                select = "'Status Comment'"/>
+    </xsl:apply-templates>
     <tr>
      <td        xsl:use-attribute-sets = "cell1of2">
       <b>Preferred Contact Mode</b>
@@ -376,6 +378,7 @@
     <xsl:text>Professional Information</xsl:text>
    </font>
   </b>
+  <p/>
 
   <xsl:apply-templates          select = "PDQBoardMembershipDetails"/>
   <!-- xsl:apply-templates          select = "PhysicianDetails"/ -->
@@ -481,14 +484,11 @@
 
   <xsl:apply-templates         select = "PhysicianMembershipInformation"/>
    <table      xsl:use-attribute-sets = "table">
-    <tr>
-     <td       xsl:use-attribute-sets = "cell1of2">
-      <b>Comment</b>
-     </td>
-     <td       xsl:use-attribute-sets = "cell2of2">
-      <xsl:apply-templates     select = "Comment"/>
-     </td>
-    </tr>
+    <xsl:apply-templates        select = "Comment"
+                                  mode = "withAttribute">
+     <xsl:with-param              name = "label"
+                                select = "'PhysDetails Comment'"/>
+    </xsl:apply-templates>
    </table>
   <p/>
 
@@ -499,31 +499,31 @@
  ===================================================================
  Display Membership Information
  =================================================================== -->
- <xsl:template                  match = "PhysicianMembershipInformation">
-  <table       xsl:use-attribute-sets = "table">
+ <xsl:template                   match = "PhysicianMembershipInformation">
+  <table        xsl:use-attribute-sets = "table">
    <tr>
-    <td        xsl:use-attribute-sets = "cell1of2">
+    <td         xsl:use-attribute-sets = "cell1of2">
      <b>Membership Information</b>
     </td>
    </tr>
    <tr>
-    <td        xsl:use-attribute-sets = "cell1of2">
+    <td         xsl:use-attribute-sets = "cell1of2">
      <b><u>Cooperative Group(s)</u></b>
     </td>
-    <td        xsl:use-attribute-sets = "cell2of2">
+    <td         xsl:use-attribute-sets = "cell2of2">
      <ul>
-      <xsl:for-each            select = "MemberOfCooperativeGroup/
-                                         CooperativeGroup/
-                                         Organization/
-                                         OrganizationName">
+      <xsl:for-each             select = "MemberOfCooperativeGroup/
+                                          CooperativeGroup/
+                                          Organization/
+                                          OrganizationName">
        <li>
         <xsl:choose>
-         <xsl:when              test = "../../../@GroupChair">
-          <xsl:value-of      select = "."/>
+         <xsl:when                test = "../../../@GroupChair">
+          <xsl:value-of         select = "."/>
           <xsl:text> (Group Chair)</xsl:text>
          </xsl:when>
          <xsl:otherwise>
-          <xsl:value-of      select = "."/>
+          <xsl:value-of         select = "."/>
          </xsl:otherwise>
         </xsl:choose>
        </li>
@@ -533,16 +533,16 @@
    </tr>
   </table>
   <p>
-  <table       xsl:use-attribute-sets = "table">
+  <table        xsl:use-attribute-sets = "table">
    <tr>
-    <td        xsl:use-attribute-sets = "cell1of2">
+    <td         xsl:use-attribute-sets = "cell1of2">
      <b><u>Medical Societies</u></b>
     </td>
-    <td        xsl:use-attribute-sets = "cell2of2">
+    <td         xsl:use-attribute-sets = "cell2of2">
      <ul>
-      <xsl:for-each            select = "MemberOfMedicalSociety">
+      <xsl:for-each             select = "MemberOfMedicalSociety">
        <li>
-        <xsl:value-of          select = "."/>
+        <xsl:value-of           select = "."/>
        </li>
       </xsl:for-each> 
      </ul>
@@ -557,40 +557,37 @@
  =====================================================================
  Template to display Administrative Information
  ===================================================================== -->
- <xsl:template                  match = "AdministrativeInformation">
-  <table       xsl:use-attribute-sets = "table">
+ <xsl:template                   match = "AdministrativeInformation">
+  <table        xsl:use-attribute-sets = "table">
    <tr>
-    <td        xsl:use-attribute-sets = "cell1of2">
+    <td         xsl:use-attribute-sets = "cell1of2">
      <b><u>Directory</u></b>
     </td>
-    <td        xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of             select = "Directory/Include"/>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Directory/Include"/>
     </td>
    </tr>  
    <tr>
-    <td        xsl:use-attribute-sets = "cell1of2">
+    <td         xsl:use-attribute-sets = "cell1of2">
      <b>Entered By</b>
     </td>
-    <td        xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of             select = "Directory/EnteredBy"/>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Directory/EnteredBy"/>
     </td>
    </tr>  
    <tr>
-    <td        xsl:use-attribute-sets = "cell1of2">
+    <td         xsl:use-attribute-sets = "cell1of2">
      <b>Entry Date</b>
     </td>
-    <td        xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of             select = "Directory/Date"/>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Directory/Date"/>
     </td>
    </tr>  
-   <tr>
-    <td        xsl:use-attribute-sets = "cell1of2">
-     <b>Comment</b>
-    </td>
-    <td        xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of             select = "Directory/Comment"/>
-    </td>
-   </tr>
+   <xsl:apply-templates         select = "Directory/Comment"
+                                  mode = "withAttribute">
+    <xsl:with-param               name = "label"
+                                select = "'PD Dir Comment'"/>
+   </xsl:apply-templates>
   </table>
   <p/>
  </xsl:template> 
@@ -623,14 +620,11 @@
      <xsl:value-of            select = "ActionDate"/>
     </td>
    </tr>
-   <tr>
-    <td       xsl:use-attribute-sets = "cell1of2">
-     <b>Comment</b>
-    </td>
-    <td       xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of            select = "Comment"/>
-    </td>
-   </tr>
+   <xsl:apply-templates         select = "Comment"
+                                  mode = "withAttribute">
+    <xsl:with-param               name = "label"
+                                select = "'DA Comment'"/>
+   </xsl:apply-templates>
   </table>
   <p/>
  </xsl:template>
@@ -661,6 +655,50 @@
    </tr>
   </table>
  </xsl:template>
+
+ <!--
+ =======================================================================
+ Template for Admin Information Comments
+ ======================================================================= -->
+ <xsl:template                   match = "Comment"
+                                  mode = "withAttribute">
+  <xsl:param                      name = "label"
+                                select = "'Comment'"/>
+
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>
+     <xsl:value-of              select = "$label"/>
+    </b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <span class="attribute">
+     <xsl:if                      test = "@audience">
+      <xsl:text>audience=</xsl:text>
+      <xsl:value-of             select = "@audience"/>
+     </xsl:if>
+     <xsl:if                      test = "@date">
+      <xsl:text> date=</xsl:text>
+      <xsl:value-of             select = "@date"/>
+     </xsl:if>
+     <xsl:if                      test = "@user">
+      <xsl:text> user=</xsl:text>
+      <xsl:value-of             select = "@user"/>
+     </xsl:if>
+    </span>
+   </td>
+  </tr>
+  <tr>
+   <td><xsl:text> </xsl:text></td>
+   <td>
+    <xsl:value-of              select = "."/>
+    <p/>
+   </td>
+  </tr>
+ </xsl:template>
+
+
+
 </xsl:transform>
 ]]>
 </CdrDocXml>
