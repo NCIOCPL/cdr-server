@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.120 2007-06-29 03:32:55 ameyer Exp $
+ * $Id: tables.sql,v 1.121 2007-08-14 23:19:19 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.120  2007/06/29 03:32:55  ameyer
+ * A bit more documentation.
+ *
  * Revision 1.119  2007/06/29 03:30:29  ameyer
  * Added comments to distinguish dt / updated_dt in doc_version.
  *
@@ -1888,8 +1891,8 @@ CREATE TABLE pub_proc_cg
          (id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs,
     pub_proc INTEGER NOT NULL REFERENCES pub_proc,
          xml NTEXT   NOT NULL,
-  force_push CHAR    NOT NULL,
-      cg_new CHAR    NOT NULL)
+  force_push CHAR    NOT NULL DEFAULT 'N',
+      cg_new CHAR    NOT NULL DEFAULT 'N')
 GO
 
 /*
