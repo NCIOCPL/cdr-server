@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: ScientificProtocolInfo.xml,v 1.15 2006-11-17 22:01:30 bkline Exp $
+      $Id: ScientificProtocolInfo.xml,v 1.16 2007-08-20 15:28:00 bkline Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.15  2006/11/17 22:01:30  bkline
+      Changed type of Comment elements to allow optional audience attribute.
+
       Revision 1.14  2006/05/05 18:38:22  bkline
       Added "Ready to merge' to value list for ProcessingStatus elements.
 
@@ -70,6 +73,9 @@
     <sequence>
       <element       name            = 'ProtocolIDs'
                      type            = 'ProtocolIDs'/>
+      <element       name            = 'ProtocolProcessingDetails'
+                     type            = 'ProtocolProcessingDetails'
+                     minOccurs       = '0'/>
       <element       name            = 'ProtocolAmendmentInformation'
                      type            = 'ProtocolAmendmentInformation'
                      minOccurs       = '0'
@@ -111,6 +117,9 @@
       <element       name            = 'InScopeDocID'
                      type            = 'ProtocolLink'
                      minOccurs       = '0'/>
+      <element       name            = 'RelatedDocuments'
+                     type            = 'RelatedDocuments'
+                     minOccurs       = '0'/>
     </sequence>
       <attribute     name            = 'xmlns:cdr'
                      type            = 'anyURI'
@@ -122,16 +131,77 @@
 <!--=====================================================================-->
   <complexType       name            = 'ProtocolProcessingDetails'>
     <sequence>
+
+      <!-- Deprecated; to be removed after old docs are flushed. -->
       <element       name            = 'ProcessingStatus'
                      type            = 'ProcessingStatus'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'ProcessingPriority'
+                     type            = 'ProcessingPriority'
+                     minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
       <element       name            = 'EnteredBy'
-                     type            = 'NotEmptyString'/>
+                     type            = 'NotEmptyString'
+                     minOccurs       = '0'/>
       <element       name            = 'ProcessingDate'
-                     type            = 'date'/>
+                     type            = 'date'
+                     minOccurs       = '0'/>
       <element       name            = 'Comment'
                      type            = 'Comment'
                      minOccurs       = '0'/>
+
+      <!-- Use these instead for new documents. -->
+      <element       name            = 'ProcessingStatuses'
+                     type            = 'ProcessingStatuses'
+                     minOccurs       = '0'/>
+      <element       name            = 'MissingRequiredInformation'
+                     type            = 'MissingRequiredInformation'
+                     minOccurs       = '0'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'ProcessingStatuses'>
+    <sequence>
+      <element       name            = 'ProcessingStatusInfo'
+                     type            = 'ProcessingStatusInfo'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'ProcessingStatusInfo'>
+    <sequence>
+      <element       name            = 'ProcessingStatus'
+                     type            = 'ProcessingStatus'/>
+      <element       name            = 'StartDateTime'
+                     type            = 'dateTime'
+                     minOccurs       = '0'/>
+      <element       name            = 'EndDateTime'
+                     type            = 'dateTime'
+                     minOccurs       = '0'/>
+      <element       name            = 'User'
+                     type            = 'CdrUser'
+                     minOccurs       = '0'/>
+      <element       name            = 'Comment'
+                     type            = 'Comment'
+                     minOccurs       = '0'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'RelatedDocuments'>
+    <sequence>
+      <element       name            = 'SupplementaryInfoLink'
+                     type            = 'SupplementaryInfoLink'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'MissingRequiredInformation'>
+    <sequence>
+      <element       name            = 'MissingInformation'
+                     type            = 'MissingInformation'
+                     maxOccurs       = 'unbounded'/>
     </sequence>
   </complexType>
 
@@ -140,11 +210,28 @@
 <!--=====================================================================-->
   <simpleType        name            = 'ProcessingStatus'>
     <restriction     base            = 'string'>
+
+      <!-- Deprecated; to be removed after old docs are flushed. -->
       <enumeration   value           = 'Edit HP Abstract'/>
       <enumeration   value           = 'Edit PT Abstract'/>
       <enumeration   value           = 'Write HP Abstract'/>
       <enumeration   value           = 'Write PT Abstract'/>
       <enumeration   value           = 'Ready to merge'/>
+
+      <!-- Use these instead for new documents. -->
+      <enumeration   value           = 'Final QC/Publishing'/>
+      <enumeration   value           = 'First edit'/>
+      <enumeration   value           = 'Patient Abstract'/>
+      <enumeration   value           = 'Patient QC'/>
+      <enumeration   value           = 'Requires second edit'/>
+      <enumeration   value           = 'Second edit'/>
+      <enumeration   value           = 'Write HP draft'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'CdrUser'>
+    <restriction     base            = 'string'>
+      <pattern       value           = '\S+'/>
     </restriction>
   </simpleType>
 
