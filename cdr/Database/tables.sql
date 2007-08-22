@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.121 2007-08-14 23:19:19 ameyer Exp $
+ * $Id: tables.sql,v 1.122 2007-08-22 17:01:55 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.121  2007/08/14 23:19:19  ameyer
+ * Added default values for pub_proc_cg.force_push and cg_new.
+ *
  * Revision 1.120  2007/06/29 03:32:55  ameyer
  * A bit more documentation.
  *
@@ -742,6 +745,13 @@ GO
  * View of the document table containing only deleted documents.
  */
 CREATE VIEW deleted_doc AS SELECT * FROM document WHERE active_status = 'D'
+GO
+
+/*
+ * View of the doc_version table containing only publishable versions.
+ */
+CREATE VIEW publishable_version AS
+     SELECT * FROM doc_version WHERE publishable = 'Y'
 GO
 
 /*
@@ -1655,6 +1665,48 @@ CREATE VIEW published_doc
                AND pub_event.id = pub_proc_doc.pub_proc
                AND (pub_proc_doc.failure IS NULL
                 OR pub_proc_doc.failure <> 'Y')
+GO
+
+/*
+ * View of documents which have been successfully pushed during or
+ * since the latest successful full load push job.
+ */
+CREATE VIEW pushed_doc
+         AS SELECT d.doc_id, d.doc_version, d.pub_proc, e.pub_subset,
+                   e.completed
+              FROM pub_proc_doc d
+              JOIN pub_event e
+                ON e.id = d.pub_proc
+             WHERE e.status = 'Success'
+               AND e.pub_subset LIKE 'Push%'
+               AND d.failure IS NULL
+               AND d.removed = 'N'
+               AND e.id >= (SELECT MAX(id)
+                              FROM pub_event
+                             WHERE e.status = 'Success'
+                               AND pub_subset =
+                                      'Push_Documents_To_Cancer.Gov_Full-Load')
+GO
+
+/*
+ * View of documents which have been successfully removed from Cancer.gov
+ * since the latest successful full load push job.
+ */
+CREATE VIEW removed_doc
+         AS SELECT d.doc_id, d.doc_version, d.pub_proc, e.pub_subset,
+                   e.completed
+              FROM pub_proc_doc d
+              JOIN pub_event e
+                ON e.id = d.pub_proc
+             WHERE e.status = 'Success'
+               AND e.pub_subset LIKE 'Push%'
+               AND d.failure IS NULL
+               AND d.removed = 'Y'
+               AND e.id > (SELECT MAX(id)
+                             FROM pub_event
+                            WHERE e.status = 'Success'
+                              AND pub_subset =
+                                      'Push_Documents_To_Cancer.Gov_Full-Load')
 GO
 
 /*
