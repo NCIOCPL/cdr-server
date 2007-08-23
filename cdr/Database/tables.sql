@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.122 2007-08-22 17:01:55 bkline Exp $
+ * $Id: tables.sql,v 1.123 2007-08-23 15:22:54 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.122  2007/08/22 17:01:55  bkline
+ * Added three new views (pushed_doc, removed_doc, and publishable_version).
+ *
  * Revision 1.121  2007/08/14 23:19:19  ameyer
  * Added default values for pub_proc_cg.force_push and cg_new.
  *
@@ -749,9 +752,17 @@ GO
 
 /*
  * View of the doc_version table containing only publishable versions.
+ * Command decision made by the CDR team to enforce check for val_status
+ *   as part of publishability.
+ * There _should_ be no invalid publishable docs, but we found some
+ *   citations for which the latest publishable version is actually
+ *   not valid.
  */
 CREATE VIEW publishable_version AS
-     SELECT * FROM doc_version WHERE publishable = 'Y'
+     SELECT * 
+       FROM doc_version 
+      WHERE publishable = 'Y'
+        AND val_status = 'V'
 GO
 
 /*
