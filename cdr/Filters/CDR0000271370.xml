@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ===========================================================================
- $Id: CDR0000271370.xml,v 1.30 2007-01-26 20:23:06 venglisc Exp $
+ $Id: CDR0000271370.xml,v 1.31 2007-08-31 18:40:24 venglisc Exp $
 
  Filter including misc Vendor filter templates.
 
@@ -451,6 +451,13 @@
   <!--
   Create MediaLink Element and attributes
   ======================================== -->
+  <xsl:if                         test = "$capLanguage = 'en' 
+                                          or
+                                          $capLanguage = 'es'
+                                          and 
+                                          /GlossaryTerm/
+                                           SpanishTermDefinition">
+
   <xsl:element                    name = "MediaLink">
    <xsl:attribute                 name = "ref">
     <xsl:value-of               select = "$mediaRef"/>
@@ -613,6 +620,56 @@
    </xsl:if>
 
   </xsl:element>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Cleaning up the xref value of the SummaryURL element
+ - replace 'http://www.cancer.gov' with 'http://cancer.gov' 
+ - remove trailing '/' from URL
+ Note:  It is expected that a normalized string is being passed.
+ ================================================================== -->  
+ <xsl:template                    name = "getSummaryURL">
+  <xsl:param                      name = "url"
+                                select = "''"/>
+  <xsl:choose>
+   <xsl:when                      test = "substring($url, 
+                                           string-length($url)) = '/'">
+    <xsl:choose>
+     <xsl:when                    test = "contains($url, 
+                                                  'http://www.cancer.gov')">
+
+      <xsl:value-of             select = "concat(
+                                          'http://cancer.gov',
+                                          substring-after(
+                                            substring($url, 1, 
+                                              string-length($url) - 1),
+                                              '.gov'))"/>
+
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "substring($url, 1, 
+                                              string-length($url) - 1)"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>
+     <xsl:when                    test = "contains($url, 
+                                                  'http://www.cancer.gov')">
+      <xsl:value-of             select = "concat(
+                                           'http://cancer.gov',
+                                           substring-after(
+                                             $url, '.gov'))"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "$url"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
