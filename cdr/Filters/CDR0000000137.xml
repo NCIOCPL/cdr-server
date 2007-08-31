@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000137.xml,v 1.26 2007-06-20 17:33:37 venglisc Exp $
+$Id: CDR0000000137.xml,v 1.27 2007-08-31 18:43:43 venglisc Exp $
 
 Filter to create Vendor XML for Glossary
 
@@ -158,34 +158,65 @@ $Log: not supported by cvs2svn $
                                  mode = "copy">
   <xsl:variable                  name = "hrefId"
                                select = "@cdr:href"/>
-  <xsl:variable                  name = "hrefNormId"
+    <xsl:variable                name = "hrefNormId"
                                select = "number(
-                                           substring-after(@cdr:href, 'CDR'))"/>
-  <xsl:variable                  name = "sqlQuery">
-     SELECT value 
+                                           substring-before(
+                                           concat(
+                                           substring-after(@cdr:href, 'CDR'),
+                                                               '#'), '#'))"/>
+    <!--
+    Extracting the content of the SummaryURL attribute to be used for 
+    populating the url attribute of the SummaryRef element.  This 
+    information has to be retrieved via a SQL query from the database
+    ================================================================= -->
+    <xsl:variable                 name = "sqlQuery">
+     SELECT path, value 
        FROM query_term_pub 
       WHERE doc_id = ?
         AND path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
-  </xsl:variable>
+    </xsl:variable>
 
+    <!-- 
+    Note: Don't perform a normalize-space here since it would convert
+          the resulting node into a string
+    ================================================================== -->
+    <xsl:variable                 name = "queryRows"
+                                select = "document(
+                                           concat('cdrutil:/sql-query/',
+                                                   $sqlQuery,
+                                                   '~',
+                                                   $hrefNormId))"/>
+    <!--
+    Note:  The url created by function getSummaryURL has no trailing 
+           slash ('/'), specifies the domain as http://cancer.gov and
+           is normalized
+    ================================================================= -->
+    <xsl:variable                 name = "url">
+     <xsl:call-template           name = "getSummaryURL">
+      <xsl:with-param             name = "url"
+                                select = "normalize-space(
+                                            $queryRows
+                                            /SqlResult
+                                            /row
+                                            /col[@name='value'])"/>
+     </xsl:call-template>
+    </xsl:variable>
+  
+    <!--
+    The SummaryRef url attribute is populated from the xref attribute of
+    the SummaryURL element displaying the full path without the domain
+    ===================================================================== -->
   <SummaryRef>
    <xsl:attribute                name = "href">
     <xsl:value-of              select = "$hrefId"/>
    </xsl:attribute>
    <xsl:attribute                name = "url">
-    <xsl:variable                name = "prettyUrl"
-                               select = "normalize-space(
-                                          document(
-                                          concat('cdrutil:/sql-query/',
-                                                  $sqlQuery,
-                                                  '~',
-                                                  $hrefNormId)))"/>
     <xsl:choose>
-     <xsl:when                   test = "starts-with($prettyUrl, 'http')">
-      <xsl:value-of            select = "substring-after($prettyUrl, '.gov')"/>
+     <xsl:when                   test = "starts-with($url, 'http')">
+      <xsl:value-of            select = "substring-after($url, '.gov')"/>
      </xsl:when>
      <xsl:otherwise>
-      <xsl:value-of            select = "$prettyUrl"/>
+      <xsl:value-of            select = "$url"/>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:attribute>
