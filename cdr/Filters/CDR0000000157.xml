@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml     version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000157.xml,v 1.55 2007-03-15 20:39:40 venglisc Exp $
+$Id: CDR0000000157.xml,v 1.56 2007-08-31 18:07:59 venglisc Exp $
 
 Filter to create summary vendor output data.
    Written by Volker Englisch, 2003-08-12
@@ -113,8 +113,7 @@ $Log: not supported by cvs2svn $
    </xsl:if>
 
    <xsl:apply-templates        select = "SummaryMetaData"/>
-   <xsl:apply-templates        select = "SummaryTitle"
-                                 mode = "copy"/>
+   <xsl:apply-templates        select = "SummaryTitle"/>
 
    <!-- 
    Display all of the SummarySection elements and attach the 
@@ -275,6 +274,72 @@ $Log: not supported by cvs2svn $
 
  <!-- 
  ==================================================================
+ SummaryURL Template to drop trailing '/' 
+ ================================================================== -->  
+ <xsl:template                  match = "SummaryURL">
+  <SummaryURL>
+    <xsl:attribute               name = "xref">
+     <xsl:call-template           name = "getSummaryURL">
+      <xsl:with-param             name = "url"
+                                select = "normalize-space(@cdr:xref)"/>
+     </xsl:call-template>
+    </xsl:attribute>
+    <xsl:apply-templates         mode = "copy"/>
+  </SummaryURL>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Cleaning up the xref value of the SummaryURL element
+ - replace 'http://www.cancer.gov' with 'http://cancer.gov' 
+ - remove trailing '/' from URL
+ Note:  It is expected that a normalized string is being passed.
+ ================================================================== -->  
+ <xsl:template                    name = "getSummaryURL">
+  <xsl:param                      name = "url"
+                                select = "''"/>
+  <xsl:choose>
+   <xsl:when                      test = "substring($url, 
+                                           string-length($url)) = '/'">
+    <xsl:choose>
+     <xsl:when                    test = "contains($url, 
+                                                  'http://www.cancer.gov')">
+
+      <xsl:value-of             select = "concat(
+                                          'http://cancer.gov',
+                                          substring-after(
+                                            substring($url, 1, 
+                                              string-length($url) - 1),
+                                              '.gov'))"/>
+
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "substring($url, 1, 
+                                              string-length($url) - 1)"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>
+     <xsl:when                    test = "contains($url, 
+                                                  'http://www.cancer.gov')">
+      <xsl:value-of             select = "concat(
+                                           'http://cancer.gov',
+                                           substring-after(
+                                             $url, '.gov'))"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "$url"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
  SectMetaData Template
  ================================================================== -->  
  <xsl:template                  match = "SectMetaData">
@@ -357,31 +422,59 @@ $Log: not supported by cvs2svn $
                                            concat(
                                            substring-after(@cdr:href, 'CDR'),
                                                                '#'), '#'))"/>
-    <xsl:variable                name = "sqlQuery">
-     SELECT value 
+    <!--
+    Extracting the content of the SummaryURL attribute to be used for 
+    populating the url attribute of the SummaryRef element.  This 
+    information has to be retrieved via a SQL query from the database
+    ================================================================= -->
+    <xsl:variable                 name = "sqlQuery">
+     SELECT path, value 
        FROM query_term_pub 
       WHERE doc_id = ?
         AND path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
     </xsl:variable>
 
-  <SummaryRef>
+    <!-- 
+    Note: Don't perform a normalize-space here since it would convert
+          the resulting node into a string
+    ================================================================== -->
+    <xsl:variable                 name = "queryRows"
+                                select = "document(
+                                           concat('cdrutil:/sql-query/',
+                                                   $sqlQuery,
+                                                   '~',
+                                                   $hrefNormId))"/>
+    <!--
+    Note:  The url created by function getSummaryURL has no trailing 
+           slash ('/'), specifies the domain as http://cancer.gov and
+           is normalized
+    ================================================================= -->
+    <xsl:variable                 name = "url">
+     <xsl:call-template           name = "getSummaryURL">
+      <xsl:with-param             name = "url"
+                                select = "normalize-space(
+                                            $queryRows
+                                            /SqlResult
+                                            /row
+                                            /col[@name='value'])"/>
+     </xsl:call-template>
+    </xsl:variable>
+  
+    <!--
+    The SummaryRef url attribute is populated from the xref attribute of
+    the SummaryURL element displaying the full path without the domain
+    ===================================================================== -->
+    <SummaryRef>
      <xsl:attribute              name = "href">
       <xsl:value-of            select = "$hrefId"/>
      </xsl:attribute>
      <xsl:attribute              name = "url">
-      <xsl:variable              name = "prettyUrl"
-                               select = "normalize-space(
-                                         document(
-                                          concat('cdrutil:/sql-query/',
-                                                  $sqlQuery,
-                                                  '~',
-                                                  $hrefNormId)))"/>
       <xsl:choose>
-       <xsl:when                 test = "starts-with($prettyUrl, 'http')">
-        <xsl:value-of          select = "substring-after($prettyUrl, '.gov')"/>
+       <xsl:when                 test = "starts-with($url, 'http')">
+        <xsl:value-of          select = "substring-after($url, '.gov')"/>
        </xsl:when>
        <xsl:otherwise>
-        <xsl:value-of          select = "$prettyUrl"/>
+        <xsl:value-of          select = "$url"/>
        </xsl:otherwise>
       </xsl:choose>
      </xsl:attribute>
@@ -414,11 +507,23 @@ $Log: not supported by cvs2svn $
                                  mode = "copy"/>
    <xsl:apply-templates        select = "SummaryDescription"
                                  mode = "copy"/>
-   <xsl:apply-templates        select = "SummaryURL"
-                                 mode = "copy"/>
+   <xsl:apply-templates        select = "SummaryURL"/>
    <xsl:apply-templates        select = "MainTopics"/>
    <xsl:apply-templates        select = "SecondaryTopics"/>
   </SummaryMetaData>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ SummaryTitle Template  (adding registered tragemark (r) sign to 
+ all titles).
+ ================================================================== -->
+ <xsl:template                  match = "SummaryTitle">
+  <SummaryTitle>
+   <xsl:apply-templates          mode = "copy"/>
+   <xsl:text> (PDQ&#xAE;)</xsl:text>
+  </SummaryTitle>
  </xsl:template>
 
 
