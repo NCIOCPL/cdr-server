@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: CommonProtocolInfo.xml,v 1.51 2007-08-20 15:28:00 bkline Exp $
+      $Id: CommonProtocolInfo.xml,v 1.52 2007-09-06 14:47:46 bkline Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.51  2007/08/20 15:28:00  bkline
+      Modifications requested by Sheri (#3518) to bring Scientific and InScope
+      schemas closer in line with each other.
+
       Revision 1.50  2007/05/03 19:08:04  kidderc
       3164
       Add value to StudyCategoryName:
@@ -535,6 +539,85 @@
     </simpleContent>
   </complexType>
 
+  <complexType       name            = 'ProtocolProcessingDetails'>
+    <sequence>
+
+      <!-- Deprecated; to be removed after old docs are flushed. -->
+      <!-- 2007-09-06: now that this structure is being applied
+           to InScopeProtocol documents we may need a global
+           change before we can tighten up the schema, because
+           the InScopeProtocol documents don't get deleted the
+           way the ScientificProtocolInfo documents do -->
+      <element       name            = 'ProcessingStatus'
+                     type            = 'ProcessingStatus'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'MissingRequiredInformation'
+                     type            = 'MissingRequiredInformation'
+                     minOccurs       = '0'/>
+      <element       name            = 'ProcessingPriority'
+                     type            = 'ProcessingPriority'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'EnteredBy'
+                     type            = 'NotEmptyString'
+                     minOccurs       = '0'/>
+      <element       name            = 'ProcessingDate'
+                     type            = 'date'
+                     minOccurs       = '0'/>
+      <element       name            = 'Comment'
+                     type            = 'Comment'
+                     minOccurs       = '0'/>
+
+      <!-- Use these instead for new documents. -->
+      <element       name            = 'ProcessingStatuses'
+                     type            = 'ProcessingStatuses'
+                     minOccurs       = '0'/>
+      <element       name            = 'MissingRequiredInformation'
+                     type            = 'MissingRequiredInformation'
+                     minOccurs       = '0'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'ProcessingStatuses'>
+    <sequence>
+      <element       name            = 'ProcessingStatusInfo'
+                     type            = 'ProcessingStatusInfo'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'ProcessingStatusInfo'>
+    <sequence>
+      <element       name            = 'ProcessingStatus'
+                     type            = 'ProcessingStatus'/>
+      <element       name            = 'ProcessingPriority'
+                     type            = 'ProcessingPriority'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'StartDateTime'
+                     type            = 'dateTime'
+                     minOccurs       = '0'/>
+      <element       name            = 'EndDateTime'
+                     type            = 'dateTime'
+                     minOccurs       = '0'/>
+      <element       name            = 'User'
+                     type            = 'CdrUser'
+                     minOccurs       = '0'/>
+      <element       name            = 'Comment'
+                     type            = 'Comment'
+                     minOccurs       = '0'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'MissingRequiredInformation'>
+    <sequence>
+      <element       name            = 'MissingInformation'
+                     type            = 'MissingInformation'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
 <!--=====================================================================-->
 <!--                  COMMON PROTOCOL SIMPLE TYPES                       -->
 <!--=====================================================================-->
@@ -742,6 +825,52 @@
       <enumeration   value           = 'Participating site list'/>
       <enumeration   value           = 'Phase of trial'/>
       <enumeration   value           = 'PRMS approval'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'ProcessingStatus'>
+    <restriction     base            = 'string'>
+
+      <!-- Deprecated; to be removed after old docs are flushed. -->
+      <enumeration   value           = 'Edit HP Abstract'/>
+      <enumeration   value           = 'Edit PT Abstract'/>
+      <enumeration   value           = 'Write HP Abstract'/>
+      <enumeration   value           = 'Write PT Abstract'/>
+      <enumeration   value           = 'Ready to merge'/>
+
+      <!-- These values are from the InScopeProtocol schema. -->
+      <enumeration   value           = 'Disapproved by PDQ Editorial Board'/>
+      <enumeration   value           = 'Approved by PDQ Editorial Board'/>
+      <enumeration   value           = 'Under PDQ Editorial Board review'/>
+      <enumeration   value           = 'Processing complete'/>
+      <enumeration   value           = 'Pending'/>
+      <enumeration   value           = 'Duplicate'/>
+      <enumeration   value           = 'Withdrawn'/>
+      <enumeration   value           = 'Hold'/>
+      <enumeration   value           = 'Abstract in review'/>
+      <enumeration   value           = 'Merged'/>
+      <enumeration   value           = 'Needs administrative information'/>
+      <enumeration   value           = 'Research study'/>
+      <enumeration   value           = 'Legacy - Do not publish'/>
+      <enumeration   value           = 'Needs OCCM review'/>
+      <enumeration   value           = 'Needs PI/PC comment'/>
+      <enumeration   value           = 'Needs scientist comment'/>
+      <enumeration   value           = 'Needs scientific information'/>
+
+      <!-- Use these instead for new documents. -->
+      <enumeration   value           = 'Final QC/Publishing'/>
+      <enumeration   value           = 'First edit'/>
+      <enumeration   value           = 'Patient Abstract'/>
+      <enumeration   value           = 'Patient QC'/>
+      <enumeration   value           = 'Requires second edit'/>
+      <enumeration   value           = 'Second edit'/>
+      <enumeration   value           = 'Write HP draft'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'CdrUser'>
+    <restriction     base            = 'string'>
+      <pattern       value           = '\S+'/>
     </restriction>
   </simpleType>
 
