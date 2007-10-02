@@ -1,7 +1,10 @@
 /*
- * $Id: CdrDom.h,v 1.14 2005-03-29 15:27:43 ameyer Exp $
+ * $Id: CdrDom.h,v 1.15 2007-10-02 00:53:04 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2005/03/29 15:27:43  ameyer
+ * Added a comment only.
+ *
  * Revision 1.13  2005/03/04 02:52:00  ameyer
  * Converted from xml4c to Xerces DOM parser.  Significant changes.
  *
@@ -159,6 +162,59 @@ namespace cdr {
             // Actual map returned from Xerces parser
             // It's a pointer
             XERCES_CPP_NAMESPACE::DOMNamedNodeMap *pNodeMap;
+
+         };
+
+        /**
+         * Ordered collection of nodes, accessible by ordinal index.
+         * NodeLists are created by Element::getElementsByTagName().
+         */
+        class NodeList {
+
+        public:
+            /**
+             * Default constructor.
+             */
+            NodeList() { nodeList = 0; }
+
+            /**
+             * Construct a new <code>NodeList<code> object from a
+             * Xerces DOMNodeList.
+             *
+             * @param nl    Pointer to Xerces object.
+             */
+            NodeList(XERCES_CPP_NAMESPACE::DOMNodeList *nl) {
+                nodeList = nl;
+            }
+
+            /**
+             * Destructor.
+             * Objects returned by parser are freed automatically
+             *   when parser is destroyed.
+             */
+            ~NodeList() {}
+
+            /**
+             * Get an item from the list.
+             *
+             * @param index  Position of node to retrieve.
+             */
+            cdr::dom::Node item(int index) const;
+            //{
+            //    return nodeList ? nodeList->item(index) : 0;
+            //}
+
+            /**
+             * Get count of nodes in the list.
+             */
+            int getLength() const {
+                return nodeList ? (int)nodeList->getLength() : 0;
+            }
+
+        private:
+            // Actual list returned from Xerces parser
+            // It's a pointer
+            XERCES_CPP_NAMESPACE::DOMNodeList *nodeList;
 
          };
 
@@ -391,10 +447,22 @@ namespace cdr {
              * @param name  Name of the attribute.
              * @return      Attribute value, or 0 if attribute non-existent.
              */
-            cdr::String getAttribute(cdr::String name) const {
+            cdr::String getAttribute(const cdr::String name) const {
                 return (cdr::String(
                     (static_cast<XERCES_CPP_NAMESPACE::DOMElement *>(pNode))
                       ->getAttribute((const XMLCh*)name.c_str())));
+            }
+
+            /**
+             * Get a list of nodes for elements of specified name.
+             *
+             * @param name  Name of the elements to look for.
+             * @return      An object representing the list of matching nodes.
+             */
+            NodeList getElementsByTagName(const cdr::String name) const {
+                const XERCES_CPP_NAMESPACE::DOMElement *e = castToElement();
+                const XMLCh* n = (const XMLCh*)name.c_str();
+                return NodeList(e->getElementsByTagName(n));
             }
 
             /**
@@ -433,6 +501,13 @@ namespace cdr {
                 return this->pNode != other.pNode;
             }
             */
+            
+        private:
+            // Helper inline method simplifies code above.
+            const XERCES_CPP_NAMESPACE::DOMElement* castToElement() const {
+                return static_cast<const XERCES_CPP_NAMESPACE::DOMElement*>
+                    (pNode);
+            }
         };
 
         /**

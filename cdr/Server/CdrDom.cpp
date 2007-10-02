@@ -1,7 +1,13 @@
 /*
- * $Id: CdrDom.cpp,v 1.11 2005-03-29 15:29:31 ameyer Exp $
+ * $Id: CdrDom.cpp,v 1.12 2007-10-02 00:53:04 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2005/03/29 15:29:31  ameyer
+ * Removed logging statements needed only for debugging.
+ * Will now throw cdr::Exceptions for fatal errors instead
+ * of attempting to log and recover.  These should never
+ * occur.
+ *
  * Revision 1.10  2005/03/04 02:51:12  ameyer
  * Converted from xml4c to Xerces DOM parser.  Significant changes.
  *
@@ -123,6 +129,10 @@ cdr::dom::Node cdr::dom::NamedNodeMap::getNamedItem(cdr::String name) {
 cdr::dom::Node cdr::dom::NamedNodeMap::item(int index) {
     return pNodeMap ? cdr::dom::Node(pNodeMap->item(index)) :
                       cdr::dom::Node();
+}
+
+cdr::dom::Node cdr::dom::NodeList::item(int index) const {
+    return nodeList ? Node(nodeList->item(index)) : cdr::dom::Node();
 }
 
 // This is needed, but why?  What's going on here

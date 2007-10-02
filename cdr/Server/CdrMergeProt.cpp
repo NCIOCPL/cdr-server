@@ -1,9 +1,15 @@
 /*
- * $Id: CdrMergeProt.cpp,v 1.6 2006-05-17 03:57:10 ameyer Exp $
+ * $Id: CdrMergeProt.cpp,v 1.7 2007-10-02 00:53:04 bkline Exp $
  *
  * Merge scientific protocol information into main in-scope protocol document.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2006/05/17 03:57:10  ameyer
+ * Made getDocTypeName() a public, external function, eliminating a duplicate
+ * function elsewhere.
+ * Changed the names of static check in/out functions to avoid conflicts
+ * caused by increasing the visibility of new header files to this module.
+ *
  * Revision 1.5  2006/02/06 00:47:13  bkline
  * Added an element to be preserved.
  *
@@ -25,6 +31,7 @@
 #pragma warning(disable : 4786)
 
 #include <iostream>
+#include <algorithm>
 #include <sstream>
 #include "CdrDom.h"
 #include "CdrCommand.h"
@@ -64,6 +71,129 @@ static bool goesBefore(
         const cdr::String&,
         const cdr::String&,
         const cdr::StringList&);
+
+// Local structures to support merging protocol processing details.
+struct StatusInfoNode {
+    cdr::String startDate;
+    cdr::dom::Node node;
+    cdr::String key;
+    StatusInfoNode(const cdr::dom::Node& n) : node(n) {
+        cdr::dom::Node child = n.getFirstChild();
+        while (child != NULL) {
+            if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
+                cdr::String name  = child.getNodeName();
+                cdr::String value = cdr::dom::getTextContent(child);
+                if (!key.empty())
+                    key += L"|";
+                key += name + L":" + value;
+                if (name == L"StartDateTime")
+                    startDate = value;
+            }
+            child = child.getNextSibling();
+        }
+    }
+
+    // Flip comparison sense, so we get more recent dates first,
+    // and empty dates in front of non-empty ones.
+    bool operator<(const StatusInfoNode& other) const {
+        return this->startDate > other.startDate;
+    }
+    StatusInfoNode& operator=(const StatusInfoNode& other)
+        { startDate = other.startDate; node = other.node; return *this; }
+    bool operator==(const StatusInfoNode& other) const {
+        return this->startDate == other.startDate;
+    }
+};
+
+struct ProcessingDetails {
+    ProcessingDetails(const cdr::dom::Element& sourceDoc,
+                      const cdr::dom::Element& targetDoc) {
+        alreadyInserted = false;
+        extract(sourceDoc);
+        extract(targetDoc);
+        std::sort(statusInfoNodes.begin(), statusInfoNodes.end());
+    }
+    bool goHere(const cdr::dom::Node& targetNode,
+                const cdr::dom::Node& sourceNode,
+                const cdr::StringList& elementSequence) {
+        if (alreadyInserted)
+            return false;
+        if (targetNode != NULL) {
+            cdr::String name = targetNode.getNodeName();
+            if (goesBefore(name, L"ProtocolProcessingDetails",
+                           elementSequence))
+                return false;
+        }
+        if (sourceNode != NULL) {
+            cdr::String name = sourceNode.getNodeName();
+            if (goesBefore(name, L"ProtocolProcessingDetails",
+                           elementSequence))
+                return false;
+        }
+        return true;
+    }
+    void insert(std::wostream& os) {
+        os << L"<ProtocolProcessingDetails>";
+        if (statusInfoNodes.size() > 0) {
+            os << L"<ProcessingStatuses>";
+            for (size_t i = 0; i < statusInfoNodes.size(); ++i) {
+                os << statusInfoNodes[i].node;
+            }
+            os << L"</ProcessingStatuses>";
+        }
+        if (missingInfo.size() > 0) {
+            os << L"<MissingRequiredInformation>";
+            cdr::StringSet::iterator i = missingInfo.begin();
+            while (i != missingInfo.end()) {
+                cdr::String value = *i;
+                cdr::String encoded = cdr::entConvert(value);
+                os << L"<MissingInformation>" << encoded.c_str()
+                   << L"</MissingInformation>";
+                ++i;
+            }
+            os << L"</MissingRequiredInformation>";
+        }
+        os << L"</ProtocolProcessingDetails>";
+        alreadyInserted = true;
+    }
+private:
+    std::vector<StatusInfoNode> statusInfoNodes;
+    cdr::StringSet missingInfo;
+    cdr::StringSet keys;
+    bool alreadyInserted;
+    void extract(const cdr::dom::Element& docElement) {
+        cdr::String name = L"ProtocolProcessingDetails";
+        cdr::dom::NodeList nodeList = docElement.getElementsByTagName(name);
+        if (nodeList.getLength() < 1)
+            return;
+        cdr::dom::Node node = nodeList.item(0).getFirstChild();
+        while (node != NULL) {
+            cdr::String name = node.getNodeName();
+            if (name == L"ProcessingStatuses") {
+                cdr::dom::Node child = node.getFirstChild();
+                while (child != NULL) {
+                    if (child.getNodeName() == L"ProcessingStatusInfo") {
+                        StatusInfoNode statusInfoNode = StatusInfoNode(child);
+                        if (keys.find(statusInfoNode.key) == keys.end()) {
+                            keys.insert(statusInfoNode.key);
+                            statusInfoNodes.push_back(statusInfoNode);
+                        }
+                    }
+                    child = child.getNextSibling();
+                }
+            }
+            else if (name == L"MissingRequiredInformation") {
+                cdr::dom::Node child = node.getFirstChild();
+                while (child != NULL) {
+                    if (child.getNodeName() == L"MissingInformation")
+                        missingInfo.insert(cdr::dom::getTextContent(child));
+                    child = child.getNextSibling();
+                }
+            }
+            node = node.getNextSibling();
+        }
+    }
+};
 
 /**
  * Fold ScientificProtocolInfo document into InScopeProtocol document.
@@ -122,6 +252,9 @@ cdr::String cdr::mergeProt(Session& session,
     dom::Node sourceChild = sourceDoc.getFirstChild();
     dom::Node targetChild = targetDoc.getFirstChild();
 
+    // Collect the merged processing information.
+    ProcessingDetails processingDetails(sourceDoc, targetDoc);
+
     // Start a new document.
     String topElementName = targetDoc.getNodeName();
     std::wostringstream os;
@@ -159,6 +292,12 @@ cdr::String cdr::mergeProt(Session& session,
         // Find out the element's name.
         String targetName = targetChild.getNodeName();
 
+        // Handled by specific logic.
+        if (targetName == L"ProtocolProcessingDetails") {
+            targetChild = targetChild.getNextSibling();
+            continue;
+        }
+
         // Is this an element owned by the ScientificProtocolInfo doc?
         if (scientificElems.find(targetName) != scientificElems.end()) {
 
@@ -166,6 +305,10 @@ cdr::String cdr::mergeProt(Session& session,
             targetChild = targetChild.getNextSibling();
             continue;
         }
+
+        // If this is where the ProtocolProcessingDetails block goes, do it.
+        if (processingDetails.goHere(targetChild, sourceChild, elemSequence))
+            processingDetails.insert(os);
 
         // Insert any scientific elements which go in front of this element.
         while (sourceChild != NULL) {
@@ -178,6 +321,17 @@ cdr::String cdr::mergeProt(Session& session,
 
             // Find out the element's name.
             String sourceName = sourceChild.getNodeName();
+
+            // Check for element handled with custom logic.
+            if (sourceName == L"ProtocolProcessingDetails") {
+                sourceChild = sourceChild.getNextSibling();
+                continue;
+            }
+
+            // Is this where the ProtocolProcessingDetails go?
+            if (processingDetails.goHere(targetChild, sourceChild,
+                                         elemSequence))
+                processingDetails.insert(os);
 
             // If we hit an element whose time has not yet come ...
             if (!goesBefore(sourceName, targetName, elemSequence)) {
@@ -195,7 +349,7 @@ cdr::String cdr::mergeProt(Session& session,
             sourceChild = sourceChild.getNextSibling();
         }
 
-        // Copy node and move to the next node in the target chain.
+        // Copy the node and move to the next node in the target chain.
         os << targetChild;
         targetChild = targetChild.getNextSibling();
     }
@@ -206,6 +360,12 @@ cdr::String cdr::mergeProt(Session& session,
         // If this is a scientific element, keep it.
         if (sourceChild.getNodeType() == dom::Node::ELEMENT_NODE) {
             String sourceName = sourceChild.getNodeName();
+
+            // Is this where the ProtocolProcessingDetails go?
+            if (processingDetails.goHere(targetChild, sourceChild,
+                                         elemSequence))
+                processingDetails.insert(os);
+
             if (scientificElems.find(sourceName) != scientificElems.end())
                 //targetDoc.appendChild(sourceChild);
                 os << sourceChild;
@@ -214,6 +374,10 @@ cdr::String cdr::mergeProt(Session& session,
         // Move to the next node.
         sourceChild = sourceChild.getNextSibling();
     }
+
+    // Last chance for ProtocolProcessingDetails.
+    if (processingDetails.goHere(targetChild, sourceChild, elemSequence))
+        processingDetails.insert(os);
 
     // The source goes away ...
     deleteDoc(sourceDocIdStr, targetDocIdStr, session, conn);
