@@ -1,9 +1,13 @@
 /*
- * $Id: CdrMergeProt.cpp,v 1.7 2007-10-02 00:53:04 bkline Exp $
+ * $Id: CdrMergeProt.cpp,v 1.8 2007-10-02 20:37:34 bkline Exp $
  *
  * Merge scientific protocol information into main in-scope protocol document.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2007/10/02 00:53:04  bkline
+ * Extensive modifications to handle merging of new ProtocolProcessingDetails
+ * information (issue #3574).
+ *
  * Revision 1.6  2006/05/17 03:57:10  ameyer
  * Made getDocTypeName() a public, external function, eliminating a duplicate
  * function elsewhere.
@@ -72,11 +76,32 @@ static bool goesBefore(
         const cdr::String&,
         const cdr::StringList&);
 
+// ----------------------------------------------------------------------
 // Local structures to support merging protocol processing details.
-struct StatusInfoNode {
+// ----------------------------------------------------------------------
+
+/**
+ * Object representing a single XML ProcessingStatusInfo subtree node
+ * from an InScopeProtocol or ScientificProtocolInfo document.
+ *
+ * Objects are sorted with earliest start dates first.  A key is
+ * generated from the text content of the child elements so that
+ * duplicate nodes can be avoided.  This approach is used instead
+ * of relying on the serialized representation of the node in order
+ * to avoid spurious differences caused by variations in whitespace
+ * between elements.
+ */
+class StatusInfoNode {
+private:
     cdr::String startDate;
     cdr::dom::Node node;
     cdr::String key;
+public:
+    // Accessor methods.
+    const cdr::dom::Node& getNode() const { return node; }
+    const cdr::String&    getKey()  const { return key; }
+
+    // Constructor.
     StatusInfoNode(const cdr::dom::Node& n) : node(n) {
         cdr::dom::Node child = n.getFirstChild();
         while (child != NULL) {
@@ -93,10 +118,16 @@ struct StatusInfoNode {
         }
     }
 
-    // Flip comparison sense, so we get more recent dates first,
-    // and empty dates in front of non-empty ones.
+    // Modify comparison logic, so that nodes with empty start dates
+    // are sorted at the back, after the ones with the most recent
+    // start date/time (and at the front when we reverse the order
+    // of the nodes).
     bool operator<(const StatusInfoNode& other) const {
-        return this->startDate > other.startDate;
+        if (this->startDate.empty() && !other.startDate.empty())
+            return false;
+        if (other.startDate.empty() && !this->startDate.empty())
+            return true;
+        return this->startDate < other.startDate;
     }
     StatusInfoNode& operator=(const StatusInfoNode& other)
         { startDate = other.startDate; node = other.node; return *this; }
@@ -105,39 +136,65 @@ struct StatusInfoNode {
     }
 };
 
-struct ProcessingDetails {
+/*
+ * Object which is used to collect the merged values from the
+ * ProtocolProcessingDetails blocks in a pair of protocol (InScope
+ * and Scientific) documents.
+ */
+class ProcessingDetails {
+public:
+
+    // We use this value a lot; make sure we spell it consistently.
+    static const cdr::String ppdName;// = L"ProtocolProcessingDetails";
+
+    // Constructor.  Extract the information and sort the status nodes,
+    // putting the most recent nodes at the front of the sequence.
     ProcessingDetails(const cdr::dom::Element& sourceDoc,
                       const cdr::dom::Element& targetDoc) {
         alreadyInserted = false;
         extract(sourceDoc);
         extract(targetDoc);
         std::sort(statusInfoNodes.begin(), statusInfoNodes.end());
+        std::reverse(statusInfoNodes.begin(), statusInfoNodes.end());
     }
+
+    // Determine whether it's appropriate to insert the processing
+    // details at this point in the merged document.
     bool goHere(const cdr::dom::Node& targetNode,
                 const cdr::dom::Node& sourceNode,
                 const cdr::StringList& elementSequence) {
+
+        // Don't do it twice.
         if (alreadyInserted)
             return false;
+
+        // If the current node in the InScope document goes in front of
+        // the ProtocolProcessingDetails element, we need to wait.
         if (targetNode != NULL) {
-            cdr::String name = targetNode.getNodeName();
-            if (goesBefore(name, L"ProtocolProcessingDetails",
-                           elementSequence))
+            cdr::String targetName = targetNode.getNodeName();
+            if (goesBefore(targetName, ppdName, elementSequence))
                 return false;
         }
+
+        // Same goes for the current node in the Scientific doc.
         if (sourceNode != NULL) {
-            cdr::String name = sourceNode.getNodeName();
-            if (goesBefore(name, L"ProtocolProcessingDetails",
-                           elementSequence))
+            cdr::String sourceName = sourceNode.getNodeName();
+            if (goesBefore(sourceName, ppdName, elementSequence))
                 return false;
         }
+
+        // We've passed all the conditions that could make us hold off,
+        // so it must be time to insert the block.
         return true;
     }
+
+    // Serialize the merged information.  Nothing tricky here.
     void insert(std::wostream& os) {
-        os << L"<ProtocolProcessingDetails>";
+        os << L"<" << ppdName << L">";
         if (statusInfoNodes.size() > 0) {
             os << L"<ProcessingStatuses>";
             for (size_t i = 0; i < statusInfoNodes.size(); ++i) {
-                os << statusInfoNodes[i].node;
+                os << statusInfoNodes[i].getNode();
             }
             os << L"</ProcessingStatuses>";
         }
@@ -153,20 +210,30 @@ struct ProcessingDetails {
             }
             os << L"</MissingRequiredInformation>";
         }
-        os << L"</ProtocolProcessingDetails>";
+        os << L"</" << ppdName << L">";
         alreadyInserted = true;
     }
+    
 private:
+
+    // Object attributes.
     std::vector<StatusInfoNode> statusInfoNodes;
     cdr::StringSet missingInfo;
     cdr::StringSet keys;
     bool alreadyInserted;
+
+    // Pull out the individual status nodes and the missing info values.
     void extract(const cdr::dom::Element& docElement) {
-        cdr::String name = L"ProtocolProcessingDetails";
-        cdr::dom::NodeList nodeList = docElement.getElementsByTagName(name);
+
+        // Find the processing details node, if there is one.
+        cdr::dom::NodeList nodeList = docElement.getElementsByTagName(ppdName);
         if (nodeList.getLength() < 1)
             return;
         cdr::dom::Node node = nodeList.item(0).getFirstChild();
+
+        // Walk through the children looking for statuses and missing info.
+        // Make sure we don't pick up a node which duplicates the values
+        // in a node we already have.
         while (node != NULL) {
             cdr::String name = node.getNodeName();
             if (name == L"ProcessingStatuses") {
@@ -174,14 +241,18 @@ private:
                 while (child != NULL) {
                     if (child.getNodeName() == L"ProcessingStatusInfo") {
                         StatusInfoNode statusInfoNode = StatusInfoNode(child);
-                        if (keys.find(statusInfoNode.key) == keys.end()) {
-                            keys.insert(statusInfoNode.key);
+                        if (keys.find(statusInfoNode.getKey()) == keys.end()) {
+                            keys.insert(statusInfoNode.getKey());
                             statusInfoNodes.push_back(statusInfoNode);
                         }
                     }
                     child = child.getNextSibling();
                 }
             }
+
+            // Pick up values representing the types of information which
+            // we still don't have for the protocol document.  Again,
+            // we only want one occurrence for a given value.
             else if (name == L"MissingRequiredInformation") {
                 cdr::dom::Node child = node.getFirstChild();
                 while (child != NULL) {
@@ -194,6 +265,9 @@ private:
         }
     }
 };
+
+// Initialize class-level constant.
+const cdr::String ProcessingDetails::ppdName = L"ProtocolProcessingDetails";
 
 /**
  * Fold ScientificProtocolInfo document into InScopeProtocol document.
@@ -293,7 +367,7 @@ cdr::String cdr::mergeProt(Session& session,
         String targetName = targetChild.getNodeName();
 
         // Handled by specific logic.
-        if (targetName == L"ProtocolProcessingDetails") {
+        if (targetName == ProcessingDetails.ppdName) {
             targetChild = targetChild.getNextSibling();
             continue;
         }
@@ -323,7 +397,7 @@ cdr::String cdr::mergeProt(Session& session,
             String sourceName = sourceChild.getNodeName();
 
             // Check for element handled with custom logic.
-            if (sourceName == L"ProtocolProcessingDetails") {
+            if (sourceName == ProcessingDetails.ppdName) {
                 sourceChild = sourceChild.getNextSibling();
                 continue;
             }
