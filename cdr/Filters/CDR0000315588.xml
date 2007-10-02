@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-$Id: CDR0000315588.xml,v 1.31 2007-04-25 23:02:05 venglisc Exp $
+$Id: CDR0000315588.xml,v 1.32 2007-10-02 21:51:32 venglisc Exp $
 
 Module: Vendor Cleanup Templates
 
@@ -185,6 +185,36 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
                                             PostalAddress/
                                             Street"
                                   mode = "copy"/>
+
+
+ <!--
+ =================================================================
+ Template to remove empty SummarySections
+ Note: This template must be placed _before_ the template to 
+       alter the id attributes for the misc. docs to allow that 
+       one to be processesed first, if appropriate.  The server is
+       using the template it sees last first, if they have the 
+       same name.
+ This template will _not_ check if a summary section created from
+ a misc. document is possibly empty (since it's processed with the
+ other template) which will mean the summary will fail to load on
+ Cancer.gov.  However, we shouldn't silently load summaries 
+ without proper misc. information anyway.
+ ================================================================= -->
+ <xsl:template                 match = "//SummarySection"
+                                mode = "copy">
+   <xsl:if                      test = "normalize-space(.)">
+    <SummarySection>
+     <xsl:for-each            select = "@*">
+      <xsl:attribute           name  = "{name()}">
+       <xsl:value-of          select = "."/>
+      </xsl:attribute>
+     </xsl:for-each>
+    <xsl:apply-templates      select = "*"
+                                mode = "copy"/>
+   </SummarySection>
+   </xsl:if>
+ </xsl:template>
 
 
  <!--
