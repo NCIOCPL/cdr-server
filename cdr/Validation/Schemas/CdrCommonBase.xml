@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<!-- $Id: CdrCommonBase.xml,v 1.42 2007-08-15 15:22:44 bkline Exp $ 
+<!-- $Id: CdrCommonBase.xml,v 1.43 2007-10-03 04:06:07 ameyer Exp $ 
 
      $Log: not supported by cvs2svn $
+     Revision 1.42  2007/08/15 15:22:44  bkline
+     Fixed bug which was suppressing zip validation.
+
      Revision 1.41  2007/06/19 13:20:25  bkline
      Added MiscellaneousDocLink to phrase-level and para-level groups
      (see request #3332).
@@ -341,6 +344,20 @@
      >U.S. address must have PoliticalSubUnit_State element</assert>
     </rule>
    </pattern>
+
+   <!-- This one tests all three kinds of addresses -->
+   <pattern>
+    <rule            context         = 'PostalAddress|SpecificPostalAddress|
+                                        ExternalSiteAddress'>
+     <assert         test            = '(@AddressType != "US") or
+                                        (Country/@cdr:ref = "CDR0000043753")'
+     >AddressType US/Non-US mismatched with Country link'</assert>
+     <assert         test            = '(@AddressType = "US") or
+                                        (Country/@cdr:ref != "CDR0000043753")'
+     >AddressType US/Non-US mismatched with Country link'</assert>
+    </rule>
+   </pattern>
+
    <pattern>
     <rule            context         = 'AltTitle'>
      <assert         test            = '@TitleType != "Short" or
