@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.42 2007-05-03 18:26:28 kidderc Exp $
+ * $Id: CdrXsd.cpp,v 1.43 2007-10-04 20:17:06 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.42  2007/05/03 18:26:28  kidderc
+ * Bug 3220. Added exception for not having a top level element in the XML Schema.
+ *
  * Revision 1.41  2006/11/12 13:49:34  bkline
  * Modifications for upgrade of Boost::Regex++ package to 1.33.1.
  *
@@ -451,6 +454,20 @@ void cdr::xsd::RuleSet::addRules(const cdr::dom::Element& e)
     }
 }
 
+/*
+ * The explanation is pretty complicated, but XSL/T needs to have double
+ * quote marks encoded twice in the message for validation errors.
+ */
+static cdr::String encodeQuotes(const cdr::String& s) {
+    cdr::String result(s);
+    cdr::String::size_type pos = result.find(L'"');
+    while (pos != result.npos) {
+        result.replace(pos, 1, L"&quot;");
+        pos = result.find(L'"', pos + 6);
+    }
+    return result;
+}
+
 /**
  * Method to get the XSLT transformation script for validating a CDR document
  * against the assertions in the set's rules.
@@ -461,13 +478,13 @@ cdr::String cdr::xsd::RuleSet::getXslt() const
         std::wostringstream os;
         os << L"<xsl:transform "
               L"xmlns:xsl='http://www.w3.org/1999/XSL/Transform' "
-              L"xmlns:cdr='cips.nci.nih.gov/cdr' version='1.0'>\n\n";
-        os << L" <xsl:template match='/'>\n"
+              L"xmlns:cdr='cips.nci.nih.gov/cdr' version='1.0'>\n\n"
+              L" <xsl:template match='/'>\n"
               L"  <Errors>\n"
               L"   <xsl:apply-templates/>\n"
               L"  </Errors>\n"
-              L" </xsl:template>\n\n";
-        os << L" <xsl:template match='node()'>\n"
+              L" </xsl:template>\n\n"
+              L" <xsl:template match='node()'>\n"
               L"  <xsl:apply-templates/>\n"
               L" </xsl:template>\n\n";
         for (size_t i = 0; i < rules.size(); ++i) {
@@ -478,56 +495,57 @@ cdr::String cdr::xsd::RuleSet::getXslt() const
 			std::vector<Assertion> assertions = rule.getAssertions();
             for (size_t j = 0; j < assertions.size(); ++j) {
                 Assertion& assertion = assertions[j];
+                cdr::String msg = encodeQuotes(assertion.getMessage());
                 os << L"  <xsl:if test='not("
                    << cdr::entConvert(assertion.getTest(), true)
                    << L")'>\n"
-                   << L"   <xsl:call-template name='packError'>\n"
-                   << L"    <xsl:with-param name='msg' select='\""
-                   << cdr::entConvert(assertion.getMessage(), true)
+                      L"   <xsl:call-template name='packError'>\n"
+                      L"    <xsl:with-param name='msg' select='\""
+                   << cdr::entConvert(msg)
                    << L"\"'/>\n"
-                   << L"   </xsl:call-template>\n"
-                   << L"  </xsl:if>\n";
+                      L"   </xsl:call-template>\n"
+                      L"  </xsl:if>\n";
             }
             os << L"  <xsl:apply-templates/>\n"
-               << L" </xsl:template>\n\n";
+                  L" </xsl:template>\n\n";
         }
         os << L" <xsl:template name='packError'>\n"
-           << L"  <xsl:param name='msg'/>\n"
-           << L"  <Err>\n"
-           << L"   <xsl:call-template name='getPath'>\n"
-           << L"    <xsl:with-param name='nodePart' select='.'/>\n"
-           << L"   </xsl:call-template>\n"
-           << L"   <xsl:value-of select='concat(&quot;: &quot;, $msg)'/>\n"
-           << L"  </Err>\n"
-           << L" </xsl:template>\n\n"
-           << L" <xsl:template name='getPath'>\n"
-           << L"  <xsl:param name='childPart'/>\n"
-           << L"  <xsl:param name='nodePart'/>\n"
-           << L"  <xsl:variable name='parent'\n"
-           << L"                select='$nodePart/parent::node()'/>\n"
-           << L"  <xsl:variable name='myName'\n"
-           << L"                select='name($nodePart)'/>\n"
-           << L"  <xsl:choose>\n"
-           << L"   <xsl:when test='name($parent)'>\n"
-           << L"    <xsl:variable name='myPos'\n"
-           << L"         select='count($nodePart/preceding-sibling::*)+1'/>\n"
-           << L"    <xsl:call-template name='getPath'>\n"
-           << L"     <xsl:with-param name='childPart'\n"
-           << L"         select='concat(&quot;/&quot;, $myName,\n"
-           << L"                        &quot;[&quot;, $myPos,\n"
-           << L"                        &quot;]&quot;,\n"
-           << L"                        $childPart)'/>\n"
-           << L"     <xsl:with-param name='nodePart' select='$parent'/>\n"
-           << L"    </xsl:call-template>\n"
-           << L"   </xsl:when>\n"
-           << L"   <xsl:otherwise>\n"
-           << L"    <xsl:value-of select='concat(&quot;/&quot;,\n"
-           << L"                                 name($nodePart),\n"
-           << L"                                 $childPart)'/>\n"
-           << L"   </xsl:otherwise>\n"
-           << L"  </xsl:choose>\n"
-           << L" </xsl:template>\n\n"
-           << L"</xsl:transform>\n";
+              L"  <xsl:param name='msg'/>\n"
+              L"  <Err>\n"
+              L"   <xsl:call-template name='getPath'>\n"
+              L"    <xsl:with-param name='nodePart' select='.'/>\n"
+              L"   </xsl:call-template>\n"
+              L"   <xsl:value-of select='concat(&quot;: &quot;, $msg)'/>\n"
+              L"  </Err>\n"
+              L" </xsl:template>\n\n"
+              L" <xsl:template name='getPath'>\n"
+              L"  <xsl:param name='childPart'/>\n"
+              L"  <xsl:param name='nodePart'/>\n"
+              L"  <xsl:variable name='parent'\n"
+              L"                select='$nodePart/parent::node()'/>\n"
+              L"  <xsl:variable name='myName'\n"
+              L"                select='name($nodePart)'/>\n"
+              L"  <xsl:choose>\n"
+              L"   <xsl:when test='name($parent)'>\n"
+              L"    <xsl:variable name='myPos'\n"
+              L"         select='count($nodePart/preceding-sibling::*)+1'/>\n"
+              L"    <xsl:call-template name='getPath'>\n"
+              L"     <xsl:with-param name='childPart'\n"
+              L"         select='concat(&quot;/&quot;, $myName,\n"
+              L"                        &quot;[&quot;, $myPos,\n"
+              L"                        &quot;]&quot;,\n"
+              L"                        $childPart)'/>\n"
+              L"     <xsl:with-param name='nodePart' select='$parent'/>\n"
+              L"    </xsl:call-template>\n"
+              L"   </xsl:when>\n"
+              L"   <xsl:otherwise>\n"
+              L"    <xsl:value-of select='concat(&quot;/&quot;,\n"
+              L"                                 name($nodePart),\n"
+              L"                                 $childPart)'/>\n"
+              L"   </xsl:otherwise>\n"
+              L"  </xsl:choose>\n"
+              L" </xsl:template>\n\n"
+              L"</xsl:transform>\n";
         xslt = os.str();
     }
     return xslt;
