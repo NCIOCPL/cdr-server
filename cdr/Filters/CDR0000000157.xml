@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml     version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000157.xml,v 1.60 2007-09-12 16:19:05 venglisc Exp $
+$Id: CDR0000000157.xml,v 1.61 2007-10-10 18:16:22 venglisc Exp $
 
 Filter to create summary vendor output data.
    Written by Volker Englisch, 2003-08-12
@@ -113,13 +113,9 @@ $Log: not supported by cvs2svn $
    </xsl:if>
 
    <xsl:apply-templates        select = "SummaryMetaData"/>
-   <xsl:apply-templates        select = "SummaryTitle"
-                                 mode = "copy"/>
-<!-- 
    <xsl:apply-templates        select = "SummaryTitle"/>
    <xsl:apply-templates        select = "AltTitle"
                                  mode = "copy"/>
--->
 
    <!-- 
    Display all of the SummarySection elements and attach the 
@@ -279,19 +275,60 @@ $Log: not supported by cvs2svn $
    Adding a paragraph to all SummarySections with a Diagnosis in the 
    Section Meta Data where the TrialSearchString attribute is not "No"
    =================================================================== -->
-   <xsl:if                       test = "SectMetaData/Diagnosis
+   <xsl:if                       test = "/Summary/
+                                          SummaryMetaData/
+                                          SummaryType = 'Treatment'
+                                         and
+                                         SectMetaData/
+                                         Diagnosis
                                          and
                                          not(@TrialSearchString)">
-   <xsl:call-template            name = "addTrialSearchString">
-    <xsl:with-param              name = "language"
-                               select = "/Summary/
+    <xsl:choose>
+     <xsl:when                   test = "/Summary/
                                           SummaryMetaData/
-                                          SummaryLanguage"/>
-    <xsl:with-param              name = "diagnosis"
-                               select = "SectMetaData/
-                                         Diagnosis/
-                                         @cdr:ref"/>
-   </xsl:call-template>
+                                          SummaryLanguage = 'English'">
+      <Para>
+       <xsl:text>Check for clinical trials from NCI's </xsl:text>
+       <xsl:text>PDQ Cancer Clinical Trials Registry </xsl:text>
+       <xsl:text>that are now accepting patients with </xsl:text>
+
+       <xsl:for-each           select = "SectMetaData/
+                                         Diagnosis">
+        <xsl:call-template       name = "addTrialSearchString">
+         <xsl:with-param         name = "diagnosis"
+                               select = "."/>
+         <xsl:with-param         name = "diagnosisID"
+                               select = "@cdr:ref"/>
+        </xsl:call-template>
+       </xsl:for-each>
+       
+       <xsl:text>.</xsl:text>
+
+      </Para>
+     </xsl:when>
+     <xsl:when                   test = "/Summary/
+                                          SummaryMetaData/
+                                          SummaryLanguage = 'Spanish'">
+      <Para>
+       <xsl:text>Consulte el Registro de Ensayos Cl&#xED;nicos sobre </xsl:text>
+       <xsl:text>C&#xE1;ncer en el PDQ del NCI para informarse sobre </xsl:text>
+       <xsl:text>los ensayos cl&#xED;nicos que ahora est&#xE1;n </xsl:text>
+       <xsl:text>aceptando pacientes con </xsl:text>
+
+       <xsl:for-each           select = "SectMetaData/
+                                         Diagnosis">
+        <xsl:call-template       name = "addTrialSearchString">
+         <xsl:with-param         name = "diagnosis"
+                               select = "."/>
+         <xsl:with-param         name = "diagnosisID"
+                               select = "@cdr:ref"/>
+        </xsl:call-template>
+       </xsl:for-each>
+
+       <xsl:text>.</xsl:text>
+      </Para>
+     </xsl:when>
+    </xsl:choose>
    </xsl:if>
   </SummarySection>
  </xsl:template>
@@ -303,48 +340,43 @@ $Log: not supported by cvs2svn $
  in the section meta data.
  ================================================================== -->  
  <xsl:template                   name = "addTrialSearchString">
-  <xsl:param                     name = "language"
-                               select = "'English'"/>
   <xsl:param                     name = "diagnosis"
+                               select = "''"/>
+  <xsl:param                     name = "diagnosisID"
                                select = "'CDR0000000000'"/>
 
-  <xsl:choose>
-   <xsl:when                     test = "$language = 'English'">
-    <Para>
-     <xsl:text>Check for </xsl:text>
+     <xsl:choose>
+      <xsl:when                  test = "position() = last()
+                                         and
+                                         not(position() = 1)">
+       <xsl:choose>
+        <xsl:when                test = "/Summary/
+                                          SummaryMetaData/
+                                          SummaryLanguage = 'English'">
+         <xsl:text> and </xsl:text>
+        </xsl:when>
+        <xsl:when                test = "/Summary/
+                                          SummaryMetaData/
+                                          SummaryLanguage = 'Spanish'">>
+         <xsl:text> y </xsl:text>
+        </xsl:when>
+       </xsl:choose>
+      </xsl:when>
+      <xsl:when                   test = "not(position() = 1)">
+       <xsl:text>, </xsl:text>
+      </xsl:when>
+     </xsl:choose>
+
      <xsl:element                name = "ExternalRef">
       <xsl:attribute             name = "xref">
        <xsl:text>http://www.cancer.gov/Search/ClinicalTrialsLink.aspx</xsl:text>
-       <xsl:text>?id=</xsl:text>
+       <xsl:text>?diagnosis=</xsl:text>
        <xsl:value-of             select = "number(
-                                            substring($diagnosis, 4))"/>
-       <xsl:text>&amp;idtype=1</xsl:text>
+                                            substring($diagnosisID, 4))"/>
+       <xsl:text>&amp;tt=1&amp;format=1</xsl:text>
       </xsl:attribute>
-      <xsl:text>clinical trials</xsl:text>
+      <xsl:value-of              select = "$diagnosis"/>
      </xsl:element> 
-     <xsl:text> from NCI's PDQ Cancer Clinical Trials Registry </xsl:text>
-     <xsl:text>that are now accepting patients.</xsl:text>
-    </Para>
-   </xsl:when>
-   <xsl:when                     test = "$language = 'Spanish'">
-    <Para>
-     <xsl:text>Consulte el Registro de </xsl:text>
-     <xsl:element                name = "ExternalRef">
-      <xsl:attribute             name = "xref">
-       <xsl:text>http://www.cancer.gov/Search/ClinicalTrialsLink.aspx</xsl:text>
-       <xsl:text>?id=</xsl:text>
-       <xsl:value-of             select = "number(
-                                            substring($diagnosis, 4))"/>
-       <xsl:text>&amp;idtype=1</xsl:text>
-      </xsl:attribute>
-      <xsl:text>Ensayos Cl&#xED;nicos</xsl:text>
-     </xsl:element>
-     <xsl:text> sobre C&#xE1;ncer en el PDQ del NCI para informarse </xsl:text>
-     <xsl:text>sobre los ensayos cl&#xED;nicos que ahora est&#xE1;n </xsl:text>
-     <xsl:text>aceptando pacientes.</xsl:text>
-    </Para>
-   </xsl:when>
-  </xsl:choose>
 
  </xsl:template>
 
@@ -1292,19 +1324,19 @@ $Log: not supported by cvs2svn $
     <xsl:otherwise>
      <xsl:choose>
       <xsl:when                  test = "$language = 'English'">
-       <xsl:copy-of            select = "document
-                                        (concat('cdr:name:More Information',
-                                                ';For more information - ',
-                                                'Health professional summary',
-                                                '/lastp'))"/>
+       <!-- Misc Document Title
+       'More Information;For more information - Health professional summary'
+       ==================================================================== -->
+       <xsl:copy-of            select = "document(concat('cdr:CDR0000334953',
+                                                         '/lastp'))"/>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:copy-of            select = "document
-                                        (concat('cdr:name:Informaci&#xF3;n ', 
-                                                'adicional;For more ', 
-                                                'information - Health ', 
-                                                'professional summary;Spanish',
-                                                '/lastp'))"/>
+       <!-- Misc Document Title
+       'Informaci&#xF3;n adicional;For more information - Health  
+        professional summary;Spanish'
+       ==================================================================== -->       
+       <xsl:copy-of            select = "document(concat('cdr:CDR0000334954',
+                                                         '/lastp'))"/>
       </xsl:otherwise>
      </xsl:choose>
     </xsl:otherwise>
@@ -1699,6 +1731,7 @@ BACH ID:
      </xsl:if>
     </xsl:otherwise>
    </xsl:choose>
+
    <xsl:apply-templates          mode = "MiscText">
     <xsl:with-param              name = "miscDocId" 
                                select = "$miscDocId"/>
