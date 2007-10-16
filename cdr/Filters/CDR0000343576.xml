@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ================================================================
-     $Id: CDR0000343576.xml,v 1.6 2005-05-11 19:57:20 venglisc Exp $
+     $Id: CDR0000343576.xml,v 1.7 2007-10-16 18:15:04 venglisc Exp $
 
      Filter to process Protocol Record Information
         Written by Volker Englisch, 2004-08-01
@@ -38,6 +38,7 @@
     </td>
    </tr>
   </table>
+  <p/>
  </xsl:template>
 
 
@@ -46,7 +47,6 @@
  Display Related Documents Information
  =============================================================== --> 
  <xsl:template                   match = "RelatedDocuments">
-  <br />
   <b>
    <font size='4'>Related Documents</font>
   </b>
@@ -57,18 +57,35 @@
      <b>Supp Info Link</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "SupplementaryInfoLink"/>
+     <xsl:for-each              select = "SupplementaryInfoLink">
+      <xsl:value-of             select = "."/>
+
+      <xsl:variable               name = "cdrId"
+                                select = "concat('CDR', 
+                                           number(
+                                            substring-after(
+                                             substring-before(
+                                              concat(@cdr:ref, '#'), '#'), 
+                                                                   'CDR')))"/>
+      <xsl:text> (</xsl:text>
+       <xsl:value-of           select = "$cdrId"/>
+      <xsl:text>)</xsl:text>
+      <br/>
+     </xsl:for-each>
     </td>
    </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Warehouse Bx No</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "WarehouseBoxNumber"/>
-    </td>
-   </tr>
+   <xsl:if                        test = "WarehouseBoxNumber">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Warehouse Bx No</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "WarehouseBoxNumber"/>
+     </td>
+    </tr>
+   </xsl:if>
   </table>
+  <p/>
  </xsl:template>
 
 

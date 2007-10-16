@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ================================================================
-     $Id: CDR0000385703.xml,v 1.1 2004-08-04 21:43:57 venglisc Exp $
+     $Id: CDR0000385703.xml,v 1.2 2007-10-16 18:18:31 venglisc Exp $
 
      Filter to generate Study Category and Protocol Related Links
         Written by Volker Englisch, 2004-08-01
@@ -43,14 +43,11 @@
      <xsl:value-of              select = "SpecialCategory"/>
     </td>
    </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Comment</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "Comment"/>
-    </td>
-   </tr>
+   <xsl:apply-templates         select = "Comment"
+                                  mode = "withAttribute">
+    <xsl:with-param               name = "label"
+                                select = "'Special Cat Comment'"/>
+   </xsl:apply-templates>
   </table>
   <br />
  </xsl:template>
@@ -66,13 +63,45 @@
   </b>
   <br />
           
-  <xsl:for-each                 select = "RelatedProtocols/InScopeProtocol">
-   <xsl:value-of                select = "ProtocolIDs/PrimaryID/IDString"/>;
-   <xsl:if                        test = "ProtocolIDs/OtherID/IDString">
+  <xsl:for-each                 select = "RelatedProtocols/
+                                          InScopeProtocol">
+   <xsl:choose>
+    <xsl:when                     test = "starts-with(ProtocolIDs/
+                                                      PrimaryID/
+                                                      IDString, '***WARN')">
+     <span class="warning"> 
+      <xsl:value-of             select = "ProtocolIDs/
+                                          PrimaryID/ 
+                                          IDString"/>;
+     </span>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of             select = "ProtocolIDs/
+                                          PrimaryID/ 
+                                          IDString"/>;
+    </xsl:otherwise>
+   </xsl:choose>
+
+   <xsl:if                        test = "ProtocolIDs/
+                                          OtherID/
+                                          IDString">
     <xsl:value-of               select = "ProtocolIDs/OtherID/IDString"/>;
    </xsl:if>
-   <xsl:value-of                select = "ProtocolTitle
-                                            [@Type='Professional']"/>
+
+   <xsl:choose>
+    <xsl:when                     test = "starts-with(ProtocolTitle
+                                                       [@Type = 'Professional'],
+                                                      '***WARN')">
+     <span class="warning">
+      <xsl:value-of             select = "ProtocolTitle
+                                            [@Type = 'Professional']"/>
+     </span>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of             select = "ProtocolTitle
+                                            [@Type = 'Professional']"/>
+    </xsl:otherwise>
+   </xsl:choose>
    <p/>                   
   </xsl:for-each>
 
@@ -114,16 +143,13 @@
     </tr>
    </table>
   </xsl:for-each>
+
   <table        xsl:use-attribute-sets = "table">
-   <tr>
-    <br/>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Comment</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "Comment"/>
-    </td>
-   </tr>
+   <xsl:apply-templates         select = "Comment"
+                                  mode = "withAttribute">
+    <xsl:with-param               name = "label"
+                                select = "'Rel Websites Comment'"/>
+   </xsl:apply-templates>
   </table>
   <p/>
  </xsl:template>

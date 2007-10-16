@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000343573.xml,v 1.11 2006-01-17 23:19:53 venglisc Exp $
+$Id: CDR0000343573.xml,v 1.12 2007-10-16 18:12:14 venglisc Exp $
 
 Filter to process Protocol HP Details
 Written by Cheryl Burg
@@ -78,16 +78,15 @@ $Log: not supported by cvs2svn $
     </tr>
 
     <xsl:apply-templates        select = "Intervention"/>
+
+   <xsl:if                        test = "Comment">
+    <xsl:apply-templates        select = "Comment"
+                                  mode = "withAttribute">
+     <xsl:with-param              name = "label"
+                                select = "'Study Cat. Comment'"/>
+    </xsl:apply-templates>
+   </xsl:if>
    </xsl:for-each>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Comment</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "StudyCategory/
-                                          Comment"/>
-    </td>
-   </tr>
   </table>
 
   <p/>
@@ -374,7 +373,19 @@ $Log: not supported by cvs2svn $
  ================================================================
  Display Published Results.
  ================================================================ --> 
- <xsl:template                   name = "displayCitation">
+ <xsl:template                    name = "displayCitation">
+  <xsl:variable                   name = "type">
+   <xsl:choose>
+    <xsl:when                     test = "name(.) = 'RelatedPublicationsQC'">
+     <xsl:text>Related Pubs Comment</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>Pub Results Comment</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+ 
+
   <table        xsl:use-attribute-sets = "table">
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
@@ -421,7 +432,7 @@ $Log: not supported by cvs2svn $
    </tr>
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
-      <b>EntryDate</b>
+      <b>Entry Date</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:apply-templates       select = "EntryDate" 
@@ -430,16 +441,11 @@ $Log: not supported by cvs2svn $
     </td>
    </tr>
    <xsl:if                        test = "Comment">
-    <tr>
-     <td        xsl:use-attribute-sets = "cell1of2">
-       <b>Comment</b>
-     </td>
-     <td        xsl:use-attribute-sets = "cell2of2">
-      <xsl:apply-templates      select = "Comment" 
-                                  mode = "copy"/>
-
-     </td>
-    </tr>
+    <xsl:apply-templates        select = "Comment"
+                                  mode = "withAttribute">
+     <xsl:with-param              name = "label"
+                                select = "$type"/>
+    </xsl:apply-templates>
    </xsl:if>
   </table>   
   <br />

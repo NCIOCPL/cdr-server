@@ -7,14 +7,14 @@
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
- ================================================================
-     $Id: CDR0000000155.xml,v 1.72 2005-07-19 15:41:57 venglisc Exp $
+================================================================
+$Id: CDR0000000155.xml,v 1.73 2007-10-16 18:06:18 venglisc Exp $
 
-     Filter to create a Full InScope Protocol QC Report
-        Written by Cheryl Burg
+Filter to create a Full InScope Protocol QC Report
+Written by Cheryl Burg
 
-     $Log: not supported by cvs2svn $
- ================================================================ -->
+$Log: not supported by cvs2svn $
+================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr">
@@ -63,7 +63,8 @@
     </TITLE>
     <STYLE type='text/css'>
      <xsl:call-template           name = "defaultStyle"/>  
-     ul.term         {margin-left: 16 ; padding-left: 0;}
+     ul.term         { margin-left: 16 ;
+                       padding-left: 0; }
     </STYLE>
    </HEAD>
    <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
@@ -85,33 +86,41 @@
    ==================================================================
    Display Report heading and subheading 
    ================================================================== -->
-   <b>
-    <font size='4'>
-     <center>
-      <xsl:text>Full Protocol</xsl:text>
-      <br/>
-      <xsl:text>QC Report</xsl:text>
-     </center>
-    </font>
-    <font size='3'>
-     <center>
-      <xsl:value-of             select = "document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M% 25p')"/>
-     </center>
-    </font>
-   </b>
+   <center>
+    <span class="big">
+     <xsl:text>Full Protocol</xsl:text>
+     <br/>
+     <xsl:text>QC Report</xsl:text>
+     <br/>
+    </span>
+    <b>
+     <xsl:value-of              select = 'document(concat("cdrutil:/date/",
+                                                          "%25B %25#d, %25Y ",
+                                                          "%25#I:%25M%25p"))'/>
+    </b>
+   </center>
    <p/>
 
    <!-- 
    ====================================================================
    Display CDR ID
    ==================================================================== -->
-   <b>
-    <font size='4'>
-     <xsl:value-of              select = "concat('CDR', 
+   <span class="big">
+    <xsl:value-of               select = "concat('CDR', 
                                            number(
                                            substring-after($docID, 'CDR')))"/>
-    </font>
-   </b>
+   </span>
+
+   <!--
+   Make sure everyone knows in case this protocol is blocked on CTGov
+   ==================================================================== -->
+   <xsl:if                        test = "BlockedFromCTGov">
+    <span class="big">
+     <span class="error">
+      <xsl:text> - Blocked From CTGov</xsl:text>
+     </span>
+    </span>
+   </xsl:if>
    <p/>
 
    <xsl:variable                  name = "cdrdoc" 
