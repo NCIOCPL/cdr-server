@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<!-- $Id: CdrCommonBase.xml,v 1.43 2007-10-03 04:06:07 ameyer Exp $ 
+<!-- $Id: CdrCommonBase.xml,v 1.44 2007-10-17 03:50:25 ameyer Exp $ 
 
      $Log: not supported by cvs2svn $
+     Revision 1.43  2007/10/03 04:06:07  ameyer
+     Added assertion rules to prevent mismatch of AddressType and
+     Country/@cdr:ref in three types of addresses.
+
      Revision 1.42  2007/08/15 15:22:44  bkline
      Fixed bug which was suppressing zip validation.
 
@@ -349,15 +353,39 @@
    <pattern>
     <rule            context         = 'PostalAddress|SpecificPostalAddress|
                                         ExternalSiteAddress'>
-     <assert         test            = '(@AddressType != "US") or
-                                        (Country/@cdr:ref = "CDR0000043753")'
-     >AddressType US/Non-US mismatched with Country link'</assert>
-     <assert         test            = '(@AddressType = "US") or
-                                        (Country/@cdr:ref != "CDR0000043753")'
-     >AddressType US/Non-US mismatched with Country link'</assert>
+     <assert         test            = '@AddressType != "US" or
+                    string(number(substring(Country/@cdr:ref,4))) =
+                      document("cdrutil:/sql-query/
+                    SELECT doc_id
+                      FROM query_term
+                     WHERE path = &apos;/Country/CountryFullName&apos;
+                       AND value = &apos;U.S.A.&apos;")
+                       /SqlResult/row/col[@name="doc_id"]'
+     >AddressType is US but Country is not U.S.A.</assert>
+     <assert         test            = '@AddressType = "US" or
+                    string(number(substring(Country/@cdr:ref,4))) !=
+                      document("cdrutil:/sql-query/
+                    SELECT doc_id
+                      FROM query_term
+                     WHERE path = &apos;/Country/CountryFullName&apos;
+                       AND value = &apos;U.S.A.&apos;")
+                       /SqlResult/row/col[@name="doc_id"]'
+     >AddressType is Non-US but Country=U.S.A.</assert>
     </rule>
    </pattern>
 
+   <pattern>
+      <rule            context         = 'PoliticalSubUnit_State'>
+     <assert test = 'document(concat("cdrutil:/sql-query/
+          SELECT value
+            FROM query_term_pub
+           WHERE path = &apos;/PoliticalSubUnit/Country/@cdr:ref&apos;
+             AND doc_id = ?~", substring(@cdr:ref,4))
+             )/SqlResult/row/col[@name="value"] = ../Country/@cdr:ref'
+     >PoliticalSubUnit_State doc links to a different country from this
+      address Country link</assert>
+    </rule>
+   </pattern>
    <pattern>
     <rule            context         = 'AltTitle'>
      <assert         test            = '@TitleType != "Short" or
