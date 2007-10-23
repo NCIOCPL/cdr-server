@@ -8,9 +8,12 @@
 <CdrDocXml><![CDATA[<?xml version='1.0'?>
 
 <!--
-     $Id: CDR0000349690.xml,v 1.6 2007-10-17 12:34:19 bkline Exp $
+     $Id: CDR0000349690.xml,v 1.7 2007-10-23 14:48:33 bkline Exp $
 
      $Log: not supported by cvs2svn $
+     Revision 1.6  2007/10/17 12:34:19  bkline
+     More status values added.
+
      Revision 1.5  2007/09/27 13:29:50  bkline
      New, changed status values.
 
@@ -753,21 +756,23 @@
  </xsl:template>
 
  <xsl:template                     name = 'pdqSponsorshipStub'>
-  <xsl:variable                    name = 'name'
-                                 select = 'normalize-space(
-                                           sponsors/lead_sponsor/agency)'/>
-  <xsl:if                          test = '$name != ""'>
-   <xsl:variable                   name = 'cdrId'
+  <xsl:text>@@PDQSPONSORSHIP=|</xsl:text>
+  <xsl:for-each                  select = 'sponsors/lead_sponsor/agency |
+                                           sponsors/collaborator/agency'>
+   <xsl:variable                   name = 'name'
+                                 select = 'normalize-space()'/>
+   <xsl:if                         test = '$name != ""'>
+    <xsl:variable                  name = 'cdrId'
                                  select = 'document(concat("cdrutil:/",
                                                            "extern-map",
                                                            "/CT.gov Agencies/",
                                                            $name))'/>
-   <xsl:if                         test = '$cdrId != ""'>
-    <xsl:value-of                select = 'concat("@@PDQSPONSORSHIP=",
-                                                  $cdrId,
-                                                  "@@")'/>
+    <xsl:if                        test = '$cdrId != ""'>
+     <xsl:value-of               select = 'concat($cdrId, "|")'/>
+    </xsl:if>
    </xsl:if>
-  </xsl:if>
+  </xsl:for-each>
+  <xsl:text>@@</xsl:text>
  </xsl:template>
 
  <xsl:template                     name = 'mapStatus'>
