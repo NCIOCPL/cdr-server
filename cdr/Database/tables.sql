@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.123 2007-08-23 15:22:54 ameyer Exp $
+ * $Id: tables.sql,v 1.124 2007-10-29 15:11:12 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.123  2007/08/23 15:22:54  ameyer
+ * Added val_status check to publishable_version view.
+ *
  * Revision 1.122  2007/08/22 17:01:55  bkline
  * Added three new views (pushed_doc, removed_doc, and publishable_version).
  *
@@ -2372,4 +2375,29 @@ submitted_by INTEGER       NOT NULL REFERENCES usr,
       status CHAR          NOT NULL DEFAULT 'U',
     imported DATETIME          NULL,
       errors NTEXT             NULL)
+GO
+
+/*
+ * View on the audit trail for actions which save a document.
+ */
+CREATE VIEW doc_save_action
+         AS
+     SELECT audit_trail.document doc_id, 
+            audit_trail.dt save_date,
+            action.name save_action
+       FROM audit_trail
+       JOIN action
+         ON action.id = audit_trail.action
+      WHERE action.name IN ('ADD DOCUMENT', 'MODIFY DOCUMENT')
+GO
+
+/*
+ * View which finds the last time a CDR document was saved.
+ */
+CREATE VIEW doc_last_save
+         AS
+     SELECT doc_id, 
+            MAX(save_date) last_save_date
+       FROM doc_save_action
+   GROUP BY doc_id
 GO

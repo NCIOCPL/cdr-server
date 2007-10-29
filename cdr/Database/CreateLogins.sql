@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.27 2007-08-22 17:01:55 bkline Exp $
+ * $Id: CreateLogins.sql,v 1.28 2007-10-29 15:11:12 bkline Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2007/08/22 17:01:55  bkline
+ * Added three new views (pushed_doc, removed_doc, and publishable_version).
+ *
  * Revision 1.26  2006/11/27 16:51:39  bkline
  * Added pub_proc_nlm table.
  *
@@ -465,4 +468,12 @@ GO
 GRANT EXECUTE ON get_prot_person_connections TO CdrPublishing
 GO
 GRANT SELECT ON pub_proc_nlm TO CdrGuest
+GO
+GRANT SELECT ON doc_save_action TO CdrGuest
+GO
+GRANT SELECT ON doc_last_save TO CdrGuest
+GO
+GRANT SELECT ON doc_save_action TO CdrPublishing
+GO
+GRANT SELECT ON doc_last_save TO CdrPublishing
 GO
