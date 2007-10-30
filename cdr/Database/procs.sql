@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.18 2007-04-11 03:53:14 ameyer Exp $
+ * $Id: procs.sql,v 1.19 2007-10-30 19:36:25 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2007/04/11 03:53:14  ameyer
+ * Added select_changed_non_active_protocols.
+ *
  * Revision 1.17  2005/09/09 17:45:57  bkline
  * Added get_prot_person_connections.
  *
@@ -870,3 +873,46 @@ AS
         ON #latestver_prot.vid = #pubver_prot.id
      WHERE #pubver_prot.id IS NULL
         OR #latestver_prot.vnum > #pubver_prot.num
+GO
+
+/*
+ * We found out the hard way that this is the only way to keep programmers
+ * from manipulating the SQL tables for CDR documents directly.
+ */
+CREATE TRIGGER NoDelVersion ON doc_version
+FOR DELETE
+AS
+    RAISERROR ('CDR Versions are permanent.', 16, 1)
+    ROLLBACK TRANSACTION
+GO
+
+/*
+ * Same principle as for the doc_version table.
+ */
+CREATE TRIGGER CdrDelDoc ON all_docs
+FOR DELETE
+AS
+    RAISERROR ('Use CdrDelDoc from the CDR client/server API instead.', 16, 1)
+    ROLLBACK TRANSACTION
+GO
+
+/*
+ * Make sure a CDR document is not marked as 'D'eleted if there's a row
+ * in the external_map table which maps to it.
+ */
+CREATE TRIGGER cdr_mod_doc ON all_docs
+FOR UPDATE
+AS
+    IF UPDATE(active_status)
+    BEGIN
+        IF EXISTS (SELECT i.id
+                     FROM cdr..external_map m
+                     JOIN inserted i
+                       ON m.doc_id = i.id
+                    WHERE i.active_status = 'D')
+        BEGIN
+            RAISERROR('Attempt to delete document in external_map table', 16, 1)
+            ROLLBACK TRANSACTION
+        END
+    END
+GO
