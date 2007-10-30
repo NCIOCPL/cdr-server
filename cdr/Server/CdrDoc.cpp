@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.68 2007-07-06 04:16:09 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.69 2007-10-30 21:43:54 bkline Exp $
  *
  */
 
@@ -1092,9 +1092,25 @@ int deleteDoc (
         throw cdr::Exception(L"deleteDoc: Unable to check publication for " +
                              docIdString);
     int count = pRs.getInt(1);
+    pSel.close();
     if (count > 0)
         throw cdr::Exception(L"deleteDoc: Cannot delete published doc " +
                              docIdString);
+
+    // Check added to make sure the document isn't used by the
+    // external_map table.
+    std::string eQry = "SELECT COUNT(*) FROM external_map WHERE doc_id = ?";
+    cdr::db::PreparedStatement eSel = conn.prepareStatement(eQry);
+    eSel.setInt(1, docId);
+    cdr::db::ResultSet eRs = eSel.executeQuery();
+    if (!eRs.next())
+        throw cdr::Exception(L"deleteDoc: Unable to check external_map for " +
+                             docIdString);
+    int eCount = eRs.getInt(1);
+    eSel.close();
+    if (eCount > 0)
+        throw cdr::Exception(L"deleteDoc: cannot delete " + docIdString +
+                             L", which is in the external mapping table");
     
     // From now on, do everything or nothing
     // setAutoCommit() checks state first, so it won't end an existing
@@ -1143,7 +1159,8 @@ int deleteDoc (
                            " WHERE id = ?";
         cdr::db::PreparedStatement dSel = conn.prepareStatement (dQry);
         dSel.setInt (1, docId);
-        cdr::db::ResultSet dRs = dSel.executeQuery();
+        dSel.executeUpdate();
+        dSel.close();
 
         // Record what we've done
         auditDoc (conn, docId, userId, L"DELETE DOCUMENT",
