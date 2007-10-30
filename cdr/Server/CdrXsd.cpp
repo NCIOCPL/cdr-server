@@ -1,7 +1,12 @@
 /*
- * $Id: CdrXsd.cpp,v 1.43 2007-10-04 20:17:06 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.44 2007-10-30 21:43:10 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.43  2007/10/04 20:17:06  bkline
+ * Modified the code which builds an XSL/T document for custom rule
+ * validation, so that double quote marks (") embedded in the validation
+ * error messages are handled correctly (they need to be escaped twice).
+ *
  * Revision 1.42  2007/05/03 18:26:28  kidderc
  * Bug 3220. Added exception for not having a top level element in the XML Schema.
  *
@@ -501,7 +506,7 @@ cdr::String cdr::xsd::RuleSet::getXslt() const
                    << L")'>\n"
                       L"   <xsl:call-template name='packError'>\n"
                       L"    <xsl:with-param name='msg' select='\""
-                   << cdr::entConvert(msg)
+                   << cdr::entConvert(msg, true)
                    << L"\"'/>\n"
                       L"   </xsl:call-template>\n"
                       L"  </xsl:if>\n";
@@ -548,6 +553,7 @@ cdr::String cdr::xsd::RuleSet::getXslt() const
               L"</xsl:transform>\n";
         xslt = os.str();
     }
+    // std::wcout << xslt.c_str();
     return xslt;
 }
 
