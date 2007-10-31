@@ -8,9 +8,12 @@
 <CdrDocXml><![CDATA[<?xml version='1.0'?>
 
 <!--
-     $Id: CDR0000349690.xml,v 1.7 2007-10-23 14:48:33 bkline Exp $
+     $Id: CDR0000349690.xml,v 1.8 2007-10-31 22:22:31 bkline Exp $
 
      $Log: not supported by cvs2svn $
+     Revision 1.7  2007/10/23 14:48:33  bkline
+     Added collaborators to IDs picked up for PDQ sponsorship stub.
+
      Revision 1.6  2007/10/17 12:34:19  bkline
      More status values added.
 
@@ -755,20 +758,40 @@
   </xsl:if>
  </xsl:template>
 
+ <!--
+  Modified October 2007 at Lakshmi's request to pick up collaborators.
+   -->
  <xsl:template                     name = 'pdqSponsorshipStub'>
   <xsl:text>@@PDQSPONSORSHIP=|</xsl:text>
-  <xsl:for-each                  select = 'sponsors/lead_sponsor/agency |
-                                           sponsors/collaborator/agency'>
-   <xsl:variable                   name = 'name'
-                                 select = 'normalize-space()'/>
-   <xsl:if                         test = '$name != ""'>
-    <xsl:variable                  name = 'cdrId'
+  <xsl:variable                    name = 'name'
+                                 select = 'normalize-space(
+                                           sponsors/lead_sponsor/agency)'/>
+  <xsl:if                          test = '$name != ""'>
+   <xsl:variable                   name = 'cdrId'
                                  select = 'document(concat("cdrutil:/",
                                                            "extern-map",
                                                            "/CT.gov Agencies/",
                                                            $name))'/>
-    <xsl:if                        test = '$cdrId != ""'>
-     <xsl:value-of               select = 'concat($cdrId, "|")'/>
+   <xsl:choose>
+    <xsl:when                     test = '$cdrId = ""'>
+     <xsl:text>Other</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of              select = 'concat("S=", $cdrId, "|")'/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:if>
+  <xsl:for-each                  select = 'sponsors/collaborator/agency'>
+   <xsl:variable                   name = 'cname'
+                                 select = 'normalize-space()'/>
+   <xsl:if                         test = '$cname != ""'>
+    <xsl:variable                  name = 'ccdrId'
+                                 select = 'document(concat("cdrutil:/",
+                                                           "extern-map",
+                                                           "/CT.gov Agencies/",
+                                                           $cname))'/>
+    <xsl:if                        test = '$ccdrId != ""'>
+     <xsl:value-of               select = 'concat("C=", $ccdrId, "|")'/>
     </xsl:if>
    </xsl:if>
   </xsl:for-each>
