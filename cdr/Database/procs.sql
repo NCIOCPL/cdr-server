@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.19 2007-10-30 19:36:25 bkline Exp $
+ * $Id: procs.sql,v 1.20 2007-11-05 15:18:49 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2007/10/30 19:36:25  bkline
+ * Added triggers to prevent unwanted deletion of CDR documents.
+ *
  * Revision 1.18  2007/04/11 03:53:14  ameyer
  * Added select_changed_non_active_protocols.
  *
@@ -912,6 +915,25 @@ AS
                     WHERE i.active_status = 'D')
         BEGIN
             RAISERROR('Attempt to delete document in external_map table', 16, 1)
+            ROLLBACK TRANSACTION
+        END
+    END
+GO
+
+/*
+ * Prevent the guest session from being logged out.
+ */
+CREATE TRIGGER guest_protection ON session
+FOR UPDATE
+AS
+    IF UPDATE(ended)
+    BEGIN
+        IF EXISTS (SELECT *
+                     FROM inserted
+                    WHERE name = 'guest'
+                      AND ended IS NOT NULL)
+        BEGIN
+            RAISERROR ('Attempt to log out guest account', 11, 1)
             ROLLBACK TRANSACTION
         END
     END
