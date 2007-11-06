@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #
-# $Id: PushDevDocs.py,v 1.5 2006-01-31 21:34:37 bkline Exp $
+# $Id: PushDevDocs.py,v 1.6 2007-11-06 19:09:54 venglisc Exp $
 #
 # Replaces copies of CDR control documents which have been preserved
 # from the development server, after a refresh of the database on
@@ -48,14 +48,81 @@ if len(sys.argv) != 4:
     sys.stderr.write("usage: PushDevDocs uid pwd dev-machine\n")
     sys.stderr.write(" e.g.: PushDevDocs melvyn lead.pudding MAHLER\n")
     sys.exit(1)
-uid     = sys.argv[1]
-pwd     = sys.argv[2]
-server  = sys.argv[3]
-conn    = cdrdb.connect('CdrGuest', dataSource = server)
-cursor  = conn.cursor()
-logFile = open("PushDevDocs.log", "w")
-session = cdr.login(uid, pwd, host = server)
-reason  = 'preserving work on development server'
+uid      = sys.argv[1]
+pwd      = sys.argv[2]
+devGroup = 'Developers'
+server   = sys.argv[3]
+conn     = cdrdb.connect('CdrGuest', dataSource = server)
+cursor   = conn.cursor()
+logFile  = open("PushDevDocs.log", "w")
+session  = cdr.login(uid, pwd, host = server)
+reason   = 'preserving work on development server'
+
+# ---------------------------------------------------------------------
+# Before we can add the new documents we have to make sure that the 
+# new document types exist in the doc_type table.
+# We have captured the necessary information in the file 
+# NewDocTypes.tab.  Use the information to add the entries in the table
+# with the addDoctype() function.
+# ---------------------------------------------------------------------
+print 'Creating new DocType entries...'
+def unFix(s):
+    if not s: return None
+    return s.replace("@@TAB", "\t").replace("@@NL@@", "\n")
+
+newDocTypes = open("NewDocTypes.tab").readlines()
+
+# If the file is empty we don't need to add more docTypes 
+# and skip this section.
+# -------------------------------------------------------------------
+if newDocTypes:
+    log("Adding new document types.", 1)
+    # Get the group information.  This needs to be modified to allow
+    # the user (presumably a member of the Developers group) to store
+    # the documents for the new document types
+    # ---------------------------------------------------------------
+    grp = cdr.getGroup(session, devGroup)
+    
+    for docType in newDocTypes:
+        fields = docType.split("\t")
+
+        # We will have a problem if the name of the schema file doesn't 
+        # match the name of the DocType.  We probably should extract 
+        # that name along with the doc_type information in the future.
+        # -------------------------------------------------------------
+        dtinfo = cdr.addDoctype(session, cdr.dtinfo(
+                                         type       = fields[1],
+                                         format     = 'xml',
+                                         versioning = fields[4],
+                                         schema     = fields[1] + '.xml',
+                                         comment    = unFix(fields[9])))
+
+        # We encountered an error creating the document type
+        # --------------------------------------------------
+        if dtinfo.error: 
+            log("Failure creating doctype: %s" % fields[1], 1)
+            sys.exit(1)
+
+        # Need to add permissions for the new docType to the grp/user 
+        # running this update so we're able to add/modify/... documents
+        # -------------------------------------------------------------
+        for act in ('ADD DOCUMENT',     'DELETE DOCTYPE', 
+                    'DELETE DOCUMENT',  'FILTER DOCUMENT', 
+                    'FORCE CHECKIN',    'FORCE CHECKOUT',
+                    'GET DOCTYPE',      'GET SCHEMA', 
+                    'MODIFY DOCTYPE',   'MODIFY DOCUMENT', 
+                    'PUBLISH DOCUMENT', 'VALIDATE DOCUMENT'):
+            grp.actions[act].append(fields[1])
+
+    # Save the permissions allowing the group to make changes to the 
+    # new document types to be added.
+    # --------------------------------------------------------------
+    errmsg = cdr.putGroup(session, devGroup, grp)
+    if errmsg:
+        log("Failure saving group permissions: %s" % errmsg)
+        sys.exit(1)
+else:
+    log("Document types up-to-date.", 1)
 
 #----------------------------------------------------------------------
 # Walk through the documents in the RepDocs subdirectory.  For each
@@ -64,6 +131,7 @@ reason  = 'preserving work on development server'
 # the current working version preserved from the development server
 # back in.
 #----------------------------------------------------------------------
+print 'Updating existing documents ...'
 for name in glob.glob("RepDocs/*.xml"):
     try:
         id = extractId(name)
@@ -107,6 +175,7 @@ for name in glob.glob("RepDocs/*.xml"):
 # check it out (to get the version with the document ID embedded),
 # and check it back in.
 #----------------------------------------------------------------------
+print 'Adding new documents ...'
 for name in glob.glob("AddDocs/*.xml"):
     try:
         id = extractId(name)
@@ -134,4 +203,5 @@ for name in glob.glob("AddDocs/*.xml"):
 #----------------------------------------------------------------------
 # Don't leave a mess behind.
 #----------------------------------------------------------------------
+print 'Done'
 cdr.logout(session, host = server)
