@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #
-# $Id: PullDevDocs.py,v 1.3 2007-07-24 20:48:22 venglisc Exp $
+# $Id: PullDevDocs.py,v 1.4 2007-11-06 19:19:17 venglisc Exp $
 #
 # Pulls control document which need to be preserved from the
 # development server in preparation for refreshing the CDR
@@ -8,6 +8,10 @@
 # with PushDevDocs.py.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.3  2007/07/24 20:48:22  venglisc
+# Modified to preserve new document types created on the development server
+# only. (Bug 3418)
+#
 # Revision 1.2  2003/06/10 17:30:02  bkline
 # Added code to preserve filter set information on the development server.
 #
@@ -63,13 +67,22 @@ def loadDocs(cursor, server, docType):
         id    = row[0]
         title = row[1]
         data  = row[2]
-        key   = title.upper()
+        key   = title.upper().encode('utf-8')
         if docs.has_key(key):
             log("duplicate found for %s doc '%s' on %s: %d and %d" %
                     (docType, title, server, docs[key].id, id), 1)
             sys.exit(1)
         else:
-            docs[key] = Doc(id, title, str(data).replace('\r', '').strip())
+            try:
+                if docType == 'css':
+                    docs[key] = Doc(id, title, 
+                                str(data).replace('\r', '').strip())
+                else:
+                    docs[key] = Doc(id, title, 
+                                data.replace('\r', '').strip().encode('utf-8'))
+            except:
+                print 'Error processing CDR-ID: %d' % id
+                raise
     return docs
 
 #----------------------------------------------------------------------
@@ -109,9 +122,11 @@ devCursor = devConn.cursor()
 pattern   = re.compile(r"""\s+Id\s*=\s*['"]CDR\d+['"]""")
 
 # ---------------------------------------------------------------------
-# Check if any new docTypes exist on the development server.
-# We select the ID of the docType last created and preserve all 
-# docTypes on MAHLER that have an ID greater then this lastDocTypeId.
+# Check if any new docTypes exist on the development server that need
+# to be preserved as well.
+# We select the ID of the docType last created on the production server
+# and preserve all docTypes on MAHLER that have an ID greater then 
+# this lastDocTypeId.
 # ---------------------------------------------------------------------
 prdCursor.execute("""\
     SELECT max(id)
@@ -130,10 +145,33 @@ for id, newDocType in rows:
     docTypes += str(newDocType),
     log('Preserving new docType: %s' % newDocType)
 
+# ---------------------------------------------------------------------
+# Preserve the information from the doc_type table for the new
+# doc_types
+# Note:  I probably should have used the cdr.getDoctype() module to 
+#        extract this information but I learned after the fact of its
+#        existense.  That's left for the next version. VE.
+# ---------------------------------------------------------------------
+log('Preserving doc_type information from %s' % devServer)
+devCursor.execute("""\
+    SELECT id, name, format, created, versioning, xml_schema, 
+           schema_date, title_filter, active, comment
+      FROM doc_type
+     WHERE id > ?""", lastDocTypeId)
+
+newDocTypes = open('%s/NewDocTypes.tab' % outputDir, 'w')
+for row in devCursor.fetchall():
+    comment = fixUp(row[9])
+    newDocTypes.write("%d\t%s\t%d\t%s\t%s\t%d\t%s\t%d\t%s\t%s\n" % (row[0],
+                       row[1], row[2], row[3], row[4], row[5] or "",
+                       row[6], row[7] or "", row[8], comment))
+newDocTypes.close()
+
 #----------------------------------------------------------------------
 # Preserve the filter sets from the development server.
 #----------------------------------------------------------------------
 log('Preserving filter sets from %s' % devServer)
+
 devCursor.execute("""\
     SELECT id, name, description, notes
       FROM filter_set""")
@@ -144,6 +182,7 @@ for row in devCursor.fetchall():
     note = fixUp(row[3])
     filterSets.write("%d\t%s\t%s\t%s\n" % (row[0], name, desc, note))
 filterSets.close()
+
 devCursor.execute("""\
          SELECT m.filter_set, m.position, d.title, m.subset
            FROM filter_set_member m
@@ -172,6 +211,7 @@ filterSetMembers.close()
 #----------------------------------------------------------------------
 log('Comparing docs between %s and %s' % (prdServer, devServer), 1)
 for docType in docTypes:
+    print 'Processing %s ...' % docType
     prdDocs = loadDocs(prdCursor, prdServer, docType)
     devDocs = loadDocs(devCursor, devServer, docType)
     for key in devDocs.keys():
@@ -220,3 +260,4 @@ for docType in docTypes:
         if not devDocs.has_key(key):
             log("%s doc %d on %s not found on %s" % (docType,
                         prdId, prdServer, devServer))
+    print 'Processing %s Done' % docType
