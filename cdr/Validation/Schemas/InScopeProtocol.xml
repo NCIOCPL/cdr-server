@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: InScopeProtocol.xml,v 1.83 2007-09-06 14:47:46 bkline Exp $
+      $Id: InScopeProtocol.xml,v 1.84 2007-11-08 21:09:07 bkline Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.83  2007/09/06 14:47:46  bkline
+      See comment #10 for issue #3518.
+
       Revision 1.82  2007/08/20 15:28:00  bkline
       Modifications requested by Sheri (#3518) to bring Scientific and InScope
       schemas closer in line with each other.
@@ -361,6 +364,12 @@
      >LeadOrgProtocolID required for Primary Lead Org</assert>
     </rule>
    </pattern>
+   <pattern>
+    <rule            context         = 'GenericPersonContact'>
+     <assert         test            = 'ContactDetail/PostalAddress/Country'
+     >Postal address (with country) required for GenericPersonContact</assert>
+    </rule>
+   </pattern>
   </appInfo>
  </annotation>
 
@@ -599,9 +608,12 @@
   <complexType       name            = 'ProtocolAdminInfo'>
     <sequence>
       <element       name            = 'StartDate'
-                     type            = 'ProtocolStartDate'
+                     type            = 'ProtocolDate'
                      minOccurs       = '0'
                      maxOccurs       = '2'/>
+      <element       name            = 'EndDate'
+                     type            = 'ProtocolDate'
+                     minOccurs       = '0'/>
       <element       name            = 'CurrentProtocolStatus'
                      type            = 'NotEmptyString'/>
 
@@ -930,11 +942,11 @@
     </sequence>
   </complexType>
 
-  <complexType       name            = 'ProtocolStartDate'>
+  <complexType       name            = 'ProtocolDate'>
     <simpleContent>
       <extension     base            = 'date'>
         <attribute   name            = 'DateType'
-                     type            = 'ProtocolStartDateType'/>
+                     type            = 'ProtocolDateType'/>
       </extension>
     </simpleContent>
   </complexType>
@@ -1182,7 +1194,7 @@
     </restriction>
   </simpleType>
 
-  <simpleType        name            = 'ProtocolStartDateType'>
+  <simpleType        name            = 'ProtocolDateType'>
     <restriction     base            = 'string'>
       <enumeration   value           = 'Projected'/>
       <enumeration   value           = 'Actual'/>
