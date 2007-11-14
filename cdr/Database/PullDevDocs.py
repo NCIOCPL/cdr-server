@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #
-# $Id: PullDevDocs.py,v 1.4 2007-11-06 19:19:17 venglisc Exp $
+# $Id: PullDevDocs.py,v 1.5 2007-11-14 01:00:09 venglisc Exp $
 #
 # Pulls control document which need to be preserved from the
 # development server in preparation for refreshing the CDR
@@ -8,6 +8,10 @@
 # with PushDevDocs.py.
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.4  2007/11/06 19:19:17  venglisc
+# Modified program to extract any documents of new document types in addition
+# to the already saved new and updated filter, css, etc. documents. (Bug 3418)
+#
 # Revision 1.3  2007/07/24 20:48:22  venglisc
 # Modified to preserve new document types created on the development server
 # only. (Bug 3418)
@@ -154,17 +158,21 @@ for id, newDocType in rows:
 # ---------------------------------------------------------------------
 log('Preserving doc_type information from %s' % devServer)
 devCursor.execute("""\
-    SELECT id, name, format, created, versioning, xml_schema, 
-           schema_date, title_filter, active, comment
-      FROM doc_type
-     WHERE id > ?""", lastDocTypeId)
+    SELECT dt.id, dt.name, dt.format, dt.created, dt.versioning, 
+           dt.xml_schema, dt.schema_date, dt.title_filter, 
+           dt.active, dt.comment, d.title
+      FROM doc_type dt
+      JOIN document d
+        ON d.id = dt.title_filter
+     WHERE dt.id > ?""", lastDocTypeId)
 
 newDocTypes = open('%s/NewDocTypes.tab' % outputDir, 'w')
 for row in devCursor.fetchall():
     comment = fixUp(row[9])
-    newDocTypes.write("%d\t%s\t%d\t%s\t%s\t%d\t%s\t%d\t%s\t%s\n" % (row[0],
+    newDocTypes.write("%d\t%s\t%d\t%s\t%s\t%d\t%s\t%d\t%s\t%s\t%s\t\n" % (
+                       row[0],
                        row[1], row[2], row[3], row[4], row[5] or "",
-                       row[6], row[7] or "", row[8], comment))
+                       row[6], row[7] or "", row[8], comment, row[10] or ""))
 newDocTypes.close()
 
 #----------------------------------------------------------------------
