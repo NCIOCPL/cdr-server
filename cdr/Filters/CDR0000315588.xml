@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-$Id: CDR0000315588.xml,v 1.34 2007-10-25 19:14:37 venglisc Exp $
+$Id: CDR0000315588.xml,v 1.35 2007-12-18 23:54:20 venglisc Exp $
 
 Module: Vendor Cleanup Templates
 
@@ -681,6 +681,42 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
    </ListItem>
   </xsl:copy>
  </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ Suppress the new CompletionDate element and replace with a comment.
+ This is neccessary in order to allow submission of the documents to 
+ ClinicalTrials.gov using the CTGovExport utility.
+ ===================================================================== -->
+ <xsl:template                   match = "CompletionDate"
+                                  mode = "copy">
+  <xsl:comment>CompletionDate comment needed for CTGovExport submission</xsl:comment>
+ </xsl:template>  
+
+ <!-- 
+ =====================================================================
+ Suppress the new Safety attribute and add a comment.
+ This is neccessary in order to allow submission of the documents to 
+ ClinicalTrials.gov using the CTGovExport utility.
+ ===================================================================== --> <xsl:template                    match = "Outcome[@Safety]"
+                                  mode = "copy">
+
+  <xsl:comment>Safety comment needed for CTGovExport submission</xsl:comment>
+
+  <xsl:element                    name = "{name()}">
+   <xsl:for-each                select = "@*">
+    <xsl:if                       test = "not(name() = 'Safety')">
+     <xsl:attribute               name = "{name()}">
+      <xsl:value-of             select = "."/>
+     </xsl:attribute>
+    </xsl:if>
+   </xsl:for-each>
+
+   <xsl:apply-templates/>
+  </xsl:element>
+ </xsl:template>  
+
 </xsl:transform>
 ]]>
 </CdrDocXml>
