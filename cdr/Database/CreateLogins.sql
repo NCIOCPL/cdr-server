@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.28 2007-10-29 15:11:12 bkline Exp $
+ * $Id: CreateLogins.sql,v 1.29 2008-01-10 22:26:50 ameyer Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2007/10/29 15:11:12  bkline
+ * Added views doc_save_action and doc_last_save.
+ *
  * Revision 1.27  2007/08/22 17:01:55  bkline
  * Added three new views (pushed_doc, removed_doc, and publishable_version).
  *
@@ -431,7 +434,7 @@ GRANT SELECT ON filter_set_member TO CdrGuest
 GO
 GRANT SELECT ON zipcode TO CdrGuest
 GO
-GRANT SELECT, UPDATE, INSERT ON query TO CdrGuest
+GRANT SELECT, UPDATE, INSERT, DELETE ON query TO CdrGuest
 GO
 GRANT SELECT ON ctgov_import TO CdrGuest
 GO
