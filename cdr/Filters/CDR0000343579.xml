@@ -8,15 +8,15 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000343579.xml,v 1.19 2007-10-16 18:16:53 venglisc Exp $
+$Id: CDR0000343579.xml,v 1.20 2008-01-11 22:50:26 venglisc Exp $
 
 Filter to generate a Protocol Administrative QC Report
 Written by Cheryl Burg - 3/13/2002 
 
 $Log: not supported by cvs2svn $
 Revision 1.14  2005/03/09 19:40:16  venglisc
-Added code to handle external sites.  Also cleaning up code by reformatting (proper indentation). (Bug 1340)
-
+Added code to handle external sites.  Also cleaning up code by 
+reformatting (proper indentation). (Bug 1340)
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
@@ -32,7 +32,7 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
  =============================================================== -->
  <xsl:template                   match = "ProtocolSponsors">
   <b>
-   <font size='4'>Protocol Sponsors</font>
+   <span class="big">Protocol Sponsors</span>
   </b>
 
   <table        xsl:use-attribute-sets = "table">
@@ -67,15 +67,13 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
  <xsl:template                   match = "FundingInfo">
   <hr />
   <b>
-   <font size='4'>Funding Information</font>
+   <span class="big">Funding Information</span>
   </b>
   <xsl:for-each                 select = "NIHGrantContract">
    <table       xsl:use-attribute-sets = "table">
     <tr>
      <td        xsl:use-attribute-sets = "cell1of2">
-      <u>
-       <b>NIH Grant Contract Type</b>
-      </u>
+      <span class="bul">NIH Grant Contract Type</span>
      </td>
      <td        xsl:use-attribute-sets = "cell2of2">
       <xsl:value-of             select = "NIHGrantContractType"/>
@@ -98,9 +96,7 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
   </xsl:for-each>
   <br />
          
-  <u>
-   <b>Other Grant Contract Information</b>
-  </u>
+  <span class="bul">Other Grant Contract Information</span>
   <br />
   <xsl:for-each                 select = "OtherGrantContractInfo"> 
    <table       xsl:use-attribute-sets = "table">
@@ -128,9 +124,7 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
  ============================================================ -->
  <xsl:template                   match = "FDAINDInfo">
   <br />
-  <u>
-   <b>FDA IND Info</b>
-  </u>
+  <span class="bul">FDA IND Info</span>
   <table        xsl:use-attribute-sets = "table">
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
@@ -169,7 +163,7 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
  <xsl:template                   match = "ProtocolSource">
    <p/>
    <b>
-    <font size='4'>Protocol Source</font>
+    <span class="big">Protocol Source</span>
    </b>
    <table       xsl:use-attribute-sets = "table">
     <tr>
@@ -226,7 +220,7 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
  ==================================================================== -->
  <xsl:template                   match = "ProtocolApproval">
   <b>
-   <font size='4'>Protocol Approval</font>
+   <span class="big">Protocol Approval</span>
   </b>
   <table        xsl:use-attribute-sets = "table">
    <tr>
@@ -274,7 +268,7 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
    </td>
    <td          xsl:use-attribute-sets = "cell2iof2">
     <b>
-     <font size='4'>Voluntary Review</font>
+     <span class="big">Voluntary Review</span>
     </b>
    </td>
    <td          xsl:use-attribute-sets = "cell2of2">
@@ -359,7 +353,7 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
  ==================================================================== -->
  <xsl:template                   match = "OversightInfo">
   <b>
-   <font size='4'>Oversight Info</font>
+   <span class="big">Oversight Info</span>
   </b>
   <table        xsl:use-attribute-sets = "table">
    <tr>
@@ -408,7 +402,7 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
     <td         xsl:use-attribute-sets = "cell1of2">
      <xsl:if                      test = "not(preceding-sibling::StartDate)">
       <b>
-       <font size='4'>Start Date</font>
+       <span class="big">Start Date</span>
       </b>
      </xsl:if>
     </td>
@@ -423,9 +417,41 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
    </tr>
   </table>
 
-  <xsl:if                      test = "not(following-sibling::StartDate)">
+  <xsl:if                      test = "not(following-sibling::StartDate)
+                                       and
+                                       not(following-sibling::CompletionDate)">
    <p/>
   </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ ===============================================================
+ Display the Protocol Completion Date
+ =============================================================== -->
+ <xsl:template                   match = "CompletionDate">
+
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <xsl:if                      test =
+                                     "not(preceding-sibling::CompletionDate)">
+      <span class="big">
+       Completion Date
+      </span>
+     </xsl:if>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "."/>
+     <b>
+      <xsl:text> (DateType = </xsl:text>
+      <xsl:value-of              select = "@DateType"/>
+      <xsl:text>)</xsl:text>
+     </b>
+    </td>
+   </tr>
+  </table>
+  <p/>
  </xsl:template>
 
 
@@ -435,7 +461,7 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
  ==================================================================== -->
  <xsl:template                   match = "CurrentProtocolStatus">
   <b>
-   <font size='4'>Current Protocol Status</font>
+   <span class="big">Current Protocol Status</span>
   </b>
   <table        xsl:use-attribute-sets = "table">
    <tr>
@@ -458,7 +484,7 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
  <xsl:template                   match = "ProtocolLeadOrg">
   <hr />
   <b>
-   <font size='4'>Lead Organization</font>
+   <span class="big">Lead Organization</span>
   </b>
   <br />
   <br />
@@ -645,9 +671,7 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
   ==================================================================
   Display Lead Organization Personnel Section
   ================================================================== -->
-  <u>
-   <b>Lead Organization Personnel</b>
-  </u>
+  <span class="bul">Lead Organization Personnel</span>
   <br />
   <br />
 
@@ -668,7 +692,7 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
  ================================================================= -->
  <xsl:template                   match = "VerificationInfo">
   <b>
-   <font size='4'>Verification Info</font>
+   <span class="big">Verification Info</span>
   </b>
   <br />
 
@@ -715,7 +739,7 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
  <xsl:template                   match = "ProtocolAdminInfo/
                                           DatedAction">
   <b>
-   <font size='4'>Dated Action</font>
+   <span class="big">Dated Action</span>
   </b>
   <br />
 
@@ -759,9 +783,7 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
    <xsl:if                        test = "name() = 'OverallContact'">
     <tr>
      <td        xsl:use-attribute-sets = "cell1of2">
-      <u>
-       <b>Overall Contact</b>
-      </u>
+      <span class="bul">Overall Contact</span>
      </td>
      <td        xsl:use-attribute-sets = "cell2of2">
       <b>
@@ -1014,13 +1036,11 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
   <table        xsl:use-attribute-sets = "table">
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
-     <u>
-      <b>
+     <span class="bul">
        <xsl:text>Person [</xsl:text>
        <xsl:value-of            select = "../@cdr:id"/>
        <xsl:text>]</xsl:text>
-      </b>
-     </u>
+     </span>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = "Person/
@@ -1787,17 +1807,15 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
  only display the string " (suppress contact information)"
  ================================================================== -->
  <xsl:template                   match = "ProtocolSites">
-  <b>
-   <u>Participating Organizations (for Lead Organization)</u>
-  </b>
+  <span class="bul">Participating Organizations (for Lead Organization)</span>
 
   <xsl:if                         test = "@SuppressContactInformation">
-   <u>
+   <span class="ul">
     <xsl:apply-templates        select = "@SuppressContactInformation">
      <xsl:with-param              name = "suppressAll"
                                 select = "'all'"/>
     </xsl:apply-templates>
-   </u> 
+   </span>
   </xsl:if>
   <br />
 
@@ -2765,16 +2783,14 @@ Added code to handle external sites.  Also cleaning up code by reformatting (pro
  ================================================================== -->
  <xsl:template                   match = "ExternalSites">
   <hr width="50%"/>
-  <b>
-   <u>
+  <span class="bul">
     <xsl:text>External Sites</xsl:text>
     <xsl:text> (Source: </xsl:text>
     <xsl:value-of               select = "@Source"/>
     <xsl:text> as of </xsl:text>
     <xsl:value-of               select = "@Received"/>
     <xsl:text>)</xsl:text>
-   </u>
-  </b>
+  </span>
 
   <br />
   <ol bottom-margin='0'>
