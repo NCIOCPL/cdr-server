@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml     version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000157.xml,v 1.65 2007-10-25 19:18:47 venglisc Exp $
+$Id: CDR0000000157.xml,v 1.66 2008-01-22 23:21:43 venglisc Exp $
 
 Filter to create summary vendor output data.
    Written by Volker Englisch, 2003-08-12
@@ -30,8 +30,8 @@ $Log: not supported by cvs2svn $
  ================================================================== -->
  <xsl:param                      name = "DateFirstPub" 
                                select = "''"/>
- <xsl:variable                    name = "whoAmI"
-                                select = "'Summary'"/>
+ <xsl:variable                   name = "whoAmI"
+                               select = "'Summary'"/>
 
  <!--
  Variables needed to identify display of certain misc documents based on 
@@ -255,7 +255,6 @@ $Log: not supported by cvs2svn $
      <xsl:value-of             select = "./@cdr:id"/>
     </xsl:attribute>
    </xsl:if>
-
    <xsl:apply-templates/>
 
    <!--
@@ -340,6 +339,14 @@ $Log: not supported by cvs2svn $
     </xsl:choose>
    </xsl:if>
   </SummarySection>
+
+  <xsl:if                       test = "starts-with(Title, 
+                                        'To Learn More About ')
+                                        or
+                                        starts-with(Title,
+                                        'Informaci&#xF3;n adicional sobre ')">
+   <xsl:call-template           name = "GeneralInfoAdult"/>
+  </xsl:if>
  </xsl:template>
 
 
@@ -1628,6 +1635,85 @@ $Log: not supported by cvs2svn $
 
 
  <!-- 
+ =========================================================================
+ Template to add the "General Info About ..." misc. document to the 
+ summaries.
+ Currently, we're only adding the section to the Treatment summaries 
+ and we are adding different sections to adult/pediatric summaries.
+ ========================================================================= -->
+ <xsl:template                   name = "GeneralInfoAdult">
+ 
+  <xsl:if                        test = "$sumType = 'Treatment'">
+   <xsl:choose>
+    <xsl:when                    test = "$language = 'English'">
+     <xsl:choose>
+      <xsl:when                  test = "$ageGroup = 'Adult'">
+       <xsl:variable             name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000575822',
+                                                         '/lastp'))"/>
+       <xsl:apply-templates    select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+        <xsl:with-param          name = "miscDocId"
+                               select = "'_GenInfoAdult'"/>
+       </xsl:apply-templates>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:variable             name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000575821',
+                                                         '/lastp'))"/>
+       <xsl:apply-templates    select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+        <xsl:with-param          name = "miscDocId"
+                               select = "'_GenInfoPed'"/>
+       </xsl:apply-templates>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:when>
+   <!-- English To Learn More Section End-->
+        
+   <!-- Spanish, Patient, To Learn More Section -->
+    <xsl:otherwise>
+     <xsl:choose>
+      <xsl:when                  test = "$ageGroup = 'Adult'">
+       <xsl:variable             name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000575839',
+                                                         '/lastp'))"/>
+       <xsl:apply-templates    select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+        <xsl:with-param          name = "miscDocId"
+                               select = "'_GenInfoAdult'"/>
+       </xsl:apply-templates>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:variable             name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000575840',
+                                                         '/lastp'))"/>
+       <xsl:apply-templates    select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+        <xsl:with-param          name = "miscDocId"
+                               select = "'_GenInfoPed'"/>
+       </xsl:apply-templates>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:otherwise>
+   <!-- Spanish General Info Section End-->
+   </xsl:choose>  
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Main MiscellaneousDocumentText Template
+ ================================================================== -->  
+ <xsl:template                  match = "MiscellaneousDocLink">
+  <xsl:apply-templates           mode = "miscFragment">
+   <xsl:with-param               name = "miscDocId" 
+                               select = "../@cdr:id"/>
+  </xsl:apply-templates>
+ </xsl:template>
+
+ <!-- 
  ==================================================================
  Main MiscellaneousDocumentText Template
  ================================================================== -->  
@@ -1674,6 +1760,43 @@ $Log: not supported by cvs2svn $
                                select = "$miscDocId"/>
    </xsl:apply-templates>
   </SummarySection>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Section Template for Misc Docs
+ Need to pass the parameter of the CDR Doc ID to set the ID 
+ attribute properly.  The misc doc can be either the 'To Learn More'
+ or the 'About PDQ' section.
+ ================================================================== -->  
+ <xsl:template                  match = "Section"
+                                 mode = "miscFragment">
+  <xsl:param                     name = "miscDocId"/>
+  <!-- SummarySection>
+   <xsl:choose>
+    <xsl:when                    test = "$miscDocId">
+     <xsl:if                     test = "./@cdr:id">
+      <xsl:attribute             name = "id">
+       <xsl:value-of           select = "$miscDocId"/>
+       <xsl:value-of           select = "./@cdr:id"/>
+      </xsl:attribute>
+     </xsl:if>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:if                     test = "./@cdr:id">
+      <xsl:attribute             name = "id">
+       <xsl:value-of           select = "./@cdr:id"/>
+      </xsl:attribute>
+     </xsl:if>
+    </xsl:otherwise>
+   </xsl:choose -->
+
+   <xsl:apply-templates          mode = "MiscText">
+    <xsl:with-param              name = "miscDocId" 
+                               select = "$miscDocId"/>
+   </xsl:apply-templates>
+  <!-- /SummarySection -->
  </xsl:template>
 
 
