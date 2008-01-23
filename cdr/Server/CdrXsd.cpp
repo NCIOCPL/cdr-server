@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.44 2007-10-30 21:43:10 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.45 2008-01-23 16:35:20 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.44  2007/10/30 21:43:10  bkline
+ * Set missing 2nd parameter to entConvert().
+ *
  * Revision 1.43  2007/10/04 20:17:06  bkline
  * Modified the code which builds an XSL/T document for custom rule
  * validation, so that double quote marks (") embedded in the validation
@@ -269,6 +272,8 @@ static void validateDate(
         const cdr::String&              val,
         const cdr::xsd::SimpleType&     type,
         cdr::StringList&                errors);
+static bool isValidDateString(
+        const cdr::String&              ds);
 static bool matchPattern(
         const wchar_t*                  pattern,
         const cdr::String&              value);
@@ -1759,6 +1764,37 @@ cdr::String identifyTextValue(
                                               + elemName;
 }
 
+/*
+ * Assumes the string has been verified to hold the correct format using
+ * a regular expression test.  This check verifies that the number of
+ * days is allowed for the month specified, and that the month portion
+ * has a value between 1 and 12.  Any year value between 0 and 9999 is
+ * accepted.  More restrictive validation for years must be imposed using
+ * a derived type specifying the appropriate regular expression.  For
+ * example, "^(19[7-9]|20).*" to restrict valid values to the period
+ * between 1970 and 2099 (deriving from the date type takes care of
+ * the rest of the date format).
+ */
+bool isValidDateString(const cdr::String& ds) {
+    int year  = cdr::String(ds.substr(0, 4)).getInt();
+    int month = cdr::String(ds.substr(5, 2)).getInt();
+    int day   = cdr::String(ds.substr(8, 2)).getInt();
+    if (day < 1)
+        return false;
+    switch (month) {
+    case 4: case 6: case 9: case 11:
+        return day <= 30;
+    case 1: case 3: case 5: case 7: case 8: case 10: case 12:
+        return day <= 31;
+    case 2:
+        if (year % 4 == 0 && year % 100 != 0 || year % 400 == 0)
+            return day <= 29;
+        return day <= 28;
+    default:
+        return false;
+    }
+}
+
 /**
  * Reports any errors found with a date value.
  */
@@ -1770,7 +1806,7 @@ void validateDate(
         cdr::StringList&                errors)
 {
     static const wchar_t pattern[] = L"^\\d\\d\\d\\d-\\d\\d-\\d\\d$";
-    if (!matchPattern(pattern, val)) {
+    if (!matchPattern(pattern, val) || !isValidDateString(val)) {
         cdr::String err = cdr::String(L"Invalid date value: '")
                         + val
                         + identifyTextValue(elemName, attrName);
@@ -1998,7 +2034,7 @@ void validateTimeInstant(
     static const wchar_t pattern[] =
         L"^\\d\\d\\d\\d-\\d\\d-\\d\\d"
         L"(T\\d\\d:\\d\\d((:\\d\\d)(\\.\\d+)?)?( ?[-+]\\d{1,2}:\\d{2})?)?$";
-    if (!matchPattern(pattern, val)) {
+    if (!matchPattern(pattern, val) || !isValidDateString(val.substr(0, 10))) {
         cdr::String err = cdr::String(L"Invalid date/time value: '")
                         + val
                         + identifyTextValue(elemName, attrName);
