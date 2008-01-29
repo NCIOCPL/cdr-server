@@ -1,9 +1,13 @@
 /*
- * $Id: CdrReport.cpp,v 1.22 2007-07-27 21:35:05 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.23 2008-01-29 15:17:12 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2007/07/27 21:35:05  bkline
+ * Added report to collect titles and document IDs for GlossaryTermName
+ * documents linked to a specific GlossaryTermConcept document.
+ *
  * Revision 1.21  2007/07/10 14:01:21  bkline
  * Added new Term Sets report.
  *
@@ -336,6 +340,21 @@ namespace
     public:
       TranslatedSummary() :
           cdr::Report("Translated Summary") {}
+
+    private:
+      virtual cdr::String execute(cdr::Session& session,
+                                  cdr::db::Connection& dbConnection,
+                                  cdr::Report::ReportParameters parm);
+  };
+
+  /*************************************************************************/
+  /* Find corresponding patient version for HP summary.
+  /*************************************************************************/
+  class PatientSummary : public cdr::Report
+  {
+    public:
+      PatientSummary() :
+          cdr::Report("Patient Summary") {}
 
     private:
       virtual cdr::String execute(cdr::Session& session,
@@ -1049,6 +1068,7 @@ struct TargetDoc {
   DatedActions                  datedActions;
   MenuTermTree                  menuTermTree;
   TranslatedSummary             translatedSummary;
+  PatientSummary                patientSummary;
   GlossaryTermNames             glossaryTermNames;
   TermSets                      termSets;
 #if 0
@@ -1084,6 +1104,37 @@ struct TargetDoc {
     result << L"<TranslatedSummary>"
            << cdr::stringDocId(id)
            << L"</TranslatedSummary>\n]]></ReportBody>\n";
+    select.close();
+    return result.str();
+  }
+
+  cdr::String PatientSummary::execute(cdr::Session& session,
+                                      cdr::db::Connection& dbConnection,
+                                      cdr::Report::ReportParameters parm)
+  {
+    ReportParameters::iterator i = parm.find(L"HPSummary");
+    if (i == parm.end())
+      throw cdr::Exception(L"Must specify HPSummary");
+    cdr::String hpSummary = i->second;
+
+    string query = "SELECT doc_id                                   "
+                   "  FROM query_term                               "
+                   " WHERE path = '/Summary/PatientVersionOf/@cdr:ref' "
+                   "   AND int_val = ?                              ";
+      
+    cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
+    select.setInt(1, hpSummary.extractDocId());
+    cdr::db::ResultSet rs = select.executeQuery();
+
+    wostringstream result;
+    result << L"<ReportBody><![CDATA[\n"
+              L"<ReportName>" << getName() << L"</ReportName>\n";
+    if (!rs.next())
+      throw cdr::Exception(L"No patient summary found for " + hpSummary);
+    int id = rs.getInt(1);
+    result << L"<PatientSummary>"
+           << cdr::stringDocId(id)
+           << L"</PatientSummary>\n]]></ReportBody>\n";
     select.close();
     return result.str();
   }
