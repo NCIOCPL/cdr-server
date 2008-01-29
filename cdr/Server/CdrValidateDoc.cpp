@@ -1,10 +1,13 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.23 2005-03-04 02:58:56 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.24 2008-01-29 15:16:38 bkline Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2005/03/04 02:58:56  ameyer
+ * Small changes for new Xerces DOM parser.
+ *
  * Revision 1.22  2004/08/20 19:58:56  bkline
  * Added new CdrSetDocStatus command.
  *
@@ -271,6 +274,18 @@ cdr::String cdr::execValidateDoc (
 
     // Will append to the error list from the document object
     cdr::StringList& errList = docObj.getErrList();
+
+    // Check for private-use characters, which we don't allow (request #3823).
+    cdr::String serializedDoc = docObj.getXml();
+    for (size_t i = 0; i < serializedDoc.size(); ++i) {
+        unsigned int c = (unsigned int)serializedDoc[i];
+        if (c >= 0xE000 && c <= 0xF8FF) {
+            wchar_t err[80];
+            swprintf(err, L"private use character U+%04X at position %u",
+                     c, i + 1);
+            errList.push_back(err);
+        }
+    }
 
     // Get a parse tree for the XML
     if (docObj.parseAvailable()) {
