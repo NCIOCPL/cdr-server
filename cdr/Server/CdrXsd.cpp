@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.cpp,v 1.45 2008-01-23 16:35:20 bkline Exp $
+ * $Id: CdrXsd.cpp,v 1.46 2008-02-13 02:30:02 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.45  2008/01/23 16:35:20  bkline
+ * Enhanced check for valid dates.
+ *
  * Revision 1.44  2007/10/30 21:43:10  bkline
  * Set missing 2nd parameter to entConvert().
  *
@@ -1577,7 +1580,7 @@ bool validateAttributes(
         cdr::xsd::Attribute* attr = (attrEnum++)->second;
         cdr::String attrName      = attr->getName();
         cdr::String attrVal       = element.getAttribute(attrName.c_str());
-        if (attrName == L"cdr::ref")
+        if (attrName == L"cdr:ref")
             isDenormalized = true;
         if (attrVal.empty()) {
             if (!attr->isOptional()) {
