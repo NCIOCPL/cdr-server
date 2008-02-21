@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000150.xml,v 1.105 2007-12-18 23:55:50 venglisc Exp $
+$Id: CDR0000000150.xml,v 1.106 2008-02-21 22:02:01 venglisc Exp $
 
 Vendor Filter: InScopeProtocol
 
@@ -218,12 +218,50 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
  Display the Primary and Other protocolIDs
  ==================================================================== -->
  <xsl:template                   match = "PrimaryID | OtherID">
-  <xsl:element                    name = "{name()}">
-   <xsl:apply-templates         select = "IDType"
+  <xsl:choose>
+   <xsl:when                      test = "name() = 'PrimaryID'">
+    <xsl:element                  name = "{name()}">
+     <xsl:apply-templates       select = "IDType"
                                   mode = "copy"/>
-   <xsl:apply-templates         select = "IDString"
+     <xsl:apply-templates       select = "IDString"
                                   mode = "copy"/>
-  </xsl:element>
+    </xsl:element>
+   </xsl:when>
+   <xsl:otherwise>
+    <!--
+    Checking how many unique IDs exist vs. how many total IDs exist
+    ===============================================================
+    <xsl:value-of               select = "count(//OtherID[not(IDString = 
+                                          preceding::OtherID/IDString)])"/>
+    <xsl:text>&gt;</xsl:text>
+    <xsl:value-of               select = "count(//OtherID/IDString)"/>
+    <xsl:text>   </xsl:text>
+    -->
+
+    <!-- 
+    According to LG we want to suppress the CTEP or DCP IDs if the
+    same IDString is already listed under a different IDType.  In 
+    other words, if for instance the institutional ID and the CTEP 
+    ID are identical we drop the CTEP ID.
+    =============================================================== -->
+    <xsl:if                       test = "not((IDString = 
+                                               preceding::OtherID/IDString
+                                               or
+                                               IDString = 
+                                               following::OtherID/IDString)
+                                              and
+                                              (IDType = 'CTEP ID'
+                                               or
+                                               IDType = 'DCP ID'))">
+     <xsl:element                 name = "{name()}">
+      <xsl:apply-templates      select = "IDType"
+                                  mode = "copy"/>
+      <xsl:apply-templates      select = "IDString"
+                                  mode = "copy"/>
+     </xsl:element>
+    </xsl:if>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
@@ -1224,6 +1262,35 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                           Organization/
                                           OrganizationNameInformation/
                                           OfficialName/Name"/>
+<xsl:if               test = "not(Person/PersonLocations/
+                                          OtherPracticeLocation
+                                           [@cdr:id = $contactFID]/
+                                          OrganizationLocation/
+                                          Organization/
+                                          OrganizationNameInformation/
+                                          OfficialName/Name)">
+         <xsl:message        terminate = "yes">
+          <xsl:text>&lt;ListItem class='Warning'&gt;</xsl:text>
+          <xsl:text>Invalid Location Fraqment ID; </xsl:text>
+          <xsl:value-of         select = "Person/
+                                          PersonNameInformation/
+                                          SurName"/>
+          <xsl:text>, </xsl:text>
+          <xsl:value-of         select = "Person/
+                                          PersonNameInformation/
+                                          GivenName"/>
+          <xsl:text> [</xsl:text>
+          <xsl:value-of         select = "$contactFID"/>
+          <xsl:text>]; </xsl:text>
+          <xsl:text>Fragment ID does not match Person Fragment ID [</xsl:text>
+          <xsl:value-of         select = "Person/PersonLocations/
+                                          OtherPracticeLocation/
+                                          @cdr:id"/>
+          <xsl:text>]</xsl:text>
+         </xsl:message> 
+<xsl:value-of  select = "$contactFID"/>
+</xsl:if>
+
          </OrganizationName>
 
          <!-- 
