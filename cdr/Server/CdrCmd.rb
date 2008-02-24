@@ -1,7 +1,7 @@
 #!/usr/local/bin/ruby
 #----------------------------------------------------------------------
 #
-# $Id: CdrCmd.rb,v 1.1 2001-11-28 19:31:47 bkline Exp $
+# $Id: CdrCmd.rb,v 1.2 2008-02-24 23:04:40 bkline Exp $
 #
 # Test client (Ruby version) for sending commands to CDR server.
 #
@@ -28,7 +28,7 @@ require 'socket'
 # Establish parameters.
 #----------------------------------------------------------------------
 name = if ARGV.size > 0 then ARGV.shift else '' end
-host = if ARGV.size > 0 then ARGV.shift else 'mmdb2.nci.nih.gov' end
+host = if ARGV.size > 0 then ARGV.shift else 'mahler.nci.nih.gov' end
 port = if ARGV.size > 0 then ARGV.shift else 2019 end
 
 
