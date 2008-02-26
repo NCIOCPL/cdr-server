@@ -1,0 +1,199 @@
+<CdrDoc Type='Filter' Id='CDR0000588691'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">TermSet QC Report Filter</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<!--
+================================================================
+$Id: CDR0000588691.xml,v 1.1 2008-02-26 19:38:23 venglisc Exp $
+
+Filter to create the TermSet QC Report
+Written      2008-02-22, Volker Englisch
+
+$Log: not supported by cvs2svn $
+================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+ <xsl:output                    method = "html"/> 
+
+ <xsl:include  href = "cdr:name:Module: Attribute Sets"/>
+ <xsl:include  href = "cdr:name:Module: InLine Markup Formatter"/>
+ <xsl:include  href = "cdr:name:Module: QC Filter Templates"/>
+ <xsl:include  href = "cdr:name:Module: STYLE Default"/> 
+
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
+ <xsl:variable                    name = "whoAmI"
+                                select = "'TermSet'"/>
+ <!--
+ ======================================================================
+ Main Template
+ ====================================================================== -->
+ <xsl:template                   match = "/">
+  <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+  <HTML>
+   <HEAD>
+    <xsl:variable                 name = "cdrdocs" 
+                                select = "document('cdrx:/*/CdrCtl')"/>
+    <TITLE>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+     <xsl:text>: </xsl:text>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/>
+    </TITLE>
+    <STYLE type='text/css'>
+     .miscdoc   { background-color: DFDFDF; }
+     <xsl:call-template           name = "defaultStyle"/>  
+    </STYLE>
+   </HEAD>
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
+   <xsl:apply-templates         select = "TermSet"/>
+  </HTML>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Terminology QC Report
+ =================================================================== -->
+ <xsl:template                   match = "TermSet">
+  <BODY>
+
+   <!-- 
+   ==================================================================
+   Display Report heading and subheading 
+   ================================================================== -->
+   <center>
+    <span class="big">
+     <xsl:text>Term Set</xsl:text>
+     <br/>
+     <xsl:text>QC Report</xsl:text>
+    </span>
+    <br/>
+    <b>
+     <xsl:value-of              select = "document(
+                                           concat('cdrutil:/date/%25B %25#d,',
+                                                  ' %25Y %25#I:%25M% 25p'))"/>
+    </b>
+   </center>
+   <p/>
+
+   <!-- 
+   ====================================================================
+   Display CDR ID
+   ==================================================================== -->
+   <span class="big">
+    <xsl:value-of               select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+   </span>
+   <p/>
+
+   <!-- 
+   ===================================================================
+   Display Document Title 
+   =================================================================== -->
+   <table        xsl:use-attribute-sets = "table">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <span class="big">Term Set Name</span>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "TermSetName"/>
+     </td>
+    </tr>
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <span class="big">Term Set Type</span>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "TermSetType"/>
+     </td>
+    </tr>
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <span class="big">Term Set Member</span>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <ul>
+       <xsl:for-each            select = "TermSetMember">
+        <li>
+       <xsl:variable              name = "cdrId"
+                                select = "concat('CDR', 
+                                           number(
+                                            substring-after(
+                                             substring-before(
+                                              concat(@cdr:ref, '#'), '#'), 
+                                                                   'CDR')))"/>
+        <xsl:apply-templates    select = "."/>
+        <xsl:text> (</xsl:text>
+         <xsl:element             name = "a">
+          <xsl:attribute          name = "href">
+           <xsl:value-of        select = "concat('/cgi-bin/cdr/QcReport.py',
+                                                 '?Session=guest',
+                                                 '&amp;DocId=',
+                                                 $cdrId)"/>
+          </xsl:attribute>
+          <xsl:attribute          name = "target">
+           <xsl:text>new</xsl:text>
+          </xsl:attribute>
+          <xsl:value-of         select = "$cdrId"/>
+          </xsl:element>
+        <xsl:text>)</xsl:text>
+        </li>
+       </xsl:for-each>
+      </ul>
+     </td>
+    </tr>
+    <xsl:if                       test = "GeneratedFrom">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <span class="big">Generated From</span>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "GeneratedFrom"/>
+      <xsl:variable               name = "cdrId"
+                                select = "concat('CDR', 
+                                           number(
+                                            substring-after(
+                                             substring-before(
+                                              concat(GeneratedFrom/@cdr:ref, 
+                                                       '#'), '#'), 'CDR')))"/>
+      <xsl:text> (</xsl:text>
+       <xsl:element               name = "a">
+        <xsl:attribute            name = "href">
+         <xsl:value-of          select = "concat('/cgi-bin/cdr/QcReport.py',
+                                                 '?Session=guest',
+                                                 '&amp;DocId=',
+                                                 $cdrId)"/>
+        </xsl:attribute>
+        <xsl:attribute            name = "target">
+          <xsl:text>new</xsl:text>
+        </xsl:attribute>
+        <xsl:value-of           select = "$cdrId"/>
+       </xsl:element>
+      <xsl:text>)</xsl:text>
+      <br/><br/>
+     </td>
+    </tr>
+    </xsl:if>
+    <xsl:apply-templates        select = "Comment"
+                                  mode = "withAttribute">
+     <xsl:with-param              name = "label"
+                                select = "'Term Set Comment'"/>
+    </xsl:apply-templates>
+   </table>
+  </BODY>
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
