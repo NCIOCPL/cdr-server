@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml     version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000157.xml,v 1.68 2008-02-20 17:12:49 venglisc Exp $
+$Id: CDR0000000157.xml,v 1.69 2008-03-01 00:05:11 venglisc Exp $
 
 Filter to create summary vendor output data.
    Written by Volker Englisch, 2003-08-12
@@ -249,6 +249,45 @@ $Log: not supported by cvs2svn $
  SummarySection Template
  ================================================================== -->  
  <xsl:template                  match = "SummarySection">
+  <!--
+  ==================================================================
+  Display the "Get More Info" section just above the Changes section
+  ================================================================== -->
+  <xsl:if                        test = "SectMetaData/
+                                         SectionType = 
+                                          'Changes to summary'">
+   <!--
+   ================================================================
+   Don't display the Get More section for the CAM summaries
+   ================================================================ -->
+   <xsl:if                       test = "not($sumType =
+                                           concat('Complementary and ',
+                                                  'alternative medicine'))">
+    <xsl:choose>
+     <xsl:when                   test = "$language = 'English'">
+      <xsl:variable              name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000000367',
+                                                         '/lastp'))"/>
+      <xsl:apply-templates     select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+       <xsl:with-param           name = "miscDocId"
+                               select = "'_GetMore'"/>
+      </xsl:apply-templates>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:variable              name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000256873',
+                                                         '/lastp'))"/>
+      <xsl:apply-templates     select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+       <xsl:with-param           name = "miscDocId"
+                               select = "'_GetMore'"/>
+      </xsl:apply-templates>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:if>
+  </xsl:if>
+
   <SummarySection>
    <xsl:if                       test = "./@cdr:id">
     <xsl:attribute               name = "id">
@@ -1393,6 +1432,11 @@ $Log: not supported by cvs2svn $
       </xsl:apply-templates>
                                  <!-- mode = "MiscText" -->
      </xsl:when>
+
+     <!--  
+     ==================================================================
+           This section has been moved in front of the "Changes to this
+           Summary" section
      <xsl:otherwise>
       <xsl:variable              name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000000367',
@@ -1403,6 +1447,7 @@ $Log: not supported by cvs2svn $
                                select = "'_GetMore'"/>
       </xsl:apply-templates>
      </xsl:otherwise>
+     ================================================================== -->
     </xsl:choose>
    </xsl:when>
   <!-- English To Learn More Section End-->
@@ -1424,6 +1469,11 @@ $Log: not supported by cvs2svn $
                                select = "'_ToLearnMore'"/>
       </xsl:apply-templates>
      </xsl:when>
+
+     <!--  
+     ==================================================================
+           This section has been moved in front of the "Changes to this
+           Summary" section
      <xsl:otherwise>
       <xsl:variable              name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000256873',
@@ -1434,6 +1484,7 @@ $Log: not supported by cvs2svn $
                                select = "'_GetMore'"/>
       </xsl:apply-templates>
      </xsl:otherwise>
+     ================================================================== -->
     </xsl:choose>
    </xsl:otherwise>
   <!-- Spanish To Learn More Section End-->
