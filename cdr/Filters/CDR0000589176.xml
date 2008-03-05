@@ -1,0 +1,59 @@
+<CdrDoc Type='Filter' Id='CDR0000589176'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Validation Error IDs: Delete and Add cdr:eid attributes</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<?xml version='1.0' encoding='UTF-8'?>
+ <!-- 
+ =======================================================================
+ $Id: CDR0000589176.xml,v 1.1 2008-03-05 02:39:22 ameyer Exp $
+
+ Filter to strip error markup from documents coming in from the client,
+ and add it to documents to be validated and returned to the client.
+
+ Error markup is used by the client to assist the user in locating errors.
+ Any markup coming in from the client is left over from a previous validation
+ and is no longer useful either for saving or revalidation.
+
+ Author: Alan Meyer.
+
+ $Log: not supported by cvs2svn $
+
+ =======================================================================
+ -->
+
+<xsl:transform  version = '1.0'
+                xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                xmlns:cdr = 'cips.nci.nih.gov/cdr'>
+ <xsl:output    method = 'xml'/>
+
+ <!-- ==================================================================
+ Copy almost everything straight through.
+ ======================================================================= -->
+ <xsl:template             match = '@*|comment()|processing-instruction()'>
+   <xsl:copy>
+       <xsl:apply-templates/>
+   </xsl:copy>
+ </xsl:template>
+
+ <!-- Delete cdr:eid attributes using empty template -->
+ <xsl:template             match = '//@cdr:eid'/>
+
+ <xsl:template             match = 'child::*'>
+   <xsl:element             name = '{name()}'>
+      <xsl:for-each       select = '@*'>
+        <xsl:copy-of select='.'/>
+      </xsl:for-each>
+      <xsl:attribute        name = 'cdr:eid'>
+         <xsl:number       level = 'any' 
+                           count = 'node()'/>
+      </xsl:attribute>
+      <xsl:apply-templates/>
+   </xsl:element>
+ </xsl:template>
+</xsl:transform>]]>
+</CdrDocXml>
+</CdrDoc>
