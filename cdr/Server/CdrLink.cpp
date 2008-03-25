@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.30 2007-07-13 00:39:51 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.31 2008-03-25 23:43:13 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2007/07/13 00:39:51  ameyer
+ * Fixed missing question mark in link_type update statement.
+ *
  * Revision 1.29  2006/11/17 05:29:30  ameyer
  * Added link fragment validation using the query_term and query_term_pub
  * tables instead of the link_fragment table.  Did not yet remove update
@@ -126,7 +129,7 @@
  * Fixed last argument to findTargetDocTypes().
  *
  * Revision 1.2  2000/09/27 11:28:44  bkline
- * Added CdrDelLinks() and findTargetDocTypes().
+ * Added cdrDelLinks() and findTargetDocTypes().
  *
  * Revision 1.1  2000/09/26 19:04:26  ameyer
  * Initial revision
@@ -171,6 +174,9 @@ struct LinkNetRow {
                target_frag == r.target_frag &&
                url         == r.url;
     }
+    // XXX 2008-03-20 Is this right?  Why six '<'?
+    //     That allows any lower valued field to indicate <
+    //     Don't see where it's used?
     bool operator<(const LinkNetRow& r) const {
         if (source_doc  < r.source_doc)  return true;
         if (source_doc  > r.source_doc)  return false;
@@ -190,11 +196,12 @@ typedef std::set<LinkNetRow> LinkNetRowSet;
 // Prototypes for internal functions
 static int linkTree (cdr::db::Connection&, const cdr::dom::Node&,
                      int, int, cdr::String&, cdr::link::LnkList&,
-                     cdr::StringSet&, cdr::StringSet&, cdr::StringList&);
+                     cdr::StringSet&, cdr::StringSet&,
+                     cdr::ValidationControl&);
 
 static int checkMissedFrags (cdr::db::Connection&, int,
                      cdr::ValidRule, cdr::StringSet&,
-                     cdr::StringList&);
+                     cdr::ValidationControl&);
 
 static void updateFragList (cdr::db::Connection&, int, cdr::StringSet&);
 
@@ -247,7 +254,6 @@ cdr::link::CdrLink::CdrLink (
     chkType       = L"C";
     trgFrag       = cdr::link::NO_FRAGMENT;
     hasData       = false;
-    errCount      = 0;
     saveLink      = true;
 
 
@@ -259,6 +265,9 @@ cdr::link::CdrLink::CdrLink (
     const cdr::dom::Element& element
              = static_cast<const cdr::dom::Element&> (fldNode);
     srcField = fldNode.getNodeName ();
+
+    // The ValidationControl object also uses the node to report errors
+    errCtl.setElementContext(fldNode);
 
     // Get link type for this link based on doctype and field
     // Also finds out what table to check against
@@ -388,6 +397,7 @@ cdr::link::CdrLink::CdrLink (
                 ref + L"' too large for database table");
         saveLink = false;
     }
+
 } // Constructor
 
 
@@ -413,6 +423,7 @@ int cdr::link::CdrLink::validateLink (
             notFoundMsg = L"No publishable document found for link target";
         else if (chkType == L"V")
             notFoundMsg = L"No document version found for link target";
+        notFoundMsg += L": " + srcField + L"=" + trgIdStr;
         this->addLinkErr (notFoundMsg);
     }
 
@@ -513,7 +524,7 @@ int cdr::link::CdrLink::validateLink (
         }
     }
 
-    return errCount;
+    return getErrorCount();
 
 } // validateLink()
 
@@ -523,11 +534,11 @@ int cdr::link::CdrLink::validateLink (
  *
  * See CdrLink.h
  */
-int cdr::link::CdrDelLinks (
-    cdr::db::Connection& dbConn,
-    int                  docId,
-    cdr::ValidRule       vRule,
-    cdr::StringList&     errList
+int cdr::link::cdrDelLinks (
+    cdr::db::Connection&    dbConn,
+    int                     docId,
+    cdr::ValidRule          vRule,
+    cdr::StringList&        errList
 ) {
 
     // Find out if any other documents link to this one
@@ -559,7 +570,8 @@ int cdr::link::CdrDelLinks (
 
     // If only validating, or if only updating if valid, then
     // Stop here if there were links to this doc
-    if (vRule == ValidateOnly || (vRule == UpdateIfValid && !errList.empty()))
+    if (vRule == ValidateOnly ||
+            (vRule == UpdateIfValid && errList.size() == 0))
         return errList.size();
 
     // Delete all links from this document to other documents
@@ -578,16 +590,19 @@ int cdr::link::CdrDelLinks (
 
     return errList.size();
 
-} // CdrDelLinks()
+} // cdrDelLinks()
 
 
 /**
  * Process a CdrCommand to retrieve back links from the link_net tables.
  *
  * This is how we find out what links to a document, as opposed to
- *   what documents it links to.
+ * what documents it links to.
  *
  * Takes standard parameters for a CdrCommand.
+ *
+ *  @return             XML string containing one LnkItem for each link
+ *                      to this document from another document.
  */
 
 cdr::String cdr::getLinks (
@@ -620,9 +635,9 @@ cdr::String cdr::getLinks (
 
     // In this simple getLinks we're just retrieving links that
     //   point to the current document
-    // CdrDelLinks can already do that.
+    // cdrDelLinks can already do that.
     cdr::StringList errList;
-    int errCount = cdr::link::CdrDelLinks (dbConnection, docId,
+    int errCount = cdr::link::cdrDelLinks (dbConnection, docId,
                                            cdr::ValidateOnly, errList);
 
     // Pack it up the transaction and links
@@ -633,6 +648,7 @@ cdr::String cdr::getLinks (
                 resp += errCount + L"</LnkCount>\n";
 
     if (errCount) {
+        // Show each error as a LinkItem
         cdr::StringList::const_iterator i = errList.begin();
         while (i != errList.end())
             resp += L"    " + cdr::tagWrap (*i++, L"LnkItem");
@@ -711,7 +727,12 @@ cdr::String cdr::link::CdrLink::dumpXML (
         xml += cdr::tagWrap (ref, L"LnkHref");
 
     // List of errors
-    if (errCount) {
+    if (errCtl.getErrorCount() > 0) {
+        // Get error info as a simple list of strings
+        cdr::StringList errList;
+        errCtl.getErrorMsgs(errList);
+
+        // Show each error as a LinkErr
         cdr::StringList::const_iterator i = errList.begin();
         while (i != errList.end())
             xml += tagWrap (*i++, L"LinkErr");
@@ -783,7 +804,9 @@ cdr::String cdr::link::CdrLink::dumpString (
         str += ref;
 
     // List of errors
-    if (errCount) {
+    if (errCtl.getErrorCount() > 0) {
+        cdr::StringList errList;
+        errCtl.getErrorMsgs(errList);
         cdr::StringList::const_iterator i = errList.begin();
         while (i != errList.end())
             str += L" ERROR: " + *i++;
@@ -795,16 +818,28 @@ cdr::String cdr::link::CdrLink::dumpString (
 
 
 /**
- * Add an error message to a link object, incrementing the count
+ * Add an error message to a link object.
+ *
+ * The error is associated with an errCtl for this one link, not for
+ * the document as a whole.  The errors must be cumulated later.
  */
-
 void cdr::link::CdrLink::addLinkErr (
     cdr::String msg
 ) {
-    errList.push_back (msg);
-    ++errCount;
+    // Get context from CdrLink object into ValidationError object
+    errCtl.setElementContext(fldNode);
+
+    // And add the message
+    errCtl.addError (msg);
 }
 
+/**
+ * Get the count of errors for the current link
+ */
+int cdr::link::CdrLink::getErrorCount()
+{
+    return errCtl.getErrorCount();
+}
 
 /**
  * Validate links in a document and, optionally, update the link_net
@@ -813,13 +848,13 @@ void cdr::link::CdrLink::addLinkErr (
  * See CdrLink.h
  */
 
-int cdr::link::CdrSetLinks (
+int cdr::link::cdrSetLinks (
     cdr::dom::Node&         xmlNode,
     cdr::db::Connection&    dbConn,
     int                     ui,
     cdr::String             docTypeStr,
     cdr::ValidRule          validRule,
-    cdr::StringList&        errList
+    cdr::ValidationControl& errCtl
 ) {
     cdr::link::LnkList lnkList;     // List of all link objects from this doc
     cdr::StringSet uniqSet;         // For finding duplicate link info
@@ -836,13 +871,16 @@ int cdr::link::CdrSetLinks (
     cdr::db::ResultSet rs = select.executeQuery();
 
     if (!rs.next())
-        throw cdr::Exception (L"CdrSetLinks: Unknown doctype");
+        throw cdr::Exception (L"cdrSetLinks: Unknown doctype");
     docType = rs.getInt (1);
     SHOW_ELAPSED("doctype retrieved", setLinksTimer);
 
+    // Set the current error context to the top level
+    errCtl.setElementContext(xmlNode);
+
     // Build list of links found in this doc
     linkTree (dbConn, xmlNode, ui, docType, docTypeStr,
-              lnkList, uniqSet, fragSet, errList);
+              lnkList, uniqSet, fragSet, errCtl);
     SHOW_ELAPSED("back from linkTree", setLinksTimer);
 
     // Unless we're not validating
@@ -853,8 +891,8 @@ int cdr::link::CdrSetLinks (
         err_count = 0;
         while (i != lnkList.end()) {
             err_count += i->validateLink (dbConn, fragSet);
-            if (i->getErrCount() > 0)
-                errList.push_back (i->dumpString (dbConn));
+            if (i->getErrorCount() > 0)
+                errCtl.cumulateErrors (i->getErrCtl());
             ++i;
         }
         SHOW_ELAPSED("links validated", setLinksTimer);
@@ -862,8 +900,11 @@ int cdr::link::CdrSetLinks (
         // Check for missing fragments
         // This is not part of validateLink because the errors are not
         //   found in a link, but rather in the absence of a fragment
+        // Set the current error context to the top level.  It should
+        //   have changed after building the link tree
+        errCtl.setElementContext(xmlNode);
         err_count += checkMissedFrags (dbConn, ui, validRule,
-                                       fragSet, errList);
+                                       fragSet, errCtl);
         SHOW_ELAPSED("missing fragments checked", setLinksTimer);
     }
 
@@ -897,10 +938,10 @@ int cdr::link::CdrSetLinks (
     //      text to be deleted when copying from its input to its output.
     // XXXX
 
-    SHOW_ELAPSED("leaving CdrSetLinks", setLinksTimer);
+    SHOW_ELAPSED("leaving cdrSetLinks", setLinksTimer);
     return err_count;
 
-} // CdrSetLinks()
+} // cdrSetLinks()
 
 
 // See comments in CdrCommand.h
@@ -1233,7 +1274,7 @@ cdr::String cdr::listLinkTypes (
     cdr::db::ResultSet rs = stmt.executeQuery (qry);
 
     // Output transaction header
-    cdr::String resp = "<CdrListLinkTypesResp>\n";
+    cdr::String resp = L"<CdrListLinkTypesResp>\n";
 
     // Output each one
     while (rs.next())
@@ -1260,7 +1301,7 @@ cdr::String cdr::listLinkProps (
     cdr::db::ResultSet rs = stmt.executeQuery (qry);
 
     // Output transaction header
-    cdr::String resp = "<CdrListLinkPropsResp>\n";
+    cdr::String resp = L"<CdrListLinkPropsResp>\n";
 
     // Output each one
     cdr::String comment;
@@ -1503,15 +1544,15 @@ static void addLinkTarget (
  */
 
 static int linkTree (
-    cdr::db::Connection&  conn,
-    const cdr::dom::Node& topNode,
-    int                   docId,
-    int                   docType,
-    cdr::String&          docTypeStr,
-    cdr::link::LnkList&   lnkList,
-    cdr::StringSet&       uniqSet,
-    cdr::StringSet&       fragSet,
-    cdr::StringList&      errList
+    cdr::db::Connection&    conn,
+    const cdr::dom::Node&   topNode,
+    int                     docId,
+    int                     docType,
+    cdr::String&            docTypeStr,
+    cdr::link::LnkList&     lnkList,
+    cdr::StringSet&         uniqSet,
+    cdr::StringSet&         fragSet,
+    cdr::ValidationControl& errCtl
 ) {
     int  link_count = 0;            // Number of links found
     cdr::String frag,               // Fragment identifier in node
@@ -1531,7 +1572,6 @@ static int linkTree (
 
         // Only concerned with element nodes
         if (node.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
-
             const cdr::dom::Element& element
                      = static_cast<const cdr::dom::Element&> (node);
 
@@ -1574,6 +1614,7 @@ static int linkTree (
                 cdr::link::CdrLink lnk (conn, node, docId, docType,
                                         docTypeStr, refValue, lnkStyle);
 
+
                 // Is it a duplicate of a link object we've already seen?
                 // Can happen if two occurrences of a field both link
                 //   to the same object.
@@ -1610,7 +1651,7 @@ static int linkTree (
 
                 // If it was already there, declare an error
                 if (!ins_stat.second)
-                    errList.push_back (L"cdr:id \"" + frag +
+                    errCtl.addError (L"cdr:id \"" + frag +
                                        L"\" used more than once");
             }
 
@@ -1620,7 +1661,7 @@ static int linkTree (
                 // Process subtree
                 link_count += linkTree (conn, child, docId, docType,
                                         docTypeStr, lnkList, uniqSet,
-                                        fragSet, errList);
+                                        fragSet, errCtl);
             }
         }
 
@@ -1826,15 +1867,18 @@ void cdr::link::updateLinkNet (
  *  @param      fragSet     Reference to cdr::StringSet of fragment texts.
  *                           These are identifiers stored in cdr:ref
  *                           attributes in a document.
+ *  @param      errCtl      Append errors here.
+ *                           Should be pre-loaded with the current context
+ *                           set at the document element.
  *  @return                 Void.
  */
 
 static int checkMissedFrags (
-    cdr::db::Connection& conn,
-    int                  docId,
-    cdr::ValidRule       validRule,
-    cdr::StringSet&      fragSet,
-    cdr::StringList&     errList
+    cdr::db::Connection&    conn,
+    int                     docId,
+    cdr::ValidRule          validRule,
+    cdr::StringSet&         fragSet,
+    cdr::ValidationControl& errCtl
 ) {
     std::string qry;            // SQL query for database access
     cdr::String frag,           // Fragment id of link to our doc
@@ -1879,7 +1923,7 @@ static int checkMissedFrags (
 
                 // Were there unreported errors?
                 if (frag_errs > cdr::link::MaxFragMissErrors)
-                    errList.push_back (cdr::String::toString (frag_errs) +
+                    errCtl.addError (cdr::String::toString (frag_errs) +
                         L" documents link to missing cdr:ref '" +
                         frag + L"'.  Stopped listing them after " +
                         cdr::String::toString (cdr::link::MaxFragMissErrors) +
@@ -1894,7 +1938,7 @@ static int checkMissedFrags (
             // But don't report the same error more than some max
             //   number of times
             if (frag_errs++ < cdr::link::MaxFragMissErrors)
-                errList.push_back (L"Document " +
+                errCtl.addError (L"Document " +
                         cdr::String::toString (srcId) +
                         L" expects cdr:id='" + frag +
                         L"' but no such id found");

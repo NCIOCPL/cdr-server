@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.69 2007-10-30 21:43:54 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.70 2008-03-25 23:42:21 ameyer Exp $
  *
  */
 
@@ -67,7 +67,8 @@ const int MAX_SQLSERVER_INDEX_SIZE = 800;
 // Extracts the various elements from the CdrDoc for database update
 cdr::CdrDoc::CdrDoc (
     cdr::db::Connection& dbConn,
-    cdr::dom::Node& docDom
+    cdr::dom::Node& docDom,
+    bool withLocators
 ) : docDbConn (dbConn),
     comment (true),
     blobData (true),
@@ -87,6 +88,7 @@ cdr::CdrDoc::CdrDoc (
     revisedXml (L""),
     revFilterFailed (false),
     revFilterLevel (DEFAULT_REVISION_LEVEL),
+    errorIdXml (L""),
     needsReview (false),
     titleFilterId (0),
     title (L""),
@@ -105,6 +107,9 @@ cdr::CdrDoc::CdrDoc (
 
     // Get the document ID if present in the transaction
     textId = docElement.getAttribute (L"Id");
+
+    // Will we use cdr:eid attributes with this doc?
+    setLocators(withLocators);
 
     // If Id was passed, document must exist in database.
     if (textId.size() > 0) {
@@ -303,7 +308,8 @@ cdr::CdrDoc::CdrDoc (
 // Extracts the various elements from the database by document ID
 cdr::CdrDoc::CdrDoc (
     cdr::db::Connection& dbConn,
-    int docId
+    int docId,
+    bool withLocators
 ) : docDbConn (dbConn), Id (docId), warningCount (0),
     revFilterLevel (DEFAULT_REVISION_LEVEL)
  {
@@ -358,6 +364,9 @@ cdr::CdrDoc::CdrDoc (
     // Content or control type document
     conType = not_set;
 
+    // Will we use cdr:eid attributes with this doc?
+    setLocators(withLocators);
+
     // Don't know yet if this is a publishable version
     // Won't check database to find out unless we need that information
     verPubStatus = unknown;
@@ -384,6 +393,9 @@ cdr::CdrDoc::CdrDoc (
     // We haven't filtered this for insertion, deletion markup
     revisedXml = L"";
 
+    // We haven't added cdr:eid attributes
+    errorIdXml = L"";
+
     // We have not parsed the xml yet and don't know of anything wrong with it
     parsed    = false;
     malformed = false;
@@ -404,7 +416,8 @@ cdr::CdrDoc::CdrDoc (
 cdr::CdrDoc::CdrDoc (
     cdr::db::Connection& dbConn,
     int docId,
-    int verNum
+    int verNum,
+    bool withLocators
 ) : docDbConn (dbConn),
     comment (true),
     blobData (true),
@@ -430,6 +443,9 @@ cdr::CdrDoc::CdrDoc (
     conType (not_set),
     warningCount (0)
 {
+    // Will we use cdr:eid attributes with this doc?
+    setLocators(withLocators);
+
     // Get info from version control
     std::string qry =
         "SELECT v.val_status, v.val_date, v.publishable, v.title, v.xml, "
@@ -475,6 +491,17 @@ void cdr::CdrDoc::store ()
     if (getRevFilterLevel() != DEFAULT_REVISION_LEVEL)
         throw cdr::Exception(L"CdrDoc::store: RevisionFilterLevel cannot be "
                              L"overridden when saving a CDR document.");
+
+    // Filter the document to remove any cdr:eid attributes
+    // These should not be stored.  Checking here guarantees that they
+    //   won't be.
+    // As a simple optimization, we'll only call this if we find a cdr:eid
+    //   in a quick string scan
+
+    if (wcsstr(Xml.c_str(), L"cdr:eid") != NULL)
+        Xml = cdr::filterDocumentByScriptTitle (Xml,
+            L"Validation Error IDs: Delete all cdr:eid attributes",
+            docDbConn);
 
     // New record
     if (!Id) {
@@ -628,7 +655,7 @@ cdr::String cdr::repDoc (
     const cdr::dom::Node& node,
     cdr::db::Connection& conn
 ) {
-    // Call cdrPutDoc with flag indicating new document.
+    // Call cdrPutDoc with flag indicating we have an existing document.
     // Return result.
     return cdrPutDoc (session, node, conn, 0);
 }
@@ -686,6 +713,9 @@ static cdr::String cdrPutDoc (
 
     // Default reason is NULL created by cdr::String contructor
     cmdReason   = L"";
+
+    // Assume validation does not use cdr:eid error locators
+    bool withLocators = false;
 
     // Parse command to get document and relevant parts
     child = cmdNode.getFirstChild();
@@ -748,6 +778,13 @@ static cdr::String cdrPutDoc (
                                     L" requested in ValidationTypes='" +
                                     validationTypes + L"'");
                     }
+
+                    // User may also request cdr:eid error locator attributes
+                    if ((attr = attrMap.getNamedItem ("ErrorLocators"))
+                             != NULL)
+                        withLocators = cdr::ynCheck(attr.getNodeValue(),
+                             withLocators,
+                             L"ErrorLocators attribute on Validate element");
                 }
             }
 
@@ -789,7 +826,7 @@ static cdr::String cdrPutDoc (
     //   not parsed out by the above logic
     if (docNode == 0)
         throw cdr::Exception(L"cdrPutDoc: No 'CdrDoc' element in transaction");
-    cdr::CdrDoc doc (dbConn, docNode);
+    cdr::CdrDoc doc (dbConn, docNode, withLocators);
     SHOW_ELAPSED("CdrDoc constructed", incrementalTimer);
 
     // filter level.
@@ -950,7 +987,7 @@ static cdr::String cdrPutDoc (
         // Perform validation
         // execValidateDoc will set valStatus in the doc object
         // Will overwrite whatever is there
-        cdr::execValidateDoc (doc,cdr::UpdateUnconditionally,validationTypes);
+        cdr::execValidateDoc (&doc,cdr::UpdateUnconditionally,validationTypes);
 
         if (cmdPublishVersion) {
             // Set publishable status based on results
@@ -965,8 +1002,7 @@ static cdr::String cdrPutDoc (
 
                 // If the user was hoping for a publishable version,
                 //   set him straight.
-                doc.getErrList().push_back(L"Non-publishable version will "
-                                           L"be created.");
+                doc.addError(L"Non-publishable version will be created.");
                 cmdPublishVersion = false;
                 cmdVersion = true;
             }
@@ -987,11 +1023,11 @@ static cdr::String cdrPutDoc (
         //   was already parsed, or if not, parse it.  It also
         //   handles revision filtering before the parse.
         if (doc.parseAvailable())
-            cdr::link::CdrSetLinks (cdr::dom::Node(doc.getDocumentElement()),
+            cdr::link::cdrSetLinks (cdr::dom::Node(doc.getDocumentElement()),
                                     dbConn,
                                     doc.getId(), doc.getTextDocType(),
                                     cdr::UpdateLinkTablesOnly,
-                                    doc.getErrList());
+                                    doc.getValCtl());
         SHOW_ELAPSED("setting links", incrementalTimer);
     }
 
@@ -1058,9 +1094,19 @@ static cdr::String cdrPutDoc (
     cdr::String rtag = newrec ? L"Add" : L"Rep";
     cdr::String resp = cdr::String (L"  <Cdr") + rtag + L"DocResp>\n"
                      + L"   <DocId>" + doc.getTextId() + L"</DocId>\n"
-                     + doc.getErrString();
+                     + doc.getErrorXml();
+
+    // If we are processing a transaction that included validation,
+    //   and if the caller requested location information of errors,
+    //   and if there were errors,
+    // then:
+    //   Be sure that we echo back the document with cdr:eid attributes.
+    if (cmdValidate && doc.hasLocators() && doc.getErrorCount() > 0)
+        cmdEcho = true;
+
     if (cmdEcho)
-        resp += cdr::getDocString(doc.getTextId(), dbConn, true, true) + L"\n";
+        // resp += cdr::getDocString(doc.getTextId(), dbConn, true, true) + L"\n";
+        resp += doc.getSerialXml();
 
     resp += L"  </Cdr" + rtag + L"DocResp>\n";
     SHOW_ELAPSED("command response ready", incrementalTimer);
@@ -1068,6 +1114,49 @@ static cdr::String cdrPutDoc (
     return resp;
 
 } // cdrPutDoc
+
+
+// Access count of error messages in ValidationControl
+int cdr::CdrDoc::getErrorCount() const
+{
+    return valCtl.getErrorCount();
+}
+
+/*
+ * Produce a serialized version of the XML document, including
+ * some standard CdrDoc, CdrDocCtl, and CdrDocXml elements as used
+ * in GetCdrDoc.getDocString() functions.
+ *
+ * See NOTES in CdrDoc.h.
+ */
+cdr::String cdr::CdrDoc::getSerialXml()
+{
+    // Determine which string to send to the caller
+    // If caller wanted cdr:eids, and there are errors to report:
+    //    Give him the one with cdr:eids
+    // Else
+    //    Give him a plain doc
+    cdr::String xmlStr = hasLocators() && getErrorCount() ? errorIdXml : Xml;
+
+    // Sanity check for debugging
+    if (xmlStr == errorIdXml && errorIdXml.size() == 0)
+        throw cdr::Exception(
+                L"BUG! CdrDoc::getSerialXml expected errorIdXml to exist, "
+                L"but it doesn't");
+
+    // Build the CdrDoc string.
+    cdr::String docStr = cdr::String(L"<CdrDoc Type='")
+                       + textDocType
+                       + L"' Id='" + textId + L"'>\n"
+                       + L"<CdrDocCtl>\n"
+                       + L" <DocTitle>" + title + L"</DocTitle>\n"
+                       + L"</CdrDocCtl>\n"
+                       + cdr::makeDocXml(xmlStr)
+                       + L"\n</CdrDoc>\n";
+
+    return docStr;
+
+} // getSerialXml
 
 
 /**
@@ -1111,7 +1200,7 @@ int deleteDoc (
     if (eCount > 0)
         throw cdr::Exception(L"deleteDoc: cannot delete " + docIdString +
                              L", which is in the external mapping table");
-    
+
     // From now on, do everything or nothing
     // setAutoCommit() checks state first, so it won't end an existing
     //   transaction
@@ -1136,13 +1225,13 @@ int deleteDoc (
     }
 
     // Update the link net to delete links from this document
-    // If validation was requested, we tell CdrDelLinks to abort if
+    // If validation was requested, we tell cdrDelLinks to abort if
     //   there are any links _to_ this document
     cdr::ValidRule vRule = validate ? cdr::UpdateIfValid :
                                       cdr::UpdateUnconditionally;
+    int errCount = cdr::link::cdrDelLinks (conn, docId, vRule, errList);
 
-    int errCount = cdr::link::CdrDelLinks (conn, docId, vRule, errList);
-
+    // Proceed if no errors, or we don't care if there were errors
     if (errCount == 0 || vRule == cdr::UpdateUnconditionally) {
 
         // Proceed with deletion
@@ -1194,7 +1283,7 @@ cdr::String cdr::delDoc (
     bool        cmdValidate;    // True=Validate that nothing links to doc
     cdr::dom::Node child,       // Child node in command
                    docNode;     // Node containing CdrDoc
-    cdr::StringList errList;    // List of errors from CdrDelLinks
+    cdr::StringList errList;    // List of errors from cdrDelLinks
 
 
     // Default values, may be replace by elements in command
@@ -1334,6 +1423,29 @@ bool cdr::CdrDoc::parseAvailable ()
 
 } // parseAvailable
 
+/**
+ * Get XML modified with cdr:eid ID attributes on each element for use
+ * in validation.
+ */
+cdr::String cdr::CdrDoc::getErrorIdXml()
+{
+    // If we've already done this, don't do it again, just
+    //   return what we've already got
+    if (errorIdXml.size() != 0)
+        return errorIdXml;
+
+    // Invoke the filter that will strip any old error IDs and
+    //   add new ones
+    // We strip old ones because new elements may be added that don't
+    //   have the markup
+    // For now, we'll let any filter exception bubble up.  May change
+    //   that later if need
+    errorIdXml = cdr::filterDocumentByScriptTitle (Xml,
+            L"Validation Error IDs: Delete and Add cdr:eid attributes",
+            docDbConn);
+
+    return errorIdXml;
+} // getErrorIdXml
 
 /**
  * Return an XML string with revision markup filtered out as per the
@@ -1341,7 +1453,7 @@ bool cdr::CdrDoc::parseAvailable ()
  */
 
 cdr::String cdr::CdrDoc::getRevisionFilteredXml (
-    bool        getIfUnfiltered
+    bool getIfUnfiltered
 ) {
     // String to receive warnings, errors, etc. from XSLT
     cdr::String errorStr = L"";
@@ -1364,8 +1476,15 @@ cdr::String cdr::CdrDoc::getRevisionFilteredXml (
             (L"useLevel", cdr::String::toString (revFilterLevel)));
 
         try {
-            revisedXml = cdr::filterDocumentByScriptTitle (
-                Xml, L"Revision Markup Filter", docDbConn, &errorStr, &pv);
+            // If validation requires error markup, filter markup version
+            if (valCtl.hasLocators())
+                revisedXml = cdr::filterDocumentByScriptTitle (
+                        getErrorIdXml(), L"Revision Markup Filter",
+                        docDbConn, &errorStr, &pv);
+            else
+                revisedXml = cdr::filterDocumentByScriptTitle (
+                        Xml, L"Revision Markup Filter",
+                        docDbConn, &errorStr, &pv);
         }
         catch (cdr::Exception& e) {
             // Don't try filtering this doc again

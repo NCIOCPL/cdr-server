@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.22 2006-09-19 22:26:50 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.23 2008-03-25 23:42:46 ameyer Exp $
  *
  */
 
@@ -17,6 +17,7 @@
 #include "CdrString.h"
 #include "CdrDbConnection.h"
 #include "CdrBlob.h"
+#include "CdrValidationCtl.h"
 
 /**@#-*/
 
@@ -124,8 +125,12 @@ namespace cdr {
              *
              *  @param  docDom      Reference to a dom parse of a CdrDoc
              *                      as would be passed in a CdrCommandSet.
+             *
+             *  @param withLocators True = use cdr:eid attributes in
+             *                      validation.
              */
-            CdrDoc (cdr::db::Connection& dbConn, cdr::dom::Node& docDom);
+            CdrDoc (cdr::db::Connection& dbConn, cdr::dom::Node& docDom,
+                    bool withLocators=false);
 
             /**
              * Create a CdrDoc object using a passed document ID.
@@ -136,8 +141,12 @@ namespace cdr {
              *
              *  @param  docId       CDR document ID for a document currently
              *                      in the database.
+             *
+             *  @param withLocators True = use cdr:eid attributes in
+             *                      validation.
              */
-            CdrDoc (cdr::db::Connection& dbConn, const int docId);
+            CdrDoc (cdr::db::Connection& dbConn, const int docId,
+                    bool withLocators=false);
 
             /**
              * Create a CdrDoc object using a passed document ID and
@@ -153,9 +162,12 @@ namespace cdr {
              *                      in the database.
              *
              *  @param  verNum      Version number, 0 = CWD.
+             *
+             *  @param withLocators True = use cdr:eid attributes in
+             *                      validation.
              */
             CdrDoc (cdr::db::Connection& dbConn, const int docId,
-                    const int verNum);
+                    const int verNum, bool withLocators=false);
 
             /**
              * Delete a CdrDoc object
@@ -217,12 +229,34 @@ namespace cdr {
              *  @param getIfUnfiltered  True=Return unfiltered Xml if
              *                            revision filtering fails for any
              *                            reason.  Note that raw Xml may
-             *                            well be unusuable if filtering
+             *                            well be unusable if filtering
              *                            didn't work.
              *                          Default = false;
              *  @return                 Filtered (or raw) XML, or L"".
              */
             cdr::String getRevisionFilteredXml (bool getIfUnfiltered=false);
+
+            /**
+             * If it has not already been done, pass the XML for the document
+             * through filtering to add or replace cdr:eid attributes to
+             * every element.
+             *
+             * These attributes are used during validation to enable the
+             * validation program to insert cdr:eref references to the
+             * specific element instance that had a problem.
+             *
+             * getErrorIdXml() MUST be called before getRevisionFilteredXML()
+             * if error markup will be used.  That function produces the XML
+             * string that will be validated.  If this function is not called
+             * first, then there will be no error markup in the revision
+             * filtered XML.
+             *
+             * XML with error markup will be saved in this.errorIdXml.  A
+             * second call to the function will return the saved copy.
+             *
+             *  @return                 XML with cdr:eid attributes.
+             */
+            cdr::String getErrorIdXml();
 
             /**
              * Mark a document as malformed.
@@ -255,6 +289,30 @@ namespace cdr {
              * validate the document be sure the id he creates is unique.
              */
             void genFragmentIds ();
+
+            /**
+             * Get a serialized version of the document using one of
+             * the in-memory XML strings, wrapped in a CdrDoc/CdrDocXml
+             * wrapper.
+             *
+             * NOTES:
+             *   The GetCdrDoc module was written before we created a CdrDoc
+             *   module to encapsulate handling of documents in the system
+             *   (even then we were too old to blame our youthful inexperience
+             *   for that.)
+             *
+             *   If we ever re-write the CDR, for example in C#, we should
+             *   definitely merge the functionality of the GetCdrDoc module
+             *   into the CdrDoc module and eliminate a separate, non-object
+             *   oriented approach to fetching serialized versions of
+             *   documents.
+             *
+             *   This version only implements what we need for now.  more may
+             *   be added later if we have a need.
+             *
+             * @return          Serial string within wrapper.
+             */
+            cdr::String getSerialXml();
 
             /**
              * Update the status of a protocol.
@@ -301,6 +359,16 @@ namespace cdr {
              */
             bool isContentType();
 
+            /**
+             * Add an error message pertaining to this document.
+             * Pass through to ValidationControl.addError().
+             *
+             *  @param msg              Error message.
+             */
+            void addError(cdr::String msg) {
+                valCtl.addError(msg);
+            }
+
             // Accessors
             int getId()                    {return Id;}
             int getDocType()               {return DocType;}
@@ -323,14 +391,22 @@ namespace cdr {
             cdr::VerPubStatus getVerPubStatus() {return verPubStatus;}
             void setVerPubStatus(cdr::VerPubStatus pvs) {verPubStatus=pvs;}
 
+            // Return a reference to the ValidationControl object
+            cdr::ValidationControl& getValCtl() { return valCtl; }
+
+            // Set/get ValidationControl locator information
+            // Pass through to ValidationControl, q.v.
+            void setLocators(bool locators) { valCtl.setLocators(locators); }
+            bool hasLocators() { return valCtl.hasLocators(); }
+
             // Get errors as an STL list of strings
             cdr::StringList& getErrList() {return errList;}
 
-            // Get errors packed as a single string - only if there are any
-            cdr::String getErrString() {
-                if (errList.size() > 0)
-                    return cdr::packErrors(errList);
-                return L"";
+            // Get errors as XML
+            // Pass through to ValidationControl
+            // Gets errors from whereever they are
+            cdr::String getErrorXml () {
+                return valCtl.getErrorXml(errList);
             }
 
             /**
@@ -350,6 +426,14 @@ namespace cdr {
              *  @return            number of warnings.
              */
             int getWarningCount() const { return warningCount; }
+
+            /**
+             * Access to count of error messages generated by
+             * document validation.
+             *
+             *  @return            number of warnings.
+             */
+            int getErrorCount() const;
 
             /**
              * Encapsulate the setting of a validation error or warning
@@ -388,6 +472,9 @@ namespace cdr {
             cdr::String Xml;            // Actual document as XML, not CDATA
             cdr::String revisedXml;     // After any filtering of insertion
                                         //   and deletion markup
+            cdr::String errorIdXml;     // XML sent from the client, with the
+                                        //   addition of cdr:eid attrs, only
+                                        //   needed if validating
             cdr::String schemaXml;      // Schema text for this doc
             cdr::Blob   blobData;       // Associated non-XML, if any
                                         //   Only loaded if exists and needed
@@ -406,6 +493,7 @@ namespace cdr {
             cdr::StringList errList;    // Errors from validation, parsing,
                                         //   filtering, or wherever.
             ContentOrControl conType;   // Treat as content or control info
+            cdr::ValidationControl valCtl; // Holds error info
 
             // Connection to the database
             cdr::db::Connection& docDbConn;
