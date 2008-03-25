@@ -1,9 +1,14 @@
 /*
- * $Id: CdrGetDoc.h,v 1.14 2006-05-04 22:54:40 ameyer Exp $
+ * $Id: CdrGetDoc.h,v 1.15 2008-03-25 23:56:50 ameyer Exp $
  *
  * Internal support functions for CDR document retrieval.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2006/05/04 22:54:40  ameyer
+ * Added optional maxDate limit parameter to one of the getDocString() funcs.
+ * Added prototype for previously static function now made external
+ * getDocTypeName().  It's now used in more than one module.
+ *
  * Revision 1.13  2005/10/27 12:37:58  bkline
  * Support for new function to calculate an artificial "verification
  * date" added.
@@ -195,6 +200,19 @@ namespace cdr {
                                        cdr::db::Connection&    conn,
                                        int elements
                                            = cdr::DocCtlComponents::std);
+
+    /**
+     * Just gets the document XML by itself, wrapped in a CDATA wrapper,
+     * inside a CdrDocXml element.
+     *
+     * This is used as a subroutine by the getDocString() functions, but
+     * can also be called by itself.
+     *
+     * @param xml           The XML string to wrap.
+     *
+     * @return              xml, wrapped in CdrDocXml/CDATA section.
+     */
+    extern cdr::String makeDocXml(const cdr::String& xml);
 
     /**
      * Finds the date the specified document was first published, if

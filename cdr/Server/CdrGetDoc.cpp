@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.35 2007-07-06 04:16:09 bkline Exp $
+ * $Id: CdrGetDoc.cpp,v 1.36 2008-03-25 23:57:17 ameyer Exp $
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2007/07/06 04:16:09  bkline
+ * Added missing close() calls for db prepared statements.
+ *
  * Revision 1.34  2006/05/17 03:48:13  ameyer
  * Added support for maximum document updated date limitation.
  *
@@ -131,7 +134,6 @@
 // Local functions.
 static bool        isReadyForReview(int, cdr::db::Connection&);
 static cdr::String fixString(const cdr::String& s);
-static cdr::String makeDocXml(const cdr::String& xml);
 static cdr::String makeDocBlob(const cdr::Blob& blob);
 static cdr::String readOnlyWrap(const cdr::String text, const cdr::String tag);
 static cdr::String denormalizeLinks(const cdr::String&, cdr::db::Connection&,
@@ -400,7 +402,7 @@ static cdr::String readOnlyWrap (
  *  @return         CdrDocXml element containing CDATA section
  */
 
-static cdr::String makeDocXml (
+cdr::String cdr::makeDocXml (
     const cdr::String& xml
 ) {
     return (L"<CdrDocXml><![CDATA[" + xml +  L"]]>\n</CdrDocXml>\n");
