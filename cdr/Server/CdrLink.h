@@ -1,10 +1,13 @@
 /*
- * $Id: CdrLink.h,v 1.11 2006-11-28 22:42:19 ameyer Exp $
+ * $Id: CdrLink.h,v 1.12 2008-03-25 23:44:20 ameyer Exp $
  *
  * Header for Link Module software - to maintain the link_net
  * table describing the link relationships among CDR documents.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2006/11/28 22:42:19  ameyer
+ * Defines for link_chk types.
+ *
  * Revision 1.10  2006/10/06 02:41:27  ameyer
  * Minor modifications to support link target version type distinctions.
  *
@@ -193,6 +196,13 @@ namespace cdr {
             void CdrLink::addLinkErr (cdr::String);
 
             /**
+             * Get the count of errors for one link.
+             *
+             * @return              Count for this one link.
+             */
+            int CdrLink::getErrorCount ();
+
+            /**
              * Set the link to not be saved in the event of certain errors
              *
              * @param  s            New saveLink value.
@@ -220,13 +230,17 @@ namespace cdr {
             cdr::String getChkType       (void) { return chkType; }
             cdr::dom::Node& getFldNode   (void) { return fldNode; }
             bool        getHasData       (void) { return hasData; }
-            StringList  getErrList       (void) { return errList; }
-            int         getErrCount      (void) { return errCount; }
             LinkStyle   getStyle         (void) { return style; }
             bool        getSaveLink      (void) { return saveLink; }
+            cdr::ValidationControl getErrCtl (void) { return errCtl; }
 
 
         private:
+            // CdrLink objects are shallow copied via push_back to a LnkList.
+            // Beware using references here.
+            // The objects are small enough that I haven't bothered to
+            //   try to optimize things with pointers, but that could
+            //   be done to save memory and copy time.
             int         type;           // From link_type table
             cdr::String typeStr;        // Human readable form of same
             int         srcId;          // Doc ID of source of link
@@ -241,13 +255,12 @@ namespace cdr {
             cdr::String trgActiveStat;  // 'A'=active, 'D'=deleted target doc
             cdr::String ref;            // Full reference as string
             cdr::String chkType;        // Check for P)ub V)er or C)WD target
-            cdr::String trgFrag;        // #Fragment part of ref, if ay
-            cdr::dom::Node& fldNode;    // Reference to DOM node in parsed xml
+            cdr::String trgFrag;        // #Fragment part of ref, if any
+            cdr::dom::Node fldNode;     // DOM node in parsed xml
             bool        hasData;        // True=denormalized data in node
             LinkStyle   style;          // cdr:ref, cdr:href, xlink:href
             bool        saveLink;       // True=Save to link_net
-            StringList  errList;        // List of error messages
-            int         errCount;       // Number in errList
+            ValidationControl errCtl;   // Holds error messages
     };
 
     /**
@@ -275,13 +288,13 @@ namespace cdr {
      *                             ValidateOnly
      *                             UpdateIfValid
      *                             UpdateUnconditionally
-     *  @param      errlist     Reference to string to receive errors.
+     *  @param      errCtl      Reference to object to receive errors.
      *  @return                 Count of errors.
      *                           0 = complete success.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern int CdrSetLinks (cdr::dom::Node&, cdr::db::Connection&,
-                   int, cdr::String, cdr::ValidRule, cdr::StringList&);
+    extern int cdrSetLinks (cdr::dom::Node&, cdr::db::Connection&,
+                   int, cdr::String, cdr::ValidRule, cdr::ValidationControl&);
 
     /**
      * Delete all link table entries for which a document is the source.
@@ -293,10 +306,10 @@ namespace cdr {
      *
      * Called by cdrDelDoc() when deleting a document.
      *
-     *  @param      conn        Reference to the connection object for the
+     *  @param      dbConn      Reference to the connection object for the
      *                           CDR database.
      *  @param      docId       Document UI, as an integer.
-     *  @param      validRule   Relationship between validation and link_net
+     *  @param      vRule       Relationship between validation and link_net
      *                           update.  Values are:
      *                             ValidateOnly
      *                             UpdateIfValid
@@ -306,7 +319,7 @@ namespace cdr {
      *                           0 = complete success.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern int CdrDelLinks (cdr::db::Connection&, int, cdr::ValidRule,
+    extern int cdrDelLinks (cdr::db::Connection&, int, cdr::ValidRule,
                             cdr::StringList&);
 
     /**
