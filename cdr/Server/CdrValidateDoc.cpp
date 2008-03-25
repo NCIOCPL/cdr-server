@@ -1,10 +1,13 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.24 2008-01-29 15:16:38 bkline Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.25 2008-03-25 23:56:03 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2008/01/29 15:16:38  bkline
+ * Added check for private use characters.
+ *
  * Revision 1.23  2005/03/04 02:58:56  ameyer
  * Small changes for new Xerces DOM parser.
  *
@@ -109,13 +112,192 @@
 
 // Local functions.
 static cdr::String makeResponse(
-        const cdr::String&     docIdString,
-        const cdr::String&     status,
-        const cdr::StringList& errors);
+        const cdr::String& docIdString,
+        const cdr::String& status,
+        const cdr::String& errors,
+        const cdr::String& docXml);
 static void setValStatus(
         cdr::db::Connection&   conn,
         int                    docId,
         const wchar_t*         status);
+
+// Default constructor for element context of a validation error, no node yet
+cdr::ValidationElementContext::ValidationElementContext()
+{
+    // No context element has yet been identified
+    hasContext  = false;
+}
+// Constructor for element context of a validation error with a node
+cdr::ValidationElementContext::ValidationElementContext(
+    cdr::dom::Node& cNode
+) {
+    contextNode = cNode;
+    hasContext  = true;
+}
+
+// Access the cdr:eid associated with the context node.
+cdr::String cdr::ValidationElementContext::getErrorIdValue()
+{
+    if (!hasContext)
+        throw new cdr::Exception(L"getErrorIdValue: "
+                L"Attempt to get cdr:eid attribute for missing context node");
+
+    cdr::String attrValue = contextNode.getAttribute("cdr:eid");
+    if (attrValue.empty()) {
+        cdr::String elemName = contextNode.getNodeName();
+
+        throw cdr::Exception(L"getErrorIdValue: "
+                L"No cdr:eid associated with context element '" +
+                elemName + L"'");
+    }
+
+    return attrValue;
+}
+
+// Constructor for internal representation of one validation error
+cdr::ValidationError::ValidationError(
+    ValidationElementContext& ctxt,
+    cdr::String&              msg,
+    cdr::String&              errorId
+) : errCtxt(ctxt), errMsg(msg), errId(errorId) {};
+
+// Extract an error in XML string format
+cdr::String cdr::ValidationError::toXmlString(
+    bool includeLocator
+) {
+    // Wrap the error message
+    cdr::String errStr = L"<Err";
+    if (includeLocator && hasContext()) {
+        // If there was an errorId specifically set, use it
+        cdr::String eref = errId;
+
+        // If not specifically set, and a context node exists, use that
+        if (eref.size() == 0 && hasContext())
+            eref = errCtxt.getErrorIdValue();
+
+        if (eref.size() > 0)
+            errStr += L" cdr:eref='" + eref + L"'";
+    }
+    // Add the error message and terminator
+    errStr += L">" + errMsg + L"</Err>\n";
+
+    return errStr;
+}
+
+// Constructor for controls governing one validation
+cdr::ValidationControl::ValidationControl()
+{
+    // Assume no error locators unless they are requested later
+    usingErrorIds = false;
+
+    // Uses default contstructor for currentCtxt - no context yet
+    currentContextSet = false;
+}
+
+// Remember what element we're validating
+void cdr::ValidationControl::setElementContext(
+    cdr::dom::Node& ctxtNode
+) {
+    currentCtxt       = cdr::ValidationElementContext(ctxtNode);
+    currentContextSet = true;
+}
+
+// Add one error
+void cdr::ValidationControl::addError(
+    cdr::String msg,
+    cdr::String errorId
+) {
+    // Create the error using the current context node for context
+    ValidationError ve(currentCtxt, msg, errorId);
+
+    // Add it to the sequence of errors
+    errVector.push_back(ve);
+}
+
+// Append errors from another ValidationControl to this one
+void cdr::ValidationControl::cumulateErrors(
+    cdr::ValidationControl& errSrc
+) {
+    // If there are any errors
+    if (errSrc.getErrorCount() > 0) {
+        std::vector<ValidationError>::const_iterator ei =
+                                      errSrc.errVector.begin();
+        // Add each one from the source vector to this vector
+        while (ei != errSrc.errVector.end())
+            errVector.push_back(*ei++);
+    }
+}
+
+// How many errors have been recorded so far
+int cdr::ValidationControl::getErrorCount() const
+{
+    return errVector.size();
+}
+
+// Say whether we want to track error locations (cdr:eid values).
+void cdr::ValidationControl::setLocators(bool locators)
+{
+    usingErrorIds = locators;
+}
+
+// Are we tracking error locators (cdr:eid values)?
+bool cdr::ValidationControl::hasLocators()
+{
+    return usingErrorIds;
+}
+
+// Get String representation of errors
+void cdr::ValidationControl::getErrorMsgs(
+    cdr::StringList& msgList
+) {
+    // Iterate through all error messages, adding them to the list
+    std::vector<cdr::ValidationError>::iterator ei = errVector.begin();
+    while (ei != errVector.end())
+        msgList.push_back(ei->getMessage());
+}
+
+// Get XML string representing all errors
+cdr::String cdr::ValidationControl::getErrorXml(
+    StringList& errList
+) {
+    // Assemble numbers here
+    wchar_t buf[80];
+
+    // Assemble messages here
+    cdr::String xml = L"";
+
+    // Number of errors
+    size_t count = errVector.size() + errList.size();
+
+    // Errors not associated with specific elements, cumulated in a string
+    // We may not need this anymore, but it doesn't hurt to leave it in
+    if (errList.size() > 0) {
+        cdr::StringList::const_iterator i = errList.begin();
+        while (i != errList.end())
+            xml += L"    <Err>" + *i++ + L"</Err>\n";
+    }
+
+    // String version of the count
+    swprintf(buf, L"'%d'", count);
+
+    // Add each error
+    // Whitespace is just for style compatibility with older code
+    if (errVector.size() > 0) {
+        std::vector<ValidationError>::iterator ei = errVector.begin();
+        while (ei != errVector.end()) {
+            xml += (*ei).toXmlString(usingErrorIds);
+            ++ei;
+        }
+    }
+
+    // Add wrapper
+    cdr::String countStr(buf);
+    xml = L"   <Errors count=" + countStr + L">\n" + xml + L"   </Errors>\n";
+
+    return xml;
+}
+
+
 
 /**
  * Validates a CDR document, using the following steps.
@@ -163,6 +345,10 @@ cdr::String cdr::validateDoc(
         throw cdr::Exception(err.c_str());
     }
 
+    // Find out whether the client wants cdr:eid attributes sent back to him
+    bool withLocators = cdr::ynCheck(commandElement.getAttribute(
+                                     L"ErrorLocators"), false);
+
     try {
         // Extract the document or its ID from the command.
         cdr::dom::Node docNode;
@@ -175,7 +361,7 @@ cdr::String cdr::validateDoc(
                     // Document is right here
                     // Create an object for it
                     docNode = child;
-                    docObj = new cdr::CdrDoc (conn, docNode);
+                    docObj = new cdr::CdrDoc (conn, docNode, withLocators);
 
                     // This version assumes that doc is passed in solely
                     //   for validation.
@@ -191,7 +377,8 @@ cdr::String cdr::validateDoc(
                     docIdString = cdr::dom::getTextContent (child);
 
                     // Construct object from the database
-                    docObj = new cdr::CdrDoc (conn, docIdString.extractDocId());
+                    docObj = new cdr::CdrDoc (conn, docIdString.extractDocId(),
+                                              withLocators);
 
                     // Make sure the caller tells the truth about the DocType.
                     if (docTypeString != docObj->getTextDocType())
@@ -223,7 +410,7 @@ cdr::String cdr::validateDoc(
             throw cdr::Exception(L"Both DocId and CdrDoc specified");
 
         // Execute validation
-        valStatus = cdr::execValidateDoc (*docObj, validRule, validationTypes);
+        valStatus = cdr::execValidateDoc (docObj, validRule, validationTypes);
     }
 
     // Cleanup from any exception, anywhere in or beneath us
@@ -239,11 +426,21 @@ cdr::String cdr::validateDoc(
     // Delete temporary object and return results
     // Note references to errList and textId should preserve contents
     //   of these strings beyond docObj destruction
-    docIdString                = docObj->getTextId();
-    cdr::StringList docErrList = docObj->getErrList();
+    docIdString         = docObj->getTextId();
+    cdr::String xmlErrs = docObj->getErrorXml();
+
+    // If we need to return XML with cdr:eid attributes, fetch it
+    cdr::String xmlToSend = L"";
+    if (docObj->hasLocators() && docObj->getErrorCount() > 0)
+        xmlToSend = docObj->getSerialXml();
+
+    // Cleanup memory, we've extracted everything we need
     delete docObj;
-    return makeResponse (docIdString, valStatus, docErrList);
-}
+
+    // Return response
+    return makeResponse (docIdString, valStatus, xmlErrs, xmlToSend);
+
+} // validateDoc
 
 
 /*
@@ -256,65 +453,78 @@ cdr::String cdr::validateDoc(
  */
 
 cdr::String cdr::execValidateDoc (
-    cdr::CdrDoc&         docObj,
+    cdr::CdrDoc          *docObj,
     cdr::ValidRule       validRule,
     const cdr::String&   validationTypes
 ) {
     // Should not get here for control docs, but secondary check just in case
     // Just say it's valid if this is one of them.
-    if (docObj.isControlType())
+    if (docObj->isControlType())
         return L"V";
 
     bool              parseOK = false;
-    cdr::String       docTypeString = docObj.getTextDocType();
+    cdr::String       docTypeString = docObj->getTextDocType();
 
     // Document status: 'V'alid, 'I'nvalid, or 'M'alformed
     // Invalid until found otherwise
     const wchar_t* status = L"I";
 
     // Will append to the error list from the document object
-    cdr::StringList& errList = docObj.getErrList();
+    // XXX OBSOLETE: cdr::StringList& errList = docObj->getErrList();
 
-    // Check for private-use characters, which we don't allow (request #3823).
-    cdr::String serializedDoc = docObj.getXml();
+    // Check for private-use characters, which we don't allow (request #3823)
+    // XXX THIS NEW FEATURE IS ALREADY OBSOLETE
+    // XXX REPLACEMENT SHOULD:
+    //     IF errorIdXml IS AVAILABLE:
+    //         GET IT
+    //         MARKUP CHARACTER WITH THE PRIVATE USE MARKUP
+    //     ELSE
+    //         NO MARKUP
+    //     FIND OUT IF BOB HAS A DIFFERENT PLAN
+    //     THEN ADD THE ERROR MESSAGE AS BELOW
+    /*
+    cdr::String serializedDoc = docObj->getXml();
     for (size_t i = 0; i < serializedDoc.size(); ++i) {
         unsigned int c = (unsigned int)serializedDoc[i];
         if (c >= 0xE000 && c <= 0xF8FF) {
             wchar_t err[80];
             swprintf(err, L"private use character U+%04X at position %u",
                      c, i + 1);
-            errList.push_back(err);
+            docObj->addError(err);
         }
     }
+    */
 
     // Get a parse tree for the XML
-    if (docObj.parseAvailable()) {
-        cdr::dom::Element docXml = docObj.getDocumentElement();
+    if (docObj->parseAvailable()) {
+        cdr::dom::Element docXml = docObj->getDocumentElement();
 
         // Validate the document against the schema if appropriate.
         if (validationTypes.empty()
         ||   validationTypes.find(L"Schema") != validationTypes.npos) {
             cdr::validateDocAgainstSchema (docXml, docTypeString,
-                                           docObj.getConn(), errList);
+                                        docObj->getConn(), docObj->getValCtl());
 
             // If there were schema errors and we aren't supposed to update
             //   the database in the event of errors, reset the flag to
             //   prevent updates
-            if (validRule == cdr::UpdateIfValid && errList.size() > 0)
+            if (validRule == cdr::UpdateIfValid && docObj->getErrorCount() > 0)
                 validRule = cdr::ValidateOnly;
         }
 
         // Validate links if appropriate
         if (validationTypes.empty()
-        ||   validationTypes.find(L"Links") != validationTypes.npos)
-            cdr::link::CdrSetLinks (cdr::dom::Node(docXml),
-                                    docObj.getConn(), docObj.getId(),
-                                    docTypeString, validRule, errList);
+                || validationTypes.find(L"Links") != validationTypes.npos) {
+            cdr::link::cdrSetLinks ((cdr::dom::Node) docXml,
+                                    docObj->getConn(), docObj->getId(),
+                                    docTypeString, validRule,
+                                    docObj->getValCtl());
+        }
     }
 
     else {
         // Add this to the error messages.  Parse error msg already there
-        errList.push_back (L"Document malformed.  Validation not performed");
+        docObj->addError (L"Document malformed.  Validation not performed");
 
         // Set status in databse to malformed
         status = L"M";
@@ -322,16 +532,16 @@ cdr::String cdr::execValidateDoc (
 
     // If not malformed, note the outcome of the validation.
     if (wcscmp(status, L"M")) {
-        size_t warningCount = static_cast<size_t>(docObj.getWarningCount());
-        bool invalid = errList.size() > warningCount;
+        int warningCount = docObj->getWarningCount();
+        bool invalid = docObj->getErrorCount() > warningCount;
         status = invalid ? L"I" : L"V";
     }
 
     // Update database and object status
-    docObj.setValStatus(status);
+    docObj->setValStatus(status);
     if (validRule == cdr::UpdateUnconditionally ||
-            (validRule == cdr::UpdateIfValid && errList.size() == 0))
-        setValStatus (docObj.getConn(), docObj.getId(), status);
+            (validRule == cdr::UpdateIfValid && docObj->getErrorCount() == 0))
+        setValStatus (docObj->getConn(), docObj->getId(), status);
 
     // Report the outcome
     return status;
@@ -347,8 +557,6 @@ cdr::String cdr::execValidateDoc (
  *  @param  docElem             top level element for CdrDoc element
  *  @param  docTypeName         string for name of document's type
  *  @param  conn                reference to CDR database connection object
- *  @param  errors              vector of strings to be populated by this
- *                              function
  *
  *  @exception  cdr::Exception  if database or parsing error encountered
  */
@@ -356,8 +564,8 @@ void cdr::validateDocAgainstSchema(
         cdr::dom::Element&              docElem,
         const cdr::String&              docTypeName,
         cdr::db::Connection&            conn,
-        cdr::StringList&                errors)
-{
+        ValidationControl&              errCtl
+) {
     // Go get the schema for the document's type.
     std::string query = "SELECT xml"
                         "  FROM document,"
@@ -387,26 +595,31 @@ void cdr::validateDocAgainstSchema(
 
     cdr::xsd::validateDocAgainstSchema(docElem,
                                   parser.getDocument().getDocumentElement(),
-                                  errors, &conn);
+                                  errCtl, &conn);
 }
 
 /**
  * Sends a response buffer to the client reporting the outcome of the
  * document validation process.
  */
-cdr::String makeResponse(const cdr::String&     docId,
-                         const cdr::String&     status,
-                         const cdr::StringList& errors)
+cdr::String makeResponse(const cdr::String& docId,
+                         const cdr::String& status,
+                         const cdr::String& errors,
+                         const cdr::String& xmlDoc)
 {
-    cdr::String response = L"  <CdrValidateDocResp>\n"
+    // Invariant part of response
+    cdr::String response = L"  <CdrValidateDocResp "
+                           L"xmlns:cdr='cips.nci.nih.gov/cdr'>\n"
                            L"   <DocId>"
                          + docId
                          + L"</DocId>\n   <DocStatus>"
                          + status
-                         + L"</DocStatus>\n";
-    if (errors.size() > 0)
-        response += cdr::packErrors(errors);
-    return response + L"  </CdrValidateDocResp>\n";
+                         + L"</DocStatus>\n"
+                         + errors
+                         + xmlDoc
+                         + L"  </CdrValidateDocResp>\n";
+
+    return response;
 }
 
 /**
