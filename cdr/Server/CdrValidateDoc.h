@@ -1,9 +1,12 @@
 /*
- * $Id: CdrValidateDoc.h,v 1.7 2004-04-27 15:41:21 ameyer Exp $
+ * $Id: CdrValidateDoc.h,v 1.8 2008-03-25 23:45:55 ameyer Exp $
  *
  * Support routines for CDR document validation.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2004/04/27 15:41:21  ameyer
+ * Removed redundant comments in the prolog for execValidateDoc().
+ *
  * Revision 1.6  2001/12/19 15:47:48  ameyer
  * Added enumeration value for validation controls to allow update
  * of link tables without returning validation information.
@@ -33,6 +36,7 @@
 #include "CdrDoc.h"
 #include "CdrDom.h"
 #include "CdrDbConnection.h"
+#include "CdrValidationCtl.h"
 
 /**@#-*/
 
@@ -95,7 +99,7 @@ namespace cdr {
      *  @exception cdr::Exception  if database error encountered, no
      *                          permission to validate, etc.
      */
-    extern cdr::String execValidateDoc (cdr::CdrDoc&, cdr::ValidRule,
+    extern cdr::String execValidateDoc (cdr::CdrDoc*, cdr::ValidRule,
                                         const cdr::String& = L"");
 
 
@@ -118,7 +122,7 @@ namespace cdr {
             cdr::dom::Element&         docElem,
             const String&              docTypeName,
             db::Connection&            dbConnection,
-            StringList&                errors);
+            ValidationControl&         errCtl);
 }
 
 #endif
