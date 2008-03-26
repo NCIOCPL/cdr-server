@@ -1,6 +1,6 @@
 #--------------------------------------------------------------------------
 #
-# $Id: Makefile,v 1.85 2006-11-29 16:31:29 bkline Exp $
+# $Id: Makefile,v 1.86 2008-03-26 00:02:30 ameyer Exp $
 #
 # Rules for building CDR server.
 #
@@ -11,6 +11,9 @@
 # around with a less predictable pattern).
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.85  2006/11/29 16:31:29  bkline
+# Added comment for the VCVER macro.
+#
 # Revision 1.84  2006/11/12 13:49:34  bkline
 # Modifications for upgrade of Boost::Regex++ package to 1.33.1.
 #
@@ -360,6 +363,7 @@ HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrString.h \
         $(CDRINC)/CdrSysValue.h \
         $(CDRINC)/CdrValidateDoc.h \
+        $(CDRINC)/CdrValidationCtl.h \
         $(CDRINC)/CdrVersion.h \
         $(CDRINC)/CdrXsd.h \
         $(CDRINC)/CdrTiming.h \
