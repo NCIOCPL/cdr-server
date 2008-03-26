@@ -1,7 +1,10 @@
 /*
- * $Id: CdrXsd.h,v 1.18 2005-03-15 01:09:22 bkline Exp $
+ * $Id: CdrXsd.h,v 1.19 2008-03-26 00:01:25 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2005/03/15 01:09:22  bkline
+ * Added a check to make sure the SimpleType can find its base type.
+ *
  * Revision 1.17  2002/11/25 21:17:33  bkline
  * Finished custom validation support.
  *
@@ -73,6 +76,7 @@
 #include "CdrException.h"
 #include "CdrDbConnection.h"
 #include "CdrDom.h"
+#include "CdrValidateDoc.h"
 
 /**@#-*/
 
@@ -100,7 +104,7 @@ namespace cdr {
         const wchar_t* const INCLUDE       = L"include";
 
         /**
-         * Attribute name for location of recursively included schema 
+         * Attribute name for location of recursively included schema
          * document.
          *
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
@@ -221,7 +225,7 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const SIMPLE_TYPE   = L"simpleType";
-        
+
         /**
          * Tag for Schema element specifying a text-only complex type.
          *
@@ -260,7 +264,7 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const MIN_LENGTH    = L"minLength";
-        
+
         /**
          * Tag for Schema element adding a constraing on the maximum length of
          * valid data values.
@@ -271,7 +275,7 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const MAX_LENGTH    = L"maxLength";
-        
+
         /**
          * Tag for Schema element adding a regular-expression pattern used
          * for specifying valid value sets.
@@ -282,7 +286,7 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const PATTERN       = L"pattern";
-        
+
         /**
          * Tag for Schema element adding a specific value to a set of
          * enumerated valid values for a user-defined simple data type.
@@ -293,7 +297,7 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const ENUMERATION   = L"enumeration";
-        
+
         /**
          * Attribute name identifying base type for a derived user-defined
          * type.
@@ -315,7 +319,7 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const STRING        = L"string";
-        
+
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
          * user-defined simple type from the built-in Date type.
@@ -326,7 +330,7 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const DATE          = L"date";
-        
+
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
          * user-defined simple type from the built-in Time type.
@@ -337,7 +341,7 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const TIME          = L"time";
-        
+
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
          * user-defined simple type from the built-in Decimal type.
@@ -348,7 +352,7 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const DECIMAL       = L"decimal";
-        
+
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
          * user-defined simple type from the built-in Integer type.
@@ -359,7 +363,7 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const INTEGER       = L"integer";
-        
+
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
          * user-defined simple type from the built-in Binary type.
@@ -371,7 +375,7 @@ namespace cdr {
          *  @note   XXX Remove after compatibility period.
          */
         const wchar_t* const BINARY        = L"binary";
-        
+
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
          * user-defined simple type from the built-in hexBinary type.
@@ -382,7 +386,7 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const HEXBIN        = L"hexBinary";
-        
+
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
          * user-defined simple type from the built-in base64Binary type.
@@ -393,7 +397,7 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const BASE64BIN     = L"base64Binary";
-        
+
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
          * user-defined simple type from the built-in URI type.
@@ -404,10 +408,10 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const URI           = L"anyURI";
-        
+
         /**
-         * Obsolete value for <code>base</code> attribute, indicating 
-         * derivation of a user-defined simple type from the built-in 
+         * Obsolete value for <code>base</code> attribute, indicating
+         * derivation of a user-defined simple type from the built-in
          * TimeInstant type.
          *
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
@@ -440,7 +444,7 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const NMTOKEN       = L"NMTOKEN";
-        
+
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
          * user-defined simple type from the built-in ID type.
@@ -451,7 +455,7 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const ID            = L"ID";
-        
+
         /**
          * Value for <code>base</code> attribute, indicating derivation of a
          * user-defined simple type from the built-in IDREF type.
@@ -462,7 +466,7 @@ namespace cdr {
          *          XML Schema Part 2: Datatypes</A>
          */
         const wchar_t* const IDREF         = L"IDREF";
-        
+
         /**
          * Tag for the element used to specify the inclusive lower bound of
          * the range for valid values for elements and attributes of this
@@ -500,7 +504,7 @@ namespace cdr {
 
         /**
          * Tag for the element used to specify the allowable number of
-         * significant digits in a value of a type derived from the built-in 
+         * significant digits in a value of a type derived from the built-in
          * Decimal or Integer types.
          *
          *  @see    <A HREF="http://www.w3.org/TR/xmlschema-1">
@@ -691,7 +695,7 @@ namespace cdr {
          */
         const wchar_t* const BASE64        = L"base64";
 
-        /** 
+        /**
          * Forward declarations.
          */
         class Type;
@@ -713,7 +717,7 @@ namespace cdr {
         typedef StringList::const_iterator              StringEnum;
         typedef std::list<Key*>                         KeyList;
         typedef std::list<KeyRef*>                      KeyRefList;
-        typedef std::map<cdr::String, 
+        typedef std::map<cdr::String,
                          const cdr::StringSet*>         ValidValueSets;
 
         /**
@@ -767,7 +771,7 @@ namespace cdr {
             Rule(const cdr::dom::Element& e);
 
             /**
-             * Accessor method for obtaining a copy of the 
+             * Accessor method for obtaining a copy of the
              * string for the context in which a rule is to be
              * applied.  The context is specified as an XSLT
              * exression, typically the name of an element.
@@ -833,7 +837,7 @@ namespace cdr {
             cdr::String getXslt() const;
 
             /**
-             * Merges additional rules into a rule set, so we can 
+             * Merges additional rules into a rule set, so we can
              * have parts of the same set defined in separate schema
              * files, which get included for a given document type.
              */
@@ -855,7 +859,7 @@ namespace cdr {
         public:
 
             /**
-             * Accessor method for <code>Key</code>'s or <code>KeyRef</code>'s 
+             * Accessor method for <code>Key</code>'s or <code>KeyRef</code>'s
              * name.
              *
              *  @return         string containing name of this key or keyref.
@@ -872,16 +876,16 @@ namespace cdr {
             cdr::String getParent() const { return parent; }
 
             /**
-             * Accessor method for <code>Key</code> or <code>KeyRef</code>'s 
+             * Accessor method for <code>Key</code> or <code>KeyRef</code>'s
              * selector.
              *
-             *  @return         string containing selector for this key or 
+             *  @return         string containing selector for this key or
              *                  keyref.
              */
             cdr::String getSelector() const { return selector; }
 
             /**
-             * Accessor method for <code>Key</code> or <code>KeyRef</code>'s 
+             * Accessor method for <code>Key</code> or <code>KeyRef</code>'s
              * list of fields.
              *
              *  @return         string containing name of this key or keyref.
@@ -921,7 +925,7 @@ namespace cdr {
         public:
 
             /**
-             * Builds a key object indicating the path and attribute used 
+             * Builds a key object indicating the path and attribute used
              * to hold the keys for a schema.
              */
             Key(const cdr::dom::Node& node, const cdr::String& parent);
@@ -942,7 +946,7 @@ namespace cdr {
         public:
 
             /**
-             * Builds a keyref object indicating the path and attribute used 
+             * Builds a keyref object indicating the path and attribute used
              * to hold the keys for a schema.
              */
             KeyRef(const cdr::dom::Node& node, const cdr::String& parent);
@@ -1050,7 +1054,7 @@ namespace cdr {
              *  @param  k       address of <code>KeyRef</code> object to
              *                  remember.
              */
-            void                addKeyRef(KeyRef* r) 
+            void                addKeyRef(KeyRef* r)
                                 { keyRefList.push_back(r); }
 
             /**
@@ -1102,8 +1106,8 @@ namespace cdr {
              * Accessor method to retrieve the collections of custom
              * validation rules used for this schema.
              */
-            const std::map<String, RuleSet>& getRuleSets() const { 
-                return ruleSets; 
+            const std::map<String, RuleSet>& getRuleSets() const {
+                return ruleSets;
             }
 
             /**
@@ -1231,7 +1235,7 @@ namespace cdr {
              *  @param  k       address of Key or KeyRef object.
              *  @param  type    "ID" or "IDREF"
              */
-            void                resolveKeyOrKeyRef(KeyOrKeyRef* key, 
+            void                resolveKeyOrKeyRef(KeyOrKeyRef* key,
                                                    const cdr::String& type);
             /**
              * Writes a DTD element definition to the specified stream.
@@ -1271,9 +1275,9 @@ namespace cdr {
              *
              *  @param  elem        reference to current element.
              *  @param  attrName    name of attribute we're interested in.
-             *  @param  elemList    reference to list we're building of 
+             *  @param  elemList    reference to list we're building of
              *                      elements which have cdr:id attributes.
-             *  @param  checked     set to prevent processing the same 
+             *  @param  checked     set to prevent processing the same
              *                      element multiple times.
              */
             void checkElementForAttribute(cdr::xsd::Element& elem,
@@ -1282,14 +1286,14 @@ namespace cdr {
                                           cdr::StringSet& checked) const;
 
             /**
-             * Examine content for a complex type, looking for elements.  
+             * Examine content for a complex type, looking for elements.
              * Content can be a group, a sequence, a choice, or an element.
              *
              *  @param  node        address of schema node.
              *  @param  attrName    name of attribute we're interested in.
-             *  @param  elemList    reference to list we're building of 
+             *  @param  elemList    reference to list we're building of
              *                      elements which have cdr:id attributes.
-             *  @param  checked     set to prevent processing the same 
+             *  @param  checked     set to prevent processing the same
              *                      element multiple times.
              */
             void checkContentForAttribute(const cdr::xsd::Node* node,
@@ -1393,14 +1397,14 @@ namespace cdr {
              *  @return         address of <code>Type</code> object assigned
              *                  to this element or attribute.
              */
-            const Type*     getType(const Schema& s) { 
-                return resolveType(s); 
+            const Type*     getType(const Schema& s) {
+                return resolveType(s);
             }
 
         protected:
 
             /**
-             * Creates an uninitialized <code>Node</code> object.  
+             * Creates an uninitialized <code>Node</code> object.
              * Construction is completed by the derived class.  Objects
              * of the base class cannot be created.
              */
@@ -1431,7 +1435,7 @@ namespace cdr {
              *  @param  s           reference to <code>Schema</code> object
              *                      which maintains the registry of types used
              *                      to match a name to a <code>Type</code>.
-             *  @return             address of <code>Type</code> object 
+             *  @return             address of <code>Type</code> object
              *                      assigned to this element or attribute.
              */
             const Type*     resolveType(const Schema&);
@@ -1488,7 +1492,7 @@ namespace cdr {
              * Extracts the specification of the requirements for this element
              * from its schema node.
              *
-             *  @param  s           reference to schema object which uses 
+             *  @param  s           reference to schema object which uses
              *                      this choice or sequence.
              *  @param  n           reference to DOM node holding validation
              *                      requirements for this element.
@@ -1511,8 +1515,8 @@ namespace cdr {
             /**
              * Extracts the specification of the requirements for this
              * attribute from its schema node.
-             * 
-             *  @param  s           reference to schema object which uses 
+             *
+             *  @param  s           reference to schema object which uses
              *                      this choice or sequence.
              *  @param  n           reference to DOM node holding validation
              *                      requirements for this attribute.
@@ -1610,7 +1614,7 @@ namespace cdr {
              * Extracts the specification of the requirements for this choice
              * or sequence from its schema node.
              *
-             *  @param  s           reference to schema object which uses 
+             *  @param  s           reference to schema object which uses
              *                      this choice or sequence.
              *  @param  n           reference to DOM node holding validation
              *                      requirements for this choice or sequence.
@@ -1643,7 +1647,7 @@ namespace cdr {
              * Extracts the specification of the requirements for this
              * choice from its schema node.
              *
-             *  @param  s           reference to schema object which uses 
+             *  @param  s           reference to schema object which uses
              *                      this choice.
              *  @param  n           reference to DOM node holding validation
              *                      requirements for this choice.
@@ -1669,7 +1673,7 @@ namespace cdr {
              * Extracts the specification of the requirements for this
              * sequence from its schema node.
              *
-             *  @param  s           reference to schema object which uses 
+             *  @param  s           reference to schema object which uses
              *                      this element sequence.
              *  @param  n           reference to DOM node holding validation
              *                      requirements for this sequence.
@@ -1694,7 +1698,7 @@ namespace cdr {
              * Extracts the specification of the requirements for this
              * group from its schema node.
              *
-             *  @param  s           reference to schema object which uses 
+             *  @param  s           reference to schema object which uses
              *                      this group.
              *  @param  n           reference to DOM node holding validation
              *                      requirements for this group.
@@ -1759,7 +1763,7 @@ namespace cdr {
             /**
              * Extracts the reference to a named group from its schema node.
              *
-             *  @param  s           reference to schema object which uses 
+             *  @param  s           reference to schema object which uses
              *                      this group.
              *  @param  n           reference to DOM node holding this group
              *                      reference.
@@ -1795,7 +1799,7 @@ namespace cdr {
         protected:
 
             /**
-             * Creates an uninitialized <code>Type</code> object.  
+             * Creates an uninitialized <code>Type</code> object.
              * Construction is completed by the derived class.  Objects
              * of the base class cannot be created.
              */
@@ -1829,7 +1833,7 @@ namespace cdr {
              *  @param  schema      reference to <code>Schema</code> object,
              *                      used for finding the base type of a new
              *                      simple type.
-             *  @param  dn          node from the schema document describing 
+             *  @param  dn          node from the schema document describing
              *                      a new simple type.
              */
             SimpleType(const Schema& schema, const cdr::dom::Node& dn);
@@ -1851,19 +1855,19 @@ namespace cdr {
              * Enumerated type representing the allowable encoding for a
              * binary simple type.
              */
-            enum Encoding { 
-                
+            enum Encoding {
+
                 /**
                  * Binary encoding allowing pairs of Hexadecimal digits,
                  * separated by optional whitespace between the pairs.
                  */
-                HEX, 
-                
+                HEX,
+
                 /**
                  * Binary encoding using a limited subset of the ASCII
                  * character set.
                  */
-                BASE64 
+                BASE64
             };
 
             /**
@@ -1905,8 +1909,8 @@ namespace cdr {
              * this type.
              *
              *  @return         integer representing exact length required
-             *                  for values of this type; <code>-1</code> if 
-             *                  no exact length requirements are imposed 
+             *                  for values of this type; <code>-1</code> if
+             *                  no exact length requirements are imposed
              *                  on values of this type.
              */
             int                 getLength() const { return length; }
@@ -1915,7 +1919,7 @@ namespace cdr {
              * Accessor method for precision requirements imposed on decimal
              * and integer types.
              *
-             *  @return         integer representing maximum number of 
+             *  @return         integer representing maximum number of
              *                  significant digits allowed for decimal or
              *                  integer types; if this type is not based on a
              *                  numeric type the return value is meaningless.
@@ -1926,10 +1930,10 @@ namespace cdr {
              * Accessor method for scale requirements imposed on decimal
              * types.
              *
-             *  @return         integer representing maximum number of 
+             *  @return         integer representing maximum number of
              *                  significant digits allowed following the
-             *                  decimal point for decimal types; if this 
-             *                  type is not based on a decimal type the 
+             *                  decimal point for decimal types; if this
+             *                  type is not based on a decimal type the
              *                  return value is meaningless.
              */
             int                 getScale() const { return scale; }
@@ -2024,7 +2028,7 @@ namespace cdr {
 
             /**
              * Maximum number of significant digits allowed for decimal or
-             * integer values of this type.  Defaults to <code>-1</code>, 
+             * integer values of this type.  Defaults to <code>-1</code>,
              * which indicates that no precision limits are imposed on values
              * of this type.
              */
@@ -2090,7 +2094,7 @@ namespace cdr {
              *  @param  s           address of the schema (we'll need
              *                      this to look up the simple type).
              */
-            SimpleContent(const cdr::String& n, const Schema* s) 
+            SimpleContent(const cdr::String& n, const Schema* s)
                          : simpleType(0), schema(s) { name = n; }
 
             /**
@@ -2110,7 +2114,7 @@ namespace cdr {
              * for future calls.
              */
             const SimpleType*   resolveType() const {
-                if (!simpleType) simpleType = 
+                if (!simpleType) simpleType =
                     dynamic_cast<const SimpleType*>(schema->lookupType(name));
                 if (!simpleType)
                     throw cdr::Exception(L"Base type not found "
@@ -2134,9 +2138,9 @@ namespace cdr {
              * DOM node containing its definition.
              *
              *  @param  schema      reference to <code>Schema</code> object,
-             *                      used for registering the elements in 
+             *                      used for registering the elements in
              *                      the type.
-             *  @param  node        reference to DOM node from the schema 
+             *  @param  node        reference to DOM node from the schema
              *                      document describing a new complex type.
              */
             ComplexType(Schema& schema, const cdr::dom::Node& node);
@@ -2165,7 +2169,7 @@ namespace cdr {
              * type.
              *
              *  @return     address of object for the sequence, choice,
-             *              group, or simple text type which makes up the 
+             *              group, or simple text type which makes up the
              *              content for this type.
              */
             const Node*     getContent() const { return content; }
@@ -2247,8 +2251,8 @@ namespace cdr {
         };
 
         /**
-         * Checks document against the schema for its document type, reporting 
-         * any errors found in the caller's <code>Errors</code> vector.  This 
+         * Checks document against the schema for its document type, reporting
+         * any errors found in the caller's <code>Errors</code> vector.  This
          * lower-level method is invoked by cdr::validateDocAgainstSchema,
          * which extracts the schema from the database.
          *
@@ -2260,19 +2264,19 @@ namespace cdr {
         extern void validateDocAgainstSchema(
                 cdr::dom::Element&         docElem,
                 cdr::dom::Element&         schemaElem,
-                StringList&                errors,
+                cdr::ValidationControl&    errCtl,
                 cdr::db::Connection*       conn = 0);
 
         /**
          * Determine whether the string matches the NMTOKEN production of
          * http://www.w3.org/TR/2000/REC-xml-20001006:
-         *      Nmtoken     ::=    (NameChar)+ 
+         *      Nmtoken     ::=    (NameChar)+
          *      NameChar    ::=     Letter | Digit | '.' | '-' | '_' | ':' |
-         *                          CombiningChar | Extender 
+         *                          CombiningChar | Extender
          * This function is exported because it is needed elsewhere than in
          * the validation module (specifically, the ParseSchema program uses
          * it when converting an XML Schema to a DTD).
-         * 
+         *
          *  @param  s                   reference to string value to be
          *                              matched against NMTOKEN production.
          *  @return                     <code>true</code> iff value matches
