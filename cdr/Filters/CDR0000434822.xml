@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000434822.xml,v 1.5 2007-10-19 17:54:48 venglisc Exp $
+$Id: CDR0000434822.xml,v 1.6 2008-03-26 22:21:51 venglisc Exp $
 
 Filter Module to include all general formatting templates for 
 Summary QC Reports 
@@ -85,7 +85,30 @@ $Log: not supported by cvs2svn $
  Display KeyPoint
  ========================================================= -->         
  <xsl:template                   match = "KeyPoint">
+  <xsl:variable                   name = "kpLink">
+   <xsl:for-each                select = "ancestor::*">
+    <xsl:choose>
+    <xsl:when                     test = "name() = 'KeyPointsList'">
+     <xsl:text>False</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <!-- Do nothing -->
+    </xsl:otherwise>
+    </xsl:choose>
+   </xsl:for-each>
+  </xsl:variable>
+
+  <!--
+  We don't want to add the id attribute to the KeyPoint box items but to 
+  the items within the text
+  ========================================================================= -->
   <b>
+   <xsl:if                        test = "not($kpLink = 'False')">
+    <xsl:call-template            name = "addIdLinkTarget">
+     <xsl:with-param              name = "id"
+                                select = "@cdr:id"/>
+    </xsl:call-template>
+   </xsl:if>
    <xsl:apply-templates/>
   </b>
 
@@ -302,6 +325,11 @@ $Log: not supported by cvs2svn $
  ============================================================== -->
  <xsl:template                   match = "SectionTitle/Title">
   <h2>
+   <xsl:call-template             name = "addIdLinkTarget">
+    <xsl:with-param               name = "id"
+                                select = "../@cdr:id"/>
+   </xsl:call-template>
+
    <xsl:apply-templates/>
   </h2>
  </xsl:template>
@@ -347,6 +375,7 @@ $Log: not supported by cvs2svn $
     <xsl:choose>
      <xsl:when                    test = "@existing">
       <li>
+       <xsl:call-template         name = "addCitationLinkTarget"/>
        <xsl:value-of            select = "."/>
        <br/>
        <br/>
@@ -358,6 +387,7 @@ $Log: not supported by cvs2svn $
         <xsl:choose>
          <xsl:when                test = "@RevisionLevel = 'proposed'">
           <li class="refinsertprop_ad">
+           <xsl:call-template     name = "addCitationLinkTarget"/>
            <span class="insertproposed_ad">
             <xsl:value-of       select = "."/>
            </span>
@@ -366,6 +396,7 @@ $Log: not supported by cvs2svn $
          </xsl:when>
          <xsl:otherwise>
           <li class="refinsertappr_ad">
+           <xsl:call-template     name = "addCitationLinkTarget"/>
            <span class="insertapproved_ad">
             <xsl:value-of       select = "."/>
            </span>
@@ -378,6 +409,7 @@ $Log: not supported by cvs2svn $
         <xsl:choose>
          <xsl:when                test = "@RevisionLevel = 'proposed'">
           <li class="refinsertprop">
+           <xsl:call-template     name = "addCitationLinkTarget"/>
            <span class="insertproposed">
             <xsl:value-of       select = "."/>
            </span>
@@ -387,6 +419,7 @@ $Log: not supported by cvs2svn $
          </xsl:when>
          <xsl:otherwise>
           <li class="refinsertappr">
+           <xsl:call-template     name = "addCitationLinkTarget"/>
            <span class="insertapproved">
             <xsl:value-of       select = "."/>
            </span>
@@ -404,6 +437,7 @@ $Log: not supported by cvs2svn $
     <xsl:choose>
      <xsl:when                    test = "@existing">
       <li>
+       <xsl:call-template         name = "addCitationLinkTarget"/>
        <xsl:value-of            select = "."/>
        <br/>
        <br/>
@@ -418,6 +452,7 @@ $Log: not supported by cvs2svn $
         <xsl:choose>
          <xsl:when                test = "@Source = 'advisory-board'">
           <li class="refdeleteprop_ad">
+           <xsl:call-template     name = "addCitationLinkTarget"/>
            <span class="deleteproposed_ad">
             <xsl:value-of       select = "."/>
            </span>
@@ -426,6 +461,7 @@ $Log: not supported by cvs2svn $
          </xsl:when>
          <xsl:otherwise>
           <li class="refdeleteprop">
+           <xsl:call-template     name = "addCitationLinkTarget"/>
            <span class="deleteproposed">
             <xsl:value-of       select = "."/>
            </span>
@@ -439,6 +475,7 @@ $Log: not supported by cvs2svn $
         <xsl:choose>
          <xsl:when                test = "@Source = 'advisory-board'">
           <li class="refdeleteappr_ad">
+           <xsl:call-template     name = "addCitationLinkTarget"/>
            <span class="deleteapproved_ad">
             <xsl:value-of       select = "."/>
            </span>
@@ -452,6 +489,7 @@ $Log: not supported by cvs2svn $
           ========================================================= -->
           <xsl:if                 test = "not(contains($whoAmI, 'BU'))"> 
            <li class="refdeleteappr">
+            <xsl:call-template    name = "addCitationLinkTarget"/>
             <span class="deleteapproved">
              <xsl:value-of      select = "."/>
             </span>
@@ -468,12 +506,28 @@ $Log: not supported by cvs2svn $
    </xsl:when>
    <xsl:otherwise>
     <li>
+     <xsl:call-template           name = "addCitationLinkTarget"/>
      <xsl:value-of              select = "."/>
      <br/>
      <br/>
     </li>
    </xsl:otherwise>
   </xsl:choose>    
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Template to add a link target to the Citation references so that 
+ these can be linked to. 
+ =================================================================== -->
+ <xsl:template                    name = "addCitationLinkTarget">
+  <xsl:attribute                  name = "id">
+   <xsl:text>CL</xsl:text>
+   <xsl:value-of                select = "../../@cdr:id"/>
+   <xsl:text>_</xsl:text>
+   <xsl:value-of                select = "@refidx"/>
+  </xsl:attribute>
  </xsl:template>
 
 

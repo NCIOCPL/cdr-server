@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000339576.xml,v 1.18 2008-01-11 22:52:47 venglisc Exp $
+$Id: CDR0000339576.xml,v 1.19 2008-03-26 22:22:41 venglisc Exp $
 
 Filter handling all In-Line Markup elements of Summary Docs
 Written by Volker Englisch, 2004-07-16
@@ -22,14 +22,49 @@ $Log: not supported by cvs2svn $
   
  <!-- 
  ======================================================================
- Display a Summary Reference, SummaryFragmentRef or LOEFragmentRef or 
- ProtocolRef
+ Display a Summary Reference or ProtocolRef
+ These elements should display the QC report of the particular document
  ====================================================================== -->
  <xsl:template                   match = "SummaryRef         | 
-                                          ProtocolRef        |
-                                          SummaryFragmentRef |
+                                          ProtocolRef">
+  <a>
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Session=guest')"/>
+   </xsl:attribute>
+   <!-- xsl:attribute                 name = "target">
+    <xsl:text>_blank</xsl:text>
+   </xsl:attribute -->
+   <xsl:value-of                select = "."/>
+  </a>
+
+   <!-- xsl:apply-templates/ -->
+ </xsl:template>
+
+
+ <!-- 
+ ======================================================================
+ Display a SummaryFragmentRef or LOEFragmentRef.
+ These elements should be created as links to sections within the 
+ document.
+ ====================================================================== -->
+ <xsl:template                   match = "SummaryFragmentRef |
                                           LOEFragmentRef">
-  <span class="ul"><xsl:apply-templates/></span>
+  <a>
+   <xsl:attribute                 name = "class">
+    <xsl:text>idLink</xsl:text>
+   </xsl:attribute>
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "concat('#', 
+                                            substring-after(@cdr:href, '#'))"/>
+   </xsl:attribute>
+   <xsl:attribute                 name = "title">
+    <xsl:value-of               select = "name()"/>
+   </xsl:attribute>
+
+   <xsl:apply-templates/>
+  </a>
  </xsl:template>
 
 
@@ -1363,10 +1398,22 @@ $Log: not supported by cvs2svn $
 
   <xsl:choose>
    <xsl:when                      test = "count($ancestors) = 2">
-    <h3><xsl:apply-templates/></h3>
+    <h3>
+     <xsl:call-template             name = "addIdLinkTarget">
+      <xsl:with-param               name = "id"
+                                  select = "../@cdr:id"/>
+     </xsl:call-template>
+     <xsl:apply-templates/>
+    </h3>
    </xsl:when>
    <xsl:when                      test = "count($ancestors) &gt; 2">
-    <h4><xsl:apply-templates/></h4>
+    <h4>
+     <xsl:call-template             name = "addIdLinkTarget">
+      <xsl:with-param               name = "id"
+                                  select = "../@cdr:id"/>
+     </xsl:call-template>
+     <xsl:apply-templates/>
+    </h4>
    </xsl:when>
   </xsl:choose>
  </xsl:template>
@@ -1405,6 +1452,7 @@ $Log: not supported by cvs2svn $
  ===================================================================== -->
  <xsl:template                   match = "Para">
   <p>
+   <xsl:call-template             name = "addIdLinkTarget"/>
    <xsl:apply-templates/>
   </p>
  </xsl:template>
@@ -1456,6 +1504,11 @@ $Log: not supported by cvs2svn $
      </xsl:when> 
     </xsl:choose> 
    </xsl:attribute>
+   <xsl:call-template             name = "addIdLinkTarget">
+    <xsl:with-param               name = "id"
+                                select = "@cdr:id"/>
+   </xsl:call-template>
+
 
    <xsl:choose>
     <xsl:when                     test = "@Compact">
@@ -1498,6 +1551,10 @@ $Log: not supported by cvs2svn $
      </xsl:when>
     </xsl:choose> 
    </xsl:attribute>
+   <xsl:call-template             name = "addIdLinkTarget">
+    <xsl:with-param               name = "id"
+                                select = "@cdr:id"/>
+   </xsl:call-template>
 
    <xsl:choose>
     <xsl:when                     test = "@Compact">
@@ -1547,6 +1604,10 @@ $Log: not supported by cvs2svn $
      </xsl:otherwise>
     </xsl:choose>
    </xsl:attribute>
+   <xsl:call-template             name = "addIdLinkTarget">
+    <xsl:with-param               name = "id"
+                                select = "@cdr:id"/>
+   </xsl:call-template>
 
    <xsl:choose>
     <xsl:when                     test = "@Compact">
@@ -1597,6 +1658,10 @@ $Log: not supported by cvs2svn $
      </xsl:otherwise>
     </xsl:choose>
    </xsl:attribute>
+   <xsl:call-template             name = "addIdLinkTarget">
+    <xsl:with-param               name = "id"
+                                select = "@cdr:id"/>
+   </xsl:call-template>
 
    <xsl:choose>
     <xsl:when                     test = "@Compact">
@@ -1684,7 +1749,10 @@ $Log: not supported by cvs2svn $
   <center>
    <table width="100%" border="0" 
           style="background-color: #CCFFFF" colspacing="3">
-    <tr>
+    <xsl:call-template            name = "addIdLinkTarget">
+     <xsl:with-param              name = "id"
+                                select = "../@cdr:id"/>
+    </xsl:call-template>    <tr>
      <td width="30%" align="right" valign="top">
       <br/>
       <b>Image:</b>
@@ -1714,6 +1782,9 @@ $Log: not supported by cvs2svn $
                                 select = "position()-1"/>
   <xsl:variable                   name = "ref" 
                                 select = "."/>
+  <xsl:variable                   name = "sectionID">
+   <xsl:call-template             name = "getSectionId"/>
+  </xsl:variable>
 
   <!--
   Displaying the Left Bracket of a list of citations with marked up 
@@ -1816,12 +1887,18 @@ $Log: not supported by cvs2svn $
       <xsl:choose>
        <xsl:when                  test = "@RevisionLevel = 'proposed'">
         <span class="deleteproposed_ad">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:when>
        <xsl:otherwise>
         <span class="deleteapproved_ad">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:otherwise>
       </xsl:choose>
@@ -1830,12 +1907,18 @@ $Log: not supported by cvs2svn $
       <xsl:choose>
        <xsl:when                  test = "@RevisionLevel = 'proposed'">
         <span class="deleteproposed">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:when>
        <xsl:otherwise>
         <span class="deleteapproved">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:otherwise>
       </xsl:choose>
@@ -1849,12 +1932,18 @@ $Log: not supported by cvs2svn $
       <xsl:choose>
        <xsl:when                  test = "@RevisionLevel = 'proposed'">
         <span class="insertproposed_ad">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:when>
        <xsl:otherwise>
         <span class="insertapproved_ad">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:otherwise>
       </xsl:choose>
@@ -1863,12 +1952,18 @@ $Log: not supported by cvs2svn $
       <xsl:choose>
        <xsl:when                  test = "@RevisionLevel = 'proposed'">
         <span class="insertproposed">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:when>
        <xsl:otherwise>
         <span class="insertapproved">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:otherwise>
       </xsl:choose>
@@ -1876,7 +1971,10 @@ $Log: not supported by cvs2svn $
     </xsl:choose>  	    
    </xsl:when>
    <xsl:otherwise>
-    <xsl:value-of               select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
    </xsl:otherwise>
   </xsl:choose>
 
@@ -2424,6 +2522,60 @@ $Log: not supported by cvs2svn $
     </xsl:choose>
    </xsl:when>
   </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ Template to add the link anchor to an element that has a cdr:id 
+ attribute 
+ ===================================================================== -->
+ <xsl:template                    name = "addIdLinkTarget">
+  <xsl:param                      name = "id"
+                                select = "./@cdr:id"/>
+
+  <xsl:attribute                  name = "id">
+   <xsl:value-of                select = "$id"/>
+  </xsl:attribute>
+ </xsl:template>
+
+
+ <!--
+ ======================================================================
+ Template to add the link anchor to the citations listed within the 
+ text linking to the citation within the reference section.
+ ====================================================================== -->
+ <xsl:template                    name = "addCitationLink">
+  <xsl:param                      name = "sectionID"/>
+         <a>
+          <xsl:attribute           name = "href">
+           <xsl:text>#CL</xsl:text>
+           <xsl:value-of         select = "$sectionID"/>
+           <xsl:text>_</xsl:text>
+           <xsl:value-of         select = "@refidx"/>
+          </xsl:attribute>
+          <xsl:attribute           name = "title">
+           <xsl:value-of         select = "."/>
+          </xsl:attribute>
+          <xsl:attribute           name = "class">
+           <xsl:text>citationLink</xsl:text>
+          </xsl:attribute>     
+          <xsl:value-of          select = "@refidx"/>
+         </a>
+ </xsl:template>
+
+
+ <!--
+ ======================================================================
+ Template to add the link anchor to the citations listed within the 
+ text linking to the citation within the reference section.
+ ====================================================================== -->
+ <xsl:template                    name = "getSectionId">
+  <xsl:for-each                 select = "ancestor-or-self::*">
+   <xsl:if                        test = "name(..) = 'Summary'">
+    <xsl:value-of               select = "@cdr:id"/>
+   </xsl:if>
+  </xsl:for-each>
  </xsl:template>
 
 
