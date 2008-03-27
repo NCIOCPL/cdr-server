@@ -7,87 +7,108 @@
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 
- <!-- ============================================================
-      Filter to construct a DocTitle for a Person document.
-      ============================================================ -->
+ <!-- 
+ ============================================================
+ Filter to construct a DocTitle for a Person document.
+ ============================================================ -->
 
 <xsl:transform        xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                         version = "1.0"
                       xmlns:cdr = "cips.nci.nih.gov/cdr">
 
- <xsl:output method="text"/>
+ <xsl:output             method = "text"/>
 
- <!-- ============================================================
-      Extract status, surname ; given name ; city ; state 
-      Added code to print status of inactive persons 10/07/2002(CB)
-      ============================================================ -->
-
- <xsl:template match="/">
-  <xsl:if test="Person/Status/CurrentStatus='Inactive'">
-  <xsl:value-of select="Person/Status/CurrentStatus"/>;<xsl:text/>
+ <!-- 
+ =============================================================
+ Extract status, surname ; given name ; city ; state 
+ Added code to print status of inactive persons 10/07/2002(CB)
+ ============================================================= -->
+ <xsl:template            match = "/">
+  <xsl:if                  test = "Person/Status/CurrentStatus = 'Inactive'">
+   <xsl:value-of         select = "Person/Status/CurrentStatus"/>
+   <xsl:text>;</xsl:text>
   </xsl:if>
-  <xsl:value-of          select = "Person/PersonNameInformation/SurName"/><xsl:text>, </xsl:text>
- <!-- <xsl:text>;</xsl:text>-->
-  <xsl:value-of          select = "Person/PersonNameInformation/GivenName"/>
+  <xsl:value-of          select = "Person
+                                   /PersonNameInformation
+                                   /SurName"/>
+  <xsl:text>, </xsl:text>
+  <xsl:value-of          select = "Person
+                                   /PersonNameInformation
+                                   /GivenName"/>
   <xsl:text>;</xsl:text>
   <xsl:apply-templates   select = "Person/PersonLocations"/>
  </xsl:template>
 
- <!-- ============================================================
-      Pick the location which matches the CIPSContact fragment ID.
-      ============================================================ -->
 
+ <!-- 
+ ============================================================
+ Pick the location which matches the CIPSContact fragment ID.
+ ============================================================ -->
  <xsl:template            match = "PersonLocations">
   <xsl:variable            name = "fragId"
                          select = "CIPSContact"/>
   <xsl:apply-templates   select = "Home[@cdr:id=$fragId]"/>
   <xsl:apply-templates   select = "PrivatePractice/
                                    PrivatePracticeLocation[@cdr:id=$fragId]"/>
-  <xsl:if test="not(OtherPracticeLocation[@cdr:id=$fragId]/SpecificPostalAddress)">
-  <xsl:apply-templates   select = "OtherPracticeLocation[@cdr:id=$fragId]/
+  <xsl:if                  test = "not(OtherPracticeLocation[@cdr:id=$fragId]
+                                   /SpecificPostalAddress)">
+   <xsl:apply-templates  select = "OtherPracticeLocation[@cdr:id=$fragId]/
                                    OrganizationLocation"/>
   </xsl:if>
-   <xsl:if test="OtherPracticeLocation[@cdr:id=$fragId]/SpecificPostalAddress">
-   <xsl:apply-templates   select = "OtherPracticeLocation[@cdr:id=$fragId]"/>
-   </xsl:if>                               
+
+  <xsl:if                  test = "OtherPracticeLocation[@cdr:id=$fragId]
+                                   /SpecificPostalAddress">
+   <xsl:apply-templates  select = "OtherPracticeLocation[@cdr:id=$fragId]"/>
+  </xsl:if>                               
  </xsl:template>
 
- <!-- ============================================================
-      Extract city and state from the organization document.
-      Using cdrx protocol so processor will not throw an exception
-      it the organization document cannot be found.
-      ============================================================ -->
 
+ <!-- 
+ ============================================================
+ Extract city and state from the organization document.
+ Using cdrx protocol so processor will not throw an exception
+ it the organization document cannot be found.
+ ============================================================ -->
  <xsl:template            match = "OtherPracticeLocation/OrganizationLocation">
- <xsl:if test="not(../SpecificPostalAddress)">
-  <xsl:variable            name = "docId"
+  <xsl:if                  test = "not(../SpecificPostalAddress)">
+   <xsl:variable           name = "docId"
                          select = "substring-before(@cdr:ref, '#')"/>
-  <xsl:variable            name = "fragId"
+   <xsl:variable           name = "fragId"
                          select = "substring-after(@cdr:ref, '#')"/>
-  <xsl:variable            name = "org"
+   <xsl:variable           name = "org"
                          select = "document(concat('cdrx:', $docId))"/>
-  <xsl:variable            name = "orgLocs"
+   <xsl:variable           name = "orgLocs"
                          select = "$org/Organization/OrganizationLocations"/>
-  <xsl:variable            name = "loc"
+   <xsl:variable           name = "loc"
                          select = "$orgLocs/OrganizationLocation
                                            /Location[@cdr:id=$fragId]"/>
   <xsl:apply-templates   select = "$loc/PostalAddress"/>
- </xsl:if>
+  </xsl:if>
  </xsl:template>
 
+
+ <!-- 
+ ============================================================
+ ============================================================ -->
  <xsl:template            match = "Home|PrivatePracticeLocation">
   <xsl:apply-templates   select = "PostalAddress"/>
  </xsl:template>
-<xsl:template            match = "OtherPracticeLocation">
+
+
+ <!-- 
+ ============================================================
+ ============================================================ -->
+ <xsl:template            match = "OtherPracticeLocation">
   <xsl:apply-templates   select = "SpecificPostalAddress"/>
  </xsl:template>
 
- <!-- ============================================================
-      Common template to pull out the city and state.
-      Make sure separating semicolon is conditional on presence of 
-      City.
-      ============================================================ -->
 
+ <!-- 
+ ============================================================
+ Common template to pull out the city and state.
+ Make sure separating semicolon is conditional on presence of 
+ City.
+ ============================================================ -->
  <xsl:template            match = "PostalAddress | SpecificPostalAddress">
   <xsl:variable            name = "city"
                          select = "City"/>
@@ -95,6 +116,7 @@
    <xsl:value-of         select = "$city"/>
    <xsl:text>;</xsl:text>
   </xsl:if>
+
   <xsl:choose>
    <xsl:when               test = "PoliticalSubUnit_State">
     <xsl:apply-templates select = "PoliticalSubUnit_State"/>
@@ -108,12 +130,13 @@
   </xsl:choose>                    
  </xsl:template>
 
- <!-- ============================================================
-      Extract the state name from its own document, not the 
-      denormalized string that might or might not be present in
-      the Person document.
-      ============================================================ -->
 
+ <!-- 
+ ============================================================
+ Extract the state name from its own document, not the 
+ denormalized string that might or might not be present in
+ the Person document.
+ ============================================================ -->
  <xsl:template            match = "PoliticalSubUnit_State">
   <!-- Only proceed if we have a valid cdr:ref for the state -->
   <xsl:if                  test = "contains(@cdr:ref, 'CDR')">
@@ -124,10 +147,11 @@
   </xsl:if>
  </xsl:template>
 
- <!-- ============================================================
-      Same approach for the Country: get it from the source.
-      ============================================================ -->
 
+ <!-- 
+ ============================================================
+ Same approach for the Country: get it from the source.
+ ============================================================ -->
  <xsl:template            match = "Country">
   <!-- Only proceed if we have a valid cdr:ref for the country -->
   <xsl:if                  test = "contains(@cdr:ref, 'CDR')">
@@ -136,7 +160,6 @@
    <xsl:value-of         select = "$doc/Country/CountryFullName"/>
   </xsl:if>
  </xsl:template>
-
 </xsl:transform>]]>
 </CdrDocXml>
 </CdrDoc>
