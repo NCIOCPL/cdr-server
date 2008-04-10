@@ -9,9 +9,12 @@
  * The code standing behind these classes is all defined in
  * CdrValidateDoc.cpp.
  *
- * $Id: CdrValidationCtl.h,v 1.1 2008-03-25 23:41:15 ameyer Exp $
+ * $Id: CdrValidationCtl.h,v 1.2 2008-04-10 20:09:41 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2008/03/25 23:41:15  ameyer
+ * Header for validation controls.
+ *
  */
 
 #ifndef CDR_VALIDATION_CTL_
@@ -74,8 +77,8 @@ namespace cdr {
              * Get the CDR error id attribute value associated with this
              * element.
              *
-             *  @return         The value of this node's cdr:eid attribute.
-             *  @throws         cdr::Exception if no cdr:eid attr.  The
+             *  @return         The value of this node's cdr-eid attribute.
+             *  @throws         cdr::Exception if no cdr-eid attr.  The
              *                  caller should know if these exist.
              */
             cdr::String getErrorIdValue();
@@ -103,7 +106,7 @@ namespace cdr {
              *
              *  @param ctxt     Context within which the error occurred.
              *  @param msg      Error message for users.
-             *  @param errorId  Value of cdr:eid to force to be used.
+             *  @param errorId  Value of cdr-eid to force to be used.
              */
             ValidationError (ValidationElementContext& ctxt,
                              cdr::String& msg, cdr::String& errorId);
@@ -118,7 +121,7 @@ namespace cdr {
              * without cdr:eref location information.
              *
              *  @param includeLocator   True = include a cdr:eref identifying
-             *                          the cdr:eid for the error's context.
+             *                          the cdr-eid for the error's context.
              */
             cdr::String toXmlString (bool includeLocator);
 
@@ -135,7 +138,14 @@ namespace cdr {
             // The context node for the error
             ValidationElementContext errCtxt;
 
-            // cdr:eid error attribute for element with this error
+            // cdr-eid error attribute for element with this error
+            // NOTE: This attribute should have been named "cdr:eid",
+            //    however a bug in XMetal's XPath implementation made
+            //    it impossible to locate attributes with namespaces
+            //    using XPath expressions.  The bug has been reported
+            //    the XMetal vendor, but we have decided to implement
+            //    a workaround by using the non-namespaced attribute
+            //    name "cdr-eid".
             cdr::String errId;
 
             // Human readable error message
@@ -174,19 +184,19 @@ namespace cdr {
              *
              * The message and current context will be remembered.
              *
-             * The errId parameter shows the value of the cdr:eid to use
+             * The errId parameter shows the value of the cdr-eid to use
              * in reporting this error.  Normally, the program declaring
              * an error doesn't know this value, we use the currentCtxt
              * to find the attribute.
              *
              * However, sometimes, specifically in the custom rule XSLT
              * validation in CdrXsd, we have no direct access to the DOM
-             * node, but do know the value of the associated cdr:eid.  So
+             * node, but do know the value of the associated cdr-eid.  So
              * that module uses the second parameter here to force the
              * reported cdr:eref to have the value it wants.
              *
              *  @param msg          Error message.
-             *  @param errorId      Value of cdr:eid to force to be used.
+             *  @param errorId      Value of cdr-eid to force to be used.
              */
             void addError (cdr::String msg, cdr::String errorId=L"");
 
@@ -235,7 +245,7 @@ namespace cdr {
             /**
              * Setter for withLocators, called before validation if need.
              *
-             *  @param locators     True = use cdr:eid/ref error locators.
+             *  @param locators     True = use cdr-eid/ref error locators.
              */
             void setLocators (bool locators);
 

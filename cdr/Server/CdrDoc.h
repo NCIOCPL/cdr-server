@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.23 2008-03-25 23:42:46 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.24 2008-04-10 20:09:14 ameyer Exp $
  *
  */
 
@@ -126,7 +126,7 @@ namespace cdr {
              *  @param  docDom      Reference to a dom parse of a CdrDoc
              *                      as would be passed in a CdrCommandSet.
              *
-             *  @param withLocators True = use cdr:eid attributes in
+             *  @param withLocators True = use cdr-eid attributes in
              *                      validation.
              */
             CdrDoc (cdr::db::Connection& dbConn, cdr::dom::Node& docDom,
@@ -142,7 +142,7 @@ namespace cdr {
              *  @param  docId       CDR document ID for a document currently
              *                      in the database.
              *
-             *  @param withLocators True = use cdr:eid attributes in
+             *  @param withLocators True = use cdr-eid attributes in
              *                      validation.
              */
             CdrDoc (cdr::db::Connection& dbConn, const int docId,
@@ -163,7 +163,7 @@ namespace cdr {
              *
              *  @param  verNum      Version number, 0 = CWD.
              *
-             *  @param withLocators True = use cdr:eid attributes in
+             *  @param withLocators True = use cdr-eid attributes in
              *                      validation.
              */
             CdrDoc (cdr::db::Connection& dbConn, const int docId,
@@ -238,7 +238,7 @@ namespace cdr {
 
             /**
              * If it has not already been done, pass the XML for the document
-             * through filtering to add or replace cdr:eid attributes to
+             * through filtering to add or replace cdr-eid attributes to
              * every element.
              *
              * These attributes are used during validation to enable the
@@ -254,7 +254,7 @@ namespace cdr {
              * XML with error markup will be saved in this.errorIdXml.  A
              * second call to the function will return the saved copy.
              *
-             *  @return                 XML with cdr:eid attributes.
+             *  @return                 XML with cdr-eid attributes.
              */
             cdr::String getErrorIdXml();
 
@@ -473,7 +473,7 @@ namespace cdr {
             cdr::String revisedXml;     // After any filtering of insertion
                                         //   and deletion markup
             cdr::String errorIdXml;     // XML sent from the client, with the
-                                        //   addition of cdr:eid attrs, only
+                                        //   addition of cdr-eid attrs, only
                                         //   needed if validating
             cdr::String schemaXml;      // Schema text for this doc
             cdr::Blob   blobData;       // Associated non-XML, if any

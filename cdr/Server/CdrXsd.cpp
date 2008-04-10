@@ -1,7 +1,14 @@
 /*
- * $Id: CdrXsd.cpp,v 1.47 2008-03-26 00:00:17 ameyer Exp $
+ * $Id: CdrXsd.cpp,v 1.48 2008-04-10 20:10:05 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.47  2008/03/26 00:00:17  ameyer
+ * Significant changes to error handling.  Now using a ValidationControl
+ * class instead of a StringList for error management.  Uses cdr:eid / cdr:eref
+ * for reporting.  Works for both regular schema and XSLT validation.
+ * Private use character validation commented out for now until I can discuss
+ * options with Bob.
+ *
  * Revision 1.46  2008/02/13 02:30:02  ameyer
  * Fixed extra colon typo in "cdr::ref".  This turns on some optimization
  * that was meant to occur but never did.
@@ -529,9 +536,9 @@ cdr::String cdr::xsd::RuleSet::getXslt() const
         os << L" <xsl:template name='packError'>\n"
               L"  <xsl:param name='msg'/>\n"
               L"  <xsl:element name='Err'>\n"
-              L"   <xsl:if test='./@cdr:eid'>\n"
-              L"    <xsl:attribute name='cdr:eid'>\n"
-              L"     <xsl:value-of select='./@cdr:eid'/>\n"
+              L"   <xsl:if test='./@cdr-eid'>\n"
+              L"    <xsl:attribute name='cdr-eid'>\n"
+              L"     <xsl:value-of select='./@cdr-eid'/>\n"
               L"    </xsl:attribute>\n"
               L"   </xsl:if>\n"
               L"   <xsl:call-template name='getPath'>\n"
@@ -1554,7 +1561,7 @@ static void processCustomRules(
                 if (elemName == L"Err") {
                     cdr::String errId =
                         (static_cast<cdr::dom::Element>(n)).getAttribute(
-                                                                "cdr:eid");
+                                                                "cdr-eid");
                     cdr::String errString = cdr::dom::getTextContent(n);
                     errCtl.addError(errString, errId);
                 }
@@ -1683,11 +1690,11 @@ bool validateAttributes(
         cdr::dom::Node  attr = attrs.item(i);
         cdr::String     name = attr.getNodeName();
 
-        // "readonly" and "cdr:eid" are special attributes used only
+        // "readonly" and "cdr-eid" are special attributes used only
         //   in communication between client and server.  They are not
         //   stored, not defined in the schemas, and therefore need not
         //   and must not be validated.
-        if (name != L"readonly" && name != L"cdr:eid"
+        if (name != L"readonly" && name != L"cdr-eid"
                                 && !type.hasAttribute(name)) {
             cdr::String err = cdr::String(L"Unexpected attribute ")
                             + name
@@ -1733,7 +1740,7 @@ void validateElement(
         for (int i = 0; i < nAttrs; ++i) {
             cdr::dom::Node  attr = attrs.item(i);
             cdr::String     name = attr.getNodeName();
-            if (name != L"readonly" && name != L"cdr:eid") {
+            if (name != L"readonly" && name != L"cdr-eid") {
                 cdr::String err = cdr::String(L"Unexpected attribute ")
                                 + name
                                 + L"='"

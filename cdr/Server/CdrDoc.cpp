@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.70 2008-03-25 23:42:21 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.71 2008-04-10 20:08:54 ameyer Exp $
  *
  */
 
@@ -108,7 +108,7 @@ cdr::CdrDoc::CdrDoc (
     // Get the document ID if present in the transaction
     textId = docElement.getAttribute (L"Id");
 
-    // Will we use cdr:eid attributes with this doc?
+    // Will we use cdr-eid attributes with this doc?
     setLocators(withLocators);
 
     // If Id was passed, document must exist in database.
@@ -364,7 +364,7 @@ cdr::CdrDoc::CdrDoc (
     // Content or control type document
     conType = not_set;
 
-    // Will we use cdr:eid attributes with this doc?
+    // Will we use cdr-eid attributes with this doc?
     setLocators(withLocators);
 
     // Don't know yet if this is a publishable version
@@ -393,7 +393,7 @@ cdr::CdrDoc::CdrDoc (
     // We haven't filtered this for insertion, deletion markup
     revisedXml = L"";
 
-    // We haven't added cdr:eid attributes
+    // We haven't added cdr-eid attributes
     errorIdXml = L"";
 
     // We have not parsed the xml yet and don't know of anything wrong with it
@@ -443,7 +443,7 @@ cdr::CdrDoc::CdrDoc (
     conType (not_set),
     warningCount (0)
 {
-    // Will we use cdr:eid attributes with this doc?
+    // Will we use cdr-eid attributes with this doc?
     setLocators(withLocators);
 
     // Get info from version control
@@ -492,15 +492,15 @@ void cdr::CdrDoc::store ()
         throw cdr::Exception(L"CdrDoc::store: RevisionFilterLevel cannot be "
                              L"overridden when saving a CDR document.");
 
-    // Filter the document to remove any cdr:eid attributes
+    // Filter the document to remove any cdr-eid attributes
     // These should not be stored.  Checking here guarantees that they
     //   won't be.
-    // As a simple optimization, we'll only call this if we find a cdr:eid
+    // As a simple optimization, we'll only call this if we find a cdr-eid
     //   in a quick string scan
 
-    if (wcsstr(Xml.c_str(), L"cdr:eid") != NULL)
+    if (wcsstr(Xml.c_str(), L"cdr-eid") != NULL)
         Xml = cdr::filterDocumentByScriptTitle (Xml,
-            L"Validation Error IDs: Delete all cdr:eid attributes",
+            L"Validation Error IDs: Delete all cdr-eid attributes",
             docDbConn);
 
     // New record
@@ -714,7 +714,7 @@ static cdr::String cdrPutDoc (
     // Default reason is NULL created by cdr::String contructor
     cmdReason   = L"";
 
-    // Assume validation does not use cdr:eid error locators
+    // Assume validation does not use cdr-eid error locators
     bool withLocators = false;
 
     // Parse command to get document and relevant parts
@@ -779,7 +779,7 @@ static cdr::String cdrPutDoc (
                                     validationTypes + L"'");
                     }
 
-                    // User may also request cdr:eid error locator attributes
+                    // User may also request cdr-eid error locator attributes
                     if ((attr = attrMap.getNamedItem ("ErrorLocators"))
                              != NULL)
                         withLocators = cdr::ynCheck(attr.getNodeValue(),
@@ -1100,7 +1100,7 @@ static cdr::String cdrPutDoc (
     //   and if the caller requested location information of errors,
     //   and if there were errors,
     // then:
-    //   Be sure that we echo back the document with cdr:eid attributes.
+    //   Be sure that we echo back the document with cdr-eid attributes.
     if (cmdValidate && doc.hasLocators() && doc.getErrorCount() > 0)
         cmdEcho = true;
 
@@ -1132,8 +1132,8 @@ int cdr::CdrDoc::getErrorCount() const
 cdr::String cdr::CdrDoc::getSerialXml()
 {
     // Determine which string to send to the caller
-    // If caller wanted cdr:eids, and there are errors to report:
-    //    Give him the one with cdr:eids
+    // If caller wanted cdr-eids, and there are errors to report:
+    //    Give him the one with cdr-eids
     // Else
     //    Give him a plain doc
     cdr::String xmlStr = hasLocators() && getErrorCount() ? errorIdXml : Xml;
@@ -1424,7 +1424,7 @@ bool cdr::CdrDoc::parseAvailable ()
 } // parseAvailable
 
 /**
- * Get XML modified with cdr:eid ID attributes on each element for use
+ * Get XML modified with cdr-eid ID attributes on each element for use
  * in validation.
  */
 cdr::String cdr::CdrDoc::getErrorIdXml()
@@ -1441,7 +1441,7 @@ cdr::String cdr::CdrDoc::getErrorIdXml()
     // For now, we'll let any filter exception bubble up.  May change
     //   that later if need
     errorIdXml = cdr::filterDocumentByScriptTitle (Xml,
-            L"Validation Error IDs: Delete and Add cdr:eid attributes",
+            L"Validation Error IDs: Delete and Add cdr-eid attributes",
             docDbConn);
 
     return errorIdXml;
