@@ -1,10 +1,15 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.25 2008-03-25 23:56:03 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.26 2008-04-10 20:12:57 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2008/03/25 23:56:03  ameyer
+ * Significant changes to support cdr:eid / cdr:eref attributes to identify
+ * errors.  Some new code and some revised code.  Also a small amount of
+ * refactoring to improve readability or performance.
+ *
  * Revision 1.24  2008/01/29 15:16:38  bkline
  * Added check for private use characters.
  *
@@ -135,19 +140,19 @@ cdr::ValidationElementContext::ValidationElementContext(
     hasContext  = true;
 }
 
-// Access the cdr:eid associated with the context node.
+// Access the cdr-eid associated with the context node.
 cdr::String cdr::ValidationElementContext::getErrorIdValue()
 {
     if (!hasContext)
         throw new cdr::Exception(L"getErrorIdValue: "
-                L"Attempt to get cdr:eid attribute for missing context node");
+                L"Attempt to get cdr-eid attribute for missing context node");
 
-    cdr::String attrValue = contextNode.getAttribute("cdr:eid");
+    cdr::String attrValue = contextNode.getAttribute("cdr-eid");
     if (attrValue.empty()) {
         cdr::String elemName = contextNode.getNodeName();
 
         throw cdr::Exception(L"getErrorIdValue: "
-                L"No cdr:eid associated with context element '" +
+                L"No cdr-eid associated with context element '" +
                 elemName + L"'");
     }
 
@@ -234,13 +239,13 @@ int cdr::ValidationControl::getErrorCount() const
     return errVector.size();
 }
 
-// Say whether we want to track error locations (cdr:eid values).
+// Say whether we want to track error locations (cdr-eid values).
 void cdr::ValidationControl::setLocators(bool locators)
 {
     usingErrorIds = locators;
 }
 
-// Are we tracking error locators (cdr:eid values)?
+// Are we tracking error locators (cdr-eid values)?
 bool cdr::ValidationControl::hasLocators()
 {
     return usingErrorIds;
@@ -298,7 +303,6 @@ cdr::String cdr::ValidationControl::getErrorXml(
 }
 
 
-
 /**
  * Validates a CDR document, using the following steps.
  * <PRE>
@@ -345,7 +349,7 @@ cdr::String cdr::validateDoc(
         throw cdr::Exception(err.c_str());
     }
 
-    // Find out whether the client wants cdr:eid attributes sent back to him
+    // Find out whether the client wants cdr-eid attributes sent back to him
     bool withLocators = cdr::ynCheck(commandElement.getAttribute(
                                      L"ErrorLocators"), false);
 
@@ -423,18 +427,23 @@ cdr::String cdr::validateDoc(
         throw;
     }
 
-    // Delete temporary object and return results
-    // Note references to errList and textId should preserve contents
-    //   of these strings beyond docObj destruction
-    docIdString         = docObj->getTextId();
-    cdr::String xmlErrs = docObj->getErrorXml();
+    // Prepare fields that are returned to the caller
+    docIdString = docObj->getTextId();
 
-    // If we need to return XML with cdr:eid attributes, fetch it
+    // Current convention is to not return an errors element if there
+    //   are no errors
+    cdr::String xmlErrs = L"";
+    if (docObj->getErrorCount() > 0)
+        xmlErrs = docObj->getErrorXml();
+
+    // If we need to return XML with cdr-eid attributes, fetch it
     cdr::String xmlToSend = L"";
     if (docObj->hasLocators() && docObj->getErrorCount() > 0)
         xmlToSend = docObj->getSerialXml();
 
-    // Cleanup memory, we've extracted everything we need
+    // makeReponse parameters have been extracted from the docObj and
+    //   separate saved.
+    // Cleanup memory, we've extracted everything we need.
     delete docObj;
 
     // Return response
@@ -469,31 +478,26 @@ cdr::String cdr::execValidateDoc (
     // Invalid until found otherwise
     const wchar_t* status = L"I";
 
-    // Will append to the error list from the document object
-    // XXX OBSOLETE: cdr::StringList& errList = docObj->getErrList();
-
     // Check for private-use characters, which we don't allow (request #3823)
-    // XXX THIS NEW FEATURE IS ALREADY OBSOLETE
-    // XXX REPLACEMENT SHOULD:
-    //     IF errorIdXml IS AVAILABLE:
-    //         GET IT
-    //         MARKUP CHARACTER WITH THE PRIVATE USE MARKUP
-    //     ELSE
-    //         NO MARKUP
-    //     FIND OUT IF BOB HAS A DIFFERENT PLAN
-    //     THEN ADD THE ERROR MESSAGE AS BELOW
-    /*
+    // Will append to the error list from the document object
+    // Note: We don't try to find out what element has the invalid character,
+    //   or what it was, we're just trying to find out if there is at least
+    //   one.  The client will need to find it.
     cdr::String serializedDoc = docObj->getXml();
-    for (size_t i = 0; i < serializedDoc.size(); ++i) {
-        unsigned int c = (unsigned int)serializedDoc[i];
+    const wchar_t *pos = serializedDoc.c_str();
+    const wchar_t *end = pos + serializedDoc.size();
+std::cout << "pos / end = " << pos << " / "  << end << std::endl;
+    while (pos < end) {
+        unsigned int c = (unsigned int) *pos++;
         if (c >= 0xE000 && c <= 0xF8FF) {
-            wchar_t err[80];
-            swprintf(err, L"private use character U+%04X at position %u",
-                     c, i + 1);
-            docObj->addError(err);
+            // At least one char was found
+            docObj->addError(
+                    L"Document contains one or more private use characters");
+std::cout << "Found a private use character and added the error" << std::endl;
+            // Don't need to check for more
+            break;
         }
     }
-    */
 
     // Get a parse tree for the XML
     if (docObj->parseAvailable()) {
@@ -612,9 +616,9 @@ cdr::String makeResponse(const cdr::String& docId,
                            L"xmlns:cdr='cips.nci.nih.gov/cdr'>\n"
                            L"   <DocId>"
                          + docId
-                         + L"</DocId>\n   <DocStatus>"
+                         + L"</DocId>\n   <DocActiveStatus>"
                          + status
-                         + L"</DocStatus>\n"
+                         + L"</DocActiveStatus>\n"
                          + errors
                          + xmlDoc
                          + L"  </CdrValidateDocResp>\n";
