@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.72 2008-04-11 03:24:41 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.73 2008-04-11 03:44:19 ameyer Exp $
  *
  */
 
@@ -140,12 +140,6 @@ cdr::CdrDoc::CdrDoc (
     }
     else
         Id = 0;
-
-    // Override database info about last fragment ID with an actual count.
-    // Original code left in until we decide for sure we don't need it.
-    // See also the other CdrDoc constructor.
-    // AHM 2008-04-10
-    lastFragmentId = findHighestFragmentId(Xml);
 
     // Check DocType - must be one of recognized types
     // Get name of XSLT filter to generate title at the same time
@@ -306,6 +300,12 @@ cdr::CdrDoc::CdrDoc (
         getXML.close();
     }
 
+    // Override database info about last fragment ID with an actual count.
+    // Original code left in until we decide for sure we don't need it.
+    // See also the other CdrDoc constructors.
+    // AHM 2008-04-10
+    lastFragmentId = findHighestFragmentId(Xml);
+
     // Generate a title, or use an existing one, or create an error title
     createTitle();
 
@@ -368,7 +368,7 @@ cdr::CdrDoc::CdrDoc (
 
     // Override database info about last fragment ID with an actual count.
     // Original code left in until we decide for sure we don't need it.
-    // See also the other CdrDoc constructor.
+    // See also the other CdrDoc constructors.
     // AHM 2008-04-10
     lastFragmentId = findHighestFragmentId(Xml);
 
