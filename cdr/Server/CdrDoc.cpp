@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.71 2008-04-10 20:08:54 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.72 2008-04-11 03:24:41 ameyer Exp $
  *
  */
 
@@ -39,6 +39,8 @@
 
 static cdr::String cdrPutDoc (cdr::Session&, const cdr::dom::Node&,
                               cdr::db::Connection&, bool);
+
+static int findHighestFragmentId (cdr::String& xml);
 
 static void auditDoc (cdr::db::Connection&, int, int, cdr::String,
                       cdr::String, cdr::String);
@@ -130,7 +132,7 @@ cdr::CdrDoc::CdrDoc (
             throw cdr::Exception(L"CdrDoc: Unable to find document " + textId);
         }
         dbActiveStatus = rs.getString (1);
-        lastFragmentId = rs.getInt (2);
+        lastFragmentId = rs.getInt (2); // XXX See findHighestFragmentId below
         select.close();
 
         // We know the original status, here's a copy that might change
@@ -138,6 +140,12 @@ cdr::CdrDoc::CdrDoc (
     }
     else
         Id = 0;
+
+    // Override database info about last fragment ID with an actual count.
+    // Original code left in until we decide for sure we don't need it.
+    // See also the other CdrDoc constructor.
+    // AHM 2008-04-10
+    lastFragmentId = findHighestFragmentId(Xml);
 
     // Check DocType - must be one of recognized types
     // Get name of XSLT filter to generate title at the same time
@@ -357,6 +365,12 @@ cdr::CdrDoc::CdrDoc (
     cdr::Int sdi   = rs.getInt (11);
     cdr::Int rvRdy = rs.getInt (12);
     select.close();
+
+    // Override database info about last fragment ID with an actual count.
+    // Original code left in until we decide for sure we don't need it.
+    // See also the other CdrDoc constructor.
+    // AHM 2008-04-10
+    lastFragmentId = findHighestFragmentId(Xml);
 
     // Modifiable copy of status, must be initialized
     activeStatus = dbActiveStatus;
@@ -1598,6 +1612,81 @@ void cdr::CdrDoc::malFormed()
         else
             title = MALFORMED_DOC_TITLE;
     }
+}
+
+
+/**
+ * Scan the xml for cdr:id attributes and find the highest numbered
+ * one in our internal _nn* format.
+ *
+ * Newly assigned fragment ids will be numbered above this one.
+ *
+ * Pass:
+ *    xml   - as a Unicode cdr::String.
+ *
+ * Return:
+ *    Integer representation of the highest id found.
+ */
+static int findHighestFragmentId(
+    cdr::String& xml
+) {
+    // We'll scan for this string in the XML
+    // It is conceivable that the string could be found as data, which
+    //   could, in vanishingly rare cases, cause a higher number than
+    //   needed to be generated.  However no error will occur.
+    static const wchar_t idAttrName[] = L" cdr:id";
+
+    // The length of the attribute name plus a quote delimiter
+    static const size_t  attrFixedLen = wcslen(idAttrName);
+
+    // Track the scan with this
+    const wchar_t *pXml = xml.c_str();
+    const wchar_t *pXmlEnd = pXml + xml.length();
+
+    // Largest found, to be returned to caller
+    int maxFragId = 0;
+
+    // Copy a digit string here for conversion to a number
+    const int NUM_BUF_SIZE = 12;
+    char numBuf[NUM_BUF_SIZE + 1];
+
+    // Keep scanning the string until no more matches on the attr name
+    while ((pXml = wcsstr(pXml, idAttrName)) != NULL) {
+
+        // Point past the attribute name chars and other structure
+        pXml += attrFixedLen;
+        while (*pXml == L' ' || *pXml == L'\n')
+            ++pXml;
+        if (*pXml != L'=')
+            continue;
+        ++pXml;
+        while (*pXml == L' ' || *pXml == L'\n')
+            ++pXml;
+        if (*pXml != L'\'' && *pXml != L'"')
+            continue;
+        ++pXml;
+
+        // Is it in our format?
+        if (*pXml++ != L'_')
+            continue;
+
+        // Copy digits up to max size, implicitly converting to ASCII
+        size_t digitCount = 0;
+        while (iswdigit(*pXml) && digitCount < NUM_BUF_SIZE)
+            numBuf[digitCount++] = (char) *pXml++;
+
+        // If no quote delimiter, this isn't one of ours
+        if (*pXml != L'\'' && *pXml != L'"')
+            continue;
+
+        // Test the number
+        numBuf[digitCount] = 0;
+        int num = atoi(numBuf);
+        if (num > maxFragId)
+            maxFragId = num;
+    }
+
+    return maxFragId;
 }
 
 
