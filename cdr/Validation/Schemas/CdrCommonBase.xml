@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<!-- $Id: CdrCommonBase.xml,v 1.46 2008-03-04 13:00:01 bkline Exp $ 
+<!-- $Id: CdrCommonBase.xml,v 1.47 2008-04-16 04:07:19 ameyer Exp $ 
 
      $Log: not supported by cvs2svn $
+     Revision 1.46  2008/03/04 13:00:01  bkline
+     Tightened up pattern constraints for email addresses.
+
      Revision 1.45  2007/11/15 14:23:14  bkline
      Consolidated rule contexts to eliminate multiple rule sets for the same
      context.
@@ -420,7 +423,6 @@
      >AddressType is Non-US but Country=U.S.A.</assert>
     </rule>
    </pattern>
-  -->
    <pattern>
       <rule            context         = 'PoliticalSubUnit_State'>
      <assert test = 'document(concat("cdrutil:/sql-query/
@@ -433,6 +435,7 @@
       address Country link</assert>
     </rule>
    </pattern>
+  -->
    <pattern>
     <rule            context         = 'AltTitle'>
      <assert         test            = '@TitleType != "Short" or
@@ -441,18 +444,24 @@
     </rule>
    </pattern>
    <pattern>
-      <rule            context         = 'PoliticalSubUnit_State'>
+    <rule            context         = 'PoliticalSubUnit_State'>
 
      <!-- SubUnit doc->Country link matches this address Country link
           That's clear from reading the expression, right? -->
-     <assert test = '(document(concat("cdrutil:/sql-query/
-          SELECT value
-            FROM query_term_pub
-           WHERE path = &apos;/PoliticalSubUnit/Country/@cdr:ref&apos;
-             AND doc_id = ?", "~", string(number(substring(@cdr:ref,4))))
-             ))/SqlResult/row/col[@name="value"] = ../Country/@cdr:ref'
-     >PoliticalSubUnit_State doc links to a different country from this
-      address Country link</assert>
+     <assert test = 'document(concat("cdrutil:/sql-query/
+          SELECT 
+              CASE
+                WHEN ISNUMERIC(&apos;",string(number(substring(@cdr:ref,4))),"&apos;) = 1 THEN (
+                  SELECT value
+                    FROM query_term
+                   WHERE path = &apos;/PoliticalSubUnit/Country/@cdr:ref&apos;
+                     AND doc_id = ?)
+                ELSE ?
+              END AS value",
+                             "~", string(number(substring(@cdr:ref,4))),
+                             "~", ../Country/@cdr:ref)
+             )/SqlResult/row/col[@name="value"] = ../Country/@cdr:ref'
+>PoliticalSubUnit_State is in different country from this address Country</assert>
     </rule>
    </pattern>
   </appInfo>
