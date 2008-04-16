@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.24 2008-04-10 20:09:14 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.25 2008-04-16 00:33:09 ameyer Exp $
  *
  */
 
@@ -369,6 +369,24 @@ namespace cdr {
                 valCtl.addError(msg);
             }
 
+            /**
+             * Set the flag saying whether cdr-eid attribute error locators
+             * will be used.
+             *
+             * Locators may only be used with content documents, never
+             * with control type documents (schemas, css, filters).
+             * An attempt to set locators for those types will (almost)
+             * silently fail.  This allows callers to not worry about
+             * the content type before calling the function.
+             *
+             *  @param locators         True=use cdr-eid attributes.
+             *
+             *  @return                 True=will use them.  Note that caller
+             *                          might request them but we still
+             *                          refuse to do it, returning false.
+             */
+            bool setLocators(bool locators);
+
             // Accessors
             int getId()                    {return Id;}
             int getDocType()               {return DocType;}
@@ -396,7 +414,6 @@ namespace cdr {
 
             // Set/get ValidationControl locator information
             // Pass through to ValidationControl, q.v.
-            void setLocators(bool locators) { valCtl.setLocators(locators); }
             bool hasLocators() { return valCtl.hasLocators(); }
 
             // Get errors as an STL list of strings
