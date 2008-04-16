@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.73 2008-04-11 03:44:19 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.74 2008-04-16 00:33:57 ameyer Exp $
  *
  */
 
@@ -109,9 +109,6 @@ cdr::CdrDoc::CdrDoc (
 
     // Get the document ID if present in the transaction
     textId = docElement.getAttribute (L"Id");
-
-    // Will we use cdr-eid attributes with this doc?
-    setLocators(withLocators);
 
     // If Id was passed, document must exist in database.
     if (textId.size() > 0) {
@@ -306,6 +303,9 @@ cdr::CdrDoc::CdrDoc (
     // AHM 2008-04-10
     lastFragmentId = findHighestFragmentId(Xml);
 
+    // Locators requested and allowed?
+    setLocators(withLocators);
+
     // Generate a title, or use an existing one, or create an error title
     createTitle();
 
@@ -457,9 +457,6 @@ cdr::CdrDoc::CdrDoc (
     conType (not_set),
     warningCount (0)
 {
-    // Will we use cdr-eid attributes with this doc?
-    setLocators(withLocators);
-
     // Get info from version control
     std::string qry =
         "SELECT v.val_status, v.val_date, v.publishable, v.title, v.xml, "
@@ -488,6 +485,10 @@ cdr::CdrDoc::CdrDoc (
     DocType      = rs.getInt(6);
     textDocType  = rs.getString(7);
     stmt.close();
+
+    // Does caller want cdr-eid attributes with this doc?
+    // Only allow them for content type documents
+    setLocators(withLocators);
 }
 
 /**
@@ -506,16 +507,24 @@ void cdr::CdrDoc::store ()
         throw cdr::Exception(L"CdrDoc::store: RevisionFilterLevel cannot be "
                              L"overridden when saving a CDR document.");
 
-    // Filter the document to remove any cdr-eid attributes
-    // These should not be stored.  Checking here guarantees that they
-    //   won't be.
-    // As a simple optimization, we'll only call this if we find a cdr-eid
-    //   in a quick string scan
-
-    if (wcsstr(Xml.c_str(), L"cdr-eid") != NULL)
-        Xml = cdr::filterDocumentByScriptTitle (Xml,
-            L"Validation Error IDs: Delete all cdr-eid attributes",
-            docDbConn);
+    if (isContentType()) {
+        // Filter the document to remove any cdr-eid attributes
+        // These should not be stored.
+        // Error IDs are never allowed in non-content type documents, so
+        //   we check above to avoid possible mangling of fancy formatting
+        //   in schemas, filters, or css objects.
+        // As a simple optimization, we'll only call this if we find a cdr-eid
+        //   in a quick string scan
+        if (wcsstr(Xml.c_str(), L"cdr-eid") != NULL) {
+            cdr::String errStr;
+            cdr::FilterParmVector pv;
+            Xml = cdr::filterDocumentByScriptTitle (Xml,
+                L"Validation Error IDs: Delete all cdr-eid attributes",
+                docDbConn, &errStr, &pv);
+            if (errStr.size() > 0)
+                throw cdr::Exception(L"Error filtering out cdr-eids" + errStr);
+        }
+    }
 
     // New record
     if (!Id) {
@@ -626,6 +635,27 @@ void cdr::CdrDoc::store ()
 #endif
 
 } // store
+
+// Set the flag to say if error id locators will be used
+bool cdr::CdrDoc::setLocators(
+    bool locators
+) {
+    // This call can only be made after the document type is known
+    if (DocType == 0)
+        throw cdr::Exception(
+            L"Attempted CdrDoc::setLocators before doctype is established");
+
+    // Locators may only be used on content type documents
+    if (isControlType())
+        // Whatever caller wanted, we won't put in locators
+        locators = false;
+
+    // Set the flag
+    valCtl.setLocators(locators);
+
+    // May return something different from what caller passed
+    return locators;
+}
 
 /**
  * Add a new document to the database.
@@ -840,6 +870,9 @@ static cdr::String cdrPutDoc (
     //   not parsed out by the above logic
     if (docNode == 0)
         throw cdr::Exception(L"cdrPutDoc: No 'CdrDoc' element in transaction");
+
+    // Create the doc object
+    // Note locators won't be added to control type docs, whatever we pass
     cdr::CdrDoc doc (dbConn, docNode, withLocators);
     SHOW_ELAPSED("CdrDoc constructed", incrementalTimer);
 
@@ -1454,9 +1487,11 @@ cdr::String cdr::CdrDoc::getErrorIdXml()
     //   have the markup
     // For now, we'll let any filter exception bubble up.  May change
     //   that later if need
-    errorIdXml = cdr::filterDocumentByScriptTitle (Xml,
+    if (isContentType()) {
+        errorIdXml = cdr::filterDocumentByScriptTitle (Xml,
             L"Validation Error IDs: Delete and Add cdr-eid attributes",
             docDbConn);
+    }
 
     return errorIdXml;
 } // getErrorIdXml
