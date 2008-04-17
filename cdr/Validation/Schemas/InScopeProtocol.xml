@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: InScopeProtocol.xml,v 1.85 2007-11-20 03:13:38 bkline Exp $
+      $Id: InScopeProtocol.xml,v 1.86 2008-04-17 18:37:46 bkline Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.85  2007/11/20 03:13:38  bkline
+      Added comment for new CompletionDate element at Lakshmi's request.
+
       Revision 1.84  2007/11/08 21:09:07  bkline
       Added new EndDate element.
 
@@ -373,6 +376,15 @@
      >Postal address (with country) required for GenericPersonContact</assert>
     </rule>
    </pattern>
+   <pattern>
+    <rule            context         = 'RegulatoryInformation'>
+     <assert         test            = 'not(FDARegulated="Yes") or Section801'
+     >Section801 element is required when FDARegulated is 'Yes'</assert>
+     <assert         test            = 'not(FDARegulated="Yes") or
+                                        DelayedPosting'
+     >DelayedPosting element is required when FDARegulated is 'Yes'</assert>
+    </rule>
+   </pattern>
   </appInfo>
  </annotation>
 
@@ -413,6 +425,9 @@
                      minOccurs       = '0'/>
       <element       name            = 'FundingInfo'
                      type            = 'FundingInfo'
+                     minOccurs       = '0'/>
+      <element       name            = 'RegulatoryInformation'
+                     type            = 'RegulatoryInformation'
                      minOccurs       = '0'/>
       <element       name            = 'FDAINDInfo'
                      type            = 'FDAINDInfo'
@@ -513,6 +528,21 @@
     </sequence>
   </complexType>
 
+  <complexType       name            = 'RegulatoryInformation'>
+    <sequence>
+      <element       name            = 'FDARegulated'
+                     type            = 'YesNo'/>
+      <element       name            = 'Section801'
+                     type            = 'YesNo'
+                     minOccurs       = '0'/>
+      <element       name            = 'DelayedPosting'
+                     type            = 'YesNo'
+                     minOccurs       = '0'/>
+      <element       name            = 'ResponsibleParty'
+                     type            = 'OrganizationOrPersonLink'/>
+    </sequence>
+  </complexType>
+
   <complexType       name            = 'NIHGrantContract'>
     <sequence>
       <element       name            = 'NIHGrantContractType'
@@ -548,6 +578,9 @@
     <sequence>
       <element       name            = 'SourceName'
                      type            = 'SourceName'/>
+      <element       name            = 'SubmissionMethod'
+                     type            = 'SubmissionMethod'
+                     minOccurs       = '0'/>
       <element       name            = 'DateReceived'
                      type            = 'date'/>
       <element       name            = 'DateSubmissionComplete'
@@ -1054,6 +1087,7 @@
       <enumeration   value           = 'INCa'/>
       <enumeration   value           =
                           'Translational Research Informatics Center - Japan'/>
+      <enumeration   value           = 'NCI-DCEG'/>
     </restriction>
   </simpleType>
 
@@ -1111,6 +1145,7 @@
       <enumeration   value           = 'Completed'/>
       <enumeration   value           = 'Withdrawn'/>
       <enumeration   value           = 'Withdrawn from PDQ'/>
+      <enumeration   value           = 'Enrolling by invitation'/>
     </restriction>
   </simpleType>
 
@@ -1219,6 +1254,16 @@
       <enumeration   value           = 'Approved with comments'/>
       <enumeration   value           = 'Disapproved'/>
       <enumeration   value           = 'Canceled'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'SubmissionMethod'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'CTEP ESYS'/>
+      <enumeration   value           = 'Email'/>
+      <enumeration   value           = 'Mail'/>
+      <enumeration   value           = 'Oncore'/>
+      <enumeration   value           = 'PDQ Portal'/>
     </restriction>
   </simpleType>
 
