@@ -1,10 +1,16 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.26 2008-04-10 20:12:57 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.27 2008-04-18 02:05:48 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2008/04/10 20:12:57  ameyer
+ * Renamed cdr:eid to cdr-eid to workaround XMetal namespace bug.
+ * Do not return Errors element if no errors.
+ * Revised private use character processing and error message.
+ * Fixed bug, returned <DocStatus> should have been <DocActiveStatus>.
+ *
  * Revision 1.25  2008/03/25 23:56:03  ameyer
  * Significant changes to support cdr:eid / cdr:eref attributes to identify
  * errors.  Some new code and some revised code.  Also a small amount of
@@ -147,7 +153,7 @@ cdr::String cdr::ValidationElementContext::getErrorIdValue()
         throw new cdr::Exception(L"getErrorIdValue: "
                 L"Attempt to get cdr-eid attribute for missing context node");
 
-    cdr::String attrValue = contextNode.getAttribute("cdr-eid");
+    cdr::String attrValue = contextNode.getAttribute(L"cdr-eid");
     if (attrValue.empty()) {
         cdr::String elemName = contextNode.getNodeName();
 
@@ -486,14 +492,12 @@ cdr::String cdr::execValidateDoc (
     cdr::String serializedDoc = docObj->getXml();
     const wchar_t *pos = serializedDoc.c_str();
     const wchar_t *end = pos + serializedDoc.size();
-std::cout << "pos / end = " << pos << " / "  << end << std::endl;
     while (pos < end) {
         unsigned int c = (unsigned int) *pos++;
         if (c >= 0xE000 && c <= 0xF8FF) {
             // At least one char was found
             docObj->addError(
                     L"Document contains one or more private use characters");
-std::cout << "Found a private use character and added the error" << std::endl;
             // Don't need to check for more
             break;
         }
