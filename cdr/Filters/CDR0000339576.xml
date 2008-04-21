@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000339576.xml,v 1.19 2008-03-26 22:22:41 venglisc Exp $
+$Id: CDR0000339576.xml,v 1.20 2008-04-21 19:35:20 venglisc Exp $
 
 Filter handling all In-Line Markup elements of Summary Docs
 Written by Volker Englisch, 2004-07-16
@@ -56,8 +56,21 @@ $Log: not supported by cvs2svn $
     <xsl:text>idLink</xsl:text>
    </xsl:attribute>
    <xsl:attribute                 name = "href">
-    <xsl:value-of               select = "concat('#', 
+    <xsl:choose>
+     <xsl:when                    test = "$docID = 
+                                            substring-before(@cdr:href, '#')">
+      <xsl:value-of             select = "concat('#', 
                                             substring-after(@cdr:href, '#'))"/>
+     </xsl:when>
+     <xsl:otherwise>
+    <xsl:value-of               select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', 
+                                             substring-before(@cdr:href, '#'),
+                                                 '&amp;Session=guest',
+                                                 '#',
+                                             substring-after(@cdr:href, '#'))"/>      
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:attribute>
    <xsl:attribute                 name = "title">
     <xsl:value-of               select = "name()"/>
@@ -1437,10 +1450,20 @@ $Log: not supported by cvs2svn $
     <!-- h2><xsl:apply-templates/></h2 -->
    </xsl:when>
    <xsl:when                      test = "count($ancestors) = 2">
-    <h3><xsl:apply-templates/></h3>
+    <h3>
+     <xsl:call-template             name = "addIdLinkTarget">
+      <xsl:with-param               name = "id"
+                                  select = "../@cdr:id"/>
+     </xsl:call-template>
+     <xsl:apply-templates/></h3>
    </xsl:when>
    <xsl:otherwise>
-    <h4><xsl:apply-templates/></h4>
+    <h4>
+     <xsl:call-template             name = "addIdLinkTarget">
+      <xsl:with-param               name = "id"
+                                  select = "../@cdr:id"/>
+     </xsl:call-template>
+     <xsl:apply-templates/></h4>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
