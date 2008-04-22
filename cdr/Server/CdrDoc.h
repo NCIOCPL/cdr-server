@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.25 2008-04-16 00:33:09 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.26 2008-04-22 21:39:12 ameyer Exp $
  *
  */
 
@@ -180,6 +180,22 @@ namespace cdr {
              *  @return void        Throws exception in the event of error
              */
             void store ();
+
+            /**
+             * For some document types ("GlossaryTermConcept" as of this
+             * writing), the document title incorporates the doc ID.
+             * For new docs, the doc ID is not assigned until the document
+             * is saved, so the saved title is not yet correct.
+             *
+             * This function is called after storing a new doc (not an
+             * updated doc.)  It regenerates the title and compares the
+             * regeneration to the stored title.  If they differ, it
+             * stores the new title in the database.
+             *
+             * @return          True  = Title changed and was updated.
+             *                  False = Title unchanged, no update needed.
+             */
+            bool cdr::CdrDoc::checkTitleChange();
 
             /**
              * Replaces the rows in the query_term tables for the current
