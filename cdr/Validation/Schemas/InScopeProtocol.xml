@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: InScopeProtocol.xml,v 1.86 2008-04-17 18:37:46 bkline Exp $
+      $Id: InScopeProtocol.xml,v 1.87 2008-04-22 17:19:11 bkline Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.86  2008/04/17 18:37:46  bkline
+      Modifications for request #3950.
+
       Revision 1.85  2007/11/20 03:13:38  bkline
       Added comment for new CompletionDate element at Lakshmi's request.
 
@@ -383,6 +386,17 @@
      <assert         test            = 'not(FDARegulated="Yes") or
                                         DelayedPosting'
      >DelayedPosting element is required when FDARegulated is 'Yes'</assert>
+    </rule>
+   </pattern>
+   <pattern>
+    <rule            context         = 'CompletionDate'>
+     <assert         test            = 'not(translate(../StartDate, "-", "")
+                                        >= translate(., "-", ""))'
+     >StartDate must be earlier than CompletionDate</assert>
+     <assert         test            = 'not(../CurrentProtocolStatus =
+                                        "Complete") or
+                                        @DateType = "Actual"'
+     >Status is 'Complete' so completion date type must be 'Actual'</assert>
     </rule>
    </pattern>
   </appInfo>
