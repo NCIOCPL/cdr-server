@@ -11,18 +11,27 @@
                  xmlns:cdr="cips.nci.nih.gov/cdr">
  <xsl:output method="text"/>
 
+ <!-- Pass Doc ID in CDRnnnnnnnnnn format -->
+ <xsl:param                      name = "docId" select="CDR0000000000"/>
+
  <!--
  =====================================================================
  This filter creates the document.title for GlossaryTermConcept docs.
  ===================================================================== -->
  <xsl:template                  match = "GlossaryTermConcept">
-  <xsl:variable                  name = "docId"
-                               select = "document('cdrutil:/docid')"/>
+  <xsl:variable                  name = "cdrId"
+                               select = "substring-after($docId, 'CDR')"/>
   <xsl:variable                  name = "def"
                                select = "TermDefinition[1]/DefinitionText"/>
   <xsl:variable                  name = "front"
                                select = "concat(substring($def, 1, 50), 
                                                 ' ...')"/>
+  <!-- xsl:value-of                select = "$docId"/>
+  <xsl:value-of                select = "$cdrId"/ -->
+  <!-- xsl:value-of                select = "concat( 
+                                           substring-after($docId, 'CDR'),
+                                           ': ',
+                                           $front)"/ -->
   <xsl:value-of                select = "concat( 
                                            number(
                                            substring-after($docId, 'CDR')),
