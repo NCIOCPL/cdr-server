@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.74 2008-04-16 00:33:57 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.75 2008-04-22 21:40:01 ameyer Exp $
  *
  */
 
@@ -959,6 +959,11 @@ static cdr::String cdrPutDoc (
     if (newrec) {
         doc.store ();
 
+        // Some docs might incorporate the docId into the title,
+        //   but the docId didn't exist until the store was done.
+        // Check and update the title if need.
+        doc.checkTitleChange();
+
         // If we need to store a version, the user must check it out first
         //   but he can't have done that for a new record, so we do it now
         // Note: Auto-check-out is also performed for new records for which
@@ -1590,9 +1595,11 @@ void cdr::CdrDoc::createTitle()
         // Generate title
         cdr::String filterTitle = L"";
         cdr::String filterMsgs  = L"";
+        cdr::FilterParmVector pv;
+        pv.push_back (std::pair<cdr::String,cdr::String>(L"docId", textId));
         try {
             filterTitle = cdr::filterDocumentByScriptId (
-                    Xml, titleFilterId, docDbConn, &filterMsgs);
+                    Xml, titleFilterId, docDbConn, &filterMsgs, &pv, textId);
         }
         catch (cdr::Exception& e) {
             // Add an error to the doc object
@@ -1623,6 +1630,37 @@ void cdr::CdrDoc::createTitle()
             L"No title available for document, using default error title");
         title = NO_TITLE_AVAILABLE;
     }
+}
+
+/**
+ * Check to be sure a title doesn't need to change, or change it
+ */
+bool cdr::CdrDoc::checkTitleChange()
+{
+    // Save the current title
+    cdr::String savedTitle = title;
+
+    // Regenerate the title
+    createTitle();
+
+    // If it's different, re-save it in the database
+    if (title != savedTitle) {
+        std::string sqlStmt =
+            "UPDATE document \n"
+            "   SET title = ?\n"
+            " WHERE id = ?\n";
+
+        cdr::db::PreparedStatement docStmt =
+            docDbConn.prepareStatement (sqlStmt);
+        docStmt.setString (1, title);
+        docStmt.setInt    (2, Id);
+        docStmt.executeUpdate ();
+
+        // Tell caller we changed it
+        return true;
+    }
+
+    return false;
 }
 
 
