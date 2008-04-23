@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0" encoding="UTF-8"?>
 <!-- 
  =======================================================================
- $Id: CDR0000593716.xml,v 1.2 2008-04-16 00:26:13 ameyer Exp $
+ $Id: CDR0000593716.xml,v 1.3 2008-04-23 03:17:07 ameyer Exp $
 
  Filter to strip error markup from documents coming in from the client,
  and add it to documents to be validated and returned to the client.
@@ -24,17 +24,18 @@
  =======================================================================
  -->
  <xsl:transform xmlns:xsl = "http://www.w3.org/1999/XSL/Transform" 
-                  version = "1.0">
+                  version = "1.0"
+                xmlns:cdr = 'cips.nci.nih.gov/cdr'>
  <xsl:output       method = "xml"/>
  <xsl:preserve-space elements='*'/>
 
  <!-- ==================================================================
  Copy almost everything straight through.
  ======================================================================= -->
- <xsl:template               match = "@*|node()|comment()|text()
+ <xsl:template               match = "@*|comment()|text()|
                                       processing-instruction()">
    <xsl:copy>
-     <xsl:apply-templates   select = "@*|node()|comment()|text()
+     <xsl:apply-templates   select = "@*|comment()|text()|
                                       processing-instruction()"/>
    </xsl:copy>
  </xsl:template>
@@ -48,7 +49,8 @@
         <xsl:copy-of        select = "."/>
       </xsl:for-each>
       <xsl:attribute          name = "cdr-eid">
-         <xsl:number         level = "any" 
+         <xsl:number         level = "any"
+                            format = "_a"
                              count = "node()"/>
       </xsl:attribute>
       <xsl:apply-templates/>
