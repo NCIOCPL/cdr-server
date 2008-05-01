@@ -1,9 +1,13 @@
 /*
- * $Id: CreateLogins.sql,v 1.29 2008-01-10 22:26:50 ameyer Exp $
+ * $Id: CreateLogins.sql,v 1.30 2008-05-01 21:24:44 ameyer Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2008/01/10 22:26:50  ameyer
+ * Added DELETE ON query TO CdrGuest to enable the Delete button to work
+ * in CdrQueries.py.
+ *
  * Revision 1.28  2007/10/29 15:11:12  bkline
  * Added views doc_save_action and doc_last_save.
  *
@@ -99,7 +103,7 @@ USE master
 GO
 
 /*
- * Create the three logins.
+ * Create the three logins, each defaulting to the CDR databas
  */
 IF NOT EXISTS (SELECT * 
                  FROM master.dbo.syslogins 
@@ -123,6 +127,22 @@ IF NOT EXISTS (SELECT *
 BEGIN
     EXEC sp_addlogin 'CdrPublishing', '***REMOVED***', 'cdr', 'us_english'
 END
+GO
+
+/*
+ * One time we restored a database, the three logins above were
+ * apparently created in the restore (so that the above sp_addlogins
+ * did not execute) but, for unknown reasons, the default database
+ * associated with the logins was lost.
+ *
+ * So we will unconditionally set the defaults here.
+ */
+
+EXEC sp_defaultdb 'cdr', 'cdr'
+GO
+EXEC sp_defaultdb 'CdrGuest', 'cdr'
+GO
+EXEC sp_defaultdb 'CdrPublishing', 'cdr'
 GO
 
 /*
