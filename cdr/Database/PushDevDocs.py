@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #
-# $Id: PushDevDocs.py,v 1.7 2007-11-14 01:00:09 venglisc Exp $
+# $Id: PushDevDocs.py,v 1.8 2008-05-02 22:41:34 venglisc Exp $
 #
 # Replaces copies of CDR control documents which have been preserved
 # from the development server, after a refresh of the database on
@@ -182,8 +182,12 @@ if newDocTypes:
         # We encountered an error creating the document type
         # --------------------------------------------------
         if dtinfo.error: 
-            log("Failure creating doctype: %s" % fields[1], 1)
-            sys.exit(1)
+            log("*** Failure creating docType: %s" % fields[1], 1)
+            log("*** %s" % dtinfo.error, 1)
+            if dtinfo.error.startswith('Document type already exists:'):
+                pass
+            else:
+                sys.exit(1)
 
         # Need to add permissions for the new docType to the grp/user 
         # running this update so we're able to add/modify/... documents
