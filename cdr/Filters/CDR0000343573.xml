@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000343573.xml,v 1.12 2007-10-16 18:12:14 venglisc Exp $
+$Id: CDR0000343573.xml,v 1.13 2008-05-16 15:45:42 venglisc Exp $
 
 Filter to process Protocol HP Details
 Written by Cheryl Burg
@@ -42,8 +42,8 @@ $Log: not supported by cvs2svn $
    </tr>
   </table>
 
-  <table        xsl:use-attribute-sets = "table">
    <xsl:for-each                select = "StudyCategory">
+  <table        xsl:use-attribute-sets = "table">
     <tr>
      <td        xsl:use-attribute-sets = "cell1of2">
       <b>Information Category Type</b>
@@ -76,18 +76,21 @@ $Log: not supported by cvs2svn $
       </table>
      </td>
     </tr>
+   </table>
+   <p/>
 
-    <xsl:apply-templates        select = "Intervention"/>
+    <table        xsl:use-attribute-sets = "table">
+     <xsl:apply-templates       select = "Intervention"/>
 
-   <xsl:if                        test = "Comment">
-    <xsl:apply-templates        select = "Comment"
+    <xsl:if                       test = "Comment">
+     <xsl:apply-templates       select = "Comment"
                                   mode = "withAttribute">
-     <xsl:with-param              name = "label"
+      <xsl:with-param             name = "label"
                                 select = "'Study Cat. Comment'"/>
-    </xsl:apply-templates>
-   </xsl:if>
-   </xsl:for-each>
+     </xsl:apply-templates>
+    </xsl:if>
   </table>
+   </xsl:for-each>
 
   <p/>
       
@@ -163,29 +166,63 @@ $Log: not supported by cvs2svn $
   <xsl:choose>
    <xsl:when                      test = "InterventionNameLink">
     <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Intervention Name</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <table      xsl:use-attribute-sets = "table">
-     <tr>
-      <td       xsl:use-attribute-sets = "cell1of2">
-       <ul class='term'>
-        <xsl:apply-templates    select = "InterventionNameLink"/>
-       </ul>
-      </td>
-     </tr>
-    </table>
-   </td>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Intervention Name</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <table    xsl:use-attribute-sets = "table">
+       <tr>
+        <td     xsl:use-attribute-sets = "cell1of2">
+         <ul class='term'>
+          <xsl:apply-templates  select = "InterventionNameLink"/>
+         </ul>
+        </td>
+       </tr>
+      </table>
+     </td>
     </tr>
    </xsl:when>
    <xsl:otherwise>
+    <!-- tr>
+     <td><xsl:text> </xsl:text></td>
+     <td><br/></td>
+    </tr -->
+   </xsl:otherwise>
+  </xsl:choose>
+    <xsl:if                       test = "ArmOrGroupLink">
+     <xsl:for-each              select = "ArmOrGroupLink">
+      <xsl:variable               name = "agLink"
+                                select = "."/>
+      <tr>
+       <td>
+        <b>Arm or Group Link</b>
+       </td>
+       <td>
+        <xsl:value-of           select = "/InScopeProtocol/
+                                           ProtocolAbstract/
+                                           Professional/
+                                           ArmsOrGroups/
+                                           ArmOrGroup[@cdr:id = $agLink]/
+                                           ArmOrGroupLabel"/>
+        <xsl:text> (#</xsl:text>
+        <xsl:value-of           select = "."/>
+        <xsl:text>)</xsl:text>
+       </td>
+      </tr>
+     </xsl:for-each>
+     <tr>
+      <td>
+       <b>Intervention Description</b>
+      </td>
+      <td>
+       <xsl:value-of            select = "InterventionDescription"/>
+      </td>
+     </tr>
+    </xsl:if>
     <tr>
      <td><xsl:text> </xsl:text></td>
      <td><br/></td>
     </tr>
-   </xsl:otherwise>
-  </xsl:choose>
  </xsl:template>
 
 
