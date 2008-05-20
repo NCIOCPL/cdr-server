@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: CommonProtocolInfo.xml,v 1.58 2008-05-05 14:44:08 bkline Exp $
+      $Id: CommonProtocolInfo.xml,v 1.59 2008-05-20 19:56:12 bkline Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.58  2008/05/05 14:44:08  bkline
+      Added block for arms/groups.
+
       Revision 1.57  2008/04/17 18:33:30  bkline
       Changes to valid value lists.
 
@@ -234,6 +237,28 @@
      >Only one original protocol title is allowed.</assert>
     </rule>
    </pattern>
+   <pattern>
+    <rule            context         = 'ArmOrGroup'>
+     <assert         test            = 'not(ArmOrGroupLabel =
+                                        preceding-sibling::ArmOrGroup
+                                        /ArmOrGroupLabel)'
+     >ArmOrGroupLabel must be unique.</assert>
+    </rule>
+   </pattern>
+   <!--
+   <pattern>
+    <rule            context         = 'ArmOrGroupLabel'>
+     <assert         test            = 'not(not(. = //ArmOrGroupLink))'
+     >ArmOrGroupLabel does not have matching ArmOrGroupLink.</assert>
+    </rule>
+   </pattern>
+   -->
+   <pattern>
+    <rule            context         = 'ArmOrGroupLink'>
+     <assert         test            = 'not(not(. = //ArmOrGroupLabel))'
+     >ArmOrGroupLink does not have matching ArmOrGroupLabel.</assert>
+    </rule>
+   </pattern>
   </appInfo>
  </annotation>
 
@@ -409,8 +434,11 @@
       <element       name            = 'ArmOrGroupType'
                      type            = 'ArmOrGroupType'/>
       <element       name            = 'ArmOrGroupDescription'
-                     type            = 'ArmOrGroupDescription'/>
+                     type            = 'CTGovDescription'/>
     </sequence>
+    <attribute       name            = 'cdr:id'
+                     type            = 'NonEmptyString'
+                     minOccurs       = '0'/>
   </complexType>
 
   <complexType       name            = 'Patient'>
@@ -483,6 +511,13 @@
                      type            = 'TerminologyLink'
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
+      <element       name            = 'ArmOrGroupLink'
+                     type            = 'NonEmptyString'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'InterventionDescription'
+                     type            = 'CTGovDescription'
+                     minOccurs       = '0'/>
       <!--Do not rename-->
     </sequence>
   </complexType>
@@ -934,7 +969,7 @@
     </restriction>
   </simpleType>
 
-  <simpleType        name            = 'ArmOrGroupDescription'>
+  <simpleType        name            = 'CTGovDescription'>
     <restriction     base            = 'string'>
       <maxLength     value           = '1000'/>
     </restriction>
