@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.76 2008-05-23 03:00:43 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.77 2008-05-23 04:31:39 ameyer Exp $
  *
  */
 
@@ -94,8 +94,7 @@ cdr::CdrDoc::CdrDoc (
     needsReview (false),
     titleFilterId (0),
     title (L""),
-    conType (not_set),
-    warningCount (0)
+    conType (not_set)
 {
     // Get doctype and id from CdrDoc attributes
     const cdr::dom::Element& docElement(docDom);
@@ -318,8 +317,7 @@ cdr::CdrDoc::CdrDoc (
     cdr::db::Connection& dbConn,
     int docId,
     bool withLocators
-) : docDbConn (dbConn), Id (docId), warningCount (0),
-    revFilterLevel (DEFAULT_REVISION_LEVEL)
+) : docDbConn (dbConn), Id (docId), revFilterLevel (DEFAULT_REVISION_LEVEL)
  {
     // Text version of identifier is from passed id
     textId = cdr::stringDocId (Id);
@@ -454,8 +452,7 @@ cdr::CdrDoc::CdrDoc (
     needsReview (false),
     titleFilterId (0),
     title (L""),
-    conType (not_set),
-    warningCount (0)
+    conType (not_set)
 {
     // Get info from version control
     std::string qry =
@@ -1059,7 +1056,7 @@ static cdr::String cdrPutDoc (
                 // This produces an <Err> return, but it's not a validation
                 //   error.
                 doc.getValCtl().setLastErrorType(cdr::ETYPE_OTHER);
-                doc.getValCtl().setLastErrorLevel(cdr::ELVL_INFO);
+                doc.getValCtl().setLastErrorLevel(cdr::ELVL_WARNING);
 
                 cmdPublishVersion = false;
                 cmdVersion = true;
@@ -2396,10 +2393,13 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
 
         // Disabled at Lakshmi's request 2002-09-30.
         // Re-enabled at Lakshmi's request 2003-04-18.
-        if (statusSet.size() > 1)
-            addValidationMessage(L"Status mismatch between Lead "
-                                 L"Organizations.  Status needs to be "
-                                 L"checked.", VAL_MESSAGE_WARNING);
+        if (statusSet.size() > 1) {
+            addError(L"Status mismatch between Lead "
+                     L"Organizations.  Status needs to be "
+                     L"checked.");
+            valCtl.setLastErrorLevel(cdr::ELVL_WARNING);
+        }
+
 
         if (statusSet.find(L"Active") != statusSet.end())
             status = L"Active";
@@ -2412,8 +2412,8 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
         else if (statusSet.find(L"Approved-not yet active") != statusSet.end())
             status = L"Approved-not yet active";
         else {
-            addValidationMessage(L"No valid lead organization status found");
             status = L"No valid lead organization status found.";
+            addError(status);
         }
     }
 
@@ -2697,7 +2697,8 @@ void cdr::CdrDoc::collectQueryTerms(
             swprintf(msg, L"Warning: Only the first %d characters of "
                           L"field %s will be indexed",
                           MAX_SQLSERVER_INDEX_SIZE, fullPath.c_str());
-            addValidationMessage(msg);
+            addError(msg);
+            valCtl.setLastErrorLevel(cdr::ELVL_WARNING);
         }
 
         // Add the absolute path to the content to the query table
