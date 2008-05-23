@@ -9,9 +9,12 @@
  * The code standing behind these classes is all defined in
  * CdrValidateDoc.cpp.
  *
- * $Id: CdrValidationCtl.h,v 1.2 2008-04-10 20:09:41 ameyer Exp $
+ * $Id: CdrValidationCtl.h,v 1.3 2008-05-23 03:01:23 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2008/04/10 20:09:41  ameyer
+ * Renamed cdr:eid to cdr-eid to workaround XMetal namespace bug.
+ *
  * Revision 1.1  2008/03/25 23:41:15  ameyer
  * Header for validation controls.
  *
@@ -29,6 +32,24 @@ namespace cdr {
 /**@#+*/
 
     /** @pkg cdr */
+
+    /**
+     * Values distinguishing different kinds of errors.
+     */
+    enum ErrType {
+        ETYPE_VALIDATION,
+        ETYPE_OTHER
+    };
+
+    /**
+     * Values distinguishing severity levels of errors.
+     */
+    enum ErrLevel {
+        ELVL_INFO,
+        ELVL_WARNING,
+        ELVL_ERROR,
+        ELVL_FATAL
+    };
 
     /**
      * The context of a particular validation error.
@@ -126,6 +147,20 @@ namespace cdr {
             cdr::String toXmlString (bool includeLocator);
 
             /**
+             * Set the error type.
+             *
+             *  @param type             New type.
+             */
+            void setErrorType (ErrType type) { errType = type; }
+
+            /**
+             * Set the error severity level.
+             *
+             *  @param level            New severity level.
+             */
+            void setErrorLevel (ErrLevel level) { errLevel = level; }
+
+            /**
              * Has a context node been set for this element?
              *
              * @return          True = contextNode has been set.
@@ -147,6 +182,12 @@ namespace cdr {
             //    a workaround by using the non-namespaced attribute
             //    name "cdr-eid".
             cdr::String errId;
+
+            // Categories of errors
+            ErrType errType;
+
+            // Severity levels
+            ErrLevel errLevel;
 
             // Human readable error message
             cdr::String errMsg;
@@ -199,6 +240,27 @@ namespace cdr {
              *  @param errorId      Value of cdr-eid to force to be used.
              */
             void addError (cdr::String msg, cdr::String errorId=L"");
+
+            /**
+             * Modify the type of the last error.
+             *
+             * Used in the relatively less common cases where an error
+             * is not a validation error, but something else.
+             *
+             * Operates on the last ValidationError in the errVector
+             *
+             *  @param type         One of the enumerated types.
+             */
+            void setLastErrorType (ErrType type);
+
+            /**
+             * Modify the error level of the last error.
+             *
+             * Operates on the last ValidationError in the errVector
+             *
+             *  @param level        One of the enumerated types.
+             */
+            void setLastErrorLevel (ErrLevel level);
 
             /**
              * Cumulate all of the errors in a source ValidationControl
