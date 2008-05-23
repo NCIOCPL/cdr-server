@@ -1,10 +1,14 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.27 2008-04-18 02:05:48 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.28 2008-05-23 03:01:52 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2008/04/18 02:05:48  ameyer
+ * Removed some debug logging.
+ * Made a string explicitly wide char.
+ *
  * Revision 1.26  2008/04/10 20:12:57  ameyer
  * Renamed cdr:eid to cdr-eid to workaround XMetal namespace bug.
  * Do not return Errors element if no errors.
@@ -170,7 +174,17 @@ cdr::ValidationError::ValidationError(
     ValidationElementContext& ctxt,
     cdr::String&              msg,
     cdr::String&              errorId
-) : errCtxt(ctxt), errMsg(msg), errId(errorId) {};
+) {
+    // Store passed parms
+    errCtxt = ctxt;
+    errMsg  = msg;
+    errId   = errorId;
+
+    // Set default values for type and error level
+    // Use setLastErrorType() or setLastErrorLevel() if change is required
+    errType  = ETYPE_VALIDATION;
+    errLevel = ELVL_ERROR;
+}
 
 // Extract an error in XML string format
 cdr::String cdr::ValidationError::toXmlString(
@@ -189,6 +203,35 @@ cdr::String cdr::ValidationError::toXmlString(
         if (eref.size() > 0)
             errStr += L" cdr:eref='" + eref + L"'";
     }
+
+    // Human readable representations of type
+    cdr::String eType;
+    switch (errType) {
+        case ETYPE_VALIDATION:
+            eType = L"validation";
+            break;
+        case ETYPE_OTHER:
+            eType = L"other";
+    }
+    errStr += L" cdr:etype='" + eType + L"'";
+
+    // Human readable representation of severity
+    cdr::String eLevel;
+    switch (errLevel) {
+        case ELVL_INFO:
+            eLevel = L"info";
+            break;
+        case ELVL_WARNING:
+            eLevel = L"warning";
+            break;
+        case ELVL_ERROR:
+            eLevel = L"error";
+            break;
+        case ELVL_FATAL:
+            eLevel = L"fatal";
+    }
+    errStr += L" cdr:elevel='" + eLevel + L"'";
+
     // Add the error message and terminator
     errStr += L">" + errMsg + L"</Err>\n";
 
@@ -223,6 +266,20 @@ void cdr::ValidationControl::addError(
 
     // Add it to the sequence of errors
     errVector.push_back(ve);
+}
+
+// Modify the type of the previous error
+void cdr::ValidationControl::setLastErrorType(
+    cdr::ErrType type
+) {
+    errVector[errVector.size() - 1].setErrorType(type);
+}
+
+// Modify the severity level of the previous error
+void cdr::ValidationControl::setLastErrorLevel(
+    cdr::ErrLevel level
+) {
+    errVector[errVector.size() - 1].setErrorLevel(level);
 }
 
 // Append errors from another ValidationControl to this one
@@ -533,6 +590,9 @@ cdr::String cdr::execValidateDoc (
     else {
         // Add this to the error messages.  Parse error msg already there
         docObj->addError (L"Document malformed.  Validation not performed");
+
+        // Strictly speaking, this is not a validation error message
+        docObj->getValCtl().setLastErrorType(cdr::ETYPE_OTHER);
 
         // Set status in databse to malformed
         status = L"M";
