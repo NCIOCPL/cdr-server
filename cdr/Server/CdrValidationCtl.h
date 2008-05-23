@@ -9,9 +9,12 @@
  * The code standing behind these classes is all defined in
  * CdrValidateDoc.cpp.
  *
- * $Id: CdrValidationCtl.h,v 1.3 2008-05-23 03:01:23 ameyer Exp $
+ * $Id: CdrValidationCtl.h,v 1.4 2008-05-23 04:34:58 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2008/05/23 03:01:23  ameyer
+ * Added controls for marking the type and severity level of errors.
+ *
  * Revision 1.2  2008/04/10 20:09:41  ameyer
  * Renamed cdr:eid to cdr-eid to workaround XMetal namespace bug.
  *
@@ -154,11 +157,25 @@ namespace cdr {
             void setErrorType (ErrType type) { errType = type; }
 
             /**
+             * Get error type.
+             *
+             *  @return                 Type.
+             */
+            ErrType getErrorType() const { return errType; }
+
+            /**
              * Set the error severity level.
              *
              *  @param level            New severity level.
              */
             void setErrorLevel (ErrLevel level) { errLevel = level; }
+
+            /**
+             * Get error severity level.
+             *
+             *  @return                 Level.
+             */
+            ErrLevel getErrorLevel() const { return errLevel; }
 
             /**
              * Has a context node been set for this element?
@@ -314,9 +331,21 @@ namespace cdr {
             /**
              * Get the total number of errors.
              *
+             * Returns the number of items in the errVector.  Errors
+             * created by other older mechanisms aren't counted.
+             *
              *  @return             Count of errors.
              */
             int getErrorCount () const;
+
+            /**
+             * Get the number of ValidationErrors with a specific
+             * error level.
+             *
+             *  @param level        Level to count.
+             *  @return             Count.
+             */
+            int getLevelCount (ErrLevel level) const;
 
             /**
              * Find out whether we are tracking locations or not in this
@@ -324,14 +353,14 @@ namespace cdr {
              *
              *  @return             True = we are tracking locators.
              */
-            bool hasLocators();
+            bool hasLocators() const;
 
             /**
              * Has this object set the current context yet?
              *
              * @return              True = Context was set.
              */
-            bool hasContext();
+            bool hasContext() const;
 
         private:
             // Accumlator for all the errors found
