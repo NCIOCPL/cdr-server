@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.75 2008-04-22 21:40:01 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.76 2008-05-23 03:00:43 ameyer Exp $
  *
  */
 
@@ -1055,6 +1055,12 @@ static cdr::String cdrPutDoc (
                 // If the user was hoping for a publishable version,
                 //   set him straight.
                 doc.addError(L"Non-publishable version will be created.");
+
+                // This produces an <Err> return, but it's not a validation
+                //   error.
+                doc.getValCtl().setLastErrorType(cdr::ETYPE_OTHER);
+                doc.getValCtl().setLastErrorLevel(cdr::ELVL_INFO);
+
                 cmdPublishVersion = false;
                 cmdVersion = true;
             }
