@@ -1,10 +1,13 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.28 2008-05-23 03:01:52 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.29 2008-05-23 04:33:58 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2008/05/23 03:01:52  ameyer
+ * Added controls for marking errors by type and severity.
+ *
  * Revision 1.27  2008/04/18 02:05:48  ameyer
  * Removed some debug logging.
  * Made a string explicitly wide char.
@@ -302,6 +305,24 @@ int cdr::ValidationControl::getErrorCount() const
     return errVector.size();
 }
 
+// How many errors have been recorded at a particular severity level
+int cdr::ValidationControl::getLevelCount(
+    ErrLevel level
+) const {
+    int count = 0;
+
+    if (getErrorCount() > 0) {
+        std::vector<ValidationError>::const_iterator ei = errVector.begin();
+        while (ei != errVector.end()) {
+            if (ei->getErrorLevel() == level)
+                ++count;
+            ++ei;
+        }
+    }
+
+    return count;
+}
+
 // Say whether we want to track error locations (cdr-eid values).
 void cdr::ValidationControl::setLocators(bool locators)
 {
@@ -309,7 +330,7 @@ void cdr::ValidationControl::setLocators(bool locators)
 }
 
 // Are we tracking error locators (cdr-eid values)?
-bool cdr::ValidationControl::hasLocators()
+bool cdr::ValidationControl::hasLocators() const
 {
     return usingErrorIds;
 }
@@ -600,9 +621,14 @@ cdr::String cdr::execValidateDoc (
 
     // If not malformed, note the outcome of the validation.
     if (wcscmp(status, L"M")) {
-        int warningCount = docObj->getWarningCount();
-        bool invalid = docObj->getErrorCount() > warningCount;
-        status = invalid ? L"I" : L"V";
+        // Were there any true errors, not just warnings?
+        int hardErrorCount = 0;
+        ValidationControl valCtl = docObj->getValCtl();
+        hardErrorCount += valCtl.getLevelCount(cdr::ELVL_ERROR);
+        hardErrorCount += valCtl.getLevelCount(cdr::ELVL_FATAL);
+
+        // Set return status accordingly
+        status = hardErrorCount ? L"I" : L"V";
     }
 
     // Update database and object status
