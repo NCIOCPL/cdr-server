@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000150.xml,v 1.108 2008-05-08 19:22:34 venglisc Exp $
+$Id: CDR0000000150.xml,v 1.109 2008-05-29 14:32:31 venglisc Exp $
 
 Vendor Filter: InScopeProtocol
 
@@ -1994,12 +1994,30 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
              </PersonRole>
              <!--
              The address is always taken from the RSS information as is
+             but in case it doesn't exist but an org address does we're
+             taking this org address.
              ==========================================================  -->
              <Contact>
               <ContactDetail>
-               <xsl:for-each     select = "ExternalSiteAddress">
-                <xsl:call-template name = "getExternalAddress"/>
-               </xsl:for-each>
+               <xsl:choose>
+                <xsl:when            test = "ExternalSiteAddress">
+                 <xsl:for-each     select = "ExternalSiteAddress">
+                  <xsl:call-template name = "getExternalAddress"/>
+                 </xsl:for-each>
+                </xsl:when>
+                <xsl:otherwise>
+                 <xsl:for-each     select = "ExternalSiteOrg/
+                                             ExternalSiteOrgID/
+                                             Organization/
+                                             OrganizationLocations/
+                                             OrganizationLocation/
+                                             Location
+                                               [@cdr:id = ../../CIPSContact]/
+                                             PostalAddress">
+                 <xsl:call-template  name = "getExternalAddress"/>
+                </xsl:for-each>
+                </xsl:otherwise>
+               </xsl:choose>
 
                <xsl:choose>
                 <xsl:when          test = "../ExternalSiteContact/
