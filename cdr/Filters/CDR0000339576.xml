@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000339576.xml,v 1.22 2008-05-14 14:49:49 venglisc Exp $
+$Id: CDR0000339576.xml,v 1.23 2008-05-30 19:59:13 venglisc Exp $
 
 Filter handling all In-Line Markup elements of Summary Docs
 Written by Volker Englisch, 2004-07-16
@@ -1403,6 +1403,37 @@ $Log: not supported by cvs2svn $
   </xsl:if>
  </xsl:template>
 
+
+ <!--
+ ================================================================
+ Template to create a target element for SummaryFragmetRef
+ elements.  The SummarySection cdr:id attribute is being attached
+ to the Title element (H1, H2, ...) in the HTML output. 
+ For SummarySections without a title the SummaryFragmentRef would
+ not work.  We need to create a target for the link - using a 
+ <span id=NNN> to make the links work.
+ ================================================================ -->
+ <xsl:template                   match = "SummarySection">
+  <xsl:variable                   name = "title"
+                                select = "child::Title"/>
+
+  <xsl:choose>
+   <xsl:when                      test = "count($title) = 0">
+    <span>
+     <xsl:call-template             name = "addIdLinkTarget">
+      <xsl:with-param               name = "id"
+                                  select = "@cdr:id"/>
+     </xsl:call-template>
+     <xsl:apply-templates/>
+    </span>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:apply-templates/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
  <!--
  ============================================================
  Display titles for Patient Summaries
@@ -1778,7 +1809,8 @@ $Log: not supported by cvs2svn $
     <xsl:call-template            name = "addIdLinkTarget">
      <xsl:with-param              name = "id"
                                 select = "../@cdr:id"/>
-    </xsl:call-template>    <tr>
+    </xsl:call-template>
+    <tr>
      <td width="30%" align="right" valign="top">
       <br/>
       <b>Image:</b>
@@ -1789,6 +1821,46 @@ $Log: not supported by cvs2svn $
       <xsl:value-of             select = "Media/
                                           MediaTitle"/>
       <xsl:text> </xsl:text>
+      <br/><br/>
+     </td>
+    </tr>
+   </table>
+  </center>
+ </xsl:template>
+
+
+ <!-- 
+ ======================================================================
+ Template to replace the MediaID element with a little table as a 
+ place holder for the image
+ ====================================================================== -->
+ <xsl:template                   match = "MediaID"
+                                  mode = "gtc">
+  <center>
+   <table width="100%" border="0" 
+          style="background-color: #CCCCFF" colspacing="3">
+    <xsl:call-template            name = "addIdLinkTarget">
+     <xsl:with-param              name = "id"
+                                select = "../@cdr:id"/>
+    </xsl:call-template>
+    <tr>
+     <td width="30%" align="right" valign="top">
+      <br/>
+      <b>
+       <xsl:value-of            select = "."/>
+      </b>
+     </td>
+     <td width="70%" align="left">
+      <br/>
+      <xsl:element                name = "img">
+       <xsl:attribute             name = "src">
+        <xsl:text>http://mahler.nci.nih.gov/cgi-bin/cdr/</xsl:text>
+        <xsl:text>GetCdrImage.py?</xsl:text>
+        <xsl:text>id=</xsl:text>
+        <xsl:value-of           select = "@cdr:ref"/>
+        <xsl:text>-250.jpg</xsl:text>
+       </xsl:attribute>
+      </xsl:element>
       <br/><br/>
      </td>
     </tr>
