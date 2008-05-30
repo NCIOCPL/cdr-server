@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.77 2008-05-23 04:31:39 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.78 2008-05-30 02:11:07 ameyer Exp $
  *
  */
 
@@ -1187,17 +1187,16 @@ int cdr::CdrDoc::getErrorCount() const
 cdr::String cdr::CdrDoc::getSerialXml()
 {
     // Determine which string to send to the caller
-    // If caller wanted cdr-eids, and there are errors to report:
+    // If caller wanted cdr-eids, and there are errors to report, and
+    //  errorIdXml was successfully generated:
     //    Give him the one with cdr-eids
     // Else
     //    Give him a plain doc
-    cdr::String xmlStr = hasLocators() && getErrorCount() ? errorIdXml : Xml;
-
-    // Sanity check for debugging
-    if (xmlStr == errorIdXml && errorIdXml.size() == 0)
-        throw cdr::Exception(
-                L"BUG! CdrDoc::getSerialXml expected errorIdXml to exist, "
-                L"but it doesn't");
+    cdr::String xmlStr;
+    if (hasLocators() && getErrorCount() > 0 && errorIdXml.size() > 0)
+        xmlStr = errorIdXml;
+    else
+        xmlStr = Xml;
 
     // Build the CdrDoc string.
     cdr::String docStr = cdr::String(L"<CdrDoc Type='")
