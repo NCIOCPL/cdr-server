@@ -1,10 +1,15 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.29 2008-05-23 04:33:58 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.30 2008-05-30 04:31:53 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2008/05/23 04:33:58  ameyer
+ * Eliminated the obsolete getWarningCount() call and am now relying on the
+ * ValidationControl classes to say whether a document has actual errors
+ * or only warnings.
+ *
  * Revision 1.28  2008/05/23 03:01:52  ameyer
  * Added controls for marking errors by type and severity.
  *
@@ -207,33 +212,38 @@ cdr::String cdr::ValidationError::toXmlString(
             errStr += L" cdr:eref='" + eref + L"'";
     }
 
-    // Human readable representations of type
-    cdr::String eType;
-    switch (errType) {
-        case ETYPE_VALIDATION:
-            eType = L"validation";
-            break;
-        case ETYPE_OTHER:
-            eType = L"other";
-    }
-    errStr += L" cdr:etype='" + eType + L"'";
+    // Additional attributes can appear with or without context, but
+    //   only if the client is using new style error location
+    if (includeLocator) {
 
-    // Human readable representation of severity
-    cdr::String eLevel;
-    switch (errLevel) {
-        case ELVL_INFO:
-            eLevel = L"info";
-            break;
-        case ELVL_WARNING:
-            eLevel = L"warning";
-            break;
-        case ELVL_ERROR:
-            eLevel = L"error";
-            break;
-        case ELVL_FATAL:
-            eLevel = L"fatal";
+        // Human readable representations of type
+        cdr::String eType;
+        switch (errType) {
+            case ETYPE_VALIDATION:
+                eType = L"validation";
+                break;
+            case ETYPE_OTHER:
+                eType = L"other";
+        }
+        errStr += L" cdr:etype='" + eType + L"'";
+
+        // Human readable representation of severity
+        cdr::String eLevel;
+        switch (errLevel) {
+            case ELVL_INFO:
+                eLevel = L"info";
+                break;
+            case ELVL_WARNING:
+                eLevel = L"warning";
+                break;
+            case ELVL_ERROR:
+                eLevel = L"error";
+                break;
+            case ELVL_FATAL:
+                eLevel = L"fatal";
+        }
+        errStr += L" cdr:elevel='" + eLevel + L"'";
     }
-    errStr += L" cdr:elevel='" + eLevel + L"'";
 
     // Add the error message and terminator
     errStr += L">" + errMsg + L"</Err>\n";
@@ -367,7 +377,13 @@ cdr::String cdr::ValidationControl::getErrorXml(
     }
 
     // String version of the count
-    swprintf(buf, L"'%d'", count);
+    // This is a new format, only use it if code is aware of error locators
+    // Otherwise it might break something
+    cdr::String countStr = L"";
+    if (usingErrorIds) {
+        swprintf(buf, L" count='%d'", count);
+        countStr = buf;
+    }
 
     // Add each error
     // Whitespace is just for style compatibility with older code
@@ -380,8 +396,7 @@ cdr::String cdr::ValidationControl::getErrorXml(
     }
 
     // Add wrapper
-    cdr::String countStr(buf);
-    xml = L"   <Errors count=" + countStr + L">\n" + xml + L"   </Errors>\n";
+    xml = L"   <Errors" + countStr + L">\n" + xml + L"   </Errors>\n";
 
     return xml;
 }
