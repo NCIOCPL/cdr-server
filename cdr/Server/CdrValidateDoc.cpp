@@ -1,10 +1,13 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.30 2008-05-30 04:31:53 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.31 2008-06-03 18:06:17 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2008/05/30 04:31:53  ameyer
+ * Backward compatibility changes.
+ *
  * Revision 1.29  2008/05/23 04:33:58  ameyer
  * Eliminated the obsolete getWarningCount() call and am now relying on the
  * ValidationControl classes to say whether a document has actual errors
@@ -209,7 +212,7 @@ cdr::String cdr::ValidationError::toXmlString(
             eref = errCtxt.getErrorIdValue();
 
         if (eref.size() > 0)
-            errStr += L" cdr:eref='" + eref + L"'";
+            errStr += L" eref='" + eref + L"'";
     }
 
     // Additional attributes can appear with or without context, but
@@ -225,7 +228,7 @@ cdr::String cdr::ValidationError::toXmlString(
             case ETYPE_OTHER:
                 eType = L"other";
         }
-        errStr += L" cdr:etype='" + eType + L"'";
+        errStr += L" etype='" + eType + L"'";
 
         // Human readable representation of severity
         cdr::String eLevel;
@@ -242,7 +245,7 @@ cdr::String cdr::ValidationError::toXmlString(
             case ELVL_FATAL:
                 eLevel = L"fatal";
         }
-        errStr += L" cdr:elevel='" + eLevel + L"'";
+        errStr += L" elevel='" + eLevel + L"'";
     }
 
     // Add the error message and terminator
