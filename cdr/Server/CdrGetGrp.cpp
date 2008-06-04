@@ -1,10 +1,13 @@
 
 /*
- * $Id: CdrGetGrp.cpp,v 1.4 2002-02-01 20:49:19 bkline Exp $
+ * $Id: CdrGetGrp.cpp,v 1.5 2008-06-04 17:55:08 bkline Exp $
  *
  * Retrieves information about requested group.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/02/01 20:49:19  bkline
+ * Modified query to use expired column.
+ *
  * Revision 1.3  2001/04/13 12:25:13  bkline
  * Retrieve grp.name so case of group name is preserved.
  *
@@ -100,5 +103,5 @@ cdr::String cdr::getGrp(cdr::Session& session,
 
 
     // Report success.
-    return response + L"  </CdrGetGrp>\n";
+    return response + L"  </CdrGetGrpResp>\n";
 }
