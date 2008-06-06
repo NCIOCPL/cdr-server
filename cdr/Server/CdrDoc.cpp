@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.78 2008-05-30 02:11:07 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.79 2008-06-06 19:19:01 bkline Exp $
  *
  */
 
@@ -1835,6 +1835,7 @@ cdr::String cdr::setDocStatus(Session&         session,
     int docId = 0;
     String docIdStr(true);
     String newStatus(true);
+    String comment;
 
     // Extract the parameters.
     dom::Node child = node.getFirstChild();
@@ -1846,6 +1847,8 @@ cdr::String cdr::setDocStatus(Session&         session,
         }
         else if (name == L"NewStatus")
             newStatus = dom::getTextContent(child);
+        else if (name == L"Comment")
+            comment = dom::getTextContent(child);
         child = child.getNextSibling();
     }
     if (docIdStr.isNull())
@@ -1854,6 +1857,9 @@ cdr::String cdr::setDocStatus(Session&         session,
         throw Exception(L"Missing required status");
     if (newStatus != L"I" && newStatus != L"A")
         throw Exception(L"Invalid status " + newStatus);
+    if (comment.length() == 0)
+        comment = newStatus == L"I" ? L"Blocking document"
+                                    : L"Unblocking document";
 
     // Find out if the user is authorized to change the doc status.
     db::PreparedStatement s1 = conn.prepareStatement(
@@ -1871,6 +1877,10 @@ cdr::String cdr::setDocStatus(Session&         session,
     if (!session.canDo(conn, L"PUBLISH DOCUMENT", docType))
         throw Exception(L"User not authorized to change the status of " +
                         docType + L" documents");
+
+    // Record the action.
+    auditDoc(conn, docId, session.getUserId(), L"MODIFY DOCUMENT",
+             L"SetDocStatus", comment);
 
     // Do it.
     db::PreparedStatement s2 = conn.prepareStatement(
