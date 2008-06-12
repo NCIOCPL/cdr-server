@@ -1,0 +1,161 @@
+<CdrDoc Type='Filter' Id='CDR0000598376'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Glossary Term Definition Update</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!--
+ ================================================================
+ $Id: CDR0000598376.xml,v 1.1 2008-06-12 19:23:36 venglisc Exp $
+
+ Filter to denormalize GlossaryTermName data.
+ Written by Volker Englisch, 2008-02-27
+
+ $Log: not supported by cvs2svn $
+ ================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+ <xsl:output                    method = "html" 
+                  omit-xml-declaration = "yes"/>
+
+ <!-- 
+ =================================================================
+ Copy control information and generate current date
+ ================================================================= -->
+ <xsl:template                   match = "GlossaryTermDef">
+  <xsl:apply-templates          select = "DefinitionText"/>
+
+  <xsl:apply-templates          select = "Comment"
+                                  mode = "withAttribute">
+   <xsl:with-param                name = "label"
+                                select = "'Comment'"/>
+  </xsl:apply-templates>
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ Copy control information and generate current date
+ ================================================================= -->
+ <xsl:template                   match = "DefinitionText">
+  <tr>
+   <td valign="top">
+    <b>Definition</b>
+   </td>
+   <td>
+    <xsl:apply-templates/>
+    </td>
+  </tr>
+ </xsl:template>
+
+
+ <!--
+ =======================================================================
+ Template for Admin Information Comments
+ ======================================================================= -->
+ <xsl:template                   match = "Comment"
+                                  mode = "withAttribute">
+  <xsl:param                      name = "label"
+                                select = "'Comment'"/>
+
+  <tr>
+   <td>
+    <b>
+     <xsl:value-of              select = "$label"/>
+    </b>
+   </td>
+   <td>
+    <span class="attribute">
+     <xsl:if                      test = "@audience">
+      <xsl:text>audience=</xsl:text>
+      <xsl:value-of             select = "@audience"/>
+     </xsl:if>
+     <xsl:if                      test = "@date">
+      <xsl:text> date=</xsl:text>
+      <xsl:value-of             select = "@date"/>
+     </xsl:if>
+     <xsl:if                      test = "@user">
+      <xsl:text> user=</xsl:text>
+      <xsl:value-of             select = "@user"/>
+     </xsl:if>
+    </span>
+   </td>
+  </tr>
+  <tr>
+   <td><xsl:text> </xsl:text></td>
+   <td>
+    <xsl:value-of              select = "."/>
+    <p/>
+   </td>
+  </tr>
+ </xsl:template>
+
+
+ <!--
+ ==============================================================
+ Denormalize terminology which doesn't involve parent hierarchy.
+ ============================================================== -->
+ <xsl:template                   match = "PlaceHolder">
+  <xsl:variable                   name = "replace"
+                                select = "@name"/>
+
+   <xsl:choose>
+    <xsl:when                     test = "@name = 'TERMNAME'">
+     <span class="term-normal">
+     <xsl:value-of              select = "../../TermNameString"/>
+     </span>
+    </xsl:when>
+    <xsl:when                     test = "@name = 'CAPPEDTERMNAME'">
+     <span class="term-capped">
+     <xsl:value-of              select = "concat('@@', 
+                                                 substring(
+                                                   ../../TermNameString, 1, 1),
+                                                 '@@')"/>
+     <xsl:value-of              select = "substring(../../TermNameString, 2)"/>
+     </span>
+    </xsl:when>
+    <xsl:when                     test = "../../GlossaryTermPlaceHolder/
+                                          ReplacementText[@name=$replace]">
+     <span class="term-name">
+     <xsl:value-of              select = "../../GlossaryTermPlaceHolder/
+                                          ReplacementText[@name=$replace]"/>
+     </span>
+    </xsl:when>
+    <xsl:when                     test = "../../GlossaryConceptPlaceHolder/
+                                          ReplacementText[@name=$replace]">
+     <span class="term-concept">
+     <xsl:value-of              select = "../../GlossaryConceptPlaceHolder/
+                                          ReplacementText[@name=$replace]"/>
+     </span>
+    </xsl:when>
+    <xsl:otherwise>
+     <span class="term-error">
+     <xsl:text>*** No Text Found ***</xsl:text>
+     </span>
+    </xsl:otherwise>
+   </xsl:choose>
+
+   <!-- xsl:text> [</xsl:text>
+   <xsl:value-of                select = "@name"/>
+   <xsl:text>]</xsl:text --> 
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Template rule used to do XML to XML transformations which
+ copies any attribute node, or node that is child of of something 
+ ================================================================== -->
+ <xsl:template                   match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates         select = "@*|node()"/>
+  </xsl:copy> 
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
