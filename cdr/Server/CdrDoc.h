@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.27 2008-05-23 04:31:56 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.28 2008-06-19 15:17:23 ameyer Exp $
  *
  */
 
@@ -437,7 +437,7 @@ namespace cdr {
 
             // Get errors as XML
             // Pass through to ValidationControl
-            // Gets errors from whereever they are
+            // Gets errors (if any) from wherever they are
             cdr::String getErrorXml () {
                 return valCtl.getErrorXml(errList);
             }
