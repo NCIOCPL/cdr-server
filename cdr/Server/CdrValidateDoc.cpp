@@ -1,10 +1,13 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.31 2008-06-03 18:06:17 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.32 2008-06-19 15:18:32 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2008/06/03 18:06:17  ameyer
+ * Removed cdr namespace qualifier from eref, etype and elevel Err attributes.
+ *
  * Revision 1.30  2008/05/30 04:31:53  ameyer
  * Backward compatibility changes.
  *
@@ -358,7 +361,7 @@ void cdr::ValidationControl::getErrorMsgs(
         msgList.push_back(ei->getMessage());
 }
 
-// Get XML string representing all errors
+// Get XML string representing all errors, or empty string
 cdr::String cdr::ValidationControl::getErrorXml(
     StringList& errList
 ) {
@@ -371,12 +374,16 @@ cdr::String cdr::ValidationControl::getErrorXml(
     // Number of errors
     size_t count = errVector.size() + errList.size();
 
+    // If there aren't any, we're done.  Empty string means no errors.
+    if (count == 0)
+        return xml;
+
     // Errors not associated with specific elements, cumulated in a string
     // We may not need this anymore, but it doesn't hurt to leave it in
     if (errList.size() > 0) {
         cdr::StringList::const_iterator i = errList.begin();
         while (i != errList.end())
-            xml += L"    <Err>" + *i++ + L"</Err>\n";
+            xml += L"<Err>" + *i++ + L"</Err>\n";
     }
 
     // String version of the count
@@ -399,7 +406,7 @@ cdr::String cdr::ValidationControl::getErrorXml(
     }
 
     // Add wrapper
-    xml = L"   <Errors" + countStr + L">\n" + xml + L"   </Errors>\n";
+    xml = L"<Errors" + countStr + L">\n" + xml + L"</Errors>\n";
 
     return xml;
 }
@@ -533,10 +540,8 @@ cdr::String cdr::validateDoc(
     docIdString = docObj->getTextId();
 
     // Current convention is to not return an errors element if there
-    //   are no errors
-    cdr::String xmlErrs = L"";
-    if (docObj->getErrorCount() > 0)
-        xmlErrs = docObj->getErrorXml();
+    //   are no errors.  getErrorXml() follows the convention.
+    cdr::String xmlErrs = docObj->getErrorXml();
 
     // If we need to return XML with cdr-eid attributes, fetch it
     cdr::String xmlToSend = L"";
