@@ -9,9 +9,13 @@
  * The code standing behind these classes is all defined in
  * CdrValidateDoc.cpp.
  *
- * $Id: CdrValidationCtl.h,v 1.4 2008-05-23 04:34:58 ameyer Exp $
+ * $Id: CdrValidationCtl.h,v 1.5 2008-06-19 15:19:23 ameyer Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2008/05/23 04:34:58  ameyer
+ * Added some needed accessors.
+ * Made a couple more functions const.
+ *
  * Revision 1.3  2008/05/23 03:01:23  ameyer
  * Added controls for marking the type and severity level of errors.
  *
@@ -305,7 +309,10 @@ namespace cdr {
              *                      reference elements.
              *                      0 or empty list means there are none.
              *
-             *  @return             Serial XML with error info.
+             *  @return             If errors exist:
+             *                          Serial XML with error info.
+             *                      Else:
+             *                          Empty string (L"").
              *
              *  @throws             cdr::Exception if locators requested but
              *                      they weren't requested when this
