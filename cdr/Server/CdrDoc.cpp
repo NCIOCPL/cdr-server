@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.79 2008-06-06 19:19:01 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.80 2008-06-26 19:55:33 ameyer Exp $
  *
  */
 
@@ -1156,16 +1156,35 @@ static cdr::String cdrPutDoc (
     //   and if there were errors,
     // then:
     //   Be sure that we echo back the document with cdr-eid attributes.
-    if (cmdValidate && doc.hasLocators() && doc.getErrorCount() > 0)
+    if (cmdValidate && doc.hasLocators() && doc.getErrorCount() > 0
+                    && doc.isContentType())
         cmdEcho = true;
 
-    if (cmdEcho)
-        // resp += cdr::getDocString(doc.getTextId(), dbConn, true, true) + L"\n";
+    if (cmdEcho) {
+
+        // Old way fetched doc from the database, via denormalization
+        // resp+=cdr::getDocString(doc.getTextId(), dbConn, true, true) + L"\n";
+
+        // New way has to use the in-memory version, with error id attrs,
+        //   and simple denormalized content.
         resp += doc.getSerialXml();
+    }
 
     resp += L"  </Cdr" + rtag + L"DocResp>\n";
     SHOW_ELAPSED("command response ready", incrementalTimer);
     SHOW_ELAPSED("total elapsed time for cdrPutDoc", putDocTimer);
+
+    /*
+    // Uncomment this to write the response to stdout for debugging
+    const wchar_t *xcstr = resp.c_str();
+    wchar_t *xpos = (wchar_t *) xcstr;
+    while (*xpos) {
+      std::wcout << *xpos;
+      ++xpos;
+    }
+    std::wcout << std::endl;
+    */
+
     return resp;
 
 } // cdrPutDoc
@@ -1198,6 +1217,17 @@ cdr::String cdr::CdrDoc::getSerialXml()
     else
         xmlStr = Xml;
 
+    // Denormalize the data - a service to users
+    cdr::String denormXml;
+    try {
+        denormXml = cdr::filterDocumentByScriptTitle(xmlStr,
+                               L"Fast Denormalization Filter", docDbConn);
+    }
+    catch (cdr::Exception& e) {
+        // Can't do it, just return what we had
+        denormXml = xmlStr;
+    }
+
     // Build the CdrDoc string.
     cdr::String docStr = cdr::String(L"<CdrDoc Type='")
                        + textDocType
@@ -1205,7 +1235,7 @@ cdr::String cdr::CdrDoc::getSerialXml()
                        + L"<CdrDocCtl>\n"
                        + L" <DocTitle>" + title + L"</DocTitle>\n"
                        + L"</CdrDocCtl>\n"
-                       + cdr::makeDocXml(xmlStr)
+                       + cdr::makeDocXml(denormXml)
                        + L"\n</CdrDoc>\n";
 
     return docStr;
