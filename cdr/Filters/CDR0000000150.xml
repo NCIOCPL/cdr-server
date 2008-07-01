@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000150.xml,v 1.109 2008-05-29 14:32:31 venglisc Exp $
+$Id: CDR0000000150.xml,v 1.110 2008-07-01 21:51:59 venglisc Exp $
 
 Vendor Filter: InScopeProtocol
 
@@ -1524,6 +1524,8 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
     </xsl:when>
     <!--
     Collect the person information for ExternalSitePIID nodes.
+    If no ExternalSiteAddress information exists we're getting the
+    information from the org record.
     ================================================================= -->
     <xsl:otherwise>
      <xsl:if                      test = "not(../../ExternalSiteContact/
@@ -1533,9 +1535,25 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                                  ExternalSiteContactTitle)">
       <Contact>
        <ContactDetail>
-        <xsl:for-each           select = "../../ExternalSiteAddress">
-         <xsl:call-template       name = "getExternalAddress"/>
-        </xsl:for-each>
+        <xsl:choose>
+         <xsl:when                 test = "../../ExternalSiteAddress">
+          <xsl:for-each           select = "../../ExternalSiteAddress">
+           <xsl:call-template       name = "getExternalAddress"/>
+          </xsl:for-each>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:for-each           select = "../../ExternalSiteOrg/
+                                             ExternalSiteOrgID/
+                                             Organization/
+                                             OrganizationLocations/
+                                             OrganizationLocation/
+                                             Location
+                                               [@cdr:id = ../../CIPSContact]/
+                                             PostalAddress">
+           <xsl:call-template       name = "getExternalAddress"/>
+          </xsl:for-each>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:choose>
          <!-- 
          Let's first see if a CTO Contact exists since this would 
@@ -1878,7 +1896,8 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                           PostalAddress">
           <!-- 
           We are reusing the getExternalAddress template here even though
-          this section has nothing to do with the External Sites!     -->
+          this section has nothing to do with the External Sites!    
+          =============================================================== -->
           <xsl:call-template      name = "getExternalAddress"/>
          </xsl:for-each>
          <Phone>
