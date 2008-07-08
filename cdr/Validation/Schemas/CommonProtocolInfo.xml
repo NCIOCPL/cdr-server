@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: CommonProtocolInfo.xml,v 1.59 2008-05-20 19:56:12 bkline Exp $
+      $Id: CommonProtocolInfo.xml,v 1.60 2008-07-08 20:28:05 bkline Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.59  2008/05/20 19:56:12  bkline
+      Added arm info to intervention block; added custom rules for arms.
+
       Revision 1.58  2008/05/05 14:44:08  bkline
       Added block for arms/groups.
 
@@ -245,6 +248,16 @@
      >ArmOrGroupLabel must be unique.</assert>
     </rule>
    </pattern>
+   <pattern>
+    <rule            context         = 'ArmsOrGroups'>
+     <assert         test            = 'not(@SingleArmStudy="Yes" and
+                                         count(ArmOrGroup) &gt; 0)'
+     >Single arm study cannot have any ArmOrGroup elements</assert>
+     <assert         test            = '@SingleArmStudy="Yes" or
+                                        count(ArmOrGroup) &gt; 1'
+     >Must have more than one ArmOrGroup or SingleArmStudy attribute</assert>
+    </rule>
+   </pattern>
    <!--
    <pattern>
     <rule            context         = 'ArmOrGroupLabel'>
@@ -423,14 +436,18 @@
     <sequence>
       <element       name            = 'ArmOrGroup'
                      type            = 'ArmOrGroup'
+                     minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
     </sequence>
+    <attribute       name            = 'SingleArmStudy'
+                     type            = 'Yes'
+                     minOccurs       = '0'/>
   </complexType>
 
   <complexType       name            = 'ArmOrGroup'>
     <sequence>
       <element       name            = 'ArmOrGroupLabel'
-                     type            = 'string'/>
+                     type            = 'ArmOrGroupLabel'/>
       <element       name            = 'ArmOrGroupType'
                      type            = 'ArmOrGroupType'/>
       <element       name            = 'ArmOrGroupDescription'
@@ -906,6 +923,7 @@
       <enumeration   value           = 'Phase of trial'/>
       <enumeration   value           = 'PRMS approval'/>
       <enumeration   value           = 'Completion date'/>
+      <enumeration   value           = 'Responsible party'/>
     </restriction>
   </simpleType>
 
@@ -972,6 +990,13 @@
   <simpleType        name            = 'CTGovDescription'>
     <restriction     base            = 'string'>
       <maxLength     value           = '1000'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'ArmOrGroupLabel'>
+    <restriction     base            = 'string'>
+      <minLength     value           = '1'/>
+      <maxLength     value           = '62'/>
     </restriction>
   </simpleType>
 
