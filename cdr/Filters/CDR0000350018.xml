@@ -8,325 +8,106 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 
 <!--
-  $Id: CDR0000350018.xml,v 1.4 2008-05-16 15:46:45 venglisc Exp $
-  $Log: not supported by cvs2svn $
+ Call the server based cached denormalizeTerm function to 
+ denormalize and, if required, upcode terminology in an 
+ InScopeProtocol.
+ 
+ The server based cdrutil:denormalizeTerm function retrieves
+ the preferred name, "upcoded" terms (names of broader terms in
+ the terminology tree), and associated id and PdqKey attributes
+ for each controlled vocabulary term in the document, returning 
+ them in an XML string suitable for inclusion in the vendor 
+ output version of the protocol document.
+
+ Denormalization is done for all terms.  Upcoding is only done
+ for some of the terms.  A parameter to the C++ function tells
+ it to upcode if necessary.
+
+                                    Author: Alan Meyer
+
+    $Id: CDR0000350018.xml,v 1.5 2008-07-08 21:35:26 venglisc Exp $
+
+    $Log: not supported by cvs2svn $
+    Revision 1.2  2004/06/30 19:35:29  ameyer
+    Entirely new version using cdr::cache::Term in the server
+
+    Revision 1.1  2003/12/16 20:59:17  bkline
+    Custom scripting for terminology upcoding support.
   -->
 
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
-                          xmlns:cdrscr = "cips.nci.nih.gov/cdr/script"
-                           xmlns:exslt = "http://www.exslt.org/functions"
-               exclude-result-prefixes = "cdrscr"
-            extension-element-prefixes = "exslt"
                                version = "1.0">
 
  <xsl:output                    method = "xml" 
                   omit-xml-declaration = "no"
                               encoding = "UTF-8"/> 
 
- <!--                                          
- ==================================================================
- Custom scripting for terminology upcoding support.
- ================================================================== -->
- <exslt:script       implements-prefix = "cdrscr"
-                              language = "ecmascript">
-
-    // Global collection of links we've already processed.
-    var seenThese = new Object();
-
-    // Construct a URI for a new base term.  Note that invoking this
-    // function has the intended side effect of initializing the
-    // set of parents we have already seen to an empty set.
-    function newUri(nodeSet) { 
-        var cdrId = nodeSet[0];
-        seenThese = new Object(); 
-        return "cdr:" + cdrId + "/lastp"; 
-    }
-
-    // Check to see if we have already picked up this parent term.
-    // If we haven't, say no but remember it so we can say yes next
-    // time.
-    function seenMe(nodeSet) {
-        var cdrId = nodeSet[0];
-        if (seenThese[cdrId])
-            return 1;
-        seenThese[cdrId] = 1;
-        return 0;
-    }
-
-  <xsl:fallback>
-   <xsl:text>ECMAScript extensions are not supported!</xsl:text>
-  </xsl:fallback>
- </exslt:script>
-
  
- <!-- *
+ <!--                                          
  ==============================================================
- Template for Intervention elements
-
- Denormalization and upcoding of InterventionType and 
- InterventionNameLink
+ Template for all elements that need denormalization and upcoding
  ============================================================== -->
- <xsl:template                   match = "Intervention">
+ <xsl:template                   match = "Intervention/InterventionType     |
+                                          Intervention/InterventionNameLink |
+                                          ProtocolDetail/Condition          |
+                                          PDQIndexing/Condition             |
+                                          Eligibility/Diagnosis">
+  <!-- Create element for the term -->
   <xsl:element                    name = "{name()}">
-   <xsl:variable                  name = "IntervenID" 
-                                select = "InterventionType/@cdr:ref"/>
-   <!-- 
-   ===============================================================
-   Don't eliminate the call to cdrscr:newUri(); we need the side
-   effect!
-   =============================================================== -->
-   <xsl:variable                  name = "uri"
-                                select = "cdrscr:newUri($IntervenID)"/>
-   <xsl:variable                  name = "IntervenInfo" 
-                                select = "document($uri)"/>
-   <InterventionType>
-    <Term>
-     <xsl:for-each              select = "InterventionType/@*">
-      <xsl:attribute              name = "{name()}">
-       <xsl:value-of            select = "."/>
-      </xsl:attribute>
-     </xsl:for-each>
 
-     <xsl:copy-of               select = "$IntervenInfo/Term/PreferredName"/>
-
-     <!-- 
-     ====================================================
-     Upcode the parent terms
-     ==================================================== -->
-     <xsl:call-template           name = "upcodeTerm">
-      <xsl:with-param             name = "termDoc"
-                                select = "$IntervenInfo"/>
-      <xsl:with-param             name = "parentElementName"
-                                select = "'Term'"/>
-     </xsl:call-template>
-
-    </Term>
-   </InterventionType>
-
-   <xsl:for-each                select = "InterventionNameLink | 
-                                          InterventionName">
-    <xsl:if                       test = "@cdr:ref">
-     <xsl:variable                name = "IntervenNameID"
+    <!-- Get the term's id -->
+    <xsl:variable                 name = "termId" 
                                 select = "@cdr:ref"/>
-     <xsl:variable                name = "IntervenNameInfo" 
-                                select = "document(concat('cdr:',
-                                                          $IntervenNameID, 
-                                                          '/lastp'))"/>
-     <InterventionNameLink>
-      <Term>
-       <xsl:for-each            select = "@*">
-        <xsl:attribute            name = "{name()}">
-         <xsl:value-of          select = "."/>
-        </xsl:attribute>
-       </xsl:for-each>
-       <xsl:copy-of             select = "$IntervenNameInfo/Term/
-                                           PreferredName"/>
-      </Term>
-     </InterventionNameLink>
-    </xsl:if>
-   </xsl:for-each>
+
+    <!-- Create a URI for a C++ callback -->
+    <xsl:variable                 name = "uriFunc"
+                                select = "concat('cdrutil:/denormalizeTerm/',
+                                                 $termId)"/>
+
+      <!-- Invoke C++ denormalization and upcode callback -->
+      <xsl:copy-of              select = "document($uriFunc)"/>
+  </xsl:element>
+
+  <xsl:if                         test = "name() = 'InterventionNameLink'">
    <xsl:apply-templates         select = "ArmOrGroupLink"/>
-   <xsl:apply-templates         select = "InterventionDescription"/>
-  </xsl:element>
+  </xsl:if>
  </xsl:template>
 
-
- <!-- *
+ <!--                                          
  ==============================================================
- Template for Condition
- ============================================================== -->
- <xsl:template                   match = "Condition">
-  <!-- 
-  ========================================================
-  Resolving the Condition to include ConditionParent.
-  Don't eliminate the call to cdrscr:newUri(); we rely on
-  its side effect!
-  ======================================================== -->
-  <xsl:variable                   name = "CondID" 
-                                select = "@cdr:ref"/>
-  <xsl:variable                   name = "uri"
-                                select = "cdrscr:newUri($CondID)"/>
-  <xsl:variable                   name = "CondInfo" 
-                                select = "document($uri)"/>
-
-  <xsl:element                    name = "{name()}">
-   <Term>
-    <xsl:for-each               select = "@*">
-     <xsl:attribute               name = "{name()}">
-      <xsl:value-of             select = "."/>
-     </xsl:attribute>
-    </xsl:for-each>
-    <xsl:copy-of                select = "$CondInfo/Term/PreferredName"/>
-
-    <!-- 
-    ====================================================
-    Upcode the parent terms
-    ==================================================== -->
-    <xsl:call-template            name = "upcodeTerm">
-     <xsl:with-param              name = "termDoc"
-                                select = "$CondInfo"/>
-     <xsl:with-param              name = "parentElementName"
-                                select = "'Term'"/>
-    </xsl:call-template>
-
-   </Term>
-  </xsl:element>
- </xsl:template>
-
-
-
- <!-- *
- ==============================================================
- Template for Diagnosis
- ============================================================== -->
- <xsl:template                   match = "Diagnosis">
-  <!--
-  ========================================================
-  Resolving the Diagnosis to include SpecificDiagnosis and
-  DiagnosisParent.  Don't eliminate the call to 
-  cdrscr:newUri(); we rely on its side effect!
-  ======================================================== -->
-   <xsl:variable                  name = "DiagID" 
-                                select = "@cdr:ref"/>
-   <xsl:variable                  name = "uri"
-                                select = "cdrscr:newUri($DiagID)"/>
-   <xsl:variable                  name = "DiagInfo" 
-                                select = "document($uri)"/>
-
-   <xsl:element                   name = "{name()}">
-    <Term>
-     <xsl:for-each              select = "@*">
-      <xsl:attribute              name = "{name()}">
-       <xsl:value-of            select = "."/>
-      </xsl:attribute>
-     </xsl:for-each>
-     <xsl:copy-of              select = "$DiagInfo/Term/PreferredName"/>
-
-    <!-- 
-    ====================================================
-    Upcode the parent terms
-    ==================================================== -->
-    <xsl:call-template            name = "upcodeTerm">
-     <xsl:with-param              name = "termDoc"
-                                select = "$DiagInfo"/>
-     <xsl:with-param              name = "parentElementName"
-                                select = "'Term'"/>
-    </xsl:call-template>
-
-    </Term>
-   </xsl:element>
- </xsl:template>
-
-
- <!-- *
- ==============================================================
- Denormalize terminology which doesn't involve parent hierarchy.
+ Template for all elements that need denormalization only
  ============================================================== -->
  <xsl:template                   match = "ExclusionCriteria | Gene">
-  <!-- 
-  ========================================================
-  Find the terminology document's preferred name.
-  ======================================================== -->
-  <xsl:variable                   name = "termId" 
-                                select = "@cdr:ref"/>
-  <xsl:variable                   name = "termDoc" 
-                                select = "document(concat('cdr:',
-                                                          $termId, 
-                                                          '/lastp'))"/>
+
+  <!-- Create element for the term -->
   <xsl:element                    name = "{name()}">
-   <Term>
-    <xsl:for-each               select = "@*">
-     <xsl:attribute               name = "{name()}">
-      <xsl:value-of             select = "."/>
-     </xsl:attribute>
-    </xsl:for-each>
-    <xsl:copy-of               select = "$termDoc/Term/PreferredName"/>
-   </Term>
+
+    <!-- Get the term's id -->
+    <xsl:variable                 name = "termId" 
+                                select = "@cdr:ref"/>
+
+    <!-- Create a URI for a C++ callback, without upcode=Yes parameter -->
+    <xsl:variable                 name = "uriFunc"
+                                select = "concat('cdrutil:/denormalizeTerm/',
+                                            concat($termId, '/No'))"/>
+
+      <!-- Invoke C++ denormalization and upcode callback -->
+      <xsl:copy-of              select = "document($uriFunc)"/>
+
   </xsl:element>
  </xsl:template>
 
+ <!--
 
- <!-- *
- ===================================================================
- Called Templates
- =================================================================== --> 
- <!-- *
- ===================================================================
- Bring in the parents for a terminology document.  Called by at
- least three places in this script.
- =================================================================== -->
- <xsl:template                    name = "upcodeTerm">
-  <xsl:param                      name = "termDoc"/>
-  <xsl:param                      name = "parentElementName"/>
-
-  <!-- 
-  =================================================================
-  There can be more than one parent!
-  ================================================================= -->
-  <xsl:for-each                 select = "$termDoc/Term
-                                           /TermRelationship/ParentTerm
-                                           /TermId">
-
-   <!-- 
-   ================================================================
-   Filter out duplicates.
-   ================================================================ -->
-   <xsl:if                        test = "not(cdrscr:seenMe(@cdr:ref))">
-    <xsl:variable                 name = "uri"
-                                select = "concat('cdr:', @cdr:ref, '/lastp')"/>
-    <xsl:variable                 name = "parent"
-                                select = "document($uri)"/>
-
-    <!-- 
-    ===============================================================
-    The Parent Term is only printed if it is not of TermTypeName = 
-    Header term | Obsolete term
-    =============================================================== -->
-    <xsl:if                       test = "not($parent/Term/
-                                              TermType/TermTypeName = 
-                                              'Header term') and
-                                          not($parent/Term/
-                                              TermType/TermTypeName = 
-                                              'Obsolete term')">
-     <xsl:element                 name = "{$parentElementName}">
-      <xsl:for-each             select = "@*">
-       <xsl:attribute             name = "{name()}">
-        <xsl:value-of           select = "."/>
-       </xsl:attribute>
-      </xsl:for-each>
-      <xsl:copy-of             select = "$parent/Term/PreferredName"/>
-     </xsl:element>
-    </xsl:if>
-
-    <!-- 
-    ===============================================================
-    Even if we skip this parent, we keep crawling up the hierarchy,
-    looking for ancestor terms which do meet the criteria (per Lakshmi,
-    2002-12-02).
-    =============================================================== -->
-    <xsl:call-template            name = "upcodeTerm">
-     <xsl:with-param              name = "termDoc"
-                                select = "$parent"/>
-     <xsl:with-param              name = "parentElementName"
-                                select = "$parentElementName"/>
-    </xsl:call-template>
-   </xsl:if>
-  </xsl:for-each>
- </xsl:template>
-
-
- <!-- *
  =========================================================================
- Generic pass-through copy action.
+ Generic pass-through copy action - called on everything else
  ========================================================================= -->
  <xsl:template                   match = "node() | @*">
   <xsl:copy>
    <xsl:apply-templates         select = "@* | node()" />
   </xsl:copy>
  </xsl:template>
-
-
 </xsl:transform>
 ]]>
 </CdrDocXml>
