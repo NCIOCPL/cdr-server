@@ -10,7 +10,7 @@
 <!--
 ======================================================================
 ==
-== $Id: CDR0000502087.xml,v 1.8 2008-05-02 14:38:30 bkline Exp $
+== $Id: CDR0000502087.xml,v 1.9 2008-07-09 19:29:14 bkline Exp $
 ==
 == This filter transforms vendor output for active protocols into
 == a structure which conforms to the NLM DTD for clinical_study
@@ -37,6 +37,9 @@
 == used for the indefinite future.
 ==
 == $Log: not supported by cvs2svn $
+== Revision 1.8  2008/05/02 14:38:30  bkline
+== Added placeholder for arm_group elements.
+==
 == Revision 1.7  2007/12/21 16:02:30  bkline
 == Added support for exporting completion dates.
 ==
@@ -169,6 +172,7 @@
  <xsl:template               match = "Protocol">
   <xsl:param                  name = "overallStatus"/>
   <xsl:call-template          name = "get_id_info"/>
+  <xsl:call-template          name = "get_reg_info"/>
   <xsl:call-template          name = "get_is_ind_study"/>
   <xsl:call-template          name = "get_has_irb_approval"/>
   <xsl:call-template          name = "get_ind_info"/>
@@ -188,6 +192,7 @@
   <xsl:call-template          name = "get_last_data_entry_date"/>
   <xsl:call-template          name = "get_phase"/>
   <xsl:call-template          name = "get_study_design"/>
+  <xsl:call-template          name = "get_enrollment_type"/>
   <xsl:call-template          name = "get_condition"/>
   <xsl:call-template          name = "get_arms_or_groups"/>
   <xsl:call-template          name = "get_intervention"/>
@@ -238,6 +243,16 @@
     </xsl:if>
    </xsl:for-each>
   </id_info>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Adds placeholder for is_fda_regulated, is_section_801, and delayed_posting
+ elements.  Need to get this from the CDR document, because the vendor 
+ filters don't export it.
+ ==================================================================== -->
+ <xsl:template                name = "get_reg_info">
+  <xsl:text>@@REG-INFO@@</xsl:text>
  </xsl:template>
 
  <!--
@@ -417,6 +432,7 @@
      </agency>
     </collaborator>
    </xsl:for-each>
+   <xsl:text>@@RESP_PARTY@@</xsl:text>
   </sponsors>
  </xsl:template>
 
@@ -659,6 +675,14 @@
    </xsl:for-each>
   </StudyDesignInfo>
   <xsl:text>@@STUDY-DESIGN-END@@</xsl:text>
+ </xsl:template>
+
+ <!--
+ ====================================================================
+ Added at Lakshmi's request (#4181).
+ ==================================================================== -->
+ <xsl:template                name = "get_enrollment_type">
+  <enrollment_type>Anticipated</enrollment_type>
  </xsl:template>
 
  <!--
