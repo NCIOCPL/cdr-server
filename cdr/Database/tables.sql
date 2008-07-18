@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.124 2007-10-29 15:11:12 bkline Exp $
+ * $Id: tables.sql,v 1.125 2008-07-18 03:16:40 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.124  2007/10/29 15:11:12  bkline
+ * Added views doc_save_action and doc_last_save.
+ *
  * Revision 1.123  2007/08/23 15:22:54  ameyer
  * Added val_status check to publishable_version view.
  *
@@ -975,6 +978,21 @@ CREATE TABLE external_map_rule
       map_id INTEGER       NOT NULL REFERENCES external_map,
      element VARCHAR(64)   NOT NULL,
        value NVARCHAR(255) NOT NULL)
+GO
+
+/*
+ * SQL "LIKE" patterns for CTGov Facility values that we should not
+ * try to map.  If a new facility value string is encountered and
+ * it matches one of these patterns, we create an external_map
+ * entry for it, as usual, but we mark it as mappable = 'N'
+ *
+ *           id  primary key for this table (auto-generated)
+ *      pattern  pattern.  Should include SQL LIKE wildcards in order
+ *               to be useful.
+ */
+CREATE TABLE external_map_nomap_pattern
+         (id INTEGER       IDENTITY PRIMARY KEY,
+     pattern NVARCHAR(356) NOT NULL)
 GO
 
 /* 
