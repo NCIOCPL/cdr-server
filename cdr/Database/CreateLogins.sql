@@ -1,9 +1,13 @@
 /*
- * $Id: CreateLogins.sql,v 1.30 2008-05-01 21:24:44 ameyer Exp $
+ * $Id: CreateLogins.sql,v 1.31 2008-07-18 03:17:08 ameyer Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2008/05/01 21:24:44  ameyer
+ * Added sp_defaultdb commands to insure that default databases are established
+ * for our logins, matter whether or not the sp_addlogins execute.
+ *
  * Revision 1.29  2008/01/10 22:26:50  ameyer
  * Added DELETE ON query TO CdrGuest to enable the Delete button to work
  * in CdrQueries.py.
@@ -473,6 +477,8 @@ GO
 GRANT SELECT, INSERT ON ctgov_export TO CdrPublishing
 GO
 GRANT SELECT ON external_map_rule TO CdrGuest
+GO
+GRANT SELECT ON external_map_nomap_pattern TO CdrGuest
 GO
 GRANT SELECT ON import_disposition TO CdrGuest
 GO
