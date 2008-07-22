@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-     $Id: CDR0000315755.xml,v 1.4 2007-08-09 16:55:22 venglisc Exp $
+     $Id: CDR0000315755.xml,v 1.5 2008-07-22 17:22:44 venglisc Exp $
 
      Common Templates shared between Person and PDQBoardMember 
      QC Report Filters
@@ -470,7 +470,24 @@
        </i>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:value-of            select = "../Phone"/>
+       <!--
+       We're using the Board Roster Report filter to create a summary
+       sheet roster report but we don't need the table layout, so we're
+       wrapping Phone, Fax, Email in an element so we can easily 
+       extract the data via a string search
+       ================================================================ -->
+       <xsl:choose>
+        <xsl:when                 test = "$whoAmI = 
+                                            'PdqBoardMemberRosterSummary'">
+         <xsl:element             name = "Phone">
+          <xsl:value-of         select = "../Phone"/>
+         </xsl:element>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:value-of          select = "../Phone"/>
+        </xsl:otherwise>
+       </xsl:choose>
+
        <xsl:if                    test = "../Phone/@Public
                                           and
                                           $whoAmI != 'PdqBoardMemberRoster'">
@@ -524,12 +541,38 @@
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:choose>
       <xsl:when                   test = "../Fax/@native">
-       <i>
-        <xsl:value-of           select = "../Fax"/>
-       </i>
+       <!--
+       See note for Phone above
+       ==================================================== -->
+       <xsl:choose>
+        <xsl:when                 test = "$whoAmI = 
+                                            'PdqBoardMemberRosterSummary'">
+         <xsl:element             name = "Fax">
+          <xsl:value-of         select = "../Fax"/>
+         </xsl:element>
+        </xsl:when>
+        <xsl:otherwise>
+         <i>
+          <xsl:value-of         select = "../Fax"/>
+         </i>
+        </xsl:otherwise>
+       </xsl:choose>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:value-of            select = "../Fax"/>
+       <!-- 
+       See note for Phone above
+       ==================================================== -->
+       <xsl:choose>
+        <xsl:when                 test = "$whoAmI = 
+                                            'PdqBoardMemberRosterSummary'">
+         <xsl:element             name = "Fax">
+          <xsl:value-of         select = "../Fax"/>
+         </xsl:element>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:value-of          select = "../Fax"/>
+        </xsl:otherwise>
+       </xsl:choose>
       </xsl:otherwise>
      </xsl:choose>      
     </td>
@@ -541,13 +584,31 @@
     <xsl:choose>
      <xsl:when                    test = "../Email">
       <td       xsl:use-attribute-sets = "cell2of2">
-       <xsl:call-template         name = "listEmail">
-        <xsl:with-param           name = "email"
+       <!-- 
+       See note for Phone above
+       ==================================================== -->
+       <xsl:choose>
+        <xsl:when                 test = "$whoAmI = 
+                                            'PdqBoardMemberRosterSummary'">
+         <xsl:element             name = "Email">
+          <xsl:value-of         select = "../Email"/>
+         </xsl:element>
+
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:call-template       name = "listEmail">
+          <xsl:with-param         name = "email"
                                 select = "../Email"/>
-       </xsl:call-template>
+         </xsl:call-template>
+        </xsl:otherwise>
+       </xsl:choose>
+
        <xsl:if                    test = "../Email/@Public
                                           and
-                                          $whoAmI != 'PdqBoardMemberRoster'">
+                                          $whoAmI != 'PdqBoardMemberRoster'
+                                          and
+                                          $whoAmI != 
+                                               'PdqBoardMemberRosterSummary'">
         <xsl:apply-templates    select = "../Email/@Public"/>
        </xsl:if>
       </td>
