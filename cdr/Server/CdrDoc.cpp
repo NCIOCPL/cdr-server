@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.80 2008-06-26 19:55:33 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.81 2008-07-30 05:35:34 ameyer Exp $
  *
  */
 
@@ -244,7 +244,7 @@ cdr::CdrDoc::CdrDoc (
                     if (ctlNode.getNodeType() ==
                                     cdr::dom::Node::CDATA_SECTION_NODE) {
 
-                        Xml = ctlNode.getNodeValue();
+                        setXml(ctlNode.getNodeValue());
                         break;
                     }
                     ctlNode = ctlNode.getNextSibling ();
@@ -292,7 +292,7 @@ cdr::CdrDoc::CdrDoc (
             throw cdr::Exception(L"CdrDoc: Unable to fetch document " +
                                   textId + L" for constructor");
         }
-        Xml = rs.getString(1);
+        setXml(rs.getString(1));
         getXML.close();
     }
 
@@ -355,7 +355,7 @@ cdr::CdrDoc::CdrDoc (
     title          = cdr::entConvert (rs.getString (3));
     dbActiveStatus = rs.getString (4);
     DocType        = rs.getInt (5);
-    Xml            = rs.getString (6);
+    setXml(rs.getString (6));
     lastFragmentId = rs.getInt (7);
     comment        = cdr::entConvert (rs.getString (8));
     textDocType    = rs.getString (9);
@@ -478,7 +478,7 @@ cdr::CdrDoc::CdrDoc (
     valDate      = rs.getString(2);
     verPubStatus = (rs.getString(3) == L"Y") ? publishable : nonPublishable;
     title        = cdr::entConvert (rs.getString(4));
-    Xml          = rs.getString(5);
+    setXml(rs.getString(5));
     DocType      = rs.getInt(6);
     textDocType  = rs.getString(7);
     stmt.close();
@@ -486,6 +486,27 @@ cdr::CdrDoc::CdrDoc (
     // Does caller want cdr-eid attributes with this doc?
     // Only allow them for content type documents
     setLocators(withLocators);
+}
+
+/**
+ * Install XML in the object.
+ * If it's different, discard anything generated from the earlier version.
+ */
+void cdr::CdrDoc::setXml (
+    cdr::String newXml
+) {
+    // If anything changed, discard dependent objects
+    if (newXml != Xml) {
+        // Discards
+        parsed     = false;
+        revisedXml = L"";
+        errorIdXml = L"";
+
+        // Put the new Xml in place
+        Xml = newXml;
+    }
+
+    // Otherwise we're already there.  Do nothing.
 }
 
 /**
@@ -515,11 +536,12 @@ void cdr::CdrDoc::store ()
         if (wcsstr(Xml.c_str(), L"cdr-eid") != NULL) {
             cdr::String errStr;
             cdr::FilterParmVector pv;
-            Xml = cdr::filterDocumentByScriptTitle (Xml,
+            cdr::String newXml = cdr::filterDocumentByScriptTitle (Xml,
                 L"Validation Error IDs: Delete all cdr-eid attributes",
                 docDbConn, &errStr, &pv);
             if (errStr.size() > 0)
                 throw cdr::Exception(L"Error filtering out cdr-eids" + errStr);
+            setXml(newXml);
         }
     }
 
@@ -1631,7 +1653,7 @@ void cdr::CdrDoc::createTitle()
         pv.push_back (std::pair<cdr::String,cdr::String>(L"docId", textId));
         try {
             filterTitle = cdr::filterDocumentByScriptId (
-                    Xml, titleFilterId, docDbConn, &filterMsgs, &pv, textId);
+                    xml, titleFilterId, docDbConn, &filterMsgs, &pv, textId);
         }
         catch (cdr::Exception& e) {
             // Add an error to the doc object
@@ -2226,12 +2248,7 @@ void cdr::CdrDoc::stripXmetalPis(bool validating)
                                                   docDbConn, &errorStr, &pv);
 
         // Save the transformation for later steps.
-        Xml = newXml;
-
-        // If there is a stored parse tree for the document
-        //   make sure it is not re-used since document may have changed
-        parsed = false;
-        revisedXml = "";
+        setXml(newXml);
 
         // Save any warnings.
         if (!errorStr.empty())
@@ -2282,11 +2299,6 @@ void cdr::CdrDoc::genFragmentIds ()
         try {
             newXml = cdr::filterDocument (Xml, xslt, docDbConn,
                                           &filterMsgs);
-
-            // If there is a stored parse tree for the document
-            //   make sure it is not re-used since document may have changed
-            parsed = false;
-            revisedXml = "";
         }
         catch (cdr::Exception& e) {
             // Add an error to the doc object
@@ -2337,7 +2349,7 @@ void cdr::CdrDoc::genFragmentIds ()
         *destp = (wchar_t) '\0';
 
         // Replace the xml with the transformed version
-        Xml = (cdr::String) fixedXml;
+        setXml(fixedXml);
 
         // Release the temporary buffer
         delete [] fixedXml;
@@ -2467,12 +2479,7 @@ void cdr::CdrDoc::updateProtocolStatus(bool validating)
                                                   docDbConn, &errorStr, &pv);
 
         // Save the transformation for later steps
-        Xml = newXml;
-
-        // If there is a stored parse tree for the document
-        //   make sure it is not re-used since document may have changed
-        parsed = false;
-        revisedXml = "";
+        setXml(newXml);
     }
     catch (cdr::Exception& e) {
         errList.push_back(L"Failure setting protocol status: " +
@@ -2509,7 +2516,7 @@ void cdr::CdrDoc::sortProtocolSites() {
 
     // If we got a result, it replaces the XML that we had
     if (sortedXml.size() > 0)
-        Xml = sortedXml;
+        setXml(sortedXml);
 }
 
 
