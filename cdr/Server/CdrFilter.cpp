@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.56 2007-08-03 19:06:11 bkline Exp $
+ * $Id: CdrFilter.cpp,v 1.57 2008-08-01 02:31:04 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.56  2007/08/03 19:06:11  bkline
+ * Fixed serious memory allocation bug in parmstr function().
+ *
  * Revision 1.55  2007/03/14 23:58:23  ameyer
  * Changed slashes to tildes to delimit query arguments in execXsltSqlQuery.
  * We need to be able to pass strings with slashes into SQL Server.
@@ -275,7 +278,7 @@ static std::map<std::string, int> *S_pFltrIdMap = 0;
 //  database.  Searches case insensitively for keyword+whitespace
 static cdr::RegEx S_unsafeWordsPat(
         ".*(insert\\s|update\\s|delete\\s|create\\s"
-            "|alter\\s|exec[\(\\s]|execute[\(\\s]).*", true);
+            "|alter\\s|exec[\\(\\s]|execute[\\(\\s]).*", true);
 
 namespace
 {
