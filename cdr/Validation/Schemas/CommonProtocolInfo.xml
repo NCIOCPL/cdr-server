@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: CommonProtocolInfo.xml,v 1.60 2008-07-08 20:28:05 bkline Exp $
+      $Id: CommonProtocolInfo.xml,v 1.61 2008-08-04 16:22:43 bkline Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.60  2008/07/08 20:28:05  bkline
+      Added optional SingleArmStudy attribute to ArmsOrGroups element; created
+      custom rules to verify that if this attribute was set then no ArmOrGroup
+      child elements are present and if any ArmOrGroup child elements are
+      present there must be at least two of them.
+
       Revision 1.59  2008/05/20 19:56:12  bkline
       Added arm info to intervention block; added custom rules for arms.
 
@@ -250,22 +256,20 @@
    </pattern>
    <pattern>
     <rule            context         = 'ArmsOrGroups'>
-     <assert         test            = 'not(@SingleArmStudy="Yes" and
+     <assert         test            = 'not(@SingleArmOrGroupStudy="Yes" and
                                          count(ArmOrGroup) &gt; 0)'
      >Single arm study cannot have any ArmOrGroup elements</assert>
-     <assert         test            = '@SingleArmStudy="Yes" or
+     <assert         test            = '@SingleArmOrGroupStudy="Yes" or
                                         count(ArmOrGroup) &gt; 1'
-     >Must have more than one ArmOrGroup or SingleArmStudy attribute</assert>
+     >Need more than one ArmOrGroup or SingleArmOrGroupStudy attribute</assert>
     </rule>
    </pattern>
-   <!--
    <pattern>
     <rule            context         = 'ArmOrGroupLabel'>
      <assert         test            = 'not(not(. = //ArmOrGroupLink))'
      >ArmOrGroupLabel does not have matching ArmOrGroupLink.</assert>
     </rule>
    </pattern>
-   -->
    <pattern>
     <rule            context         = 'ArmOrGroupLink'>
      <assert         test            = 'not(not(. = //ArmOrGroupLabel))'
@@ -439,7 +443,7 @@
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
     </sequence>
-    <attribute       name            = 'SingleArmStudy'
+    <attribute       name            = 'SingleArmOrGroupStudy'
                      type            = 'Yes'
                      minOccurs       = '0'/>
   </complexType>
