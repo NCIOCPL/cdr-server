@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.125 2008-07-18 03:16:40 ameyer Exp $
+ * $Id: tables.sql,v 1.126 2008-08-05 19:46:32 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.125  2008/07/18 03:16:40  ameyer
+ * Added external_map_nomap_pattern.
+ *
  * Revision 1.124  2007/10/29 15:11:12  bkline
  * Added views doc_save_action and doc_last_save.
  *
@@ -2131,7 +2134,11 @@ GO
  *      changed  date/time document was last changed at NLM
  *       cdr_id  document ID in CDR (if imported)
  *      dropped  flag indicating that NLM is no longer exporting this trial
+ *        force  flag for trials we want even if NLM doesn't code them
+ *               in such a way that they would be picked up by our
+ *               basic query
  *      comment  user comments, if any
+ *        phase  captures the phase of the trial for reporting
  */
 CREATE TABLE ctgov_import
      (nlm_id VARCHAR(16)   NOT NULL PRIMARY KEY,
@@ -2144,6 +2151,7 @@ CREATE TABLE ctgov_import
      changed DATETIME          NULL,
       cdr_id INTEGER           NULL REFERENCES all_docs,
      dropped CHAR          NOT NULL DEFAULT 'N',
+       force CHAR          NOT NULL DEFAULT 'N',
      comment NTEXT             NULL,
        phase VARCHAR(20)       NULL)
 GO
