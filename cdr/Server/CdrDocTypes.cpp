@@ -1,9 +1,13 @@
 /*
- * $Id: CdrDocTypes.cpp,v 1.13 2005-03-04 02:45:28 ameyer Exp $
+ * $Id: CdrDocTypes.cpp,v 1.14 2008-08-12 14:36:00 bkline Exp $
  *
  * Support routines for CDR document types.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2005/03/04 02:45:28  ameyer
+ * Modified declaration of parser to increase scope of variable so
+ * that new DOM parser that holds memory will stay in scope.
+ *
  * Revision 1.12  2002/08/27 17:51:00  bkline
  * Fixed bug that was extracting linking elements for non-XML doc types.
  *
@@ -257,7 +261,8 @@ cdr::String cdr::getDocType(Session&          session,
             resp << L"<EnumSet Node='" << i->first << L"'>";
             cdr::StringSet::const_iterator j = validValues->begin();
             while (j != validValues->end())
-                resp << L"<ValidValue>" << *j++ << L"</ValidValue>";
+                resp << L"<ValidValue>" << cdr::entConvert(*j++)
+                     << L"</ValidValue>";
             resp << L"</EnumSet>";
             ++i;
         }
