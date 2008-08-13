@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000343579.xml,v 1.21 2008-05-16 15:46:28 venglisc Exp $
+$Id: CDR0000343579.xml,v 1.22 2008-08-13 19:23:15 venglisc Exp $
 
 Filter to generate a Protocol Administrative QC Report
 Written by Cheryl Burg - 3/13/2002 
@@ -156,18 +156,132 @@ reformatting (proper indentation). (Bug 1340)
       </td>
      </tr>
     </xsl:if>
-    <tr>
-     <td        xsl:use-attribute-sets = "cell1of2">
-      <b>Responsible Party</b>
-     </td>
-     <td        xsl:use-attribute-sets = "cell2of2">
-      <xsl:value-of             select = "ResponsibleParty"/><br />
-     </td>
-    </tr>
    </table>
+
+   <xsl:apply-templates      select = "ResponsibleParty"/>
   <br />
  </xsl:template>
    
+
+ <!-- 
+ ================================================================
+ Display the ResponsibleParty block which could either 
+ contain a Responsible Person element or Responsible Organization
+ ================================================================ -->
+ <xsl:template                   match = "ResponsibleParty">
+  <table       xsl:use-attribute-sets = "table">
+   <xsl:apply-templates          select = "ResponsiblePerson"/>
+   <xsl:apply-templates          select = "ResponsibleOrganization"/> 
+
+   <xsl:if                         test = "ResponsiblePerson/
+                                          SpecificPhone     |
+                                          ResponsibleOrganization/
+                                          SpecificPhone">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1iof2">
+     </td>
+     <td        xsl:use-attribute-sets = "cell2iof2">
+      <b>Specific Phone</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "ResponsiblePerson/
+                                          SpecificPhone     |
+                                          ResponsibleOrganization/
+                                          SpecificPhone"/>
+     </td>
+    </tr>
+    </xsl:if>
+    <xsl:if                       test = "ResponsiblePerson/
+                                          SpecificEmail     |
+                                          ResponsibleOrganization/
+                                          SpecificEmail">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1iof2">
+     </td>
+     <td        xsl:use-attribute-sets = "cell2iof2">
+      <b>Specific Email</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:for-each             select = "ResponsiblePerson/
+                                          SpecificEmail     |
+                                          ResponsibleOrganization/
+                                          SpecificEmail">
+       <xsl:call-template         name = "createEmailLink"/>
+      </xsl:for-each>
+     </td>
+    </tr>
+   </xsl:if>
+  </table>
+ </xsl:template>
+
+
+ <!-- 
+ ============================================================
+ Display the ResponsiblePerson information
+ ============================================================ -->
+ <xsl:template                   match = "ResponsiblePerson">
+  <tr>
+   <td colspan="3" xsl:use-attribute-sets = "cell1of2">
+    <b>Responsible Party (Person)</b>
+   </td>
+  </tr>
+
+  <xsl:for-each                 select = "Person">
+   <xsl:call-template             name = "respPerson"/>
+  </xsl:for-each>
+ </xsl:template>
+
+
+ <!-- 
+ ============================================================
+ Display the ResponsibleOrganization information
+ ============================================================ -->
+ <xsl:template                   match = "ResponsibleOrganization">
+  <tr>
+   <td colspan="3" xsl:use-attribute-sets = "cell1of2">
+    <b>Responsible Party (Organization)</b>
+   </td>
+  </tr>
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1iof2">
+   </td>
+   <td          xsl:use-attribute-sets = "cell2iof2">
+    <b>Organization</b>
+   </td>
+   <td>
+    <xsl:value-of               select = "Organization/
+                                          Organization/
+                                          OrganizationNameInformation/
+                                          OfficialName/
+                                          Name"/>
+    <xsl:variable                 name = "orgref"
+                                select = "Organization/
+                                          Organization/@cdr:ref"/>
+    <xsl:variable                 name = "cdrId"
+                                select = "concat('CDR', 
+                                           number(
+                                            substring-after(
+                                             substring-before(
+                                              concat($orgref, '#'), '#'), 
+                                                                   'CDR')))"/>
+    <xsl:text> (</xsl:text>
+    <xsl:element                  name = "a">
+     <xsl:attribute               name = "href">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py',
+                                                 '?Session=guest',
+                                                 '&amp;DocId=',
+                                                 $cdrId)"/>
+     </xsl:attribute>
+     <xsl:attribute               name = "target">
+      <xsl:text>new</xsl:text>
+     </xsl:attribute>
+     <xsl:value-of              select = "$cdrId"/>
+    </xsl:element>
+    <xsl:text>)</xsl:text>
+   </td>
+  </tr>
+ </xsl:template>
+
 
  <!-- 
  ============================================================
@@ -590,6 +704,7 @@ reformatting (proper indentation). (Bug 1340)
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Current Protocol Status</b>
     </td>
+
     <td         xsl:use-attribute-sets = "cell2of2">
     </td>
    </tr>
@@ -805,9 +920,11 @@ reformatting (proper indentation). (Bug 1340)
   <br />
 
   <table        xsl:use-attribute-sets = "table">
+
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Action Description</b>
+
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = "ActionDescription"/>
@@ -883,11 +1000,13 @@ reformatting (proper indentation). (Bug 1340)
 
 
  <!--
+
  ======================================================================
  Template to display OverallContact Information
  ====================================================================== -->
  <xsl:template                   match = "GenericPersonContact">
   <tr>
+
    <td          xsl:use-attribute-sets = "cell1of2">
     <xsl:choose>
      <xsl:when                    test = "name(..) = 'OverallContact'">
@@ -1063,6 +1182,86 @@ reformatting (proper indentation). (Bug 1340)
   <xsl:apply-templates          select = "Person"/>
  </xsl:template>
 
+
+ <!--
+ ======================================================================
+ Template to Display Person Information
+ ====================================================================== -->
+ <xsl:template                    name = "respPerson">
+  <!-- 
+  Create a variable holding the fragment ID of the Person's 
+  Fragment ID for the SpecificLocation.
+  ============================================================= -->
+  <xsl:variable                   name = "orgref"       
+                                select = "Person/@cdr:ref"/>
+  <xsl:variable                   name = "OrgFrag"      
+                                select = "substring-after($orgref,'#')"/>
+
+  <!-- 
+  Create a variable holding the fragment ID of the Org Location
+  for this Org Location.  This will be used to display
+  the address when no SpecificPostalAddress element exists.
+  ============================================================= -->
+  <xsl:variable                   name = "orgLocRef"  
+                                select = "Person/
+                                          PersonLocations/
+                                          OtherPracticeLocation
+                                           [@cdr:id=$OrgFrag]/
+                                          OrganizationLocation/
+                                          Organization/
+                                          @cdr:ref"/>
+  <xsl:variable                   name = "orgLocFrag"  
+                                select = "substring-after($orgLocRef,'#')"/>
+
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1iof2">
+    </td>
+    <td         xsl:use-attribute-sets = "cell2iof2">
+     <b>
+      <xsl:text>Person</xsl:text>
+     </b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "Person/
+                                          PersonNameInformation/
+                                          SurName"/>
+     <xsl:text>, </xsl:text>
+     <xsl:value-of              select = "Person/
+                                          PersonNameInformation/
+                                          GivenName"/>
+     <xsl:variable                name = "personref"
+                                select = "Person/@cdr:ref"/>
+     <xsl:variable                name = "FragPersonRef" 
+                                select = "substring-after($personref,'#')"/>
+     <xsl:variable                name = "cdrId"
+                                select = "concat('CDR', 
+                                           number(
+                                            substring-after(
+                                             substring-before(
+                                              concat($personref, '#'), '#'), 
+                                                                   'CDR')))"/>
+     <xsl:text> (</xsl:text>
+     <xsl:element                 name = "a">
+      <xsl:attribute              name = "href">
+       <xsl:value-of            select = "concat('/cgi-bin/cdr/QcReport.py',
+                                                 '?Session=guest',
+                                                 '&amp;DocId=',
+                                                 $cdrId)"/>
+      </xsl:attribute>
+      <xsl:attribute              name = "target">
+       <xsl:text>new</xsl:text>
+      </xsl:attribute>
+      <xsl:value-of             select = "$cdrId"/>
+      </xsl:element>
+     <xsl:text>)</xsl:text>
+
+     <xsl:text> [</xsl:text>
+     <xsl:value-of              select = "$FragPersonRef"/>
+     <xsl:text>]</xsl:text>
+     <xsl:apply-templates       select = "../@Public"/>
+    </td>
+   </tr>
+ </xsl:template>
 
  <!--
  ======================================================================
@@ -1306,6 +1505,7 @@ reformatting (proper indentation). (Bug 1340)
     </xsl:for-each>
    </xsl:when>
    <xsl:otherwise>
+
     <table      xsl:use-attribute-sets = "table">                       
      <xsl:for-each              select = "Person/PersonLocations/
                                           OtherPracticeLocation
@@ -1413,6 +1613,7 @@ reformatting (proper indentation). (Bug 1340)
          <i>
           <b>Country</b>
          </i>
+
         </td>
         <td     xsl:use-attribute-sets = "cell2of2">
          <i>
@@ -1755,6 +1956,7 @@ reformatting (proper indentation). (Bug 1340)
      </xsl:for-each>
     </xsl:when>
     <xsl:otherwise>
+
      <tr>   
       <td       xsl:use-attribute-sets = "cell1iof2">
       </td>
@@ -2446,8 +2648,10 @@ reformatting (proper indentation). (Bug 1340)
 					                        [@cdr:id = $PerFrag]/
                                           OrganizationLocation/
 					                      Organization/
+
                                           OrganizationLocations/
                                           OrganizationLocation/
+
 					                      Location[@cdr:id = $orgLocFrag]/
                                           Phone"/>
 	         </i>
@@ -2706,6 +2910,7 @@ reformatting (proper indentation). (Bug 1340)
 					                        WebSite">
               <xsl:call-template  name = "createWebLink"/>
 	          <br/>
+
 	          <xsl:value-of     select = "."/>
 	         </xsl:for-each>
 	        </td>
@@ -2848,6 +3053,8 @@ reformatting (proper indentation). (Bug 1340)
     <xsl:text>External Sites</xsl:text>
     <xsl:text> (Source: </xsl:text>
     <xsl:value-of               select = "@Source"/>
+
+
     <xsl:text> as of </xsl:text>
     <xsl:value-of               select = "@Received"/>
     <xsl:text>)</xsl:text>
@@ -2891,6 +3098,7 @@ reformatting (proper indentation). (Bug 1340)
             </tr>
            </xsl:for-each>
           </table>
+
          </xsl:when>
          <xsl:otherwise>
           <xsl:value-of         select = "ExternalSiteOrg/
@@ -3123,7 +3331,7 @@ reformatting (proper indentation). (Bug 1340)
 	      </td>
 	      <td   xsl:use-attribute-sets = "cell2of2">
 	       <xsl:value-of        select = "PoliticalSubUnit_State/
-				                          PoliticalSubUnitFullName"/>
+                                              PoliticalSubUnitFullName"/>
 	
 	      </td>
 	     </tr>
@@ -3153,22 +3361,22 @@ reformatting (proper indentation). (Bug 1340)
 	    the address since no SpecificPostalAddress element exists.
 	    ============================================================= -->
 	    <xsl:variable             name = "orgLocFrag"  
-			                    select = "substring-after(PersonLocations/
-			  		                      OtherPracticeLocation
-			  		                        [@cdr:id = $PerFrag]/
-			  	                          OrganizationLocation/
-			  	                          Organization/@cdr:ref, '#')"/>
+		                    select = "substring-after(PersonLocations/
+	  		                      OtherPracticeLocation
+	  		                        [@cdr:id = $PerFrag]/
+                                              OrganizationLocation/
+                                              Organization/@cdr:ref, '#')"/>
 
 	    <xsl:for-each           select = "PersonLocations/
-			  	                          OtherPracticeLocation
-			  	                            [@cdr:id = $PerFrag]/
-			  	                          OrganizationLocation/
-					                      Organization/
-			  	                          OrganizationLocations/
-			  	                          OrganizationLocation/
-			  	                          Location[@cdr:id = $orgLocFrag]/
-			  	                          PostalAddress/
-			  	                          Street">
+                                                OtherPracticeLocation
+                                                  [@cdr:id = $PerFrag]/
+                                                OrganizationLocation/
+                                                Organization/
+                                                OrganizationLocations/
+                                                OrganizationLocation/
+                                                Location[@cdr:id = $orgLocFrag]/
+                                                PostalAddress/
+                                                Street">
 	     <tr>
 	      <td   xsl:use-attribute-sets = "cell1of2">
 	       <xsl:if                test = "not(preceding-sibling::Street)">
@@ -3186,14 +3394,14 @@ reformatting (proper indentation). (Bug 1340)
 	    </xsl:for-each>
 
 	    <xsl:for-each           select = "PersonLocations/
-			  	                          OtherPracticeLocation
-			  	                            [$PerFrag=@cdr:id]/
-			  	                          OrganizationLocation/
-				                          Organization/
-			  	                          OrganizationLocations/
-			  	                          OrganizationLocation/
-			  	                          Location[@cdr:id = $orgLocFrag]/
-			  	                          PostalAddress">
+                                              OtherPracticeLocation
+                                                [$PerFrag=@cdr:id]/
+                                              OrganizationLocation/
+                                              Organization/
+                                              OrganizationLocations/
+                                              OrganizationLocation/
+                                              Location[@cdr:id = $orgLocFrag]/
+                                              PostalAddress">
 	     <tr>
 	      <td   xsl:use-attribute-sets = "cell1of2">
 	       <i>
@@ -3229,7 +3437,7 @@ reformatting (proper indentation). (Bug 1340)
 	      <td   xsl:use-attribute-sets = "cell2of2">
 	       <i>
 	        <xsl:value-of       select = "PoliticalSubUnit_State/
-					                      PoliticalSubUnitFullName"/>
+                                              PoliticalSubUnitFullName"/>
 	       </i>
 	      </td>
 	     </tr>
@@ -3265,6 +3473,7 @@ reformatting (proper indentation). (Bug 1340)
      <br/>
     </li>
    </xsl:for-each>
+
   </ol>
   <hr width="50%"/>
  </xsl:template>
@@ -3428,6 +3637,8 @@ Need to create a template to globally format the QC address block
        <b class="native">Street</b>
       </xsl:if>
      </td>
+
+
        
      <td        xsl:use-attribute-sets = "cell2of2">
       <p class="native">
@@ -3563,6 +3774,7 @@ Need to create a template to globally format the QC address block
      </td>
      <td        xsl:use-attribute-sets = "cell2of2">
       <p class="native">
+
        <xsl:value-of            select = "."/>
       </p>
      </td>
