@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ================================================================
-     $Id: CDR0000000108.xml,v 1.76 2007-02-14 18:37:10 venglisc Exp $
+     $Id: CDR0000000108.xml,v 1.77 2008-08-13 19:25:04 venglisc Exp $
 
      Denormalization Filter: InScopeProtocol
         Written by Volker Englisch, 2002-04-01
@@ -77,7 +77,7 @@
  <xsl:param                       name = "pubProcDate"
                                 select = "''"/>
 
- <!-- *
+ <!--
  ==================================================================
  Copy everything AS IS and invoke matched templates by default.
  ================================================================== -->
@@ -118,7 +118,7 @@
  </xsl:template>
 
 
- <!-- *
+ <!--
  ==============================================================
  Template Professional sections
  Copy all nodes and add the ProfessionalDisclaimer
@@ -164,7 +164,7 @@
  </xsl:template>
 
 
- <!-- *
+ <!--
  ==================================================================
  MiscellaneousDocumentText Template
  ================================================================== -->
@@ -178,7 +178,7 @@
  </xsl:template>
 
 
- <!-- *
+ <!--
  ==============================================================
  Template Patient sections
  Copy all nodes, perform denormalization and add the 
@@ -260,7 +260,7 @@
  </xsl:template>
 
 
- <!-- *
+ <!--
  ==================================================================
  Template for displaying RelatedProtocols section.
  If no publishable version of the protocol exists, a pseudo-protocol
@@ -378,7 +378,7 @@
  </xsl:template>
 
 
- <!-- *
+ <!--
  ==============================================================
  Template Published Results section
  ============================================================== -->
@@ -434,7 +434,7 @@
 
 
 
- <!-- *
+ <!--
  ==============================================================
  Template PublishedIn section
  ============================================================== -->
@@ -442,6 +442,7 @@
   <xsl:element                   name = "{name()}">
    <xsl:for-each               select = "@*">
     <xsl:attribute               name = "{name()}">
+
      <xsl:value-of             select = "."/>
     </xsl:attribute>
    </xsl:for-each>
@@ -457,7 +458,7 @@
  </xsl:template>
 
 
- <!-- *
+ <!--
  ==============================================================
  Template for Protocol Admin section
  ============================================================== -->
@@ -498,7 +499,39 @@
 
 
 
- <!-- *
+ <!--
+ ==============================================================
+ Template for Protocol Admin section
+ ============================================================== -->
+ <xsl:template                   match = "ResponsibleOrganization/
+                                         Organization">
+  <xsl:element                    name = "{name()}">
+   <xsl:for-each                select = "../@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+
+   <xsl:variable                  name = "orgID"
+                                select = "@cdr:ref"/>
+   <xsl:variable                  name = "org"
+                                select = "document(concat('cdr:', $orgID, 
+                                                          '/last'))"/>
+   <Organization>
+    <xsl:for-each               select = "@*">
+     <xsl:attribute               name = "{name()}">
+      <xsl:value-of             select = "."/>
+     </xsl:attribute>
+    </xsl:for-each>
+
+    <xsl:copy-of                select = "$org/Organization/
+                                          OrganizationNameInformation"/>
+   </Organization>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
  ============================================================= 
  Create the Para template including the renamed attribute for 
  the paragraph IDs.
@@ -525,7 +558,7 @@
  </xsl:template>
 
 
- <!-- *
+ <!--
  ============================================================= 
  Create the Para template including the renamed attribute for 
  the paragraph IDs.
@@ -552,7 +585,7 @@
  </xsl:template>
 
 
- <!-- *
+ <!--
  ===============================================================
  Create the Cancer.gov link that displayes the HP version of the
  current document by modifying the cdr:xref attribute.
@@ -566,12 +599,12 @@
  </xsl:template>
 
 
- <!-- *
+ <!--
  ===================================================================
  Called Templates
  =================================================================== --> 
 
- <!-- *
+ <!--
  ===================================================================
  Upcoding the Parent Names for the address block.
  =================================================================== -->
@@ -603,7 +636,7 @@
  </xsl:template>
 
 
- <!-- *
+ <!--
  =========================================================================
  Default Template
  ========================================================================= -->
