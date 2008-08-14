@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!--
-    $Id: GlossaryTermName.xml,v 1.14 2008-08-04 16:29:19 bkline Exp $
+    $Id: GlossaryTermName.xml,v 1.15 2008-08-14 19:54:16 bkline Exp $
 
     $Log: not supported by cvs2svn $
+    Revision 1.14  2008/08/04 16:29:19  bkline
+    Fixed checking comment for previous revision.
+
     Revision 1.13  2008/08/04 16:22:43  bkline
     Added document level status element; restricted language type.
 
@@ -66,10 +69,16 @@
   <complexType       name            = 'GlossaryTermName'>
     <sequence>
       <element       name            = 'TermName'
-                     type            = 'TermNameType'
-                     maxOccurs       = 'unbounded'/>
+                     type            = 'TermNameType'/>
       <element       name            = 'TermNameStatus'
                      type            = 'TermNameStatus'/>
+      <element       name            = 'TermNameStatusDate'
+                     type            = 'date'
+                     minOccurs       = '0'/>
+      <element       name            = 'TranslatedName'
+                     type            = 'TranslatedNameType'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'GlossaryTermConcept'
                      type            = 'GlossaryConceptLink'/>
       <element       name            = 'ReplacementText'
@@ -105,18 +114,33 @@
       <element       name            = 'TermNameSource'
                      type            = 'TermNameSource'
                      minOccurs       = '0'/>
-      <element       name            = 'TermNameSourceVerification'
+      <element       name            = 'TermNameVerificationResource'
                      type            = 'string'
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
+      <element       name            = 'Comment'
+                     type            = 'Comment'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'DateLastModified'
+                     type            = 'date'
+                     minOccurs       = '0'/>
+    </sequence>
+    <attribute       name            = 'cdr:id'
+                     type            = 'FragmentId'/>
+  </complexType>
+
+  <complexType       name            = 'TranslatedNameType'>
+    <sequence>
+      <element       name            = 'TermNameString'
+                     type            = 'TermNameString'/>
       <element       name            = 'TranslationResource'
                      type            = 'string'
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
-      <element       name            = 'TermNameStatus'
-                     type            = 'TermNameStatus'
-                     minOccurs       = '0'/>
-      <element       name            = 'TermNameStatusDate'
+      <element       name            = 'TranslationStatus'
+                     type            = 'TermNameStatus'/>
+      <element       name            = 'TranslationStatusDate'
                      type            = 'date'
                      minOccurs       = '0'/>
       <element       name            = 'Comment'
@@ -128,20 +152,20 @@
                      minOccurs       = '0'/>
     </sequence>
 
-    <!-- e.g.: language='en sp' -->
+    <!-- e.g.: language='es' -->
     <attribute       name            = 'language'
                      type            = 'GlossaryTermNameLanguage'/>
 
     <!-- Used as a flag to identify translated names other than the
          one to which the user interface from the English name.
          For example:
-          <TermName language='en'>
+          <TermName>
            <TermNameString>breast</TermNameString>
           </TermName>
-          <TermName language='sp'>
+          <TranslatedName language='es'>
            <TermNameString>seno</TermNameString>
           </TermName>
-          <TermName language='sp' NameType='alternate'>
+          <TranslatedName language='es' NameType='alternate'>
            <TermNameString>mama</TermNameString>
           </TermName>
 
@@ -154,6 +178,8 @@
     <attribute       name            = 'NameType'
                      type            = 'NameTypeValue'
                      minOccurs       = '0'/>
+    <attribute       name            = 'cdr:id'
+                     type            = 'FragmentId'/>
   </complexType>
 
   <complexType       name            = 'ReplacementText'
@@ -191,17 +217,13 @@
       <enumeration   value           = 'New pending'/>
       <enumeration   value           = 'Revision pending'/>
       <enumeration   value           = 'Rejected'/>
-      <enumeration   value           = 'Translation approved'/>
-      <enumeration   value           = 'Translation pending'/>
-      <enumeration   value           = 'Translation revision pending'/>
     </restriction>
   </simpleType>
 
+  <!-- Spanish is all we handle right now. -->
   <simpleType        name            = 'GlossaryTermNameLanguage'>
     <restriction     base            = 'string'>
-      <enumeration   value           = 'en'/>
       <enumeration   value           = 'es'/>
-      <enumeration   value           = 'en es'/>
     </restriction>
   </simpleType>
 
