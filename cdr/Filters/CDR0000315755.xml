@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-     $Id: CDR0000315755.xml,v 1.5 2008-07-22 17:22:44 venglisc Exp $
+     $Id: CDR0000315755.xml,v 1.6 2008-08-22 19:00:04 venglisc Exp $
 
      Common Templates shared between Person and PDQBoardMember 
      QC Report Filters
@@ -440,11 +440,23 @@
  <!--
  ========================================================================
  Named Template to display the Phone, Fax, WebSite, Role information
+
+ Note:
+ We're using the Board Roster Report filter to create a summary sheet
+ roster report so that we don't have to reinvent the denormalization
+ rules but we don't want the table layout for the summary sheet.
+ In order to achieve this we're using a hack.  None HTML elements are
+ ignored within an HTML document, so we're wrapping Phone, Fax, Email 
+ in an element allowing us to easily extract the data via a string search
+    PhoneNumber  ==> <Phone>PhoneNumber</Phone>
  ======================================================================== -->
  <xsl:template                    name = "listPhone">
   <!--
   Display the Phone, Fax, Email, etc. in a table format
   ========================================================== -->
+  <!--
+  A) Phone
+  ============= -->
   <table        xsl:use-attribute-sets = "table">
    <tr> 
     <td         xsl:use-attribute-sets = "cell1of2">
@@ -462,19 +474,29 @@
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:choose>
       <xsl:when                   test = "../Phone/@native">
-       <i>
-        <xsl:value-of           select = "../Phone"/>
-        <xsl:if                   test = "../Phone/@Public">
-         <xsl:apply-templates   select = "../Phone/@Public"/>
-        </xsl:if>
-       </i>
+       <!--
+       See note above
+       ================================================================= -->
+       <xsl:choose>
+        <xsl:when                 test = "$whoAmI = 
+                                            'PdqBoardMemberRosterSummary'">
+         <xsl:element             name = "Phone">
+          <xsl:value-of         select = "../Phone"/>
+         </xsl:element>
+        </xsl:when>
+        <xsl:otherwise>
+         <i>
+          <xsl:value-of         select = "../Phone"/>
+          <xsl:if                 test = "../Phone/@Public">
+           <xsl:apply-templates select = "../Phone/@Public"/>
+          </xsl:if>
+         </i>
+        </xsl:otherwise>
+       </xsl:choose>
       </xsl:when>
       <xsl:otherwise>
        <!--
-       We're using the Board Roster Report filter to create a summary
-       sheet roster report but we don't need the table layout, so we're
-       wrapping Phone, Fax, Email in an element so we can easily 
-       extract the data via a string search
+       See note above
        ================================================================ -->
        <xsl:choose>
         <xsl:when                 test = "$whoAmI = 
@@ -497,6 +519,9 @@
      </xsl:choose>
     </td>
    </tr>
+  <!--
+  B) Toll Free Phone
+  =================== -->
    <xsl:if                        test = "$whoAmI = 'PersonQc'
                                           or
                                           $whoAmI = 'PdqBoardMemberQc'">
@@ -525,6 +550,9 @@
      </td>
     </tr>
    </xsl:if>
+  <!--
+  C) Fax
+  =================== -->
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <xsl:choose>
@@ -577,6 +605,9 @@
      </xsl:choose>      
     </td>
    </tr>
+  <!--
+  D) Email
+  =================== -->
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <xsl:text>Email</xsl:text>
@@ -585,7 +616,7 @@
      <xsl:when                    test = "../Email">
       <td       xsl:use-attribute-sets = "cell2of2">
        <!-- 
-       See note for Phone above
+       See note above
        ==================================================== -->
        <xsl:choose>
         <xsl:when                 test = "$whoAmI = 
