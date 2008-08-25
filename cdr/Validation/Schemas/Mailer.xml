@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!--
-     $Id: Mailer.xml,v 1.22 2008-08-04 16:24:51 bkline Exp $
+     $Id: Mailer.xml,v 1.23 2008-08-25 16:39:15 bkline Exp $
 
      Schema for mailer tracking documents.
 
      $Log: not supported by cvs2svn $
+     Revision 1.22  2008/08/04 16:24:51  bkline
+     Fixed checking comment for previous revision.
+
      Revision 1.21  2008/08/04 16:22:43  bkline
      Added Verification Mailer type.
 
@@ -122,6 +125,10 @@
       <element       name            = 'Response'
                      type            = 'MailerResponse'
                      minOccurs       = '0'/>
+      <element       name            = 'CallLog'
+                     type            = 'CallLog'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
     </sequence>
     <attribute       name            = 'xmlns:cdr'
                      type            = 'NotEmptyString'/>
@@ -137,6 +144,22 @@
                      type            = 'MailerTypeMode'/>
       </extension>
     </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'CallLog'>
+    <sequence>
+      <element       name            = 'Comment'
+                     type            = 'Comment'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'Resolution'
+                     type            = 'MailerCallResolution'/>
+      <element       name            = 'Comment'
+                     type            = 'Comment'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+    <attribute       name            = 'CallLogType'
+                     type            = 'CallLogType'/>
   </complexType>
 
   <complexType       name            = 'MailerResponse'>
@@ -211,14 +234,30 @@
       <enumeration   value           = 'Status changes'/>
       <enumeration   value           = 'Participating site changes'/>
       <enumeration   value           = 'Citation'/>
+      <enumeration   value           = 'Received with discrepancies'/>
     </restriction>
   </simpleType>
 
   <simpleType        name            = 'MailerTypeMode'>
-    <restriction     base            = 'NotEmptyString'>
+    <restriction     base            = 'string'>
       <enumeration   value           = 'Web-based'/>
       <enumeration   value           = 'Mail'/>
       <enumeration   value           = 'Email'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'MailerCallResolution'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Needs new mailer'/>
+      <enumeration   value           = 'Resolved'/>
+      <enumeration   value           = 'Unresolved'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'CallLogType'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'initial'/>
+      <enumeration   value           = 'follow-up'/>
     </restriction>
   </simpleType>
 
