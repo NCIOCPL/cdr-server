@@ -1,0 +1,635 @@
+<CdrDoc Type='Filter' Id='CDR0000613261'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Glossary Term Concept QC Report filter</DocTitle>
+<DocComment>CVS-V1.18: Title and CDRID Modified (Bug 962)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!--
+================================================================
+$Id: CDR0000613261.xml,v 1.1 2008-08-26 20:06:19 venglisc Exp $
+
+Filter to display Glossary Term Concept QC Reports
+Volker Englisch         2007-09-20
+
+$Log: not supported by cvs2svn $
+================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+
+ <xsl:output                    method = "html"/>
+
+ <xsl:include   href = "cdr:name:Module: Attribute Sets"/>
+ <xsl:include   href = "cdr:name:Module: InLine Markup Formatter"/>
+ <xsl:include   href = "cdr:name:Module: STYLE Default"/> 
+
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
+ <xsl:variable                    name = "whoAmI"
+                                select = "'GlossaryTermConcept'"/>
+ <!-- 
+ ====================================================================
+ This program is a filter to create a Glossary term Concept QC Report 
+ ==================================================================== -->
+ <xsl:template                   match = "/">
+  <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+  <HTML>
+   <HEAD>
+    <xsl:variable                 name = "cdrdocs" 
+                                select = "document('cdrx:/*/CdrCtl')"/>
+    <TITLE>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+     <xsl:text>: </xsl:text>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/> 
+    </TITLE>
+    <STYLE type='text/css'>
+     <xsl:call-template           name = "defaultStyle"/>  
+     .attribute  { font-weight: normal; 
+                   font-style: italic; 
+                   background-color: #FFFFFF; }
+     .big        { font-size: 14pt; 
+                   font-weight: bold; }
+     .name       { color: blue;
+                   font-weight: bold;
+                   background-color: #EEEEEE; }
+     .ph         { color: teal;
+                   font-weight: bold; }
+     .rpt        { color: teal;
+                   text-align: right; 
+                   padding-right: 10px; }
+    </STYLE>
+   </HEAD>
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' /> 
+   <xsl:apply-templates         select = "GlossaryTermConcept"/>
+  </HTML>
+ </xsl:template>
+
+ <!-- 
+ ==============================================================  
+ Generate the HTML for the glossary term QC Report
+ ============================================================== -->
+ <xsl:template                   match = "GlossaryTermConcept">
+  <BODY>
+  <!-- 
+  =============================================================
+  Display Report heading and subheading 
+  ============================================================= -->
+  <span class="big">
+   <center>
+    <xsl:text>Glossary Term Concept</xsl:text>
+    <br/>
+    <xsl:text>QC Report</xsl:text>
+   </center>
+  </span>
+  <b>
+   <center>
+    <xsl:value-of               select = 'document(concat("cdrutil:/date/",
+                                                          "%25B %25#d, %25Y ",
+                                                          "%25#I:%25M%25p"))'/>
+   </center>
+  </b>
+  <p/>
+
+
+  <!-- 
+  ====================================================================
+  Display CDR ID
+  ==================================================================== -->
+  <span class="big">
+   <xsl:value-of                select = "concat('CDR', 
+                                          number(
+                                          substring-after($docID, 'CDR')))"/>
+  </span>
+  <p/>
+
+  <!--
+  ===============================================================
+  Display Name Information
+  =============================================================== -->
+  <xsl:apply-templates          select = "TermDefinition"/>
+
+  <br/>
+
+  <!--
+  ===============================================================
+  Display Source Information
+  =============================================================== -->
+  <xsl:if                         test = "MediaLink">
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Media Link</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "MediaLink/
+                                          MediaID"
+                                  mode = "gtc"/>
+     </td>
+    </tr>
+   </table>
+
+   <p />
+   <hr/>
+   <br />
+
+  </xsl:if>
+
+  <xsl:apply-templates          select = "SpanishTermDefinition"/>
+
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Type</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each              select = "TermType">
+      <li>
+       <xsl:value-of            select = "."/>
+      </li>
+     </xsl:for-each>
+    </td>
+   </tr>
+  </table>
+
+  <xsl:if                         test = "RelatedInformation">
+   <p/>
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td>
+      <b>Related Information</b>
+     </td>
+     <td> </td>
+    </tr>
+    <xsl:apply-templates        select = "RelatedInformation"/>
+   </table>
+   <p/>
+  </xsl:if>
+
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:if                        test = "PDQTerm">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>PDQ Term</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "PDQTerm"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "NCIThesaurusID">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>NCI Thesaurus ID</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "NCIThesaurusID"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "Comment">
+    <xsl:apply-templates        select = "Comment"
+                                  mode = "withAttribute">
+     <xsl:with-param              name = "label"
+                                select = "'Comment'"/>
+    </xsl:apply-templates>
+   </xsl:if>
+  </table>
+
+  <p/>
+  </BODY>  
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template to display individual TermDefinitions
+ ================================================================== -->
+ <xsl:template                   match = "TermDefinition">
+  <table        xsl:use-attribute-sets = "table">
+   <tr class="name">
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Name</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "DefinitionText"/>
+    </td>
+   </tr>
+   <xsl:for-each                select  ="ReplacementText">
+    <tr class="name">
+     <td class="rpt"  xsl:use-attribute-sets = "cell1of2">
+      <b>
+       [<xsl:value-of            select = "@name"/>]
+      </b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "."/>
+    </td>
+   </tr>
+   </xsl:for-each>
+   <xsl:if                        test = "DefinitionResource">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Definition Resource</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:for-each             select = "DefinitionResource">
+       <li>
+        <xsl:value-of            select = "."/>
+       </li>
+      </xsl:for-each>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "MediaLink">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Media Link</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "MediaLink/
+                                          MediaID"
+                                  mode = "gtc"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "Dictionary">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Dictionary</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "Dictionary"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <!-- xsl:if                        test = "TermPronunciation">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Pronunciation</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "TermPronunciation"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "PronunciationResource">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Pronunciation Resource</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:for-each             select = "PronunciationResource">
+       <li>
+        <xsl:value-of            select = "."/>
+       </li>
+      </xsl:for-each>
+     </td>
+    </tr>
+   </xsl:if -->
+  </table>           
+
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Audience</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each              select = "Audience">
+      <xsl:if                     test = "position() = last()">
+       <i>
+        <xsl:value-of           select = "."/>
+       </i>
+      </xsl:if>
+      <xsl:if                     test = "not(position() = last())">
+       <i>
+        <xsl:value-of           select = "."/>
+        <xsl:text>; </xsl:text>
+       </i>
+      </xsl:if>
+     </xsl:for-each> 
+    </td>
+   </tr>
+   <xsl:if                        test = "DefinitionStatus">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Definition Status</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "DefinitionStatus"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "StatusDate">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Status Date</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "StatusDate"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "Comment">
+    <xsl:apply-templates        select = "Comment"
+                                  mode = "withAttribute">
+     <xsl:with-param              name = "label"
+                                select = "'Comment [en]'"/>
+    </xsl:apply-templates>
+   </xsl:if>
+
+   <xsl:call-template             name = "addDates"/>
+
+  </table>
+
+  <!--
+  Separate multiple Term definitions with a small horizontal line
+  =============================================================== -->
+  <xsl:choose>
+   <xsl:when                      test = "position() != last()">
+    <center>
+     <hr width="25%"/>
+    </center>
+   </xsl:when>
+   <xsl:otherwise>
+    <hr/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template to display individual SpanishTermDefinitions
+ ================================================================== -->
+ <xsl:template                   match = "PlaceHolder">
+  <xsl:variable                   name = "replace"
+                                select = "@name"/>
+  <span class="ph">
+   <xsl:value-of                select = "../../
+                                          ReplacementText[@name=$replace]"/>
+   <xsl:text> [</xsl:text>
+   <xsl:value-of                select = "@name"/>
+   <xsl:text>]</xsl:text> 
+  </span>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template to display individual SpanishTermDefinitions
+ ================================================================== -->
+ <xsl:template                   match = "SpanishTermDefinition">
+  <table        xsl:use-attribute-sets = "table">
+   <tr class="name">  
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Spanish Name</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "DefinitionText"/>
+    </td>
+   </tr>
+   <xsl:for-each                select  ="ReplacementText">
+    <tr class="name">
+     <td class="rpt"  xsl:use-attribute-sets = "cell1of2">
+      <b>
+       [<xsl:value-of            select = "@name"/>]
+      </b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "."/>
+    </td>
+   </tr>
+   </xsl:for-each>
+  </table>
+
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:if                        test = "TranslationResource">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Tranlation Resource</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "TranslationResource"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "MediaLink">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Media Link</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "MediaLink/
+                                          MediaID"
+                                  mode = "gtc"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "Dictionary">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Spanish Dictionary</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "Dictionary"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Spanish Audience</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each              select = "Audience">
+      <xsl:if                     test = "position() = last()">
+       <i>
+        <xsl:value-of           select = "."/>
+       </i>
+      </xsl:if>
+      <xsl:if                     test = "not(position() = last())">
+       <i>
+        <xsl:value-of           select = "."/>
+        <xsl:text>; </xsl:text>
+       </i>
+      </xsl:if>
+     </xsl:for-each> 
+    </td>
+   </tr>
+   <xsl:if                        test = "DefinitionStatus">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Definition Status</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "DefinitionStatus"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "StatusDate">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Status Date</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "StatusDate"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "Comment">
+    <xsl:apply-templates        select = "Comment"
+                                  mode = "withAttribute">
+     <xsl:with-param              name = "label"
+                                select = "'Comment [es]'"/>
+    </xsl:apply-templates>
+   </xsl:if>
+
+   <xsl:call-template             name = "addDates"/>
+
+  </table> 
+
+  <!--
+  Separate multiple Term definitions with a small horizontal line
+  =============================================================== -->
+  <xsl:choose>
+   <xsl:when                      test = "position() != last()">
+    <center>
+     <hr width="25%"/>
+    </center>
+   </xsl:when>
+   <xsl:otherwise>
+    <hr/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template to display the RelatedInformation elements
+ ================================================================== -->
+ <xsl:template                   match = "RelatedInformation">
+  <xsl:apply-templates          select = "RelatedSummaryRef"/>
+  <xsl:apply-templates          select = "RelatedDrugSummaryRef"/>
+  <xsl:apply-templates          select = "RelatedExternalRef"/>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template to display the RelatedInformation elements
+ ================================================================== -->
+ <xsl:template                   match = "RelatedSummaryRef     |
+                                          RelatedDrugSummaryRef |
+                                          RelatedExternalRef">
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>
+     <xsl:choose>
+      <xsl:when                  test = "name() = 'RelatedSummaryRef'">
+       <xsl:if                   test = "not(
+                                         preceding-sibling::RelatedSummaryRef)">
+        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;Summary Ref</xsl:text>
+       </xsl:if>
+      </xsl:when>
+      <xsl:when                  test = "name() = 'RelatedDrugSummaryRef'">
+       <xsl:if                   test = "not(
+                                        preceding-sibling::RelatedDrugSummaryRef
+                                              )">
+        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;Drug Ref</xsl:text>
+       </xsl:if>
+      </xsl:when>
+      <xsl:when                  test = "name() = 'RelatedExternalRef'">
+       <xsl:if                   test = "not(
+                                        preceding-sibling::RelatedExternalRef
+                                              )">
+        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;External Ref</xsl:text>
+       </xsl:if>
+      </xsl:when>
+     </xsl:choose>
+    </b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:value-of               select = "."/>
+   </td>
+  </tr>
+ </xsl:template>
+
+
+ <!--
+ =======================================================================
+ Template for Admin Information Comments
+ ======================================================================= -->
+ <xsl:template                   match = "Comment"
+                                  mode = "withAttribute">
+  <xsl:param                      name = "label"
+                                select = "'Comment'"/>
+
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>
+     <xsl:value-of              select = "$label"/>
+    </b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <span class="attribute">
+     <xsl:if                      test = "@audience">
+      <xsl:text>audience=</xsl:text>
+      <xsl:value-of             select = "@audience"/>
+     </xsl:if>
+     <xsl:if                      test = "@date">
+      <xsl:text> date=</xsl:text>
+      <xsl:value-of             select = "@date"/>
+     </xsl:if>
+     <xsl:if                      test = "@user">
+      <xsl:text> user=</xsl:text>
+      <xsl:value-of             select = "@user"/>
+     </xsl:if>
+    </span>
+   </td>
+  </tr>
+  <tr>
+   <td><xsl:text> </xsl:text></td>
+   <td>
+    <xsl:value-of              select = "."/>
+    <p/>
+   </td>
+  </tr>
+ </xsl:template>
+
+
+ <!--
+ =======================================================================
+ Adding Date Last Modified/Date Last Reviewed
+ ======================================================================= -->
+ <xsl:template                    name = "addDates">
+   <xsl:if                        test = "DateLastModified">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Date Last Modified</b>
+     </td>
+     <td>
+      <xsl:apply-templates      select = "DateLastModified"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "DateLastReviewed">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Date Last Reviewed</b>
+     </td>
+     <td>
+      <xsl:apply-templates      select = "DateLastReviewed"/>
+     </td>
+    </tr>
+   </xsl:if>
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
