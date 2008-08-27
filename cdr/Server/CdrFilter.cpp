@@ -1,9 +1,12 @@
 /*
- * $Id: CdrFilter.cpp,v 1.57 2008-08-01 02:31:04 ameyer Exp $
+ * $Id: CdrFilter.cpp,v 1.58 2008-08-27 02:38:31 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.57  2008/08/01 02:31:04  ameyer
+ * Fixed incorrectly escaped parenthesis chars in regex.
+ *
  * Revision 1.56  2007/08/03 19:06:11  bkline
  * Fixed serious memory allocation bug in parmstr function().
  *
@@ -269,6 +272,8 @@ static std::string filterVector (
 static string getVerificationDate(const string& parms,
                                   cdr::db::Connection& conn,
                                   const cdr::String&);
+
+static void makeNomapRegex (cdr::RegEx& re, cdr::db::Connection& conn);
 
 // Map of filter strings to ids
 // Used only if filter profiling is specified by environment variable
@@ -2645,13 +2650,28 @@ string lookupExternalValue(const string& parms,
     stmt.setString(2, externName);
     cdr::db::ResultSet rs = stmt.executeQuery();
     if (!rs.next()) {
+
+        // Value was not found.  Is it a mappable pattern?
+        // Find out by getting a regex of non-mappable patterns
+        // RegEx constructed for case insensitive searching = true
+        cdr::RegEx re(true);
+        makeNomapRegex(re, conn);
+
+        // By default it will be mappable
+        cdr::String mappable = L"Y";
+        if (re.match(externName) && usageName == L"CT.gov Facilities")
+            // It matched one of the patterns for non-mappable agency values
+            mappable = L"N";
+
+        // Insert the new value
         cdr::db::PreparedStatement s = conn.prepareStatement(
-            "INSERT INTO external_map (usage, value, last_mod) "
-            "SELECT id, ?, GETDATE()                           "
-            "  FROM external_map_usage                         "
-            " WHERE name = ?                                   ");
+            "INSERT INTO external_map (usage, value, last_mod, mappable) "
+            "SELECT id, ?, GETDATE(), ?  "
+            "  FROM external_map_usage   "
+            " WHERE name = ?             ");
         s.setString(1, externName);
-        s.setString(2, usageName);
+        s.setString(2, mappable);
+        s.setString(3, usageName);
         s.executeUpdate();
         return "<DocId/>";
     }
@@ -2717,4 +2737,108 @@ void cdr::buildFilterString2IdMap() {
 
     // Store this in static memory
     S_pFltrIdMap = pMap;
+}
+
+/**
+ * Create a big regular expression from the non-mappable patterns
+ * stored in the external_map_nomap_pattern table.
+ *
+ *  @param re       Reference to regular expression object to hold pattern.
+ *                  Caller should create it with ignore case set.
+ *  @param conn     Database connection.
+ *
+ *  @return         Void, caller's re is set to pattern.
+ *  @throw          cdr::Exception if pattern error or memory blowout
+ */
+// Pattern buf size, big enough for 1-2,000+ patterns of expected size.
+const int MAX_PAT_BUF = 100000;
+
+// Map of ASCII chars that must be escaped
+typedef unsigned short PATCHAR;
+const int MAX_ESC = 128;
+static PATCHAR escape[MAX_ESC];
+static unsigned char escapeChars[] = "^$()[]*+.|\\";
+
+// If true, escape list not yet initialized
+static bool noEscape = true;
+
+static void makeNomapRegex (
+    cdr::RegEx& re,
+    cdr::db::Connection& conn
+) {
+    // Build pattern here.  Allocate some overflow area just in case
+    wchar_t patBuf[MAX_PAT_BUF + 8];
+
+    // Point to start and end
+    wchar_t *nextp = patBuf;
+    wchar_t *endp  = patBuf + MAX_PAT_BUF;
+
+    // Seed table of escape chars if not yet done
+    // Static array initialized by compiler to all 0
+    if (noEscape) {
+        for (int i=0; i<sizeof(escapeChars); i++) {
+            PATCHAR c = escapeChars[i];
+            escape[c] = 1;
+        }
+        noEscape = false;
+    }
+
+    // Select all of the values in the table
+    cdr::db::PreparedStatement selStmt = conn.prepareStatement(
+                "SELECT pattern FROM external_map_nomap_pattern");
+    cdr::db::ResultSet rs = selStmt.executeQuery();
+
+    // Need OR symbol before all but the first pattern
+    bool firstPat = true;
+
+    // Put each pattern into the big pattern string
+    while (rs.next()) {
+        cdr::String nomapPattern = rs.getString(1);
+        const wchar_t *nPatp = nomapPattern.c_str();
+
+        // Set alternation if needed
+        if (!firstPat)
+            *nextp++ = (PATCHAR) '|';
+        firstPat = false;
+
+        // Each subpattern must match starting at the
+        //   beginning of a value string
+        *nextp++ = (PATCHAR) '(';
+        *nextp++ = (PATCHAR) '^';
+
+        // Process each char until done or buffer full
+        while (*nPatp && nextp < endp) {
+            PATCHAR c = *nPatp++;
+
+            // Translate SQL wildcard to regex
+            if (c == '%') {
+                *nextp++ = (PATCHAR) '.';
+                *nextp++ = (PATCHAR) '*';
+                continue;
+            }
+            // Check for chars needing backslash escapes
+            // All escape chars are in 7 bit ASCII set
+            if (c < MAX_ESC && escape[c])
+                *nextp++ = (PATCHAR) '\\';
+
+            // Save actual char
+            *nextp++ = c;
+        }
+        *nextp++ = (PATCHAR) ')';
+
+        // Did we run out of memory?
+        if (nextp >= endp)
+            // Somebody has to recompile with higher value
+            throw cdr::Exception(L"makeNomapRegex ran out of memory.  "
+                                 L"Please inform support staff");
+    }
+
+    // Terminate the whole thing
+    *nextp++ = (PATCHAR) 0;
+
+    // DEBUG - Log the complete regex
+    // cdr::log::WriteFile("makeNomapRegex pattern: ", patBuf);
+
+    // Initialize the regular expression
+    re.set(patBuf);
 }
