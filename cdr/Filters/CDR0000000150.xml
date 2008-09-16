@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000150.xml,v 1.110 2008-07-01 21:51:59 venglisc Exp $
+$Id: CDR0000000150.xml,v 1.111 2008-09-16 20:51:08 venglisc Exp $
 
 Vendor Filter: InScopeProtocol
 
@@ -78,6 +78,7 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
 
    <xsl:apply-templates         select = "ProtocolIDs"/>
    <xsl:apply-templates         select = "FundingInfo"/>
+   <xsl:apply-templates         select = "RegulatoryInformation"/>
    <xsl:apply-templates         select = "ProtocolSponsors"/>
    <xsl:apply-templates         select = "ProtocolApproval"/>
    <!-- xsl:apply-templates     select = "FDAINDInfo"
@@ -281,6 +282,86 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
     <xsl:apply-templates        select = "."
                                   mode = "copy"/>
    </xsl:for-each>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ RegulatoryInfo template to display regulatory information and
+ ResponsibleParty information (for internal use only)
+ ==================================================================== -->
+ <xsl:template                   match = "RegulatoryInformation">
+  <xsl:element                    name = "{name()}">
+   <xsl:apply-templates         select = "FDARegulated |
+                                          Section801   |
+                                          DelayedPosting"
+                                  mode = "copy"/>
+   <xsl:apply-templates         select = "ResponsibleParty"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ ResponsibleParty information (for internal use only)
+ ==================================================================== -->
+ <xsl:template                   match = "ResponsibleParty">
+  <xsl:element                    name = "{name()}">
+   <xsl:apply-templates         select = "ResponsiblePerson      |
+                                          ResponsibleOrganization"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ ResponsibleParty information (for internal use only)
+ ==================================================================== -->
+ <xsl:template                   match = "ResponsiblePerson">
+  <xsl:element                    name = "{name()}">
+   <xsl:for-each                select = "Person">
+    <xsl:element                  name = "ResponsiblePersonName">
+     <xsl:attribute               name = "ref">
+      <xsl:value-of             select = "Person/@cdr:ref"/>
+     </xsl:attribute>
+     <xsl:value-of              select = "Person/
+                                          PersonNameInformation/
+                                          SurName"/>
+     <xsl:text>, </xsl:text>
+     <xsl:value-of              select = "Person/
+                                          PersonNameInformation/
+                                          GivenName"/>
+    </xsl:element>
+   </xsl:for-each>
+   <xsl:apply-templates         select = "SpecificPhone |
+                                          SpecificEmail"
+                                  mode = "copy"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ ResponsibleParty information (for internal use only)
+ ==================================================================== -->
+ <xsl:template                   match = "ResponsibleOrganization">
+  <xsl:element                    name = "{name()}">
+   <xsl:for-each                select = "Organization">
+    <ResponsibleOrganizationName>
+     <xsl:attribute               name = "ref">
+      <xsl:value-of             select = "Organization/@cdr:ref"/>
+     </xsl:attribute>
+     <xsl:value-of              select = "Organization/
+                                          OrganizationNameInformation/
+                                          OfficialName/
+                                          Name"/> 
+    </ResponsibleOrganizationName>
+   </xsl:for-each>
+   <xsl:apply-templates         select = "PersonTitle   |
+                                          SpecificPhone |
+                                          SpecificEmail"
+                                  mode = "copy"/>
   </xsl:element>
  </xsl:template>
 
@@ -1965,6 +2046,7 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
                                           PersonLastName = '')">
           <ProtPerson>
            <xsl:choose>
+
             <xsl:when             test = "ExternalSiteContact/
                                           ExternalSiteContactName
                                           or
@@ -2668,6 +2750,7 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
 
 
  <!--
+
  ====================================================================
  Drop PdqKey with and withoiut mode = "copy".
  It doesn't appear to be used without mode="copy" but it's safe to do.
