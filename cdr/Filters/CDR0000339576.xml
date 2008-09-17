@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000339576.xml,v 1.23 2008-05-30 19:59:13 venglisc Exp $
+$Id: CDR0000339576.xml,v 1.24 2008-09-17 20:54:11 venglisc Exp $
 
 Filter handling all In-Line Markup elements of Summary Docs
 Written by Volker Englisch, 2004-07-16
@@ -32,14 +32,34 @@ $Log: not supported by cvs2svn $
                                           ProtocolRef">
   <a>
    <xsl:attribute                 name = "href">
-    <xsl:value-of               select = "concat('/cgi-bin/cdr/QcReport.py?',
+    <!--
+    For reformatted patient summaries run a different QC report
+    =========================================================== -->
+    <xsl:choose>
+     <xsl:when                    test = "Summary
+                                           /LinkedSummaryAudience = 'Patients'
+                                          and
+                                          (Summary/LinkedKeyPoints
+                                           or
+                                           Summary/LinkedSummaryType = 
+                                           concat('Complementary and ',
+                                                  'alternative medicine'))">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;ReportType=pat',
+                                                 '&amp;Session=guest')"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Session=guest')"/>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:attribute>
    <!-- xsl:attribute                 name = "target">
     <xsl:text>_blank</xsl:text>
    </xsl:attribute -->
-   <xsl:value-of                select = "."/>
+   <xsl:apply-templates             select = "SummaryRefText"/>
   </a>
 
    <!-- xsl:apply-templates/ -->
@@ -871,6 +891,7 @@ $Log: not supported by cvs2svn $
                                           Deletion/@RevisionLevel = 'publish'">
          <xsl:call-template       name = "setCSS">
           <xsl:with-param         name = "myCSS"
+
                                 select = "'deleteapproved'"/>
           <xsl:with-param         name = "myString"
                                 select = "'Note: '"/>
@@ -1080,6 +1101,7 @@ $Log: not supported by cvs2svn $
            <xsl:with-param        name = "myString"
                                 select = "'Nota: '"/>
           </xsl:call-template>
+
          </xsl:when>
          <xsl:when                test = "Insertion/@RevisionLevel ='proposed'">
           <xsl:call-template      name = "setCSS">
@@ -1857,6 +1879,7 @@ $Log: not supported by cvs2svn $
         <xsl:text>http://mahler.nci.nih.gov/cgi-bin/cdr/</xsl:text>
         <xsl:text>GetCdrImage.py?</xsl:text>
         <xsl:text>id=</xsl:text>
+
         <xsl:value-of           select = "@cdr:ref"/>
         <xsl:text>-250.jpg</xsl:text>
        </xsl:attribute>
@@ -2471,6 +2494,7 @@ $Log: not supported by cvs2svn $
          </xsl:when>
          <xsl:otherwise>
           <span class="insertapproved">
+
           <xsl:text>, </xsl:text>
           </span>
          </xsl:otherwise>
@@ -2502,6 +2526,7 @@ $Log: not supported by cvs2svn $
         </xsl:choose>
        </xsl:when>    
        <xsl:otherwise>
+
         <xsl:choose>
          <xsl:when                 test = "@existing">
           <xsl:text>, </xsl:text>
