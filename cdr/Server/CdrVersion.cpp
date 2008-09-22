@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.32 2007-07-08 16:33:21 bkline Exp $
+ * $Id: CdrVersion.cpp,v 1.33 2008-09-22 13:36:00 bkline Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2007/07/08 16:33:21  bkline
+ * Added missing commit() calls.
+ *
  * Revision 1.31  2007/07/06 04:16:09  bkline
  * Added missing close() calls for db prepared statements.
  *
@@ -281,7 +284,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
     cdr::Int blobId = rs.getInt(8);
     select.close();
 
-    string newver = "INSERT INTO doc_version "
+    string newver = "INSERT INTO all_doc_versions "
                     "            (id, num, dt, updated_dt, usr, val_status, "
                     "             val_date, doc_type, title, "
                     "             xml, comment, publishable) "
