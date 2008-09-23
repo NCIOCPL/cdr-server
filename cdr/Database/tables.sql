@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.126 2008-08-05 19:46:32 bkline Exp $
+ * $Id: tables.sql,v 1.127 2008-09-23 15:45:14 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.126  2008/08/05 19:46:32  bkline
+ * Added phase and force columns to ctgov_import table.
+ *
  * Revision 1.125  2008/07/18 03:16:40  ameyer
  * Added external_map_nomap_pattern.
  *
@@ -412,7 +415,37 @@
  * GO
  * CREATE DATABASE cdr
  * GO
+ * DROP DATABASE cdr_archived_versions
+ * GO
+ * CREATE DATABASE cdr_archived_versions
+ * GO
  */
+
+USE cdr_archived_versions
+GO
+
+/*
+ * This is the table which holds the older versions of CDR documents.
+ * It is separated out in order to keep the size of the main cdr
+ * database low enough that we can avoid some of the messier bugs
+ * in the Windows file system that we used to encounter in backing
+ * up and copying everything.  See notes on all_doc_versions table
+ * and doc_version in the cdr database view below.
+ *
+ *           id  identifies the document which this version represents
+ *          num  sequential number of the version of the document; numbering
+ *               starts with 1
+ *          xml  for structured documents, this is the data for the document;
+ *               for unstructured documents this contains tagged textual
+ *               information associated with the document (for example, the
+ *               standard caption for an illustration)
+ */
+CREATE TABLE doc_version_xml
+             (id INTEGER      NOT NULL,
+             num INTEGER      NOT NULL,
+             xml NTEXT        NOT NULL,
+     PRIMARY KEY (id, num))
+GO
 
 USE cdr
 GO
@@ -1045,15 +1078,18 @@ CREATE INDEX debug_log_recorded_idx ON debug_log(recorded)
 GO
 
 /* 
- * Version control.  XXX - will we use version control for documents whose
- * data is stored externally (e.g., graphics)?  Also, should we add a column
- * for older versions which have been archived from the on-line portion of the
- * system, providing location information for the version's data?
- * Alan has suggested that we may only want to store version information for
- * versions which have been "published" - assuming we can come up with a
- * satisfactory definition for that term in this context.
+ * Version control.  This is now implemented with a base table whose xml  
+ * column can be set to NULL, in which case the document for the version cat
+ * be retrieved from a separate database with a single table to store the     
+ * older versions of documents.  New versions have their xml stored
+ * directly in the base table.  Every year (or six months if we need to do it
+ * more frequently) the xml is moved to the separate database and the xml
+ * column in the base table is set to NULL.  The doc_version view now
+ * presents the data in a way that is transparent to the software in the
+ * rest of the system, which has no knowledge of the database for the
+ * archived XML.
  *
- *     document  identifies the document which this version represents
+ *           id  identifies the document which this version represents
  *          num  sequential number of the version of the document; numbering
  *               starts with 1
  *           dt  date/time the document was checked in - by GETDATE()
@@ -1077,7 +1113,7 @@ GO
  *      comment  optional free-text description of additional characteristics
  *               of the document
  */
-CREATE TABLE doc_version
+CREATE TABLE all_doc_versions
              (id INTEGER      NOT NULL REFERENCES all_docs,
              num INTEGER      NOT NULL,
               dt DATETIME     NOT NULL,
@@ -1088,10 +1124,24 @@ CREATE TABLE doc_version
      publishable CHAR         NOT NULL,
         doc_type INTEGER      NOT NULL REFERENCES doc_type,
            title VARCHAR(255) NOT NULL,
-             xml NTEXT        NOT NULL,
+             xml NTEXT            NULL,
          comment VARCHAR(255)     NULL,
      PRIMARY KEY (id, num))
 GO
+CREATE VIEW doc_version
+AS
+         SELECT v.id, v.num, v.dt, v.updated_dt, v.usr, 
+                v.val_status, v.val_date,
+                v.publishable, v.doc_type, v.title, 
+                xml = CASE
+                          WHEN v.xml IS NOT NULL THEN v.xml
+                          ELSE a.xml
+                      END,
+                comment
+           FROM all_doc_versions v
+LEFT OUTER JOIN cdr_archived_versions.dbo.doc_version_xml a
+             ON a.id = v.id
+            AND a.num = v.num
 
 /*
  * Marks a version for later retrieval by name.  Note that a single version of

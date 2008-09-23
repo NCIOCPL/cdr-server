@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.31 2008-07-18 03:17:08 ameyer Exp $
+ * $Id: CreateLogins.sql,v 1.32 2008-09-23 15:45:14 bkline Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2008/07/18 03:17:08  ameyer
+ * SELECT on external_map_nomap_pattern to CdrGuest.
+ *
  * Revision 1.30  2008/05/01 21:24:44  ameyer
  * Added sp_defaultdb commands to insure that default databases are established
  * for our logins, matter whether or not the sp_addlogins execute.
@@ -149,6 +152,20 @@ GO
 EXEC sp_defaultdb 'CdrPublishing', 'cdr'
 GO
 
+/* Take care of permissions for the database of older versions. */
+USE cdr_archived_versions
+GO
+sp_changedbowner 'cdr'
+GO
+sp_grantdbaccess 'CdrGuest'
+GO
+sp_grantdbaccess 'CdrPublishing'
+GO
+GRANT SELECT ON doc_version_xml TO CdrGuest
+GO
+GRANT SELECT ON doc_version_xml TO CdrPublishing
+GO
+
 /*
  * Add the users to the access list for the cdr database.
  */
@@ -257,6 +274,10 @@ GO
 GRANT SELECT ON doc_version TO CdrGuest
 GO
 GRANT SELECT ON doc_version TO CdrPublishing
+GO
+GRANT SELECT ON all_doc_versions TO CdrGuest
+GO
+GRANT SELECT ON all_doc_versions TO CdrPublishing
 GO
 GRANT SELECT ON version_label TO CdrGuest
 GO
