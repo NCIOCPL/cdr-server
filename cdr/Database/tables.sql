@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.127 2008-09-23 15:45:14 bkline Exp $
+ * $Id: tables.sql,v 1.128 2008-09-25 14:55:51 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.127  2008/09/23 15:45:14  bkline
+ * Modifications needed for the new cdr_archived_versions database.
+ *
  * Revision 1.126  2008/08/05 19:46:32  bkline
  * Added phase and force columns to ctgov_import table.
  *
@@ -1128,20 +1131,6 @@ CREATE TABLE all_doc_versions
          comment VARCHAR(255)     NULL,
      PRIMARY KEY (id, num))
 GO
-CREATE VIEW doc_version
-AS
-         SELECT v.id, v.num, v.dt, v.updated_dt, v.usr, 
-                v.val_status, v.val_date,
-                v.publishable, v.doc_type, v.title, 
-                xml = CASE
-                          WHEN v.xml IS NOT NULL THEN v.xml
-                          ELSE a.xml
-                      END,
-                comment
-           FROM all_doc_versions v
-LEFT OUTER JOIN cdr_archived_versions.dbo.doc_version_xml a
-             ON a.id = v.id
-            AND a.num = v.num
 
 /*
  * Marks a version for later retrieval by name.  Note that a single version of
