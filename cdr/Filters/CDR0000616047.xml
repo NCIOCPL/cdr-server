@@ -1,0 +1,367 @@
+<CdrDoc Type='Filter' Id='CDR0000616047'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Denormalization Filter: GlossaryTermName</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!--
+================================================================
+$Id: CDR0000616047.xml,v 1.1 2008-09-26 17:29:19 venglisc Exp $
+
+Filter to create Vendor XML for Glossary
+
+$Log: not supported by cvs2svn $
+================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+               exclude-result-prefixes = "cdr"
+                               version = "1.0">
+
+ <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
+ <!-- xsl:include href = "cdr:name:Module: Vendor Filter Templates"/ -->
+    
+ <xsl:output                    method = "xml" 
+                  omit-xml-declaration = "no"/>  
+
+ <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
+ <xsl:param                       name = "DateFirstPub"
+                                select = "''"/>
+
+ <xsl:variable                    name = "whoAmI"
+                                select = "'GlossaryTerm'"/>
+ <!-- 
+ =================================================================== 
+ Copy DocId, TermName,TermDefinition, Term Pronunciation
+ =================================================================== -->
+ <xsl:template                   match = "GlossaryTermName">
+  <xsl:text    disable-output-escaping = "yes">
+&lt;!DOCTYPE GlossaryTerm &gt;</xsl:text>
+
+  <xsl:variable                   name = "termName"
+                                select = "normalize-space(TermName/
+                                                          TermNameString)"/>
+  <xsl:element                    name = "GlossaryTerm">
+   <xsl:for-each                select = "document('cdrutil:/docid')">
+    <xsl:attribute                name = "id">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+   <xsl:if                        test = "PdqKey">
+    <xsl:attribute                name = "LegacyPDQID">
+     <xsl:value-of              select = "PdqKey"/>
+    </xsl:attribute>
+   </xsl:if>
+   <!--
+   Test to make sure the TermName exists and hasn't been removed
+   because it was within markup
+   ============================================================= -->
+   <xsl:if                        test = "$termName = ''">
+    <xsl:message             terminate = "no">
+     <xsl:text>&lt;LI&gt;&lt;b&gt;Error:&lt;/b&gt; TermName</xsl:text>
+     <xsl:text> does not exist.&lt;BR/&gt;</xsl:text>
+    </xsl:message> 
+   </xsl:if>
+
+   <xsl:apply-templates         select = "TermName"/>
+   
+   <xsl:for-each                select = "GlossaryTermConcept/
+                                          TermDefinition">
+    <TermDefinition>
+     <xsl:apply-templates       select = "DefinitionText">
+      <xsl:with-param             name = "language"
+                                select = "'en'"/>
+     </xsl:apply-templates>
+     <xsl:apply-templates       select = "Dictionary"
+                                  mode = "copy"/>
+     <xsl:apply-templates       select = "Audience"
+                                  mode = "copy"/> 
+    </TermDefinition>
+   </xsl:for-each>
+
+   <!--
+   Make sure we only have either a shared MediaLink for both, English and
+   Spanish or we have individual once but not both
+   ====================================================================== -->
+   <xsl:if                        test = "MediaLink
+                                          and
+                                          (TermDefinition/MediaLink
+                                           or
+                                           TranslatedTermDefinition/MediaLink)">
+    <xsl:message              terminate = "no">
+     <xsl:text>&lt;LI class="error" &gt;</xsl:text>
+     <xsl:text>&lt;b&gt;Error:&lt;/b&gt; Invalid </xsl:text>
+     <xsl:text>use of MediaLink.&lt;BR/&gt;</xsl:text>
+    </xsl:message>
+   </xsl:if>
+   <xsl:apply-templates         select = "MediaLink |
+                                          TermDefinition/
+                                          MediaLink |
+                                          TranslatedTermDefinition/
+                                          MediaLink"/>
+
+   <xsl:apply-templates         select = "TranslatedName"/>
+
+   <xsl:for-each                select = "GlossaryTermConcept/
+                                          TranslatedTermDefinition">
+    <SpanishTermDefinition>
+     <xsl:apply-templates      select  = "DefinitionText">
+      <xsl:with-param             name = "language"
+                                select = "'es'"/>
+     </xsl:apply-templates>
+     <xsl:apply-templates       select = "Dictionary"
+                                  mode = "copy"/>
+     <xsl:apply-templates       select = "Audience"
+                                  mode = "copy"/> 
+    </SpanishTermDefinition>
+   </xsl:for-each>
+
+
+   <!-- 
+   ===================================================================
+   Copy Date First Published and Date Last Modified
+   =================================================================== -->
+   <xsl:variable                  name = "CtrlBlk" 
+                                select = "document('cdr:/*/CdrCtl')"/>
+   <xsl:choose>
+    <xsl:when                     test = "$CtrlBlk/CdrDocCtl/FirstPub/Date">
+     <DateFirstPublished>
+      <xsl:value-of             select = "substring-before ($CtrlBlk/
+                                            CdrDocCtl/FirstPub/Date,'T')"/>
+     </DateFirstPublished>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:call-template           name = "getDateFirstPub">
+      <xsl:with-param             name = "date"
+                                select = "$DateFirstPub"/>
+     </xsl:call-template>    
+    </xsl:otherwise>
+   </xsl:choose>
+   <xsl:apply-templates         select = "GlossaryTermConcept/
+                                          TermDefinition/
+                                          DateLastModified" 
+                                  mode = "copy"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ The TermNameString is displayed as TermName in the vendor output
+ ===================================================================== -->
+ <xsl:template                    match = "TermName">
+  <TermName>
+   <xsl:value-of                 select = "normalize-space(TermNameString)"/>
+  </TermName>
+
+  <xsl:apply-templates           select = "TermPronunciation"/>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ The TermNameString is displayed as TermName in the vendor output
+ ===================================================================== -->
+ <xsl:template                    match = "TranslatedName">
+  <xsl:choose>
+   <xsl:when                       test = "@language = 'es'">
+    <SpanishTermName>
+     <xsl:value-of               select = "normalize-space(TermNameString)"/>
+    </SpanishTermName>
+   </xsl:when>
+   <xsl:otherwise>
+    <UnknownTermName>
+     <xsl:value-of               select = "normalize-space(TermNameString)"/>
+    </UnknownTermName>
+    </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ The TermPronunciation needs to be displayed with parenthesis around 
+ the name. 
+ ===================================================================== -->
+ <xsl:template                    match = "TermPronunciation">
+  <xsl:element                     name = "{name()}">
+   <xsl:text>(</xsl:text>
+    <xsl:value-of                select = "normalize-space(.)"/>
+   <xsl:text>)</xsl:text>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ The TermDefinition and SpanishTermDefinition can contain inline 
+ markup and needs to be handled with a template
+ ===================================================================== -->
+ <xsl:template                    match = "DefinitionText">
+  <xsl:param                       name = "language"/>
+
+  <xsl:element                     name = "{name()}">
+   <xsl:apply-templates            mode = "copy">
+    <xsl:with-param                name = "language"
+                                 select = "$language"/>
+   </xsl:apply-templates>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Replacing the place holders within the definition text with the 
+ appropriate text definitions.
+ ===================================================================== -->
+ <xsl:template                   match = "PlaceHolder"
+                                  mode = "copy">
+  <xsl:param                      name = "language"
+                                select = "'en'"/>
+
+  <xsl:variable                   name = "ph"
+                                select = "@name"/>
+    <xsl:variable                 name = "termName"
+                                select = "//TermName[@language = $language]/
+                                            TermNameString"/>
+
+  <xsl:choose>
+   <!-- 
+   A) The canned name TERMNAME has been specified as a place holder
+      We replace the term name with the correct term for this language
+   ==================================================================== -->
+   <xsl:when                      test = "$ph = 'TERMNAME'">
+    <xsl:value-of               select = "$termName"/>
+   </xsl:when>
+   <!--
+   B) The canned name CAPPEDTERMNAME has been entered as a place holder
+      We replace the term name and capitalize it unless the 
+      PreservCase attribute of the TermNameString has been specified
+   ==================================================================== -->
+   <xsl:when                      test = "$ph = 'CAPPEDTERMNAME'">
+    <xsl:choose>
+     <!-- Preserve the case of the term name -->
+     <xsl:when                    test = "//TermName[@language = $language]/
+                                             TermNameString/
+                                             @PreserveCase = 'Yes'">
+      <xsl:value-of             select = "normalize-space($termName)"/>
+     </xsl:when>
+     <!-- Cap the term name -->
+     <xsl:otherwise>
+      <xsl:call-template          name = "convertCase">
+       <xsl:with-param            name = "convString"
+                                select = "substring(
+                                           normalize-space($termName), 1, 1)"/>
+       <xsl:with-param            name = "convertTo"
+                                select = "'proper'"/>
+      </xsl:call-template>
+      <xsl:value-of             select = "substring(
+                                           normalize-space($termName), 2)"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <!--
+   C) Replace the PlaceHolder attribute string with the proper 
+      ReplacementText element
+   ==================================================================== -->
+   <xsl:otherwise>
+    <!-- 
+    In case the same PlaceHolder string is used in the English as well
+    as Spanish section we need to ensure to pick up the right replacement
+    text for the correct language.
+    ===================================================================== -->
+    <xsl:choose>
+     <xsl:when                    test = "$language = 'en'">   
+      <xsl:value-of             select = "normalize-space(
+                                           //TermDefinition/
+                                             ReplacementText[@name = $ph])"/>
+     </xsl:when>
+     <xsl:when                    test = "$language = 'es'">
+      <xsl:value-of             select = "normalize-space(
+                                           //TranslatedTermDefinition/
+                                             ReplacementText[@name = $ph])"/>
+     </xsl:when>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Template for extracting SummaryRef Definition
+ =================================================================== -->
+ <xsl:template                  match = "SummaryRef"
+                                 mode = "copy">
+  <xsl:variable                  name = "hrefId"
+                               select = "@cdr:href"/>
+    <xsl:variable                name = "hrefNormId"
+                               select = "number(
+                                           substring-before(
+                                           concat(
+                                           substring-after(@cdr:href, 'CDR'),
+                                                               '#'), '#'))"/>
+    <!--
+    Extracting the content of the SummaryURL attribute to be used for 
+    populating the url attribute of the SummaryRef element.  This 
+    information has to be retrieved via a SQL query from the database
+    ================================================================= -->
+    <xsl:variable                 name = "sqlQuery">
+     SELECT path, value 
+       FROM query_term_pub 
+      WHERE doc_id = ?
+        AND path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
+    </xsl:variable>
+
+    <!-- 
+    Note: Don't perform a normalize-space here since it would convert
+          the resulting node into a string
+    ================================================================== -->
+    <xsl:variable                 name = "queryRows"
+                                select = "document(
+                                           concat('cdrutil:/sql-query/',
+                                                   $sqlQuery,
+                                                   '~',
+                                                   $hrefNormId))"/>
+    <!--
+    Note:  The url created by function getSummaryURL has no trailing 
+           slash ('/'), specifies the domain as http://cancer.gov and
+           is normalized
+    ================================================================= -->
+    <xsl:variable                 name = "url">
+     <xsl:call-template           name = "getSummaryURL">
+      <xsl:with-param             name = "url"
+                                select = "normalize-space(
+                                            $queryRows
+                                            /SqlResult
+                                            /row
+                                            /col[@name='value'])"/>
+     </xsl:call-template>
+    </xsl:variable>
+  
+    <!--
+    The SummaryRef url attribute is populated from the xref attribute of
+    the SummaryURL element displaying the full path without the domain
+    ===================================================================== -->
+  <SummaryRef>
+   <xsl:attribute                name = "href">
+    <xsl:value-of              select = "$hrefId"/>
+   </xsl:attribute>
+   <xsl:attribute                name = "url">
+    <xsl:choose>
+     <xsl:when                   test = "starts-with($url, 'http')">
+      <xsl:value-of            select = "substring-after($url, '.gov')"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of            select = "$url"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:attribute>
+   <xsl:apply-templates/>
+  </SummaryRef>
+ </xsl:template>
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
