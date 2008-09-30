@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-$Id: CDR0000486311.xml,v 1.5 2008-01-15 16:09:23 venglisc Exp $
+$Id: CDR0000486311.xml,v 1.6 2008-09-30 21:16:18 venglisc Exp $
 
 Filter to create the DrugInformationSummary QC Report
    Written      2006-04-03
@@ -234,6 +234,24 @@ $Log: not supported by cvs2svn $
      <xsl:value-of              select = "FDAApproved"/>
     </td>
    </tr>
+   <xsl:if                        test = "ApprovedIndication">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Approved Indication</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:for-each             select = "ApprovedIndication">
+       <li>
+        <xsl:value-of           select = "Term/
+                                          PreferredName"/>
+         <xsl:for-each          select = "Term">
+          <xsl:call-template      name = "createCdrQcLink"/>
+        </xsl:for-each>
+       </li>
+      </xsl:for-each>
+     </td>
+    </tr>
+   </xsl:if>
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Term Link</b>
@@ -270,7 +288,8 @@ $Log: not supported by cvs2svn $
  ===================================================================
  Display Description information with insertion/deletion markup 
  =================================================================== -->
- <xsl:template                   match = "Description">
+ <xsl:template                   match = "Description |
+                                          DateLastModified">
   <xsl:apply-templates/>
  </xsl:template>
 
@@ -326,6 +345,19 @@ $Log: not supported by cvs2svn $
      </i>
     </td>
    </tr>
+   <xsl:if                        test = "Comment">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Comments</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+    <xsl:for-each               select = "Comment">
+     <xsl:apply-templates       select = "."/>
+     <br/>
+    </xsl:for-each>
+    </td>
+   </tr>
+   </xsl:if>
   </table>
   <p/>
  </xsl:template>
@@ -358,7 +390,7 @@ $Log: not supported by cvs2svn $
      <b>Date Last Modified</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "DateLastModified"/>
+     <xsl:apply-templates       select = "DateLastModified"/>
     </td>
    </tr>
    <tr>
