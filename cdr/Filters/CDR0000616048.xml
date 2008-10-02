@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000616048.xml,v 1.4 2008-10-02 21:29:11 venglisc Exp $
+$Id: CDR0000616048.xml,v 1.5 2008-10-02 22:30:13 venglisc Exp $
 
 Filter to create Vendor XML for Glossary
 
@@ -217,6 +217,7 @@ $Log: not supported by cvs2svn $
                                            concat(
                                            substring-after($gtnId, 'CDR'),
                                                                '#'), '#'))"/>
+<!-- 
    <xsl:variable                  name = "sqlGTNQuery">
           SELECT n.value
             FROM query_term qt
@@ -243,14 +244,37 @@ $Log: not supported by cvs2svn $
              AND d1.active_status = 'A'
            ORDER BY n.value
    </xsl:variable>
-   <xsl:variable                  name = "queryRows"
-                                select = "document(
+-->
+   <xsl:variable                  name = "sqlGTNQuery">
+          SELECT n.doc_id, n.value
+            FROM query_term gtc
+            join query_term n
+              on n.doc_id = gtc.doc_id
+             and n.path = '/GlossaryTermName/?/TermNameString'
+            join document d
+              on d.id = n.doc_id
+           WHERE gtc.path = '/GlossaryTermName/GlossaryTermConcept/@cdr:ref'
+             AND gtc.int_val = ?
+             AND d.active_status = 'A'
+           order by n.doc_id
+   </xsl:variable>
+   <xsl:variable                  name = "queryRows">
+    <xsl:choose>
+     <xsl:when                    test = "$language = 'en'">
+      <xsl:value-of             select = "document(
                                            concat('cdrutil:/sql-query/',
                                                    $sqlGTNQuery,
-                                                   '~',
-                                                   $gtnNormId,
-                                                   '~',
-                                                   $language))"/>
+                                                   '~TermName~',
+                                                   $gtnNormId))"/>
+     </xsl:when>
+     <xsl:when                    test = "$language = 'es'">
+      <xsl:value-of             select = "document(
+                                           concat('cdrutil:/sql-query/',
+                                                   $sqlGTNQuery,
+                                                   '~TranslatedName~',
+                                                   $gtnNormId))"/>
+     </xsl:when>
+    </xsl:choose>
 
    <!--
    Also-called is only added if the SQL query returns with a record
