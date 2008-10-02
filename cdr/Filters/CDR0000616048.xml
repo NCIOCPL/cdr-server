@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000616048.xml,v 1.3 2008-10-01 19:51:47 venglisc Exp $
+$Id: CDR0000616048.xml,v 1.4 2008-10-02 21:29:11 venglisc Exp $
 
 Filter to create Vendor XML for Glossary
 
@@ -105,7 +105,7 @@ $Log: not supported by cvs2svn $
    <xsl:for-each                select = "GlossaryTermConcept/
                                           TranslatedTermDefinition">
     <SpanishTermDefinition>
-     <xsl:apply-templates      select  = "DefinitionText">
+     <xsl:apply-templates       select = "DefinitionText">
       <xsl:with-param             name = "language"
                                 select = "'es'"/>
      </xsl:apply-templates>
@@ -149,12 +149,12 @@ $Log: not supported by cvs2svn $
  =====================================================================
  The TermNameString is displayed as TermName in the vendor output
  ===================================================================== -->
- <xsl:template                    match = "TermName">
+ <xsl:template                   match = "TermName">
   <TermName>
-   <xsl:value-of                 select = "normalize-space(TermNameString)"/>
+   <xsl:value-of                select = "normalize-space(TermNameString)"/>
   </TermName>
 
-  <xsl:apply-templates           select = "TermPronunciation"/>
+  <xsl:apply-templates          select = "TermPronunciation"/>
  </xsl:template>
 
 
@@ -162,16 +162,16 @@ $Log: not supported by cvs2svn $
  =====================================================================
  The TermNameString is displayed as TermName in the vendor output
  ===================================================================== -->
- <xsl:template                    match = "TranslatedName">
+ <xsl:template                   match = "TranslatedName">
   <xsl:choose>
-   <xsl:when                       test = "@language = 'es'">
+   <xsl:when                      test = "@language = 'es'">
     <SpanishTermName>
-     <xsl:value-of               select = "normalize-space(TermNameString)"/>
+     <xsl:value-of              select = "normalize-space(TermNameString)"/>
     </SpanishTermName>
    </xsl:when>
    <xsl:otherwise>
     <UnknownTermName>
-     <xsl:value-of               select = "normalize-space(TermNameString)"/>
+     <xsl:value-of              select = "normalize-space(TermNameString)"/>
     </UnknownTermName>
     </xsl:otherwise>
   </xsl:choose>
@@ -183,10 +183,10 @@ $Log: not supported by cvs2svn $
  The TermPronunciation needs to be displayed with parenthesis around 
  the name. 
  ===================================================================== -->
- <xsl:template                    match = "TermPronunciation">
-  <xsl:element                     name = "{name()}">
+ <xsl:template                   match = "TermPronunciation">
+  <xsl:element                    name = "{name()}">
    <xsl:text>(</xsl:text>
-    <xsl:value-of                select = "normalize-space(.)"/>
+    <xsl:value-of               select = "normalize-space(.)"/>
    <xsl:text>)</xsl:text>
   </xsl:element>
  </xsl:template>
@@ -197,14 +197,120 @@ $Log: not supported by cvs2svn $
  The TermDefinition and SpanishTermDefinition can contain inline 
  markup and needs to be handled with a template
  ===================================================================== -->
- <xsl:template                    match = "DefinitionText">
-  <xsl:param                       name = "language"/>
+ <xsl:template                   match = "DefinitionText">
+  <xsl:param                      name = "language"/>
 
-  <xsl:element                     name = "{name()}">
-   <xsl:apply-templates            mode = "copy">
-    <xsl:with-param                name = "language"
-                                 select = "$language"/>
+  <xsl:element                    name = "{name()}">
+   <xsl:apply-templates           mode = "copy">
+    <xsl:with-param               name = "language"
+                                select = "$language"/>
    </xsl:apply-templates>
+
+   <!-- 
+   Need to add the Also-called elements at the end of the DefinitionText
+   ===================================================================== -->
+   <xsl:variable                  name = "gtnId"
+                                select = "document('cdrutil:/docid')"/>
+   <xsl:variable                  name = "gtnNormId"
+                                select = "number(
+                                           substring-before(
+                                           concat(
+                                           substring-after($gtnId, 'CDR'),
+                                                               '#'), '#'))"/>
+   <xsl:variable                  name = "sqlGTNQuery">
+          SELECT n.value
+            FROM query_term qt
+            JOIN document d
+              ON d.id = qt.int_val
+            join doc_type dt
+              ON d.doc_type = dt.id
+            JOIN document d1
+              ON d1.id = qt.doc_id
+            JOIN doc_type dt1
+              ON d1.doc_type = dt1.id
+            JOIN query_term n
+              ON n.doc_id   = qt.doc_id
+             AND n.path     = '/GlossaryTermName/TermName/TermNameString'
+            JOIN query_term l
+              ON l.doc_id   = qt.doc_id
+             AND l.path     = '/GlossaryTermName/TermName/@language'
+             AND substring(n.node_loc, 1, 4) = l.node_loc
+           WHERE qt.path    = '/GlossaryTermName/GlossaryTermConcept/@cdr:ref'
+             AND dt1.name   = 'GlossaryTermName'
+             AND dt.name    = 'GlossaryTermConcept'
+             AND qt.int_val = ?
+             AND l.value    = ?
+             AND d1.active_status = 'A'
+           ORDER BY n.value
+   </xsl:variable>
+   <xsl:variable                  name = "queryRows"
+                                select = "document(
+                                           concat('cdrutil:/sql-query/',
+                                                   $sqlGTNQuery,
+                                                   '~',
+                                                   $gtnNormId,
+                                                   '~',
+                                                   $language))"/>
+
+   <!--
+   Also-called is only added if the SQL query returns with a record
+   ================================================================ -->
+   <xsl:if                        test = "$queryRows/SqlResult/row">
+    <xsl:choose>
+     <!--
+     A) Only one Also-called exists
+     ============================== -->
+     <xsl:when                    test = "count($queryRows/SqlResult/row) = 1">
+      <xsl:text> Also called </xsl:text>
+      <xsl:value-of             select = "$queryRows
+                                             /SqlResult
+                                             /row
+                                             /col[@name='value']"/>
+      <xsl:text>. </xsl:text>
+     </xsl:when>
+     <!--
+     B) Exactly two Also-calleds exist
+     ================================= -->
+     <xsl:when                    test = "count($queryRows/SqlResult/row) = 2">
+      <xsl:text> Also called </xsl:text>
+      <xsl:value-of             select = "$queryRows
+                                             /SqlResult
+                                             /row[@id = 1]
+                                             /col[@name='value']"/>
+      <xsl:text> and </xsl:text>
+      <xsl:value-of             select = "$queryRows
+                                             /SqlResult
+                                             /row[@id = 2]
+                                             /col[@name='value']"/>
+      <xsl:text>. </xsl:text>
+     </xsl:when>
+     <!--
+     C) More than two Also-called exist
+     ================================== -->
+     <xsl:otherwise>
+      <xsl:text> Also called </xsl:text>
+      <xsl:for-each             select = "$queryRows/SqlResult/row">
+       <xsl:if                    test = "position() = last()">
+        <xsl:text>and </xsl:text>
+       </xsl:if>
+
+       <xsl:value-of            select = "col[@name='value']"/>
+
+       <xsl:choose>
+        <xsl:when                 test = "position() = last()">
+         <xsl:text>. </xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:text>, </xsl:text>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:for-each>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:if>
+
+<!-- XXX -->
+
   </xsl:element>
  </xsl:template>
 
@@ -286,6 +392,7 @@ $Log: not supported by cvs2svn $
      <xsl:when                    test = "$language = 'en'">   
       <xsl:value-of             select = "normalize-space(
                                            //TermDefinition/
+
                                              ReplacementText[@name = $ph])"/>
      </xsl:when>
      <xsl:when                    test = "$language = 'es'">
@@ -306,14 +413,13 @@ $Log: not supported by cvs2svn $
  <!-- 
  ===================================================================
  Template for extracting SummaryRef Definition
-
  =================================================================== -->
- <xsl:template                  match = "SummaryRef"
-                                 mode = "copy">
-  <xsl:variable                  name = "hrefId"
-                               select = "@cdr:href"/>
-    <xsl:variable                name = "hrefNormId"
-                               select = "number(
+ <xsl:template                   match = "SummaryRef"
+                                  mode = "copy">
+  <xsl:variable                   name = "hrefId"
+                                select = "@cdr:href"/>
+  <xsl:variable                   name = "hrefNormId"
+                                select = "number(
                                            substring-before(
                                            concat(
                                            substring-after(@cdr:href, 'CDR'),
@@ -361,16 +467,17 @@ $Log: not supported by cvs2svn $
     the SummaryURL element displaying the full path without the domain
     ===================================================================== -->
   <SummaryRef>
-   <xsl:attribute                name = "href">
-    <xsl:value-of              select = "$hrefId"/>
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "$hrefId"/>
    </xsl:attribute>
-   <xsl:attribute                name = "url">
+   <xsl:attribute                 name = "url">
     <xsl:choose>
-     <xsl:when                   test = "starts-with($url, 'http')">
-      <xsl:value-of            select = "substring-after($url, '.gov')"/>
+     <xsl:when                    test = "starts-with($url, 'http')">
+      <xsl:value-of             select = "substring-after($url, '.gov')"/>
      </xsl:when>
+
      <xsl:otherwise>
-      <xsl:value-of            select = "$url"/>
+      <xsl:value-of             select = "$url"/>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:attribute>
@@ -383,10 +490,10 @@ $Log: not supported by cvs2svn $
  ==============================================================
  Template for extracting External Ref Definition
  ============================================================== -->
- <xsl:template                  match = "ExternalRef">
+ <xsl:template                   match = "ExternalRef">
   <ExternalRef>
-   <xsl:attribute                name = "xref">
-    <xsl:value-of              select = "@cdr:xref"/>
+   <xsl:attribute                 name = "xref">
+    <xsl:value-of               select = "@cdr:xref"/>
    </xsl:attribute>
    <xsl:apply-templates/>
   </ExternalRef>
