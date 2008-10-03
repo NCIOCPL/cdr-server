@@ -55,27 +55,27 @@ the directory specified is not already in the system search path):
       xerces-c_x_xD.dll (debug version)
     to d:\usr\xerces\bin
 
- 4. Install regex++ (no pre-built binary package available, unfortunately)
-  - go to http://ourworld.compuserve.com/homepages/John_Maddock/regexpp.htm
-  - download the latest regexpp*.zip
-  - unzip regexpp* -d regex
-  - move regex to d:\usr\regex
-  - change to d:\usr\regex\libs\regex\build directory
-  - nmake -f vc7.mak
-  - add d:\usr\regex\libs\regex\build\vc7 to the system search path
+ 4. Install regex++
+  - go to http://www.boostpro.com/products/free
+  - download the latest BoostPro installer
+  - launch the installer
+  - agree to the licences
+  - select Multithread (DLL) for VS 9.0
+  - uncheck all packages except Boost Headers and Regex
+  - set installation target as d:\usr\regex
+  - answer "yes" when asked about adding binaries to the PATH
 
  5. Check out and build the server source code
   - cvs checkout cdr/server
   - cd cdr\server
-  - nmake VCVER=7
-  - nmake VCVER=7 install (when you're ready)
+  - nmake DRV=d: [or b: for Bach, f: for Franck]
 
 In addition to the DLLs installed by the steps above, the following 
 two DLLs must be copied to c:\winnt\system32, if they are not already
 in the search path:
 
-    msvcp70d.dll
-    msvcr70d.dll
+    msvcp90.dll
+    msvcr90.dll
 
 ============================================================================
 
@@ -171,9 +171,13 @@ The dependencies for the server are listed below:
 
   * js (javascript interpreter; used by sablotron)
     download latest sources from:
-        http://www.mozilla.org/cvs.html
+        ftp://ftp.mozilla.org/pub/mozilla.org/js/
         (on mmdb2 or cdrdev you can just use 'cvs update' in /usr/js/src)
     unpack to /usr/js
+    cd /usr/js/src
+    open jsinterp.c
+    add #include "jsiter.c" at top of file
+    save and close jsiterp.c
     build in /usr/js/src with 'nmake -f js.mak CFG="js - Win32 Release"'
     build in /usr/js/src with 'nmake -f js.mak CFG="js - Win32 Debug"'
     copy /usr/js/src/Release/js32.dll to /cdr/bin
