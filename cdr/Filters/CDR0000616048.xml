@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000616048.xml,v 1.5 2008-10-02 22:30:13 venglisc Exp $
+$Id: CDR0000616048.xml,v 1.6 2008-10-03 18:14:01 venglisc Exp $
 
 Filter to create Vendor XML for Glossary
 
@@ -52,6 +52,7 @@ $Log: not supported by cvs2svn $
      <xsl:value-of              select = "PdqKey"/>
     </xsl:attribute>
    </xsl:if>
+
    <!--
    Test to make sure the TermName exists and hasn't been removed
    because it was within markup
@@ -217,64 +218,64 @@ $Log: not supported by cvs2svn $
                                            concat(
                                            substring-after($gtnId, 'CDR'),
                                                                '#'), '#'))"/>
-<!-- 
+   <xsl:variable                  name = "sqlGTCQuery">
+          SELECT int_val
+            FROM query_term
+           WHERE path = '/GlossaryTermName/GlossaryTermConcept/@cdr:ref'
+             AND doc_id = ?
+   </xsl:variable>
+
+   <xsl:variable                  name = "sqlGTCRows" 
+                                  select = "document(
+                                           concat('cdrutil:/sql-query/',
+                                                   $sqlGTCQuery,
+                                                   '~',
+                                                   $gtnNormId))"/>
+
+   <xsl:variable                  name = "sqlGTCId">
+    <xsl:value-of               select = "$sqlGTCRows/SqlResult/row/col"/>
+   </xsl:variable>
+
    <xsl:variable                  name = "sqlGTNQuery">
           SELECT n.value
-            FROM query_term qt
-            JOIN document d
-              ON d.id = qt.int_val
-            join doc_type dt
-              ON d.doc_type = dt.id
-            JOIN document d1
-              ON d1.id = qt.doc_id
-            JOIN doc_type dt1
-              ON d1.doc_type = dt1.id
-            JOIN query_term n
-              ON n.doc_id   = qt.doc_id
-             AND n.path     = '/GlossaryTermName/TermName/TermNameString'
-            JOIN query_term l
-              ON l.doc_id   = qt.doc_id
-             AND l.path     = '/GlossaryTermName/TermName/@language'
-             AND substring(n.node_loc, 1, 4) = l.node_loc
-           WHERE qt.path    = '/GlossaryTermName/GlossaryTermConcept/@cdr:ref'
-             AND dt1.name   = 'GlossaryTermName'
-             AND dt.name    = 'GlossaryTermConcept'
-             AND qt.int_val = ?
-             AND l.value    = ?
-             AND d1.active_status = 'A'
-           ORDER BY n.value
-   </xsl:variable>
--->
-   <xsl:variable                  name = "sqlGTNQuery">
-          SELECT n.doc_id, n.value
             FROM query_term gtc
             join query_term n
               on n.doc_id = gtc.doc_id
-             and n.path = '/GlossaryTermName/?/TermNameString'
+             and n.path = '/GlossaryTermName/' + ? + '/TermNameString'
             join document d
               on d.id = n.doc_id
            WHERE gtc.path = '/GlossaryTermName/GlossaryTermConcept/@cdr:ref'
              AND gtc.int_val = ?
              AND d.active_status = 'A'
-           order by n.doc_id
+             AND n.doc_id != ?
+           order by n.value
    </xsl:variable>
+
+   <!--
+   We need two different queries depending on the language attribute
+   ================================================================= -->
    <xsl:variable                  name = "queryRows">
     <xsl:choose>
-     <xsl:when                    test = "$language = 'en'">
-      <xsl:value-of             select = "document(
+     <xsl:when                     test = "$language = 'en'">
+      <xsl:copy-of               select = "document(
                                            concat('cdrutil:/sql-query/',
                                                    $sqlGTNQuery,
                                                    '~TermName~',
+                                                   $sqlGTCId,
+                                                   '~',
                                                    $gtnNormId))"/>
      </xsl:when>
      <xsl:when                    test = "$language = 'es'">
-      <xsl:value-of             select = "document(
+      <xsl:copy-of              select = "document(
                                            concat('cdrutil:/sql-query/',
                                                    $sqlGTNQuery,
                                                    '~TranslatedName~',
+                                                   $sqlGTCId,
+                                                   '~',
                                                    $gtnNormId))"/>
      </xsl:when>
     </xsl:choose>
+   </xsl:variable>
 
    <!--
    Also-called is only added if the SQL query returns with a record
@@ -285,7 +286,14 @@ $Log: not supported by cvs2svn $
      A) Only one Also-called exists
      ============================== -->
      <xsl:when                    test = "count($queryRows/SqlResult/row) = 1">
-      <xsl:text> Also called </xsl:text>
+      <xsl:choose>
+       <xsl:when                  test = "$language = 'en'">
+        <xsl:text> Also called </xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "$language = 'es'">
+        <xsl:text> Tambi&#xE9;n se llama </xsl:text>
+       </xsl:when>
+      </xsl:choose>
       <xsl:value-of             select = "$queryRows
                                              /SqlResult
                                              /row
@@ -296,12 +304,26 @@ $Log: not supported by cvs2svn $
      B) Exactly two Also-calleds exist
      ================================= -->
      <xsl:when                    test = "count($queryRows/SqlResult/row) = 2">
-      <xsl:text> Also called </xsl:text>
+      <xsl:choose>
+       <xsl:when                  test = "$language = 'en'">
+        <xsl:text> Also called </xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "$language = 'es'">
+        <xsl:text> Tambi&#xE9;n se llama </xsl:text>
+       </xsl:when>
+      </xsl:choose>
       <xsl:value-of             select = "$queryRows
                                              /SqlResult
                                              /row[@id = 1]
                                              /col[@name='value']"/>
-      <xsl:text> and </xsl:text>
+      <xsl:choose>
+       <xsl:when                  test = "$language = 'en'">
+        <xsl:text> and </xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "$language = 'es'">
+        <xsl:text> y </xsl:text>
+       </xsl:when>
+      </xsl:choose>
       <xsl:value-of             select = "$queryRows
                                              /SqlResult
                                              /row[@id = 2]
@@ -312,10 +334,24 @@ $Log: not supported by cvs2svn $
      C) More than two Also-called exist
      ================================== -->
      <xsl:otherwise>
-      <xsl:text> Also called </xsl:text>
+      <xsl:choose>
+       <xsl:when                  test = "$language = 'en'">
+        <xsl:text> Also called </xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "$language = 'es'">
+        <xsl:text> Tambi&#xE9;n se llama </xsl:text>
+       </xsl:when>
+      </xsl:choose>
       <xsl:for-each             select = "$queryRows/SqlResult/row">
        <xsl:if                    test = "position() = last()">
-        <xsl:text>and </xsl:text>
+        <xsl:choose>
+         <xsl:when                test = "$language = 'en'">
+          <xsl:text> and </xsl:text>
+         </xsl:when>
+         <xsl:when                test = "$language = 'es'">
+          <xsl:text> y </xsl:text>
+         </xsl:when>
+        </xsl:choose>
        </xsl:if>
 
        <xsl:value-of            select = "col[@name='value']"/>
@@ -332,8 +368,6 @@ $Log: not supported by cvs2svn $
      </xsl:otherwise>
     </xsl:choose>
    </xsl:if>
-
-<!-- XXX -->
 
   </xsl:element>
  </xsl:template>
@@ -386,6 +420,8 @@ $Log: not supported by cvs2svn $
      <xsl:when                    test = "//TermName[@language = $language]/
                                              TermNameString/
                                              @PreserveCase = 'Yes'">
+
+
       <xsl:value-of             select = "normalize-space($termName)"/>
      </xsl:when>
      <!-- Cap the term name -->
@@ -482,7 +518,9 @@ $Log: not supported by cvs2svn $
                                             $queryRows
                                             /SqlResult
                                             /row
+
                                             /col[@name='value'])"/>
+
      </xsl:call-template>
     </xsl:variable>
   
