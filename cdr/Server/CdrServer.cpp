@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.43 2005-03-29 15:29:56 ameyer Exp $
+ * $Id: CdrServer.cpp,v 1.44 2008-10-03 23:54:05 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.43  2005/03/29 15:29:56  ameyer
+ * Removed domLog logging.  Conversion to Xerces is complete.
+ *
  * Revision 1.42  2005/03/04 02:57:23  ameyer
  * Converted to new DOM parser that requires that parser for command
  * stay in scope until we are done with DOM tree created for the command.
@@ -199,7 +202,7 @@ static void excep_trans_func(unsigned int u, struct _EXCEPTION_POINTERS *pExp);
  * Creates a socket and listens for connections on it.  Spawns
  * a new thread to handle each incoming connection.
  */
-main(int ac, char **av)
+int main(int ac, char **av)
 {
     WSAData             wsadata;
     int                 sock;
@@ -758,7 +761,7 @@ cdr::String processCommand(cdr::Session& session,
                     conn.rollback();
                 wchar_t tmpBuf[80];
                 swprintf(tmpBuf, L" at line %d, Column %d",
-                         spe.getLineNumber(), spe.getColumnNumber);
+                         spe.getLineNumber(), spe.getColumnNumber());
                 cdr::String locString = tmpBuf;
                 elapsedTime = getElapsedTime(start);
                 return cdr::String(rspTag + L"failure' Elapsed='"

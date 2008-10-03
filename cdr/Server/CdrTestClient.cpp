@@ -1,5 +1,5 @@
 /*
- * $Id: CdrTestClient.cpp,v 1.8 2004-03-31 03:29:55 ameyer Exp $
+ * $Id: CdrTestClient.cpp,v 1.9 2008-10-03 23:54:05 bkline Exp $
  *
  * Test client (C++ version) for sending commands to CDR server.
  *
@@ -16,6 +16,9 @@
  * The encoding for the XML must be UTF-8.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2004/03/31 03:29:55  ameyer
+ * Added new parameter to set_exception_catcher.
+ *
  * Revision 1.7  2004/03/17 20:58:28  bkline
  * Fixed setmode() call.
  *
@@ -61,7 +64,7 @@ const short CDR_PORT = 2019;
 static std::string  readFile(std::istream&);
 static void         cleanup() { WSACleanup(); }
 
-main(int ac, char **av)
+int main(int ac, char **av)
 {
     WSAData             wsadata;
     char *              host;

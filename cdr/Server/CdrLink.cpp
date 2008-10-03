@@ -23,9 +23,12 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.31 2008-03-25 23:43:13 ameyer Exp $
+ * $Id: CdrLink.cpp,v 1.32 2008-10-03 23:54:36 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2008/03/25 23:43:13  ameyer
+ * Revised error handling to support cdr:eid error ID attributes on validation.
+ *
  * Revision 1.30  2007/07/13 00:39:51  ameyer
  * Fixed missing question mark in link_type update statement.
  *
@@ -301,7 +304,7 @@ cdr::link::CdrLink::CdrLink (
     if (style == cdr::link::ref || style == cdr::link::href) {
 
         // Get the fragment portion of the reference, if any
-        wchar_t *fragptr = wcschr (ref.c_str(), '#');
+        const wchar_t *fragptr = wcschr (ref.c_str(), '#');
         if (fragptr) {
 
             // Isolate base reference and fragment
