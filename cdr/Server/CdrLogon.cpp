@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLogon.cpp,v 1.8 2003-08-04 17:03:26 bkline Exp $
+ * $Id: CdrLogon.cpp,v 1.9 2008-10-04 22:01:13 bkline Exp $
  *
  * Opens a new CDR session.
  *
@@ -15,6 +15,10 @@
  *  </CdrLogonResp>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2003/08/04 17:03:26  bkline
+ * Fixed breakage caused by upgrade to latest version of Microsoft's
+ * C++ compiler.
+ *
  * Revision 1.7  2002/06/07 13:54:06  bkline
  * Added case-sensitive check of user name at Lakshmi's request (issue #257).
  *
@@ -91,7 +95,7 @@ cdr::String cdr::logon(cdr::Session& session,
    
     // Create a new row in the session table.
     char idBuf[256];
-    unsigned long now = time(0);
+    unsigned long now = (unsigned long)time(0);
     unsigned long ticks = clock();
     static char randomChars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     static size_t nRandomChars = sizeof randomChars - 1;

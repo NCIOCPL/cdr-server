@@ -1,10 +1,13 @@
 /*
- * $Id: CdrSearch.h,v 1.7 2000-10-04 18:22:42 bkline Exp $
+ * $Id: CdrSearch.h,v 1.8 2008-10-04 22:01:13 bkline Exp $
  *
  * Interface for CDR search implementation.  Used by implementation of search
  * command and by the query parser.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2000/10/04 18:22:42  bkline
+ * Added optional maxDocs argument to getSql().
+ *
  * Revision 1.6  2000/08/10 15:45:25  bkline
  * Added new OpType BEGINS.
  *
@@ -205,8 +208,8 @@ namespace cdr {
         String      markString(const cdr::String&) const;
         String      markInt(const cdr::String&) const;
         String      strip(const cdr::String&) const;
-        QueryNode(const& QueryNode);             // Block this.
-        QueryNode operator=(const& QueryNode);   // Block this.
+        QueryNode(const QueryNode&);             // Block this.
+        QueryNode operator=(const QueryNode&);   // Block this.
     };
 
     /**
@@ -252,7 +255,7 @@ namespace cdr {
         bool        hasModifierTest;
         void        checkTablesJoined(const QueryNode*);
         Query(const Query&);                    // Block this.
-        Query operator=(const& QueryNode);      // This, too.
+        Query operator=(const QueryNode&);      // This, too.
     };
 
     /**

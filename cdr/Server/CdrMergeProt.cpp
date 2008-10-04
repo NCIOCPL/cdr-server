@@ -1,9 +1,12 @@
 /*
- * $Id: CdrMergeProt.cpp,v 1.8 2007-10-02 20:37:34 bkline Exp $
+ * $Id: CdrMergeProt.cpp,v 1.9 2008-10-04 22:01:13 bkline Exp $
  *
  * Merge scientific protocol information into main in-scope protocol document.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2007/10/02 20:37:34  bkline
+ * Fleshed out docs and fixed logic for ordering status nodes.
+ *
  * Revision 1.7  2007/10/02 00:53:04  bkline
  * Extensive modifications to handle merging of new ProtocolProcessingDetails
  * information (issue #3574).
@@ -367,7 +370,7 @@ cdr::String cdr::mergeProt(Session& session,
         String targetName = targetChild.getNodeName();
 
         // Handled by specific logic.
-        if (targetName == ProcessingDetails.ppdName) {
+        if (targetName == ProcessingDetails::ppdName) {
             targetChild = targetChild.getNextSibling();
             continue;
         }
@@ -397,7 +400,7 @@ cdr::String cdr::mergeProt(Session& session,
             String sourceName = sourceChild.getNodeName();
 
             // Check for element handled with custom logic.
-            if (sourceName == ProcessingDetails.ppdName) {
+            if (sourceName == ProcessingDetails::ppdName) {
                 sourceChild = sourceChild.getNextSibling();
                 continue;
             }

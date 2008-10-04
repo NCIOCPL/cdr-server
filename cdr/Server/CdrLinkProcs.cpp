@@ -21,9 +21,13 @@
  *
  *                                          Alan Meyer  January, 2001
  *
- * $Id: CdrLinkProcs.cpp,v 1.21 2006-10-04 03:46:45 ameyer Exp $
+ * $Id: CdrLinkProcs.cpp,v 1.22 2008-10-04 22:01:13 bkline Exp $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2006/10/04 03:46:45  ameyer
+ * Fixed double negation bug in handling "<>".
+ * Added support for AND NOT operator.
+ *
  * Revision 1.20  2006/05/17 01:52:29  ameyer
  * Added support for custom picklist processing on top of custom link
  * validation.
@@ -601,19 +605,19 @@ static cdr::link::LinkChkBoolOp parseBoolOp (const char **stringpp)
             ++p;
         op = cdr::link::boolAnd;
     }
-    else if (!strnicmp (p, "and", 3)) {
+    else if (!_strnicmp (p, "and", 3)) {
          p += 3;
          op = cdr::link::boolAnd;
 
          // Is it an "and not"?
          const char *q = p;
          skipSpace(&q);
-         if (!strnicmp (q, "not", 3)) {
+         if (!_strnicmp (q, "not", 3)) {
              p = q + 3;
              op = cdr::link::boolAndNot;
          }
     }
-    else if (!strnicmp (p, "or", 2)) {
+    else if (!_strnicmp (p, "or", 2)) {
          p += 2;
          op = cdr::link::boolOr;
     }

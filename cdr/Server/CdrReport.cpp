@@ -1,9 +1,13 @@
 /*
- * $Id: CdrReport.cpp,v 1.23 2008-01-29 15:17:12 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.24 2008-10-04 22:01:13 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2008/01/29 15:17:12  bkline
+ * Added report to find patient equivalent of a health professional
+ * summary.
+ *
  * Revision 1.22  2007/07/27 21:35:05  bkline
  * Added report to collect titles and document IDs for GlossaryTermName
  * documents linked to a specific GlossaryTermConcept document.
@@ -960,7 +964,7 @@ namespace
       docIds.push_back(rs.getInt(1));
       docVersions.push_back(rs.getInt(2));
     }
-    for (int i = 0; i < docIds.size(); ++i)
+    for (size_t i = 0; i < docIds.size(); ++i)
     {
       int docId          = docIds[i];
       int docVersion     = docVersions[i];

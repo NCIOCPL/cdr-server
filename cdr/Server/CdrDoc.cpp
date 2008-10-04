@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.81 2008-07-30 05:35:34 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.82 2008-10-04 22:01:13 bkline Exp $
  *
  */
 
@@ -1245,7 +1245,7 @@ cdr::String cdr::CdrDoc::getSerialXml()
         denormXml = cdr::filterDocumentByScriptTitle(xmlStr,
                                L"Fast Denormalization Filter", docDbConn);
     }
-    catch (cdr::Exception& e) {
+    catch (cdr::Exception&) {
         // Can't do it, just return what we had
         denormXml = xmlStr;
     }
