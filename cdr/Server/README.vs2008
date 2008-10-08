@@ -13,9 +13,11 @@ follow these steps (if this is on your own workstation, you can
 substitute c: for d: if you don't have a usable d: drive):
 
  1. Install Mozilla build tools
-  - Go to https://wiki.mozilla.org/MozillaBuild
-  - Download the latest MozillaBuildSetup-x.x.exe
-  - Run the installer, putting the tools in d:\usr\mozilla-build
+  - Go to https://wiki.mozilla.org/MozillaBuild.
+  - Download the latest installer, MozillaBuildSetup-x.x.exe.
+  - Run the installer, putting the tools in d:\usr\mozilla-build.
+    The installer installs a great many linux/cygwin style tools, including
+    its own bash and make.
 
  2. Build NSPR ("Netscape Portable Runtime libraries"; needed by JavaScript)
   - Go to http://ftp.mozilla.org/pub/mozilla.org/nspr/releases/
@@ -23,7 +25,7 @@ substitute c: for d: if you don't have a usable d: drive):
     (e.g. nspr-4.7.1.tar.gz)
   - Unpack and move to d:\usr\nspr
   - Switch to d:\usr\mozilla-build
-  - Unset your HOME environment variable
+  - Unset your HOME environment variable, i.e., "set HOME=" (no quotes)
     (this disables any customization of PATH done in your .bash_profile)
   - Run start-msvc9.bat (matches Visual Studio 2008)
   - cd /d/usr/nspr/mozilla/nsprpub
@@ -43,20 +45,42 @@ substitute c: for d: if you don't have a usable d: drive):
   - cd d:\usr\js\src
   - copy js.mak to js.vs2008.mak
   - edit js.vs2008.mak (see cdr/Server/js.vs2008.patch in CVS)
-     * find the block that starts "!IF  "$(CFG)" == "js - Win32 Release"
+     (But don't count on using the patch file because the next version of
+      js.mak could be different.  It's in CVS only as an example.)
+     * find the block that defines the project files for "js - Win32 Release"
+       Clues are:
+        The block starts with "!IF  "$(CFG)" == "js - Win32 Release"
+        There may be a comment saying "Begin Project"
+        Symbols are defined for:
+          OUTDIR=.\Release
+          INTDIR=.\Release
+          ALL
+          CLEAN
+        These symbols are also defined in other blocks for 
+          "js - Win32 Debug"
+          "jsshell - Win32 Release" (and Debug)
+          "jskwgen - Win32 Release" (and Debug)
+          "fdlibm - Win32 Release" (and Debug)
+        We're only interested in "js - Win32 Release"
      * in that block:
         - add definition NSPR=../../nspr
         - for definition of CPP_PROJ:
            * replace /GX with /EHca
            * remove /YX
            * add:
+              * Tell javascript where header files will be
               - /I $(NSPR)/include
-              - /D "_CRT_SECURE_NO_DEPRECATE"
-              - /D "_CRT_NONSTDC_NO_DEPRECATE"
-              - /D "JS_THREADSAFE"
+              * Ignore warnings on deprecated function names
+              - /D_CRT_SECURE_NO_DEPRECATE
+              - /D_CRT_NONSTDC_NO_DEPRECATE
+              * Compile js for multi-threading
+              - /DJS_THREADSAFE
         - add $(INTDIR)\jsiter.obj to definition of LINK32_OBJS
-        - add definition LIBS=$(NSPR)/lib/libnspr4.lib
-   - nmake -f js.vs2008.mak CFG="js - Win32 Release"
+        - add $(NSPR)/lib/libnspr4.lib to LINK32 arguments, i.e.,
+              $(LINK32) @<<
+              $(LINK32_FLAGS) $(LINK32_OBJS) $(NSPR)/lib/libnspr4.lib
+   - nmake -f js.vs2008.mak CFG="js - Win32 Release" > errs
+   - examine errs file for problems
    - cd ..
    - mkdir bin
    - copy src\Release\js32.dll bin
@@ -76,8 +100,16 @@ substitute c: for d: if you don't have a usable d: drive):
     ourselves, as the Sablotron teams support for the package is defunct.
   - Go to d:\usr
   - cvs co sablot
+  - edit makefile_include.msvc
+      Make same changes as for js.vs2008.mak
+       - replace /GX with /EHca
+       - remove /YX
+      Add to CFLAGS to suppress warnings.
+       - /D_CRT_SECURE_NO_DEPRECATE
+       - /D_CRT_NONSTDC_NO_DEPRECATE
   - cd sablot
-  - nmake -f makefile.msvc
+  - nmake -f makefile.msvc > errs
+  - examine errs file for problems
 
  5. Install expat
   - go to http://sourceforge.net/projects/expat
@@ -92,7 +124,7 @@ substitute c: for d: if you don't have a usable d: drive):
     version of the Visual Studio compiler we're using; for example,
     xerces-c-3.0.0-x86-windows-vc-9.0.zip for VS2008)
   - unpack the zipfile
-  - move the unpacked files to d:\usr\xerces
+  - move the unpacked files to d:\usr\xercesc
 
  7. Install regex++
   - go to http://www.boostpro.com/products/free
@@ -104,10 +136,15 @@ substitute c: for d: if you don't have a usable d: drive):
   - set installation target as d:\usr\regex
   - answer "yes" when asked about adding binaries to the PATH
 
- 8. Check out and build the server source code
+ 8. Ensure that there is a path to each of the dlls. Add to the path:
+  - d:\usr\xerces\bin
+  - d:\usr\sablot\bin
+  - d:\usr\js\bin
+
+ 9. Check out and build the server source code
   - cvs checkout cdr/server
   - cd cdr\server
-  - nmake DRV=d: [or b: for Bach, f: for Franck]
+  - nmake -f Makefile.vs2008 DRV=d: [or c:, b: for Bach, f: for Franck]
 
 In addition to the DLLs installed by the steps above, the following 
 two DLLs must be copied to the search path, if they are not already
