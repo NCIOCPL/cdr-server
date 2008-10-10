@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000616048.xml,v 1.7 2008-10-03 21:06:04 venglisc Exp $
+$Id: CDR0000616048.xml,v 1.8 2008-10-10 16:31:15 venglisc Exp $
 
 Filter to create Vendor XML for Glossary
 
@@ -86,22 +86,30 @@ $Log: not supported by cvs2svn $
    Make sure we only have either a shared MediaLink for both, English and
    Spanish or we have individual once but not both
    ====================================================================== -->
-   <xsl:if                        test = "MediaLink
+   <xsl:if                        test = "GlossaryTermConcept/
+                                            MediaLink
                                           and
-                                          (TermDefinition/MediaLink
+                                          (GlossaryTermConcept/
+                                             TermDefinition/
+                                             MediaLink
                                            or
-                                           TranslatedTermDefinition/MediaLink)">
+                                           GlossaryTermConcept/
+                                             TranslatedTermDefinition/
+                                             MediaLink)">
     <xsl:message              terminate = "no">
      <xsl:text>&lt;LI class="error" &gt;</xsl:text>
      <xsl:text>&lt;b&gt;Error:&lt;/b&gt; Invalid </xsl:text>
      <xsl:text>use of MediaLink.&lt;BR/&gt;</xsl:text>
     </xsl:message>
    </xsl:if>
-   <xsl:apply-templates         select = "MediaLink |
-                                          TermDefinition/
-                                          MediaLink |
-                                          TranslatedTermDefinition/
-                                          MediaLink"/>
+   <xsl:apply-templates         select = "GlossaryTermConcept/
+                                            MediaLink            |
+                                          GlossaryTermConcept/
+                                            TermDefinition/
+                                            MediaLink            |
+                                          GlossaryTermConcept/
+                                            TranslatedTermDefinition/
+                                            MediaLink"/>
 
    <xsl:apply-templates         select = "TranslatedName"/>
 
@@ -195,6 +203,7 @@ $Log: not supported by cvs2svn $
    <xsl:text>)</xsl:text>
   </xsl:element>
  </xsl:template>
+
 
 
  <!-- 
@@ -305,7 +314,7 @@ $Log: not supported by cvs2svn $
                                              /SqlResult
                                              /row
                                              /col[@name='value']"/>
-      <xsl:text>. </xsl:text>
+      <xsl:text>.</xsl:text>
      </xsl:when>
      <!--
      B) Exactly two Also-calleds exist
@@ -335,7 +344,7 @@ $Log: not supported by cvs2svn $
                                              /SqlResult
                                              /row[@id = 2]
                                              /col[@name='value']"/>
-      <xsl:text>. </xsl:text>
+      <xsl:text>.</xsl:text>
      </xsl:when>
      <!--
      C) More than two Also-called exist
@@ -365,7 +374,7 @@ $Log: not supported by cvs2svn $
 
        <xsl:choose>
         <xsl:when                 test = "position() = last()">
-         <xsl:text>. </xsl:text>
+         <xsl:text>.</xsl:text>
         </xsl:when>
         <xsl:otherwise>
          <xsl:text>, </xsl:text>
@@ -375,7 +384,6 @@ $Log: not supported by cvs2svn $
      </xsl:otherwise>
     </xsl:choose>
    </xsl:if>
-
   </xsl:element>
  </xsl:template>
 
@@ -482,6 +490,7 @@ $Log: not supported by cvs2svn $
         <xsl:value-of           select = "//GlossaryTermConcept
                                            /TranslatedTermDefinition[Audience = $audience]
                                            /ReplacementText[@name = $ph]"/>
+
        </xsl:when>
        <xsl:otherwise>
         <xsl:value-of           select = "normalize-space(
