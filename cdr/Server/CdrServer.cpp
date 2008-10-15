@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.44 2008-10-03 23:54:05 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.45 2008-10-15 02:38:31 ameyer Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.44  2008/10/03 23:54:05  bkline
+ * Fixing problems flushed out by Visual Studio 2008.
+ *
  * Revision 1.43  2005/03/29 15:29:56  ameyer
  * Removed domLog logging.  Conversion to Xerces is complete.
  *
@@ -151,6 +154,7 @@
 #include <ctime>
 #include <process.h>
 #include <signal.h>
+#include <sys/stat.h>
 
 // Project headers.
 #include "catchexp.h"
@@ -167,6 +171,7 @@
 // Local constants.
 const short CDR_PORT = 2019;
 const int   CDR_QUEUE_SIZE = 10;
+const int   MAX_DIR_SIZE = 256;
 const unsigned int MAX_REQUEST_LENGTH = 25000000;
 
 // Local functions.
@@ -201,6 +206,11 @@ static void excep_trans_func(unsigned int u, struct _EXCEPTION_POINTERS *pExp);
 /**
  * Creates a socket and listens for connections on it.  Spawns
  * a new thread to handle each incoming connection.
+ *
+ * usage: CdrServer {port {log drive}}
+ *    default port          = CDR_PORT = 2019
+ *    default logging drive = "d"  See CdrLog.cpp
+ *
  */
 int main(int ac, char **av)
 {
@@ -208,6 +218,11 @@ int main(int ac, char **av)
     int                 sock;
     struct sockaddr_in  addr;
     short               port = CDR_PORT;
+    char                *defaultDir = NULL;
+
+    // Find out whether we should suppress command logging.
+    if (getenv("SUPPRESS_CDR_COMMAND_LOGGING"))
+        logCommands = false;
 
     if (ac > 1) {
         port = atoi(av[1]);
@@ -215,10 +230,39 @@ int main(int ac, char **av)
         std::cout << "heap debugging\n" << std::endl;
     }
 
-    // Find out whether we should suppress command logging.
-    if (getenv("SUPPRESS_CDR_COMMAND_LOGGING"))
-        logCommands = false;
+    // Should logs go somewhere else than the default?
+    // Set default drive to NULL or indicated drive, adding ":"
+    defaultDir = getenv("CDR_LOG_DIR");
+    if (ac > 2)
+        // Override both default and environment
+        defaultDir = av[2];
 
+    if (defaultDir) {
+        // Test to be sure it's okay
+        bool drvOK = true;
+        struct _stat statBuf;
+        int statResult;
+        if (strlen(defaultDir) < MAX_DIR_SIZE - 1) {
+            statResult = _stat(defaultDir, &statBuf);
+            if (statResult != 0)
+                drvOK = false;
+        }
+        else
+            drvOK = false;
+
+        // Failed
+        if (!drvOK) {
+            std::cerr << "Invalid logging directory \"" << defaultDir
+                      << "\"" << std::endl;
+            exit(1);
+        }
+
+        // Set it
+        cdr::log::setDefaultLogDir(defaultDir);
+    }
+
+//DEBUG TEST
+cdr::log::WriteFile("Testing log directory", "This is a test");
     // In case of catastrophe, don't hang up on console, but do abort.
     // My experiments so using a C++ wrapper work in the
     //   individual threads, but not at the top level of the
@@ -226,8 +270,12 @@ int main(int ac, char **av)
     //   structured exception handler.
     // We replace the exception catcher here with one with a C++ wrapper
     //   around cdr::Exception in each started thread.
-    if (!getenv ("NOCATCHCRASH"))
-        set_exception_catcher ("d:/cdr/log/CdrServer.crash", 1);
+    if (!getenv ("NOCATCHCRASH")) {
+        char catchLog[MAX_DIR_SIZE + 20];
+        strcpy(catchLog, cdr::log::getDefaultLogDir().c_str());
+        strcat(catchLog, "CdrServer.crash");
+        set_exception_catcher (catchLog, 1);
+    }
 
     // Set new structured exception handler that throws cdr::Exception
     // Couldn't get this to work here.  It rethrew itself recursively
