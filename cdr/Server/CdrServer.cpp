@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.45 2008-10-15 02:38:31 ameyer Exp $
+ * $Id: CdrServer.cpp,v 1.46 2008-10-15 04:16:49 ameyer Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.45  2008/10/15 02:38:31  ameyer
+ * Added support for altering the directory for logging.
+ *
  * Revision 1.44  2008/10/03 23:54:05  bkline
  * Fixing problems flushed out by Visual Studio 2008.
  *
@@ -261,8 +264,9 @@ int main(int ac, char **av)
         cdr::log::setDefaultLogDir(defaultDir);
     }
 
-//DEBUG TEST
-cdr::log::WriteFile("Testing log directory", "This is a test");
+    // Announce start to log file
+    cdr::log::WriteFile("CdrServer", "Starting server");
+
     // In case of catastrophe, don't hang up on console, but do abort.
     // My experiments so using a C++ wrapper work in the
     //   individual threads, but not at the top level of the
@@ -273,7 +277,7 @@ cdr::log::WriteFile("Testing log directory", "This is a test");
     if (!getenv ("NOCATCHCRASH")) {
         char catchLog[MAX_DIR_SIZE + 20];
         strcpy(catchLog, cdr::log::getDefaultLogDir().c_str());
-        strcat(catchLog, "CdrServer.crash");
+        strcat(catchLog, "/CdrServer.crash");
         set_exception_catcher (catchLog, 1);
     }
 
