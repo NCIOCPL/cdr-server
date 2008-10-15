@@ -1,11 +1,14 @@
 /*
- * $Id: CdrLog.h,v 1.4 2002-08-10 19:27:24 bkline Exp $
+ * $Id: CdrLog.h,v 1.5 2008-10-15 02:35:49 ameyer Exp $
  *
  * Write log strings to log database or file.
  *
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2002/08/10 19:27:24  bkline
+ * Added GetId() access method.
+ *
  * Revision 1.3  2002/07/11 18:55:27  ameyer
  * Added directory prefix for default logfile name.
  *
@@ -43,20 +46,6 @@ namespace cdr {
      * More is truncated.
      */
     static const size_t MsgMaxLen = 3800;
-
-    /**
-     * Directory for logging - for OSLogFile.
-     * Also may be used elsewhere.
-     */
-    const std::string CdrLogDir = "d:/cdr/log";
-
-    /**
-     * Name of OS based logfile.
-     * This file is used if, and only if, the logger is unable to
-     *   write to the debug_log table in the database.
-     * Otherwise all log messages go to table debug_log.
-     */
-    static const std::string OSLogFile = CdrLogDir + "/CdrLogErrs";
 
     /**
      * Thread global pointer to thread specific instance of a log object.
@@ -132,17 +121,33 @@ namespace cdr {
     };
 
     /**
+     * Change the default logging directory.
+     * Must call this before any logging is done.
+     *
+     *  @param dir      Windows directory e.g., "d:/cdr/logdir", "c:/testlogs"
+     */
+    extern void setDefaultLogDir(std::string dir);
+
+    /**
+     * Get the current logging directory
+     *
+     * @return          String like "d:/cdr/Log"
+     */
+    extern std::string getDefaultLogDir();
+
+    /**
      * Write to an OS file, either passing the name or using
      * a default name.
      *
-     *  @param MsgSrc   Identify source of message - module or
+     *  @param msgSrc   Identify source of message - module or
      *                  whatever - as cdr::String.
-     *  @param Msg      Message to write, as cdr::String.
-     *  @param Fname    Name of file, or defaulted
+     *  @param msg      Message to write, as cdr::String.
+     *  @param fname    Name of file, if defaulted to "", uses default log
+     *                  directory established by setDefaultLogDir() or by
+     *                  cdr::log::WriteFile().
      */
-    extern void WriteFile (const cdr::String MsgSrc, const cdr::String Msg,
-                           const std::string Fname = OSLogFile);
-
+    extern void WriteFile (const cdr::String msgSrc, const cdr::String msg,
+                           std::string fname = "");
   }
 }
 
