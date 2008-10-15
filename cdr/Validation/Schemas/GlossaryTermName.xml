@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!--
-    $Id: GlossaryTermName.xml,v 1.15 2008-08-14 19:54:16 bkline Exp $
+    $Id: GlossaryTermName.xml,v 1.16 2008-10-15 21:00:28 bkline Exp $
 
     $Log: not supported by cvs2svn $
+    Revision 1.15  2008/08/14 19:54:16  bkline
+    Schema changes from 2008-08-14 meeting.  Makes the primary name required
+    and creates separately defined block for optional translated names.
+    Brings main status to top level of document.
+
     Revision 1.14  2008/08/04 16:29:19  bkline
-    Fixed checking comment for previous revision.
+    Fixed check-in comment for previous revision.
 
     Revision 1.13  2008/08/04 16:22:43  bkline
     Added document level status element; restricted language type.
@@ -51,6 +56,25 @@
   -->
 
 <schema              xmlns           = 'http://www.w3.org/2001/XMLSchema'>
+
+<!--=================================================================-->
+<!--                         CUSTOM RULES                            -->
+<!--=================================================================-->
+ <annotation>
+  <appInfo>
+   <pattern>
+    <rule            context         = 'TranslatedName'>
+     <assert         test            = 'TranslatedNameStatus = "Rejected" or
+                                        @NameType = "alternate" or
+                                        not(preceding-sibling::TranslatedName
+                                        [@language = current()/@language and
+                                         not(TranslatedNameStatus = "Rejected")
+                                         and not(@NameType = "alternate")])'
+     >too many unrejected primary translated names in the same language</assert>
+    </rule>
+   </pattern>
+  </appInfo>
+ </annotation>
 
 <!--=================================================================-->
 <!--                COMMON CDR SCHEMA COMPONENTS                     -->
@@ -138,9 +162,9 @@
                      type            = 'string'
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
-      <element       name            = 'TranslationStatus'
+      <element       name            = 'TranslatedNameStatus'
                      type            = 'TermNameStatus'/>
-      <element       name            = 'TranslationStatusDate'
+      <element       name            = 'TranslatedNameStatusDate'
                      type            = 'date'
                      minOccurs       = '0'/>
       <element       name            = 'Comment'
@@ -164,10 +188,10 @@
           </TermName>
           <TranslatedName language='es'>
            <TermNameString>seno</TermNameString>
-          </TermName>
+          </TranslatedName>
           <TranslatedName language='es' NameType='alternate'>
            <TermNameString>mama</TermNameString>
-          </TermName>
+          </TranslatedName>
 
          In this fragment, 'mama' is recognized as an alternate
          Spanish translation of the English term 'breast' but

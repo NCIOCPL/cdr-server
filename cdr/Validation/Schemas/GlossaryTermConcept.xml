@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!--
-    $Id: GlossaryTermConcept.xml,v 1.16 2008-08-04 16:29:19 bkline Exp $
+    $Id: GlossaryTermConcept.xml,v 1.17 2008-10-15 21:00:28 bkline Exp $
 
     $Log: not supported by cvs2svn $
+    Revision 1.16  2008/08/04 16:29:19  bkline
+    Fixed checking comment for previous revision.
+
     Revision 1.15  2008/08/04 16:22:43  bkline
     Made Spanish definition required.
 
@@ -67,6 +70,16 @@
      >duplicate audience values not allowed</assert>
     </rule>
    </pattern>
+<!--
+   <pattern>
+    <rule            context         = 'TermDefinition'>
+     <assert         test            = 'not(Dictionary = "Cancer.gov") or
+                                        ../TranslatedTermDefinition
+                                        [@language = "es"]'
+     >Terms for Cancer.gov dictionary must have Spanish definition</assert>
+    </rule>
+   </pattern>
+-->
   </appInfo>
  </annotation>
 
@@ -96,8 +109,9 @@
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
 
-      <element       name            = 'SpanishTermDefinition'
-                     type            = 'SpanishGlossaryDefinition'
+      <element       name            = 'TranslatedTermDefinition'
+                     type            = 'TranslatedTermDefinition'
+                     minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
       <element       name            = 'TermType'
                      type            = 'TermType'
@@ -163,7 +177,7 @@
     </sequence>
   </complexType>
 
-  <complexType       name            = 'SpanishGlossaryDefinition'>
+  <complexType       name            = 'TranslatedTermDefinition'>
     <sequence>
       <element       name            = 'DefinitionText'
                      type            = 'GlossaryDefinitionText'/>
@@ -186,10 +200,10 @@
       <element       name            = 'Audience'
                      type            = 'GlossaryAudience'
                      maxOccurs       = 'unbounded'/>
-      <element       name            = 'DefinitionStatus'
+      <element       name            = 'TranslatedStatus'
                      type            = 'GlossaryDefinitionStatus'
                      minOccurs       = '0'/>
-      <element       name            = 'StatusDate'
+      <element       name            = 'TranslatedStatusDate'
                      type            = 'date'
                      minOccurs       = '0'/>
       <element       name            = 'Comment'
@@ -203,6 +217,8 @@
                      type            = 'date'
                      minOccurs       = '0'/>
     </sequence>
+    <attribute       name            = 'language'
+                     type            = 'GlossaryLanguage'/>
   </complexType>
 
   <complexType       name            = 'GlossaryDefinitionText'
@@ -311,9 +327,6 @@
       <enumeration   value           = 'Approved'/>
       <enumeration   value           = 'New pending'/>
       <enumeration   value           = 'Revision pending'/>
-      <enumeration   value           = 'Translation approved'/>
-      <enumeration   value           = 'Translation pending'/>
-      <enumeration   value           = 'Translation revision pending'/>
       <enumeration   value           = 'Rejected'/>
     </restriction>
   </simpleType>
@@ -351,6 +364,13 @@
   <simpleType        name            = 'NMTOKENS'>
     <restriction     base            = 'string'>
       <pattern       value           = '\S+(\s+\S+)*'/>
+    </restriction>
+  </simpleType>
+
+  <!-- Spanish is all we handle right now. -->
+  <simpleType        name            = 'GlossaryLanguage'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'es'/>
     </restriction>
   </simpleType>
 
