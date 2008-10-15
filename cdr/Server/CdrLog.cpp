@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLog.cpp,v 1.12 2006-10-04 03:45:20 ameyer Exp $
+ * $Id: CdrLog.cpp,v 1.13 2008-10-15 02:36:19 ameyer Exp $
  *
  * Implementation of writing info to the log table in the database.
  * If that can't be done, takes an alternative action to write to file.
@@ -7,6 +7,9 @@
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2006/10/04 03:45:20  ameyer
+ * Revised mutex security attribute management.
+ *
  * Revision 1.11  2006/01/25 01:47:47  ameyer
  * Fixed bug introduced in last version.  I was checking whether we were
  * inside the logger in one place too many - guaranteeing that we were.
@@ -85,6 +88,22 @@ cdr::log::Log __declspec(thread) * cdr::log::pThreadLog;
  * inappropriately.
  */
 static bool __declspec(thread) inLogging = false;
+
+/**
+ * Directory for logging - for OSLogFile.
+ * Also may be used elsewhere.
+ * Changed from constant to variable to allow overrides
+ * in invocation of the CdrServer.
+ */
+static std::string CdrLogDir = "d:/cdr/log";
+
+/**
+ * Name of OS based logfile.
+ * This file is used if, and only if, the logger is unable to
+ *   write to the debug_log table in the database.
+ * Otherwise all log messages go to table debug_log.
+ */
+static std::string OSLogFile = "/CdrLogErrs";
 
 // Class static variables
 int    cdr::log::Log::s_LogId     = 0;
@@ -252,6 +271,23 @@ void cdr::log::Log::Write (
     inLogging = false;
 }
 
+/**
+ * setDefaultLogDir()
+ *   Modifies the default log directory for WriteFile and any other software
+ *   that might check via any subsequent calls to getDefaultLogDir().
+ */
+void cdr::log::setDefaultLogDir(std::string dir) {
+    CdrLogDir = dir;
+}
+
+/**
+ * getDefaultLogDir()
+ *   Returns drive + directory.
+ */
+std::string cdr::log::getDefaultLogDir() {
+    return CdrLogDir;
+}
+
 
 /**
  * WriteFile ()
@@ -264,9 +300,9 @@ void cdr::log::Log::Write (
  */
 
 void cdr::log::WriteFile (
-    const cdr::String MsgSrc,   // Name of module or whatever caller wants
-    const cdr::String Msg,      // Message
-    const std::string Fname     // Filename, may be defaulted
+    const cdr::String msgSrc,   // Name of module or whatever caller wants
+    const cdr::String msg,      // Message
+          std::string fname     // Filename, may be defaulted
 ) {
     // First try to get exclusive control of the file
     HANDLE hMutex = CreateMutex (0, false, "CdrWriteFileMutex");
@@ -286,22 +322,26 @@ void cdr::log::WriteFile (
     cdr::String timeStr(ascTime);
 
 
+    // If no filename given, construct a default
+    if (fname.empty())
+        fname = CdrLogDir + OSLogFile;
+
     // Try to log the message whether or not we got exclusive access
     // When writing to a file, we don't truncate the data - don't
     //   have the database string limits on output
-    std::wofstream os(Fname.c_str(), std::ios::app);
+    std::wofstream os(fname.c_str(), std::ios::app);
     if (os) {
 
         // Datetime, source, message
         os << L"---" << timeStr.c_str()
-           << L">>>" << MsgSrc.c_str()
-           << L":\n" << Msg.c_str() << std::endl;
+           << L">>>" << msgSrc.c_str()
+           << L":\n" << msg.c_str() << std::endl;
     }
     else {
         // Last resort is stderr
         std::wcerr << L"---" << timeStr.c_str()
-                   << L">>>" << MsgSrc.c_str()
-                   << L":\n" << Msg.c_str() << std::endl;
+                   << L">>>" << msgSrc.c_str()
+                   << L":\n" << msg.c_str() << std::endl;
     }
 
 
