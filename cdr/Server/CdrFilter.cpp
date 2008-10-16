@@ -1,9 +1,13 @@
 /*
- * $Id: CdrFilter.cpp,v 1.58 2008-08-27 02:38:31 ameyer Exp $
+ * $Id: CdrFilter.cpp,v 1.59 2008-10-16 20:26:38 ameyer Exp $
  *
  * Applies XSLT scripts to a document
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.58  2008/08/27 02:38:31  ameyer
+ * Added functionality to lookupExternalValue() to make values non-mappable
+ * if they match anything in the external_map_nomap_pattern table.
+ *
  * Revision 1.57  2008/08/01 02:31:04  ameyer
  * Fixed incorrectly escaped parenthesis chars in regex.
  *
@@ -2583,7 +2587,7 @@ static string execXsltSqlQuery(const string& parms,
 
         // All columns
         for (int i=1; i<= colCount; i++) {
-            cdr::String wValue = rs.getString(i);
+            cdr::String wValue = cdr::entConvert(rs.getString(i));
             sprintf(buf, "\n  <col id='%d' name='%s'", i,
                     colNames[i-1].c_str());
             // sprintf(buf, "\n  <col id='%d'", i);
