@@ -1,9 +1,13 @@
 /*
- * $Id: CdrVersion.cpp,v 1.34 2008-10-16 12:09:38 bkline Exp $
+ * $Id: CdrVersion.cpp,v 1.35 2008-10-16 15:05:14 bkline Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2008/10/16 12:09:38  bkline
+ * Added temporary code to dynamically choose a version table for new
+ * documents.
+ *
  * Revision 1.33  2008/09/22 13:36:00  bkline
  * Changed version creation to insert into all_doc_versions table.
  *
@@ -296,7 +300,9 @@ int cdr::checkIn(cdr::Session& session, int docId,
     FILE* fp = fopen("d:/cdr/old-version-table", "r");
     if (fp) {
         fclose(fp);
-        newver.replace(12, 16, "doc_version");
+        string target = "all_doc_versions";
+        string replacement = "doc_version";
+        newver.replace(newver.find(target), target.length(), replacement);
     }
     // XXX END OF KLUDGE.
     cdr::db::PreparedStatement insert = conn.prepareStatement(newver);
