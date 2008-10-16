@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.33 2008-09-22 13:36:00 bkline Exp $
+ * $Id: CdrVersion.cpp,v 1.34 2008-10-16 12:09:38 bkline Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2008/09/22 13:36:00  bkline
+ * Changed version creation to insert into all_doc_versions table.
+ *
  * Revision 1.32  2007/07/08 16:33:21  bkline
  * Added missing commit() calls.
  *
@@ -289,6 +292,13 @@ int cdr::checkIn(cdr::Session& session, int docId,
                     "             val_date, doc_type, title, "
                     "             xml, comment, publishable) "
       "VALUES (?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    // XXX KLUDGE!  GET RID OF ME AFTER MAHLER HAS BEEN REFRESHED!!!
+    FILE* fp = fopen("d:/cdr/old-version-table", "r");
+    if (fp) {
+        fclose(fp);
+        newver.replace(12, 16, "doc_version");
+    }
+    // XXX END OF KLUDGE.
     cdr::db::PreparedStatement insert = conn.prepareStatement(newver);
     insert.setInt(1, docId);
     insert.setInt(2, version);
