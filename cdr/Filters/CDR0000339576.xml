@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000339576.xml,v 1.25 2008-10-06 18:51:01 venglisc Exp $
+$Id: CDR0000339576.xml,v 1.26 2008-10-21 19:59:28 venglisc Exp $
 
 Filter handling all In-Line Markup elements of Summary Docs
 Written by Volker Englisch, 2004-07-16
@@ -58,7 +58,9 @@ $Log: not supported by cvs2svn $
    </xsl:attribute>
 
    <xsl:choose>
-    <xsl:when                         test = "name() = 'SummaryRef'">
+    <xsl:when                         test = "name() = 'SummaryRef'
+                                              and
+                                              SummaryRefText">
      <xsl:apply-templates             select = "SummaryRefText"/>
     </xsl:when>
     <xsl:otherwise>
@@ -148,6 +150,60 @@ $Log: not supported by cvs2svn $
    <xsl:apply-templates/>
   </a>
  </xsl:template>
+
+
+ <!-- 
+ ======================================================================
+ Link to DrugInfoSummaries
+ ====================================================================== -->
+ <xsl:template                   match = "DrugSummaryRef">
+  <xsl:choose>
+   <xsl:when                      test = "Deletion">
+    <a>
+     <xsl:attribute               name = "href">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Session=guest')"/>
+     </xsl:attribute>
+     <xsl:attribute               name = "target">
+      <xsl:text>_blank</xsl:text>
+     </xsl:attribute>
+     <span class="deleteDisRef">
+      <xsl:value-of           select = "."/>
+     </span>
+    </a>
+   </xsl:when>
+   <xsl:when                      test = "Insertion">
+    <a>
+     <xsl:attribute               name = "href">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Session=guest')"/>
+     </xsl:attribute>
+     <xsl:attribute               name = "target">
+      <xsl:text>_blank</xsl:text>
+     </xsl:attribute>
+     <span class="insertDisRef">
+      <xsl:value-of           select = "."/>
+     </span>
+    </a>
+   </xsl:when>
+   <xsl:otherwise>
+    <a>
+     <xsl:attribute               name = "href">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Session=guest')"/>
+     </xsl:attribute>
+     <xsl:attribute               name = "target">
+      <xsl:text>_blank</xsl:text>
+     </xsl:attribute>
+     <xsl:value-of              select = "."/>
+    </a>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
 
  <!-- 
  ===================================================================
@@ -1399,6 +1455,7 @@ $Log: not supported by cvs2svn $
  <xsl:template                   match = "Title" 
                                   mode = "TOC">
   <xsl:apply-templates/>
+
  </xsl:template>
 
 
@@ -2180,6 +2237,7 @@ $Log: not supported by cvs2svn $
            <xsl:otherwise>
             <span class="deleteapproved">
              <xsl:text>, </xsl:text>
+
             </span>
            </xsl:otherwise>
           </xsl:choose>
@@ -2622,6 +2680,7 @@ $Log: not supported by cvs2svn $
           </xsl:choose>
          </xsl:otherwise>
         </xsl:choose>
+
        </xsl:when>    
        <xsl:otherwise>
         <xsl:choose>
