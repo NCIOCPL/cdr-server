@@ -1,9 +1,13 @@
 /*
- * $Id: tables.sql,v 1.128 2008-09-25 14:55:51 bkline Exp $
+ * $Id: tables.sql,v 1.129 2008-10-21 21:00:50 ameyer Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.128  2008/09/25 14:55:51  bkline
+ * Definition of doc_version view moved to separate script, since it
+ * depends on a separate database.
+ *
  * Revision 1.127  2008/09/23 15:45:14  bkline
  * Modifications needed for the new cdr_archived_versions database.
  *
@@ -828,7 +832,7 @@ GO
  * multi-threaded, single-process architecture is replaced with multiple
  * server processes (or, more likely, we may switch to using shared memory).
  *
- *           id  automatically generated primary key for the checkout table
+ *           id  CDR ID of the document checked out
  *       dt_out  date/time document was checked out
  *          usr  identifies the user account to which the document has been
  *               checked out
