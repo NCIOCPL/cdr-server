@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #
-# $Id: PushDevDocs.py,v 1.8 2008-05-02 22:41:34 venglisc Exp $
+# $Id: PushDevDocs.py,v 1.9 2008-10-27 18:30:05 venglisc Exp $
 #
 # Replaces copies of CDR control documents which have been preserved
 # from the development server, after a refresh of the database on
@@ -65,7 +65,7 @@ reason   = 'preserving work on development server'
 # the current working version preserved from the development server
 # back in.
 #----------------------------------------------------------------------
-print 'Updating existing documents ...'
+log('Updating existing documents ...', 1)
 for name in glob.glob("RepDocs/*.xml"):
     try:
         id = extractId(name)
@@ -104,36 +104,6 @@ for name in glob.glob("RepDocs/*.xml"):
         cdr.logout(session, host = server)
         raise
 
-#----------------------------------------------------------------------
-# For each document in the AddDocs subdirectory, add the document,
-# check it out (to get the version with the document ID embedded),
-# and check it back in.
-#----------------------------------------------------------------------
-print 'Adding new documents ...'
-for name in glob.glob("AddDocs/*.xml"):
-    try:
-        id = extractId(name)
-        idString = "CDR%010d" % id
-        doc = open(name, 'rb').read()
-        resp = cdr.addDoc(session, doc = doc, checkIn = 'N', 
-                          reason = reason, host = server)
-        if not resp.startswith("CDR"):
-            log("Failure saving %s: %s" % (idString, resp), 1)
-            continue
-        doc = cdr.getDoc(session, resp, 'Y', host = server)
-        if doc.startswith("<Err"):
-            log("Failure locking %s: %s" % (idString, doc), 1)
-            continue
-        resp = cdr.repDoc(session, doc = doc, checkIn = 'Y', ver = 'Y', 
-                          reason = reason, host = server, val = 'Y')
-        if not resp.startswith("CDR"):
-            log("Failure saving %s: %s" % (idString, resp), 1)
-        else:
-            log("Added %s to %s" % (resp, server))
-    except:
-        cdr.logout(session, host = server)
-        raise
-
 # ---------------------------------------------------------------------
 # Before we can add the new documents we have to make sure that the 
 # new document types exist in the doc_type table.
@@ -141,7 +111,7 @@ for name in glob.glob("AddDocs/*.xml"):
 # NewDocTypes.tab.  Use the information to add the entries in the table
 # with the addDoctype() function.
 # ---------------------------------------------------------------------
-print 'Creating new DocType entries...'
+log('Creating new DocType entries...', 1)
 def unFix(s):
     if not s: return None
     return s.replace("@@TAB", "\t").replace("@@NL@@", "\n")
@@ -227,7 +197,39 @@ else:
 
 
 #----------------------------------------------------------------------
+# We're waiting to add new documents until the docTypes have been added.
+#
+# For each document in the AddDocs subdirectory, add the document,
+# check it out (to get the version with the document ID embedded),
+# and check it back in.
+#----------------------------------------------------------------------
+log('Adding new documents ...', 1)
+for name in glob.glob("AddDocs/*.xml"):
+    try:
+        id = extractId(name)
+        idString = "CDR%010d" % id
+        doc = open(name, 'rb').read()
+        resp = cdr.addDoc(session, doc = doc, checkIn = 'N', 
+                          reason = reason, host = server)
+        if not resp.startswith("CDR"):
+            log("Failure saving %s: %s" % (idString, resp), 1)
+            continue
+        doc = cdr.getDoc(session, resp, 'Y', host = server)
+        if doc.startswith("<Err"):
+            log("Failure locking %s: %s" % (idString, doc), 1)
+            continue
+        resp = cdr.repDoc(session, doc = doc, checkIn = 'Y', ver = 'Y', 
+                          reason = reason, host = server, val = 'Y')
+        if not resp.startswith("CDR"):
+            log("Failure saving %s: %s" % (idString, resp), 1)
+        else:
+            log("Added old file %s as %s to %s" % (name, resp, server))
+    except:
+        cdr.logout(session, host = server)
+        raise
+
+#----------------------------------------------------------------------
 # Don't leave a mess behind.
 #----------------------------------------------------------------------
-print 'Done'
+log('Done', 1)
 cdr.logout(session, host = server)
