@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000616048.xml,v 1.9 2008-10-20 22:25:36 venglisc Exp $
+$Id: CDR0000616048.xml,v 1.10 2008-10-27 18:52:38 venglisc Exp $
 
 Filter to create Vendor XML for Glossary
 
@@ -112,8 +112,33 @@ $Log: not supported by cvs2svn $
                                             TranslatedTermDefinition/
                                             MediaLink"/>
 
-   <xsl:apply-templates         select = "TranslatedName"/>
+   <!--
+   If a translated name exists, process it.  If a translated name does
+   not exist, it's because a translation for the word does not exist
+   in the translated language and we're using the English word with 
+   the note "en englais".
+   However, we only want to do this if a translated concept definition
+   exists for this term.
+   =================================================================== -->
+   <xsl:choose>
+    <xsl:when                     test = "TranslatedName">
+     <xsl:apply-templates       select = "TranslatedName"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:if                      test = "GlossaryTermConcept/
+                                          TranslatedTermDefinition">
+      <SpanishTermName>
+       <xsl:value-of            select = "normalize-space(TermName/
+                                                           TermNameString)"/>
+       <xsl:text> (en ingl&#xE9;s)</xsl:text>
+      </SpanishTermName>
+     </xsl:if>
+    </xsl:otherwise>
+   </xsl:choose>
 
+   <!--
+   Process the translated definition for the language
+   ================================================== -->
    <xsl:for-each                select = "GlossaryTermConcept/
                                           TranslatedTermDefinition">
     <SpanishTermDefinition>
@@ -279,6 +304,7 @@ $Log: not supported by cvs2svn $
                                                    $sqlGTNQuery,
                                                    '~TermName~',
                                                    $sqlGTCId,
+
                                                    '~',
                                                    $gtnNormId))"/>
      </xsl:when>
@@ -579,6 +605,7 @@ $Log: not supported by cvs2svn $
      </xsl:when>
 
      <xsl:otherwise>
+
 
       <xsl:value-of             select = "$url"/>
      </xsl:otherwise>
