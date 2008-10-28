@@ -1,10 +1,13 @@
 /*
- * $Id: CdrGlossaryMap.cpp,v 1.3 2004-12-21 19:30:24 bkline Exp $
+ * $Id: CdrGlossaryMap.cpp,v 1.4 2008-10-28 20:57:10 bkline Exp $
  *
  * Returns a document identifying which glossary terms should be used
  * for marking up phrases found in a CDR document.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2004/12/21 19:30:24  bkline
+ * Added restriction to exclude rejected glossary terms.
+ *
  * Revision 1.2  2004/09/09 18:43:26  bkline
  * Added Name element for each term.
  *
@@ -18,6 +21,7 @@
 #include <vector>
 #include <sstream>
 #include <wchar.h>
+#include <iostream>
 
 #include "CdrCommand.h"
 #include "CdrDbPreparedStatement.h"
@@ -26,11 +30,13 @@
 
 static void mapPreferredTerms(cdr::StringSet& phrases, 
                               std::map<int, cdr::StringList>& mappings,
-                              std::map<int, cdr::String>& names,
+                              std::map<int, cdr::String>& preferredNames,
+                              std::set<int>& nonRejectedTerms,
                               cdr::db::Connection& conn);
 static void mapExternalPhrases(cdr::StringSet& phrases, 
-                              std::map<int, cdr::StringList>& mappings,
-                              cdr::db::Connection& conn);
+                               std::map<int, cdr::StringList>& mappings,
+                               const std::set<int>& nonRejectedTerms,
+                               cdr::db::Connection& conn);
 static void addPhrase(cdr::StringSet& phrases,
                       std::map<int, cdr::StringList>& mappings,
                       int id,
@@ -57,7 +63,7 @@ cdr::String cdr::getGlossaryMap(cdr::Session&,
     std::wostringstream response;
     response << L"<CdrGetGlossaryMapResp>";
 
-    // Remember phrases we've already taken care of.
+    // Keep track of phrases we've already taken care of.
     StringSet phrases;
 
     // Collect the phrases which belong to each term.
@@ -65,10 +71,11 @@ cdr::String cdr::getGlossaryMap(cdr::Session&,
     std::map<int, String>     names;
 
     // Find the term's preferred terms first (these take precedence).
-    mapPreferredTerms(phrases, mappings, names, connection);
+    std::set<int> nonRejectedTerms;
+    mapPreferredTerms(phrases, mappings, names, nonRejectedTerms, connection);
 
     // Collect all the other phrases we can map.
-    mapExternalPhrases(phrases, mappings, connection);
+    mapExternalPhrases(phrases, mappings, nonRejectedTerms, connection);
 
     // Fill out the response document.
     std::map<int, StringList>::const_iterator term = mappings.begin();
@@ -94,27 +101,29 @@ cdr::String cdr::getGlossaryMap(cdr::Session&,
 }
 
 /*
- * Get the preferred names for the glossary terms.
+ * Get the preferred names for the glossary terms using the new doc type.
  */
 void mapPreferredTerms(cdr::StringSet& phrases, 
                        std::map<int, cdr::StringList>& mappings,
-                       std::map<int, cdr::String>& names,
+                       std::map<int, cdr::String>& preferredNames,
+                       std::set<int>& nonRejectedTerms,
                        cdr::db::Connection& conn)
 {
     cdr::db::Statement stmt = conn.createStatement();
     cdr::db::ResultSet rs = stmt.executeQuery(
-        "SELECT n.doc_id, n.value                   "
-        "  FROM query_term n                        "
-        "  JOIN query_term s                        "
-        "    ON s.doc_id = n.doc_id                 "
-        " WHERE n.path = '/GlossaryTerm/TermName'   "
-        "   AND s.path = '/GlossaryTerm/TermStatus' "
-        "   AND s.value <> 'Rejected'               ");
+        "SELECT n.doc_id, n.value                                    "
+        "  FROM query_term n                                         "
+        "  JOIN query_term s                                         "
+        "    ON s.doc_id = n.doc_id                                  "
+        " WHERE n.path = '/GlossaryTermName/TermName/TermNameString' "
+        "   AND s.path = '/GlossaryTermName/TermNameStatus'          "
+        "   AND s.value <> 'Rejected'                                ");
     while (rs.next()) {
-        int         id   = rs.getInt(1);
-        cdr::String name = rs.getString(2);
-        names[id]        = name;
+        int         id     = rs.getInt(1);
+        cdr::String name   = rs.getString(2);
+        preferredNames[id] = name;
         addPhrase(phrases, mappings, id, name);
+        nonRejectedTerms.insert(id);
     }
     stmt.close();
 }
@@ -124,23 +133,21 @@ void mapPreferredTerms(cdr::StringSet& phrases,
  */
 void mapExternalPhrases(cdr::StringSet& phrases, 
                         std::map<int, cdr::StringList>& mappings,
+                        const std::set<int>& nonRejectedTerms,
                         cdr::db::Connection& conn)
 {
     cdr::db::Statement stmt = conn.createStatement();
     cdr::db::ResultSet rs = stmt.executeQuery(
-        "SELECT m.doc_id, m.value                   "
-        "  FROM external_map m                      "
-        "  JOIN external_map_usage u                "
-        "    ON u.id   = m.usage                    "
-        "  JOIN query_term s                        "
-        "    ON s.doc_id = m.doc_id                 "
-        " WHERE u.name = 'GlossaryTerm Phrases'     "
-        "   AND s.path = '/GlossaryTerm/TermStatus' "
-        "   AND s.value <> 'Rejected'               ");
+        "SELECT m.doc_id, m.value               "
+        "  FROM external_map m                  "
+        "  JOIN external_map_usage u            "
+        "    ON u.id   = m.usage                "
+        " WHERE u.name = 'GlossaryTerm Phrases' ");
     while (rs.next()) {
         int         id   = rs.getInt(1);
         cdr::String name = rs.getString(2);
-        addPhrase(phrases, mappings, id, name);
+        if (nonRejectedTerms.find(id) != nonRejectedTerms.end())
+            addPhrase(phrases, mappings, id, name);
     }
     stmt.close();
 }
