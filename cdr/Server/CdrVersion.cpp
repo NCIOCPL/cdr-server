@@ -1,9 +1,12 @@
 /*
- * $Id: CdrVersion.cpp,v 1.35 2008-10-16 15:05:14 bkline Exp $
+ * $Id: CdrVersion.cpp,v 1.36 2008-10-28 20:57:03 ameyer Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2008/10/16 15:05:14  bkline
+ * Made kludge (see previous revision) slightly less kludgey.
+ *
  * Revision 1.34  2008/10/16 12:09:38  bkline
  * Added temporary code to dynamically choose a version table for new
  * documents.
@@ -296,15 +299,7 @@ int cdr::checkIn(cdr::Session& session, int docId,
                     "             val_date, doc_type, title, "
                     "             xml, comment, publishable) "
       "VALUES (?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    // XXX KLUDGE!  GET RID OF ME AFTER MAHLER HAS BEEN REFRESHED!!!
-    FILE* fp = fopen("d:/cdr/old-version-table", "r");
-    if (fp) {
-        fclose(fp);
-        string target = "all_doc_versions";
-        string replacement = "doc_version";
-        newver.replace(newver.find(target), target.length(), replacement);
-    }
-    // XXX END OF KLUDGE.
+
     cdr::db::PreparedStatement insert = conn.prepareStatement(newver);
     insert.setInt(1, docId);
     insert.setInt(2, version);
