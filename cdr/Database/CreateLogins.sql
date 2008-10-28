@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.32 2008-09-23 15:45:14 bkline Exp $
+ * $Id: CreateLogins.sql,v 1.33 2008-10-28 14:27:10 bkline Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2008/09/23 15:45:14  bkline
+ * Modifications needed for the new cdr_archived_versions database.
+ *
  * Revision 1.31  2008/07/18 03:17:08  ameyer
  * SELECT on external_map_nomap_pattern to CdrGuest.
  *
@@ -156,6 +159,10 @@ GO
 USE cdr_archived_versions
 GO
 sp_changedbowner 'cdr'
+GO
+sp_revokedbaccess 'CdrGuest'
+GO
+sp_revokedbaccess 'CdrPublishing'
 GO
 sp_grantdbaccess 'CdrGuest'
 GO
