@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.82 2008-10-04 22:01:13 bkline Exp $
+ * $Id: CdrDoc.cpp,v 1.83 2008-10-31 03:34:38 ameyer Exp $
  *
  */
 
@@ -34,7 +34,8 @@
 
 #include <iostream>
 #include <string>
-//#define CDR_TIMINGS 1 // Uncomment line to activate timing code.
+// Uncomment following line to activate timing code.
+// #define CDR_TIMINGS 1
 #include "CdrTiming.h"
 
 static cdr::String cdrPutDoc (cdr::Session&, const cdr::dom::Node&,
@@ -58,6 +59,31 @@ static void checkForDuplicateTitle(cdr::db::Connection&, int,
 
 static int deleteDoc(cdr::Session&, int, bool, const cdr::String&,
                      cdr::StringList&, cdr::db::Connection&);
+
+static cdr::String stripCdrEidAttrs(cdr::String &, cdr::db::Connection &);
+
+static cdr::String addCdrEidAttrs(cdr::String& docStr);
+
+// For debugging only
+void saveXmlToFile(char *msg, char *fname, cdr::String xml) {
+    try {
+        FILE *fp;
+        std::string xmlStr;
+        size_t xsize;
+        if ((fp = fopen(fname, "ab")) != NULL) {
+            fprintf (fp, "Saving record: %s\n", msg);
+            xmlStr = xml.toUtf8();
+            xsize  = xmlStr.size();
+            fwrite(xmlStr.c_str(), 1, xsize, fp);
+            fclose(fp);
+        }
+    }
+    catch (...) {
+        perror("Unable to write xml");
+    }
+}
+
+
 
 // String constants used as substitute titles
 #define MALFORMED_DOC_TITLE L"!Malformed document - no title can be generated"
@@ -90,12 +116,12 @@ cdr::CdrDoc::CdrDoc (
     revisedXml (L""),
     revFilterFailed (false),
     revFilterLevel (DEFAULT_REVISION_LEVEL),
-    errorIdXml (L""),
     needsReview (false),
     titleFilterId (0),
     title (L""),
     conType (not_set)
 {
+    MAKE_TIMER(ctorDocTimer);
     // Get doctype and id from CdrDoc attributes
     const cdr::dom::Element& docElement(docDom);
     textDocType = docElement.getAttribute (L"Type");
@@ -137,6 +163,7 @@ cdr::CdrDoc::CdrDoc (
     else
         Id = 0;
 
+    MAKE_TIMER(checkDocTypeTimer);
     // Check DocType - must be one of recognized types
     // Get name of XSLT filter to generate title at the same time
     // And get document id of the schema for this doc type
@@ -154,6 +181,7 @@ cdr::CdrDoc::CdrDoc (
     cdr::Int tfi  = rs.getInt(2);
     cdr::Int sdi  = rs.getInt(3);
     select.close();
+    SHOW_ELAPSED("Checking doctype", checkDocTypeTimer);
 
     // There may not be title filter and/or schemas for all doc types,
     //   so we need to check
@@ -167,6 +195,7 @@ cdr::CdrDoc::CdrDoc (
         schemaDocId = sdi;
 
     // Pull out the parts of the document from the dom
+    MAKE_TIMER(parseCdrDocCtlTimer);
     cdr::dom::Node child = docDom.getFirstChild ();
     while (child != 0) {
 
@@ -262,6 +291,7 @@ cdr::CdrDoc::CdrDoc (
 
         child = child.getNextSibling ();
     }
+    SHOW_ELAPSED("Finished parsing CdrDocCtl", parseCdrDocCtlTimer);
 
     // No passed XML may be legal or may not, have to check other things
     if (Xml.size() == 0) {
@@ -300,14 +330,19 @@ cdr::CdrDoc::CdrDoc (
     // Original code left in until we decide for sure we don't need it.
     // See also the other CdrDoc constructors.
     // AHM 2008-04-10
+    MAKE_TIMER(fragIdTimer);
     lastFragmentId = findHighestFragmentId(Xml);
+    SHOW_ELAPSED("Finding last fragment ID", fragIdTimer);
 
-    // Locators requested and allowed?
+    // Add/replace cdr-eids if needed and remember whether we're using them
     setLocators(withLocators);
 
     // Generate a title, or use an existing one, or create an error title
+    MAKE_TIMER(createTitleTimer);
     createTitle();
+    SHOW_ELAPSED("Creating the title", createTitleTimer);
 
+    SHOW_ELAPSED("constructing CdrDoc", ctorDocTimer);
 } // CdrDoc ()
 
 
@@ -376,7 +411,7 @@ cdr::CdrDoc::CdrDoc (
     // Content or control type document
     conType = not_set;
 
-    // Will we use cdr-eid attributes with this doc?
+    // Add/replace cdr-eids if needed and remember whether we're using them
     setLocators(withLocators);
 
     // Don't know yet if this is a publishable version
@@ -404,9 +439,6 @@ cdr::CdrDoc::CdrDoc (
 
     // We haven't filtered this for insertion, deletion markup
     revisedXml = L"";
-
-    // We haven't added cdr-eid attributes
-    errorIdXml = L"";
 
     // We have not parsed the xml yet and don't know of anything wrong with it
     parsed    = false;
@@ -483,8 +515,7 @@ cdr::CdrDoc::CdrDoc (
     textDocType  = rs.getString(7);
     stmt.close();
 
-    // Does caller want cdr-eid attributes with this doc?
-    // Only allow them for content type documents
+    // Will we use cdr-eid attributes with this doc?
     setLocators(withLocators);
 }
 
@@ -500,7 +531,6 @@ void cdr::CdrDoc::setXml (
         // Discards
         parsed     = false;
         revisedXml = L"";
-        errorIdXml = L"";
 
         // Put the new Xml in place
         Xml = newXml;
@@ -517,7 +547,8 @@ void cdr::CdrDoc::setXml (
  */
 void cdr::CdrDoc::store ()
 {
-    std::string sqlStmt;
+    std::string sqlStmt;    // SQL for update
+    cdr::String storeXml;   // XML string to store in the document table
 
     // Make sure the client program hasn't tampered with the revision
     // filter level.
@@ -525,24 +556,14 @@ void cdr::CdrDoc::store ()
         throw cdr::Exception(L"CdrDoc::store: RevisionFilterLevel cannot be "
                              L"overridden when saving a CDR document.");
 
+    storeXml = Xml;
     if (isContentType()) {
         // Filter the document to remove any cdr-eid attributes
         // These should not be stored.
         // Error IDs are never allowed in non-content type documents, so
         //   we check above to avoid possible mangling of fancy formatting
         //   in schemas, filters, or css objects.
-        // As a simple optimization, we'll only call this if we find a cdr-eid
-        //   in a quick string scan
-        if (wcsstr(Xml.c_str(), L"cdr-eid") != NULL) {
-            cdr::String errStr;
-            cdr::FilterParmVector pv;
-            cdr::String newXml = cdr::filterDocumentByScriptTitle (Xml,
-                L"Validation Error IDs: Delete all cdr-eid attributes",
-                docDbConn, &errStr, &pv);
-            if (errStr.size() > 0)
-                throw cdr::Exception(L"Error filtering out cdr-eids" + errStr);
-            setXml(newXml);
-        }
+        storeXml = stripCdrEidAttrs(Xml, docDbConn);
     }
 
     // New record
@@ -580,7 +601,7 @@ void cdr::CdrDoc::store ()
     docStmt.setString (2, activeStatus);
     docStmt.setInt    (3, DocType);
     docStmt.setString (4, title);
-    docStmt.setString (5, Xml);
+    docStmt.setString (5, storeXml);
     docStmt.setString (6, comment);
     docStmt.setInt    (7, lastFragmentId);
 
@@ -671,6 +692,10 @@ bool cdr::CdrDoc::setLocators(
 
     // Set the flag
     valCtl.setLocators(locators);
+
+    // Add the cdr-eid attributes, if required
+    if (locators)
+        setXml(createErrorIdXml());
 
     // May return something different from what caller passed
     return locators;
@@ -1227,27 +1252,23 @@ int cdr::CdrDoc::getErrorCount() const
  */
 cdr::String cdr::CdrDoc::getSerialXml()
 {
-    // Determine which string to send to the caller
-    // If caller wanted cdr-eids, and there are errors to report, and
-    //  errorIdXml was successfully generated:
-    //    Give him the one with cdr-eids
-    // Else
-    //    Give him a plain doc
-    cdr::String xmlStr;
-    if (hasLocators() && getErrorCount() > 0 && errorIdXml.size() > 0)
-        xmlStr = errorIdXml;
-    else
-        xmlStr = Xml;
-
     // Denormalize the data - a service to users
     cdr::String denormXml;
     try {
-        denormXml = cdr::filterDocumentByScriptTitle(xmlStr,
+        denormXml = cdr::filterDocumentByScriptTitle(Xml,
                                L"Fast Denormalization Filter", docDbConn);
     }
     catch (cdr::Exception&) {
         // Can't do it, just return what we had
-        denormXml = xmlStr;
+        denormXml = Xml;
+    }
+
+    // Our convention is to include cdr-eids if they are present and there
+    //   are errors that might refer to them.
+    // Else we strip out any cdr-eids
+    if (hasLocators()) {
+        if (getErrorCount() == 0)
+            denormXml = stripCdrEidAttrs(denormXml, docDbConn);
     }
 
     // Build the CdrDoc string.
@@ -1486,10 +1507,12 @@ bool cdr::CdrDoc::parseAvailable ()
         getRevisionFilteredXml();
 
     // Parse whatever is available
-    if (revisedXml.size() > 0)
+    if (revisedXml.size() > 0) {
         data = revisedXml;
-    else if (Xml.size() > 0)
+    }
+    else if (Xml.size() > 0) {
         data = Xml;
+    }
     else {
         // Nothing to build a tree from
         errList.push_back (L"No XML in this document to parse");
@@ -1530,15 +1553,37 @@ bool cdr::CdrDoc::parseAvailable ()
 } // parseAvailable
 
 /**
- * Get XML modified with cdr-eid ID attributes on each element for use
+ * Remove cdr-eid attributes, if necessary, from XML.
+ */
+static cdr::String stripCdrEidAttrs(
+    cdr::String         &xml,
+    cdr::db::Connection &conn
+) {
+    // As a simple optimization, we'll only call this if we find a cdr-eid
+    //   in a quick string scan
+    if (wcsstr(xml.c_str(), L"cdr-eid") == NULL)
+        return xml;
+
+    // Else there are some, filter them out
+    cdr::String errStr;
+    cdr::FilterParmVector pv;
+    cdr::String newXml = cdr::filterDocumentByScriptTitle (xml,
+        L"Validation Error IDs: Delete all cdr-eid attributes",
+        conn, &errStr, &pv);
+    if (errStr.size() > 0)
+        throw cdr::Exception(L"Error filtering out cdr-eids" + errStr);
+
+    // Replace this objects Xml
+    return newXml;
+}
+
+/**
+ * Add cdr-eid ID attributes to each element for use
  * in validation.
  */
-cdr::String cdr::CdrDoc::getErrorIdXml()
+cdr::String cdr::CdrDoc::createErrorIdXml()
 {
-    // If we've already done this, don't do it again, just
-    //   return what we've already got
-    if (errorIdXml.size() != 0)
-        return errorIdXml;
+    cdr::String eidXml;
 
     // Invoke the filter that will strip any old error IDs and
     //   add new ones
@@ -1547,13 +1592,16 @@ cdr::String cdr::CdrDoc::getErrorIdXml()
     // For now, we'll let any filter exception bubble up.  May change
     //   that later if need
     if (isContentType()) {
-        errorIdXml = cdr::filterDocumentByScriptTitle (Xml,
-            L"Validation Error IDs: Delete and Add cdr-eid attributes",
-            docDbConn);
+        MAKE_TIMER(errorIdTimer);
+        eidXml = stripCdrEidAttrs(Xml, docDbConn);
+        SHOW_ELAPSED("Delete cdr-eid attrs", errorIdTimer);
+        MAKE_TIMER(errorIdAddTimer);
+        eidXml = addCdrEidAttrs(eidXml);
+        SHOW_ELAPSED("Add cdr-eid attrs", errorIdAddTimer);
     }
 
-    return errorIdXml;
-} // getErrorIdXml
+    return eidXml;
+} // createErrorIdXml
 
 /**
  * Return an XML string with revision markup filtered out as per the
@@ -1584,15 +1632,12 @@ cdr::String cdr::CdrDoc::getRevisionFilteredXml (
             (L"useLevel", cdr::String::toString (revFilterLevel)));
 
         try {
-            // If validation requires error markup, filter markup version
-            if (valCtl.hasLocators())
-                revisedXml = cdr::filterDocumentByScriptTitle (
-                        getErrorIdXml(), L"Revision Markup Filter",
-                        docDbConn, &errorStr, &pv);
-            else
-                revisedXml = cdr::filterDocumentByScriptTitle (
-                        Xml, L"Revision Markup Filter",
-                        docDbConn, &errorStr, &pv);
+            MAKE_TIMER(revXmlTimer);
+            revisedXml = cdr::filterDocumentByScriptTitle (
+                    Xml, L"Revision Markup Filter",
+                    docDbConn, &errorStr, &pv);
+            SHOW_ELAPSED("Revision Filter Xml",
+                         revXmlTimer);
         }
         catch (cdr::Exception& e) {
             // Don't try filtering this doc again
@@ -1644,7 +1689,9 @@ void cdr::CdrDoc::createTitle()
 
         // If revision markup not yet filtered, filter it now.
         // This is needed because it might affect the title generation fields
+        MAKE_TIMER(revFilterTimer);
         cdr::String xml = getRevisionFilteredXml(true);
+        SHOW_ELAPSED("Applying revision filtering", revFilterTimer);
 
         // Generate title
         cdr::String filterTitle = L"";
@@ -1652,8 +1699,10 @@ void cdr::CdrDoc::createTitle()
         cdr::FilterParmVector pv;
         pv.push_back (std::pair<cdr::String,cdr::String>(L"docId", textId));
         try {
+            MAKE_TIMER(applyTitleFilterTimer);
             filterTitle = cdr::filterDocumentByScriptId (
                     xml, titleFilterId, docDbConn, &filterMsgs, &pv, textId);
+            SHOW_ELAPSED("Applying title filter", applyTitleFilterTimer);
         }
         catch (cdr::Exception& e) {
             // Add an error to the doc object
@@ -2085,7 +2134,7 @@ void updateQueryTermTable(
         unwantedTerms.size() > newTerms.size() / 2) {
         delQueryTerms(conn, docId, tblName);
         termsToInsert = &newTerms;
-        SHOW_ELAPSED("finished wholesale term deletion", queryTermsTimer);
+        // SHOW_ELAPSED("finished wholesale term deletion", queryTermsTimer);
     }
     else {
 
@@ -2126,10 +2175,12 @@ void updateQueryTermTable(
         insStmt.executeUpdate();
     }
     insStmt.close();
+    /*
     SHOW_ELAPSED((cdr::String("finished inserting ") +
                   cdr::String::toString(termsToInsert->size()) +
                   cdr::String(" new terms")).toUtf8().c_str(),
                   queryTermsTimer);
+    */
 }
 
 /**
@@ -2631,8 +2682,6 @@ static cdr::String createFragIdTransform (cdr::db::Connection& conn,
 
         // Rest of script
         xslt += s_xslScriptBack;
-// DEBUG
-// cdr::log::WriteFile (L"createFragIdTransforms", xslt);
     }
 
     // Return script, may be empty string
@@ -2899,4 +2948,78 @@ cdr::String cdr::mailerCleanup(Session&         session,
         os << packErrors(errs);
     os << L"</CdrMailerCleanupResp>";
     return os.str();
+}
+
+/**
+ * Add cdr-eid attributes to every element in a document.
+ *
+ * This function was written to provide higher performance as compared to
+ * the Sablotron implementation of xsl:number.
+ *
+ * Assumptions:
+ *    The document is well formed.  Our usage of this function only
+ *    occurs after some other logic has caused the document to be parsed
+ *    and an exception thrown if the document was not well-formed.
+ *    If this assumption does not obtain, there is a very small danger
+ *    that we could run off the end of the document string while
+ *    attempting to examine up to two or three characters beyond
+ *    a recognized start tag or comment end delimiter.
+ *
+ * @param docStr        The serialized document to process.
+ *
+ * @return              A new copy of the serialized doc, with cdr-eid
+ *                      attributes.  Each attribute has a unique numeric
+ *                      value.
+ */
+static cdr::String addCdrEidAttrs(
+    cdr::String &docStr
+) {
+    const wchar_t *p;         // Pointr into docStr
+    const wchar_t *endp;      // Pointer to char after last char of docStr
+    wchar_t c;          // Single char at p
+    wchar_t c1;         // Single char at p+1
+    int     nextEid;    // cdr-eid value
+    bool    inTag;      // True = we're inside a start tag
+    bool    inComment;  // We're inside an xml <!-- ... --> comment
+
+    // Cumulate output here
+    std::wostringstream os;
+
+    // First assigned cdr-eid will be this one
+    nextEid = 1;
+
+    inTag = inComment = false;
+    p     = docStr.c_str();
+    endp  = p + wcslen(p);
+    while (p < endp) {
+        c = *p++;
+        if (c == '<' && !inComment) {
+            c1 = *p;
+            if (c1 == '!') {
+                if (*(p+1) == '-' && *(p+2) == '-')
+                    // Found comment start "<!--"
+                    inComment = true;
+            }
+            else if (c1 != '?' && c1 != '/') {
+                // Not a PI or end tag
+                inTag = true;
+            }
+        }
+        else if (c == '-' && inComment) {
+            if (*(p+1) == '-' && *(p+2) == '>')
+                // Found comment end "-->"
+                inComment = false;
+        }
+        else if (c == '>' && inTag) {
+            // Append attribute like " cdr-eid='_123'"
+            os << L" cdr-eid='_" << nextEid++ << "'";
+            inTag = false;
+        }
+
+        // Output original char from docStr
+        os << c;
+    }
+
+    // Finished docStr, return output
+    return cdr::String(os.str());
 }
