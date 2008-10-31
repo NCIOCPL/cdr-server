@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.h,v 1.29 2008-07-30 05:34:48 ameyer Exp $
+ * $Id: CdrDoc.h,v 1.30 2008-10-31 03:32:34 ameyer Exp $
  *
  */
 
@@ -253,26 +253,20 @@ namespace cdr {
             cdr::String getRevisionFilteredXml (bool getIfUnfiltered=false);
 
             /**
-             * If it has not already been done, pass the XML for the document
-             * through filtering to add or replace cdr-eid attributes to
-             * every element.
+             * Pass the XML for the document through filtering to
+             * add or replace cdr-eid attributes in every element.
              *
              * These attributes are used during validation to enable the
              * validation program to insert cdr:eref references to the
              * specific element instance that had a problem.
              *
-             * getErrorIdXml() MUST be called before getRevisionFilteredXML()
-             * if error markup will be used.  That function produces the XML
-             * string that will be validated.  If this function is not called
-             * first, then there will be no error markup in the revision
-             * filtered XML.
-             *
-             * XML with error markup will be saved in this.errorIdXml.  A
-             * second call to the function will return the saved copy.
+             * createErrorIdXml() must be called before
+             * getRevisionFilteredXML(), and before any other changes are
+             * made to the record if error markup will be used.
              *
              *  @return                 XML with cdr-eid attributes.
              */
-            cdr::String getErrorIdXml();
+            cdr::String createErrorIdXml();
 
             /**
              * Mark a document as malformed.
@@ -310,6 +304,15 @@ namespace cdr {
              * Get a serialized version of the document using one of
              * the in-memory XML strings, wrapped in a CdrDoc/CdrDocXml
              * wrapper.
+             *
+             * The serial XML will include cdr-eid attributes if and only
+             * if:
+             *
+             *   The CdrDoc was constructed withLocators = true.
+             *
+             *   There were errors that might reference those locators.
+             *
+             * Otherwise any cdr-eid attributes will be stripped.
              *
              * NOTES:
              *   The GetCdrDoc module was written before we created a CdrDoc
@@ -466,9 +469,6 @@ namespace cdr {
             cdr::String Xml;            // Actual document as XML, not CDATA
             cdr::String revisedXml;     // After any filtering of insertion
                                         //   and deletion markup
-            cdr::String errorIdXml;     // XML sent from the client, with the
-                                        //   addition of cdr-eid attrs, only
-                                        //   needed if validating
             cdr::String schemaXml;      // Schema text for this doc
             cdr::Blob   blobData;       // Associated non-XML, if any
                                         //   Only loaded if exists and needed
@@ -554,7 +554,7 @@ namespace cdr {
              * user supplied title must be preserved, don't call this
              * function.
              */
-            void cdr::CdrDoc::createTitle();
+            void createTitle();
     };
 }
 
