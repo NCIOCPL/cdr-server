@@ -1,10 +1,15 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.32 2008-06-19 15:18:32 ameyer Exp $
+ * $Id: CdrValidateDoc.cpp,v 1.33 2008-10-31 03:35:38 ameyer Exp $
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2008/06/19 15:18:32  ameyer
+ * Modified getErrorXml() to eliminate some spaces around the Errors element
+ * that could break old string matching code, and made it return an empty
+ * string if no errors were found.
+ *
  * Revision 1.31  2008/06/03 18:06:17  ameyer
  * Removed cdr namespace qualifier from eref, etype and elevel Err attributes.
  *
@@ -129,6 +134,10 @@
 // XXX DEBUGGING ONLY.
 #include <iostream>
 
+// Uncomment next line for timing outputs
+// #define CDR_TIMINGS
+#include "CdrTiming.h"
+
 // Project headers.
 #include "CdrString.h"
 #include "CdrCommand.h"
@@ -138,6 +147,9 @@
 #include "CdrGetDoc.h"
 #include "CdrLink.h"
 #include "CdrValidateDoc.h"
+
+// For DEBUG only
+extern void saveXmlToFile(char *, char *, cdr::String);
 
 // Local functions.
 static cdr::String makeResponse(
@@ -443,7 +455,8 @@ cdr::String cdr::validateDoc(
     cdr::ValidRule validRule;       // Do we update the DB or just validate?
     cdr::String    valStatus;       // V)alid, I)valid, M)alformed
 
-    // Get document type and check user authorization to validate it
+    MAKE_TIMER(fullValTimer);
+    MAKE_TIMER(setupValTimer);
     const cdr::dom::Element& commandElement =
         static_cast<const cdr::dom::Element&>(commandNode);
     validationTypes = commandElement.getAttribute(L"ValidationTypes");
@@ -462,7 +475,9 @@ cdr::String cdr::validateDoc(
     bool withLocators = cdr::ynCheck(commandElement.getAttribute(
                                      L"ErrorLocators"), false);
 
+    SHOW_ELAPSED("Validation setup", setupValTimer);
     try {
+        MAKE_TIMER(docPrepValTimer);
         // Extract the document or its ID from the command.
         cdr::dom::Node docNode;
         cdr::dom::Node child = commandNode.getFirstChild();
@@ -474,7 +489,9 @@ cdr::String cdr::validateDoc(
                     // Document is right here
                     // Create an object for it
                     docNode = child;
+                    MAKE_TIMER(createDocTimer);
                     docObj = new cdr::CdrDoc (conn, docNode, withLocators);
+                    SHOW_ELAPSED("Create CdrDoc obj from xml", createDocTimer);
 
                     // This version assumes that doc is passed in solely
                     //   for validation.
@@ -485,6 +502,7 @@ cdr::String cdr::validateDoc(
 
                 else if (name == L"DocId") {
 
+                    MAKE_TIMER(fetchDocTimer);
                     // Document is in the database
                     // Get ID for it
                     docIdString = cdr::dom::getTextContent (child);
@@ -510,6 +528,7 @@ cdr::String cdr::validateDoc(
                         validRule = ValidateOnly;
                     else
                         validRule = UpdateUnconditionally;
+                    SHOW_ELAPSED("Create CdrDoc obj from db", fetchDocTimer);
                 }
             }
             child = child.getNextSibling();
@@ -522,6 +541,7 @@ cdr::String cdr::validateDoc(
         if (docNode != 0 && !docIdString.empty())
             throw cdr::Exception(L"Both DocId and CdrDoc specified");
 
+        SHOW_ELAPSED("Preparing doc for validation", docPrepValTimer);
         // Execute validation
         valStatus = cdr::execValidateDoc (docObj, validRule, validationTypes);
     }
@@ -554,6 +574,7 @@ cdr::String cdr::validateDoc(
     delete docObj;
 
     // Return response
+    SHOW_ELAPSED("Full validation", fullValTimer);
     return makeResponse (docIdString, valStatus, xmlErrs, xmlToSend);
 
 } // validateDoc
@@ -581,6 +602,7 @@ cdr::String cdr::execValidateDoc (
     bool              parseOK = false;
     cdr::String       docTypeString = docObj->getTextDocType();
 
+    MAKE_TIMER(execValTimer);
     // Document status: 'V'alid, 'I'nvalid, or 'M'alformed
     // Invalid until found otherwise
     const wchar_t* status = L"I";
@@ -611,9 +633,10 @@ cdr::String cdr::execValidateDoc (
         // Validate the document against the schema if appropriate.
         if (validationTypes.empty()
         ||   validationTypes.find(L"Schema") != validationTypes.npos) {
+            MAKE_TIMER(schemaValTimer);
             cdr::validateDocAgainstSchema (docXml, docTypeString,
                                         docObj->getConn(), docObj->getValCtl());
-
+            SHOW_ELAPSED("Schema validation", schemaValTimer);
             // If there were schema errors and we aren't supposed to update
             //   the database in the event of errors, reset the flag to
             //   prevent updates
@@ -624,10 +647,12 @@ cdr::String cdr::execValidateDoc (
         // Validate links if appropriate
         if (validationTypes.empty()
                 || validationTypes.find(L"Links") != validationTypes.npos) {
+            MAKE_TIMER(linkValTimer);
             cdr::link::cdrSetLinks ((cdr::dom::Node) docXml,
                                     docObj->getConn(), docObj->getId(),
                                     docTypeString, validRule,
                                     docObj->getValCtl());
+            SHOW_ELAPSED("Link validation", linkValTimer);
         }
     }
 
@@ -642,6 +667,7 @@ cdr::String cdr::execValidateDoc (
         status = L"M";
     }
 
+    MAKE_TIMER(valCleanupTimer);
     // If not malformed, note the outcome of the validation.
     if (wcscmp(status, L"M")) {
         // Were there any true errors, not just warnings?
@@ -661,6 +687,8 @@ cdr::String cdr::execValidateDoc (
         setValStatus (docObj->getConn(), docObj->getId(), status);
 
     // Report the outcome
+    SHOW_ELAPSED("Validation cleanup", valCleanupTimer);
+    SHOW_ELAPSED("execValidateDoc", execValTimer);
     return status;
 }
 
