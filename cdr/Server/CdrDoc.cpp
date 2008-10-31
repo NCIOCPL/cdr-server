@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.83 2008-10-31 03:34:38 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.84 2008-10-31 05:26:59 ameyer Exp $
  *
  */
 
@@ -2996,9 +2996,10 @@ static cdr::String addCdrEidAttrs(
         if (c == '<' && !inComment) {
             c1 = *p;
             if (c1 == '!') {
-                if (*(p+1) == '-' && *(p+2) == '-')
+                if (*(p+1) == '-' && *(p+2) == '-') {
                     // Found comment start "<!--"
                     inComment = true;
+                }
             }
             else if (c1 != '?' && c1 != '/') {
                 // Not a PI or end tag
@@ -3006,11 +3007,13 @@ static cdr::String addCdrEidAttrs(
             }
         }
         else if (c == '-' && inComment) {
-            if (*(p+1) == '-' && *(p+2) == '>')
+            if (*(p) == '-' && *(p+1) == '>') {
                 // Found comment end "-->"
                 inComment = false;
+            }
         }
-        else if (c == '>' && inTag) {
+        // Check for two styles of end tag, ">" or "/>"
+        else if (((c == '/' && *p == '>') || c == '>') && inTag) {
             // Append attribute like " cdr-eid='_123'"
             os << L" cdr-eid='_" << nextEid++ << "'";
             inTag = false;
