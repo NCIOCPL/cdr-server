@@ -1,9 +1,13 @@
 /*
- * $Id: CdrVersion.cpp,v 1.36 2008-10-28 20:57:03 ameyer Exp $
+ * $Id: CdrVersion.cpp,v 1.37 2008-10-31 03:37:36 ameyer Exp $
  *
  * Version control functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.36  2008/10/28 20:57:03  ameyer
+ * Removed Bob's kludge introduced in last version to handle alternate
+ * doc_version tables.  No longer needed.
+ *
  * Revision 1.35  2008/10/16 15:05:14  bkline
  * Made kludge (see previous revision) slightly less kludgey.
  *
@@ -441,12 +445,32 @@ int cdr::checkOut(cdr::Session& session,
   string insert = "INSERT INTO checkout "
     "(id, dt_out, usr, comment) "
     "VALUES (?, GETDATE(), ?, ?)";
-  cdr::db::PreparedStatement stmt = conn.prepareStatement(insert);
-  stmt.setInt(1, docId);
-  stmt.setInt(2, usr);
-  stmt.setString(3, (comment.size() == 0) ? cdr::String(false) : comment);
-  stmt.executeQuery();
-  stmt.close();
+
+  // It has happened, perhaps once a year, that we do two checkouts
+  //   so fast that the second one occurs within one clock tick,
+  //   causing the insert to fail with a primary key violation,
+  //   primary key (id + dt_out) is not unique
+  // If that (or any other error for that matter happens), we'll wait
+  //   and try once more.
+  bool success = false;
+  int  tries   = 0;
+  while (!success && tries < 2) {
+      ++tries;
+      try {
+          cdr::db::PreparedStatement stmt = conn.prepareStatement(insert);
+          stmt.setInt(1, docId);
+          stmt.setInt(2, usr);
+          stmt.setString(3, (comment.size() == 0) ?
+                             cdr::String(false) : comment);
+          stmt.executeQuery();
+          stmt.close();
+          success = true;
+      }
+      catch (...) {
+          // Wait 100 milliseconds
+          Sleep(100);
+      }
+  }
 
   conn.commit();
   conn.setAutoCommit(autocommitted);
