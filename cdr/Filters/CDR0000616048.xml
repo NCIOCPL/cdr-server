@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000616048.xml,v 1.10 2008-10-27 18:52:38 venglisc Exp $
+$Id: CDR0000616048.xml,v 1.11 2008-11-04 23:02:36 venglisc Exp $
 
 Filter to create Vendor XML for Glossary
 
@@ -203,16 +203,23 @@ $Log: not supported by cvs2svn $
  ===================================================================== -->
  <xsl:template                   match = "TranslatedName">
   <xsl:choose>
-   <xsl:when                      test = "@language = 'es'">
+   <xsl:when                      test = "@language = 'es'
+                                          and
+                                          not(@NameType)">
     <SpanishTermName>
      <xsl:value-of              select = "normalize-space(TermNameString)"/>
     </SpanishTermName>
    </xsl:when>
+   <xsl:when                      test = "@language = 'es'
+                                          and
+                                          @NameType">
+    <!-- Ignore "alternate" translated names -->
+   </xsl:when>
    <xsl:otherwise>
-    <UnknownTermName>
+    <UnknownLanguage>
      <xsl:value-of              select = "normalize-space(TermNameString)"/>
-    </UnknownTermName>
-    </xsl:otherwise>
+    </UnknownLanguage>
+   </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
 
