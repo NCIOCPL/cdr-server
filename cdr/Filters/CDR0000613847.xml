@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000613847.xml,v 1.5 2008-09-25 22:01:56 venglisc Exp $
+$Id: CDR0000613847.xml,v 1.6 2008-11-07 17:01:42 venglisc Exp $
 
 Filter to display Glossary Term Name QC Reports
 Volker Englisch         2007-09-26
@@ -27,8 +27,36 @@ $Log: not supported by cvs2svn $
 
  <xsl:variable                    name = "docID"
                                 select = "document('cdrutil:/docid')"/>
+ <xsl:variable                    name = "intID"
+                                select = "concat('', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
  <xsl:variable                    name = "whoAmI"
                                 select = "'GlossaryTermName'"/>
+ <xsl:variable                    name = "sqlQuery">
+     SELECT active_status
+       FROM document 
+      WHERE id = ?
+ </xsl:variable>
+
+ <!-- 
+ Note: Don't perform a normalize-space here since it would convert
+       the resulting node into a string
+ ================================================================== -->
+ <xsl:variable                    name = "queryRows"
+                                select = "document(
+                                           concat('cdrutil:/sql-query/',
+                                                   $sqlQuery,
+                                                   '~',
+                                                   $intID))"/>
+ <xsl:variable                    name = "isBlocked">
+  <xsl:value-of                 select = "$queryRows
+                                          /SqlResult
+                                          /row/col"/>
+ </xsl:variable>
+
+
+
  <!-- 
  ====================================================================
  This program is a filter to create a Glossary term Concept QC Report 
@@ -48,6 +76,7 @@ $Log: not supported by cvs2svn $
                                            concat($cdrdocs/CdrDocCtl/
                                                   DocTitle, ';'), ';')"/> 
     </TITLE>
+
     <STYLE type='text/css'>
      <xsl:call-template           name = "defaultStyle"/>  
      .attribute  { font-weight: normal; 
@@ -58,12 +87,14 @@ $Log: not supported by cvs2svn $
      .name       { color: blue;
                    font-weight: bold;
                    background-color: #EEEEEE; }
+     .blocked    { color: red; }
     </STYLE>
    </HEAD>
    <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' /> 
    <xsl:apply-templates         select = "GlossaryTermName"/>
   </HTML>
  </xsl:template>
+
 
  <!-- 
  ==============================================================  
@@ -97,9 +128,22 @@ $Log: not supported by cvs2svn $
   Display CDR ID
   ==================================================================== -->
   <span class="big">
-   <xsl:value-of                select = "concat('CDR', 
+   <xsl:choose>
+    <xsl:when                     test = "not($isBlocked = 'I')">
+     <xsl:value-of              select = "concat('CDR', 
                                           number(
                                           substring-after($docID, 'CDR')))"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <span class="blocked">
+      <xsl:value-of             select = "concat('CDR', 
+                                          number(
+                                          substring-after($docID, 'CDR')))"/>
+
+      <xsl:text> [BLOCKED]</xsl:text>
+     </span>
+    </xsl:otherwise>
+   </xsl:choose>
   </span>
   <p/>
 
@@ -188,6 +232,8 @@ $Log: not supported by cvs2svn $
   <!--
   ===============================================================
   Display the ReplacementText elements
+
+
   =============================================================== -->
   <xsl:if                         test = "ReplacementText">
    <table       xsl:use-attribute-sets = "table">
