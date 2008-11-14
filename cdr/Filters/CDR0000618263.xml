@@ -8,10 +8,16 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ================================================================
- $Id: CDR0000618263.xml,v 1.1 2008-10-22 19:38:56 venglisc Exp $
+ $Id: CDR0000618263.xml,v 1.2 2008-11-14 20:00:49 venglisc Exp $
 
  Filter to denormalize SummaryRef elements within MiscDoc
  Fragments.
+
+ Note: Do not include this filter as a member of the 
+       "Denormalization Summary Set" since it's only necessary
+       to do this secondary denormalization in order to create 
+       these secondary SummaryRef links in the QC reports.
+
     Written by Volker Englisch, 2003-08-12
 
  $Log: not supported by cvs2svn $
@@ -25,13 +31,10 @@
 
  <!-- 
  =================================================================
- Copy control information and generate current date
+ Copy all nodes as is (except for those specified below)
  ================================================================= -->
  <xsl:template                    match = "Summary">
   <xsl:copy>
-   <!-- xsl:apply-templates          select = "document('cdrutil:/docid')"/>
-   <xsl:apply-templates          select = "document('cdrx:/*/CdrCtl')"/ -->
-
    <xsl:apply-templates/>
   </xsl:copy>
  </xsl:template>
@@ -39,11 +42,12 @@
 
  <!-- 
  =================================================================
- Template to denormalize the SummaryRef elements
+ Template to denormalize the SummaryRef elements within the 
+ MiscDocLink fragments.
  We need this denormalization in order to correctly create the 
  link in the QC report to the listed summaries.
  ================================================================= -->
- <xsl:template                    match = "SummaryRef">
+ <xsl:template                    match = "MiscellaneousDocLink//SummaryRef">
   <xsl:variable                    name = "SummaryRefID" 
                                  select = "@cdr:href"/>
   <xsl:variable                    name = "SummaryRefInfo" 
