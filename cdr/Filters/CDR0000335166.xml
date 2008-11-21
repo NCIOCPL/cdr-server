@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-$Id: CDR0000335166.xml,v 1.5 2008-01-11 22:33:13 venglisc Exp $
+$Id: CDR0000335166.xml,v 1.6 2008-11-21 17:57:59 venglisc Exp $
 
 Filter to display Summary elements selected by Checkbox
 Written by Volker Englisch, 2004-07-16
@@ -78,12 +78,17 @@ $Log: not supported by cvs2svn $
            </td>
            <td>
             <span class="deleteproposed">
-             <xsl:value-of        select = "TermName"/>
+             <xsl:value-of        select = "GlossaryTermName"/>
             </span>
            </td>
            <td>
             <span class="deleteproposed">
-             <xsl:value-of        select = "DefinitionText"/>
+             <xsl:apply-templates select = "GlossaryTermConcept/
+                                            TermDefinition/
+                                            DefinitionText         |
+                                            GlossaryTermConcept/
+                                            TranslatedDefinition/
+                                            DefinitionText"/>
             </span>
            </td>
           </xsl:when>
@@ -95,12 +100,17 @@ $Log: not supported by cvs2svn $
            </td>
            <td>
             <span class="deleteapproved">
-             <xsl:value-of        select = "TermName"/>
+             <xsl:value-of        select = "GlossaryTermName"/>
             </span>
            </td>
            <td>
             <span class="deleteapproved">
-             <xsl:value-of        select = "DefinitionText"/>
+             <xsl:apply-templates select = "GlossaryTermConcept/
+                                            TermDefinition/
+                                            DefinitionText         |
+                                            GlossaryTermConcept/
+                                            TranslatedDefinition/
+                                            DefinitionText"/>
             </span>
            </td>
           </xsl:otherwise>
@@ -117,12 +127,17 @@ $Log: not supported by cvs2svn $
            </td>
            <td>
             <span class="insertproposed">
-             <xsl:value-of        select = "TermName"/>
+             <xsl:value-of        select = "GlossaryTermName"/>
             </span>
            </td>
            <td>
             <span class="insertproposed">
-             <xsl:value-of        select = "DefinitionText"/>
+             <xsl:apply-templates select = "GlossaryTermConcept/
+                                            TermDefinition/
+                                            DefinitionText         |
+                                            GlossaryTermConcept/
+                                            TranslatedDefinition/
+                                            DefinitionText"/>
             </span>
            </td>
           </xsl:when>
@@ -134,12 +149,17 @@ $Log: not supported by cvs2svn $
            </td>
            <td>
             <span class="insertapproved">
-             <xsl:value-of        select = "TermName"/>
+             <xsl:value-of        select = "GlossaryTermName"/>
             </span>
            </td>
            <td>
             <span class="insertapproved">
-             <xsl:value-of        select = "DefinitionText"/>
+             <xsl:apply-templates select = "GlossaryTermConcept/
+                                            TermDefinition/
+                                            DefinitionText         |
+                                            GlossaryTermConcept/
+                                            TranslatedDefinition/
+                                            DefinitionText"/>
             </span>
            </td>
           </xsl:otherwise>
@@ -150,10 +170,15 @@ $Log: not supported by cvs2svn $
           <xsl:value-of        select = "GlossaryTermRef"/>
          </td>
          <td>
-          <xsl:value-of        select = "TermName"/>
+          <xsl:value-of        select = "GlossaryTermName"/>
          </td>
          <td>
-          <xsl:value-of        select = "DefinitionText"/>
+          <xsl:apply-templates select = "GlossaryTermConcept/
+                                         TermDefinition/
+                                         DefinitionText         |
+                                         GlossaryTermConcept/
+                                         TranslatedDefinition/
+                                         DefinitionText"/>
          </td>
         </xsl:otherwise>
        </xsl:choose>
@@ -161,6 +186,43 @@ $Log: not supported by cvs2svn $
     </xsl:for-each>
    </table>
   </xsl:if>
+ </xsl:template>
+
+
+ <!--
+ ======================================================================
+ Template to handle the PlaceHolder/ReplacementText elements within the 
+ DefinitionText.
+ ====================================================================== -->
+ <xsl:template   match = "DefinitionText">
+  <xsl:apply-templates/>
+ </xsl:template>
+
+
+ <!--
+ ======================================================================
+ Template to pick the right PlaceHolder text to insert in the 
+ DefinitionText
+ ====================================================================== -->
+ <xsl:template                   match = "PlaceHolder">
+  <xsl:variable                   name = "replace"
+                                select = "@name"/>
+
+  <xsl:choose>
+  <xsl:when                       test = "@name = 'TERMNAME'">
+   <xsl:value-of                select = "../../../../
+                                          GlossaryTermName"/>
+  </xsl:when>
+  <xsl:when                       test = "../../
+                                          ReplacementText[@name = $replace]">
+   <xsl:value-of                select = "../../
+                                          ReplacementText[@name = $replace]"/>
+  </xsl:when>
+  <xsl:otherwise>
+   <xsl:value-of                select = "../../../../
+                                          ReplacementText[@name = $replace]"/>
+  </xsl:otherwise>
+ </xsl:choose>
  </xsl:template>
 
 
@@ -225,6 +287,7 @@ $Log: not supported by cvs2svn $
          <xsl:otherwise>
           <xsl:text> [Response: </xsl:text>
          </xsl:otherwise>
+
         </xsl:choose>
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>

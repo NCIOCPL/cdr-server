@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
  ================================================================
- $Id: CDR0000409593.xml,v 1.8 2008-03-26 22:10:11 venglisc Exp $
+ $Id: CDR0000409593.xml,v 1.9 2008-11-21 17:59:10 venglisc Exp $
 
  Intermediate Filter to prepare for Patient QC Summary Report
  Written by Volker Englisch, 2002-05-06
@@ -26,6 +26,10 @@
  Main Template
  ================================================================ -->
  <xsl:template                   match = "Summary">
+  <xsl:variable                   name = "sumAudience"
+                                select = "substring(
+                                            SummaryMetaData/
+                                            SummaryAudience, 1, 19)"/>
   <xsl:copy>
    <!--  
    ==============================================================
@@ -106,39 +110,81 @@
                                   mode = "copy"/>
    </xsl:for-each>
 
-   <GlossaryTerms>
-    <xsl:for-each               select = "//GlossaryTermRef">
-     <GlossaryTerm>
-      <GlossaryTermRef>
-       <xsl:apply-templates       mode = "copy"/>
-      </GlossaryTermRef>
+    <GlossaryTerms>
+     <xsl:for-each              select = "//GlossaryTermRef">
+      <GlossaryTerm>
+       <GlossaryTermRef>
+        <xsl:apply-templates      mode = "copy"/>
+       </GlossaryTermRef>
        
-      <xsl:variable               name = "defID"  
+       <xsl:variable              name = "defID"  
                                 select = "@cdr:href"/>
       
-      <xsl:variable               name = "defInfo" 
+       <xsl:variable              name = "defInfo" 
                                 select = "document(concat('cdrx:', $defID,
                                                           '/last'))"/>
-      <xsl:if                     test = "$defInfo/GlossaryTerm/
-                                          TermDefinition/
-                                          Audience = 'Patient' 
-                                          and 
-                                          $defInfo/GlossaryTerm/
-                                          TermDefinition/
-                                          Dictionary = 'Cancer.gov'"> 
-                                           
-       <TermName>
-        <xsl:value-of           select = "$defInfo/GlossaryTerm/
-                                          TermName"/> 
-       </TermName>
-       <DefinitionText>     
-        <xsl:value-of           select = "$defInfo/GlossaryTerm/
-                                          TermDefinition/DefinitionText"/>
-       </DefinitionText>
-      </xsl:if>
-     </GlossaryTerm>
-    </xsl:for-each>
-   </GlossaryTerms>
+       <xsl:variable              name = "conceptID"  
+                                select = "$defInfo/GlossaryTermName/
+                                          GlossaryTermConcept/@cdr:ref"/>
+      
+       <xsl:variable              name = "conceptInfo" 
+                                select = "document(concat('cdrx:', $conceptID,
+                                                          '/last'))"/>
+
+       <xsl:choose>
+         <xsl:when                test = "/Summary/
+                                           SummaryMetaData/
+                                           SummaryLanguage = 'English'">
+          <GlossaryTermName>
+           <xsl:value-of        select = "$defInfo/GlossaryTermName/
+                                          TermName/
+                                          TermNameString"/> 
+          </GlossaryTermName>
+          <xsl:copy-of          select = "$defInfo/GlossaryTermName/
+                                           ReplacementText"/>
+          <GlossaryTermConcept>
+           <!--
+           The Genetics Summaries are using the definitions for the HP
+           audience instead of Patient (English only)
+           =========================================================== -->
+           <xsl:choose>
+            <xsl:when             test = "$sumAudience = 'Health professional'">
+             <xsl:copy-of       select = "$conceptInfo/
+                                           GlossaryTermConcept/
+                                           TermDefinition
+                                             [Audience 
+                                                = 'Health professional']"/>
+            </xsl:when>
+            <xsl:otherwise>
+             <xsl:copy-of       select = "$conceptInfo/
+                                           GlossaryTermConcept/
+                                           TermDefinition
+                                             [Audience = 'Patient'
+                                              and
+                                              Dictionary = 'Cancer.gov']"/>
+            </xsl:otherwise>
+           </xsl:choose>
+          </GlossaryTermConcept>
+         </xsl:when>
+         <xsl:otherwise>
+          <GlossaryTermName>
+           <xsl:value-of        select = "$defInfo/GlossaryTermName/
+                                           TranslatedName/
+                                           TermNameString"/> 
+          </GlossaryTermName>
+          <xsl:copy-of          select = "$defInfo/GlossaryTermName/
+                                           ReplacementText"/>
+           <GlossaryTermConcept>
+          <xsl:copy-of          select = "$conceptInfo/
+                                           GlossaryTermConcept/
+                                           TranslatedTermDefinition
+                                              [Audience = $sumAudience]"/>
+          </GlossaryTermConcept>
+         </xsl:otherwise>
+        </xsl:choose>
+      </GlossaryTerm>
+     </xsl:for-each>
+    </GlossaryTerms>
   </xsl:copy>  
  </xsl:template>
 
