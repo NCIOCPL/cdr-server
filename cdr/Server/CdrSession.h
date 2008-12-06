@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSession.h,v 1.10 2002-08-10 19:28:22 bkline Exp $
+ * $Id: CdrSession.h,v 1.11 2008-12-06 20:34:33 bkline Exp $
  *
  * Information about the current login.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2002/08/10 19:28:22  bkline
+ * Added accessor method getName().
+ *
  * Revision 1.9  2000/10/30 17:42:57  mruben
  * added canDo for document number
  *
@@ -152,8 +155,10 @@ namespace cdr {
          *                          for CDR database, whose clock we use as
          *                          the reference for the current date and
          *                          time.
+         *  @param  ip              string representation of the IP address
+         *                          from which the most recent request came.
          */
-        void setLastActivity(db::Connection& conn) const;
+        void setLastActivity(db::Connection& conn, const String& ip) const;
 
         /**
          * Returns <code>true</code> if the user account for the current

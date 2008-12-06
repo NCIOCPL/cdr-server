@@ -1,9 +1,12 @@
 /*
- * $Id: CdrSession.cpp,v 1.10 2002-08-23 02:03:43 ameyer Exp $
+ * $Id: CdrSession.cpp,v 1.11 2008-12-06 20:34:33 bkline Exp $
  *
  * Session control information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2002/08/23 02:03:43  ameyer
+ * Now normalizing action string whitespace in canDo().
+ *
  * Revision 1.9  2002/06/18 22:16:03  ameyer
  * Bug fix in new getCanDo().
  *
@@ -64,11 +67,16 @@ void cdr::Session::lookupSession(const cdr::String& sessionId,
     uName = rs.getString(3);
 }
 
-void cdr::Session::setLastActivity(db::Connection& conn) const
+void cdr::Session::setLastActivity(db::Connection& conn,
+                                   const String& ip) const
 {
-    std::string query = "UPDATE session SET last_act = GETDATE() WHERE id = ?";
+    std::string query = "UPDATE session "
+                        "   SET last_act = GETDATE(),"
+                        "       ip_address = ?"
+                        " WHERE id = ?";
     cdr::db::PreparedStatement update = conn.prepareStatement(query);
-    update.setInt(1, id);
+    update.setString(1, ip);
+    update.setInt(2, id);
     update.executeQuery();
 }
 

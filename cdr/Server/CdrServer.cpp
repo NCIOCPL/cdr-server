@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.46 2008-10-15 04:16:49 ameyer Exp $
+ * $Id: CdrServer.cpp,v 1.47 2008-12-06 20:34:33 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.46  2008/10/15 04:16:49  ameyer
+ * Minor fixes to the changes just introduced.
+ *
  * Revision 1.45  2008/10/15 02:38:31  ameyer
  * Added support for altering the directory for logging.
  *
@@ -177,12 +180,18 @@ const int   CDR_QUEUE_SIZE = 10;
 const int   MAX_DIR_SIZE = 256;
 const unsigned int MAX_REQUEST_LENGTH = 25000000;
 
+// Local types.
+struct ThreadArgs {
+    int  fd;                // file descriptor for socket connection
+    char clientAddress[65]; // IP address from which request was received
+};
+
 // Local functions.
 static void             cleanup();
 static void __cdecl     controlC(int);
 static int              readRequest(int, std::string&, const cdr::String&);
 static void             sendResponse(int, const cdr::String&);
-static void             processCommands(int, const std::string&,
+static void             processCommands(const ThreadArgs*, const std::string&,
                                         cdr::db::Connection&,
                                         const cdr::String&);
 static cdr::String      processCommand(cdr::Session&,
@@ -193,7 +202,7 @@ static cdr::String      getElapsedTime(DWORD);
 static void             sendErrorResponse(int, const cdr::String&,
                                           const cdr::String&);
 static void __cdecl     dispatcher(void*);
-static void             realDispatcher(void* arg);
+static void             realDispatcher(const ThreadArgs* args);
 static void __cdecl     sessionSweep(void*);
 static int              handleNextClient(int sock);
 static void             logTopLevelFailure(const cdr::String what,
@@ -201,7 +210,6 @@ static void             logTopLevelFailure(const cdr::String what,
 static bool             timeToShutdown = false;
 static bool             logCommands = true;
 static cdr::log::Log    log;
-
 
 /* This is a C++ function, but needs a C interface */
 static void excep_trans_func(unsigned int u, struct _EXCEPTION_POINTERS *pExp);
@@ -393,9 +401,16 @@ int handleNextClient(int sock)
         logTopLevelFailure(L"accept", (unsigned long)WSAGetLastError());
         return EXIT_FAILURE;
     }
+    ThreadArgs threadArgs;
+    memset(&threadArgs, 0, sizeof threadArgs);
+    threadArgs.fd = fd;
+    strncpy(threadArgs.clientAddress, inet_ntoa(client_addr.sin_addr),
+            sizeof(threadArgs.clientAddress) - 1);
+    std::cout << "client IP address: " << threadArgs.clientAddress
+              << std::endl;
 #ifndef SINGLE_THREAD_DEBUGGING
     int tries = 5;
-    while (_beginthread(dispatcher, 0, (void*)fd) == -1) {
+    while (_beginthread(dispatcher, 0, (void*)&threadArgs) == -1) {
         DWORD err = errno; // GetLastError();
         std::cerr << "_beginthread: " << err << '\n';
         if (tries-- <= 0) {
@@ -409,7 +424,7 @@ int handleNextClient(int sock)
     // Use this version (and turn off the invocation of the session cleanup
     // thread below) when you want to debug without dealing with multiple
     // threads.
-    realDispatcher((void*)fd);
+    realDispatcher(&threadArgs);
 #endif
     return EXIT_SUCCESS;
 }
@@ -436,7 +451,7 @@ static void __cdecl controlC(int s)
  * Implements thread processing to handle a new connection.  Capable
  * of handling multiple command sets for the connection.
  */
-void realDispatcher(void* arg) {
+void realDispatcher(const ThreadArgs* threadArgs) {
     cdr::db::Connection conn =
         cdr::db::DriverManager::getConnection(cdr::db::url,
                                               cdr::db::uid,
@@ -457,16 +472,16 @@ void realDispatcher(void* arg) {
     // Set new structured exception handler that throws cdr::Exception
     _set_se_translator (excep_trans_func);
 
-    int fd = (int)arg;
     std::string request;
     int nBytes;
     int response = 0;
+    int fd = threadArgs->fd;
     try {
         while ((nBytes = readRequest(fd, request, now)) > 0) {
 #ifndef _NDEBUG
             std::cout << "received request with " << nBytes << " bytes...\n";
 #endif
-            processCommands(fd, request, conn, now);
+            processCommands(threadArgs, request, conn, now);
         }
     }
     catch (const cdr::Exception e) {
@@ -479,15 +494,15 @@ void realDispatcher(void* arg) {
     // Thread is about to go, done with thread specific log
     cdr::log::pThreadLog->Write(L"Thread Stopping", threadId);
     delete cdr::log::pThreadLog;
-    closesocket(fd);
+    closesocket(threadArgs->fd);
 }
 
 /**
  * Do the real work in a separate function to force Microsoft to clean
  * up the stack.
  */
-void __cdecl dispatcher(void* arg) {
-    realDispatcher(arg);
+void __cdecl dispatcher(void* threadArgs) {
+    realDispatcher((const ThreadArgs*)threadArgs);
     _endthread();
 }
 
@@ -603,10 +618,11 @@ void logCommand(cdr::db::Connection& conn, const std::string& buf)
  * processed.  Wraps all the responses in a buffer, which is returned
  * to the client.
  */
-void processCommands(int fd, const std::string& buf,
+void processCommands(const ThreadArgs* threadArgs, const std::string& buf,
                      cdr::db::Connection& conn,
                      const cdr::String& when)
 {
+    int fd = threadArgs->fd;
     if (logCommands)
         logCommand(conn, buf);
     try {
@@ -646,7 +662,7 @@ void processCommands(int fd, const std::string& buf,
                     cdr::String sessionId = cdr::dom::getTextContent(n);
                     //std::wcerr << L"sessionId=" << sessionId << L"\n";
                     session.lookupSession(sessionId, conn);
-                    session.setLastActivity(conn);
+                    session.setLastActivity(conn, threadArgs->clientAddress);
                 }
                 else if (elementName == L"CdrCommand") {
                     // Process one command
