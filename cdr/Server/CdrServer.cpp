@@ -1,9 +1,12 @@
 /*
- * $Id: CdrServer.cpp,v 1.47 2008-12-06 20:34:33 bkline Exp $
+ * $Id: CdrServer.cpp,v 1.48 2008-12-07 21:14:22 bkline Exp $
  *
  * Server for ICIC Central Database Repository (CDR).
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.47  2008/12/06 20:34:33  bkline
+ * Added code to capture the client IP address for CDR sessions.
+ *
  * Revision 1.46  2008/10/15 04:16:49  ameyer
  * Minor fixes to the changes just introduced.
  *
@@ -401,21 +404,22 @@ int handleNextClient(int sock)
         logTopLevelFailure(L"accept", (unsigned long)WSAGetLastError());
         return EXIT_FAILURE;
     }
-    ThreadArgs threadArgs;
-    memset(&threadArgs, 0, sizeof threadArgs);
-    threadArgs.fd = fd;
-    strncpy(threadArgs.clientAddress, inet_ntoa(client_addr.sin_addr),
-            sizeof(threadArgs.clientAddress) - 1);
-    std::cout << "client IP address: " << threadArgs.clientAddress
+    ThreadArgs* threadArgs = new ThreadArgs();
+    memset(threadArgs, 0, sizeof(ThreadArgs));
+    threadArgs->fd = fd;
+    strncpy(threadArgs->clientAddress, inet_ntoa(client_addr.sin_addr),
+            sizeof(threadArgs->clientAddress) - 1);
+    std::cout << "client IP address: " << threadArgs->clientAddress
               << std::endl;
 #ifndef SINGLE_THREAD_DEBUGGING
     int tries = 5;
-    while (_beginthread(dispatcher, 0, (void*)&threadArgs) == -1) {
+    while (_beginthread(dispatcher, 0, (void*)threadArgs) == -1) {
         DWORD err = errno; // GetLastError();
         std::cerr << "_beginthread: " << err << '\n';
         if (tries-- <= 0) {
             logTopLevelFailure(L"_beginthread", err);
             closesocket(fd);
+            delete threadArgs;
             return EXIT_FAILURE;
         }
         Sleep(1000);
@@ -424,7 +428,7 @@ int handleNextClient(int sock)
     // Use this version (and turn off the invocation of the session cleanup
     // thread below) when you want to debug without dealing with multiple
     // threads.
-    realDispatcher(&threadArgs);
+    realDispatcher(threadArgs);
 #endif
     return EXIT_SUCCESS;
 }
@@ -495,6 +499,7 @@ void realDispatcher(const ThreadArgs* threadArgs) {
     cdr::log::pThreadLog->Write(L"Thread Stopping", threadId);
     delete cdr::log::pThreadLog;
     closesocket(threadArgs->fd);
+    delete threadArgs;
 }
 
 /**
