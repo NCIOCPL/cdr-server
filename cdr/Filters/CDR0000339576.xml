@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000339576.xml,v 1.27 2008-11-25 15:46:22 venglisc Exp $
+$Id: CDR0000339576.xml,v 1.28 2008-12-10 22:15:48 venglisc Exp $
 
 Filter handling all In-Line Markup elements of Summary Docs
 Written by Volker Englisch, 2004-07-16
@@ -207,7 +207,7 @@ $Log: not supported by cvs2svn $
 
  <!-- 
  ===================================================================
- Display a Glossary Link
+ Decide which version of the GlossaryTermRef/LOERef to display
  =================================================================== -->
  <xsl:template                   match = "GlossaryTermRef | LOERef">
   <xsl:choose>
@@ -267,16 +267,20 @@ $Log: not supported by cvs2svn $
    <xsl:when                      test = "Deletion">
     <a>
      <xsl:attribute               name = "href">
-      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+      <xsl:choose>
+       <xsl:when                  test = "name() = 'LOERef'">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Session=guest')"/>
-<!--
-      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
-                                                 '&amp;Filter=name:Glossary',
-                                                 '+Term+Display+for+Patient',
-                                                 '+Summaries')"/>
--->
+                                                 '&amp;Filter=set:QC+',
+                                                 'GlossaryTermName+',
+                                                 'with+Concept+Set')"/>
+       </xsl:otherwise>
+      </xsl:choose>
      </xsl:attribute>
      <xsl:attribute               name = "target">
       <xsl:text>_blank</xsl:text>
@@ -289,16 +293,20 @@ $Log: not supported by cvs2svn $
    <xsl:otherwise>
     <a>
      <xsl:attribute               name = "href">
-      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+      <xsl:choose>
+       <xsl:when                  test = "name() = 'LOERef'">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Session=guest')"/>
-<!--
-      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
-                                                 '&amp;Filter=name:Glossary',
-                                                 '+Term+Display+for+Patient',
-                                                 '+Summaries')"/>
--->
+                                                 '&amp;Filter=set:QC+',
+                                                 'GlossaryTermName+',
+                                                 'with+Concept+Set')"/>
+       </xsl:otherwise>
+      </xsl:choose>
      </xsl:attribute>
      <xsl:attribute               name = "target">
       <xsl:text>_blank</xsl:text>
@@ -325,16 +333,20 @@ $Log: not supported by cvs2svn $
     <xsl:if                       test = "Deletion/@RevisionLevel = 'proposed'">
       <a>
        <xsl:attribute             name = "href">
-      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+        <xsl:choose>
+         <xsl:when                test = "name() = 'LOERef'">
+          <xsl:value-of         select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Session=guest')"/>
-<!--
-        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:value-of         select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
-                                                 '&amp;Filter=name:Glossary',
-                                                 '+Term+Display+for+Patient',
-                                                 '+Summaries')"/>
--->
+                                                 '&amp;Filter=set:QC+',
+                                                 'GlossaryTermName+',
+                                                 'with+Concept+Set')"/>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:attribute>
        <span class="deleteGlossaryTerm">
         <xsl:value-of           select = "."/>
@@ -345,16 +357,20 @@ $Log: not supported by cvs2svn $
    <xsl:otherwise>
     <a>
      <xsl:attribute               name = "href">
-      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+      <xsl:choose>
+       <xsl:when                  test = "name() = 'LOERef'">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Session=guest')"/>
-<!--
-      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
-                                                 '&amp;Filter=name:Glossary',
-                                                 '+Term+Display+for+Patient',
-                                                 '+Summaries')"/>
--->
+                                                 '&amp;Filter=set:QC+',
+                                                 'GlossaryTermName+',
+                                                 'with+Concept+Set')"/>
+       </xsl:otherwise>
+      </xsl:choose>
      </xsl:attribute>
      <xsl:value-of              select = "."/>
     </a>
@@ -468,6 +484,20 @@ $Log: not supported by cvs2svn $
      <xsl:when                    test = "Deletion/@Source = 'advisory-board'">
       <a>
        <xsl:attribute             name = "href">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Session=guest')"/>
@@ -567,6 +597,8 @@ $Log: not supported by cvs2svn $
     </xsl:choose> 
    </xsl:attribute>
 
+
+
    <xsl:for-each                select = "ListItem">
     <!-- Don't display empty list items -->
     <xsl:if                       test = "not(. = '')">
@@ -593,6 +625,7 @@ $Log: not supported by cvs2svn $
  <!-- 
  =====================================================================
  Display a Superscript 
+
  ===================================================================== -->
  <xsl:template                   match = "Superscript">
   <sup>
@@ -876,7 +909,7 @@ $Log: not supported by cvs2svn $
 
     <!--
     Display the "Note: " string properly marked up
-    ========================================================================= -->
+    ======================================================================== -->
     <xsl:otherwise>
      <xsl:choose>
       <xsl:when                   test = "Insertion/@Source = 'advisory-board'
@@ -905,6 +938,7 @@ $Log: not supported by cvs2svn $
         <xsl:when                 test = "Deletion/@RevisionLevel = 'approved'
                                           or
                                           Deletion/@RevisionLevel = 'publish'">
+
          <xsl:call-template       name = "setCSS">
           <xsl:with-param         name = "myCSS"
                                 select = "'deleteapproved_ad'"/>
@@ -1094,6 +1128,7 @@ $Log: not supported by cvs2svn $
          <xsl:text> [</xsl:text>
         </span>
        </xsl:when>
+
        <xsl:when                  test = "Deletion/@RevisionLevel = 'proposed'">
         <span class="deleteproposed_ad">
          <xsl:text> [</xsl:text>
@@ -1144,7 +1179,7 @@ $Log: not supported by cvs2svn $
 
     <!--
     Display the Spanish "Nota: " string properly marked up
-    ========================================================================= -->
+    ======================================================================== -->
     <xsl:choose>
      <xsl:when                    test = "//SummaryLanguage ='Spanish'"> 
       <xsl:choose>
@@ -1189,6 +1224,7 @@ $Log: not supported by cvs2svn $
           </xsl:if>
          </xsl:otherwise>
         </xsl:choose>
+
        </xsl:when>
        <xsl:otherwise>
         <xsl:choose>
@@ -1234,7 +1270,7 @@ $Log: not supported by cvs2svn $
 
      <!--
      Display the "Note: " string properly marked up
-     ========================================================================= -->
+     ======================================================================= -->
      <xsl:otherwise>
       <xsl:choose>
        <xsl:when                  test = "Insertion/@Source = 'advisory-board'
@@ -1277,6 +1313,7 @@ $Log: not supported by cvs2svn $
           </xsl:if>
          </xsl:otherwise>
         </xsl:choose>
+
        </xsl:when>
        <xsl:otherwise>
         <xsl:choose>
@@ -1726,6 +1763,7 @@ $Log: not supported by cvs2svn $
     <xsl:choose>
      <xsl:when                    test = "@Style = 'UAlpha'">        
       <xsl:text>A</xsl:text>
+
      </xsl:when>
      <xsl:when                    test = "@Style = 'LAlpha'">
       <xsl:text>little-alpha</xsl:text>
@@ -1846,7 +1884,9 @@ $Log: not supported by cvs2svn $
   <xsl:if                         test = "not(. = '')">
    <xsl:choose>
     <xsl:when                     test = "position() = last()">
+
      <li>
+
       <xsl:apply-templates/>
      </li>
     </xsl:when>
@@ -1886,6 +1926,14 @@ $Log: not supported by cvs2svn $
  place holder for the image
  ====================================================================== -->
  <xsl:template                   match = "MediaID">
+  <!-- xsl:param                      name = "DisplayImages"
+                                select = "''"/ -->
+  <xsl:choose>
+   <xsl:when                      test = "$DisplayImages = 'Y'">
+    <xsl:apply-templates        select = "."
+                                  mode = "summary"/>
+   </xsl:when>
+   <xsl:otherwise>
   <center>
    <table width="100%" border="0" 
           style="background-color: #CCFFFF" colspacing="3">
@@ -1904,6 +1952,56 @@ $Log: not supported by cvs2svn $
       <xsl:value-of             select = "Media/
                                           MediaTitle"/>
       <xsl:text> </xsl:text>
+      <br/><br/>
+     </td>
+    </tr>
+   </table>
+  </center>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ======================================================================
+ Template to replace the MediaID element with a little table as a 
+ place holder for the image
+ ====================================================================== -->
+ <xsl:template                   match = "MediaID"
+                                  mode = "summary">
+  <center>
+   <table width="100%" border="0" 
+          style="background-color: #CCCCFF" colspacing="3">
+    <xsl:call-template            name = "addIdLinkTarget">
+     <xsl:with-param              name = "id"
+                                select = "../@cdr:id"/>
+    </xsl:call-template>
+    <tr>
+     <td align="right" valign="top">
+      <br/>
+      <b>
+       <xsl:choose>
+        <xsl:when                 test = "Media/MediaTitle">
+         <xsl:value-of            select = "Media/MediaTitle"/>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:value-of            select = "."/>
+        </xsl:otherwise>
+       </xsl:choose>
+      </b>
+     </td>
+     <td align="left">
+      <br/>
+      <xsl:element                name = "img">
+       <xsl:attribute             name = "src">
+        <xsl:text>http://mahler.nci.nih.gov/cgi-bin/cdr/</xsl:text>
+        <xsl:text>GetCdrImage.py?</xsl:text>
+        <xsl:text>id=</xsl:text>
+
+        <xsl:value-of           select = "@cdr:ref"/>
+        <xsl:text>.jpg</xsl:text>
+       </xsl:attribute>
+      </xsl:element>
       <br/><br/>
      </td>
     </tr>
@@ -1994,6 +2092,7 @@ $Log: not supported by cvs2svn $
          <span class="insertapproved_ad">
           <xsl:text>[</xsl:text>
          </span>
+
         </xsl:otherwise>
        </xsl:choose>
       </xsl:when>
@@ -2586,6 +2685,7 @@ $Log: not supported by cvs2svn $
            <xsl:when               test = "@RevisionLevel = 'proposed'">
             <span class="deleteproposed_ad">
              <xsl:text>, </xsl:text>
+
             </span>
            </xsl:when>
            <xsl:otherwise>
