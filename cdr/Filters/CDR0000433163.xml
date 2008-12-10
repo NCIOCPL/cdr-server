@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
  ================================================================
- $Id: CDR0000433163.xml,v 1.6 2006-09-07 20:28:09 venglisc Exp $
+ $Id: CDR0000433163.xml,v 1.7 2008-12-10 22:10:17 venglisc Exp $
 
  Filter to create a Media Content QC Report 
  Written by Volker Englisch
@@ -22,6 +22,7 @@
  <xsl:output                    method = "html"/>
 
  <xsl:include  href = "cdr:name:Module: Attribute Sets"/>
+ <xsl:include  href = "cdr:name:Module: QC Filter Templates"/>
 
  <xsl:variable                    name = "docID"
                                 select = "document('cdrutil:/docid')"/>
@@ -977,7 +978,12 @@
     <xsl:value-of               select = "Summary/SummaryTitle"/>
    </xsl:when>
    <xsl:otherwise>
-    <xsl:value-of               select = "."/>
+     <xsl:value-of              select = "GlossaryTermName/
+                                          TermName/
+                                          TermNameString"/>
+     <xsl:for-each              select = "GlossaryTermName">
+      <xsl:call-template          name = "createGlossaryQcLink"/>
+     </xsl:for-each>
    </xsl:otherwise>
   </xsl:choose>
 
