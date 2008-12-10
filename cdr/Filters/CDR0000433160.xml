@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Denormalization Filter (1/1): Media</DocTitle>
-<DocComment>CVS-V1.1: Initial Media Denorm Filter (Bug 1653)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.3: Corrected MediaID Denormalization (Bug 1985)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!-- 
@@ -88,6 +88,28 @@ Filter to Denormalize Terminology XML
     </xsl:for-each>
     <xsl:copy-of               select = "$mediaDoc/Media/MediaTitle"/>
    </Media>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ Template to denormalize the Glossary elements
+ ================================================================= -->
+ <xsl:template                   match = "Glossary">
+  <xsl:variable                   name = "glossID" 
+                                select = "@cdr:ref"/>
+  <xsl:variable                   name = "glossDoc" 
+                                select = "document(concat('cdr:',$glossID,
+                                                           '/lastp'))"/>
+  <xsl:element                    name = "{name()}">
+   <GlossaryTermName>
+   <xsl:attribute                 name = "cdr:ref">
+    <xsl:value-of               select = "@cdr:ref"/>
+   </xsl:attribute>
+
+   <xsl:copy-of                 select = "$glossDoc/GlossaryTermName/*"/>
+   </GlossaryTermName>
   </xsl:element>
  </xsl:template>
 
