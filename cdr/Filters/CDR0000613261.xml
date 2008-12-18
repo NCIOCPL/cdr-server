@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000613261.xml,v 1.7 2008-11-17 23:16:28 venglisc Exp $
+$Id: CDR0000613261.xml,v 1.8 2008-12-18 15:59:14 venglisc Exp $
 
 Filter to display Glossary Term Concept QC Reports
 Volker Englisch         2007-09-20
@@ -144,6 +144,8 @@ $Log: not supported by cvs2svn $
   </xsl:if>
 
   <xsl:apply-templates          select = "TranslatedTermDefinition"/>
+
+  <xsl:apply-templates          select = "ProcessingStatuses"/>
 
   <table        xsl:use-attribute-sets = "table">
    <tr>
@@ -518,6 +520,51 @@ $Log: not supported by cvs2svn $
 
  <!--
  ==================================================================
+ Template to display the Processing Statuses Block
+ ================================================================== -->
+ <xsl:template                   match = "ProcessingStatuses">
+  <span class="big">Processing Statuses</span>
+  <br/>
+
+  <xsl:apply-templates          select = "ProcessingStatus"/>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template to display the Processing Status Block
+ ================================================================== -->
+ <xsl:template                   match = "ProcessingStatus">
+  <span class="bold">Processing Status</span>
+
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:for-each                select = "ProcessingStatusValue">
+    <xsl:call-template            name = "rowWithAttributes">
+     <xsl:with-param              name = "label"
+                                select = "'Status'"/>
+     <xsl:with-param              name = "indent"
+                                select = "'Y'"/>
+    </xsl:call-template>
+   </xsl:for-each>
+
+   <xsl:if                        test = "Comment">
+    <xsl:apply-templates        select = "Comment"
+                                  mode = "withAttribute">
+     <xsl:with-param              name = "label"
+                                select = "'Comment'"/>
+     <xsl:with-param              name = "indent"
+                                select = "'Y'"/>
+    </xsl:apply-templates>
+   </xsl:if>
+
+
+  </table>           
+  <br/>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
  Template to display the RelatedInformation elements
  ================================================================== -->
  <xsl:template                   match = "RelatedInformation">
@@ -576,7 +623,11 @@ $Log: not supported by cvs2svn $
                                   mode = "withAttribute">
   <xsl:param                      name = "label"
                                 select = "'Comment'"/>
+  <xsl:param                      name = "indent"
+                                select = "'N'"/>
 
+ <xsl:choose>
+  <xsl:when                       test = "$indent = 'N'">
   <tr>
    <td          xsl:use-attribute-sets = "cell1of2">
     <b>
@@ -607,6 +658,124 @@ $Log: not supported by cvs2svn $
     <p/>
    </td>
   </tr>
+  </xsl:when>
+  <xsl:otherwise>
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1iof2"> </td>
+   <td          xsl:use-attribute-sets = "cell2iof2">
+    <b>
+     <xsl:value-of              select = "$label"/>
+    </b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <span class="attribute">
+     <xsl:if                      test = "@audience">
+      <xsl:text>audience=</xsl:text>
+      <xsl:value-of             select = "@audience"/>
+     </xsl:if>
+     <xsl:if                      test = "@date">
+      <xsl:text> date=</xsl:text>
+      <xsl:value-of             select = "@date"/>
+     </xsl:if>
+     <xsl:if                      test = "@user">
+      <xsl:text> user=</xsl:text>
+      <xsl:value-of             select = "@user"/>
+     </xsl:if>
+    </span>
+   </td>
+  </tr>
+  <tr>
+   <td><xsl:text> </xsl:text></td>
+   <td><xsl:text> </xsl:text></td>
+   <td>
+    <xsl:value-of              select = "."/>
+    <p/>
+   </td>
+  </tr>
+  </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ =======================================================================
+ Template for Admin Information Comments
+ ======================================================================= -->
+ <xsl:template                    name = "rowWithAttributes"
+                                  mode = "withAttribute">
+  <xsl:param                      name = "label"
+                                select = "'Status'"/>
+  <xsl:param                      name = "indent"
+                                select = "'N'"/>
+
+ <xsl:choose>
+  <xsl:when                       test = "$indent = 'N'">
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>
+     <xsl:value-of              select = "$label"/>
+    </b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <span class="attribute">
+     <xsl:if                      test = "@audience">
+      <xsl:text>audience=</xsl:text>
+      <xsl:value-of             select = "@audience"/>
+     </xsl:if>
+     <xsl:if                      test = "@date">
+      <xsl:text> date=</xsl:text>
+      <xsl:value-of             select = "@date"/>
+     </xsl:if>
+     <xsl:if                      test = "@user">
+      <xsl:text> user=</xsl:text>
+      <xsl:value-of             select = "@user"/>
+     </xsl:if>
+    </span>
+   </td>
+  </tr>
+  <tr>
+   <td><xsl:text> </xsl:text></td>
+   <td>
+    <xsl:value-of              select = "."/>
+    <p/>
+   </td>
+  </tr>
+  </xsl:when>
+  <xsl:otherwise>
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1iof2"> </td>
+   <td          xsl:use-attribute-sets = "cell2iof2">
+    <b>
+     <xsl:value-of              select = "$label"/>
+    </b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <span class="attribute">
+     <xsl:if                      test = "@audience">
+      <xsl:text>audience=</xsl:text>
+      <xsl:value-of             select = "@audience"/>
+     </xsl:if>
+     <xsl:if                      test = "@date">
+      <xsl:text> date=</xsl:text>
+      <xsl:value-of             select = "@date"/>
+     </xsl:if>
+     <xsl:if                      test = "@user">
+      <xsl:text> user=</xsl:text>
+      <xsl:value-of             select = "@user"/>
+     </xsl:if>
+    </span>
+   </td>
+  </tr>
+  <tr>
+   <td><xsl:text> </xsl:text></td>
+   <td><xsl:text> </xsl:text></td>
+   <td>
+    <xsl:value-of              select = "."/>
+    <p/>
+   </td>
+  </tr>
+  </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
