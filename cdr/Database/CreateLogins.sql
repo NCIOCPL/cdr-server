@@ -1,9 +1,12 @@
 /*
- * $Id: CreateLogins.sql,v 1.33 2008-10-28 14:27:10 bkline Exp $
+ * $Id: CreateLogins.sql,v 1.34 2008-12-19 17:05:08 bkline Exp $
  *
  * Run this script as database superuser to create the cdr user logins.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2008/10/28 14:27:10  bkline
+ * Added sp_revokedbaccess calls.
+ *
  * Revision 1.32  2008/09/23 15:45:14  bkline
  * Modifications needed for the new cdr_archived_versions database.
  *
@@ -533,4 +536,8 @@ GO
 GRANT SELECT ON doc_save_action TO CdrPublishing
 GO
 GRANT SELECT ON doc_last_save TO CdrPublishing
+GO
+GRANT SELECT ON client_log TO CdrGuest
+GO
+GRANT SELECT ON client_log TO CdrPublishing
 GO

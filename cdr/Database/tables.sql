@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.129 2008-10-21 21:00:50 ameyer Exp $
+ * $Id: tables.sql,v 1.130 2008-12-19 17:05:08 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.129  2008/10/21 21:00:50  ameyer
+ * Corrected erroneous comment describing checkout.id.
+ *
  * Revision 1.128  2008/09/25 14:55:51  bkline
  * Definition of doc_version view moved to separate script, since it
  * depends on a separate database.
@@ -2444,6 +2447,23 @@ submitted_by INTEGER       NOT NULL REFERENCES usr,
       status CHAR          NOT NULL DEFAULT 'U',
     imported DATETIME          NULL,
       errors NTEXT             NULL)
+GO
+
+/*
+ * Records events which occurred in a CDR client session.  Used, for
+ * example, to record when users save documents locally instead of in
+ * the CDR.
+ *
+ *     event_id  primary key for table
+ *   event_time  when was the event recorded
+ *   event_desc  text description of the event
+ *      session  foreign key reference into the session table
+ */
+CREATE TABLE client_log
+   (event_id INTEGER       IDENTITY PRIMARY KEY,
+  event_time DATETIME      NOT NULL,
+  event_desc NVARCHAR(255) NOT NULL,
+     session INTEGER           NULL REFERENCES session)
 GO
 
 /*
