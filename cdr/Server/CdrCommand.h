@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.34 2004-08-20 19:58:55 bkline Exp $
+ * $Id: CdrCommand.h,v 1.35 2008-12-19 17:03:46 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2004/08/20 19:58:55  bkline
+ * Added new CdrSetDocStatus command.
+ *
  * Revision 1.33  2004/08/11 17:48:15  bkline
  * Adding new command CdrAddExternalMapping.
  *
@@ -1263,6 +1266,21 @@ namespace cdr {
     extern String setDocStatus(Session&         session,
                                const dom::Node& node,
                                db::Connection&  conn);
+
+    /**
+     * Records an event which occurred in a CDR client process.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String logClientEvent(Session&         session,
+                                 const dom::Node& node,
+                                 db::Connection&  conn);
 
     /**
      * Shuts down the CDR Server.

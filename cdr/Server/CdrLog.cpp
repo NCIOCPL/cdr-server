@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLog.cpp,v 1.13 2008-10-15 02:36:19 ameyer Exp $
+ * $Id: CdrLog.cpp,v 1.14 2008-12-19 17:03:46 bkline Exp $
  *
  * Implementation of writing info to the log table in the database.
  * If that can't be done, takes an alternative action to write to file.
@@ -7,6 +7,9 @@
  *                                          Alan Meyer  June, 2000
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2008/10/15 02:36:19  ameyer
+ * Changed handling of default logging directory and file.
+ *
  * Revision 1.12  2006/10/04 03:45:20  ameyer
  * Revised mutex security attribute management.
  *
@@ -58,6 +61,7 @@
 #include <wchar.h>
 #include <time.h>
 #include "CdrString.h"
+#include "CdrCommand.h"
 #include "CdrDbConnection.h"
 #include "CdrDbPreparedStatement.h"
 #include "CdrDbStatement.h"
@@ -350,4 +354,56 @@ void cdr::log::WriteFile (
         ReleaseMutex (hMutex);
     if (hMutex)
         CloseHandle(hMutex);
+}
+
+/**
+ * Records an event which occurred in a CDR client process.
+ *
+ *  @param      session     contains information about the current user.
+ *  @param      node        contains the XML for the command.
+ *  @param      conn        reference to the connection object for the
+ *                          CDR database.
+ *  @return                 String object containing the XML for the
+ *                          command response.
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::logClientEvent(Session&         session,
+                                const dom::Node& node,
+                                db::Connection&  conn)
+{
+    String eventDescription(true);
+    Int    sessionId(true);
+
+    // Extract the parameters.
+    dom::Node child = node.getFirstChild();
+    while (child != 0) {
+        String name = child.getNodeName();
+        if (name == L"EventDescription")
+            eventDescription = dom::getTextContent(child);
+        child = child.getNextSibling();
+    }
+    if (eventDescription.isNull())
+        throw Exception(L"Missing required event description");
+
+    // Get the user ID, if available.
+    int sid = session.getId();
+    if (sid)
+        sessionId = sid;
+
+    // Record the event.
+    db::PreparedStatement s = conn.prepareStatement(
+            "INSERT INTO client_log (event_time, event_desc, session) "
+            "     VALUES (GETDATE(), ?, ?)");
+    s.setString(1, eventDescription);
+    s.setInt   (2, sessionId);
+    s.executeUpdate();
+    s.close();
+    conn.commit();
+    int eventId = conn.getLastIdent();
+
+    // Report success.
+    std::wostringstream os;
+    os << L"<CdrLogClientEventResp><EventId>" << eventId
+       << L"</EventId></CdrLogClientEventResp>";
+    return os.str();
 }
