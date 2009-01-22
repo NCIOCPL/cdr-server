@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.35 2008-12-19 17:03:46 bkline Exp $
+ * $Id: CdrCommand.h,v 1.36 2009-01-22 20:49:57 bkline Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2008/12/19 17:03:46  bkline
+ * Added CdrLogClientEvent command.
+ *
  * Revision 1.34  2004/08/20 19:58:55  bkline
  * Added new CdrSetDocStatus command.
  *
@@ -1223,7 +1226,7 @@ namespace cdr {
 
     /**
      * Returns a document identifying which glossary terms should be used
-     * for marking up phrases found in a CDR document.
+     * for marking up English phrases found in a CDR document.
      *
      *  @param      session     contains information about the current user.
      *  @param      node        contains the XML for the command.
@@ -1236,6 +1239,22 @@ namespace cdr {
     extern String getGlossaryMap(Session&         session,
                                  const dom::Node& node,
                                  db::Connection&  conn);
+
+    /**
+     * Returns a document identifying which glossary terms should be used
+     * for marking up Spanish phrases found in a CDR document.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String getSpanishGlossaryMap(Session&         session,
+                                        const dom::Node& node,
+                                        db::Connection&  conn);
 
     /**
      * Inserts a new row into the external mapping table.
