@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ================================================================
-     $Id: CDR0000335424.xml,v 1.6 2008-09-17 20:52:49 venglisc Exp $
+     $Id: CDR0000335424.xml,v 1.7 2009-01-23 20:55:26 venglisc Exp $
 
      Filter to denormalize summary data.
         Written by Volker Englisch, 2003-08-12
@@ -161,13 +161,14 @@
  We need this denormalization in order to correctly create the 
  link in the QC report to the listed summaries.
  ================================================================= -->
- <xsl:template                    match = "SummaryRef">
+ <xsl:template                    match = "SummaryRef |
+                                           SummaryFragmentRef">
   <xsl:variable                    name = "SummaryRefID" 
                                  select = "@cdr:href"/>
   <xsl:variable                    name = "SummaryRefInfo" 
                                  select = "document(concat('cdr:',$SummaryRefID,
                                                            '/lastp'))"/>
-  <xsl:element                     name = "SummaryRef">
+  <xsl:element                     name = "{name()}">
    <xsl:attribute                  name = "cdr:href">
     <xsl:value-of                select = "@cdr:href"/>
    </xsl:attribute>
@@ -187,6 +188,7 @@
                                              /SummaryMetaData
                                              /SummaryAudience"/>
     </LinkedSummaryAudience>
+    <xsl:copy-of              select = "$SummaryRefInfo/Summary"/>
     <xsl:if                        test = "$SummaryRefInfo/Summary
                                              //KeyPoint">
      <LinkedKeyPoints>
