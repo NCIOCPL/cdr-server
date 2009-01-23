@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000339576.xml,v 1.29 2008-12-18 20:40:47 venglisc Exp $
+$Id: CDR0000339576.xml,v 1.30 2009-01-23 20:53:36 venglisc Exp $
 
 Filter handling all In-Line Markup elements of Summary Docs
 Written by Volker Englisch, 2004-07-16
@@ -81,31 +81,56 @@ $Log: not supported by cvs2svn $
  <xsl:template                   match = "SummaryFragmentRef |
                                           LOEFragmentRef">
   <a>
-   <xsl:attribute                 name = "class">
+   <!-- xsl:attribute                 name = "class">
     <xsl:text>idLink</xsl:text>
-   </xsl:attribute>
+   </xsl:attribute -->
    <xsl:attribute                 name = "href">
+    <!--
+    For reformatted patient summaries run a different QC report
+    =========================================================== -->
     <xsl:choose>
-     <xsl:when                    test = "$thisDocID = 
-                                            substring-before(@cdr:href, '#')">
-      <xsl:value-of             select = "concat('#', 
+     <xsl:when                    test = "Summary
+                                            /LinkedSummaryAudience = 'Patients'
+                                          and
+                                          (Summary
+                                            /LinkedKeyPoints
+                                           or
+                                           Summary
+                                            /LinkedSummaryType = 
+                                           concat('Complementary and ',
+                                                  'alternative medicine'))">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=',
+                                             substring-before(@cdr:href, '#'),
+                                                 '&amp;ReportType=pat',
+                                                 '&amp;Session=guest', 
+                                                 '#',
                                             substring-after(@cdr:href, '#'))"/>
+
      </xsl:when>
      <xsl:otherwise>
-    <xsl:value-of               select = "concat('/cgi-bin/cdr/QcReport.py?',
-                                                 'DocId=', 
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=',
                                              substring-before(@cdr:href, '#'),
-                                                 '&amp;Session=guest',
+                                                 '&amp;Session=guest', 
                                                  '#',
-                                             substring-after(@cdr:href, '#'))"/>      
+                                            substring-after(@cdr:href, '#'))"/>
+
      </xsl:otherwise>
     </xsl:choose>
    </xsl:attribute>
-   <xsl:attribute                 name = "title">
-    <xsl:value-of               select = "name()"/>
-   </xsl:attribute>
 
-   <xsl:apply-templates/>
+   <xsl:choose>
+    <xsl:when                         test = "name() = 'SummaryFragmentRef'
+                                              and
+                                              SummaryRefText">
+     <xsl:apply-templates             select = "SummaryRefText"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates/>
+    </xsl:otherwise>
+   </xsl:choose>
+
   </a>
  </xsl:template>
 
@@ -465,6 +490,7 @@ $Log: not supported by cvs2svn $
        </xsl:attribute>
        <xsl:value-of            select = "."/>
       </a>
+
      </xsl:otherwise>
     </xsl:choose>
    </xsl:otherwise>
@@ -484,6 +510,7 @@ $Log: not supported by cvs2svn $
      <xsl:when                    test = "Deletion/@Source = 'advisory-board'">
       <a>
        <xsl:attribute             name = "href">
+
 
 
 
@@ -1108,6 +1135,7 @@ $Log: not supported by cvs2svn $
 
  <!-- 
  =====================================================================
+
  Display a note with markup (Bold/Underline)   
  ===================================================================== -->
  <xsl:template                   match = "Note" 
@@ -2086,6 +2114,7 @@ $Log: not supported by cvs2svn $
   ================================================================= -->
   <xsl:if                         test = "name(../node()[$firstRef])
                                             != 'Citation'">
+
    <xsl:choose>
     <xsl:when                     test = "@InsertionOrDeletion = 'Insertion'">
      <xsl:choose>
@@ -2250,6 +2279,7 @@ $Log: not supported by cvs2svn $
         <span class="insertproposed">
          <xsl:call-template        name = "addCitationLink">
           <xsl:with-param          name = "sectionID"
+
                                  select = "$sectionID"/>
          </xsl:call-template>
         </span>
@@ -2374,6 +2404,7 @@ $Log: not supported by cvs2svn $
                                             != 'Citation'">
     <xsl:choose>
      <xsl:when                     test = "@InsertionOrDeletion = 'Insertion'">
+
       <xsl:choose>
        <xsl:when                   test = "@Source = 'advisory-board'">
         <xsl:choose>
@@ -2491,6 +2522,7 @@ $Log: not supported by cvs2svn $
          </span>
         </xsl:when>
         <xsl:otherwise>
+
          <span class="insertapproved_ad">
           <xsl:text>[</xsl:text>
          </span>
