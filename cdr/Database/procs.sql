@@ -1,9 +1,12 @@
 /*
- * $Id: procs.sql,v 1.20 2007-11-05 15:18:49 bkline Exp $
+ * $Id: procs.sql,v 1.21 2009-01-27 16:58:36 bkline Exp $
  *
  * Stored procedures for CDR.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2007/11/05 15:18:49  bkline
+ * Added trigger to prevent the guest account's sessin from being logged out.
+ *
  * Revision 1.19  2007/10/30 19:36:25  bkline
  * Added triggers to prevent unwanted deletion of CDR documents.
  *
@@ -882,7 +885,7 @@ GO
  * We found out the hard way that this is the only way to keep programmers
  * from manipulating the SQL tables for CDR documents directly.
  */
-CREATE TRIGGER NoDelVersion ON doc_version
+CREATE TRIGGER NoDelVersion ON all_doc_versions
 FOR DELETE
 AS
     RAISERROR ('CDR Versions are permanent.', 16, 1)
@@ -890,7 +893,7 @@ AS
 GO
 
 /*
- * Same principle as for the doc_version table.
+ * Same principle as for the all_doc_versions table.
  */
 CREATE TRIGGER CdrDelDoc ON all_docs
 FOR DELETE
