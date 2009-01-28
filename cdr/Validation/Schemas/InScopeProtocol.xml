@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-      $Id: InScopeProtocol.xml,v 1.94 2009-01-22 19:32:48 ameyer Exp $
+      $Id: InScopeProtocol.xml,v 1.95 2009-01-28 14:44:22 bkline Exp $
 
       $Log: not supported by cvs2svn $
+      Revision 1.94  2009/01/22 19:32:48  ameyer
+      Made ProtocolDetail singly occurring.  It always should have been.
+
       Revision 1.93  2008/11/04 19:33:09  bkline
       Added custom rule to make sure that "Actual" start and completion dates
       are not in the future.
@@ -434,6 +437,21 @@
                                             document(concat("cdrutil:/date/",
                                                             "%25Y%25m%25d")))'
      >Actual start date cannot be in the future</assert>
+     <assert         test            = 'not(../CurrentProtocolStatus =
+                                        "Active") or
+                                        @DateType = "Actual"'
+     >Status is 'Active' so start date type must be 'Actual'</assert>
+    </rule>
+   </pattern>
+   <pattern>
+    <rule            context         = 'FDAINDInfo'>
+     <assert         test            =
+                  '../RegulatoryInformation/FDARegulated = "Yes" or
+                   ../RegulatoryInformation/FDARegulated = "No" or
+                   ../ProtocolAdminInfo/CurrentProtocolStatus = "Closed" or
+                   ../ProtocolAdminInfo/CurrentProtocolStatus = "Withdrawn" or
+                   ../ProtocolAdminInfo/CurrentProtocolStatus = "Completed"'
+     >RegulatoryInformation is required when FDAINDInfo is present</assert>
     </rule>
    </pattern>
   </appInfo>
