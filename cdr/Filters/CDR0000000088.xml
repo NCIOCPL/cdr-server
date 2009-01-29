@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml version="1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000088.xml,v 1.21 2008-10-09 14:33:55 venglisc Exp $
+$Id: CDR0000000088.xml,v 1.22 2009-01-29 17:45:40 venglisc Exp $
 
 Filter to create a Terminology Content QC Report
    Written      10/18/2001  C.Burg   
@@ -79,7 +79,9 @@ $Log: not supported by cvs2svn $
    </font>
    <font size='3'>
     <center>
-     <xsl:value-of              select = "document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M% 25p')"/>
+     <xsl:value-of              select = "document(concat('cdrutil:/date/%25B',
+                                                          ' %25#d, %25Y %25#I',
+                                                          ':%25M% 25p'))"/>
     </center>
    </font>
   </b>
@@ -100,29 +102,22 @@ $Log: not supported by cvs2svn $
 
   <!-- 
   ===================================================================
-  Display preferred name of term 
+  Display preferred name of term and the optionally following comment
   =================================================================== -->
-   <table       xsl:use-attribute-sets = "table">
-    <tr>
-     <td        xsl:use-attribute-sets = "cell1of2">
-      <b>
-       <font size="4">Preferred Name</font>
-      </b>
-     </td>
-     <td        xsl:use-attribute-sets = "cell2of2">
-      <xsl:apply-templates      select = "PreferredName"/>
-     </td>
-    </tr>
-  </table>
+  <xsl:for-each                 select = "PreferredName">
+   <xsl:call-template             name = "elementAndComment">
+    <xsl:with-param               name = "myElement"
+                                select = "."/>
+   </xsl:call-template>
+  </xsl:for-each>
+
   <p/>
 
   <!-- 
   ====================================================================
   If other names, display them, including type,review status 
   ==================================================================== -->
-  <b>
-   <font size='4'>Other Names</font>
-  </b>
+  <span class='big'>Other Names</span>
 
   <xsl:apply-templates          select = "OtherName"/>
   <p/>
@@ -131,9 +126,7 @@ $Log: not supported by cvs2svn $
   ======================================================================
   Display definitions
   ====================================================================== -->
-  <b>
-   <font size='4'>Definition</font>
-  </b>
+  <span class='big'>Definition</span>
   <xsl:apply-templates          select = "Definition"/>
  
   <!-- 
@@ -149,28 +142,15 @@ $Log: not supported by cvs2svn $
   ===================================================================
   Display term status and comment if available 
   =================================================================== -->
-  <b>
-   <font size='4'>Term Status</font>
-  </b>
+  <span class='big'>Term Status</span>
 
-  <table        xsl:use-attribute-sets = "table">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Status</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "TermStatus"/>
-    </td>
-   </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Comment</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "Comment"/>
-    </td>
-   </tr>
-  </table>
+  <xsl:for-each                 select = "TermStatus">
+   <xsl:call-template             name = "elementAndComment">
+    <xsl:with-param               name = "myElement"
+                                select = "."/>
+   </xsl:call-template>
+  </xsl:for-each>
+
   <p/>
 
   <xsl:apply-templates          select = "MenuInformation"/>
@@ -179,9 +159,7 @@ $Log: not supported by cvs2svn $
   ===================================================================
   Display Record Information
   ================================================================ -->
-  <b>
-   <font size='4'>Record Information</font>
-  </b>
+  <span class='big'>Record Information</span>
 
   <xsl:variable                   name = "cdrmydoc" 
                                 select = "document('cdrx:/*/CdrCtl')"/>
@@ -228,6 +206,80 @@ $Log: not supported by cvs2svn $
   <xsl:comment>@@TERMTREE@@</xsl:comment>
 
   </BODY>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Template to display the TermStatus and the optional Comment that's
+ following.
+ This needs to be done in a template since there may exist multiple
+ Comment elements as children of the root node.
+ =================================================================== -->
+ <xsl:template                   match = "TermStatus">
+
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Status</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "."/>
+    </td>
+   </tr>
+
+   <xsl:if                        test = "following-sibling::Comment">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Comment</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "following-sibling::Comment"/>
+     </td>
+    </tr>
+   </xsl:if>
+  </table>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Template to display the element and the optional Comment that's
+ following.
+ This needs to be done in a template since there may exist multiple
+ Comment elements as children of the root node.
+ =================================================================== -->
+ <xsl:template                    name = "elementAndComment">
+  <xsl:param                      name = "myElement"/>
+                                
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <xsl:choose>
+      <xsl:when                    test = "name() = 'PreferredName'">
+       <span class="big">Preferred Name</span>
+      </xsl:when>
+      <xsl:otherwise>
+       <b>Status</b>
+      </xsl:otherwise>
+     </xsl:choose>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "$myElement"/>
+    </td>
+   </tr>
+
+   <xsl:if                        test = "following-sibling::Comment">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Comment</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "following-sibling::Comment"/>
+     </td>
+    </tr>
+   </xsl:if>
+  </table>
  </xsl:template>
 
 
@@ -426,9 +478,7 @@ $Log: not supported by cvs2svn $
  Template to Display TermType 
  =================================================================== -->
  <xsl:template                   match = "TermType">
-  <b>
-   <font size='4'>Term Type</font>
-  </b>
+  <span class='big'>Term Type</span>
  
   <table        xsl:use-attribute-sets = "table">
    <tr>
@@ -462,6 +512,7 @@ $Log: not supported by cvs2svn $
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Semantic Type</b>
     </td>
+
     <td>
      <table cellspacing = "0" cellpadding = "0">
       <xsl:for-each             select = "Term/PreferredName">
@@ -502,9 +553,7 @@ $Log: not supported by cvs2svn $
  Template to Display TermRelationship
  =================================================================== -->
  <xsl:template                   match = "TermRelationship">
-  <b>
-   <font size='4'>Term Relationship</font>
-  </b>
+  <span class='big'>Term Relationship</span>
   <xsl:apply-templates          select = "ParentTerm"/>
   <xsl:apply-templates          select = "RelatedTerm"/>
  </xsl:template>
@@ -532,6 +581,8 @@ $Log: not supported by cvs2svn $
      <b>Term ID</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
+
+
      <xsl:value-of              select = "concat('CDR', 
                                            number(
                                            substring-after(@cdr:ref, 'CDR')))"/>
@@ -621,9 +672,7 @@ $Log: not supported by cvs2svn $
  =================================================================== -->
  <xsl:template                   match = "MenuInformation">
   <hr/>
-  <b>
-   <font size='4'>Menu Information</font>
-  </b>
+  <span class='big'>Menu Information</span>
 
   <ol>
    <xsl:apply-templates         select = "MenuItem"/>
@@ -677,6 +726,7 @@ $Log: not supported by cvs2svn $
       </tr>
       <tr>
        <td>
+
         <b>MenuStatus</b>
        </td>
        <td>
