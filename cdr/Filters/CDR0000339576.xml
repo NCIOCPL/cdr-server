@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000339576.xml,v 1.30 2009-01-23 20:53:36 venglisc Exp $
+$Id: CDR0000339576.xml,v 1.31 2009-02-12 22:34:12 venglisc Exp $
 
 Filter handling all In-Line Markup elements of Summary Docs
 Written by Volker Englisch, 2004-07-16
@@ -80,15 +80,38 @@ $Log: not supported by cvs2svn $
  ====================================================================== -->
  <xsl:template                   match = "SummaryFragmentRef |
                                           LOEFragmentRef">
+
   <a>
-   <!-- xsl:attribute                 name = "class">
+   <!-- 
+   Attribute to being able and specify the CSS for this link
+   ========================================================= -->
+   <xsl:attribute                 name = "class">
     <xsl:text>idLink</xsl:text>
-   </xsl:attribute -->
+   </xsl:attribute>
+
+   <!--
+   Attribute to display the element name as a mouse-hover
+   ====================================================== -->
+   <xsl:attribute                 name = "title">
+    <xsl:value-of               select = "name()"/>
+   </xsl:attribute>
+
+   <!--
+   Attribute to specify the link.  If the link is an internal link
+   do not go through the filter process but jump to the anker 
+   element directly.
+   =============================================================== -->
    <xsl:attribute                 name = "href">
     <!--
     For reformatted patient summaries run a different QC report
     =========================================================== -->
     <xsl:choose>
+     <!-- Internal link -->
+     <xsl:when                    test = "$thisDocID = 
+                                            substring-before(@cdr:href, '#')">
+      <xsl:value-of             select = "concat('#', 
+                                            substring-after(@cdr:href, '#'))"/>
+     </xsl:when>
      <xsl:when                    test = "Summary
                                             /LinkedSummaryAudience = 'Patients'
                                           and
