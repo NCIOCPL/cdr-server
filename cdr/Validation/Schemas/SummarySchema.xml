@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!--
-      $Id: SummarySchema.xml,v 1.35 2009-02-11 18:28:59 bkline Exp $
+      $Id: SummarySchema.xml,v 1.36 2009-02-12 15:55:20 ameyer Exp $
 
       $Log: not supported by cvs2svn $
       Revision 1.34  2009/02/06 03:32:51  ameyer
@@ -140,18 +140,19 @@
                                         string-length(
                                          normalize-space(@cdr:xref)), 1) != "/"'
      >The attribute (@cdr:xref) must not end with a slash ('/')</assert>
-<!--
     <assert test = "number(document(concat('/sql-query/
 SELECT COUNT(q1.doc_id) AS cnt
   FROM query_term q1
-  JOIN query_term q2
-    ON q1.doc_id = q2.doc_id
  WHERE q1.path = &apos;/Summary/SummaryMetaData/SummaryURL/@cdr:xref&apos;
    AND q1.value = ?
-   AND q2.path &lt;&gt; &apos;/Summary/WillReplace&apos;
+   AND NOT EXISTS (
+      SELECT q2.doc_id
+        FROM query_term q2
+       WHERE q2.path = &apos;/Summary/WillReplace&apos;
+         AND q2.doc_id = q1.doc_id
+   )
 ~', @cdr:xref))/SqlResult/row/col) &lt; 2"
-     >More than one Summary has the same SummaryURL and no WillReplace element</assert>
--->
+     >More than one Summary has the same SummaryURL with no WillReplace element</assert>
     </rule>
    </pattern>
   </appInfo>
