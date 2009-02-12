@@ -1,9 +1,12 @@
 /*
- * $Id: CdrReport.cpp,v 1.24 2008-10-04 22:01:13 bkline Exp $
+ * $Id: CdrReport.cpp,v 1.25 2009-02-12 14:21:57 bkline Exp $
  *
  * Reporting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2008/10/04 22:01:13  bkline
+ * Cleanup of warnings in (possible) migration to Visual Studio 2008.
+ *
  * Revision 1.23  2008/01/29 15:17:12  bkline
  * Added report to find patient equivalent of a health professional
  * summary.
@@ -157,7 +160,7 @@ cdr::String cdr::Report::doReport(cdr::Session& session,
       {
         cdr::dom::Node n = child.getFirstChild();
         if (n == NULL || n.getNodeType() != cdr::dom::Node::TEXT_NODE)
-          throw cdr::Exception(L"Invalid document ID");
+          throw cdr::Exception(L"Missing Report Name");
         cdr::String rname = n.getNodeValue();
         std::map<cdr::String, cdr::Report*>::iterator rpt;
         if ((rpt = reportMap.find(rname)) == reportMap.end()
@@ -225,6 +228,20 @@ namespace
   {
     public:
       Inactive() : cdr::Report("Inactive Checked Out Documents") {}
+
+    private:
+      virtual cdr::String execute(cdr::Session& session,
+                                  cdr::db::Connection& dbConnection,
+                                  cdr::Report::ReportParameters parm);
+  };
+
+  /*************************************************************************/
+  /* Report on documents locked by specified user.                         */
+  /*************************************************************************/
+  class LockedDocuments : public cdr::Report
+  {
+    public:
+      LockedDocuments() : cdr::Report("Locked Documents") {}
 
     private:
       virtual cdr::String execute(cdr::Session& session,
@@ -367,6 +384,21 @@ namespace
   };
 
   /*************************************************************************/
+  /* Find corresponding person document linked from board member document.
+  /*************************************************************************/
+  class BoardMember : public cdr::Report
+  {
+    public:
+      BoardMember() :
+          cdr::Report("Board Member") {}
+
+    private:
+      virtual cdr::String execute(cdr::Session& session,
+                                  cdr::db::Connection& dbConnection,
+                                  cdr::Report::ReportParameters parm);
+  };
+
+  /*************************************************************************/
   /* Find GlossaryTermName documents linked to a GlossaryTermConcept doc.
   /*************************************************************************/
   class GlossaryTermNames : public cdr::Report
@@ -488,6 +520,50 @@ namespace
                 L"<ActionType>" << aname << L"</ActionType>\n"
                 L"<ActionWhen>" << dt << L"</ActionWhen>\n"
                 L"</LastActivity>\n"
+                L"</ReportRow>\n";
+    }
+
+    result << L"]]></ReportBody>\n";
+    select.close();
+    return result.str();
+  }
+
+  cdr::String LockedDocuments::execute(cdr::Session& session,
+                                       cdr::db::Connection& dbConnection,
+                                       cdr::Report::ReportParameters parm)
+  {
+    ReportParameters::iterator i = parm.find(L"UserId");
+    if (i == parm.end())
+      throw cdr::Exception(L"Must specify UserId");
+
+    cdr::String userId(i->second);
+    string query = "SELECT DISTINCT c.id, t.name, c.dt_out "
+                   "           FROM checkout c             "
+                   "           JOIN usr u                  "
+                   "             ON u.id = c.usr           "
+                   "           JOIN document d             "
+                   "             ON d.id = c.id            "
+                   "           JOIN doc_type t             "
+                   "             ON t.id = d.doc_type      "
+                   "          WHERE c.dt_in IS NULL        "
+                   "            AND u.name = ?             "
+                   "       ORDER BY c.id                   ";
+      
+    cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
+    select.setString(1, userId);
+    cdr::db::ResultSet rs = select.executeQuery();
+    wostringstream result;
+    result << L"<ReportBody><![CDATA[\n"
+              L"<ReportName>" << getName() << L"</ReportName>\n";
+    while (rs.next())
+    {
+      int id = rs.getInt(1);
+      cdr::String dtype = rs.getString(2);
+      cdr::String dt_out = cdr::toXmlDate(rs.getString(3));
+      result << L"<ReportRow>\n"
+                L"<DocId>" << cdr::stringDocId(id) << L"</DocId>\n"
+                L"<DocType>" << dtype << L"</DocType>\n"
+                L"<WhenCheckedOut>" << dt_out << L"</WhenCheckedOut>\n"
                 L"</ReportRow>\n";
     }
 
@@ -1064,6 +1140,7 @@ struct TargetDoc {
 
   // Instantiations of report objects.
   Inactive                      inactive;
+  LockedDocuments               lockedDocuments;
   LeadOrgPicklist               leadOrgPicklist;
   ProtocolUpdatePersonsPicklist protocolUpdatePersonsPicklist;
   PersonLocations               personLocations;
@@ -1073,6 +1150,7 @@ struct TargetDoc {
   MenuTermTree                  menuTermTree;
   TranslatedSummary             translatedSummary;
   PatientSummary                patientSummary;
+  BoardMember                   boardMember;
   GlossaryTermNames             glossaryTermNames;
   TermSets                      termSets;
 #if 0
@@ -1139,6 +1217,38 @@ struct TargetDoc {
     result << L"<PatientSummary>"
            << cdr::stringDocId(id)
            << L"</PatientSummary>\n]]></ReportBody>\n";
+    select.close();
+    return result.str();
+  }
+
+  cdr::String BoardMember::execute(cdr::Session& session,
+                                   cdr::db::Connection& dbConnection,
+                                   cdr::Report::ReportParameters parm)
+  {
+    ReportParameters::iterator i = parm.find(L"PersonId");
+    if (i == parm.end())
+      throw cdr::Exception(L"Must specify PersonId");
+    cdr::String personId = i->second;
+
+    string query = "SELECT doc_id                             "
+                   "  FROM query_term                         "
+                   " WHERE path = '/PDQBoardMemberInfo'       "
+                   "            + '/BoardMemberName/@cdr:ref' "
+                   "   AND int_val = ?                        ";
+      
+    cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
+    select.setInt(1, personId.extractDocId());
+    cdr::db::ResultSet rs = select.executeQuery();
+
+    wostringstream result;
+    result << L"<ReportBody><![CDATA[\n"
+              L"<ReportName>" << getName() << L"</ReportName>\n";
+    if (!rs.next())
+      throw cdr::Exception(L"No board member found for " + personId);
+    int id = rs.getInt(1);
+    result << L"<BoardMember>"
+           << cdr::stringDocId(id)
+           << L"</BoardMember>\n]]></ReportBody>\n";
     select.close();
     return result.str();
   }
