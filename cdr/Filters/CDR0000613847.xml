@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000613847.xml,v 1.9 2009-03-05 19:35:33 venglisc Exp $
+$Id: CDR0000613847.xml,v 1.10 2009-03-24 14:51:28 venglisc Exp $
 
 Filter to display Glossary Term Name QC Reports
 Volker Englisch         2007-09-26
@@ -203,9 +203,22 @@ $Log: not supported by cvs2svn $
      <b>Glossary Term Concept</b>
     </td>
     <td>
-     <xsl:value-of              select = "GlossaryTermConcept/
+     <xsl:choose>
+      <xsl:when                   test = "string-length(
+                                            GlossaryTermConcept/
+                                            TermDefinition/
+                                            DefinitionText) &lt; 50">
+       <xsl:value-of            select = "GlossaryTermConcept/
                                             TermDefinition/
                                             DefinitionText"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of            select = "concat(substring(
+                                            GlossaryTermConcept/
+                                            TermDefinition/
+                                            DefinitionText, 1, 46), ' ...')"/>
+      </xsl:otherwise>
+     </xsl:choose>
 
      <xsl:variable                name = "cdrId"
                                 select = "concat('CDR', 
