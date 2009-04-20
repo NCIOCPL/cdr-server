@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ================================================================
-     $Id: CDR0000335424.xml,v 1.8 2009-01-26 22:23:08 venglisc Exp $
+     $Id: CDR0000335424.xml,v 1.9 2009-04-20 19:23:29 venglisc Exp $
 
      Filter to denormalize summary data.
         Written by Volker Englisch, 2003-08-12
@@ -138,7 +138,7 @@
  =================================================================
  Template to denormalize the Term elements
  ================================================================= -->
- <xsl:template                    match = "Diagnosis">
+ <xsl:template                    match = "Diagnosis | Intervention | Drug">
   <xsl:variable                    name = "TermID" 
                                  select = "@cdr:ref"/>
   <xsl:variable                    name = "TermInfo" 
@@ -157,6 +157,31 @@
 
  <!-- 
  =================================================================
+ Template to denormalize the summary section intervention terms
+ ================================================================= -->
+<!--
+ <xsl:template                   match = "Diagnosis    |
+                                          Intervention |
+                                          Drug">
+  <xsl:variable                   name = "termID" 
+                                select = "@cdr:ref"/>
+  <xsl:variable                   name = "termDoc" 
+                                select = "document(concat('cdr:',$termID,
+                                                           '/lastp'))"/>
+  <xsl:element                    name = "{name()}">
+    <xsl:for-each               select = "@*">
+     <xsl:attribute               name = "{name()}">
+      <xsl:value-of             select = "."/>
+     </xsl:attribute>
+    </xsl:for-each>
+    <xsl:apply-templates        select = "$termDoc/Term
+                                           /PreferredName"/>
+  </xsl:element>
+ </xsl:template>
+-->
+
+ <!-- 
+ =================================================================
  Template to denormalize the SummaryRef elements
  We need this denormalization in order to correctly create the 
  link in the QC report to the listed summaries.
@@ -164,10 +189,38 @@
  <xsl:template                    match = "SummaryRef |
                                            SummaryFragmentRef">
   <xsl:variable                    name = "SummaryRefID" 
-                                 select = "@cdr:href"/>
-  <xsl:variable                    name = "SummaryRefInfo" 
-                                 select = "document(concat('cdr:',$SummaryRefID,
+                                 select = "substring-before(
+                                             concat(@cdr:href, '#'), '#')"/>
+
+  <xsl:variable                    name = "thisSummaryId"
+                                 select = "document('cdrutil:/docid')"/>
+  <xsl:variable                    name = "pubVersion"
+                                 select = "document(concat('cdrutil:', 
+                                                           '/get-pv-num/',
+                                                       @cdr:href | @href))"/>
+
+  <!--
+  If a SummaryRef or SummaryFragmentRef is pointing to itself and the summary
+  is new we can't expect a publishable version of the summary to exist.
+  In this case we need to allow to denormalize with the last version.
+  ====================================================================== -->
+  <xsl:variable                   name = "SummaryRefInfo">
+   <xsl:choose>
+    <xsl:when                     test = "$pubVersion = 0
+                                           and
+                                           $SummaryRefID = $thisSummaryId">
+     <xsl:copy-of              select = "document(concat('cdr:',
+                                                           $SummaryRefID,
+                                                           '/last'))"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:copy-of              select = "document(concat('cdr:',
+                                                           $SummaryRefID,
                                                            '/lastp'))"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
   <xsl:element                     name = "{name()}">
    <xsl:attribute                  name = "cdr:href">
     <xsl:value-of                select = "@cdr:href"/>
@@ -177,7 +230,7 @@
     <xsl:value-of                select = "."/>
    </SummaryRefText>
 
-   <Summary>
+   <LinkedSummary>
     <LinkedSummaryType>
      <xsl:value-of               select = "$SummaryRefInfo/Summary
                                              /SummaryMetaData
@@ -196,7 +249,7 @@
                                              //KeyPoint)"/>
      </LinkedKeyPoints>
     </xsl:if>
-   </Summary>
+   </LinkedSummary>
   </xsl:element>
  </xsl:template>
 
