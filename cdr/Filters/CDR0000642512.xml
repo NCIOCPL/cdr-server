@@ -1,0 +1,89 @@
+<CdrDoc Type='Filter' Id='CDR0000642512'>
+<CdrDocCtl>
+<DocValStatus readonly="yes">U</DocValStatus>
+<DocActiveStatus readonly="yes">A</DocActiveStatus>
+<DocTitle readonly="yes">Protocol Report Post Process</DocTitle>
+<ReadyForReview readonly="yes">N</ReadyForReview>
+</CdrDocCtl>
+<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<!--
+ ================================================================
+     $Id: CDR0000642512.xml,v 1.1 2009-05-04 21:10:22 venglisc Exp $
+
+     Denormalization Filter: InScopeProtocol
+        Written by Volker Englisch, 2002-04-01
+
+     $Log: not supported by cvs2svn $
+ ================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                          xmlns:cdrscr = "cips.nci.nih.gov/cdr/script"
+                           xmlns:exslt = "http://www.exslt.org/functions"
+               exclude-result-prefixes = "cdrscr"
+            extension-element-prefixes = "exslt"
+                               version = "1.0">
+
+ <xsl:output                    method = "xml" 
+                  omit-xml-declaration = "no"
+                              encoding = "UTF-8"/> 
+
+
+ <!-- *
+ ==================================================================
+ Copy AdminInfo AS IS call the LeadOrgPersonnel template
+ ================================================================== -->
+ <xsl:template                   match = "Protocol">
+  <xsl:copy>
+   <xsl:apply-templates         select = "ProtocolAdminInfo/
+                                          ProtocolLeadOrg
+                                            [LeadOrgRole = 'Primary']/
+                                          LeadOrgPersonnel"/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!-- *
+ ==============================================================
+ Template to extract PUP information
+ ============================================================== -->
+ <xsl:template                   match = "ProtocolAdminInfo/
+                                          ProtocolLeadOrg/
+                                          LeadOrgPersonnel">
+  <xsl:apply-templates          select = "ProtPerson"/>
+ </xsl:template>
+
+
+ <xsl:template                   match = "ProtPerson">
+  <xsl:if                         test = "PersonRole = 'Update person'">
+   <Person>
+    <xsl:copy-of                select = "PersonRole"/>
+    <Name>
+     <xsl:value-of              select = "PersonNameInformation/
+                                          GivenName"/>
+     <xsl:text> </xsl:text>
+     <xsl:value-of              select = "PersonNameInformation/
+                                          SurName"/>
+    </Name>
+   <xsl:copy-of                  select = "Contact/
+                                          ContactDetail/Phone |
+                                          Contact/
+                                          ContactDetail/Email"/>
+   </Person>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- *
+ =========================================================================
+ Default Template
+ ========================================================================= -->
+ <xsl:template                   match = "node() | @*">
+  <xsl:copy>
+   <xsl:apply-templates         select = "@* | node()" />
+  </xsl:copy>
+ </xsl:template>
+
+</xsl:transform>
+]]>
+</CdrDocXml>
+</CdrDoc>
