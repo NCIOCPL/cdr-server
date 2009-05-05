@@ -3,14 +3,14 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">CTGov Export Filter</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-V1.12: Mods for Single Arm study (Bug 4181)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml version="1.0" encoding="utf-8"?>
 
 <!--
 ======================================================================
 ==
-== $Id: CDR0000502087.xml,v 1.12 2008-07-22 20:19:57 bkline Exp $
+== $Id: CDR0000502087.xml,v 1.13 2009-05-05 14:34:47 bkline Exp $
 ==
 == This filter transforms vendor output for active protocols into
 == a structure which conforms to the NLM DTD for clinical_study
@@ -37,6 +37,9 @@
 == used for the indefinite future.
 ==
 == $Log: not supported by cvs2svn $
+== Revision 1.12  2008/07/22 20:19:57  bkline
+== Latest FDAAA changes.
+==
 == Revision 1.8  2008/05/02 14:38:30  bkline
 == Added placeholder for arm_group elements.
 ==
@@ -544,7 +547,13 @@
   <xsl:variable               name = "status"
                             select = "/Protocol/ProtocolAdminInfo
                                       /CurrentProtocolStatus"/>
+  <xsl:variable               name = "studyType"
+                            select = "/Protocol/ProtocolDetail/StudyType"/>
   <xsl:choose>
+   <xsl:when                  test = "$studyType = 'Research study' and 
+                                      not(.//ProtocolSite)">
+    <xsl:value-of           select = "'Active, not recruiting'"/>
+   </xsl:when>
    <xsl:when                  test = "$status = 'Active'">
     <xsl:choose>
      <xsl:when                test = "not(/Protocol/ProtocolAdminInfo
