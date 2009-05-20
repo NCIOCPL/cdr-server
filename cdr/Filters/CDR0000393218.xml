@@ -11,7 +11,7 @@
                             xmlns:cdr = "cips.nci.nih.gov/cdr"
               exclude-result-prefixes = "cdr">
 
- <xsl:include                   href = "cdr:name:Module: Emailer Common"/>
+ <xsl:include                    href = "cdr:name:Module: Emailer Common"/>
 
  <!--
  ==========================================================================
@@ -24,8 +24,24 @@
  Rule for the root of the document.
  ========================================================================== -->
  <xsl:template                  match = "/">
+  <xsl:variable                  name = 'leadOrgType'
+                               select = 'InScopeProtocol/ProtocolAdminInfo/
+                                         ProtocolLeadOrg
+                                         [LeadOrganizationID/
+                                         @cdr:ref = $leadOrgId]/
+                                         LeadOrgRole'/>
   <EmailerDocument>
    <ProtocolStatusAndParticipants>
+    <xsl:attribute               name = 'PrimaryLeadOrg'>
+     <xsl:choose>
+      <xsl:when                  test = '$leadOrgType = "Primary"'>
+       <xsl:value-of           select = '"Y"'/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of           select = '"N"'/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:attribute>
     <xsl:apply-templates       select = "InScopeProtocol"/>
    </ProtocolStatusAndParticipants>
   </EmailerDocument>
@@ -92,6 +108,10 @@
                                          CurrentOrgStatus/StatusDate"/>
    </ProtocolStatusEffectiveDate>
   </CurrentProtocolStatus>
+  <xsl:if                        test = "LeadOrgRole = 'Primary'">
+   <xsl:copy-of                select = "../StartDate[position() = last()]"/>
+   <xsl:copy-of                select = "../CompletionDate"/>
+  </xsl:if>
   <LeadOrgPersonnel>
    <xsl:apply-templates        select = "LeadOrgPersonnel
                                         [PersonRole = 'Protocol chair' or
