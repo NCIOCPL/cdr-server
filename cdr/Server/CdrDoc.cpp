@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.84 2008-10-31 05:26:59 ameyer Exp $
+ * $Id: CdrDoc.cpp,v 1.85 2009-05-22 02:31:57 ameyer Exp $
  *
  */
 
@@ -1764,6 +1764,53 @@ bool cdr::CdrDoc::checkTitleChange()
     }
 
     return false;
+}
+
+/**
+ * Regenerate the title for a document identified by its ID.
+ * See CdrCommand.h.
+ */
+cdr::String cdr::updateTitle (
+    cdr::Session& session,
+    const cdr::dom::Node& cmdNode,
+    cdr::db::Connection& conn
+) {
+    cdr::dom::Node child;       // Child node in command
+    cdr::String    docIdStr;    // ID in CDR000... format
+    int            docIdNum;    // Same as numeric
+    bool           changed;     // True = title changed
+
+    // Parse command to get the document CDR ID
+    child    = cmdNode.getFirstChild();
+    docIdStr = L"";
+    while (child != 0) {
+        if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE &&
+            child.getNodeName() == L"DocId") {
+            docIdStr = cdr::trimWhiteSpace(cdr::dom::getTextContent(child));
+            docIdNum = docIdStr.extractDocId();
+            break;
+        }
+        child = child.getNextSibling();
+    }
+
+    // Transaction format check
+    if (docIdStr == L"")
+        throw cdr::Exception (
+                L"updateTitle could not find DocId element in cmd");
+
+    // Instantiate a CdrDoc for this document
+    CdrDoc doc(conn, docIdNum, false);
+
+    // Generate and, if necessary, update the title
+    changed = doc.checkTitleChange();
+
+    // Formulate response
+    cdr::String result = changed ? L"changed" : L"unchanged";
+    cdr::String response = L" <CdrUpdateTitleResp>" +
+                           result +
+                           L"</CdrUpdateTitleResp>\n";
+
+    return response;
 }
 
 

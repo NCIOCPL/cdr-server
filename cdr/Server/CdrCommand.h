@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.h,v 1.36 2009-01-22 20:49:57 bkline Exp $
+ * $Id: CdrCommand.h,v 1.37 2009-05-22 02:33:02 ameyer Exp $
  *
  * Interface for CDR command handlers.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.36  2009/01/22 20:49:57  bkline
+ * Added support for a Spanish glossifier.
+ *
  * Revision 1.35  2008/12/19 17:03:46  bkline
  * Added CdrLogClientEvent command.
  *
@@ -528,6 +531,25 @@ namespace cdr {
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
     extern String validateDoc(Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
+
+    /**
+     * Pass the document through a title filter to regenerate and, if
+     * needed, store, a document title.
+     *
+     * This was written to support regeneration of titles for any document
+     * type for which the title filter was modified.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String updateTitle(Session&          session,
                               const dom::Node&  node,
                               db::Connection&   conn);
 

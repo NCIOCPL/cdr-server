@@ -1,9 +1,12 @@
 /*
- * $Id: CdrCommand.cpp,v 1.43 2009-01-22 20:49:57 bkline Exp $
+ * $Id: CdrCommand.cpp,v 1.44 2009-05-22 02:32:26 ameyer Exp $
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.43  2009/01/22 20:49:57  bkline
+ * Added support for a Spanish glossifier.
+ *
  * Revision 1.42  2008/12/19 17:03:46  bkline
  * Added CdrLogClientEvent command.
  *
@@ -176,6 +179,7 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
         CommandMap(L"CdrDelDoc",             cdr::delDoc),
         CommandMap(L"CdrValidateDoc",        cdr::validateDoc),
         CommandMap(L"CdrReindexDoc",         cdr::reIndexDoc),
+        CommandMap(L"CdrUpdateTitle",        cdr::updateTitle),
         CommandMap(L"CdrSearch",             cdr::search),
         CommandMap(L"CdrListQueryTermRules", cdr::listQueryTermRules),
         CommandMap(L"CdrListQueryTermDefs",  cdr::listQueryTermDefs),
