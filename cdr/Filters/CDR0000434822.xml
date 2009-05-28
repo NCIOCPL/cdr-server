@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000434822.xml,v 1.6 2008-03-26 22:21:51 venglisc Exp $
+$Id: CDR0000434822.xml,v 1.7 2009-05-28 20:42:00 venglisc Exp $
 
 Filter Module to include all general formatting templates for 
 Summary QC Reports 
@@ -311,11 +311,20 @@ $Log: not supported by cvs2svn $
    </xsl:otherwise>
   </xsl:choose>    
        
-  <ol>
-   <xsl:for-each                select = "Citation">
-    <xsl:call-template            name = "markupCitation"/>
-   </xsl:for-each>
-  </ol>
+  <xsl:choose>
+   <xsl:when                      test = "$DisplayCitations = 'Y'">
+    <ol>
+     <xsl:for-each              select = "Citation">
+      <xsl:call-template          name = "markupCitation"/>
+     </xsl:for-each>
+    </ol>
+   </xsl:when>
+   <xsl:otherwise>
+    <table width="100%" border="0" style="background-color: #CCFFFF">
+     <tr><td><b>Note: </b>Citation display suppressed</td></tr>
+    </table>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
@@ -352,6 +361,9 @@ $Log: not supported by cvs2svn $
  ================================================================= -->
  <xsl:template                   match = "QandAEntry">
   <LI class="addspace">
+   <xsl:attribute                 name = "id">
+    <xsl:value-of               select = "@cdr:id"/>
+   </xsl:attribute>
    <xsl:apply-templates        select = "Question"/>
    <p/>
    <span class="answer">
