@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml  version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000505580.xml,v 1.95 2009-03-31 21:43:04 venglisc Exp $
+$Id: CDR0000505580.xml,v 1.96 2009-06-03 20:59:50 venglisc Exp $
 
 Filter to create DrugInfoSummary vendor output documents.
                               Volker Englisch, 2006-08-12
@@ -84,13 +84,22 @@ $Log: not supported by cvs2svn $
       <xsl:value-of             select = "$drugRefTypeFDA"/>
      </xsl:attribute>
 
-     <Title>
-      <xsl:text>Information from the </xsl:text>
-      <xsl:value-of             select = "$drugRefTypeFDA"/>
-     </Title>
 
-     <xsl:apply-templates       select = "DrugReference
-                                           [DrugReferenceType='FDA']"/>
+     <!-- 
+     Only display the following FDA section if the DrugReference includes
+     a DrugReferenceLink with text node "FDA Approval for ..."
+     ==================================================================== -->
+     <xsl:for-each              select = "DrugReference">
+      <xsl:if                     test = "starts-with(
+                                           DrugReferenceLink, 
+                                           'FDA Approval for')">
+       <Title>
+        <xsl:text>Information from the </xsl:text>
+        <xsl:value-of           select = "$drugRefTypeFDA"/>
+       </Title>
+       <xsl:apply-templates     select = "."/>
+      </xsl:if>
+     </xsl:for-each>
     </Section>
    </xsl:if>
 
@@ -486,15 +495,18 @@ $Log: not supported by cvs2svn $
 
  <!--
  =====================================================================
- Template to rename the SummarySection to a Section and remove the 
- element tags of elements that are allowed in the Schema as a 
- SummarySection but not in the DTD as a Section.
+ Template to display the Para elements
  ===================================================================== -->
  <xsl:template                   match = "SummarySection" 
                                   mode = "copy">
-  <Para>
+  <!-- Para>
    <xsl:value-of                select = "."/>
-  </Para>
+  </Para -->
+  <xsl:apply-templates          select = "Para         | 
+                                          ItemizedList |
+                                          OrderedList  |
+                                          Title" 
+                                  mode = "copy"/>
  </xsl:template>
 
 
