@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml     version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000000157.xml,v 1.76 2008-12-05 20:19:20 venglisc Exp $
+$Id: CDR0000000157.xml,v 1.77 2009-06-12 18:43:07 venglisc Exp $
 
 Filter to create summary vendor output data.
    Written by Volker Englisch, 2003-08-12
@@ -37,6 +37,10 @@ $Log: not supported by cvs2svn $
  Variables needed to identify display of certain misc documents based on 
  document type
  ======================================================================= -->
+ <xsl:variable                   name = "sumAudience"
+                               select = "/Summary/
+                                          SummaryMetaData/
+                                          SummaryAudience"/>
  <xsl:variable                   name = "language"
                                select = "/Summary/
                                           SummaryMetaData/
@@ -48,6 +52,11 @@ $Log: not supported by cvs2svn $
  <xsl:variable                   name = "sumId" 
                                select = "/Summary/
                                           DocId"/>
+ <xsl:variable                   name = "tlss" 
+                               select = "/Summary//
+                                          SummarySection[
+                                              @TrialSearchString='TopLevel']/
+                                          SectMetaData"/>
  <xsl:variable                   name = "ageGroup">
   <xsl:choose>
    <xsl:when                     test = "contains(/Summary/
@@ -61,6 +70,63 @@ $Log: not supported by cvs2svn $
    </xsl:otherwise>
   </xsl:choose>
  </xsl:variable>
+
+  <!--
+  Loading all Clinical Trials Search Text Misc documents
+  ====================================================== -->
+  <xsl:variable                   name = "slText_en_hp" 
+                                select = "document(
+                                            concat('cdr:name:Clinical Trial ',
+                                                   'Search Link Text - ',
+                                                   'English-HP;',
+                                                   'Standard wording',
+                                                                 '/lastp'))"/>
+  <xsl:variable                   name = "slText_es_hp" 
+                                select = "document(
+                                            concat('cdr:name:Clinical Trial ',
+                                                   'Search Link Text - ',
+                                                   'Spanish-HP;',
+                                                   'Standard wording;Spanish',
+                                                                 '/lastp'))"/>
+  <xsl:variable                   name = "slText_en_pat" 
+                                select = "document(
+                                            concat('cdr:name:Clinical Trial ',
+                                                   'Search Link Text - ',
+                                                   'English-Patient;',
+                                                   'Standard wording',
+                                                                 '/lastp'))"/>
+  <xsl:variable                   name = "slText_es_pat" 
+                                select = "document(
+                                            concat('cdr:name:Clinical Trial ',
+                                                   'Search Link Text - ',
+                                                   'Spanish-Patient;',
+                                                   'Standard wording;Spanish',
+                                                                 '/lastp'))"/>
+
+  <xsl:variable                   name = "miscSection">
+   <xsl:choose>
+    <xsl:when                     test = "$sumType = 'Supportive care'">
+     <xsl:text>_supportiveCare</xsl:text>
+    </xsl:when>
+    <xsl:when                     test = "$sumType = 'Treatment'">
+     <xsl:text>_treatment</xsl:text>
+    </xsl:when>
+    <xsl:when                     test = "$sumType = 'Prevention'">
+     <xsl:text>_prevention</xsl:text>
+    </xsl:when>
+    <xsl:when                     test = "$sumType = 'Screening'">
+     <xsl:text>_prevention</xsl:text>
+    </xsl:when>
+    <xsl:when                     test = "$sumType = 'Genetics'">
+     <xsl:text>_genetics</xsl:text>
+    </xsl:when>
+    <xsl:when                     test = "$sumType = concat('Complementary',
+                                                            ' and alternative',
+                                                            ' medicine')">
+     <xsl:text>_cam</xsl:text>
+    </xsl:when>
+   </xsl:choose>
+  </xsl:variable>
 
  <!-- 
  ===========================================================
@@ -86,7 +152,6 @@ $Log: not supported by cvs2svn $
    <xsl:attribute                name = "id">
     <xsl:value-of              select = "DocId"/>
    </xsl:attribute>
-
    <!-- 
    LegacyPDQID should not be displayed for CAM summaries 
    ===================================================== -->
@@ -197,12 +262,6 @@ $Log: not supported by cvs2svn $
 
      <xsl:call-template          name = "MoreInformation"/>
 
-
-
-
-
-
-
     </xsl:otherwise>
    </xsl:choose>
    <!-- HP Summaries End-->
@@ -255,13 +314,39 @@ $Log: not supported by cvs2svn $
  SummarySection Template
  ================================================================== -->  
  <xsl:template                  match = "SummarySection">
+
   <!--
   ==================================================================
-  Display the "Get More Info" section just above the Changes section
+  Display the TopLevel "TrialSearch" section (for HP Summaries) and 
+  the "Get More Info" section just above the "Changes" section
   ================================================================== -->
   <xsl:if                        test = "SectMetaData/
                                          SectionType = 
                                           'Changes to summary'">
+
+   <!-- 
+   If the document contains a TopLevel TrialSearchString attribute we're 
+   including the main Trial Search Summary section
+   (The trial search sections are only added for Treatment and 
+    Supportive care summaries)
+   ===================================================================== -->
+   <xsl:if                        test = "$sumType = 'Treatment'
+                                          or
+                                          ($sumType = 'Supportive care'
+                                            and
+                                           $sumAudience = 
+                                              'Health professionals')">
+    <!-- 
+    Only if a TrialSearchString='TopLevel' exists are we adding the extra
+    Summary section
+    ===================================================================== -->
+    <xsl:if                       test = "//SummarySection[@TrialSearchString 
+                                           = 'TopLevel']">
+     <xsl:call-template           name = "addTopLevelTrialSearchSection"/>
+
+    </xsl:if>
+   </xsl:if>
+
    <!--
    ================================================================
    Don't display the Get More section for the CAM summaries
@@ -308,358 +393,29 @@ $Log: not supported by cvs2svn $
    This rule doesn't have any effect on the patient summaries since 
    those don't contain references.
    =================================================================== -->
-   <xsl:apply-templates        select = "*[not(self::ReferenceList)]"/>
+   <xsl:apply-templates         select = "*[not(self::ReferenceList)]"/>
+   
+   <xsl:if                        test = "$sumType = 'Treatment'
+                                          or
+                                          $sumType = 'Supportive care'">
+    <xsl:call-template            name = "addTrialSearchSection">
+     <xsl:with-param              name = "sectionID"
+                                select = "concat('_TrialSearch', ./@cdr:id)"/>
+    </xsl:call-template>
+   </xsl:if>
 
-
-   <xsl:call-template           name = "addTrialSearchSection">
-    <xsl:with-param             name = "sectionID"
-                              select = "./@cdr:id"/>
-   </xsl:call-template>
+   <!--
+   Now is the time to display the Reference section which 
+   we suppressed earlier
+   ========================================================= -->
    <xsl:apply-templates       select = "ReferenceList"/>
+
   </SummarySection>
-
-  <!-- 
-  <xsl:if                       test = "starts-with(Title, 
-                                        'To Learn More About ')
-                                        or
-                                        starts-with(Title,
-                                        'Informaci&#xF3;n adicional sobre ')">
-   <xsl:call-template           name = "GeneralInfoAdult"/>
-  </xsl:if>
-  -->
  </xsl:template>
 
 
- <!-- 
- ==================================================================
- Template to add the Trial Search section
- ================================================================== -->  
- <xsl:template                    name = "addTrialSearchSection">
-  <xsl:param                      name = "sectionID"
-                                select = "'_0000'"/>
-   <!--
-   Patient Clinical Trials Search String:
-   Adding a paragraph to all SummarySections with a Diagnosis in the 
-   Section Meta Data where the TrialSearchString attribute is not "No"
-   =================================================================== -->
-   <xsl:if                       test = "/Summary/
-                                          SummaryMetaData/
-                                          SummaryType = 'Treatment'
-                                         and
-                                         /Summary/
-                                          SummaryMetaData/
-                                          SummaryAudience = 'Patients'
-                                         and
-                                         SectMetaData/
-                                         Diagnosis
-                                         and
-                                         not(@TrialSearchString)">
-    <xsl:choose>
-     <xsl:when                   test = "/Summary/
-                                          SummaryMetaData/
-                                          SummaryLanguage = 'English'">
-      <Para>
-       <xsl:text>Check for U.S. clinical trials from NCI's </xsl:text>
-       <xsl:text>PDQ Cancer Clinical Trials Registry </xsl:text>
-       <xsl:text>that are now accepting patients with </xsl:text>
-
-       <xsl:for-each           select = "SectMetaData/
-                                         Diagnosis">
-        <xsl:call-template       name = "addTrialSearchString">
-         <xsl:with-param         name = "diagnosis"
-                               select = "."/>
-         <xsl:with-param         name = "diagnosisID"
-                               select = "@cdr:ref"/>
-        </xsl:call-template>
-       </xsl:for-each>
-       
-       <xsl:text>. For more specific results, refine the </xsl:text>
-       <xsl:text>search by using other search features, such as </xsl:text>
-       <xsl:text>the location of the trial, the type of </xsl:text>
-       <xsl:text>treatment, or the name of the drug.  </xsl:text>
-       <xsl:text>General information about clinical trials </xsl:text>
-       <xsl:text>is available from the </xsl:text>
-
-        <xsl:element               name = "ExternalRef">
-         <xsl:attribute            name = "xref">
-          <xsl:text>http://www.cancer.gov/clinicaltrials</xsl:text>
-         </xsl:attribute>
-         <xsl:text>NCI Web site</xsl:text>
-        </xsl:element>
-
-       <xsl:text>.</xsl:text>
-
-      </Para>
-     </xsl:when>
-     <xsl:when                   test = "/Summary/
-                                          SummaryMetaData/
-                                          SummaryLanguage = 'Spanish'">
-      <Para>
-       <xsl:text>Consultar el Registro de Ensayos Cl&#xED;nicos </xsl:text>
-       <xsl:text>sobre C&#xE1;ncer del PDQ del NCI (NCI's PDQ </xsl:text>
-       <xsl:text>Cancer Clinical Trials Registry) para acceder a </xsl:text>
-       <xsl:text>los ensayos cl&#xED;nicos que se realizan </xsl:text>
-       <xsl:text>en los Estados Unidos y que </xsl:text>
-       <xsl:text>est&#xE1;n aceptando pacientes. Para </xsl:text>
-       <xsl:text>realizar la b&#xFA;squeda, usar </xsl:text>
-
-       <!-- 
-       Different text in Spanish for singular/plural
-       ============================================= -->
-       <xsl:choose>
-        <xsl:when                 test = "count(SectMetaData/Diagnosis) = 1">
-         <xsl:text>el t&#xE9;rmino </xsl:text>
-        </xsl:when>
-        <xsl:otherwise>
-         <xsl:text>los t&#xE9;rminos </xsl:text>
-        </xsl:otherwise>
-       </xsl:choose>
-
-       <xsl:text>en ingl&#xE9;s </xsl:text>
-
-       <xsl:for-each           select = "SectMetaData/
-                                         Diagnosis">
-        <xsl:call-template       name = "addTrialSearchString">
-         <xsl:with-param         name = "diagnosis"
-                               select = "."/>
-         <xsl:with-param         name = "diagnosisID"
-                               select = "@cdr:ref"/>
-        </xsl:call-template>
-       </xsl:for-each>
-
-       <xsl:text>. </xsl:text>
-       <xsl:text>Para obtener resultados m&#xE1;s precisos, </xsl:text>
-       <xsl:text>sea m&#xE1;s espec&#xED;fico en su b&#xFA;squeda </xsl:text>
-       <xsl:text>agregando factores tales como la ubicaci&#xF3;n </xsl:text>
-       <xsl:text>del ensayo, el tipo de tratamiento o el </xsl:text>
-       <xsl:text>nombre del medicamento.</xsl:text>
-       <xsl:text>Nota: los resultados obtenidos solo </xsl:text>
-       <xsl:text>estar&#xE1;n disponibles en ingl&#xE9;s.</xsl:text>
-      </Para>
-      <Para>
-       <xsl:text>Asimismo, se puede </xsl:text>
-       <xsl:text>obtener informaci&#xF3;n general en espa&#xF1;ol </xsl:text>
-       <xsl:text>sobre ensayos cl&#xED;nicos en el portal de </xsl:text>
-
-        <xsl:element               name = "ExternalRef">
-         <xsl:attribute            name = "xref">
-         <xsl:text>http://www.cancer.gov/</xsl:text>
-         <xsl:text>espanol/cancer/estudios-clinicos</xsl:text>
-         </xsl:attribute>
-         <xsl:text>Internet del NCI</xsl:text>
-        </xsl:element>
-
-       <xsl:text>. </xsl:text>
-      </Para>
-
-     </xsl:when>
-    </xsl:choose>
-   </xsl:if>
-
-   <!--
-   HP Clinical Trials Search String:
-   Adding a a subsection to all SummarySections with a Diagnosis in the 
-   Section Meta Data where the TrialSearchString attribute is not "No"
-   =================================================================== -->
-   <xsl:if                       test = "/Summary/
-                                          SummaryMetaData/
-                                          SummaryType = 'Treatment'
-                                         and
-                                         /Summary/
-                                          SummaryMetaData/
-                                          SummaryAudience = 
-                                                          'Health professionals'
-                                         and
-                                         SectMetaData/
-                                         Diagnosis
-                                         and
-                                         not(@TrialSearchString)">
-    <xsl:choose>
-     <xsl:when                   test = "/Summary/
-                                          SummaryMetaData/
-                                          SummaryLanguage = 'English'">
-      <SummarySection>
-       <xsl:attribute            name = "id">
-        <xsl:value-of          select = "$sectionID"/>
-        <xsl:text>_</xsl:text>
-        <xsl:value-of          select = "position()"/>
-       </xsl:attribute>
-       <Title>Current Clinical Trials</Title>
-       <Para>
-        <xsl:text>Check for U.S. clinical trials from NCI's </xsl:text>
-        <xsl:text>PDQ Cancer Clinical Trials Registry that are </xsl:text>
-        <xsl:text>now accepting patients with </xsl:text>
-
-       <xsl:for-each           select = "SectMetaData/
-                                         Diagnosis">
-        <xsl:call-template       name = "addTrialSearchString">
-         <xsl:with-param         name = "diagnosis"
-                               select = "."/>
-         <xsl:with-param         name = "diagnosisID"
-                               select = "@cdr:ref"/>
-         <xsl:with-param         name = "audience"
-                               select = "'hp'"/>
-        </xsl:call-template>
-       </xsl:for-each>
-
-        <xsl:text>.  The list of clinical trials can be further </xsl:text>
-        <xsl:text>narrowed by location, drug, intervention, </xsl:text>
-        <xsl:text>and other criteria.</xsl:text>
-       </Para>
-
-       <Para>
-        <xsl:text>General information about clinical trials </xsl:text>
-        <xsl:text>is also available from the </xsl:text>
-
-        <xsl:element               name = "ExternalRef">
-         <xsl:attribute            name = "xref">
-          <xsl:text>http://www.cancer.gov/clinicaltrials</xsl:text>
-         </xsl:attribute>
-         <xsl:text>NCI Web site</xsl:text>
-        </xsl:element>
-        <xsl:text>.</xsl:text>
-       </Para>
-
-      </SummarySection>
-     </xsl:when>
-     <xsl:otherwise>
-      <SummarySection>
-       <xsl:attribute            name = "id">
-        <xsl:value-of          select = "$sectionID"/>
-        <xsl:text>_</xsl:text>
-        <xsl:value-of          select = "position()"/>
-       </xsl:attribute>
-       <Title>Ensayos cl&#xED;nicos en curso</Title>
-       <Para>
-        <xsl:text>Consultar el Registro de Ensayos Cl&#xED;nicos </xsl:text>
-        <xsl:text>sobre C&#xE1;ncer del PDQ del NCI </xsl:text>
-        <xsl:text>(NCI's PDQ Cancer Clinical Trials Registry) </xsl:text>
-        <xsl:text>para acceder a los ensayos cl&#xED;nicos que se </xsl:text>
-        <xsl:text>realizan en los Estados Unidos y que est&#xE1;n </xsl:text>
-        <xsl:text>aceptando pacientes. Para realizar la </xsl:text>
-        <xsl:text>b&#xFA;squeda, usar </xsl:text>
-
-        <!-- 
-        Different text in Spanish for singular/plural
-        ============================================= -->
-        <xsl:choose>
-         <xsl:when                test = "count(SectMetaData/Diagnosis) = 1">
-          <xsl:text>el t&#xE9;rmino </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text>los t&#xE9;rminos </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-
-        <xsl:text>en ingl&#xE9;s </xsl:text>
-
-       <xsl:for-each           select = "SectMetaData/
-                                         Diagnosis">
-        <xsl:call-template       name = "addTrialSearchString">
-         <xsl:with-param         name = "diagnosis"
-                               select = "."/>
-         <xsl:with-param         name = "diagnosisID"
-                               select = "@cdr:ref"/>
-         <xsl:with-param         name = "audience"
-                               select = "'hp'"/>
-        </xsl:call-template>
-       </xsl:for-each>
-
-        <xsl:text>.  La lista de ensayos cl&#xED;nicos </xsl:text>
-        <xsl:text>se puede reducir si se especifican la localidad, </xsl:text>
-        <xsl:text>el tipo de medicamento, el procedimiento y otros </xsl:text>
-        <xsl:text>criterios. </xsl:text>
-        <xsl:text>Nota: los resultados obtenidos solo </xsl:text>
-        <xsl:text>estar&#xE1;n disponibles en </xsl:text>
-        <xsl:text>ingl&#xE9;s.</xsl:text>
-       </Para>
-
-       <Para>
-        <xsl:text>Asimismo, se puede obtener informaci&#xF3;n </xsl:text>
-        <xsl:text>general en ingl&#xE9;s sobre ensayos </xsl:text>
-        <xsl:text>cl&#xED;nicos en el </xsl:text>
-
-        <xsl:element               name = "ExternalRef">
-         <xsl:attribute            name = "xref">
-          <xsl:text>http://www.cancer.gov/clinicaltrials</xsl:text>
-         </xsl:attribute>
-         <xsl:text>portal de Internet del NCI</xsl:text>
-        </xsl:element>
-        <xsl:text>.</xsl:text>
-       </Para>
-
-      </SummarySection>
-     </xsl:otherwise>
-    </xsl:choose>
-   </xsl:if>
- </xsl:template>
 
 
- <!-- 
- ==================================================================
- Template to add the Trial Search String to sections with Diagnosis
- in the section meta data.
- ================================================================== -->  
- <xsl:template                    name = "addTrialSearchString">
-  <xsl:param                      name = "diagnosis"
-                                select = "''"/>
-  <xsl:param                      name = "diagnosisID"
-                                select = "'CDR0000000000'"/>
-  <xsl:param                      name = "audience"
-                                select = "'patient'"/>
-  
-  <xsl:choose>
-   <xsl:when                      test = "position() = last()
-                                          and
-                                          not(position() = 1)">
-    <xsl:choose>
-     <xsl:when                    test = "/Summary/
-                                           SummaryMetaData/
-                                           SummaryLanguage = 'English'">
-      <xsl:text> and </xsl:text>
-     </xsl:when>
-     <xsl:when                    test = "/Summary/
-                                           SummaryMetaData/
-                                           SummaryLanguage = 'Spanish'">
-      <xsl:text> y </xsl:text>
-     </xsl:when>
-    </xsl:choose>
-   </xsl:when>
-   <xsl:when                      test = "not(position() = 1)">
-    <xsl:text>, </xsl:text>
-   </xsl:when>
-  </xsl:choose>
-
-  <xsl:choose>
-   <xsl:when                      test = "$audience = 'patient'">
-    <xsl:element                  name = "ExternalRef">
-     <xsl:attribute               name = "xref">
-      <xsl:text>http://www.cancer.gov/Search/ClinicalTrialsLink.aspx</xsl:text>
-      <xsl:text>?diagnosis=</xsl:text>
-      <xsl:value-of             select = "number(substring($diagnosisID, 4))"/>
-      <xsl:text>&amp;tt=1</xsl:text>
-      <xsl:text>&amp;format=1</xsl:text>
-      <xsl:text>&amp;cn=1</xsl:text>
-     </xsl:attribute>
-     <xsl:value-of              select = "$diagnosis"/>
-    </xsl:element>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:element                  name = "ExternalRef">
-     <xsl:attribute               name = "xref">
-      <xsl:text>http://www.cancer.gov/Search/ClinicalTrialsLink.aspx</xsl:text>
-      <xsl:text>?diagnosis=</xsl:text>
-      <xsl:value-of             select = "number(substring($diagnosisID, 4))"/>
-      <xsl:text>&amp;tt=1</xsl:text>
-      <xsl:text>&amp;format=2</xsl:text>
-      <xsl:text>&amp;cn=1</xsl:text>
-     </xsl:attribute>
-     <xsl:value-of              select = "$diagnosis"/>
-    </xsl:element>
-   </xsl:otherwise>
-  </xsl:choose>
-
- </xsl:template>
 
  <!-- 
  ==================================================================
@@ -683,11 +439,15 @@ $Log: not supported by cvs2svn $
  SectMetaData Template
  ================================================================== -->  
  <xsl:template                  match = "SectMetaData">
+  <xsl:if                        test = "Diagnosis
+                                         or
+                                         SectionType">
   <SectMetaData>
    <xsl:apply-templates        select = "Diagnosis"/>
    <xsl:apply-templates        select = "SectionType"
                                  mode = "copy"/>
   </SectMetaData>
+  </xsl:if>
  </xsl:template>
 
 
@@ -835,6 +595,14 @@ $Log: not supported by cvs2svn $
  </xsl:template>
 
 
+ <!--
+ ==================================================================
+ Template to suppress the auxiliary information for linked
+ summaries.
+ ================================================================== -->  
+ <xsl:template                  match = "LinkedSummary"/>
+
+
  <!-- 
  ==================================================================
  SummaryMetaData Template
@@ -871,8 +639,7 @@ $Log: not supported by cvs2svn $
 
  <!-- 
  ============================================================= 
- Create the Para template including the renamed attribute for 
- the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+ Template to create MainTopics
  ============================================================= -->
  <xsl:template                  match = "MainTopics">
   <MainTopics>
@@ -883,8 +650,7 @@ $Log: not supported by cvs2svn $
 
  <!-- 
  ============================================================= 
- Create the Para template including the renamed attribute for 
- the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+ Template to create SecondaryTopics
  ============================================================= -->
  <xsl:template                  match = "SecondaryTopics">
   <SecondaryTopics>
@@ -895,8 +661,7 @@ $Log: not supported by cvs2svn $
 
  <!-- 
  ============================================================= 
- Create the Para template including the renamed attribute for 
- the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+ Template to create Terms
  ============================================================= -->
  <xsl:template                  match = "Term">
    <TermRef>
@@ -937,16 +702,38 @@ $Log: not supported by cvs2svn $
  <xsl:template                  match = "Para"
                                  mode = "MiscText">
   <xsl:param                     name = "miscDocId"/>
+  <xsl:param                   name = "curLocation">
+   <SectMetaData/>
+  </xsl:param>
+
   <Para>
    <xsl:attribute                name = "id">
     <xsl:value-of              select = "concat($miscDocId, ./@cdr:id)"/>
    </xsl:attribute>
    <xsl:apply-templates        select = "Para" 
                                  mode = "copy"/>
-   <xsl:apply-templates/>
+   <xsl:apply-templates>
+    <xsl:with-param             name = "curLocation"
+                               select = "$curLocation"/>
+   </xsl:apply-templates>
   </Para>
  </xsl:template>
     
+
+ <!-- 
+ ============================================================= 
+ Create the Para template including the renamed attribute for 
+ the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+ ============================================================= -->
+ <xsl:template                  match = "Para"
+                                 mode = "trialSearch">
+  <xsl:if                        test = "normalize-space(.)">
+   <Para>
+    <xsl:apply-templates/>
+   </Para>
+  </xsl:if>
+ </xsl:template>
+
 
  <!-- 
  ============================================================= 
@@ -1035,6 +822,34 @@ $Log: not supported by cvs2svn $
    <xsl:attribute                name = "id">
     <xsl:value-of              select = "./@cdr:id"/>
    </xsl:attribute>
+   <xsl:if                       test = "./@Style">
+    <xsl:attribute               name = "Style">
+     <xsl:value-of             select = "./@Style"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:if                       test = "./@Compact">
+    <xsl:attribute               name = "Compact">
+     <xsl:value-of             select = "./@Compact"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:apply-templates/>
+  </OrderedList>
+ </xsl:template>
+    
+
+ <!-- 
+ ==================================================================== 
+ Create the OrderedList template including the renamed attribute for 
+ the paragraph IDs. (cdr:ref ID needs to be renamed to id).
+ ==================================================================== -->
+ <xsl:template                  match = "OrderedList"
+                                 mode = "MiscText">
+  <xsl:param                     name = "miscDocId"/>
+
+  <OrderedList>
+    <xsl:attribute               name = "id">
+     <xsl:value-of             select = "concat($miscDocId, ./@cdr:id)"/>
+    </xsl:attribute>
    <xsl:if                       test = "./@Style">
     <xsl:attribute               name = "Style">
      <xsl:value-of             select = "./@Style"/>
@@ -1156,6 +971,187 @@ $Log: not supported by cvs2svn $
    </QandAEntry>
  </xsl:template>
     
+
+ <!-- 
+ ==================================================================
+ Main MiscellaneousDocumentText Template
+ ================================================================== -->  
+ <xsl:template                  match = "MiscellaneousDocLink">
+  <xsl:apply-templates           mode = "miscFragment">
+   <xsl:with-param               name = "miscDocId" 
+                               select = "../@cdr:id"/>
+  </xsl:apply-templates>
+ </xsl:template>
+
+ <!-- 
+ ==================================================================
+ Main MiscellaneousDocumentText Template
+ ================================================================== -->  
+ <xsl:template                  match = "MiscellaneousDocumentText">
+  <xsl:param                     name = "miscDocId"/>
+  <xsl:apply-templates>
+   <xsl:with-param               name = "miscDocId" 
+                               select = "$miscDocId"/>
+  </xsl:apply-templates>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Section Template for Misc Docs
+ Need to pass the parameter of the CDR Doc ID to set the ID 
+ attribute properly.  The misc doc can be either the 'To Learn More'
+ or the 'About PDQ' section.
+ ================================================================== -->  
+ <xsl:template                  match = "Section">
+  <xsl:param                     name = "miscDocId"/>
+
+  <SummarySection>
+   <xsl:choose>
+    <xsl:when                    test = "$miscDocId">
+     <xsl:if                     test = "./@cdr:id">
+      <xsl:attribute             name = "id">
+       <xsl:value-of           select = "$miscDocId"/>
+       <xsl:value-of           select = "./@cdr:id"/>
+      </xsl:attribute>
+     </xsl:if>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:if                     test = "./@cdr:id">
+      <xsl:attribute             name = "id">
+       <xsl:value-of           select = "./@cdr:id"/>
+      </xsl:attribute>
+     </xsl:if>
+    </xsl:otherwise>
+   </xsl:choose>
+
+   <xsl:apply-templates          mode = "MiscText">
+    <xsl:with-param              name = "miscDocId" 
+                               select = "$miscDocId"/>
+   </xsl:apply-templates>
+  </SummarySection>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Section Template for Misc Docs
+ Need to pass the parameter of the CDR Doc ID to set the ID 
+ attribute properly.  The misc doc can be either the 'To Learn More'
+ or the 'About PDQ' section.
+ ================================================================== -->  
+ <xsl:template                  match = "Section"
+                                 mode = "miscFragment">
+  <xsl:param                     name = "miscDocId"/>
+  <!-- SummarySection>
+   <xsl:choose>
+    <xsl:when                    test = "$miscDocId">
+     <xsl:if                     test = "./@cdr:id">
+      <xsl:attribute             name = "id">
+       <xsl:value-of           select = "$miscDocId"/>
+       <xsl:value-of           select = "./@cdr:id"/>
+      </xsl:attribute>
+     </xsl:if>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:if                     test = "./@cdr:id">
+      <xsl:attribute             name = "id">
+       <xsl:value-of           select = "./@cdr:id"/>
+      </xsl:attribute>
+     </xsl:if>
+    </xsl:otherwise>
+   </xsl:choose -->
+
+   <xsl:apply-templates          mode = "MiscText">
+    <xsl:with-param              name = "miscDocId" 
+                               select = "$miscDocId"/>
+   </xsl:apply-templates>
+  <!-- /SummarySection -->
+ </xsl:template>
+
+
+ <!-- 
+ ==============================================================
+ Template for extracting External Ref Definition
+ ============================================================== -->
+ <xsl:template                  match = "ExternalRef">
+  <ExternalRef>
+   <xsl:attribute                name = "xref">
+    <xsl:value-of              select = "@cdr:xref"/>
+   </xsl:attribute>
+   <xsl:apply-templates/>
+  </ExternalRef>
+ </xsl:template>
+
+
+ <!-- 
+ ============================================================= 
+ Replace the PlaceHolder link name in the Misc. Document
+ ============================================================= -->
+ <xsl:template                  match = "PlaceHolder[
+                                          @name = 'ClinicalTrialSearchLink']">
+  <xsl:param                      name = "curLocation"/>
+
+
+  <xsl:choose>
+   <xsl:when                      test = "$curLocation/Diagnosis
+                                         or
+                                          $curLocation/Intervention
+                                         or
+                                          $curLocation/Drug">
+    <xsl:for-each               select = "$curLocation/Diagnosis    |
+                                          $curLocation/Intervention |
+                                          $curLocation/Drug">
+     <xsl:call-template           name = "addTrialSearchString">
+      <xsl:with-param             name = "metaDataDoc"
+                                select = "."/>
+      <xsl:with-param             name = "metaDataType"
+                                select = "name()"/>
+      <xsl:with-param             name = "metaDataDocID"
+                                select = "@cdr:ref | @ref"/>
+      <xsl:with-param             name = "audience"
+                                select = "$sumAudience"/>
+     </xsl:call-template>
+    </xsl:for-each>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:for-each               select = "$tlss/Diagnosis           |
+                                          $tlss/Intervention        | 
+                                          $tlss/Drug">
+     <xsl:call-template           name = "addTrialSearchString">
+      <xsl:with-param             name = "metaDataDoc"
+                                select = "."/>
+      <xsl:with-param             name = "metaDataType"
+                                select = "name()"/>
+      <xsl:with-param             name = "metaDataDocID"
+                                select = "@cdr:ref | @ref"/>
+      <xsl:with-param             name = "audience"
+                                select = "$sumAudience"/>
+     </xsl:call-template>
+    </xsl:for-each>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+    
+
+ <!-- 
+ ==============================================================
+ Replace the PlaceHolder link for Spanish text (singular/plural
+ ============================================================== -->
+ <xsl:template                   match = "PlaceHolder[@name = 'termino']">
+  <xsl:param                      name = "curLocation"/>
+  <xsl:choose>
+   <xsl:when                      test = "count($curLocation/Diagnosis    |
+                                                $curLocation/Intervention |
+                                                $curLocation/Drug) = 1">
+    <xsl:text>el t&#xE9;rmino</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>los t&#xE9;rminos</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
 
  <!-- 
  =========================================================================
@@ -1984,114 +1980,361 @@ $Log: not supported by cvs2svn $
 
  <!-- 
  ==================================================================
- Main MiscellaneousDocumentText Template
+ Template to add the Top Level Trial Search section
+ By convention the TrialSearchString = TopLevel attribute is being 
+ placed in the top most section of a summary.
  ================================================================== -->  
- <xsl:template                  match = "MiscellaneousDocLink">
-  <xsl:apply-templates           mode = "miscFragment">
-   <xsl:with-param               name = "miscDocId" 
-                               select = "../@cdr:id"/>
-  </xsl:apply-templates>
+ <xsl:template                    name = "addTopLevelTrialSearchSection">
+  <xsl:param                      name = "sectionID"
+                                select = "'_TopTrialSearch'"/>
+
+  <xsl:choose>
+   <xsl:when                      test = "$sumAudience 
+                                                   = 'Health professionals'">
+    <SummarySection>
+     <xsl:attribute               name = "id">
+      <xsl:value-of             select = "$sectionID"/>
+      <xsl:text>_</xsl:text>
+      <xsl:value-of             select = "position()"/>
+     </xsl:attribute>
+     <xsl:choose>
+      <xsl:when                   test = "/Summary/
+                                          SummaryMetaData/
+                                          SummaryLanguage = 'English'">
+       <Title>
+        <xsl:text>Current Clinical Trials</xsl:text>
+       </Title>
+
+       <xsl:apply-templates     select = "$slText_en_hp/
+                                          MiscellaneousDocument/
+                                          MiscellaneousDocumentText/
+                                          Section[@cdr:id=$miscSection]/
+                                          *[not(self::Title)]"
+                                  mode = "MiscText">
+        <xsl:with-param           name = "miscDocId"
+                                select = "$sectionID"/>
+       </xsl:apply-templates>
+      </xsl:when>
+      <xsl:when                   test = "/Summary/
+                                          SummaryMetaData/
+                                          SummaryLanguage = 'Spanish'">
+       <Title>
+        <xsl:text>Ensayos cl&#xED;nicos en curso</xsl:text>
+       </Title>
+       <xsl:apply-templates     select = "$slText_es_hp/
+                                          MiscellaneousDocument/
+                                          MiscellaneousDocumentText/
+                                          Section[@cdr:id=$miscSection]/
+                                          *[not(self::Title)]"
+                                  mode = "MiscText">
+        <xsl:with-param           name = "miscDocId"
+                                select = "$sectionID"/>
+       </xsl:apply-templates>
+      </xsl:when>
+     </xsl:choose>
+    </SummarySection>
+   </xsl:when>
+   <xsl:when                      test = "$sumAudience 
+                                                   = 'Patients'">
+    <SummarySection>
+     <xsl:attribute               name = "id">
+      <xsl:value-of             select = "$sectionID"/>
+      <xsl:text>_</xsl:text>
+      <xsl:value-of             select = "position()"/>
+     </xsl:attribute>
+     <xsl:choose>
+      <xsl:when                   test = "/Summary/
+                                          SummaryMetaData/
+                                          SummaryLanguage = 'English'">
+       <Title>
+        <xsl:text>Current Clinical Trials</xsl:text>
+       </Title>
+
+
+       <xsl:apply-templates     select = "$slText_en_pat/
+                                          MiscellaneousDocument/
+                                          MiscellaneousDocumentText/
+                                          Section[@cdr:id=$miscSection]/
+                                          *[not(self::Title)]"
+                                  mode = "MiscText">
+        <xsl:with-param           name = "miscDocId"
+                                select = "$sectionID"/>
+       </xsl:apply-templates>
+      </xsl:when>
+      <xsl:when                   test = "/Summary/
+                                          SummaryMetaData/
+                                          SummaryLanguage = 'Spanish'">
+       <Title>
+        <xsl:text>Ensayos cl&#xED;nicos en curso</xsl:text>
+       </Title>
+       <xsl:apply-templates     select = "$slText_es_pat/
+                                          MiscellaneousDocument/
+                                          MiscellaneousDocumentText/
+                                          Section[@cdr:id=$miscSection]/
+                                          *[not(self::Title)]"
+                                  mode = "MiscText">
+        <xsl:with-param           name = "miscDocId"
+                                select = "$sectionID"/>
+       </xsl:apply-templates>
+      </xsl:when>
+     </xsl:choose>
+    </SummarySection>
+   </xsl:when>
+  </xsl:choose>
  </xsl:template>
+
 
  <!-- 
  ==================================================================
- Main MiscellaneousDocumentText Template
+ Template to add the Trial Search section
  ================================================================== -->  
- <xsl:template                  match = "MiscellaneousDocumentText">
-  <xsl:param                     name = "miscDocId"/>
-  <xsl:apply-templates>
-   <xsl:with-param               name = "miscDocId" 
-                               select = "$miscDocId"/>
-  </xsl:apply-templates>
- </xsl:template>
+ <xsl:template                    name = "addTrialSearchSection">
+  <xsl:param                      name = "sectionID"
+                                select = "'_TrialSearch'"/>
 
-
- <!-- 
- ==================================================================
- Section Template for Misc Docs
- Need to pass the parameter of the CDR Doc ID to set the ID 
- attribute properly.  The misc doc can be either the 'To Learn More'
- or the 'About PDQ' section.
- ================================================================== -->  
- <xsl:template                  match = "Section">
-  <xsl:param                     name = "miscDocId"/>
-
-  <SummarySection>
+  <xsl:if                         test = "(SectMetaData/
+                                           Diagnosis
+                                          or
+                                           SectMetaData/
+                                           Intervention
+                                          or 
+                                           SectMetaData/
+                                           Drug)
+                                          and
+                                           not(@TrialSearchString)">
+   <xsl:variable                  name = "metaData"
+                                select = "./SectMetaData"/>
+   
    <xsl:choose>
-    <xsl:when                    test = "$miscDocId">
-     <xsl:if                     test = "./@cdr:id">
-      <xsl:attribute             name = "id">
-       <xsl:value-of           select = "$miscDocId"/>
-       <xsl:value-of           select = "./@cdr:id"/>
+    <xsl:when                     test = "/Summary/
+                                           SummaryMetaData/
+                                           SummaryAudience = 
+                                                        'Health professionals'">
+     <SummarySection>
+      <xsl:attribute              name = "id">
+       <xsl:value-of            select = "$sectionID"/>
+       <xsl:value-of            select = "concat('_', position())"/>
       </xsl:attribute>
-     </xsl:if>
+
+      <xsl:choose>
+       <xsl:when                  test = "$language = 'English'">
+        <Title>Current Clinical Trials</Title>
+        <xsl:apply-templates    select = "$slText_en_hp/
+                                          MiscellaneousDocument/
+                                          MiscellaneousDocumentText/
+                                          Section[@cdr:id=$miscSection]/
+                                          *[not(self::Title)]"
+                                  mode = "MiscText">
+           <xsl:with-param        name = "miscDocId"
+                                select = "$sectionID"/>
+           <xsl:with-param        name = "curLocation"
+                                select = "$metaData"/>
+        </xsl:apply-templates>
+       </xsl:when>
+       <xsl:when                  test = "$language = 'Spanish'">
+        <Title>Ensayos cl&#xED;nicos en curso</Title>
+        <xsl:apply-templates    select = "$slText_es_hp/
+                                          MiscellaneousDocument/
+                                          MiscellaneousDocumentText/
+                                          Section[@cdr:id=$miscSection]/
+                                          *[not(self::Title)]"
+                                  mode = "MiscText">
+           <xsl:with-param        name = "miscDocId"
+                                select = "$sectionID"/>
+           <xsl:with-param        name = "curLocation"
+                                select = "$metaData"/>
+        </xsl:apply-templates>
+       </xsl:when>
+      </xsl:choose>
+     </SummarySection>
     </xsl:when>
-    <xsl:otherwise>
-     <xsl:if                     test = "./@cdr:id">
-      <xsl:attribute             name = "id">
-       <xsl:value-of           select = "./@cdr:id"/>
-      </xsl:attribute>
-     </xsl:if>
-    </xsl:otherwise>
+    <!-- 
+    Display additional paragraph at end of section for 'Patients'
+    ============================================================= -->
+    <xsl:when                     test = "/Summary/
+                                          SummaryMetaData/
+                                          SummaryAudience = 'Patients'">
+     <xsl:choose>
+      <xsl:when                   test = "$language = 'English'">
+       <xsl:apply-templates     select = "$slText_en_pat/
+                                          MiscellaneousDocument/
+                                          MiscellaneousDocumentText/
+                                          Section[@cdr:id=$miscSection]/
+                                          *[not(self::Title)]"
+                                  mode = "MiscText">
+           <xsl:with-param        name = "miscDocId"
+                                select = "$sectionID"/>
+           <xsl:with-param        name = "curLocation"
+                                select = "$metaData"/>
+       </xsl:apply-templates>
+      </xsl:when>
+      <xsl:when                   test = "$language = 'Spanish'">
+       <xsl:apply-templates     select = "$slText_es_pat/
+                                          MiscellaneousDocument/
+                                          MiscellaneousDocumentText/
+                                          Section[@cdr:id=$miscSection]/
+                                          *[not(self::Title)]"
+                                  mode = "MiscText">
+           <xsl:with-param        name = "miscDocId"
+                                select = "$sectionID"/>
+           <xsl:with-param        name = "curLocation"
+                                select = "$metaData"/>
+       </xsl:apply-templates>
+      </xsl:when>
+     </xsl:choose>
+    </xsl:when>
    </xsl:choose>
-
-   <xsl:apply-templates          mode = "MiscText">
-    <xsl:with-param              name = "miscDocId" 
-                               select = "$miscDocId"/>
-   </xsl:apply-templates>
-  </SummarySection>
+  </xsl:if>
  </xsl:template>
 
 
  <!-- 
  ==================================================================
- Section Template for Misc Docs
- Need to pass the parameter of the CDR Doc ID to set the ID 
- attribute properly.  The misc doc can be either the 'To Learn More'
- or the 'About PDQ' section.
+ Template to add the Trial Search String to sections with Diagnosis
+ in the section meta data.
  ================================================================== -->  
- <xsl:template                  match = "Section"
-                                 mode = "miscFragment">
-  <xsl:param                     name = "miscDocId"/>
-  <!-- SummarySection>
-   <xsl:choose>
-    <xsl:when                    test = "$miscDocId">
-     <xsl:if                     test = "./@cdr:id">
-      <xsl:attribute             name = "id">
-       <xsl:value-of           select = "$miscDocId"/>
-       <xsl:value-of           select = "./@cdr:id"/>
-      </xsl:attribute>
-     </xsl:if>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:if                     test = "./@cdr:id">
-      <xsl:attribute             name = "id">
-       <xsl:value-of           select = "./@cdr:id"/>
-      </xsl:attribute>
-     </xsl:if>
-    </xsl:otherwise>
-   </xsl:choose -->
+ <xsl:template                    name = "addTrialSearchString">
+  <xsl:param                      name = "metaDataDoc"
+                                select = "''"/>
+  <xsl:param                      name = "metaDataType"
+                                select = "'Diagnosis'"/>
+  <xsl:param                      name = "metaDataDocID"
+                                select = "'CDR0000000000'"/>
+  <xsl:param                      name = "audience"
+                                select = "'Patients'"/>
+  
+  <xsl:choose>
+   <xsl:when                      test = "position() = last()
+                                          and
+                                          not(position() = 1)">
+    <xsl:choose>
+     <xsl:when                    test = "/Summary/
+                                           SummaryMetaData/
+                                           SummaryLanguage = 'English'">
+      <xsl:text> and </xsl:text>
+     </xsl:when>
+     <xsl:when                    test = "/Summary/
+                                           SummaryMetaData/
+                                           SummaryLanguage = 'Spanish'">
+      <xsl:text> y </xsl:text>
+     </xsl:when>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:when                      test = "not(position() = 1)">
+    <xsl:text>, </xsl:text>
+   </xsl:when>
+  </xsl:choose>
 
-   <xsl:apply-templates          mode = "MiscText">
-    <xsl:with-param              name = "miscDocId" 
-                               select = "$miscDocId"/>
-   </xsl:apply-templates>
-  <!-- /SummarySection -->
+  <xsl:choose>
+   <xsl:when                      test = "$audience = 'Patients'">
+    <xsl:element                  name = "ExternalRef">
+     <xsl:attribute               name = "xref">
+      <xsl:text>http://www.cancer.gov/Search/ClinicalTrialsLink.aspx</xsl:text>
+      <xsl:text>?</xsl:text>
+      <xsl:value-of             select = "$metaDataType"/>
+      <xsl:text>=</xsl:text>
+      <xsl:value-of             select = "number(substring($metaDataDocID,
+                                                                      4))"/>
+      <xsl:text>&amp;tt=1</xsl:text>
+      <xsl:text>&amp;format=1</xsl:text>
+      <xsl:text>&amp;cn=1</xsl:text>
+     </xsl:attribute>
+     <xsl:value-of              select = "$metaDataDoc"/>
+    </xsl:element>
+   </xsl:when>
+   <!--
+   HP Section
+   ========================================================== -->
+   <xsl:otherwise>
+    <xsl:call-template            name = "makeSearchString">
+     <xsl:with-param              name = "metaDataType"
+                                select = "$metaDataType"/>
+     <xsl:with-param              name = "metaDataDocID"
+                                select = "$metaDataDocID"/>
+     <xsl:with-param              name = "metaDataDoc"
+                                select = "$metaDataDoc"/>
+    </xsl:call-template>
+   </xsl:otherwise>
+  </xsl:choose>
+
  </xsl:template>
 
 
  <!-- 
- ==============================================================
- Template for extracting External Ref Definition
- ============================================================== -->
- <xsl:template                  match = "ExternalRef">
-  <ExternalRef>
-   <xsl:attribute                name = "xref">
-    <xsl:value-of              select = "@cdr:xref"/>
-   </xsl:attribute>
-   <xsl:apply-templates/>
-  </ExternalRef>
+ ==================================================================
+ 
+ ================================================================== -->  
+ <xsl:template                    name = "makeSearchString">
+  <xsl:param                      name = "metaDataDoc"
+                                select = "''"/>
+  <xsl:param                      name = "metaDataType"
+                                select = "'Diagnosis'"/>
+  <xsl:param                      name = "metaDataDocID"
+                                select = "'CDR0000000000'"/>
+  <xsl:param                      name = "audience"
+                                select = "'patient'"/>
+
+    <xsl:element                  name = "ExternalRef">
+     <xsl:attribute               name = "xref">
+
+      <xsl:choose>
+       <xsl:when                  test = "$metaDataType = 'Diagnosis'">
+        <xsl:text>http://www.cancer.gov/Search</xsl:text>
+        <xsl:text>/ClinicalTrialsLink.aspx?</xsl:text>
+        <xsl:value-of            select = "$metaDataType"/>
+        <xsl:text>=</xsl:text>
+        <xsl:value-of            select = "number(substring($metaDataDocID,
+                                                                       4))"/>
+        <xsl:text>&amp;tt=1</xsl:text>
+        <xsl:text>&amp;format=2</xsl:text>
+        <xsl:text>&amp;cn=1</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "$metaDataType = 'Intervention'">
+        <xsl:text>http://www.cancer.gov/Search</xsl:text>
+        <xsl:text>/ClinicalTrialsLink.aspx?</xsl:text>
+        <xsl:text>idtype=5&amp;id=</xsl:text>
+        <xsl:value-of            select = "number(substring($metaDataDocID,
+                                                                       4))"/>
+        <xsl:text>&amp;tt=1</xsl:text>
+        <xsl:text>&amp;format=2</xsl:text>
+        <xsl:text>&amp;cn=1</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "$metaDataType = 'Drug'">
+        <xsl:text>http://www.cancer.gov/Search</xsl:text>
+        <xsl:text>/ClinicalTrialsLink.aspx?</xsl:text>
+        <xsl:text>idtype=1&amp;id=</xsl:text>
+        <xsl:value-of            select = "number(substring($metaDataDocID,
+                                                                       4))"/>
+        <xsl:text>&amp;tt=1</xsl:text>
+        <xsl:text>&amp;format=2</xsl:text>
+        <xsl:text>&amp;cn=1</xsl:text>
+       </xsl:when>
+      </xsl:choose>
+     </xsl:attribute>
+     <xsl:value-of              select = "$metaDataDoc"/>
+    </xsl:element>
  </xsl:template>
+
+
+ <!-- 
+ =========================================================================
+ ========================================================================= -->
+<!-- 
+ <xsl:template                    name = "MiscDiagnosis">
+  <xsl:variable                   name = "MiscInfo" 
+                                select = "document(concat('cdr:name:',
+                                                        'TEST - VE TrialSearch',
+                                                        ';Standard wording',
+                                                          '/lastp'))"/>
+  
+  <xsl:apply-templates          select = "$MiscInfo/
+                                            MiscellaneousDocument/
+                                            MiscellaneousDocumentText/
+                                            Section/Para"
+                                  mode = "trialSearch"/>
+ </xsl:template>
+-->
+
 </xsl:transform>
 ]]>
 </CdrDocXml>
