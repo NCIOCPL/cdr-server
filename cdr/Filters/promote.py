@@ -1,32 +1,34 @@
 # *********************************************************************
 #
-# $Id: promote.py,v 1.1 2009-07-27 18:16:23 venglisc Exp $
+# $Id: promote.py,v 1.2 2009-07-28 21:48:02 venglisc Exp $
 #
 # Promote filters to FRANCK and BACH
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.1  2009/07/27 18:16:23  venglisc
+# Initial copy of the new program to promote a filter to the CDR. (Bug 4608)
+#
 # *********************************************************************
 
 #----------------------------------------------------------------------
 # Import required modules.
 #----------------------------------------------------------------------
-import cdr, os, sys, tempfile, string, socket, time, subprocess
+import cdr, os, sys, string, socket
 
 #----------------------------------------------------------------------
 # Edit only on Dev machine.
 #----------------------------------------------------------------------
 localhost = socket.gethostname()
-if string.upper(localhost) == "FRANCKx" or \
+if string.upper(localhost) == "FRANCK" or \
    string.upper(localhost) == "MAHLER":
     localhost = "Dev"
-# elif string.upper(localhost) == "BACH":
-elif string.upper(localhost) == "FRANCK":
+elif string.upper(localhost) == "BACH":
     localhost = "Prod"
 
 if len(sys.argv) < 4:
     sys.stderr.write('usage: promote.py user passwd NNNNN[-V]\n')
     sys.stderr.write('       NNNNN = filter ID\n')
-    sys.stderr.write('           V = filter version (optional)\n')
+    sys.stderr.write('           V = filter version (integer)\n')
     sys.exit(1)
 
 #----------------------------------------------------------------------
@@ -35,79 +37,14 @@ if len(sys.argv) < 4:
 LOGNAME   = "promote-filter.log"
 l         = cdr.Log(LOGNAME)
 
-#if os.environ.has_key("TMP"):
-#    tempfile.tempdir = os.environ["TMP"]
-#    l.write("tempfile.tempdir=%s" % tempfile.tempdir)
-
 tmpPath   = 'D:\\cdr\\tmp'
-l.write("%s" % tmpPath)
+l.write("tempPath: %s" % tmpPath)
 filtDir   = 'promoteFilters'
 filtPath  = '%s\\%s' % (tmpPath, filtDir)
 
 user      = sys.argv[1]
 passwd    = sys.argv[2]
 filters   = sys.argv[3:]
-debugging = 1
-
-#----------------------------------------------------------------------
-# Logging to keep an eye on problems (mostly with CVS).
-#----------------------------------------------------------------------
-def debugLog(what):
-    if debugging:
-        try:
-            f = open(LOGNAME + "d", "a")
-            f.write("%s: %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), what))
-            f.close()
-        except Exception, info:
-            sys.exit("Failure writing to %sd: %s" % (LOGNAME, str(info)))
-
-#----------------------------------------------------------------------
-# Object for results of an external command.
-#----------------------------------------------------------------------
-class CommandResult:
-    def __init__(self, code, output, error = None):
-        self.code   = code
-        self.output = output
-        self.error  = error
-
-#----------------------------------------------------------------------
-# Run an external command.
-#----------------------------------------------------------------------
-def runCommand(command):
-    debugLog("runCommand(%s)" % command)
-    try:
-        commandStream = os.popen('%s' % command)
-        output = commandStream.read()
-        code = commandStream.close()
-        return CommandResult(code, output)
-    except Exception, info:
-        debugLog("failure running command: %s" % str(info))
-
-def runCommand2(command):
-    debugLog("runCommand(%s)" % command)
-    try:
-        commandStream = subprocess.Popen('%s' % command, 
-                                         stdout = subprocess.PIPE, 
-                                         stderr = subprocess.STDOUT)
-        output, error = commandStream.communicate()
-        return CommandResult(commandStream.returncode, output)
-    except Exception, info:
-        debugLog("failure running command: %s" % str(info))
-
-def runCommand0(command):
-    debugLog("runCommand(%s)" % command)
-    try:
-        commandStream = subprocess.Popen('%s' % command, 
-                                         stdout = subprocess.PIPE, 
-                                         stderr = subprocess.PIPE)
-        output, error = commandStream.communicate()
-        code = commandStream.returncode
-
-        return CommandResult(code, output, error)
-    except Exception, info:
-        debugLog("failure running command: %s" % str(info))
-
-
 
 #----------------------------------------------------------------------
 # Checking out the documents that need to be promoted
@@ -124,14 +61,12 @@ def getFilterVersion(docId, version = None):
 
     # Set up cvs strings and repository
     # ---------------------------------
-    #cvshost = "verdi.nci.nih.gov"
-    #app     = 'cgi-bin/cdr/cvsweb.cgi/~checkout~/cdr/Filters'
     cvsroot = "-d:pserver:anon@%s" % cdr.CVSROOT
     l.write("initializing CVS workspace: \n     CVSROOT=%s" % cvsroot)
 
     cvsDoc   = 'CDR%010d.xml' % docId
     cvsRevDoc= 'CDR%010d_V1.%s.xml'
-    cvsRevision = [0 , 0]
+    cvsRevision = [-1, -1]
 
     # Change to the CVS repository, if it doesn't exist create it
     # -----------------------------------------------------------
@@ -176,12 +111,15 @@ def getFilterVersion(docId, version = None):
         # possibly an older version
         # --------------------------------------------------------
         cmd = "cvs %s checkout -r1.%s -p cdr/Filters/%s" % (cvsroot, 
-                                                               version, cvsDoc)
-        res = cdr.runCommand0(cmd)
+                                                            version, 
+                                                            cvsDoc)
+        os.chdir(tmpPath)
+        res = cdr.runCommand(cmd, joinErr2Out = False, osPopen = False)
+        os.chdir(filtPath)
         
-        file= "%s\\%s" % (filtPath, cvsRevDoc)
-        f   = open(file % (docId, version), 'w')
-        f.write(res.output)
+        file= "%s\\%s" % (filtPath, cvsRevDoc % (docId, version))
+        f   = open(file, 'w')
+        f.write(res.output.replace('\r', ''))
         f.close()
 
     except Exception, info:
@@ -219,7 +157,12 @@ for filtId in filters:
     # ------------------------------------------------------------------
     filterIds = cdr.exNormalize(filtId)
     docId     = filterIds[1]
-    cvsVersion = filterIds[2][1:]
+    try:
+        cvsVersion = int(filterIds[2][1:])
+    except:
+        l.write("*** Error:  Version must be an integer")
+        sys.exit("*** Error: Version must be an integer: %s" % str(cvsVersion))
+
     l.write("  CDR%010d.xml" % filterIds[1], stdout = True)
     l.write("  -----------------",           stdout = True)
     l.write("",                              stdout = True)
@@ -241,7 +184,7 @@ for filtId in filters:
     res = cdr.runCommand(cmd, joinErr2Out = False, osPopen = False)
     
     if res.code:
-        l.write( '*** Error in CVS status: %s' % res.output)
+        l.write( '*** Error in CVS status: %s' %            res.output)
         sys.exit('*** Error in CVS status: \n%s\n%s\n%s' % (res.output,
                                                             res.error,
                                                             res.code))
@@ -254,20 +197,26 @@ for filtId in filters:
     # -----------------------------------------------------------
     if not filterIds[2] == '':
         if int(cvsVersion) > int(lastCvsVersion):
-            l.write("*** Error:  Cannot promote specified version")
+            l.write("*** Error:   Cannot promote specified version")
             sys.exit("*** Error:  Cannot promote specified version")
 
     l.write(" ---------------------------",           stdout = True)
     l.write("   Updating   Revision: 1.%s" % version, stdout = True)
     l.write('   Updating w/ comment: "%s"' % comment, stdout = True)
-    l.write("", stdout = True)
+    l.write("",                                       stdout = True)
 
     # Checking out document before we can copy the filter
     # ---------------------------------------------------
     try:
-        cdr.getDoc((user, passwd), docId, 'Y')
+        coDoc = cdr.getDoc((user, passwd), docId, 'Y')
+        if coDoc.startswith("<Errors"):
+            l.write("*** Error: Checking out document unsuccessful\n%s" % 
+                                                  coDoc, stdout = True)
+            sys.exit(1)
+
     except Exception, info:
-        print "Checking out document failed\n%s" % str(info)
+        l.write("*** Error:  Checking out document failed\n%s" % str(info))
+        sys.exit("*** Error: Checking out document failed - %s" % str(info))
 
     # Promote the filter to the CDR server and unlock the document
     # ------------------------------------------------------------
@@ -282,6 +231,7 @@ for filtId in filters:
                     stdout = True)
         l.write("", stdout = True)
     except Exception, info:
-        print "Replacing document failed\n%s" % str(info)
-
+        l.write("*** Error: Replacing document failed\n%s" % str(info), 
+                                                         stdout = True)
+        sys.exit("           Confirm that document isn't locked")
 sys.exit(0)
