@@ -1,10 +1,13 @@
 # *********************************************************************
 #
-# $Id: promote.py,v 1.2 2009-07-28 21:48:02 venglisc Exp $
+# $Id: promote.py,v 1.3 2009-07-31 15:03:08 venglisc Exp $
 #
 # Promote filters to FRANCK and BACH
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.2  2009/07/28 21:48:02  venglisc
+# Fixed some bugs found during testing. (Bug 4608)
+#
 # Revision 1.1  2009/07/27 18:16:23  venglisc
 # Initial copy of the new program to promote a filter to the CDR. (Bug 4608)
 #
@@ -114,7 +117,8 @@ def getFilterVersion(docId, version = None):
                                                             version, 
                                                             cvsDoc)
         os.chdir(tmpPath)
-        res = cdr.runCommand(cmd, joinErr2Out = False, osPopen = False)
+        res = cdr.runCommand(cmd, joinErr2Out = False, 
+                                  returnNoneOnSuccess = False)
         os.chdir(filtPath)
         
         file= "%s\\%s" % (filtPath, cvsRevDoc % (docId, version))
@@ -181,7 +185,8 @@ for filtId in filters:
     version = cvsVersion or lastCvsVersion
 
     cmd = "cvs status CDR%010d.xml" % docId
-    res = cdr.runCommand(cmd, joinErr2Out = False, osPopen = False)
+    res = cdr.runCommand(cmd, joinErr2Out = False, 
+                              returnNoneOnSuccess = False)
     
     if res.code:
         l.write( '*** Error in CVS status: %s' %            res.output)
