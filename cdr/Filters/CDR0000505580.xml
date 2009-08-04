@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml  version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000505580.xml,v 1.97 2009-06-04 14:01:57 venglisc Exp $
+$Id: CDR0000505580.xml,v 1.98 2009-08-04 15:01:18 venglisc Exp $
 
 Filter to create DrugInfoSummary vendor output documents.
                               Volker Englisch, 2006-08-12
@@ -193,7 +193,15 @@ $Log: not supported by cvs2svn $
     </Section>
    </xsl:if>
                
-   <xsl:call-template             name = "trialSection"/>
+   <!--
+   The Clinical Trials section should only be displayed for the Drug Info
+   Summaries that are not Drug Combinations
+   ====================================================================== -->
+   <xsl:if                        test = "not(/DrugInformationSummary
+                                                /DrugInfoMetaData
+                                                /DrugInfoType/@Combination)">
+    <xsl:call-template            name = "trialSection"/>
+   </xsl:if>
 
    <!--
    Add a Disclaimer document based on the DrugInfoType
@@ -323,8 +331,15 @@ $Log: not supported by cvs2svn $
     <xsl:apply-templates        select = "Manufacturers"/>
    </xsl:if>
 
-   <xsl:apply-templates         select = "FDAApproved"
+   <!--
+   We only need the FDA Approved section for non-DCS
+   ================================================= -->
+   <xsl:if                        test = "not(/DrugInformationSummary
+                                                /DrugInfoMetaData
+                                                /DrugInfoType/@Combination)">
+    <xsl:apply-templates        select = "FDAApproved"
                                   mode = "copy"/>
+   </xsl:if>
 
    <TerminologyLink>
     <xsl:attribute                name = "ref">
@@ -499,16 +514,30 @@ $Log: not supported by cvs2svn $
  ===================================================================== -->
  <xsl:template                   match = "SummarySection" 
                                   mode = "copy">
-  <!-- Para>
+  <!-- XXX Para>
    <xsl:value-of                select = "."/>
-  </Para -->
+  </Para XXX -->
+  <xsl:apply-templates          select = "Title"
+                                  mode = "section"/>
   <xsl:apply-templates          select = "Para         | 
                                           ItemizedList |
                                           OrderedList  |
-                                          Title" 
+                                          TitleX" 
                                   mode = "copy"/>
  </xsl:template>
 
+
+ <!--
+ =====================================================================
+ Template to convert the SummarySection Title element to a Bolded text
+ since Cancer.gov doesn't allow a title in a section.
+ ===================================================================== -->
+ <xsl:template                  match = "Title"
+                                 mode = "section">
+  <Para>
+   <Strong><xsl:value-of       select = "."/></Strong>
+  </Para>
+ </xsl:template>
 
  <!--
  =====================================================================
@@ -570,12 +599,6 @@ $Log: not supported by cvs2svn $
  Template to dedup US Brand Name (the names are coming in sorted)
  ===================================================================== -->
  <xsl:template                   match = "OtherName">
-<!--
-  <xsl:if                         test = "OtherTermName
-                                           [not(normalize-space(.) =  
-                                                normalize-space
-                                                (following::OtherTermName))]">
--->
   <xsl:if                         test = "OtherTermName
                                            [not(normalize-space(translate(.,
                                              'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
