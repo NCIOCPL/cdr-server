@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml     version = "1.0"?>
 <!--
 ================================================================
-$Id: CDR0000634383.xml,v 1.1 2009-02-02 22:06:31 venglisc Exp $
+$Id: CDR0000634383.xml,v 1.2 2009-08-06 20:38:31 venglisc Exp $
 
 Filter to resolve the placeholder elements.
 Volker Englisch         2009-01-26
@@ -23,8 +23,6 @@ $Log: not supported by cvs2svn $
                   omit-xml-declaration = "no"/>
 
  <xsl:include   href = "cdr:name:Module: Global Filter Templates"/>
-
-
 
  <!--
  ======================================================================
@@ -48,35 +46,80 @@ $Log: not supported by cvs2svn $
   <xsl:variable                   name = "replace"
                                 select = "@name"/>
 
+  <xsl:variable                   name = "language">
+   <xsl:choose>
+    <xsl:when                     test = "../../@language">
+     <xsl:value-of              select = "../../@language"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of              select = "../../../@language"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
   <xsl:choose>
-  <xsl:when                       test = "@name = 'TERMNAME'">
-   <xsl:value-of                select = "../../../../
+  <xsl:when                      test = "@name = 'TERMNAME'">
+   <xsl:choose>
+    <xsl:when                    test = "$language = 'es'">
+     <xsl:value-of             select = "/GlossaryTermName/
                                           TermName/
                                           TermNameString"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of             select = "/GlossaryTermName/
+                                          TranslatedName/
+                                          TermNameString"/>
+    </xsl:otherwise>
+   </xsl:choose>
   </xsl:when>
+
   <xsl:when                       test = "@name = 'CAPPEDTERMNAME'">
-   <xsl:call-template             name = "convertCase">
-    <xsl:with-param               name = "convString"
+   <xsl:choose>
+    <xsl:when                     test = "$language = 'es'">
+     <xsl:call-template           name = "convertCase">
+      <xsl:with-param             name = "convString"
                                 select = "substring(
-                                           normalize-space(../../../../
-                                          TermName/
-                                          TermNameString), 1, 1)"/>
-    <xsl:with-param               name = "convertTo"
+                                           normalize-space(
+                                           /GlossaryTermName/
+                                            TranslatedName[1]/
+                                            TermNameString), 1, 1)"/>
+      <xsl:with-param               name = "convertTo"
                                 select = "'proper'"/>
-   </xsl:call-template>
-   <xsl:value-of                select = "substring(
-                                           normalize-space(../../../../
-                                          TermName/
-                                          TermNameString), 2)"/>
+     </xsl:call-template>
+     <xsl:value-of                select = "substring(
+                                           normalize-space(
+                                           /GlossaryTermName/
+                                            TranslatedName[1]/
+                                            TermNameString), 2)"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:call-template             name = "convertCase">
+      <xsl:with-param               name = "convString"
+                                select = "substring(
+                                           normalize-space(
+                                           /GlossaryTermName/
+                                            TermName/
+                                            TermNameString), 1, 1)"/>
+      <xsl:with-param               name = "convertTo"
+                                select = "'proper'"/>
+     </xsl:call-template>
+     <xsl:value-of                select = "substring(
+                                           normalize-space(
+                                           /GlossaryTermName/
+                                            TermName/
+                                            TermNameString), 2)"/>
+    </xsl:otherwise>
+   </xsl:choose>
   </xsl:when>
   <xsl:when                       test = "../../
                                           ReplacementText[@name = $replace]">
-   <xsl:value-of                select = "../../
+   <xsl:apply-templates         select = "../../
                                           ReplacementText[@name = $replace]"/>
   </xsl:when>
   <xsl:otherwise>
-   <xsl:value-of                select = "../../../../
-                                          ReplacementText[@name = $replace]"/>
+   <xsl:apply-templates         select = "../../../../
+                                          ReplacementText[@name = $replace]"
+                                  mode = "copy"/>
   </xsl:otherwise>
  </xsl:choose>
  </xsl:template>
@@ -84,20 +127,12 @@ $Log: not supported by cvs2svn $
 
  <!--
  ======================================================================
- Template to display the Replacement text and PlaceHolders
+ Template to display the Replacement text with markup
  ====================================================================== -->
-<!-- 
- <xsl:template                  match = "ReplacementText">
-  <tr>
-   <td>
-    <xsl:value-of              select = "@name"/>
-   </td>
-   <td>
-    <xsl:value-of              select = "."/>
-   </td>
-  </tr>
+ <xsl:template                  match = "ReplacementText"
+                                 mode = "copy">
+  <xsl:apply-templates           mode = "copy"/>
  </xsl:template>
--->
 </xsl:transform>
 ]]>
 </CdrDocXml>
