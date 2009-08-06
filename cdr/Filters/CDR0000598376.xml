@@ -8,7 +8,7 @@
 <CdrDocXml><![CDATA[<?xml      version = "1.0"?>
 <!--
  ================================================================
- $Id: CDR0000598376.xml,v 1.4 2008-11-18 18:45:52 venglisc Exp $
+ $Id: CDR0000598376.xml,v 1.5 2009-08-06 20:27:14 venglisc Exp $
 
  Filter to denormalize GlossaryTermName data.
  Written by Volker Englisch, 2008-02-27
@@ -34,6 +34,18 @@
    <xsl:with-param                name = "label"
                                 select = "'Comment'"/>
   </xsl:apply-templates>
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ Template for TermNameDef.
+ Adding TermNameString so that the TermNameString element tags 
+ will be suppressed.  The default template would include those.
+ ================================================================= -->
+ <xsl:template                   match = "TermNameDef | 
+                                          TermNameString">
+  <xsl:apply-templates/>
  </xsl:template>
 
 
@@ -106,29 +118,31 @@
    <xsl:choose>
     <xsl:when                     test = "@name = 'TERMNAME'">
      <span class="term-normal">
-     <xsl:value-of              select = "../../TermNameString"/>
+     <!-- if the TermNameString is placed within insertion/deletion markup
+          we will need to go one more level up to get the name for it -->
+     <xsl:apply-templates       select = "../../TermNameString |
+                                          ../../../TermNameString"/>
      </span>
     </xsl:when>
     <xsl:when                     test = "@name = 'CAPPEDTERMNAME'">
      <span class="term-capped">
-     <xsl:value-of              select = "concat('@@', 
-                                                 substring(
-                                                   ../../TermNameString, 1, 1),
-                                                 '@@')"/>
-     <xsl:value-of              select = "substring(../../TermNameString, 2)"/>
+      <xsl:text>@@</xsl:text>
+      <xsl:apply-templates       select = "../../TermNameString |
+                                           ../../../TermNameString"/>
+      <xsl:text>@@</xsl:text>
      </span>
     </xsl:when>
     <xsl:when                     test = "../../GlossaryTermPlaceHolder/
                                           ReplacementText[@name=$replace]">
      <span class="term-name">
-     <xsl:value-of              select = "../../GlossaryTermPlaceHolder/
+     <xsl:apply-templates       select = "../../GlossaryTermPlaceHolder/
                                           ReplacementText[@name=$replace]"/>
      </span>
     </xsl:when>
     <xsl:when                     test = "../../GlossaryConceptPlaceHolder/
                                           ReplacementText[@name=$replace]">
      <span class="term-concept">
-     <xsl:value-of              select = "../../GlossaryConceptPlaceHolder/
+     <xsl:apply-templates       select = "../../GlossaryConceptPlaceHolder/
                                           ReplacementText[@name=$replace]"/>
      </span>
     </xsl:when>
@@ -146,6 +160,7 @@
 
 
  <!--
+ ===================================================================
  We need to display the Glossary Term Name/Concept report with 
  insertion/deletion markup.
  =================================================================== -->
