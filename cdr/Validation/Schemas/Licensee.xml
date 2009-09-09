@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-     $Id: Licensee.xml,v 1.1 2008-11-18 23:09:01 venglisc Exp $ 
+     $Id: Licensee.xml,v 1.2 2009-09-09 19:00:51 venglisc Exp $ 
 
      $Log: not supported by cvs2svn $
+     Revision 1.1  2008/11/18 23:09:01  venglisc
+     Initial copy of licensee schema.
+
 -->
 
 <schema              xmlns           = 'http://www.w3.org/2001/XMLSchema'>
@@ -26,10 +29,10 @@
 
   <simpleType        name            = 'LicenseeStatus'>
     <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Active'/>
+      <enumeration   value           = 'Production'/>
+      <enumeration   value           = 'Production-inactive'/>
       <enumeration   value           = 'Test'/>
-      <enumeration   value           = 'Inactive'/>
-      <enumeration   value           = 'Inactive-revoked'/>
+      <enumeration   value           = 'Test-inactive'/>
     </restriction>
   </simpleType>
 
@@ -40,11 +43,11 @@
     </restriction>
   </simpleType>
 
-  <simpleType        name            = 'LicenseeIsForProfit'>
+  <simpleType        name            = 'OrganizationType'>
     <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Yes'/>
-      <enumeration   value           = 'No'/>
-      <enumeration   value           = 'Unknown'/>
+      <enumeration   value           = 'ForProfit'/>
+      <enumeration   value           = 'NotForProfit'/>
+      <enumeration   value           = 'Government'/>
     </restriction>
   </simpleType>
 
@@ -76,10 +79,52 @@
     </restriction>
   </simpleType>
 
-  <simpleType        name            = 'Directory'>
+  <complexType       name            = 'DistributionMethods'>
+    <sequence>
+      <element       name            = 'DistributionMethod'
+                     type            = 'DistributionMethod'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <simpleType        name            = 'DistributionMethod'>
     <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Treatment'/>
-      <enumeration   value           = 'Genetics'/>
+      <enumeration   value           = 'CD-ROM'/>
+      <enumeration   value           = 'E-mail'/>
+      <enumeration   value           = 'World Wide Web'/>
+      <enumeration   value           = 'Print'/>
+      <enumeration   value           = 'Other'/>
+    </restriction>
+  </simpleType>
+
+  <complexType       name            = 'Audiences'>
+    <sequence>
+      <element       name            = 'Audience'
+                     type            = 'Audience'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <simpleType        name            = 'Audience'>
+    <restriction     base            = 'NotEmptyString'>
+      <enumeration   value           = 'Attorneys'/>
+      <enumeration   value           = 'Biomedical professionals'/>
+      <enumeration   value           = 'Business professionals'/>
+      <enumeration   value           = 'Dentists'/>
+      <enumeration   value           = 'Educators'/>
+      <enumeration   value           = 'General public'/>
+      <enumeration   value           = 'HMOs'/>
+      <enumeration   value           = 'Hospitals'/>
+      <enumeration   value           = 'Medical Faculty/Students'/>
+      <enumeration   value           = 'Medical Librarians'/>
+      <enumeration   value           = 'Nurses'/>
+      <enumeration   value           = 'Patients/Families'/>
+      <enumeration   value           = 'Pharmacists'/>
+      <enumeration   value           = 'Physicians'/>
+      <enumeration   value           = 'Researchers'/>
+      <enumeration   value           = 'Scientists'/>
+      <enumeration   value           = 'Universities'/>
+      <enumeration   value           = 'Other'/>
     </restriction>
   </simpleType>
 
@@ -96,17 +141,14 @@
     <sequence>
       <element       name            = 'LicenseeInformation'
                      type            = 'LicenseeInformation'/>
-      <element       name            = 'BusinessContacts'
-                     type            = 'PersonLink'/>
-      <element       name            = 'TechnicalContacts'
-                     type            = 'TechnicalContacts'/>
+      <element       name            = 'ContactPersons'
+                     type            = 'ContactPersons'/>
       <element       name            = 'ApplicationInformation'
                      type            = 'ApplicationInformation'/>
+      <element       name            = 'FtpInformation'
+                     type            = 'FtpInformation'/>
       <element       name            = 'Status'
                      type            = 'Status'/>
-      <element       name            = 'OrganizationType'
-                     type            = 'OrganizationType'
-                     maxOccurs       = 'unbounded'/>
       <element       name            = 'DateLastModified'
                      type            = 'date'
                      minOccurs       = '0'/>
@@ -127,11 +169,11 @@
                      type            = 'NotEmptyString'
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
-      <element       name            = 'LicenseeIsForProfit'
-                     type            = 'LicenseeIsForProfit'
+      <element       name            = 'OrganizationType'
+                     type            = 'OrganizationType'
                      minOccurs       = '0'/>
       <element       name            = 'Web'
-                     type            = 'Web'
+                     type            = 'anyURI'
                      minoccurs       = '0'/>
       <element       name            = 'LicenseeType'
                      type            = 'LicenseeType'/>
@@ -139,11 +181,6 @@
                      type            = 'LicenseeStatus'/>
       <element       name            = 'LicenseeStatusDates'
                      type            = 'LicenseeStatusDates'/>
-      <element       name            = 'FtpInformation'
-                     type            = 'FtpInformation'/>
-      <element       name            = 'ApplicationDate'
-                     type            = 'date'
-                     minOccurs       = '0'/>
     </sequence>
   </complexType>
 
@@ -151,9 +188,24 @@
     <sequence>
       <element       name            = 'OfficialName'
                      type            = 'OrganizationName'/>
-      <element       name            = 'LicenseeAlternateNames'
-                     type            = 'OrganizationName'
+      <element       name            = 'AlternateNames'
+                     type            = 'AlternateNames'
                      minOccurs       = '0'/>
+      <element       name            = 'Comment'
+                     type            = 'Comment'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'AlternateNames'>
+    <sequence>
+      <element       name            = 'AlternateName'
+                     type            = 'OrganizationName'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'FormerName'
+                     type            = 'OrganizationName'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'Comment'
                      type            = 'Comment'
                      minOccurs       = '0'
@@ -163,47 +215,37 @@
 
   <complexType       name            = 'LicenseeStatusDates'>
     <sequence>
-      <element       name            = 'TestStartDate'
+      <element       name            = 'Test activation'
+                     type            = 'date'/>
+      <element       name            = 'Test inactivation'
                      type            = 'date'
                      minOccurs       = '0'/>
-      <element       name            = 'ActiveStartDate'
+      <element       name            = 'Test extension'
                      type            = 'date'
                      minOccurs       = '0'/>
-      <element       name            = 'EndDate'
+      <element       name            = 'Production activation'
+                     type            = 'date'
+                     minOccurs       = '0'/>
+      <element       name            = 'Production inactivation'
                      type            = 'date'
                      minOccurs       = '0'/>
     </sequence>
   </complexType>
 
-  <complexType       name            = 'FtpInformation'>
+  <complexType       name            = "ContactPersons">
     <sequence>
-      <element       name            = 'UserName'
-                     type            = 'NotEmptyString'/>
-      <element       name            = 'Password'
-                     type            = 'NotEmptyString'/>
-    </sequence>
-  </complexType>
-
-  <complexType       name            = "BusinessContacts">
-    <sequence>
-      <element       name            = "BusinessContact"
-                     type            = "PersonLink"
+      <element       name            = "ContactPerson"
+                     type            = "ContactPerson"
                      maxOccurs       = "unbounded"/>
     </sequence>
   </complexType>
 
-  <complexType       name            = "TechnicalContacts">
-    <sequence>
-      <element       name            = "TechnicalContact"
-                     type            = "TechnicalContact"
-                     maxOccurs       = "unbounded"/>
-    </sequence>
-  </complexType>
-
-  <complexType       name            = "TechnicalContact">
+  <complexType       name            = "ContactPerson">
     <sequence>
       <element       name            = "ContactName"
                      type            = "NotEmptyString"/>
+      <element       name            = "ContactType"
+                     type            = "ContactType"/>
       <element       name            = "ContactEmail"
                      type            = "Email"/>
       <element       name            = "ContactPhone"
@@ -219,21 +261,6 @@
     </sequence>
   </complexType>
 
-  <complexType       name            = 'ApplicationInformation'>
-    <sequence>
-      <element       name            = 'Name'
-                     type            = 'NotEmptyString'/>
-      <element       name            = 'Name'
-                     type            = 'NotEmptyString'/>
-      <element       name            = 'Name'
-                     type            = 'NotEmptyString'/>
-      <element       name            = 'Name'
-                     type            = 'NotEmptyString'/>
-      <element       name            = 'Name'
-                     type            = 'NotEmptyString'/>
-    </sequence>
-  </complexType>
-
   <complexType       name            = 'OrganizationName'>
     <sequence>
       <element       name            = 'Name'
@@ -244,53 +271,28 @@
                      minOccurs       = '0'/>
   </complexType>
 
-  <complexType       name            = 'OrganizationType'>
-    <simpleContent>
-      <extension     base            = 'Type'>
-        <attribute   name            = 'Public'
-                     type            = 'No'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
-
-  <complexType       name            = 'Status'>
+  <complexType       name            = 'ApplicationInformation'>
     <sequence>
-      <element       name            = 'CurrentStatus'
-                     type            = 'CurrentStatus'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
+      <element       name            = 'DistributionMethods'
+                     type            = 'DistributionMethods'/>
+      <element       name            = 'Audiences'
+                     type            = 'Audiences'/>
+      <element       name            = 'SupplementaryInfoLink'
+                     type            = 'SupplementaryInfoLink'
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
     </sequence>
   </complexType>
 
-  <complexType       name            = 'OrganizationLocations'>
+  <complexType       name            = 'FtpInformation'>
     <sequence>
-      <element       name            = 'OrganizationLocation'
-                     type            = 'OrganizationLocation'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'ClinicalTrialsOfficeContact'
-                     type            = 'ClinicalTrialsOfficeContact'
-                     minOccurs       = '0'/>
-      <element       name            = 'CIPSContact'
-                     type            = 'IDREF'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'UserName'
+                     type            = 'NotEmptyString'/>
+      <element       name            = 'Password'
+                     type            = 'NotEmptyString'/>
+      <element       name            = 'AccountBlocked'
+                     type            = 'YesNo'/>
     </sequence>
   </complexType>
-
-  <complexType       name            = 'OrganizationLocation'>
-    <sequence>
-      <element       name            = 'Location'
-                     type            = 'ContactDetail'/>
-    </sequence>
-    <attribute       name            = 'PreviousLocation'
-                     type            = 'Yes'
-                     minOccurs       = '0'/>
-  </complexType>
-
 
 </schema>
