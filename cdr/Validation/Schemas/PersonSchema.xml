@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!-- 
-     $Id: PersonSchema.xml,v 1.30 2007-04-13 12:33:55 kidderc Exp $ 
+     $Id: PersonSchema.xml,v 1.31 2009-09-23 21:30:04 bkline Exp $ 
 
      $Log: not supported by cvs2svn $
+     Revision 1.30  2007/04/13 12:33:55  kidderc
+     3130. Changed Comment so it has no maximum occurance.
+
      Revision 1.29  2006/11/17 22:01:30  bkline
      Changed type of Comment elements to allow optional audience attribute.
 
@@ -179,6 +182,10 @@
                      minOccurs       = '0'/>
       <element       name            = 'PersonLocations'
                      type            = 'PersonLocations'/>
+      <element       name            = 'ProfessionalType'
+                     type            = 'ProfessionalType'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'Status'
                      type            = 'Status'/>
       <element       name            = 'DatedAction'
@@ -229,7 +236,7 @@
     </sequence>
   </complexType>
 
-<complexType       name            = 'ProfessionalSuffix'>
+  <complexType       name            = 'ProfessionalSuffix'>
       <choice        maxOccurs       = 'unbounded'>
       <element       name            = 'StandardProfessionalSuffix'
                      type            = 'StandardProfessionalSuffix'
@@ -275,12 +282,12 @@
       <element       name            = 'AdministrativeInformation'
                      type            = 'AdministrativeInformation'/>
       <element       name            = 'GeneticsSpecialtyInformation'
-                     type            = 'GeneticsSpecialtyInformation'
-                     maxOccurs       = 'unbounded'/>
+                     type            = 'GeneticsSpecialtyInformation'/>
       <element       name            = 'InterdisciplinaryTeamMember'
                      type            = 'YesNo'/>
       <element       name            = 'GeneticsTeamServices'
                      type            = 'GeneticsTeamServices'
+                     minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
       <element       name            = 'ProvidesServices'
                      type            = 'YesNo'/>
@@ -289,11 +296,16 @@
       <element       name            = 'ServiceLimitations'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
-      <element       name            = 'FamilialCancerSyndromes'
+      <element       name            = 'FamilialCancerSyndrome'
                      type            = 'TerminologyLink'
                      maxOccurs       = 'unbounded'/>
       <element       name            = 'MemberOfGeneticsSociety'
-                     type            = 'MemberOfGeneticsSociety'/>
+                     type            = 'MemberOfGeneticsSociety'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'LegacyGeneticsData'
+                     type            = 'LegacyGeneticsData'
+                     minOccurs       = '0'/>
       <element       name            = 'Comment'
                      type            = 'Comment'
                      minOccurs       = '0'
@@ -311,10 +323,40 @@
     -->
   <complexType       name            = 'GeneticsSpecialtyInformation'>
     <sequence>
+ <!--
       <element       name            = 'GeneticsSpecialtyName'
                      type            = 'GeneticsSpecialtyName'/>
+   -->
       <element       name            = 'GeneticsBoardCertification'
                      type            = 'GeneticsBoardCertification'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'LegacyGeneticsData'>
+    <sequence>
+      <element       name            = 'LegacyID'
+                     type            = 'integer'/>
+      <element       name            = 'OracleID'
+                     type            = 'integer'
+                     minOccurs       = '0'/>
+      <element       name            = 'OriginalCreationDate'
+                     type            = 'date'/>
+      <element       name            = 'OriginalCreationUser'
+                     type            = 'string'/>
+      <element       name            = 'LastUpdateBeforeConversion'
+                     type            = 'date'/>
+      <element       name            = 'LastUpdateUserBeforeConversion'
+                     type            = 'string'/>
+      <element       name            = 'LegacyUserName'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+      <element       name            = 'LegacyPassword'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+      <element       name            = 'StateCertification'
+                     type            = 'StateCertification'
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
     </sequence>
@@ -336,6 +378,16 @@
                      type            = 'Comment'
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'StateCertification'>
+    <sequence>
+      <element       name            = 'StateCertificationState'
+                     type            = 'string'/>
+      <element       name            = 'StateCertificationNumber'
+                     type            = 'string'
+                     minOccurs       = '0'/>
     </sequence>
   </complexType>
 
@@ -714,6 +766,8 @@
       <enumeration   value           = 'Clinical Biochemical Genetics'/>
       <enumeration   value           = 'Clinical Molecular Genetics'/>
       <enumeration   value           = 'Clinical Cytogenetics'/>
+      <enumeration   value           = 'Oncology Nursing'/>
+      <enumeration   value           = 'Molecular Genetic Pathology'/>
     </restriction>
   </simpleType>
 
@@ -741,21 +795,37 @@
 
   <simpleType        name            = 'MemberOfGeneticsSociety'>
     <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'American College of Medical Genetics'/>
-      <enumeration   value           = 'American Psychological Association'/>
-      <enumeration   value           = 'American Society of Clinical Oncology'/>
-      <enumeration   value           = 'American Society of Human Genetics'/>
-      <enumeration   value           = 'International Society of Nurses in Genetics'/>
-      <enumeration   value           = 'National Society of Genetic Counselors'/>
+      <enumeration   value           = 'American College of Medical Genetics (ACMG)'/>
+      <enumeration   value           = 'American Psychological Association (APA)'/>
+      <enumeration   value           = 'American Society of Clinical Oncology (ASCO)'/>
+      <enumeration   value           = 'American Society of Human Genetics (ASHG)'/>
+      <enumeration   value           = 'International Society of Nurses in Genetics (ISONG)'/>
+      <enumeration   value           = 'National Society of Genetic Counselors (NSGC)'/>
       <enumeration   value           = 'NSGC Special Interest Group in Cancer'/>
-      <enumeration   value           = 'Oncology Nursing Society'/>
+      <enumeration   value           = 'Oncology Nursing Society (ONS)'/>
       <enumeration   value           = 'ONS Cancer Genetics Special Interest Group'/>
     </restriction>
   </simpleType>
 
   <simpleType        name            = 'GeneticsTeamServices'>
-    <restriction     base            = 'NotEmptyString'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Appropriate pre- and post-test counseling and informed consent'/>
+      <enumeration   value           = 'Follow-up plan of care'/>
+      <enumeration   value           = 'Genetic susceptibility testing'/>
+      <enumeration   value           = 'Patient cancer risk assessment'/>
       <enumeration   value           = 'Patient genetics education'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'ProfessionalType'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Clinical Psychologist (Ph.D., Psy.D.)'/>
+      <enumeration   value           = 'Clinical Social Worker (M.S.W., D.S.W.)'/>
+      <enumeration   value           = 'Genetic Counselor (M.S., M.Sc., M.A., C.G.C.)'/>
+      <enumeration   value           = 'Geneticist (Ph.D.)'/>
+      <enumeration   value           = 'Nurse (R.N., B.S.N., M.S.N., M.S., M.A., Ph.D.)'/>
+      <enumeration   value           = 'Physician (M.D., D.O., or foreign equivalent)'/>
+      <enumeration   value           = 'Other'/>
     </restriction>
   </simpleType>
 
