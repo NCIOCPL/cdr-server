@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.130 2008-12-19 17:05:08 bkline Exp $
+ * $Id: tables.sql,v 1.131 2009-09-23 18:46:42 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.130  2008/12/19 17:05:08  bkline
+ * Added client_log table.
+ *
  * Revision 1.129  2008/10/21 21:00:50  ameyer
  * Corrected erroneous comment describing checkout.id.
  *
@@ -2170,21 +2173,25 @@ GO
 /*
  * Table for tracking documents downloaded from NLM's CancerTrials.gov site.
  *
- *       nlm_id  uniquely identifies the document within CT.gov
- *        title  official title, if present; otherwise brief title
- *          xml  unmodified XML document as downloaded from NLM
- *   downloaded  date/time of download
- *  disposition  foreign key into ctgov_disposition table
- *           dt  date/time of most recent disposition change
- *     verified  date/time document was last verified at NLM
- *      changed  date/time document was last changed at NLM
- *       cdr_id  document ID in CDR (if imported)
- *      dropped  flag indicating that NLM is no longer exporting this trial
- *        force  flag for trials we want even if NLM doesn't code them
- *               in such a way that they would be picked up by our
- *               basic query
- *      comment  user comments, if any
- *        phase  captures the phase of the trial for reporting
+ *         nlm_id  uniquely identifies the document within CT.gov
+ *          title  official title, if present; otherwise brief title
+ *            xml  unmodified XML document as downloaded from NLM
+ *     downloaded  date/time of download
+ *    disposition  foreign key into ctgov_disposition table
+ *             dt  date/time of most recent disposition change
+ *       verified  date/time document was last verified at NLM
+ *        changed  date/time document was last changed at NLM
+ *         cdr_id  document ID in CDR (if imported)
+ *        dropped  flag indicating that NLM is no longer exporting this trial
+ * reason_dropped  used to record results of research into why NLM stopped
+ *                 sending a trial; when this column has been populated
+ *                 the CT.gov download report will suppress reporting of
+ *                 the drop of the trial
+ *          force  flag for trials we want even if NLM doesn't code them
+ *                 in such a way that they would be picked up by our
+ *                 basic query
+ *        comment  user comments, if any
+ *          phase  captures the phase of the trial for reporting
  */
 CREATE TABLE ctgov_import
      (nlm_id VARCHAR(16)   NOT NULL PRIMARY KEY,
@@ -2197,6 +2204,7 @@ CREATE TABLE ctgov_import
      changed DATETIME          NULL,
       cdr_id INTEGER           NULL REFERENCES all_docs,
      dropped CHAR          NOT NULL DEFAULT 'N',
+ reason_dropped VARCHAR(512)   NULL,
        force CHAR          NOT NULL DEFAULT 'N',
      comment NTEXT             NULL,
        phase VARCHAR(20)       NULL)
