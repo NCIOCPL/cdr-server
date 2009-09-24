@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.131 2009-09-23 18:46:42 bkline Exp $
+ * $Id: tables.sql,v 1.132 2009-09-24 18:46:02 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.131  2009/09/23 18:46:42  bkline
+ * Added reason_dropped to ctgov_import table.
+ *
  * Revision 1.130  2008/12/19 17:05:08  bkline
  * Added client_log table.
  *
@@ -2237,6 +2240,8 @@ GO
  * needs_review  'Y' if NLM made changes which might affect PDQ indexing;
  *               otherwise 'N'
  *  pub_version  'Y' if a publishable version was created; otherwise 'N'
+ *  transferred  'Y' if the trial is being converted from an InScopeProtocol
+                 to a CTGovProtocol; otherwise 'N'
  */
 CREATE TABLE ctgov_import_event
         (job INTEGER     NOT NULL REFERENCES ctgov_import_job,
@@ -2245,6 +2250,7 @@ CREATE TABLE ctgov_import_event
          new CHAR(1)         NULL,
 needs_review CHAR(1)         NULL,
  pub_version CHAR(1)         NULL,
+ transferred CHAR            NULL,
   CONSTRAINT ctgov_import_event_pk PRIMARY KEY(job, nlm_id))
 GO
 
@@ -2267,6 +2273,7 @@ CREATE TABLE ctgov_download_stats
           dt DATETIME NOT NULL,
 total_trials INTEGER  NOT NULL,
   new_trials INTEGER  NOT NULL,
+ transferred INTEGER  NOT NULL,
      updated INTEGER  NOT NULL,
    unchanged INTEGER  NOT NULL,
      pdq_cdr INTEGER  NOT NULL,
