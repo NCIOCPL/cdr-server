@@ -1,5 +1,5 @@
 /*
- * $Id: CdrTestClient.cpp,v 1.9 2008-10-03 23:54:05 bkline Exp $
+ * $Id: CdrTestClient.cpp,v 1.10 2009-09-25 04:16:28 ameyer Exp $
  *
  * Test client (C++ version) for sending commands to CDR server.
  *
@@ -16,6 +16,9 @@
  * The encoding for the XML must be UTF-8.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2008/10/03 23:54:05  bkline
+ * Fixing problems flushed out by Visual Studio 2008.
+ *
  * Revision 1.8  2004/03/31 03:29:55  ameyer
  * Added new parameter to set_exception_catcher.
  *
@@ -78,6 +81,19 @@ int main(int ac, char **av)
     // But do abort
     if (!getenv ("NOCATCHCRASH"))
         set_exception_catcher ("CdrTestClient.crash", 1);
+
+    /*
+    // Usage
+    if (ac > 1 && av[1][0] == '-' || av[1][0] == '/') {
+        if (av[1][1] == '?' || av[1][1] == 'h' || av[1][0] == 'H') {
+            std::cerr << "Submit commands to a CdrServer\n"
+                      << "usage: " << av[0]
+                      << " [command-file [host [port]]]"
+                      << std::endl;
+            exit(1);
+        }
+    }
+    */
 
     // Load the requests.
     if (ac > 1 && strcmp(av[1], "-")) {
