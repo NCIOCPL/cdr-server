@@ -1,9 +1,12 @@
 /*
- * $Id: tables.sql,v 1.132 2009-09-24 18:46:02 bkline Exp $
+ * $Id: tables.sql,v 1.133 2009-09-25 15:03:00 bkline Exp $
  *
  * DBMS tables for the ICIC Central Database Repository
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.132  2009/09/24 18:46:02  bkline
+ * Added 'transferred' column to ctgov_import_event and ctgov_download_stats.
+ *
  * Revision 1.131  2009/09/23 18:46:42  bkline
  * Added reason_dropped to ctgov_import table.
  *
@@ -2261,6 +2264,7 @@ GO
  *           dt  date/time of download job
  * total_trials  number of cancer trials that meet query criteria
  *   new_trials  new active and approved-not yet active trials
+ *  transferred  Count of trials for which ownership tranferred from PDQ
  *      updated  Updates to previously downloaded trials
  *    unchanged  skipped trials since no changes from previous download
  *      pdq_cdr  skipped trials from PDQ/CDR
