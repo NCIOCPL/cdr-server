@@ -20,6 +20,13 @@ fi
 # -----------------
 CDRBIN="d:/home/venglisch/cdr/bin"
 CVS="/cygdrive/d/bin/cvs.exe"
+
+CURRCVS=`echo $CVSROOT`
+$CVS -d$CVSROOT logout  >  dump
+
+CVSROOT=":pserver:venglisc:baseba11@verdi.nci.nih.gov:/usr/local/cvsroot"
+$CVS -d$CVSROOT login   >> dump
+
 echo -n "Enter common text for Comment field: "
 read TEXT
 
@@ -34,9 +41,8 @@ fi
 pwd
 
 echo ""
-echo "Updating Filter to current Repository Version"
-echo "============================================="
-echo "***************"
+echo "Updating Filter(s) to current Repository Version"
+echo "------------------------------------------------"
 echo ""
 
 for i in $*
@@ -46,16 +52,28 @@ do
   VERS=`$CVS status $CDRID.xml | grep 'Repos' | awk '{print $3}'`
   echo "   $CDRID.xml"
   echo "   -----------------"
-  $CVS status $CDRID.xml | grep "^   [WR][oe][rp][ko]"
+  $CVS status $CDRID.xml | grep "^   [WR][oe][rp][ko]" |\
+       sed 's/\/usr\/local\/cvsroot\///'
   echo "   Updating   revision: $VERS"
-  echo "   Updating    comment: \"$TEXT\""
+  echo "   Updating w/ comment: \"$TEXT\""
   if [ "$HOSTNAME" = "franck" ]
   then 
+    if [[ -f temp/${CDRID}_V$VERS.xml ]]
+    then
+      chmod 660 temp/${CDRID}_V$VERS.xml
+    fi
     $CVS co -p cdr/Filters/$CDRID.xml > temp/${CDRID}_V$VERS.xml
   fi
-  ###  $CDRBIN/checkoutcdrdoc.cmd      $ID     > dump
+  $CDRBIN/CdrCheckoutDoc.cmd      $ID     >> dump
   $CDRBIN/VersionCdrDoc temp/${CDRID}_V$VERS.xml "CVS-V$VERS: $TEXT"
+  $CDRBIN/CdrUnlockDoc.cmd        $ID     >> dump
+  echo ""
+  echo "-------------------------------------------------------------------"
   echo ""
 done
 
+$CVS -d$CVSROOT logout  >> dump
+
+CVSROOT="`echo $CURRCVS | sed 's/@/:baseba11@/'`"
+$CVS -d$CVSROOT login   >> dump
 exit 0
