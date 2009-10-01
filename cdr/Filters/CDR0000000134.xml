@@ -3,7 +3,7 @@
 <DocValStatus readonly="yes">U</DocValStatus>
 <DocActiveStatus readonly="yes">A</DocActiveStatus>
 <DocTitle readonly="yes">Vendor Filter: Term</DocTitle>
-<DocComment>CVS-V1.30: Case Insensitive Diff (Bug 2086)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
+<DocComment>CVS-R1.32 Modified URL for NCI Thesaurus link [REQUEST 4607]</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
 </CdrDocCtl>
 <CdrDocXml><![CDATA[<?xml  version = "1.0"?>
 <!-- 
@@ -157,6 +157,38 @@ Filter to create the vendor Terminology XML
   <xsl:copy>
    <xsl:apply-templates           mode = "copy"/>
 
+    <xsl:variable                name = "docNormId"
+                               select = "number(
+                                           substring-before(
+                                           concat(
+                                           substring-after(/Term/DocId, 'CDR'),
+                                                               '#'), '#'))"/>  
+ <xsl:variable                  name = "sqlQuery">
+    SELECT distinct t.doc_id
+      FROM query_term_pub t
+      JOIN query_term_pub d
+        ON t.doc_id = d.int_val
+       AND d.path = '/DrugInformationSummary/DrugInfoMetaData' +
+                    '/TerminologyLink/@cdr:ref'
+      JOIN query_term_pub c
+        ON c.doc_id = d.doc_id
+       AND c.path = '/DrugInformationSummary/DrugInfoMetaData' +
+                    '/DrugInfoType/@Combination'
+     WHERE t.doc_id = ?
+   </xsl:variable>
+
+   <xsl:variable                  name = "queryRows"
+                                select = "document(
+                                             concat('cdrutil:/sql-query/',
+                                                    $sqlQuery,
+                                                    '~', $docNormId))"/>
+
+   <!--
+   If the SQL query found a DrugInfo Summary with a term link to this
+   document, we need to suppress the display of the clinical search 
+   string.
+   ================================================================== -->
+   <xsl:if                        test = "not($queryRows/SqlResult/row)">
    <!--
    Conctruct the URL for NCI active trials using this drug
    ======================================================== -->
@@ -192,6 +224,8 @@ Filter to create the vendor Terminology XML
    </xsl:element>
 
    <xsl:text> using this agent.</xsl:text>
+   </xsl:if>
+
 
    <!--
    Conctruct the URL for NCI concept ID
