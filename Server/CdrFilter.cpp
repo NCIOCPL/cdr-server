@@ -276,6 +276,8 @@ static std::string filterVector (
 static string getVerificationDate(const string& parms,
                                   cdr::db::Connection& conn,
                                   const cdr::String&);
+static string execXsltDedupIDs(const string&);
+static int parseIDs(char *, std::vector<char *>&);
 
 static void makeNomapRegex (cdr::RegEx& re, cdr::db::Connection& conn);
 
@@ -909,6 +911,11 @@ for (int i=0; i<alen; i++) {
       else if (function == "sql-query")
       {
         u.doc = execXsltSqlQuery(parms, thread_data->connection);
+      }
+      else if (function == "dedup-ids")
+      {
+std::cout << "Recognized function 'dedup-ids'\n";
+        u.doc = execXsltDedupIDs(parms);
       }
       else
         return 1;
@@ -2613,6 +2620,176 @@ static string execXsltSqlQuery(const string& parms,
 
     return result;
 }
+
+/**
+ * Examine a list of protocol IDs to find secondary IDs that are
+ * not included in a list of primary IDs, using a normalized string
+ * comparison.
+ *
+ * This is a highly specialized custom function designed to support
+ * addition of PDQProtocolIDs to CTGovProtocolIDs without duplicating
+ * any of them.
+ *
+ * Example parms in call:
+ *   "cdrutil:/dedup-ids/swog1234~ecog-123~~NCI-442~SWOG 1234~ecog-123~Pf-99"
+ *
+ * Example return for above:
+ *   <?xml version='1.0' encode='UTF-8'?>
+ *   <result>
+ *    <id>NCI-442</id>
+ *    <id>Pf-99</id>
+ *   </result>
+ *
+ * @params parms    Tilde delimited string.
+ *                  One tilde between each pair of IDs.
+ *                  Two tildes (i.e., empty ID) between primary IDs and
+ *                  secondary IDs.  Only the unique secondary IDs will be
+ *                  returned.
+ *
+ * @params conn     Database connection.
+ *
+ * @return          Serial result document, as illustrated above.
+ */
+static string execXsltDedupIDs(const string& parms) {
+
+    if (parms.size() == 0)
+        throw cdr::Exception("Empty parameter string to execXsltDedupIDs()");
+
+    // All the input IDs are parsed here
+    int buflen = parms.size() + 1;
+    char *buf;         // Plain IDs copied here for tokenizing
+    char *normBuf;     // Normalized here
+
+    // Pointers to the two buffers
+    char *bufp;
+    char *normp;
+
+    std::vector<char *> inIDs;      // Input ID pointers
+    std::vector<char *> normIDs;    // Ptrs to normalized IDs
+
+    // Output XML string
+    std::string result;
+
+    // Use try wrapper to avoid memory leak on allocations
+    try {
+        buf     = new char[buflen];
+        normBuf = new char[buflen];
+        bufp    = buf;
+        normp   = normBuf;
+
+        strcpy(buf, parms.c_str());
+
+        // Parse the input converting ~ -> 0 and storing pointers in inIDs
+        int primeCount = parseIDs(buf, inIDs);
+        int idCount    = inIDs.size();
+
+        // Normalize all of the IDs in a separate copy
+        for (int i=0; i<idCount; i++) {
+            // Copy from buf to normBuf
+            bufp = inIDs[i];
+            normIDs.push_back(normp);
+            while (*bufp) {
+                char c = *bufp++;
+                // Accept only normalized case alphanumerics
+                if (isupper(c))
+                    *normp++ = tolower(c);
+                else if (isalpha(c) || isdigit(c))
+                    *normp++ = c;
+            }
+            // Terminate the normalized string
+            *normp++ = (char) 0;
+        }
+
+        // Compare them, starting with the first secondary ID
+        // We compare each string to all previous ones.
+        // If they are the same:
+        //   Keep the previous one and null out the later one.
+        for (int i=primeCount; i<idCount; i++) {
+            for (int j=0; j<i; j++) {
+                if (normIDs[j] && !strcmp(normIDs[j], normIDs[i])) {
+                    normIDs[i] = NULL;
+                    break;
+                }
+            }
+        }
+
+        // Construct output as an xml string
+        result = "<?xml version='1.0' encoding='UTF-8'?>\n<result>\n";
+        for (int i=primeCount; i<idCount; i++) {
+            if (normIDs[i]) {
+                result += " <id>";
+                result += inIDs[i];
+                result += "</id>\n";
+            }
+        }
+
+        result += "</result>\n";
+    } catch (...) {
+        if (normBuf)
+            delete normBuf;
+        if (buf)
+            delete buf;
+        throw;
+    }
+
+    return result;
+}
+
+
+/**
+ * Parse a tilde delimited list of primary and secondary IDs.
+ * Helper function for execXsltDedupIDs.
+ *
+ * This function is separated from the rest of the logic in case the
+ * input format needs to change.
+ *
+ * @params inStr    Input tilde delimited C style char string, null terminated.
+ *                  See execXsltDedupIDs.
+ *
+ * @params inIDs    Empty vector of pointers to chars to receive
+ *                  parsed IDs as null delimited C strings.
+ *
+ * @return          Index of first pointer in inIDs that is a secondary ID.
+ *
+ * @throws          cdr::Exception if memory overflow (should never happen).
+ */
+static int parseIDs(char *inStr, std::vector<char *>& inIDs) {
+
+    int tokenCount = 0;         // Number of IDs found
+    int primeCount = 0;         // Count that are primary IDs (before ~~)
+
+std::cout << "Entering parseIDs\n";
+    char *inp = inStr;
+
+    // Parse till end of inStr
+    while (*inp) {
+
+        // Install pointer to token
+        inIDs.push_back(inp);
+        while (*inp) {
+            if (*inp == '~') {
+
+                // Terminate token in the original string
+                *inp = (char) 0;
+                ++tokenCount;
+
+                // Two separators in a row separate primary/secondary IDs
+                if (*(inp+1) == '~') {
+                    primeCount = tokenCount;
+                    ++inp;
+                }
+                ++inp;
+                break;
+            }
+            ++inp;
+        }
+    }
+
+std::cout << "Leaving parseIDs, tokenCount=" << tokenCount
+          << " primeCount=" << primeCount << "\n";
+    return primeCount;
+}
+
 
 /**
  * Search the external_map table for a value in a specific usage.
