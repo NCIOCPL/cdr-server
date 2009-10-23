@@ -914,7 +914,6 @@ for (int i=0; i<alen; i++) {
       }
       else if (function == "dedup-ids")
       {
-std::cout << "Recognized function 'dedup-ids'\n";
         u.doc = execXsltDedupIDs(parms);
       }
       else
@@ -2758,7 +2757,6 @@ static int parseIDs(char *inStr, std::vector<char *>& inIDs) {
     int tokenCount = 0;         // Number of IDs found
     int primeCount = 0;         // Count that are primary IDs (before ~~)
 
-std::cout << "Entering parseIDs\n";
     char *inp = inStr;
 
     // Parse till end of inStr
@@ -2785,8 +2783,6 @@ std::cout << "Entering parseIDs\n";
         }
     }
 
-std::cout << "Leaving parseIDs, tokenCount=" << tokenCount
-          << " primeCount=" << primeCount << "\n";
     return primeCount;
 }
 
