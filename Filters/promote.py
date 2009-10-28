@@ -1,6 +1,6 @@
 # *********************************************************************
 #
-# $Id: promote.py,v 1.3 2009-07-31 15:03:08 venglisc Exp $
+# $Id$
 #
 # Promote filters to FRANCK and BACH
 #
