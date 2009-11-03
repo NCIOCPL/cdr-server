@@ -2,6 +2,10 @@
 
 <!--
      $Id$
+
+     BZIssue::4664
+     BZIssue::4685
+
   -->
 
 <xsl:transform                xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
@@ -13,6 +17,9 @@
 
  <xsl:param                        name = 'newDoc'
                                  select = '"Y"'/>
+ <xsl:param                        name = 'newlyTransferredDoc'
+                                 select = '"N"'/>
+ <xsl:param                        name = 'importDateTime'/>
 
  <xsl:template                    match = '/'>
   <CTGovProtocol>
@@ -48,9 +55,25 @@
   <xsl:apply-templates           select = 'start_date'/>
   <xsl:apply-templates           select = 'end_date'/>
   <xsl:apply-templates           select = 'location'/>
-  <xsl:if                          test = 'not($newDoc = "Y")'>
-   <xsl:text>@@ProtocolProcessingDetails@@</xsl:text>
-  </xsl:if>
+  <xsl:choose>
+   <xsl:when                       test = '$newDoc = "Y" or
+                                           $newlyTransferredDoc = "Y"'>
+    <ProtocolProcessingDetails>
+     <ProcessingStatus>Newly imported</ProcessingStatus>
+     <EnteredBy>CTGovImport</EnteredBy>
+     <ProcessingStartDateTime>
+      <xsl:value-of              select = '$importDateTime'/>
+     </ProcessingStartDateTime>
+     <ProcessingStartDateTime>
+      <xsl:value-of              select = '$importDateTime'/>
+     </ProcessingStartDateTime>
+     <Comment>Imported from ClinicalTrials.gov at NLM</Comment>
+    </ProtocolProcessingDetails>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>@@ProtocolProcessingDetails@@</xsl:text>
+   </xsl:otherwise>
+  <xsl:choose>
   <xsl:apply-templates           select = 'brief_summary'/>
   <xsl:apply-templates           select = 'detailed_description'/>
   <xsl:call-template               name = 'extractPhase'/>
