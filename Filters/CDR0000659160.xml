@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- $Id$ -->
+<!-- Filter title: NIH CCT Block Stripper -->
+<!-- BZIssue::4689 -->
+<xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                             xmlns:cdr = 'cips.nci.nih.gov/cdr'
+                               version = '1.0'>
+
+ <xsl:output                    method = 'xml'
+                              encoding = 'utf-8'/>
+
+ <!--
+ =======================================================================
+ Copy most things straight through.
+ ======================================================================= -->
+ <xsl:template                   match = '@*|node()|comment()|
+                                          processing-instruction()'>
+  <xsl:copy>
+   <xsl:apply-templates         select = '@*|node()|comment()|
+                                          processing-instruction()'/>
+  </xsl:copy>
+ </xsl:template>
+
+ <!--
+ =======================================================================
+ Be more selective with the ProtocolSpecialCategory blocks.
+ ======================================================================= -->
+ <xsl:template                   match = 'ProtocolSpecialCategory'>
+  <xsl:if                         test = 'not(SpecialCategory =
+                                              "NIH Clinical Center trial")'>
+   <xsl:copy>
+    <xsl:apply-templates        select = '@*|node()|comment()|
+                                          processing-instruction()'/>
+   </xsl:copy>
+  </xsl:if>
+ </xsl:template>
+
+</xsl:transform>

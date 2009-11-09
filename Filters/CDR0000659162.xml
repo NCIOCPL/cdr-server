@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- $Id$ -->
+<!-- Filter title: NIH CCT Block Inserter -->
+<!-- BZIssue::4689 -->
+<xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                             xmlns:cdr = 'cips.nci.nih.gov/cdr'
+                               version = '1.0'>
+
+ <xsl:output                    method = 'xml'
+                              encoding = 'utf-8'/>
+
+ <xsl:param                       name = 'cmt'
+                                select = '""'/>
+
+ <!--
+ =======================================================================
+ Copy most things straight through.
+ ======================================================================= -->
+ <xsl:template                   match = '@*|node()|comment()|
+                                          processing-instruction()'>
+  <xsl:copy>
+   <xsl:apply-templates         select = '@*|node()|comment()|
+                                          processing-instruction()'/>
+  </xsl:copy>
+ </xsl:template>
+
+ <!--
+ =======================================================================
+ Insert a ProtocolSpecialCategory block with the SpecialCategory child
+ set to "NIH Clinical Center trial"; caller has made sure that the new
+ block is needed (and not already present).  This code may need to be
+ fixed if this part of the CTGovProtocol schema is changed radically
+ enough.
+ ======================================================================= -->
+ <xsl:template                   match = 'PDQAdminInfo'>
+  <xsl:copy>
+   <xsl:apply-templates         select = '@*|node()|comment()|
+                                          processing-instruction()'/>
+   <ProtocolSpecialCategory>
+    <SpecialCategory>NIH Clinical Center trial</SpecialCategory>
+    <xsl:if                       test = 'not($cmt = "")'>
+     <Comment>
+      <xsl:value-of             select = '$cmt'/>
+     </Comment>
+    </xsl:if>
+   </ProtocolSpecialCategory>
+  </xsl:copy>
+ </xsl:template>
+
+</xsl:transform>
