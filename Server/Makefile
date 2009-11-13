@@ -316,7 +316,7 @@ CC     =cl
 BISON  =bison
 LN     =link
 CP     =cp -f
-CVSUPD =cvs update
+CVSUPD =svn update
 DOC    =$(DRV)/InetPub/wwwroot/cdr/ccdoc/
 DOCS   =$(DOC)default.htm
 CDRBIN =$(CDR)/bin
@@ -385,6 +385,7 @@ LIBOBJS=CdrString.obj \
         CdrSession.obj \
         CdrParserInput.obj \
         CdrRegEx.obj \
+        CdrValidateDoc.obj \
         CdrVersion.obj \
         CdrTiming.obj \
         catchexp.obj \
@@ -405,7 +406,6 @@ OBJS   =CdrCommand.obj \
         CdrListUsrs.obj \
         CdrActions.obj \
         CdrDoc.obj \
-        CdrValidateDoc.obj \
         CdrLink.obj \
         CdrLinkProcs.obj \
         CdrSearch.obj \
@@ -477,6 +477,13 @@ CdrService.obj: CdrService.c service.h
 
 service.obj: service.c service.h
 	$(CC) -c $(SVCFLGS) service.c
+
+#--------------------------------------------------------------------------
+# Rule for building schema parser.
+#--------------------------------------------------------------------------
+
+ParseSchema.exe: ParseSchema.obj $(HDRS) $(CDRLIB)
+	$(CC) $(CFLAGS) ParseSchema.cpp $(LIBS) $(OBJS) $(LFLAGS) >> errs
 
 #--------------------------------------------------------------------------
 # Rule for building test client.
