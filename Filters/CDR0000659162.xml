@@ -47,4 +47,30 @@
   </xsl:copy>
  </xsl:template>
 
+ <!--
+ =======================================================================
+ Handle the case in which the input document doesn't have a PDQAdminInfo
+ block at all.  This should work correctly, because the PDQIndexing is a
+ required element, and the PDQAdminInfo block comes immediately after the
+ PDQIndexing block.
+ ======================================================================= -->
+ <xsl:template                   match = 'PDQIndexing'>
+  <xsl:copy>
+   <xsl:apply-templates         select = '@*|node()|comment()|
+                                          processing-instruction()'/>
+  </xsl:copy>
+  <xsl:if                         test = 'not(../PDQAdminInfo)'>
+   <PDQAdminInfo>
+    <ProtocolSpecialCategory>
+     <SpecialCategory>NIH Clinical Center trial</SpecialCategory>
+     <xsl:if                      test = 'not($cmt = "")'>
+      <Comment>
+       <xsl:value-of            select = '$cmt'/>
+      </Comment>
+     </xsl:if>
+    </ProtocolSpecialCategory>
+   </PDQAdminInfo>
+  </xsl:if>
+ </xsl:template>
+
 </xsl:transform>
