@@ -4,19 +4,7 @@
  * Returns a document identifying which glossary terms should be used
  * for marking up phrases found in a CDR document.
  *
- * $Log: not supported by cvs2svn $
- * Revision 1.4  2008/10/28 20:57:10  bkline
- * Glossifier for new GlossaryTermName documents.
- *
- * Revision 1.3  2004/12/21 19:30:24  bkline
- * Added restriction to exclude rejected glossary terms.
- *
- * Revision 1.2  2004/09/09 18:43:26  bkline
- * Added Name element for each term.
- *
- * Revision 1.1  2004/07/08 00:32:38  bkline
- * Added CdrGetGlossaryMap command; added cdr.lib to 'make clean' target.
- *
+ * BZIssue::4704
  */
 
 #include <set>
@@ -30,6 +18,8 @@
 #include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
 
+static cdr::String PATH_EN = L"/GlossaryTermName/TermName/TermNameString";
+static cdr::String PATH_ES = L"/GlossaryTermName/TranslatedName/TermNameString";
 
 static void mapPreferredTerms(cdr::StringSet& phrases, 
                               std::map<int, cdr::StringList>& mappings,
@@ -77,7 +67,7 @@ cdr::String cdr::getGlossaryMap(cdr::Session&,
 
     // Find the term's preferred terms first (these take precedence).
     std::set<int> nonRejectedTerms;
-    String path = L"/GlossaryTermName/TermName/TermNameString";
+    String path = PATH_EN;
     mapPreferredTerms(phrases, mappings, names, nonRejectedTerms, conn, path);
 
     // Collect all the other phrases we can map.
@@ -136,7 +126,7 @@ cdr::String cdr::getSpanishGlossaryMap(cdr::Session&,
 
     // Find the term's preferred terms first (these take precedence).
     std::set<int> nonRejectedTerms;
-    String path = L"/GlossaryTermName/TranslatedName/TermNameString";
+    String path = PATH_ES;
     mapPreferredTerms(phrases, mappings, names, nonRejectedTerms, conn, path);
 
     // Collect all the other phrases we can map.
@@ -177,13 +167,28 @@ void mapPreferredTerms(cdr::StringSet& phrases,
                        const cdr::String& path)
 {
     std::string query = 
-        "SELECT n.doc_id, n.value                           "
-        "  FROM query_term n                                "
-        "  JOIN query_term s                                "
-        "    ON s.doc_id = n.doc_id                         "
-        " WHERE n.path = ?                                  "
-        "   AND s.path = '/GlossaryTermName/TermNameStatus' "
-        "   AND s.value <> 'Rejected'                       ";
+        "         SELECT n.doc_id, n.value                           "
+        "           FROM query_term n                                "
+        "           JOIN query_term s                                "
+        "             ON s.doc_id = n.doc_id                         ";
+    if (path == PATH_EN)
+        query += 
+        "LEFT OUTER JOIN query_term e                                "
+        "             ON e.doc_id = n.doc_id                         "
+        "            AND e.path = '/GlossaryTermName/TermName'       "
+        "                       + '/@ExcludeFromGlossifier'          ";
+    else
+        query +=
+        "LEFT OUTER JOIN query_term e                                "
+        "             ON e.doc_id = n.doc_id                         "
+        "            AND e.path = '/GlossaryTermName/TranslatedName' "
+        "                       + '/@ExcludeFromGlossifier'          "
+        "            AND LEFT(n.node_loc, 4) = LEFT(e.node_loc, 4)   ";
+    query +=
+        "          WHERE n.path = ?                                  "
+        "            AND s.path = '/GlossaryTermName/TermNameStatus' "
+        "            AND s.value <> 'Rejected'                       "
+        "            AND (e.value IS NULL OR e.value <> 'Yes')       ";
     cdr::db::PreparedStatement stmt = conn.prepareStatement(query);
     stmt.setString (1, path);
     cdr::db::ResultSet rs = stmt.executeQuery();
