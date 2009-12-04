@@ -1,0 +1,633 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- $Id$ -->
+<!-- Filter title: Licensee QC Report Filter -->
+<xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                             xmlns:cdr = 'cips.nci.nih.gov/cdr'
+                               version = '1.0'>
+
+ <xsl:output                    method = "html"/> 
+
+ <xsl:include  href = "cdr:name:Module: Attribute Sets"/>
+ <xsl:include  href = "cdr:name:Module: InLine Markup Formatter"/>
+ <xsl:include  href = "cdr:name:Module: QC Filter Templates"/>
+ <xsl:include  href = "cdr:name:Module: QC Filter Templates - Summary"/>
+ <xsl:include  href = "cdr:name:Module: Table Formatter"/>
+ <xsl:include  href = "cdr:name:Module: STYLE Default"/> 
+ <xsl:include  href = "cdr:name:Module: STYLE RS Insertion Deletion"/> 
+
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
+ <xsl:variable                    name = "whoAmI"
+                                select = "'Licensee'"/>
+ <!--
+ ======================================================================
+ Main Template
+ ====================================================================== -->
+ <xsl:template                   match = "/">
+  <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
+  <HTML>
+   <HEAD>
+    <xsl:variable                 name = "cdrdocs" 
+                                select = "document('cdrx:/*/CdrCtl')"/>
+    <TITLE>
+     <xsl:value-of              select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+     <xsl:text>: </xsl:text>
+     <xsl:value-of              select = "substring-before(
+                                           concat($cdrdocs/CdrDocCtl/
+                                                  DocTitle, ';'), ';')"/>
+    </TITLE>
+    <STYLE type='text/css'>
+     .miscdoc   { background-color: DFDFDF; }
+     <xsl:call-template           name = "defaultStyle"/>  
+     <xsl:call-template           name = "rsInsertionDeletionStyle"/>
+    </STYLE>
+   </HEAD>
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
+   <xsl:apply-templates         select = "Licensee"/>
+  </HTML>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Terminology QC Report
+ =================================================================== -->
+ <xsl:template                   match = "Licensee">
+  <BODY>
+
+  <!-- 
+  ==================================================================
+  Display Report heading and subheading 
+  ================================================================== -->
+  <span class="big">
+    <center>
+     <xsl:text>Licensee</xsl:text>
+     <br/>
+     <xsl:text>QC Report</xsl:text>
+    </center>
+  </span>
+  <b>
+    <center>
+     <xsl:value-of              select = "document(
+                                           concat('cdrutil:/date/%25B %25#d,',
+                                                  ' %25Y %25#I:%25M% 25p'))"/>
+    </center>
+  </b>
+  <p/>
+
+  <!-- 
+  ====================================================================
+  Display CDR ID
+  ==================================================================== -->
+  <span class="big">
+    <xsl:value-of               select = "concat('CDR', 
+                                           number(
+                                           substring-after($docID, 'CDR')))"/>
+  </span>
+  <p/>
+
+  <!-- 
+  ===================================================================
+  Display Document Title 
+  =================================================================== -->
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:apply-templates         select = "LicenseeInformation"/>
+  </table>
+  <p/>
+
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:apply-templates         select = "ContactPersons"/>
+  </table>
+  <p/>
+
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:apply-templates         select = "ApplicationInformation"/>
+  </table>
+  <p/>
+
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:apply-templates         select = "FtpInformation"/>
+  </table>
+  <p/>
+
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Date Last Modified</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "DateLastModified"/>
+    </td>
+   </tr>
+  </table>
+  </BODY>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Licensee Name Information
+ =================================================================== -->
+ <xsl:template                   match = "LicenseeInformation">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <span class="big">Licensee Information</span>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:choose>
+      <xsl:when                   test = "../FtpInformation/
+                                          AccountBlocked = 'Yes'">
+       <span class="error">
+        <b>*** Account Blocked ***</b>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <!-- Display status of vendor if account isn't blocked yet -->
+       <xsl:choose>
+        <xsl:when                 test = "not(LicenseeStatusDates/
+                                              ProductionInactivation)
+                                          and
+                                          LicenseeStatusDates/
+                                          ProductionActivation">
+         <span style="color: blue; font-style: italic;">
+          <b>Regular, active</b>
+         </span>
+        </xsl:when>
+        <xsl:when                 test = "LicenseeStatusDates/
+                                              ProductionInactivation">
+         <span style="color: red; font-style: italic;">
+          <b>Regular, inactive</b>
+         </span>
+        </xsl:when>
+        <xsl:when                 test = "not(LicenseeStatusDates/
+                                              TestInactivation)
+                                          and
+                                          not(LicenseeStatusDates/
+                                          ProductionActivation)">
+         <span style="color: orange; font-style: italic;">
+          <b>Test, active</b>
+         </span>
+        </xsl:when>
+        <xsl:when                 test = "LicenseeStatusDates/
+                                              TestInactivation
+                                          and
+                                          not(LicenseeStatusDates/
+                                          ProductionActivation)">
+         <span style="color: red; font-style: italic;">
+          <b>Test, inactive</b>
+         </span>
+        </xsl:when>
+       </xsl:choose>
+      </xsl:otherwise>
+     </xsl:choose>
+    </td>
+   </tr>
+
+  <xsl:apply-templates          select = "LicenseeNameInformation"/>
+
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Organization Type</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:apply-templates        select = "OrganizationType"/>
+   </td>
+  </tr>
+
+
+   <xsl:apply-templates         select = "ContactDetail"/>
+
+
+
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Licensee Type</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:apply-templates        select = "LicenseeType"/>
+   </td>
+  </tr>
+
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Licensee Status</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:apply-templates        select = "LicenseeStatus"/>
+   </td>
+  </tr>
+
+  <xsl:apply-templates          select = "LicenseeStatusDates"/>
+
+
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Licensee Name Information
+ =================================================================== -->
+ <xsl:template                   match = "LicenseeNameInformation">
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Official Name</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:apply-templates        select = "OfficialName/
+                                          Name"/>
+   </td>
+  </tr>
+
+  <xsl:for-each                 select = "OtherNames/AlternateName">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Alternate Name</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "Name"/>
+    </td>
+   </tr>
+  </xsl:for-each>
+
+  <xsl:for-each                 select = "OtherNames/FormerName">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Former Name</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:apply-templates       select = "Name"/>
+    </td>
+   </tr>
+  </xsl:for-each>
+
+   <xsl:apply-templates         select = "OtherNames/Comment"
+                                  mode = "withAttribute">
+    <xsl:with-param               name = "label"
+                                select = "'Name Comment'"/>
+   </xsl:apply-templates>
+
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Licensee Status Dates
+ =================================================================== -->
+ <xsl:template                   match = "LicenseeStatusDates">
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <br/>
+    <span class="big">Licensee Status Dates</span>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:text> </xsl:text>
+   </td>
+  </tr>
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Test Activation</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:apply-templates        select = "TestActivation"/>
+   </td>
+  </tr>
+
+  <xsl:if                         test = "TestExtension">
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Test Extension</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:apply-templates        select = "TestExtension"/>
+   </td>
+  </tr>
+  </xsl:if>
+
+  <xsl:if                         test = "TestInactivation">
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Test Inactivation</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:apply-templates        select = "TestInactivation"/>
+   </td>
+  </tr>
+  </xsl:if>
+
+  <xsl:if                         test = "ProductionActivation">
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Production Activation</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:apply-templates        select = "ProductionActivation"/>
+   </td>
+  </tr>
+  </xsl:if>
+
+  <xsl:if                         test = "ProductionInactivation">
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Production Inactivation</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:apply-templates        select = "ProductionInactivation"/>
+   </td>
+  </tr>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Ftp Information
+ =================================================================== -->
+ <xsl:template                   match = "FtpInformation">
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <br/>
+    <b>FTP Information</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:text> </xsl:text>
+   </td>
+  </tr>
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>User Name</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:apply-templates        select = "UserName"/>
+   </td>
+  </tr>
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Password</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:value-of               select = "'************'"/>
+   </td>
+  </tr>
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Account Blocked?</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:apply-templates        select = "AccountBlocked"/>
+   </td>
+  </tr> 
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Licensee Name Information
+ =================================================================== -->
+ <xsl:template                   match = "ContactPersons">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <span class="big">Contact Persons</span>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:text> </xsl:text>
+    </td>
+   </tr>
+
+    <xsl:apply-templates        select = "ContactPerson"/>
+
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Licensee Name Information
+ =================================================================== -->
+ <xsl:template                   match = "ContactPerson">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Contact Name</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <b>
+     <xsl:apply-templates        select = "ContactName"/>
+     </b>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Contact Type</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each               select = "ContactType">
+      <xsl:value-of              select = "."/><br/>
+     </xsl:for-each>
+    </td>
+   </tr>
+
+   <xsl:apply-templates        select = "ContactDetail"/>
+  
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Licensee Name Information
+ =================================================================== -->
+ <xsl:template                   match = "ApplicationInformation">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <span class="big">Application Information</span>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:text> </xsl:text>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Distribution Methods</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each              select = "DistributionMethods/
+                                          DistributionMethod">
+      <li>
+       <xsl:value-of             select = "."/>
+      </li>
+     </xsl:for-each>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Audiences</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each              select = "Audiences/
+                                          Audience">
+      <li>
+       <xsl:value-of             select = "."/>
+      </li>
+     </xsl:for-each>
+    </td>
+   </tr>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Licensee Name Information
+ =================================================================== -->
+ <xsl:template                   match = "Status">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <span class="big">Status</span>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:text> </xsl:text>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Current Status</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+    <xsl:apply-templates         select = "CurrentStatus"/>
+    </td>
+   </tr>
+  
+   <xsl:apply-templates         select = "Comment"
+                                  mode = "withAttribute">
+    <xsl:with-param               name = "label"
+                                select = "'Status Comment'"/>
+   </xsl:apply-templates>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Licensee Name Information
+ =================================================================== -->
+ <xsl:template                   match = "ContactDetail">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <br/>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <br/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Address</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each               select = "PostalAddress/
+                                           Street">
+      <xsl:value-of              select = "."/>
+      <br/>
+     </xsl:for-each>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <xsl:text> </xsl:text>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:if                      test = "PostalAddress/
+                                          City">
+      <xsl:value-of             select = "PostalAddress/
+                                          City"/>
+      <xsl:text>, </xsl:text>
+     </xsl:if>
+    <xsl:value-of               select = "PostalAddress/
+                                          PoliticalSubUnit_State"/>
+    <xsl:text> </xsl:text>
+    <xsl:value-of               select = "PostalAddress/
+                                          PostalCode_ZIP"/>
+    </td>
+   </tr>
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <xsl:text> </xsl:text>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+    <xsl:apply-templates         select = "PostalAddress/
+                                           Country"/>
+    </td>
+   </tr>
+  
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Phone</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:value-of               select = "Phone"/>
+   </td>
+  </tr>
+
+ <xsl:if                          test = "TollFreePhone">
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Toll Free Phone</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:value-of               select = "TollFreePhone"/>
+   </td>
+  </tr>
+ </xsl:if>
+
+ <xsl:if                          test = "Fax">
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Fax</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:value-of               select = "Fax"/>
+   </td>
+  </tr>
+ </xsl:if>
+
+ <xsl:if                          test = "Email">
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Email</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:for-each               select = "Email">
+     <xsl:call-template            name = "createEmailLink"/>
+    </xsl:for-each>
+   </td>
+  </tr>
+ </xsl:if>
+
+ <xsl:if                          test = "WebSite">
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <b>Web</b>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:for-each               select = "WebSite">
+     <xsl:call-template           name = "createWebLink"/>
+     <br/>
+     <xsl:value-of              select = "."/>
+    </xsl:for-each>
+   </td>
+  </tr>
+ </xsl:if>
+
+  <tr>
+   <td          xsl:use-attribute-sets = "cell1of2">
+    <br/>
+   </td>
+   <td          xsl:use-attribute-sets = "cell2of2">
+    <xsl:text> </xsl:text>
+   </td>
+  </tr>
+
+   <xsl:apply-templates         select = "Comment"
+                                  mode = "withAttribute">
+    <xsl:with-param               name = "label"
+                                select = "'Status Comment'"/>
+   </xsl:apply-templates>
+ </xsl:template>
+</xsl:transform>
