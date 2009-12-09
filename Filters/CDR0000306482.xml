@@ -1,25 +1,20 @@
-<CdrDoc Type='Filter' Id='CDR0000306482'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Module: Global Filter Templates</DocTitle>
-<DocComment>CVS-V1.4: Global Address Template (Bug 601)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: Module: Global Filter Templates -->
 <!--
 ================================================================
-$RCSfile: CDR0000306482.xml,v $
+$RCSfile: $
 
 Filter modules for general use (string conversion, etc.)
 $Author$
 Created: Volker Englisch
 
-$Source: /usr/local/cvsroot/cdr/Filters/CDR0000306482.xml,v $
+$Source:$
 $Revision$
 
 History
 =======
-$Log: not supported by cvs2svn $
+$Log: $
 
 ================================================================ -->
 <xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -207,6 +202,135 @@ $Log: not supported by cvs2svn $
  </xsl:template>
 
 
+ <!--
+ ========================================================================
+ Create the URLInfo block for InScopeProtocol and CTGovProtocol
+ ======================================================================== -->
+ <xsl:template                 name = 'urlInfo'>
+  <xsl:element                 name = 'UrlInfo'>
+   <xsl:element                name = 'PrimaryUrlID'>
+    <xsl:value-of            select = 'IDInfo/
+                                       NCTID        |
+                                       ProtocolIDs/
+                                       PrimaryID/
+                                       IDString'/>
+   </xsl:element>
+   <xsl:if                     test = 'PDQAdminInfo/
+                                       PDQProtocolIDs/
+                                       PrimaryID/
+                                       IDString'>
+    <xsl:element               name = 'SecondaryUrlID'>
+     <xsl:value-of           select = 'PDQAdminInfo/
+                                       PDQProtocolIDs/
+                                       PrimaryID/
+                                       IDString'/>
+    </xsl:element>
+   </xsl:if>
+   <xsl:if                     test = 'ProtocolIDs/
+                                       OtherID/
+                                       IDType = "ClinicalTrials.gov ID"'>
+    <xsl:element               name = 'SecondaryUrlID'>
+     <xsl:value-of           select = 'ProtocolIDs/
+                                       OtherID[IDType="ClinicalTrials.gov ID"]/
+                                       IDString'/>
+    </xsl:element>
+   </xsl:if>
+  </xsl:element>
+ </xsl:template>
+
+<!-- 
+ <xsl:template                 name = 'urlInfo'>
+  <xsl:variable                name = 'ctGovIDs'>
+   <xsl:for-each             select = '/CTGovProtocol/
+                                        IDInfo/
+                                        NCTID          |
+                                       /CTGovProtocol/
+                                        IDInfo/
+                                        OrgStudyID     |
+                                       /CTGovProtocol/
+                                        IDInfo/
+                                        SecondaryID    |
+                                       /InScopeProtocol/
+                                        ProtocolIDs/
+                                        PrimaryID/
+                                        IDString       |
+                                       /InScopeProtocol/
+                                        ProtocolIDs/
+                                        OtherID/
+                                        IDString'>
+     <xsl:value-of           select = '.'/>
+     <xsl:text>~</xsl:text>
+   </xsl:for-each>
+   <xsl:text>~</xsl:text>
+  </xsl:variable>
+
+  <xsl:variable                name = 'pdqIDs'>
+   <xsl:if                     test = '/CTGovProtocol/
+                                        PDQProtocolIDs'>
+    <xsl:for-each            select = 'PDQProtocolIDs/*/IDString'>
+     <xsl:value-of           select = '.'/>
+     <xsl:text>~</xsl:text>
+    </xsl:for-each>
+   </xsl:if>
+  </xsl:variable>
+
+  <xsl:variable                name = 'allIDs'
+                             select = 'concat($ctGovIDs, $pdqIDs)'/>
+
+  <xsl:value-of              select = '$allIDs'/>
+  <xsl:variable                name = 'newIDs'
+                             select = "document(concat('cdrutil:/dedup-ids/', 
+                                                         $allIDs))"/>
+
+  <UrlInfo>
+   <xsl:element                name = 'PrimaryUrlID'>
+    <xsl:value-of            select = '/CTGovProtocol/
+                                        IDInfo/
+                                        NCTID  |
+                                       /InScopeProtocol/
+                                        ProtocolIDs/
+                                        PrimaryID/
+                                        IDString'/>
+   </xsl:element>
+   <xsl:for-each             select = '/CTGovProtocol/
+                                        IDInfo/
+                                        OrgStudyID     |
+                                       /CTGovProtocol/
+                                        IDInfo/
+                                        SecondaryID    |
+                                       /InScopeProtocol/
+                                        ProtocolIDs/
+                                        OtherID/
+                                        IDString'>
+    <xsl:element               name = 'SecondaryUrlID'>
+     <xsl:value-of           select = '.'/>
+    </xsl:element>
+   </xsl:for-each>
+   <xsl:if                     test = '$newIDs/result/id'>
+    <xsl:for-each            select = '$newIDs/result/id'>
+     <xsl:element              name = 'SecondaryUrlID'>
+      <xsl:value-of          select = '.'/>
+     </xsl:element>
+    </xsl:for-each>
+   </xsl:if>
+
+   <xsl:if                     test = '/InScopeProtocol/
+                                        ProtocolIDs/
+                                        OtherID/
+                                        IDType = "ClinicalTrials.gov ID"'>
+     <xsl:element              name = 'SecondaryUrlID'>
+      <xsl:value-of          select = '/InScopeProtocol/
+                                        ProtocolIDs/
+                                        OtherID/
+                                        IDType["ClinicalTrials.gov ID"]/
+                                        IDString'/>
+     </xsl:element>
+   </xsl:if>
+  </UrlInfo>
+ </xsl:template>
+-->
+
+
 <!-- ======================================================================
      Template rule used to do XML to XML transformations which
      copies any attribute node, or node that is child of of something 
@@ -226,6 +350,3 @@ $Log: not supported by cvs2svn $
   </xsl:template>
 
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>
