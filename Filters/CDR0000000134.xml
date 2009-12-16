@@ -1,11 +1,9 @@
-<CdrDoc Type='Filter' Id='CDR0000000134'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Vendor Filter: Term</DocTitle>
-<DocComment>CVS-R1.32 Modified URL for NCI Thesaurus link [REQUEST 4607]</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml  version = "1.0"?>
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: Module: Vendor Filter: Term -->
+<!--
+BZIssue::4703 - Suppress Clin. Trials search string
+-->
 <!-- 
 ===================================================================
 Filter to create the vendor Terminology XML 
@@ -152,6 +150,8 @@ Filter to create the vendor Terminology XML
  listing documents either active or closed documents using this drug.
  The third external Ref lists the NCI Thesaurus entry for the given 
  concept ID
+ These new Ref attributes should not be displayed if the Term 
+ is listed with a TermTypeName = 'Drug Combination'.
  =================================================================== -->
  <xsl:template                   match = "DefinitionText">
   <xsl:copy>
@@ -188,7 +188,10 @@ Filter to create the vendor Terminology XML
    document, we need to suppress the display of the clinical search 
    string.
    ================================================================== -->
-   <xsl:if                        test = "not($queryRows/SqlResult/row)">
+   <xsl:if                        test = "not($queryRows/SqlResult/row)
+                                          and
+                                          not(/Term/TermType/TermTypeName 
+                                                    = 'Drug Combination')">
    <!--
    Conctruct the URL for NCI active trials using this drug
    ======================================================== -->
@@ -390,6 +393,3 @@ Filter to create the vendor Terminology XML
   </MenuParent>
  </xsl:template>
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>
