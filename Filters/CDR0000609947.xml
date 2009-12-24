@@ -1,14 +1,11 @@
-<CdrDoc Type='Filter' Id='CDR0000609947'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Vendor Filter: Convert CG to Public Data</DocTitle>
-<DocComment>CVS-V1.3: Remove Elements from Vendor Output (Bug 4123)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml      version = "1.0" ?>
-<!-- ===============================================================
-      Filter to create Vendor Person XML documents 
-     =============================================================== -->
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: Vendor Filter: Convert CG to Public Data -->
+<!--
+BZIssue::4675 - Create URLInfo Block
+===============================================================
+Filter to create Vendor Person XML documents 
+=============================================================== -->
   <xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr" 
@@ -51,14 +48,21 @@
  </xsl:template>
 
  <!--
- Remove the ArmsOrGroups block from the licensee output
+ Remove various elements from the licensee output
  ======================================================= -->
  <xsl:template                 match = "ArmsOrGroups         |
                                         OfficialProtocolTitle|
                                         RegulatoryInformation|
-                                        CTGovInterventionType"
+                                        CTGovInterventionType|
+                                        UrlInfo"
                                 mode = "copy"/>
 
-</xsl:transform>]]>
-</CdrDocXml>
-</CdrDoc>
+ <!--
+ Remove ProtocolSpecialCategory from CTGovProtocols 
+ (but not InScopeProtocols)
+ ======================================================= -->
+ <xsl:template                 match = "CTGovProtocol/
+                                        ProtocolSpecialCategory"
+                                mode = "copy"/>
+
+</xsl:transform>
