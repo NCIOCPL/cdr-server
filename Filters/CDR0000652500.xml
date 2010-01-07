@@ -1,0 +1,184 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- $Id$ -->
+<!-- Filter title: Denormalization Filter: GeneticsProfessional -->
+<!-- 
+BZIssue::4629
+-->
+<xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                             xmlns:cdr = 'cips.nci.nih.gov/cdr'
+                               version = '1.0'>
+
+ <xsl:output                    method = 'xml' 
+                  omit-xml-declaration = 'no'
+                              encoding = 'utf-8'/>
+
+ <!-- 
+ =================================================================
+ Copy control information and generate current date
+ ================================================================= -->
+  <xsl:template                  match = "Person">
+   <xsl:copy>
+   <xsl:apply-templates         select = "document('cdrutil:/docid')"/>
+   <xsl:apply-templates         select = "document('cdrx:/*/CdrCtl')"/>
+
+   <xsl:apply-templates/>
+
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ Template to denormalize Organization Name link
+ ================================================================= -->
+ <xsl:template                   match = "OrganizationLocation">
+  <xsl:variable                   name = "orgId" 
+                                select = "@cdr:ref"/>
+  <xsl:variable                   name = "orgDoc" 
+                                select = "document(concat('cdr:', $orgId,
+                                                          '/last'))"/>
+  <xsl:element                    name = "OrganizationLocation">
+   <xsl:for-each                select = "@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+   <xsl:apply-templates         select = "$orgDoc/Organization/
+                                                  OrganizationNameInformation/
+                                                  OfficialName"/>
+  </xsl:element>
+ </xsl:template> 
+
+
+ <!-- 
+ =================================================================
+ Template to denormalize Country link
+ ================================================================= -->
+ <xsl:template                   match = "Country">
+  <xsl:variable                   name = "countryId" 
+                                select = "@cdr:ref"/>
+  <xsl:variable                   name = "countryDoc" 
+                                select = "document(concat('cdr:', $countryId,
+                                                          '/lastp'))"/>
+  <xsl:element                    name = "Country">
+   <xsl:for-each                select = "@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+   <xsl:apply-templates         select = "$countryDoc/Country/
+                                                      CountryFullName |
+                                          $countryDoc/Country/
+                                                      Continent       |
+                                          $countryDoc/Country/
+                                                      PostalCodePosition"/>
+  </xsl:element>
+ </xsl:template> 
+
+
+ <!--
+ ===================================================================
+ Denormalize the information for PoliticalSubUnit/State information.
+ =================================================================== -->
+ <xsl:template                   match = "PoliticalSubUnit_State">
+  <xsl:variable                   name = "stateId"
+                                select = "@cdr:ref"/>
+
+  <xsl:variable                   name = "state"
+                                select = "document(concat('cdr:', $stateId, 
+                                                          '/lastp'))"/>
+  <xsl:element                    name = "PoliticalSubUnit_State">
+   <xsl:attribute                 name = "cdr:ref">
+    <xsl:value-of               select = "$stateId"/>
+   </xsl:attribute>
+   <xsl:copy-of                 select = "$state/PoliticalSubUnit/
+                                          PoliticalSubUnitFullName"/>
+   <xsl:copy-of                 select = "$state/PoliticalSubUnit/
+                                          PoliticalSubUnitShortName"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Denormalize the information for FamilyCancerSyndrome information.
+ This element needs to be denormalized by first selecting all 
+ Terms that are pointing to the term of the FamilyCancerSyndrome.
+ Once we have those documents we're extracting the menu information
+ which is going to be displayed as the CancerSite and CancerType.
+ =================================================================== -->
+ <xsl:template                   match = "FamilialCancerSyndrome">
+  <xsl:variable                   name = "termId"
+                                select = "@cdr:ref"/>
+  <xsl:variable                   name = "termNormId"
+                                select = "number(
+                                           substring-before(
+                                           concat(
+                                           substring-after($termId, 'CDR'),
+                                                               '#'), '#'))"/>  
+
+  <xsl:variable                   name = "term"
+                                select = "document(concat('cdr:', $termId, 
+                                                          '/last'))"/>
+  <xsl:element                    name = "FamilialCancerSyndrome">
+   <xsl:attribute                 name = "cdr:ref">
+    <xsl:value-of               select = "$termId"/>
+   </xsl:attribute>
+   <xsl:element                   name = "Term">
+    <xsl:copy-of                select = "$term/Term/MenuInformation/
+                                                MenuItem[MenuType = 
+                                    'Genetics Professionals--GeneticSyndrome']/
+                                                DisplayName"/>
+    <xsl:copy-of                select = "$term/Term/MenuInformation/
+                                                MenuItem"/>
+   </xsl:element>
+
+   <xsl:element                   name = "TermMenus">
+    <xsl:variable                 name = "sqlQuery">
+     SELECT r.doc_id 
+       FROM query_term q
+       JOIN query_term r
+         ON r.doc_id = q.doc_id
+        AND r.path = '/Term/PreferredName'
+      WHERE q.int_val = ?
+        AND q.path = '/Term/TermRelationship/RelatedTerm/TermId/@cdr:ref'
+      ORDER BY r.value
+    </xsl:variable>
+
+  <xsl:variable                   name = "queryRows"
+                                select = "document(
+                                            concat('cdrutil:/sql-query/',
+                                                   $sqlQuery,
+                                                   '~', $termNormId))"/>
+
+  <xsl:copy-of                  select = "$queryRows"/>
+  
+  <xsl:for-each                 select = "$queryRows/SqlResult/row/col">
+  <xsl:variable                   name = "menus"
+                                select = "document(
+                                             concat('cdr:CDR', ., '/last'))"/>
+   <xsl:element                   name = "TermMenu">
+    <xsl:attribute                name = "id">
+     <xsl:value-of              select = "concat('CDR', 
+                                          format-number(.,'0000000000'))"/>
+    </xsl:attribute>
+    <xsl:copy-of                select = "$menus/Term/MenuInformation"/>
+   </xsl:element>
+  </xsl:for-each>
+  </xsl:element>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Template rule used to do XML to XML transformations which
+ copies any attribute node, or node that is child of of something 
+ ================================================================== -->
+ <xsl:template                   match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates         select = "@*|node()"/>
+  </xsl:copy> 
+ </xsl:template>
+
+</xsl:transform>

@@ -1,0 +1,76 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- $Id$ -->
+<!-- Filter title: Copy XML for GeneticsProfessional -->
+<!--
+BZIssue::4629
+-->
+<xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                             xmlns:cdr = 'cips.nci.nih.gov/cdr'
+                               version = '1.0'>
+
+ <xsl:output                    method = 'xml'
+                  omit-xml-declaration = 'no'
+                              encoding = 'utf-8'/>
+
+ <xsl:include  href = "cdr:name:Module: Global Filter Templates"/>
+ <xsl:include  href = "cdr:name:Module: Vendor Address Templates"/>
+
+ <!--
+ =========================================================================== 
+ =========================================================================== -->
+ <xsl:template                   match = "TermMenus"
+                                  mode = "copy">
+  <xsl:copy>
+   <xsl:apply-templates         select = "TermMenu/
+                                          MenuInformation/
+                                          MenuItem[MenuType=
+                                            'Genetics Professionals--CancerType'
+                                            and
+                                            MenuStatus = 'Online']"
+                                  mode = "type">
+    <xsl:sort/>
+   </xsl:apply-templates>
+
+   <xsl:apply-templates/>
+
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ =========================================================================== 
+ =========================================================================== -->
+ <xsl:template                   match = "MenuItem"
+                                  mode = "type">
+  <xsl:variable                   name = "gpType"
+                                select = "DisplayName"/>
+
+  <xsl:element                    name = "GPCancerType">
+    <xsl:copy-of                select = "$gpType"/>
+   <xsl:element                   name = "GPCancerSite">
+    <xsl:for-each               select = "../MenuItem[MenuType = 
+                                         'Genetics Professionals--CancerSite']">
+     <xsl:copy-of               select = "DisplayName"/>
+    </xsl:for-each>
+   </xsl:element>
+  </xsl:element>
+ </xsl:template>
+ 
+
+ <!--
+ =========================================================================== 
+ =========================================================================== -->
+ <xsl:template                  match = "TermMenu  |
+                                         SqlResult"/>
+
+ <!--
+ =========================================================================== 
+ =========================================================================== -->
+ <xsl:template                   match = "*">
+  <xsl:copy>
+   <xsl:apply-templates           mode = "copy"/>
+  </xsl:copy>
+ </xsl:template>
+
+
+</xsl:transform>
