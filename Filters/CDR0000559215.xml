@@ -42,13 +42,20 @@ Filter to create Vendor Genetics Professionals XML documents
                                             LegacyGeneticsData/
                                             LegacyID"/>
    <xsl:apply-templates         select = "PersonNameInformation"/>
+
+   <!--
+   We're only interested in locations marked with the attribute
+     UsedFor = GP
+   ====================================================================== -->
    <xsl:apply-templates         select = "PersonLocations/PrivatePractice/
-                                            PrivatePracticeLocation       |
+                                            PrivatePracticeLocation
+                                                  [@UsedFor]              |
                                           PersonLocations/
                                             OtherPracticeLocation
                                                   [@UsedFor]              |
                                           PersonLocations/
-                                            Home"/>
+                                            Home  [@UsedFor]"/>
+
    <xsl:apply-templates         select = "ProfessionalType"/>
    <xsl:apply-templates         select = "ProfessionalInformation/
                                             GeneticsProfessionalDetails/
@@ -142,8 +149,9 @@ Filter to create Vendor Genetics Professionals XML documents
 
    <xsl:apply-templates         select = "Prefix"
                                   mode = "copy"/>
-   <xsl:apply-templates         select = "GenerationSuffix"
-                                  mode = "copy"/>
+   <xsl:element                   name = "SUFFIX">
+    <xsl:apply-templates        select = "GenerationSuffix"/>
+   </xsl:element>
 
    <xsl:apply-templates         select = "NameFormat"
                                   mode = "copy"/>
@@ -186,7 +194,11 @@ Filter to create Vendor Genetics Professionals XML documents
  <!-- 
  =====================================================================
  Copy Contact Information for Private Practice and Home location
- ==================================================================== --> 
+ Note:
+ There doesn't exist any Home or PrivatePractice location for GenProfs
+ at this time.  If they start to exist the filter needs to be extended
+ to create the location from it according to the DTD.  VE, 2010-01-13
+ ===================================================================== --> 
  <xsl:template                   match = "Home                   | 
                                           OtherPracticeLocation  |
                                           PrivatePracticeLocation">
