@@ -1,12 +1,10 @@
-<CdrDoc Type='Filter' Id='CDR0000258630'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Module: Citation Formatting</DocTitle>
-<DocComment>CVS-V1.20: Removed YYY string (Bug 1995)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
- 
+<?xml version='1.0' encoding='utf-8'?>
+<!-- $Id$ -->
+<!-- Filter title: Module: Citation Formatting -->
+<!--
+BZIssue::4740 - Fixing formatted citation display
+-->
+
 <xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                          xmlns:cdr = "cips.nci.nih.gov/cdr"
            exclude-result-prefixes = "cdr"
@@ -324,7 +322,15 @@
                             select = "count(Author/LastName)"/>
 
   <xsl:choose>
-   <xsl:when                  test = "contains($Authors,'null')">
+<!--
+   Not sure what this test was trying to do.  I'm guessing I wanted 
+   to check if an Author element existed but that's wrong. VE.
+   Instead, I'm checking if an AuthorList/Author element exists (even
+   if it's empty).
+
+   <xsl:when                  test = "contains($Authors,'Null')">
+-->
+   <xsl:when                  test = "not($Authors)">
     <xsl:text></xsl:text>
    </xsl:when>
    <xsl:otherwise>
@@ -475,13 +481,13 @@
                             select = "count(Author/LastName)"/>
 
  <xsl:choose>
-  <xsl:when                  test = "contains($Authors,'null')">
+  <xsl:when                  test = "contains($Authors,'')">
    <xsl:text></xsl:text>
   </xsl:when>
   <xsl:when                   test   = "Author/CollectiveName">
-   <xsl:value-of              select = "$nAuthor"/>AA
-   <xsl:value-of              select = "$nLastName"/>LL
-   <xsl:value-of              select = "$nCollective"/>CC
+   <xsl:value-of              select = "$nAuthor"/>
+   <xsl:value-of              select = "$nLastName"/>
+   <xsl:value-of              select = "$nCollective"/>
    <xsl:text>: </xsl:text>
   </xsl:when>
   <xsl:otherwise>
@@ -745,6 +751,3 @@
   </xsl:choose>
  </xsl:template>
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>
