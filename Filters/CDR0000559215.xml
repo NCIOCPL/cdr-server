@@ -37,10 +37,26 @@ Filter to create Vendor Genetics Professionals XML documents
    <!--
    Collect the individual sections that make up the GenProf vendor output
    ====================================================================== -->
-   <xsl:apply-templates         select = "ProfessionalInformation/
+   <xsl:choose>
+    <!-- New documents don't contain Legacy data -->
+    <xsl:when                     test = "ProfessionalInformation/
+                                            GeneticsProfessionalDetails/
+                                            LegacyGeneticsData/
+                                            LegacyID">
+     <xsl:apply-templates       select = "ProfessionalInformation/
                                             GeneticsProfessionalDetails/
                                             LegacyGeneticsData/
                                             LegacyID"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:element                 name = "ID">
+     <xsl:value-of              select = "number(
+                                                substring-after(/Person/DocId, 
+                                                                'CDR'))"/>
+     </xsl:element>
+    </xsl:otherwise>
+   </xsl:choose>
+
    <xsl:apply-templates         select = "PersonNameInformation"/>
 
    <!--
@@ -103,9 +119,7 @@ Filter to create Vendor Genetics Professionals XML documents
      <xsl:value-of              select = "."/>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:value-of              select = "number(
-                                                substring-after(/Person/DocId, 
-                                                                'CDR'))"/>
+     <xsl:text>9999999999</xsl:text>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:element>
