@@ -1,29 +1,23 @@
-<CdrDoc Type='Filter' Id='CDR0000335166'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Module: Checkbox Formatter</DocTitle>
-<DocComment>Restored after refresh of CDR database on Mahler</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
-<!--
-================================================================
-$Id$
+<?xml version='1.0' encoding='utf-8'?>
+<!-- $Id$ -->
+<!-- Filter title: Module: Checkbox Formatter -->
+<!-- 
 
-Filter to display Summary elements selected by Checkbox
-Written by Volker Englisch, 2004-07-16
+BZIssue::4751 - Modify BU Reports to display LOERefs
 
-$Log: not supported by cvs2svn $
-================================================================ -->
-<xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                             version = "1.0"
-                           xmlns:cdr = "cips.nci.nih.gov/cdr"
-             exclude-result-prefixes = "cdr">
+===============================================================
+Filter to create Vendor Genetics Professionals XML documents 
+=============================================================== -->
+<xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                             xmlns:cdr = 'cips.nci.nih.gov/cdr'
+                               version = '1.0'
+               exclude-result-prefixes = 'cdr'>
 
  <!-- 
  Checkbox parameters passed via the Web interface
  ==================================================== -->
  <xsl:param                   name = "DisplayGlossaryTermList"/>
+ <xsl:param                   name = "DisplayLOETermList"/>
  <xsl:param                   name = "DisplayComments"
                             select = "'N'"/>
  <xsl:param                   name = "ShowStandardWording"/>
@@ -171,6 +165,166 @@ $Log: not supported by cvs2svn $
         <xsl:otherwise>
          <td>
           <xsl:value-of        select = "GlossaryTermRef"/>
+         </td>
+         <td>
+          <xsl:value-of        select = "GlossaryTermName"/>
+         </td>
+         <td>
+          <xsl:apply-templates select = "GlossaryTermConcept/
+                                         TermDefinition/
+                                         DefinitionText         |
+                                         GlossaryTermConcept/
+                                         TranslatedDefinition/
+                                         DefinitionText"/>
+         </td>
+        </xsl:otherwise>
+       </xsl:choose>
+     </tr>
+    </xsl:for-each>
+   </table>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ ================================================================
+ Display a Table of LOEs at the end of a Summary QC Report if the
+ 'Include LOE Terms' checkbox is checked.
+ ================================================================ -->
+ <xsl:template               match = "LOETerms">
+  <xsl:if                     test = "$DisplayLOETermList='Y'">
+   <hr />
+   <b>
+    <h1>
+     <xsl:text>Table of Level of Evidence Terms</xsl:text>
+    </h1>
+   </b>
+   <p/>
+        
+   <table                   border = "1"> 
+    <tr>
+     <th>
+      <b>
+       <xsl:text>Term Text</xsl:text>
+      </b>
+     </th>
+
+     <th>
+      <b>
+       <xsl:text>Term Name</xsl:text>
+      </b>
+     </th>
+     <th>
+      <b>
+       <xsl:text>Definition Text</xsl:text>
+      </b>
+     </th>
+    </tr>
+           
+    <xsl:for-each           select = "LOETerm">
+     <tr>
+       <xsl:choose>
+        <xsl:when             test = "GlossaryTermRef/Deletion">
+         <xsl:choose>
+          <xsl:when           test = "GlossaryTermRef/Deletion/
+                                         @RevisionLevel = 'proposed'">
+           <td>
+            <span class="deleteproposed">
+             <xsl:value-of        select = "LOERef/Deletion"/>
+            </span>
+           </td>
+           <td>
+            <span class="deleteproposed">
+             <xsl:value-of        select = "GlossaryTermName"/>
+            </span>
+           </td>
+           <td>
+            <span class="deleteproposed">
+             <xsl:apply-templates select = "GlossaryTermConcept/
+                                            TermDefinition/
+                                            DefinitionText         |
+                                            GlossaryTermConcept/
+                                            TranslatedDefinition/
+                                            DefinitionText"/>
+            </span>
+           </td>
+          </xsl:when>
+          <xsl:otherwise>
+           <td>
+            <span class="deleteapproved">
+             <xsl:value-of        select = "LOERef/Deletion"/>
+            </span>
+           </td>
+           <td>
+            <span class="deleteapproved">
+             <xsl:value-of        select = "GlossaryTermName"/>
+            </span>
+           </td>
+           <td>
+            <span class="deleteapproved">
+             <xsl:apply-templates select = "GlossaryTermConcept/
+                                            TermDefinition/
+                                            DefinitionText         |
+                                            GlossaryTermConcept/
+                                            TranslatedDefinition/
+                                            DefinitionText"/>
+            </span>
+           </td>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:when>
+        <xsl:when             test = "GlossaryTermRef/Insertion">
+         <xsl:choose>
+          <xsl:when           test = "GlossaryTermRef/Insertion/
+                                         @RevisionLevel = 'proposed'">
+           <td>
+            <span class="insertproposed">
+             <xsl:value-of        select = "LOERef/Insertion"/>
+            </span>
+           </td>
+           <td>
+            <span class="insertproposed">
+             <xsl:value-of        select = "GlossaryTermName"/>
+            </span>
+           </td>
+           <td>
+            <span class="insertproposed">
+             <xsl:apply-templates select = "GlossaryTermConcept/
+                                            TermDefinition/
+                                            DefinitionText         |
+                                            GlossaryTermConcept/
+                                            TranslatedDefinition/
+                                            DefinitionText"/>
+            </span>
+           </td>
+          </xsl:when>
+          <xsl:otherwise>
+           <td>
+            <span class="insertapproved">
+             <xsl:value-of        select = "LOERef/Insertion"/>
+            </span>
+           </td>
+           <td>
+            <span class="insertapproved">
+             <xsl:value-of        select = "GlossaryTermName"/>
+            </span>
+           </td>
+           <td>
+            <span class="insertapproved">
+             <xsl:apply-templates select = "GlossaryTermConcept/
+                                            TermDefinition/
+                                            DefinitionText         |
+                                            GlossaryTermConcept/
+                                            TranslatedDefinition/
+                                            DefinitionText"/>
+            </span>
+           </td>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:when>
+        <xsl:otherwise>
+         <td>
+          <xsl:value-of        select = "LOERef"/>
          </td>
          <td>
           <xsl:value-of        select = "GlossaryTermName"/>
@@ -602,6 +756,4 @@ $Log: not supported by cvs2svn $
   </xsl:choose>
  </xsl:template>
 
-</xsl:transform>]]>
-</CdrDocXml>
-</CdrDoc>
+</xsl:transform>
