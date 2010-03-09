@@ -464,7 +464,7 @@ int readRequest(int fd, std::string& request, const cdr::String& when) {
         if (totalRead != length) {
             char errMsg[256];
             sprintf(errMsg, "Expected %u bytes reading client request; "
-                    "got %u bytes", length, totalRead)
+                    "got %u bytes", length, totalRead);
             sendErrorResponse(fd, errMsg, when);
             return 0;
         }
