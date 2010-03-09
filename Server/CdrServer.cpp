@@ -3,155 +3,7 @@
  *
  * Server for ICIC Central Database Repository (CDR).
  *
- * $Log: not supported by cvs2svn $
- * Revision 1.47  2008/12/06 20:34:33  bkline
- * Added code to capture the client IP address for CDR sessions.
- *
- * Revision 1.46  2008/10/15 04:16:49  ameyer
- * Minor fixes to the changes just introduced.
- *
- * Revision 1.45  2008/10/15 02:38:31  ameyer
- * Added support for altering the directory for logging.
- *
- * Revision 1.44  2008/10/03 23:54:05  bkline
- * Fixing problems flushed out by Visual Studio 2008.
- *
- * Revision 1.43  2005/03/29 15:29:56  ameyer
- * Removed domLog logging.  Conversion to Xerces is complete.
- *
- * Revision 1.42  2005/03/04 02:57:23  ameyer
- * Converted to new DOM parser that requires that parser for command
- * stay in scope until we are done with DOM tree created for the command.
- * Also retaining some logging here that may eventually be discarded.
- *
- * Revision 1.41  2004/04/30 01:31:17  ameyer
- * Added call to cdr::buildFilterString2IdMap() to initialize filter profiling.
- *
- * Revision 1.40  2004/03/31 03:29:22  ameyer
- * Revised exception handling.  Now rethrowing OS level structured
- * exceptions as CDR exceptions.
- *
- * Revision 1.39  2004/03/22 14:27:24  bkline
- * Adjustments to use of _DEBUG and _NDEBUG symbols to prevent unwanted
- * linking of the debugging versions of Microsoft's runtime libraries.
- *
- * Revision 1.38  2004/03/21 21:19:27  bkline
- * Added signal handler for Control-C.
- *
- * Revision 1.37  2003/07/08 18:50:23  bkline
- * Fixed timing of capturing WSA error.
- *
- * Revision 1.36  2003/05/23 01:24:42  ameyer
- * Added logging of "Unexpected exception" with command that generated it.
- *
- * Revision 1.35  2003/01/14 19:41:11  bkline
- * Made command logging the default (with environment override).
- *
- * Revision 1.34  2002/09/13 21:53:04  bkline
- * Testing readonly cvs account.
- *
- * Revision 1.33  2002/09/13 21:48:17  anon
- * Testing anonymous CVS.
- *
- * Revision 1.32  2002/08/12 15:48:11  bkline
- * Error handling enhanced for _beginthread() failure.
- *
- * Revision 1.31  2002/08/10 20:18:46  bkline
- * More thread logging.
- *
- * Revision 1.30  2002/08/10 19:28:22  bkline
- * Guest session support; better hacker protection; message logging.
- *
- * Revision 1.29  2002/07/11 18:56:19  ameyer
- * Added directory path for exception catcher crash log.
- *
- * Revision 1.28  2002/06/16 03:02:43  bkline
- * Sidestep 'helpful' attacks from NIH network administration.
- *
- * Revision 1.27  2002/03/09 04:21:35  bkline
- * Added some #ifdef _DEBUG fences.
- *
- * Revision 1.26  2002/03/07 12:58:22  bkline
- * Added more tracing to standard output, as well as conditional memory
- * allocation dumps at the bottom of each time through the main loop.
- *
- * Revision 1.25  2002/03/06 20:33:28  bkline
- * Made catch argument a reference instead of an object.  Removed redundant
- * heap trace information.
- *
- * Revision 1.24  2002/02/27 23:33:09  bkline
- * Added test of buffer allocation for new client message.
- *
- * Revision 1.23  2002/02/01 20:48:21  bkline
- * Added more logging for top-level failures.
- *
- * Revision 1.22  2002/01/28 23:10:36  bkline
- * Added handler for unexpected exception when processing a single command.
- *
- * Revision 1.21  2001/12/14 18:28:46  bkline
- * Added use of heap debugging conditional macros.
- *
- * Revision 1.20  2001/12/14 15:18:14  bkline
- * Made code friendlier for optional heap debugging.
- *
- * Revision 1.18  2001/09/19 18:48:22  bkline
- * Added support for timing processing time for commands.
- *
- * Revision 1.17  2001/05/21 20:31:58  bkline
- * Fixed typo (missing right angle bracket for element closing tag).
- *
- * Revision 1.16  2000/10/04 18:31:36  bkline
- * Added code to catch more exception types.
- *
- * Revision 1.15  2000/08/24 20:07:33  ameyer
- * Added NT structured exception handling for crashes.
- *
- * Revision 1.14  2000/06/23 15:29:01  bkline
- * Added additional logging (for startup and shutdown).
- *
- * Revision 1.13  2000/06/15 23:02:20  ameyer
- * Modified logging in processCommand().
- *
- * Revision 1.12  2000/06/09 04:00:09  ameyer
- * Added logging.
- *
- * Revision 1.11  2000/06/09 00:46:36  bkline
- * Replaced hardwired database logon strings with named constants.
- *
- * Revision 1.10  2000/06/02 20:56:01  bkline
- * Fixed typo in progress message reporting clearing of inactive sessions.
- *
- * Revision 1.9  2000/06/01 18:49:57  bkline
- * Removed some debugging output.
- *
- * Revision 1.8  2000/05/21 00:52:15  bkline
- * Added CdrShutdown command support and sweep for stale sessions.
- *
- * Revision 1.7  2000/05/09 20:15:34  bkline
- * Replaced direct reading of Session fields with accessor methods.
- *
- * Revision 1.6  2000/05/04 12:45:25  bkline
- * Changed getString() to what() for cdr::Exceptions.
- *
- * Revision 1.5  2000/05/03 15:24:34  bkline
- * Added timestamp for command batch response.
- *
- * Revision 1.4  2000/04/22 09:33:56  bkline
- * Added transaction support, calling rollback() in exception handlers.
- *
- * Revision 1.3  2000/04/16 21:55:48  bkline
- * Fixed code for getting sessionId.  Added calls to lookupSession() and
- * setLastActivity().  Added code to set Status attribute in <CdrResponse>
- * element.
- *
- * Revision 1.2  2000/04/15 14:12:07  bkline
- * Added conditional Sleep() for 0-byte recv.  Replaced cdr::DbConnection*
- * with cdr::db::Connection&.  Catch added for exception thrown by
- * command implementation.
- *
- * Revision 1.1  2000/04/13 17:08:44  bkline
- * Initial revision
- *
+ * BZIssue::4767
  */
 
 // System headers.
@@ -176,12 +28,13 @@
 #include "CdrString.h"
 #include "HeapDebug.h"
 #include "CdrFilter.h"
+#include "CdrBlob.h"
 
 // Local constants.
 const short CDR_PORT = 2019;
 const int   CDR_QUEUE_SIZE = 10;
 const int   MAX_DIR_SIZE = 256;
-const unsigned int MAX_REQUEST_LENGTH = 25000000;
+const unsigned int MAX_REQUEST_LENGTH = 150000000;
 
 // Local types.
 struct ThreadArgs {
@@ -201,6 +54,8 @@ static cdr::String      processCommand(cdr::Session&,
                                        const cdr::dom::Node&,
                                        cdr::db::Connection&,
                                        const cdr::String&);
+static const std::string stripBlob(const std::string&,
+                                   cdr::Session&);
 static cdr::String      getElapsedTime(DWORD);
 static void             sendErrorResponse(int, const cdr::String&,
                                           const cdr::String&);
@@ -519,6 +374,13 @@ size_t readBytes(int fd, size_t requested, char* buf)
     bool canSleep = true;
     while (totalRead < requested) {
         size_t bytesLeft = requested - totalRead;
+
+        // This is needed because Microsoft's implementation of recv, instead
+        // of reading what it can and returning the number of bytes it got,
+        // decides that if it can't read it all at once it won't read anything
+        // at all.  So "bytesLeft" is no longer really "bytes left."
+        if (bytesLeft > 1024 * 1024)
+            bytesLeft = 1024 * 1024;
         int nRead = recv(fd, buf + totalRead, bytesLeft, 0);
         if (nRead < 0)
             return 0;
@@ -599,8 +461,13 @@ int readRequest(int fd, std::string& request, const cdr::String& when) {
         if (totalRead == length)
             request = std::string(buf, totalRead);
         delete [] buf;
-        if (totalRead != length)
+        if (totalRead != length) {
+            char errMsg[256];
+            sprintf(errMsg, "Expected %u bytes reading client request; "
+                    "got %u bytes", length, totalRead)
+            sendErrorResponse(fd, errMsg, when);
             return 0;
+        }
     }
     return totalRead;
 }
@@ -619,6 +486,70 @@ void logCommand(cdr::db::Connection& conn, const std::string& buf)
 }
 
 /**
+ * Remove the blob from the client's buffer and store it separately
+ * (since the DOM parser chokes when a large (or even medium-sized)
+ * blob is present in the buffer).
+ */
+const std::string stripBlob(const std::string& buf, cdr::Session& session) {
+
+    // Look for the opening tag for the blob; everything before will be kept.
+    size_t openTagPos = buf.find("<CdrDocBlob");
+
+    // If we don't have a blob the caller gets his own buffer back.
+    if (openTagPos == std::string::npos)
+        return buf;
+
+    // Find the final character of the opening tag, skipping attributes.
+    // We bump this up to mark the beginning of the blob bytes.
+    size_t blobStart = buf.find('>', openTagPos);
+
+    if (blobStart++ == std::string::npos)
+        throw cdr::Exception("malformed CdrDocBlob tag");
+
+    // Start with the possibility that we have an empty element tag.
+    size_t tailStart = blobStart;
+    size_t blobLen = 0;
+    if (buf[blobStart - 2] == '/')
+        session.setClientBlob(cdr::Blob(false));
+    else {
+
+        // The start of the closing tag marks the position just past the blob
+        // bytes.
+        size_t blobEnd = buf.find("</CdrDocBlob", blobStart);
+        if (blobEnd == std::string::npos)
+            throw cdr::Exception("missing CdrDocBlob end tag");
+
+        // Look for the closing delimiter of the end tag separately,
+        // because the spec allows optional whitespace between this
+        // delimiter and the rest of the end tag.
+        size_t endTagClosingDelimiter = buf.find('>', blobEnd);
+        if (endTagClosingDelimiter == std::string::npos)
+            throw cdr::Exception("malformed CdrDocBlob end tag");
+
+        // Decode the base64 representation of the blob.
+        cdr::Blob blob(buf.data() + blobStart, blobEnd - blobStart);
+
+        // Put the blob somewhere where the save command can find it.
+        session.setClientBlob(blob);
+
+        // Adjust the values we need for reassembling the caller's buffer.
+        tailStart = endTagClosingDelimiter + 1;
+        blobLen = blob.size();
+    }
+
+    // Safety check to make sure other blobs don't fall on the floor.
+    if (buf.find("<CdrDocBlob", tailStart) != std::string::npos)
+        throw cdr::Exception("only one CdrDocBlob element allowed "
+                             "in command set");
+
+    // Reassemble the caller's buffer, replacing the blob with an
+    // empty element containing only a size attribute.
+    char blobTag[80];
+    sprintf(blobTag, "<CdrDocBlob size='%u'/>", blobLen);
+    return buf.substr(0, openTagPos) + blobTag + buf.substr(tailStart);
+}
+ 
+/**
  * Parses command set buffer, extracts each command and has it
  * processed.  Wraps all the responses in a buffer, which is returned
  * to the client.
@@ -628,9 +559,11 @@ void processCommands(const ThreadArgs* threadArgs, const std::string& buf,
                      const cdr::String& when)
 {
     int fd = threadArgs->fd;
-    if (logCommands)
-        logCommand(conn, buf);
     try {
+        cdr::Session session;
+        const std::string newBuf = stripBlob(buf, session);
+        if (logCommands)
+            logCommand(conn, newBuf);
         // Create a parser for the entire command set.
         // This does NOT use thread static memory to control all parse
         //   trees.
@@ -641,7 +574,7 @@ void processCommands(const ThreadArgs* threadArgs, const std::string& buf,
         cdr::dom::Parser parser(false);
 
         // Parse the buffer
-        parser.parse(buf);
+        parser.parse(newBuf);
         cdr::dom::Document document = parser.getDocument();
         if (document == 0) {
             sendErrorResponse(fd, "Failure parsing command buffer", when);
@@ -657,7 +590,6 @@ void processCommands(const ThreadArgs* threadArgs, const std::string& buf,
             sendErrorResponse(fd, "Top element must be CdrCommandSet", when);
             return;
         }
-        cdr::Session session;
         cdr::String response = L"<CdrResponseSet Time='" + when + L"'>\n";
         cdr::dom::Node n = docElement.getFirstChild();
         while (n != 0) {

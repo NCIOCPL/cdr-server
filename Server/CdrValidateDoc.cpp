@@ -4,126 +4,7 @@
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *
- * $Log: not supported by cvs2svn $
- * Revision 1.32  2008/06/19 15:18:32  ameyer
- * Modified getErrorXml() to eliminate some spaces around the Errors element
- * that could break old string matching code, and made it return an empty
- * string if no errors were found.
- *
- * Revision 1.31  2008/06/03 18:06:17  ameyer
- * Removed cdr namespace qualifier from eref, etype and elevel Err attributes.
- *
- * Revision 1.30  2008/05/30 04:31:53  ameyer
- * Backward compatibility changes.
- *
- * Revision 1.29  2008/05/23 04:33:58  ameyer
- * Eliminated the obsolete getWarningCount() call and am now relying on the
- * ValidationControl classes to say whether a document has actual errors
- * or only warnings.
- *
- * Revision 1.28  2008/05/23 03:01:52  ameyer
- * Added controls for marking errors by type and severity.
- *
- * Revision 1.27  2008/04/18 02:05:48  ameyer
- * Removed some debug logging.
- * Made a string explicitly wide char.
- *
- * Revision 1.26  2008/04/10 20:12:57  ameyer
- * Renamed cdr:eid to cdr-eid to workaround XMetal namespace bug.
- * Do not return Errors element if no errors.
- * Revised private use character processing and error message.
- * Fixed bug, returned <DocStatus> should have been <DocActiveStatus>.
- *
- * Revision 1.25  2008/03/25 23:56:03  ameyer
- * Significant changes to support cdr:eid / cdr:eref attributes to identify
- * errors.  Some new code and some revised code.  Also a small amount of
- * refactoring to improve readability or performance.
- *
- * Revision 1.24  2008/01/29 15:16:38  bkline
- * Added check for private use characters.
- *
- * Revision 1.23  2005/03/04 02:58:56  ameyer
- * Small changes for new Xerces DOM parser.
- *
- * Revision 1.22  2004/08/20 19:58:56  bkline
- * Added new CdrSetDocStatus command.
- *
- * Revision 1.21  2003/04/30 10:36:27  bkline
- * Implemented support for validation warning messages which do not
- * cause the document to be marked as invalid.
- *
- * Revision 1.20  2002/08/14 01:52:39  ameyer
- * Replaced independent check of schema/filter/css document types with
- * call to CdrDoc::isControlType()
- *
- * Revision 1.19  2002/07/15 18:57:05  bkline
- * Restored 'schema' to 'Schema' for validation type.
- *
- * Revision 1.18  2002/07/03 12:55:19  bkline
- * Fixed check for Schema doctype.
- *
- * Revision 1.17  2002/03/15 21:56:50  bkline
- * Fixed log comment for previous version.
- *
- * Revision 1.16  2002/03/15 21:53:12  bkline
- * Added fix for val_status setting.
- *
- * Revision 1.15  2002/02/26 22:39:39  ameyer
- * Now updating document.val_status with 'M' if document is malformed.
- * (previous comment about this was in error.)
- * Now catching DOM exception if schema parse fails to throw a more
- * informative cdr::Exception to report doctype and that it was a schema.
- *
- * Revision 1.14  2001/09/25 14:22:57  ameyer
- * Updated call to validateDocAgainstSchema for new parameter.
- *
- * Revision 1.13  2001/06/20 00:54:51  ameyer
- * Changed handling of error lists in order to incorporate error info
- * from other stages of processing into one returned list to client,
- * and to eliminate CdrValidateDocResp wrappers from inappropriate place.
- *
- * Revision 1.12  2001/06/15 02:30:04  ameyer
- * Now using a common parse of the document instead of performing a new one.
- * Returning a proper error message if document is malformed.
- * Updating val_status accordingly to 'M'.
- *
- * Revision 1.11  2001/05/16 15:46:11  bkline
- * Adjusted query to get the top-level schema document from the
- * document table instead of the doc_type table, where it used
- * to live.
- *
- * Revision 1.10  2001/04/10 21:39:02  ameyer
- * Added catch(...) to ensure doc object allocate on heap is deleted.
- *
- * Revision 1.9  2001/04/05 19:58:18  ameyer
- * Fixed comments.
- *
- * Revision 1.8  2000/10/05 21:26:14  bkline
- * Moved most of the lower-level schema validation routines to the CdrXsd
- * module.
- *
- * Revision 1.7  2000/10/05 14:40:33  ameyer
- * Converted to work with CdrDoc objects, to implement link validation,
- * and to handle database update flags differently.
- *
- * Revision 1.6  2000/05/17 12:50:49  bkline
- * Replaced code to create Errors element with call to cdr::packErrors().
- *
- * Revision 1.5  2000/05/03 15:20:38  bkline
- * Reworked to expose document validation to other modules.  Fixed use
- * of prepared db statements.
- *
- * Revision 1.4  2000/04/29 15:50:13  bkline
- * First version with all stubs replaced.
- *
- * Revision 1.3  2000/04/27 13:10:49  bkline
- * Replaced stubs for validation of simple types.
- *
- * Revision 1.2  2000/04/26 01:25:01  bkline
- * First working version, with stubs for validation of simple types.
- *
- * Revision 1.1  2000/04/25 03:42:18  bkline
- * Initial revision
+ * BZIssue::4767
  */
 
 // Eliminate annoying warnings about truncated debugging information.
@@ -490,7 +371,8 @@ cdr::String cdr::validateDoc(
                     // Create an object for it
                     docNode = child;
                     MAKE_TIMER(createDocTimer);
-                    docObj = new cdr::CdrDoc (conn, docNode, withLocators);
+                    docObj = new cdr::CdrDoc (conn, docNode, session,
+                                              withLocators);
                     SHOW_ELAPSED("Create CdrDoc obj from xml", createDocTimer);
 
                     // This version assumes that doc is passed in solely

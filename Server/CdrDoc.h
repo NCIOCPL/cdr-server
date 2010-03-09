@@ -7,6 +7,7 @@
  *
  * $Id: CdrDoc.h,v 1.30 2008-10-31 03:32:34 ameyer Exp $
  *
+ * BZIssue:: 4767
  */
 
 #ifndef CDR_DOC_
@@ -126,11 +127,14 @@ namespace cdr {
              *  @param  docDom      Reference to a dom parse of a CdrDoc
              *                      as would be passed in a CdrCommandSet.
              *
+             *  @param session      reference to CDR session object
+             *                      for this context
+             *
              *  @param withLocators True = use cdr-eid attributes in
              *                      validation.
              */
             CdrDoc (cdr::db::Connection& dbConn, cdr::dom::Node& docDom,
-                    bool withLocators=false);
+                    cdr::Session& session, bool withLocators=false);
 
             /**
              * Create a CdrDoc object using a passed document ID.

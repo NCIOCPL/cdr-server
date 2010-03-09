@@ -3,15 +3,7 @@
  *
  * CDR wrapper for a string of bytes.
  *
- * $Log: not supported by cvs2svn $
- * Revision 1.3  2001/06/06 12:39:45  bkline
- * Added encoding/decoding support.
- *
- * Revision 1.2  2000/05/03 17:27:54  bkline
- * Fleshed out ccdoc comments.
- *
- * Revision 1.1  2000/05/03 15:37:25  bkline
- * Initial revision
+ * BZIssue::4767
  */
 
 #ifndef CDR_BLOB_
@@ -63,9 +55,10 @@ namespace cdr {
          * Creates a new non-null <code>Blob</code> object from a base-64-
          * encoded string.
          *
-         *  @param  s           reference to base-64 encoded string object.
+         *  @param  s           pointer to base-64 encoded string buffer
+         *  @param  n           count of characters in buffer
          */
-        Blob(const String&);
+        Blob(const char* s, size_t n);
 
         /**
          * Copy constructor.
@@ -123,13 +116,13 @@ namespace cdr {
          *
          *  @return             decoding table.
          */
-        static const wchar_t* getDecodingTable();
+        static const char* getDecodingTable();
         static size_t getDecodingTableSize() { return 128; }
 
         /**
          * Only the low six bits can be represented in an encoding character.
          */
-        static wchar_t invalidBits() { return L'\xFFC0'; }
+        static char invalidBits() { return '\xC0'; }
     };
 }
 

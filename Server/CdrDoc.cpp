@@ -7,6 +7,7 @@
  *
  * $Id: CdrDoc.cpp,v 1.85 2009-05-22 02:31:57 ameyer Exp $
  *
+ * BZIssue::4767
  */
 
 // Eliminate annoying MS warnings about MS problems.
@@ -96,6 +97,7 @@ const int MAX_SQLSERVER_INDEX_SIZE = 800;
 cdr::CdrDoc::CdrDoc (
     cdr::db::Connection& dbConn,
     cdr::dom::Node& docDom,
+    cdr::Session& session,
     bool withLocators
 ) : docDbConn (dbConn),
     comment (true),
@@ -281,7 +283,7 @@ cdr::CdrDoc::CdrDoc (
             }
 
             else if (name == L"CdrDocBlob")
-                blobData = cdr::Blob(cdr::dom::getTextContent(child));
+                blobData = session.getClientBlob();
 
             else
                 // Nothing else is allowed
@@ -917,7 +919,7 @@ static cdr::String cdrPutDoc (
 
     // Create the doc object
     // Note locators won't be added to control type docs, whatever we pass
-    cdr::CdrDoc doc (dbConn, docNode, withLocators);
+    cdr::CdrDoc doc (dbConn, docNode, session, withLocators);
     SHOW_ELAPSED("CdrDoc constructed", incrementalTimer);
 
     // filter level.

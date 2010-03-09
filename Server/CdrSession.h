@@ -3,36 +3,7 @@
  *
  * Information about the current login.
  *
- * $Log: not supported by cvs2svn $
- * Revision 1.10  2002/08/10 19:28:22  bkline
- * Added accessor method getName().
- *
- * Revision 1.9  2000/10/30 17:42:57  mruben
- * added canDo for document number
- *
- * Revision 1.8  2000/05/09 21:10:06  bkline
- * Replaced struct with class.
- *
- * Revision 1.7  2000/05/04 12:39:43  bkline
- * More ccdoc comments.
- *
- * Revision 1.6  2000/04/22 18:57:38  bkline
- * Added ccdoc comment markers for namespaces and @pkg directives.
- *
- * Revision 1.5  2000/04/22 18:01:26  bkline
- * Fleshed out documentation comments.
- *
- * Revision 1.4  2000/04/21 14:02:06  bkline
- * Added canDo() method.
- *
- * Revision 1.3  2000/04/16 21:37:25  bkline
- * Changed member names, added new member variables and methods.
- *
- * Revision 1.2  2000/04/15 12:15:37  bkline
- * Added uName and uid members.
- *
- * Revision 1.1  2000/04/14 16:01:08  bkline
- * Initial revision
+ * BZIssue::4767
  */
 
 #ifndef CDR_SESSION_
@@ -40,6 +11,7 @@
 
 #include "CdrString.h"
 #include "CdrDbConnection.h"
+#include "CdrBlob.h"
 
 /**@#-*/
 
@@ -70,6 +42,7 @@ namespace cdr {
             id    = 0;
             name  = L"";
             uName = L"";
+            iBlob = Blob();
         }
 
         /**
@@ -128,6 +101,25 @@ namespace cdr {
          *                  last command.
          */
         void setStatus(const String& status) { lastStatus = status; }
+
+        /**
+         * Accessor method for the blob sent by the client as part of
+         * the command set submitted.  A command set can only contain
+         * at most one CdrDocBlob element (enforced by the command set
+         * preprocessor).
+         *
+         *  @return         CDR Blob object
+         */
+        Blob getClientBlob() const { return iBlob; }
+
+        /**
+         * Used by preprocessor of command set buffer to store any blob
+         * it finds in what the client sent.
+         *
+         *  @param  blob  string representing outcome of processing of 
+         *                  last command.
+         */
+        void setClientBlob(const Blob& blob) { iBlob = blob; }
 
         /**
          * Reports whether the session is open and valid.
@@ -244,6 +236,14 @@ namespace cdr {
          * command dispatcher, the attribute will be set to "error".
          */
         String lastStatus;
+
+        /**
+         * Possibly null blob object representing blob submitted by the
+         * client (if any).  The name i[ncoming]Blob is used in case
+         * we also need another object to represent an o[outgoing]Blob
+         * later on.
+         */
+        Blob iBlob;
     };
 }
 
