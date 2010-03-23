@@ -379,9 +379,11 @@ size_t readBytes(int fd, size_t requested, char* buf)
         // of reading what it can and returning the number of bytes it got,
         // decides that if it can't read it all at once it won't read anything
         // at all.  So "bytesLeft" is no longer really "bytes left."
-        if (bytesLeft > 1024 * 1024)
-            bytesLeft = 1024 * 1024;
+        int chunkSize = 10240; // 1024 * 1024
+        if (bytesLeft > chunkSize)
+            bytesLeft = chunkSize;
         int nRead = recv(fd, buf + totalRead, bytesLeft, 0);
+        std::cerr << "got " << totalRead << " of " << requested << " bytes\n";
         if (nRead < 0)
             return 0;
         if (nRead == 0) {
