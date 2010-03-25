@@ -41,8 +41,8 @@ Filter to create Vendor Genetics Professionals XML documents
    <!--
    Collect the individual sections that make up the GenProf vendor output
    ====================================================================== -->
+   <!-- New documents don't contain Legacy data -->
    <xsl:choose>
-    <!-- New documents don't contain Legacy data -->
     <xsl:when                     test = "ProfessionalInformation/
                                             GeneticsProfessionalDetails/
                                             LegacyGeneticsData/
@@ -52,17 +52,6 @@ Filter to create Vendor Genetics Professionals XML documents
                                             LegacyGeneticsData/
                                             LegacyID"/>
     </xsl:when>
-<!--
-    Changed DTD to make ID element optional
-    =======================================
-    <xsl:otherwise>
-     <xsl:element                 name = "ID">
-     <xsl:value-of              select = "number(
-                                                substring-after(/Person/DocId, 
-                                                                'CDR'))"/>
-     </xsl:element>
-    </xsl:otherwise>
--->
    </xsl:choose>
 
    <xsl:apply-templates         select = "PersonNameInformation"/>
@@ -294,17 +283,7 @@ Filter to create Vendor Genetics Professionals XML documents
  ===================================================================== -->
  <xsl:template                    name = "makePracticeLocation">
   <xsl:param                      name = "token"/>
-     <!-- xsl:element                 name = "PRACTICELOCATION">
-      <xsl:attribute              name = "UsedFor">
-       <xsl:value-of            select = "$token"/>
-      </xsl:attribute>
-      <Volker>Dada</Volker>
-     </xsl:element>
- </xsl:template -->
 
-
- <!-- xsl:template                   match = "OtherPracticeLocation  |
-                                          PrivatePracticeLocation" -->
   <xsl:element                    name = "PRACTICELOCATIONS">
    <xsl:attribute                 name = "UsedFor">
     <xsl:value-of               select = "$token"/>
@@ -349,6 +328,8 @@ Filter to create Vendor Genetics Professionals XML documents
    <xsl:call-template             name = "getPhone">
     <xsl:with-param               name = "orgAddressFID"
                                 select = "$orgAddressFID"/>
+    <xsl:with-param               name = "token"
+                                select = "$token"/>
    </xsl:call-template>
 
 
@@ -359,16 +340,22 @@ Filter to create Vendor Genetics Professionals XML documents
    PPLocation and OtherLocation
    ================================================================ -->
    <xsl:variable                  name = "email">
-    <xsl:call-template            name = "getEmail"/>
+    <xsl:call-template            name = "getEmail">
+     <xsl:with-param              name = "token"
+                                select = "$token"/>
+    </xsl:call-template>
    </xsl:variable>
 
    <xsl:variable                  name = "ppemail">
-    <xsl:call-template            name = "getPPEmail"/>
+    <xsl:call-template            name = "getPPEmail">
+     <xsl:with-param              name = "token"
+                                select = "$token"/>
+    </xsl:call-template>
    </xsl:variable>
 
-   <xsl:if                        test = "not($email = '') 
-                                          and
-                                          not($ppemail = '')">
+   <xsl:if                        test = "contains($email, '@') 
+                                          or
+                                          contains($ppemail, '@')">
     <xsl:element                  name = "CEML">
      <xsl:value-of              select = "$email"/>
      <xsl:value-of              select = "$ppemail"/>
@@ -459,10 +446,12 @@ Filter to create Vendor Genetics Professionals XML documents
 
  <!--
  ====================================================================
- Postal Address
+ Template to display the phone numbers
  ==================================================================== -->
  <xsl:template                    name = "getPhone">
   <xsl:param                      name = "orgAddressFID"/>
+  <xsl:param                      name = "token"
+                                select = "'GP'"/>
 
   <xsl:if                         test = "OrganizationLocation/
                                           Organization/OrganizationLocations/
@@ -471,7 +460,7 @@ Filter to create Vendor Genetics Professionals XML documents
                                           Phone">
    <xsl:element                   name = "CPHN">
     <xsl:value-of               select = "../Phone"/>
-     <xsl:value-of              select = "OrganizationLocation/
+    <xsl:value-of               select = "OrganizationLocation/
                                           Organization/OrganizationLocations/
                                           OrganizationLocation/
                                           Location[@cdr:id = $orgAddressFID]/
@@ -479,7 +468,34 @@ Filter to create Vendor Genetics Professionals XML documents
    </xsl:element>
   </xsl:if>
 
-  <xsl:if                         test = "Phone
+  <!--
+  We need to display the phone number for the GPMailer block regardless
+  of the Public=No attribute.
+  ===================================================================== -->
+  <xsl:choose>
+   <xsl:when                      test = "$token = 'GPMailer'">
+    <xsl:if                       test = "Phone
+                                          or
+                                          SpecificPhone
+                                          or 
+                                          TollFreePhone
+                                          or
+                                          SpecificTollFreePhone">
+     <xsl:element                 name = "CPHN">
+      <xsl:for-each             select = "Phone                       |
+                                          SpecificPhone               | 
+                                          TollFreePhone               |
+                                          SpecificTollFreePhone">
+       <xsl:if                    test = "not(position() = 1)">
+        <xsl:text> </xsl:text>
+       </xsl:if>
+       <xsl:value-of            select = "."/>
+      </xsl:for-each>
+     </xsl:element>
+    </xsl:if>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:if                       test = "Phone
                                           and
                                           not(Phone[@Public='No'])
                                           or
@@ -490,18 +506,20 @@ Filter to create Vendor Genetics Professionals XML documents
                                           TollFreePhone
                                           or
                                           SpecificTollFreePhone">
-   <xsl:element                   name = "CPHN">
-    <xsl:for-each               select = "Phone[not(@Public)]         |
+     <xsl:element                 name = "CPHN">
+      <xsl:for-each             select = "Phone[not(@Public)]         |
                                           SpecificPhone[not(@Public)] | 
                                           TollFreePhone               |
                                           SpecificTollFreePhone">
-     <xsl:if                      test = "not(position() = 1)">
-      <xsl:text> </xsl:text>
-     </xsl:if>
-     <xsl:value-of              select = "."/>
-    </xsl:for-each>
-   </xsl:element>
-  </xsl:if>
+       <xsl:if                    test = "not(position() = 1)">
+        <xsl:text> </xsl:text>
+       </xsl:if>
+       <xsl:value-of            select = "."/>
+      </xsl:for-each>
+     </xsl:element>
+    </xsl:if>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
@@ -509,8 +527,13 @@ Filter to create Vendor Genetics Professionals XML documents
  ====================================================================
  Get the email address for OtherPracticeLocations
  The email address is only maintained for the GPMailer location
+ We need to provide the email address regardless of the Public 
+ attribute for the GPMailer address block.
  ==================================================================== -->
  <xsl:template                    name = "getEmail">
+  <xsl:param                      name = "token"
+                                select = "'GP'"/>
+
   <xsl:variable                   name = "gpContact">
    <xsl:for-each                select = "/Person/
                                            PersonLocations/
@@ -521,7 +544,22 @@ Filter to create Vendor Genetics Professionals XML documents
    </xsl:for-each>
   </xsl:variable>
 
-   <xsl:if                        test = "/Person/
+  <xsl:choose>
+   <xsl:when                      test = "$token = 'GPMailer'">
+    <xsl:if                       test = "/Person/
+                                           PersonLocations/
+                                           OtherPracticeLocation
+                                               [@cdr:id = $gpContact]/
+                                          SpecificEmail">
+     <xsl:value-of              select = "/Person/
+                                           PersonLocations/
+                                           OtherPracticeLocation
+                                               [@cdr:id = $gpContact]/
+                                          SpecificEmail"/>
+    </xsl:if>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:if                       test = "/Person/
                                            PersonLocations/
                                            OtherPracticeLocation
                                                [@cdr:id = $gpContact]/
@@ -532,14 +570,14 @@ Filter to create Vendor Genetics Professionals XML documents
                                                OtherPracticeLocation
                                                [@cdr:id = $gpContact]/
                                           SpecificEmail[@Public='No'])">
-    <!-- xsl:element                  name = "CEML" -->
      <xsl:value-of              select = "/Person/
                                            PersonLocations/
                                            OtherPracticeLocation
                                                [@cdr:id = $gpContact]/
                                           SpecificEmail"/>
-    <!-- /xsl:element -->
-   </xsl:if>
+    </xsl:if>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
@@ -549,6 +587,9 @@ Filter to create Vendor Genetics Professionals XML documents
  The email address is only maintained for the GPMailer location
  ==================================================================== -->
  <xsl:template                    name = "getPPEmail">
+  <xsl:param                      name = "token"
+                                select = "'GP'"/>
+
   <xsl:variable                   name = "gpContact">
    <xsl:for-each                select = "/Person/
                                            PersonLocations/
@@ -559,7 +600,24 @@ Filter to create Vendor Genetics Professionals XML documents
    </xsl:for-each>
   </xsl:variable>
 
-   <xsl:if                        test = "/Person/
+  <xsl:choose>
+   <xsl:when                      test = "$token = 'GPMailer'">
+    <xsl:if                       test = "/Person/
+                                           PersonLocations/
+                                           PrivatePractice/
+                                           PrivatePracticeLocation
+                                               [@cdr:id = $gpContact]/
+                                          Email">
+     <xsl:value-of              select = "/Person/
+                                           PersonLocations/
+                                           PrivatePractice/
+                                           PrivatePracticeLocation
+                                               [@cdr:id = $gpContact]/
+                                          Email"/>
+    </xsl:if>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:if                       test = "/Person/
                                            PersonLocations/
                                            PrivatePractice/
                                            PrivatePracticeLocation
@@ -572,15 +630,15 @@ Filter to create Vendor Genetics Professionals XML documents
                                                PrivatePracticeLocation
                                                [@cdr:id = $gpContact]/
                                           Email[@Public='No'])">
-    <!-- xsl:element                  name = "CEML" -->
      <xsl:value-of              select = "/Person/
                                            PersonLocations/
                                            PrivatePractice/
                                            PrivatePracticeLocation
                                                [@cdr:id = $gpContact]/
                                           Email"/>
-    <!-- /xsl:element -->
-   </xsl:if>
+    </xsl:if>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
