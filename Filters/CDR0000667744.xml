@@ -1,0 +1,243 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- $Id$ -->
+<!-- Filter title: PDQBoardMember Roster Excel -->
+<!-- 
+ BZIssue::4673 - Full Board Roster report
+                 Note:
+                 The user decided against the output of the full board roster
+                 report in Excel format.  
+                 If this option does need to get implemented at a
+                 later time the Address/SpecificInfo elements displaying the
+                 address blocks will need to be finalized and the board name
+                 should be added to the list.
+-->
+<xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                             xmlns:cdr = 'cips.nci.nih.gov/cdr'
+                               version = '1.0'
+               exclude-result-prefixes = 'cdr'>
+
+ <xsl:output                    method = 'text'
+                              encoding = 'utf-8'/>
+
+ <xsl:include  href = "cdr:name:Module: Attribute Sets"/>
+ <xsl:include  href = "cdr:name:Module: Person QC Common"/>
+
+
+ <xsl:variable                    name = "docID"
+                                select = "document('cdrutil:/docid')"/>
+ <xsl:variable                    name = "whoAmI"
+                                select = "'PdqBoardMemberRoster'"/>
+ <xsl:param                       name = "eic"/>
+ <xsl:param                       name = "assistant"/>
+ <xsl:param                       name = "otherInfo" select = "'Yes'"/>
+ <!-- 
+ ===============================================================
+ Main Template
+ =============================================================== -->
+ <xsl:template                   match = "/">
+   <!--
+   ================================================
+   Display Person Name and Address
+   ================================================ -->
+   <xsl:text>:</xsl:text>
+   <xsl:apply-templates         select = "PDQBoardMemberInfo/
+                                          BoardMemberName/
+                                          Person"/>
+   <!--
+   =====================================================================
+   If the otherInfo parameter is selected via the web interface, display
+   the SpecificBoardMember Info (internal CIPS contact address).
+   ===================================================================== -->
+   <xsl:text>:</xsl:text>
+   <xsl:apply-templates         select = "PDQBoardMemberInfo/
+                                          BoardMemberContact/
+                                          SpecificBoardMemberContact"/>
+   <!--
+   =====================================================================
+   If the assistant parameter is selected via the web interface, display
+   the Assistant Info 
+   ===================================================================== -->
+   <xsl:text>:</xsl:text>
+   <xsl:value-of                select = "PDQBoardMemberInfo/
+                                          BoardMemberAssistant/
+                                          AssistantName"/>
+   <xsl:text>:</xsl:text>
+   <xsl:value-of                select = "PDQBoardMemberInfo/
+                                          BoardMemberAssistant/
+                                          Phone"/>
+   <xsl:text>:</xsl:text>
+   <xsl:value-of                select = "PDQBoardMemberInfo/
+                                          BoardMemberAssistant/
+                                          Fax"/>
+   <xsl:text>:</xsl:text>
+   <xsl:value-of                select = "PDQBoardMemberInfo/
+                                          BoardMemberAssistant/
+                                          Email"/>
+   <xsl:text>:</xsl:text>
+
+   <!--
+   =====================================================================
+   Display the "Send Packet" information if either the assistant or the
+   additional address information is being displayed but not for the 
+   default report.
+   ===================================================================== -->
+   <xsl:value-of                select = "PDQBoardMemberInfo/
+                                          BoardMemberContactMode"/>
+   <xsl:text>:</xsl:text>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the address block for the Person if Contact ID is not 
+ CIPSContact ID.
+ =================================================================== -->
+ <xsl:template                   match = "PersonContactID">
+  <xsl:apply-templates          select = "../../BoardMemberName/
+                                          Person/PersonLocations">
+   <xsl:with-param                name = "fragID"
+                                select = "."/>
+  </xsl:apply-templates>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Generate the HTML for the Person QC Report
+ =================================================================== -->
+ <xsl:template                   match = "Person">
+  <!-- 
+  ====================================================================
+  Display Name Header, and PersonNameInformation
+  ==================================================================== -->
+
+  <xsl:apply-templates          select = "PersonNameInformation"/>
+  <xsl:text>:</xsl:text>
+
+  <!--
+  ===============================================================
+  Display the address fragment linked to by the PersonContactID
+  or display the CIPSContact address if Person ContactID does not
+  exist.
+  =============================================================== -->
+  <xsl:choose>
+   <xsl:when                      test = "/PDQBoardMemberInfo/
+                                           BoardMemberContact/
+                                           PersonContactID">
+    <xsl:apply-templates        select = "PersonLocations">
+     <xsl:with-param              name = "fragID"
+                                select = "/PDQBoardMemberInfo/
+                                           BoardMemberContact/
+                                           PersonContactID"/>
+    </xsl:apply-templates>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:apply-templates        select = "PersonLocations">
+     <xsl:with-param              name = "fragID"
+                                 select = "PersonLocations/
+                                           CIPSContact"/>
+    </xsl:apply-templates>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ Template to display the Person Locations
+ ===================================================================== -->
+ <xsl:template                   match = "PersonLocations">
+  <xsl:param                      name = "fragID"/>
+
+  <xsl:choose>
+   <xsl:when                      test = "OtherPracticeLocation
+                                           [@cdr:id = $fragID]"> 
+    <xsl:apply-templates        select = "OtherPracticeLocation
+                                           [@cdr:id = $fragID]"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <!-- No Org Name -->
+    <xsl:text>:</xsl:text>
+    <xsl:text>:</xsl:text>
+
+    <xsl:apply-templates        select = "Home
+                                           [@cdr:id = $fragID] |
+                                          PrivatePracticeLocation
+                                           [@cdr:id = $fragID]"/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ Display Person Location Information for Private Practice and 
+ Home Location
+ ===================================================================== -->
+ <xsl:template                   match = "Home                    | 
+                                          PrivatePracticeLocation"> 
+
+  <xsl:for-each                 select = "PostalAddress">
+   <xsl:call-template             name = "listAddress"/>
+  </xsl:for-each>
+  <xsl:text>:</xsl:text>
+  <xsl:value-of                 select = "Phone"/>
+  <xsl:text>:</xsl:text>
+  <xsl:value-of                 select = "Fax"/>
+  <xsl:text>:</xsl:text>
+  <xsl:value-of                 select = "Email"/>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ Display Person Location Information for Other Practice Location 
+ ===================================================================== -->
+ <xsl:template                   match = "OtherPracticeLocation">
+  <!-- Display the Person Title -->
+  <xsl:value-of                select = "PersonTitle"/>
+  <xsl:text>:</xsl:text>
+
+  <xsl:for-each                 select = "OrganizationLocation/
+                                          OrganizationName">
+   <xsl:value-of                select = "."/>
+  </xsl:for-each>
+  <xsl:text>:</xsl:text>
+
+  <xsl:for-each                 select = "OrganizationLocation/
+                                          PostalAddress">
+   <xsl:call-template             name = "listAddress"/>
+  </xsl:for-each>
+  <xsl:text>:</xsl:text>
+  <xsl:value-of                 select = "OrganizationLocation/
+                                          Phone"/>
+  <xsl:text>:</xsl:text>
+  <xsl:value-of                 select = "OrganizationLocation/
+                                          Fax"/>
+  <xsl:text>:</xsl:text>
+  <xsl:value-of                 select = "OrganizationLocation/
+                                          Email"/>
+ </xsl:template>
+
+
+ <!--
+ ========================================================================
+ Template to remove the Status and ProfessionalInformation from output.
+ ======================================================================== -->
+ <xsl:template                   match = "Status | ProfessionalInformation"/>
+
+
+ <!--
+ ========================================================================
+ Template to display the SpecificBoardMember Contact Information
+ ======================================================================== -->
+ <xsl:template                   match = "SpecificBoardMemberContact">
+  <xsl:value-of                select = "OrganizationName"/>
+
+  <xsl:for-each                 select = "PostalAddress">
+   <xsl:call-template             name = "listAddress"/>
+   <xsl:call-template             name = "listPhone"/>
+  </xsl:for-each>
+ </xsl:template>
+
+</xsl:transform>
