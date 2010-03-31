@@ -1,34 +1,37 @@
-<CdrDoc Type='Filter' Id='CDR0000433160'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Denormalization Filter (1/1): Media</DocTitle>
-<DocComment>CVS-V1.3: Corrected MediaID Denormalization (Bug 1985)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
-<!-- 
+<?xml version='1.0' encoding='utf-8'?>
+<!-- $Id$ -->
+<!-- Filter title: Denormalization Filter (1/1): Media -->
+<!--
+  BZIssue::4781 - Have certain links to unpublished docs ignored
+-->
+<!--
 ==================================================================
-Filter to Denormalize Terminology XML
+Filter to Denormalize Media XML
 ================================================================== -->
-<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                               version = "1.0"
-                             xmlns:cdr = "cips.nci.nih.gov/cdr">
-   
+<xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                             xmlns:cdr = 'cips.nci.nih.gov/cdr'
+                               version = '1.0'>
+
  <xsl:include href = "cdr:name:Module: Summary Denormalization"/>
 
  <xsl:output                    method = "xml" 
-                  omit-xml-declaration = "no" 
-                                indent = "yes"/>
+                  omit-xml-declaration = "no"
+                              encoding = "utf-8"/>
 
+ <!-- Stylesheet level parameters passed in from the caller -->
+ <xsl:param                       name = "isPP"
+                                select = "'N'"/>
+ <xsl:param                       name = "isQC"
+                                select = "'N'"/>
 
  <!-- 
  =================================================================
  Copy control information and generate current date
  ================================================================= -->
-  <xsl:template                   match = "Media">
-   <xsl:copy>
-   <xsl:apply-templates          select = "document('cdrutil:/docid')"/>
-   <xsl:apply-templates          select = "document('cdrx:/*/CdrCtl')"/>
+ <xsl:template                   match = "Media">
+  <xsl:copy>
+   <xsl:apply-templates         select = "document('cdrutil:/docid')"/>
+   <xsl:apply-templates         select = "document('cdrx:/*/CdrCtl')"/>
 
    <xsl:apply-templates/>
 
@@ -42,9 +45,9 @@ Filter to Denormalize Terminology XML
  ============================================================== -->
  <xsl:template                   match = "Diagnosis | Topic">
   <!-- 
-  ========================================================
+  =============================================================
   Find the terminology document's preferred name.
-  ======================================================== -->
+  ============================================================= -->
   <xsl:variable                   name = "termId" 
                                 select = "@cdr:ref"/>
   <xsl:variable                   name = "termDoc" 
@@ -95,13 +98,28 @@ Filter to Denormalize Terminology XML
  <!-- 
  =================================================================
  Template to denormalize the Glossary elements
+ Ignore errors if the filter is run as a PublishPreview or QC 
+ report.
  ================================================================= -->
  <xsl:template                   match = "Glossary">
   <xsl:variable                   name = "glossID" 
                                 select = "@cdr:ref"/>
-  <xsl:variable                   name = "glossDoc" 
-                                select = "document(concat('cdr:',$glossID,
+
+  <xsl:variable                   name = "glossDoc">
+   <xsl:choose>
+    <xsl:when                     test = "$isPP = 'Y'
+                                          or
+                                          $isQC = 'Y'">
+     <xsl:copy-of               select = "document(concat('cdrx:', $glossID,
                                                            '/lastp'))"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:copy-of               select = "document(concat('cdr:', $glossID,
+                                                           '/lastp'))"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
   <xsl:element                    name = "{name()}">
    <GlossaryTermName>
    <xsl:attribute                 name = "cdr:ref">
@@ -125,6 +143,3 @@ Filter to Denormalize Terminology XML
   </xsl:copy> 
  </xsl:template>
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>

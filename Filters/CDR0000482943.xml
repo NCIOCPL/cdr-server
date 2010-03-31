@@ -1,11 +1,9 @@
-<CdrDoc Type='Filter' Id='CDR0000482943'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Module: Summary Denormalization</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<?xml version='1.0' encoding='utf-8'?>
+<!-- $Id$ -->
+<!-- Filter title: Module: Summary Denormalization -->
+<!--
+  BZIssue::4781 - Have certain links to unpublished docs ignored
+-->
 <!--
 ================================================================
  $Id$
@@ -19,7 +17,6 @@
  (KeyPoints = No) in order to create the propper QC report link
  in the Media QC report.
 
- $Log: not supported by cvs2svn $
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -27,19 +24,33 @@
 
  <xsl:output                    method = "xml" 
                   omit-xml-declaration = "no"
-                              encoding = "UTF-8"/>
-
+                              encoding = "utf-8"/>
 
  <!-- 
  =================================================================
  Template to denormalize the Summary elements
+ Ignore errors if the filter is run as a PublishPreview or QC 
+ report.
  ================================================================= -->
  <xsl:template                   match = "Summary">
   <xsl:variable                   name = "docID" 
                                 select = "@cdr:ref"/>
-  <xsl:variable                   name = "docInfo" 
-                                select = "document(concat('cdr:',$docID,
-                                                           '/last'))"/>
+
+  <xsl:variable                   name = "docInfo"> 
+   <xsl:choose>
+    <xsl:when                     test = "$isPP = 'Y'
+                                          or
+                                          $isQC = 'Y'">
+     <xsl:copy-of               select = "document(concat('cdrx:', $docID,
+                                                           '/lastp'))"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:copy-of               select = "document(concat('cdr:', $docID,
+                                                           '/lastp'))"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
   <xsl:element                    name = "Summary">
    <xsl:attribute                 name = "cdr:ref">
     <xsl:value-of               select = "@cdr:ref"/>
@@ -59,9 +70,7 @@
     </xsl:otherwise>
    </xsl:choose>
    </Summary>
+   XX<xsl:value-of select = "$isQC"/>XX
   </xsl:element>
  </xsl:template>
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>

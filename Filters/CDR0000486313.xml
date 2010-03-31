@@ -1,31 +1,30 @@
-<CdrDoc Type='Filter' Id='CDR0000486313'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Denormalization Filter: DrugInfoSummary</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<?xml version='1.0' encoding='utf-8'?>
+<!-- $Id$ -->
+<!-- Filter title: Denormalization Filter: DrugInfoSummary -->
 <!--
- ================================================================
- $Id$
+  BZIssue::4781 - Have certain links to unpublished docs ignored
+-->
+<!--
 
- Filter to denormalize summary data.
+===============================================================
+Filter to denormalize Drug Information Summary data.
     Written by Volker Englisch, 2006-05-02
+=============================================================== -->
+<xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                             xmlns:cdr = 'cips.nci.nih.gov/cdr'
+                               version = '1.0'>
 
- $Log: not supported by cvs2svn $
- ================================================================ -->
-<xsl:transform                xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                                version = "1.0"
-                              xmlns:cdr = "cips.nci.nih.gov/cdr">
+ <xsl:output                    method = 'xml'
+                  omit-xml-declaration = 'no'
+                              encoding = 'utf-8'/>
 
- <xsl:output                     method = "xml" 
-                   omit-xml-declaration = "no"/>
-
- <xsl:include href = "cdr:name:Module: PersonLocations Denormalization"/>
-
+ <!-- Stylesheet level parameter pubProcDate passed in from the caller -->
  <xsl:param                       name = "pubProcDate"
                                 select = "''"/>
+ <xsl:param                       name = "isPP"
+                                select = "'N'"/>
+ <xsl:param                       name = "isQC"
+                                select = "'N'"/>
 
  <!-- 
  =================================================================
@@ -105,13 +104,28 @@
  <!-- 
  =================================================================
  Template to denormalize the Glossary elements
+ We need to allow the PublishPreview output to proceed even if a
+ mandatory GlossaryLink doesn't exist.
  ================================================================= -->
  <xsl:template                   match = "GlossaryLink">
   <xsl:variable                   name = "glossID" 
                                 select = "@cdr:ref"/>
-  <xsl:variable                   name = "glossDoc" 
-                                select = "document(concat('cdr:',$glossID,
+
+  <xsl:variable                   name = "glossDoc">
+   <xsl:choose>
+    <xsl:when                     test = "$isPP = 'Y'
+                                          or
+                                          $isQC = 'Y'">
+     <xsl:copy-of               select = "document(concat('cdrx:', $glossID,
                                                            '/lastp'))"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:copy-of               select = "document(concat('cdr:', $glossID,
+                                                           '/lastp'))"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
   <xsl:element                    name = "{name()}">
    <GlossaryTermName>
    <xsl:attribute                 name = "cdr:ref">
@@ -167,6 +181,3 @@
  </xsl:template>
 
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>
