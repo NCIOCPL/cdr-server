@@ -1,20 +1,14 @@
-<CdrDoc Type='Filter' Id='CDR0000000108'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Denormalization Filter (1/1): InScope Protocol</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<?xml version='1.0' encoding='utf-8'?>
+<!-- $Id$ -->
+<!-- Filter title: Denormalization Filter (1/1): InScope Protocol -->
 <!--
- ================================================================
-     $Id$
+================================================================
+Denormalization Filter: InScopeProtocol
+Written by Volker Englisch, 2002-04-01
 
-     Denormalization Filter: InScopeProtocol
-        Written by Volker Englisch, 2002-04-01
+BZIssue::4809 - Invalid warning messages in Status and Error Report
 
-     $Log: not supported by cvs2svn $
- ================================================================ -->
+================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
                           xmlns:cdrscr = "cips.nci.nih.gov/cdr/script"
@@ -288,6 +282,26 @@
       <xsl:choose>
       <xsl:when                  test = "$protocolDoc/InScopeProtocol">
        <xsl:element              name = "{name()}">
+        <xsl:variable            name = "docID"
+                               select = "@cdr:ref | @ref"/>
+        <xsl:variable            name = "pubVersion"
+                               select = "document(concat('cdrutil:/get-pv-num/',
+                                                       @cdr:ref | @ref))"/>
+        <xsl:if                  test = "$pubVersion = 0">
+         <xsl:attribute          name = "Publishable">
+          <xsl:value-of        select = "'No'"/>
+         </xsl:attribute>
+         <xsl:message         terminate = "no">
+          <xsl:text>&lt;LI class="warning"&gt;</xsl:text>
+          <xsl:value-of          select = "name()"/>
+          <xsl:text> (</xsl:text>
+          <xsl:value-of          select = "concat('CDR', number(
+                                             substring-after($docID, 'CDR')))"/>
+          <xsl:text>)&lt;BR/&gt;</xsl:text>
+          <xsl:text>Publishable Version of InScopeProtocol </xsl:text>
+          <xsl:text>does not exist.&lt;BR/&gt;&lt;/LI&gt;</xsl:text>
+         </xsl:message> 
+        </xsl:if>
         <InScopeProtocol>
          <xsl:for-each         select = "@*">
           <xsl:attribute         name = "{name()}">
@@ -303,16 +317,53 @@
         </InScopeProtocol>
        </xsl:element>
       </xsl:when>
-      <!-- Create the information for protocols that are not publishable -->
-      <xsl:otherwise>
+      <xsl:when                  test = "$protocolDoc/CTGovProtocol">
        <xsl:element              name = "{name()}">
-        <InScopeProtocol>
+        <xsl:variable            name = "docID"
+                               select = "@cdr:ref | @ref"/>
+        <xsl:variable            name = "pubVersion"
+                               select = "document(concat('cdrutil:/get-pv-num/',
+                                                       @cdr:ref | @ref))"/>
+        <xsl:if                  test = "$pubVersion = 0">
+         <xsl:attribute          name = "Publishable">
+          <xsl:value-of        select = "'No'"/>
+         </xsl:attribute>
+         <xsl:message         terminate = "no">
+          <xsl:text>&lt;LI class="warning"&gt;</xsl:text>
+          <xsl:value-of          select = "name()"/>
+          <xsl:text> (</xsl:text>
+          <xsl:value-of          select = "concat('CDR', number(
+                                             substring-after($docID, 'CDR')))"/>
+          <xsl:text>)&lt;BR/&gt;</xsl:text>
+          <xsl:text>Publishable Version of CTGovProtocol </xsl:text>
+          <xsl:text>does not exist.&lt;BR/&gt;&lt;/LI&gt;</xsl:text>
+         </xsl:message> 
+        </xsl:if>
+        <CTGovProtocol>
          <xsl:for-each         select = "@*">
           <xsl:attribute         name = "{name()}">
            <xsl:value-of         select = "."/>
           </xsl:attribute>
-          <xsl:attribute         name = "Publishable">
-           <xsl:value-of         select = "'No'"/>
+         </xsl:for-each>
+         <xsl:copy-of          select = "$protocolDoc/CTGovProtocol/
+                                         IDInfo"/>
+         <xsl:copy-of          select = "$protocolDoc/CTGovProtocol/
+                                         BriefTitle"/>
+         <xsl:copy-of          select = "$protocolDoc/CTGovProtocol/
+                                         OfficialTitle"/>
+        </CTGovProtocol>
+       </xsl:element>
+      </xsl:when>
+      <!-- Create the information for protocols that are not publishable -->
+      <xsl:otherwise>
+       <xsl:element              name = "{name()}">
+        <xsl:attribute           name = "Publishable">
+         <xsl:value-of         select = "'No'"/>
+        </xsl:attribute>
+        <InScopeProtocol>
+         <xsl:for-each         select = "@*">
+          <xsl:attribute         name = "{name()}">
+           <xsl:value-of       select = "."/>
           </xsl:attribute>
          </xsl:for-each>
          <ProtocolIDs><PrimaryID><IDString>
@@ -356,7 +407,9 @@
               (The handling of the message = No is implementation 
                dependend)
        =========================================================== -->
-       <xsl:if                    test = "not($protocolDoc/InScopeProtocol)">
+       <xsl:if                    test = "not($protocolDoc/InScopeProtocol)
+                                          and
+                                          not($protocolDoc/CTGovProtocol)">
         <xsl:message         terminate = "no">
          <xsl:text>&lt;LI class="warning"&gt;</xsl:text>
          <xsl:value-of          select = "name()"/>
@@ -647,6 +700,3 @@
  </xsl:template>
 
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>

@@ -7,6 +7,8 @@ $Id$
 
 Vendor Filter: InScopeProtocol
 
+BZIssue::4809 - Invalid warning messages in Status and Error Report
+
 $Log: CDR0000000150.xml,v $
 Revision 1.96  2006/07/28 14:15:56  bkline
 Captured OfficialProtocolTitle for mailers; will be stripped out for 
@@ -720,10 +722,9 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
    <xsl:when                      test = "RelatedWebsites">
     <xsl:element                  name = "{name()}">
      <xsl:choose>
-      <xsl:when                   test = "count(RelatedProtocols/
-                                            InScopeProtocol) &gt;
-                                            count(RelatedProtocols/
-                                            InScopeProtocol/@Publishable)">
+      <xsl:when                   test = "count(RelatedProtocols) 
+                                          &gt;
+                                          count(RelatedProtocols/@Publishable)">
        <xsl:apply-templates     select = "RelatedProtocols | RelatedWebsites"/>
       </xsl:when>
       <xsl:otherwise>
@@ -733,10 +734,9 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
     </xsl:element>
    </xsl:when>
    <xsl:otherwise>
-    <xsl:if                       test = "count(RelatedProtocols/
-                                            InScopeProtocol) &gt;
-                                            count(RelatedProtocols/
-                                            InScopeProtocol/@Publishable)">
+    <xsl:if                       test = "count(RelatedProtocols) 
+                                          &gt;
+                                          count(RelatedProtocols/@Publishable)">
      <xsl:element                 name = "{name()}">
       <xsl:apply-templates      select = "RelatedProtocols"/>
      </xsl:element>
@@ -753,14 +753,16 @@ Modifycations to handle ExternalSites elements.  Minor formatting changes (Bug 1
  RelatedWebsites elements are valid.
  ==================================================================== -->
  <xsl:template                   match = "RelatedProtocols">
-  <xsl:if                         test = "not(InScopeProtocol
-                                                     [@Publishable])">
+  <xsl:if                         test = "not(./@Publishable)">
    <xsl:element                   name = "{name()}">
     <xsl:attribute                name = "ref">
-     <xsl:value-of              select = "InScopeProtocol/@cdr:ref"/>
+     <xsl:value-of              select = "InScopeProtocol/@cdr:ref |
+                                          CTGovProtocol/@cdr:ref"/>
     </xsl:attribute>
     <xsl:value-of               select = "InScopeProtocol/ProtocolIDs/
-                                          PrimaryID/IDString"/>
+                                          PrimaryID/IDString |
+                                          CTGovProtocol/IDInfo/
+                                          OrgStudyID"/>
    </xsl:element>
    </xsl:if>
  </xsl:template>
