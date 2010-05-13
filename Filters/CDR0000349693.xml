@@ -1,7 +1,10 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!-- $Id$ -->
 <!-- Filter title: Vendor Filter: CTGovProtocol -->
-<!-- BZIssue::4675 -->
+<!--
+BZIssue::4675
+BZIssue::4772 - CTGovProtocol Vendor Filter Changes
+-->
 <xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
                              xmlns:cdr = 'cips.nci.nih.gov/cdr'
                                version = '1.0'
@@ -173,6 +176,86 @@
     <xsl:value-of               select = 'LinkText'/>
    </LinkText>
   </RequiredHeader>
+ </xsl:template>
+
+
+ <!--
+ ================================================================
+ ================================================================ -->
+ <xsl:template                   match = "IDInfo">
+  <xsl:copy>
+   <xsl:apply-templates         select = "OrgStudyID"/>
+   <xsl:call-template             name = "listSecondaryIDs"/>
+   <xsl:apply-templates         select = "NCTID"/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ ================================================================
+ Template to dedup the protocol IDs.
+ Any secondary ID that we already saw as a NCTID or OrgStudyID
+ will be eliminated.
+ ================================================================ -->
+ <xsl:template                    name = "listSecondaryIDs">
+
+  <xsl:variable                  name = 'ctGovIDs'>
+   <xsl:for-each               select = '/CTGovProtocol/
+                                          IDInfo/
+                                          NCTID          |
+                                         /CTGovProtocol/
+                                          IDInfo/
+                                          OrgStudyID'>
+     <xsl:value-of              select = '.'/>
+     <xsl:text>~</xsl:text>
+   </xsl:for-each>
+   <xsl:text>~</xsl:text>
+  </xsl:variable>
+
+  <xsl:variable                   name = "secondaryIDs">
+   <xsl:if                        test = "SecondaryID
+                                          |
+                                          /CTGovProtocol/
+                                           PDQAdminInfo/
+                                           PDQProtocolIDs/
+                                           PrimaryID/IDString
+                                          |
+                                          /CTGovProtocol/
+                                           PDQAdminInfo/
+                                           PDQProtocolIDs/
+                                           OtherID/
+                                           IDStringSecondaryID">
+    <xsl:for-each               select = "SecondaryID         |
+                                          /CTGovProtocol/
+                                           PDQAdminInfo/
+                                           PDQProtocolIDs/
+                                           PrimaryID/IDString |
+                                          /CTGovProtocol/
+                                           PDQAdminInfo/
+                                           PDQProtocolIDs/
+                                           OtherID/
+                                           IDString">
+     <xsl:value-of              select = "."/>
+     <xsl:text>~</xsl:text>
+    </xsl:for-each>
+   </xsl:if>
+  </xsl:variable>
+
+  <xsl:variable                   name = "allIDs"
+                                select = "concat($ctGovIDs, $secondaryIDs)"/>
+
+  <xsl:variable                   name = "newIDs"
+                                select = "document(concat('cdrutil:/dedup-ids/',
+                                                           $allIDs))"/>
+
+  <xsl:if                         test = "$newIDs/result/id">
+   <xsl:for-each                select = "$newIDs/result/id">
+    <xsl:element                  name = "SecondaryID">
+     <xsl:value-of              select = "."/>
+    </xsl:element>
+   </xsl:for-each>
+  </xsl:if>
+
  </xsl:template>
 
 
