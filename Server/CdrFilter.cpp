@@ -1,5 +1,5 @@
 /*
- * $Id: CdrFilter.cpp,v 1.59 2008-10-16 20:26:38 ameyer Exp $
+ * $Id$
  *
  * Applies XSLT scripts to a document
  *

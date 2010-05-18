@@ -1,6 +1,6 @@
 
 /*
- * $Id: CdrGetGrp.cpp,v 1.5 2008-06-04 17:55:08 bkline Exp $
+ * $Id$
  *
  * Retrieves information about requested group.
  *

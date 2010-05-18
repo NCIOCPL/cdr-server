@@ -1,5 +1,5 @@
 /*
- * $Id: CdrParserInput.cpp,v 1.1 2000-04-21 13:59:43 bkline Exp $
+ * $Id$
  *
  * Implementation of wrapper for input to CDR string parsers.
  *

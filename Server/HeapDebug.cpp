@@ -1,5 +1,5 @@
 /*
- * $Id: HeapDebug.cpp,v 1.7 2004-03-22 14:27:24 bkline Exp $
+ * $Id$
  *
  * Instrumentation for tracking down dynamic memory leaks.
  *

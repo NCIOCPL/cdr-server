@@ -1,5 +1,5 @@
 /*
- * $Id: CdrTestClient.cpp,v 1.10 2009-09-25 04:16:28 ameyer Exp $
+ * $Id$
  *
  * Test client (C++ version) for sending commands to CDR server.
  *

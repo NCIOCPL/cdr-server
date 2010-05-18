@@ -1,6 +1,6 @@
 
 /*
- * $Id: CdrListUsrs.cpp,v 1.4 2002-01-31 13:19:10 bkline Exp $
+ * $Id$
  *
  * Retrieves list of the existing CDR users.
  *

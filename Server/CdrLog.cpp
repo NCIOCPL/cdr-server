@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLog.cpp,v 1.14 2008-12-19 17:03:46 bkline Exp $
+ * $Id$
  *
  * Implementation of writing info to the log table in the database.
  * If that can't be done, takes an alternative action to write to file.

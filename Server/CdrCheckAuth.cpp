@@ -1,5 +1,5 @@
 /*
- * $Id: CdrCheckAuth.cpp,v 1.4 2000-05-09 20:14:10 bkline Exp $
+ * $Id$
  *
  * Reports which actions are allowed for the current session.
  *

@@ -1,5 +1,5 @@
 /*
- * $Id: CdrShutdown.cpp,v 1.1 2001-11-28 19:45:16 bkline Exp $
+ * $Id$
  *
  * Shuts down the CDR system.
  *

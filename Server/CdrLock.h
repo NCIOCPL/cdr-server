@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLock.h,v 1.2 2001-12-13 20:24:26 bkline Exp $
+ * $Id$
  *
  * Class for mutex acquisition to take advantage of automatic release
  * when stack frame exits.

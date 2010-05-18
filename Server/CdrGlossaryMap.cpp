@@ -1,5 +1,5 @@
 /*
- * $Id: CdrGlossaryMap.cpp,v 1.5 2009-01-22 20:49:57 bkline Exp $
+ * $Id$
  *
  * Returns a document identifying which glossary terms should be used
  * for marking up phrases found in a CDR document.

@@ -1,5 +1,5 @@
 /*
- * $Id: CdrXsd.h,v 1.19 2008-03-26 00:01:25 ameyer Exp $
+ * $Id$
  *
  * $Log: not supported by cvs2svn $
  * Revision 1.18  2005/03/15 01:09:22  bkline

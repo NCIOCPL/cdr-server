@@ -1,5 +1,5 @@
 /*
- * $Id: CdrParserInput.h,v 1.4 2000-05-04 11:52:35 bkline Exp $
+ * $Id$
  *
  * Maintains state information for input for CDR string parser.
  *

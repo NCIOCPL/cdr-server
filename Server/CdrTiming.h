@@ -1,5 +1,5 @@
 /*
- * $Id: CdrTiming.h,v 1.3 2004-04-30 01:32:21 ameyer Exp $
+ * $Id$
  *
  * Simple tool for timing processing.
  *

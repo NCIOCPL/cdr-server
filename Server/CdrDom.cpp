@@ -1,5 +1,5 @@
 /*
- * $Id: CdrDom.cpp,v 1.12 2007-10-02 00:53:04 bkline Exp $
+ * $Id$
  *
  * $Log: not supported by cvs2svn $
  * Revision 1.11  2005/03/29 15:29:31  ameyer

@@ -1,6 +1,6 @@
 
 /*
- * $Id: CdrDelUsr.cpp,v 1.4 2002-10-06 23:38:12 bkline Exp $
+ * $Id$
  *
  * Deletes a user (and any of the user's group memberships) from the CDR.  
  * Fails if any actions have been performed by the user.

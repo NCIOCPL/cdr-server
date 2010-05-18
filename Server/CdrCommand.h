@@ -1,5 +1,5 @@
 /*
- * $Id: CdrCommand.h,v 1.37 2009-05-22 02:33:02 ameyer Exp $
+ * $Id$
  *
  * Interface for CDR command handlers.
  *

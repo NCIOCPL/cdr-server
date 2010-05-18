@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #
-# $Id: CdrCmd.pl,v 1.1 2001-11-28 19:31:03 bkline Exp $
+# $Id$
 #
 # Test client (Perl version) for sending commands to CDR server.
 #

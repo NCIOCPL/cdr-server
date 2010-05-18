@@ -1,5 +1,5 @@
 /*
- * $Id: CdrGetDoc.h,v 1.15 2008-03-25 23:56:50 ameyer Exp $
+ * $Id$
  *
  * Internal support functions for CDR document retrieval.
  *

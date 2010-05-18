@@ -1,7 +1,7 @@
 #!/usr/local/bin/ruby
 #----------------------------------------------------------------------
 #
-# $Id: CdrCmd.rb,v 1.2 2008-02-24 23:04:40 bkline Exp $
+# $Id$
 #
 # Test client (Ruby version) for sending commands to CDR server.
 #

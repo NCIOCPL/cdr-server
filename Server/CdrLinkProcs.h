@@ -6,7 +6,7 @@
  *                                      @author Alan Meyer
  *                                      @date February 2001
  *
- * $Id: CdrLinkProcs.h,v 1.8 2006-10-04 03:46:06 ameyer Exp $
+ * $Id$
  *
  * $Log: not supported by cvs2svn $
  * Revision 1.7  2006/05/17 01:53:26  ameyer

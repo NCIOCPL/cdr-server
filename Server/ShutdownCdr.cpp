@@ -1,5 +1,5 @@
 /*
- * $Id: ShutdownCdr.cpp,v 1.1 2001-11-28 19:30:03 bkline Exp $
+ * $Id$
  *
  * Program for submitting command to shut down the CDR server.
  *

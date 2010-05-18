@@ -1,5 +1,5 @@
 /*
- * $Id: CdrDbPreparedStatement.cpp,v 1.5 2002-05-01 00:51:14 bkline Exp $
+ * $Id$
  *
  * Implementation of class for prepared CDR SQL queries.
  *

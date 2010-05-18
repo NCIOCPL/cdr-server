@@ -1,6 +1,6 @@
 
 /*
- * $Id: CdrListGrps.cpp,v 1.2 2000-05-03 15:25:41 bkline Exp $
+ * $Id$
  *
  * Retrieves list of the existing CDR group names.
  *

@@ -1,5 +1,5 @@
 /*
- * $Id: CdrValidateDoc.cpp,v 1.33 2008-10-31 03:35:38 ameyer Exp $
+ * $Id$
  *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.

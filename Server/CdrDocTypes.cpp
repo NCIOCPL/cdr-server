@@ -1,5 +1,5 @@
 /*
- * $Id: CdrDocTypes.cpp,v 1.14 2008-08-12 14:36:00 bkline Exp $
+ * $Id$
  *
  * Support routines for CDR document types.
  *

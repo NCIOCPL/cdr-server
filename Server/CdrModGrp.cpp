@@ -1,6 +1,6 @@
 
 /*
- * $Id: CdrModGrp.cpp,v 1.3 2001-04-13 12:28:59 bkline Exp $
+ * $Id$
  *
  * Modifies authorizations, comment, and possibly name of existing group.
  *

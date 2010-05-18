@@ -1,5 +1,5 @@
 /*
- * $Id: CdrCache.h,v 1.4 2004-07-02 03:17:37 ameyer Exp $
+ * $Id$
  *
  * Header for cacheing used to speed operations.
  *

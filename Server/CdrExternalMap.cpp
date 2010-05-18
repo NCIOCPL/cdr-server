@@ -1,5 +1,5 @@
 /*
- * $Id: CdrExternalMap.cpp,v 1.2 2006-09-01 02:07:10 ameyer Exp $
+ * $Id$
  *
  * Commands for manipulating mappings of external values to CDR documents.
  *

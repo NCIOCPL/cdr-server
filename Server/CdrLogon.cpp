@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLogon.cpp,v 1.9 2008-10-04 22:01:13 bkline Exp $
+ * $Id$
  *
  * Opens a new CDR session.
  *

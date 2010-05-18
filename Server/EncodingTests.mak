@@ -1,6 +1,6 @@
 #--------------------------------------------------------------------------
 #
-# $Id: EncodingTests.mak,v 1.1 2001-06-06 12:35:16 bkline Exp $
+# $Id$
 #
 # Rules for building test programs for blob encoding/decoding.
 #

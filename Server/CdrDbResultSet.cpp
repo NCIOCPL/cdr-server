@@ -1,5 +1,5 @@
 /*
- * $Id: CdrDbResultSet.cpp,v 1.15 2005-08-02 15:01:21 ameyer Exp $
+ * $Id$
  *
  * Implementation for ODBC result fetching wrapper (modeled after JDBC).
  *

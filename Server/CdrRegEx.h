@@ -1,5 +1,5 @@
 /*
- * $Id: CdrRegEx.h,v 1.4 2002-09-24 13:21:23 bkline Exp $
+ * $Id$
  *
  * CDR wrapper for regular expression processing.
  *

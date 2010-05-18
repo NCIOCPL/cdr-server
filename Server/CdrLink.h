@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLink.h,v 1.12 2008-03-25 23:44:20 ameyer Exp $
+ * $Id$
  *
  * Header for Link Module software - to maintain the link_net
  * table describing the link relationships among CDR documents.

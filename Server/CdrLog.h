@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLog.h,v 1.5 2008-10-15 02:35:49 ameyer Exp $
+ * $Id$
  *
  * Write log strings to log database or file.
  *

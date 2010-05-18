@@ -1,5 +1,5 @@
 /*
- * $Id: CdrFilter.h,v 1.6 2006-05-04 22:48:19 ameyer Exp $
+ * $Id$
  *
  * Internal support functions for CDR filter
  *

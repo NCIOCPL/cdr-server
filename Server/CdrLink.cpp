@@ -23,7 +23,7 @@
  *
  *                                          Alan Meyer  July, 2000
  *
- * $Id: CdrLink.cpp,v 1.32 2008-10-03 23:54:36 bkline Exp $
+ * $Id$
  *
  * $Log: not supported by cvs2svn $
  * Revision 1.31  2008/03/25 23:43:13  ameyer

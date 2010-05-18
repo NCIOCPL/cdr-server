@@ -1,5 +1,5 @@
 /*
- * $Id: CdrCommand.cpp,v 1.44 2009-05-22 02:32:26 ameyer Exp $
+ * $Id$
  *
  * Lookup facility for CDR commands.  Also contains stubs right now.
  *

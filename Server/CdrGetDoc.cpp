@@ -1,5 +1,5 @@
 /*
- * $Id: CdrGetDoc.cpp,v 1.36 2008-03-25 23:57:17 ameyer Exp $
+ * $Id$
  *
  * Stub version of internal document retrieval commands needed by other
  * modules.

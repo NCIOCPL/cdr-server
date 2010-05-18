@@ -1,5 +1,5 @@
 /*
- * $Id: CdrString.h,v 1.30 2006-05-25 23:02:00 ameyer Exp $
+ * $Id$
  *
  * $Log: not supported by cvs2svn $
  * Revision 1.29  2005/03/04 02:58:18  ameyer

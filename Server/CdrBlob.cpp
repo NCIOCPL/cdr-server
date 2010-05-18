@@ -1,5 +1,5 @@
 /*
- * $Id: CdrBlob.cpp,v 1.2 2004-11-05 05:18:08 ameyer Exp $
+ * $Id$
  *
  * Manage the occurrence of blobs and references to blobs in the
  * CDR database.

@@ -1,5 +1,5 @@
 /*
- * $Id: CdrDbResultSet.h,v 1.9 2002-05-01 01:04:16 bkline Exp $
+ * $Id$
  *
  * Wrapper for ODBC result fetching.  Modeled after JDBC interface.
  *

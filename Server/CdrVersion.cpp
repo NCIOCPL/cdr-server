@@ -1,5 +1,5 @@
 /*
- * $Id: CdrVersion.cpp,v 1.37 2008-10-31 03:37:36 ameyer Exp $
+ * $Id$
  *
  * Version control functions
  *

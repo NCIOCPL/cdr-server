@@ -1,5 +1,5 @@
 /*
- * $Id: CdrBlob.h,v 1.4 2004-11-05 05:19:26 ameyer Exp $
+ * $Id$
  *
  * CDR wrapper for a string of bytes.
  *

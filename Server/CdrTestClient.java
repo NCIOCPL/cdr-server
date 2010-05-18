@@ -1,5 +1,5 @@
 /*
- * $Id: CdrTestClient.java,v 1.3 2001-01-18 14:49:15 bkline Exp $
+ * $Id$
  *
  * Test client (Java version) for sending commands to CDR server.
  * 

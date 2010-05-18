@@ -1,5 +1,5 @@
 /*
- * $Id: CdrDbStatement.cpp,v 1.9 2001-04-08 22:45:34 bkline Exp $
+ * $Id$
  *
  * Implementation for ODBC HSTMT wrapper (modeled after JDBC).
  *

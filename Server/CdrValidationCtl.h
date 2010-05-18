@@ -9,7 +9,7 @@
  * The code standing behind these classes is all defined in
  * CdrValidateDoc.cpp.
  *
- * $Id: CdrValidationCtl.h,v 1.5 2008-06-19 15:19:23 ameyer Exp $
+ * $Id$
  *
  * $Log: not supported by cvs2svn $
  * Revision 1.4  2008/05/23 04:34:58  ameyer

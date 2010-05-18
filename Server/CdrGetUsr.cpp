@@ -1,6 +1,6 @@
 
 /*
- * $Id: CdrGetUsr.cpp,v 1.6 2002-11-21 18:59:15 ameyer Exp $
+ * $Id$
  *
  * Retrieves information about requested user.
  *

@@ -1,5 +1,5 @@
 /*
- * $Id: CdrDbPreparedStatement.h,v 1.4 2001-01-17 21:52:10 bkline Exp $
+ * $Id$
  *
  * Specialized Statement class for handling parameterized queries.
  *

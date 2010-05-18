@@ -1,5 +1,5 @@
 /*
- * $Id: CdrLogoff.cpp,v 1.5 2002-08-10 19:28:21 bkline Exp $
+ * $Id$
  *
  * Closes a CDR session.
  *

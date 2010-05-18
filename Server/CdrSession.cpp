@@ -1,5 +1,5 @@
 /*
- * $Id: CdrSession.cpp,v 1.11 2008-12-06 20:34:33 bkline Exp $
+ * $Id$
  *
  * Session control information.
  *

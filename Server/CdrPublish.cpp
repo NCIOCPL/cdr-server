@@ -1,5 +1,5 @@
 /*
- * $Id: CdrPublish.cpp,v 1.9 2006-05-17 03:31:42 ameyer Exp $
+ * $Id$
  *
  * Commands to create a new publishing job and retrieve status for an
  * existing publishing job.

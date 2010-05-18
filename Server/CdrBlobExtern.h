@@ -1,5 +1,5 @@
 /*
- * $Id: CdrBlobExtern.h,v 1.1 2004-11-05 06:04:31 ameyer Exp $
+ * $Id$
  *
  * Declarations for external blob management routines.
  *

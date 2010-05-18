@@ -1,5 +1,5 @@
 /*
- * $Id: CdrSearch.cpp,v 1.11 2002-09-24 13:20:42 bkline Exp $
+ * $Id$
  *
  * Queries the CDR to create subset list of documents.
  *

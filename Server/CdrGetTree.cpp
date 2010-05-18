@@ -1,5 +1,5 @@
 /*
- * $Id: CdrGetTree.cpp,v 1.3 2002-01-02 21:59:25 bkline Exp $
+ * $Id$
  *
  * Retrieves tree context information for terminology term.
  *

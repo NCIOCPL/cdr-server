@@ -1,6 +1,6 @@
 
 /*
- * $Id: CdrDelGrp.cpp,v 1.2 2000-05-03 15:25:41 bkline Exp $
+ * $Id$
  *
  * Deletes a group (and its associated users and actions) from CDR.
  *

@@ -1,5 +1,5 @@
 /*
- * $Id: CdrDbConnection.cpp,v 1.11 2005-07-05 14:04:16 ameyer Exp $
+ * $Id$
  *
  * Implementation for ODBC connection wrapper.
  *

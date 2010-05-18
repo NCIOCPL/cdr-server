@@ -5,7 +5,7 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id: CdrDoc.cpp,v 1.85 2009-05-22 02:31:57 ameyer Exp $
+ * $Id$
  *
  * BZIssue::4767
  */

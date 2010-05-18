@@ -1,5 +1,5 @@
 /*
- * $Id: CdrInt.h,v 1.3 2000-05-04 01:15:22 bkline Exp $
+ * $Id$
  *
  * Nullable integer type.
  *

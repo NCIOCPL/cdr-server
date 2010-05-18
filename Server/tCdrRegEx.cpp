@@ -1,5 +1,5 @@
 /*
- * $Id: tCdrRegEx.cpp,v 1.2 2008-07-31 22:06:37 ameyer Exp $
+ * $Id$
  *
  * Test driver for cdr::RegEx class.
  *

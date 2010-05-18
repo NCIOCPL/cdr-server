@@ -1,6 +1,6 @@
 
 /*
- * $Id: CdrModUsr.cpp,v 1.4 2001-04-11 14:38:54 bkline Exp $
+ * $Id$
  *
  * Modifies the attributes and group assignments for an existing CDR user.
  *

@@ -1,5 +1,5 @@
 /*
- * $Id: CdrDOMtoString.cpp,v 1.1 2001-11-28 19:43:14 bkline Exp $
+ * $Id$
  *
  * Generate CdrString containing representation of a DOM node
  *

@@ -1,5 +1,5 @@
 /*
- * $Id: CdrMergeProt.cpp,v 1.9 2008-10-04 22:01:13 bkline Exp $
+ * $Id$
  *
  * Merge scientific protocol information into main in-scope protocol document.
  *

@@ -1,6 +1,6 @@
 
 /*
- * $Id: CdrAddGrp.cpp,v 1.2 2000-05-03 15:25:41 bkline Exp $
+ * $Id$
  *
  * Adds group definition to CDR.
  *

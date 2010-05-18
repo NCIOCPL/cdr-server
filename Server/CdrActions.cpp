@@ -1,5 +1,5 @@
 /*
- * $Id: CdrActions.cpp,v 1.2 2003-05-27 19:44:40 ameyer Exp $
+ * $Id$
  *
  * Commands for viewing, editing, creating CDR actions.
  *

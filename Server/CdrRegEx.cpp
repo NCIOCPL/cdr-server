@@ -1,5 +1,5 @@
 /*
- * $Id: CdrRegEx.cpp,v 1.7 2007-02-05 03:05:01 bkline Exp $
+ * $Id$
  *
  * Implementation of CDR wrapper for regular expression handling.
  *

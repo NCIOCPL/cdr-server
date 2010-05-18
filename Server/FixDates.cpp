@@ -1,5 +1,5 @@
 /*
- * $Id: FixDates.cpp,v 1.1 2000-05-19 05:33:44 bkline Exp $
+ * $Id$
  *
  * Example of program to zap CDR XML data.  Don't try this at home, kids!
  * This one fixes the delimiter between the date and time, changing it

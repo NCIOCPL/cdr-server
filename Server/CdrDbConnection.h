@@ -1,5 +1,5 @@
 /*
- * $Id: CdrDbConnection.h,v 1.10 2007-07-10 20:07:13 bkline Exp $
+ * $Id$
  *
  * Interface for CDR wrapper for an ODBC database connection.
  *

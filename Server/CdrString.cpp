@@ -1,5 +1,5 @@
 /*
- * $Id: CdrString.cpp,v 1.26 2006-11-12 13:49:34 bkline Exp $
+ * $Id$
  *
  * BZIssue::4767
  */

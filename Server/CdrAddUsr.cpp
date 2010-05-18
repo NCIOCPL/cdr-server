@@ -1,5 +1,5 @@
 /*
- * $Id: CdrAddUsr.cpp,v 1.5 2001-04-11 14:38:18 bkline Exp $
+ * $Id$
  *
  * Adds new user to CDR.
  *

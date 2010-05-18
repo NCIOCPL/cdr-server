@@ -1,5 +1,5 @@
 /*
- * $Id: CdrVersion.h,v 1.11 2006-09-19 22:29:00 ameyer Exp $
+ * $Id$
  *
  * Internal support functions for CDR verison control
  *

@@ -6,7 +6,7 @@
  *
  *                                           Alan Meyer  January, 2003
  *
- * $Id: CdrSysValue.cpp,v 1.1 2003-01-31 00:07:33 ameyer Exp $
+ * $Id$
  * $Log: not supported by cvs2svn $
  */
 

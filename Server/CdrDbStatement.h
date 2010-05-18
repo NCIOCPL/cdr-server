@@ -1,5 +1,5 @@
 /*
- * $Id: CdrDbStatement.h,v 1.11 2001-04-08 22:49:08 bkline Exp $
+ * $Id$
  *
  * Wrapper for ODBC HSTMT.  Modeled after JDBC interface.
  *

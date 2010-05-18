@@ -1,5 +1,5 @@
 /*
- * $Id: CdrValidateDoc.h,v 1.8 2008-03-25 23:45:55 ameyer Exp $
+ * $Id$
  *
  * Support routines for CDR document validation.
  *

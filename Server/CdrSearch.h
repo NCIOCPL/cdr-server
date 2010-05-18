@@ -1,5 +1,5 @@
 /*
- * $Id: CdrSearch.h,v 1.8 2008-10-04 22:01:13 bkline Exp $
+ * $Id$
  *
  * Interface for CDR search implementation.  Used by implementation of search
  * command and by the query parser.

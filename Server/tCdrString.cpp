@@ -1,5 +1,5 @@
 /*
- * $Id: tCdrString.cpp,v 1.2 2000-04-13 17:07:34 bkline Exp $
+ * $Id$
  *
  * Test driver for CdrString class.
  *

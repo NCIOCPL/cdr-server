@@ -1,5 +1,5 @@
 /*
- * $Id: CdrException.h,v 1.5 2000-06-09 04:00:52 ameyer Exp $
+ * $Id$
  *
  * $Log: not supported by cvs2svn $
  * Revision 1.4  2000/05/15 19:12:19  mruben
