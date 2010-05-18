@@ -3,81 +3,9 @@
  *
  * Reporting functions
  *
- * $Log: not supported by cvs2svn $
- * Revision 1.24  2008/10/04 22:01:13  bkline
- * Cleanup of warnings in (possible) migration to Visual Studio 2008.
- *
- * Revision 1.23  2008/01/29 15:17:12  bkline
- * Added report to find patient equivalent of a health professional
- * summary.
- *
- * Revision 1.22  2007/07/27 21:35:05  bkline
- * Added report to collect titles and document IDs for GlossaryTermName
- * documents linked to a specific GlossaryTermConcept document.
- *
- * Revision 1.21  2007/07/10 14:01:21  bkline
- * Added new Term Sets report.
- *
- * Revision 1.20  2006/01/05 16:05:11  bkline
- * Added support for finding document for summary translation.
- *
- * Revision 1.19  2004/11/03 19:14:03  bkline
- * Fixed code formatting.
- *
- * Revision 1.18  2004/11/03 19:00:07  venglisc
- * Modified SQL query for creating the Menu Hierarchy Report by adding the
- * SortOrder attribute value to the output. (Bug 1363)
- *
- * Revision 1.17  2004/10/19 22:02:33  venglisc
- * Modified SQL query for creating the Menu Hierarchy Report by eliminating
- * display of terms with MenuStatus of Offline. (Bug 1363)
- *
- * Revision 1.16  2003/04/15 21:01:22  bkline
- * Added parameter for MenuType in menu tree hierarchy report.
- *
- * Revision 1.15  2003/04/15 18:15:08  bkline
- * Added MenuTermTree report.
- *
- * Revision 1.14  2003/02/14 17:57:42  bkline
- * Fixed typo in query for PUP picklist (issue #595).
- *
- * Revision 1.13  2003/01/02 13:28:59  bkline
- * Fixed bug in report of checked out docs without recent activity.
- *
- * Revision 1.12  2002/09/08 12:27:21  bkline
- * Added PublishLinkedDocs code (not finished or enabled yet).
- *
- * Revision 1.11  2002/08/01 19:17:15  bkline
- * Removed debugging output.
- *
- * Revision 1.10  2002/07/26 23:59:33  bkline
- * Extra parameter for Person Location Picklist.
- *
- * Revision 1.9  2002/06/07 13:53:18  bkline
- * Added missing fragment id for participating org personnel.
- *
- * Revision 1.8  2002/03/14 13:32:22  bkline
- * Modified the dated action report to avoid conflicting database locks.
- *
- * Revision 1.7  2002/03/12 20:42:44  bkline
- * Added report for dated actions.
- *
- * Revision 1.6  2002/02/14 17:59:09  bkline
- * Added code to recognize empty-element tag syntax.
- *
- * Revision 1.5  2002/02/01 22:43:15  bkline
- * Modified logic in LeadOrgPicklist class to avoid duplicates.
- *
- * Revision 1.4  2001/09/19 18:46:07  bkline
- * Added reports to support Protocol customization.
- *
- * Revision 1.3  2001/04/08 22:47:11  bkline
- * Fixed name of response; added DocType element; fixed CDATA delimiter.
- *
- * Revision 1.2  2000/10/26 15:03:17  mruben
- * fixed various bugs
- *
- *
+ * BZIssue::595
+ * BZIssue::1363
+ * BZIssue::4839
  */
 
 #if defined _MSC_VER
@@ -421,6 +349,21 @@ namespace
     public:
       TermSets() :
           cdr::Report("Term Sets") {}
+
+    private:
+      virtual cdr::String execute(cdr::Session& session,
+                                  cdr::db::Connection& dbConnection,
+                                  cdr::Report::ReportParameters parm);
+  };
+
+  /*************************************************************************/
+  /* Find values located in document at specified path.                    */
+  /*************************************************************************/
+  class ValuesForPath : public cdr::Report
+  {
+    public:
+      ValuesForPath() :
+          cdr::Report("Values For Path") {}
 
     private:
       virtual cdr::String execute(cdr::Session& session,
@@ -1052,6 +995,61 @@ namespace
     return result.str();
   }
 
+  cdr::String ValuesForPath::execute(cdr::Session& session,
+                                     cdr::db::Connection& dbConnection,
+                                     cdr::Report::ReportParameters parm)
+  {
+    // Extract the required parameters for the request.
+    ReportParameters::iterator idIter = parm.find(L"DocId");
+    if (idIter == parm.end())
+      throw cdr::Exception(L"Must specify DocId");
+    cdr::String docId = idIter->second;
+    ReportParameters::iterator pathIter = parm.find(L"Path");
+    if (pathIter == parm.end())
+      throw cdr::Exception(L"Must specify Path");
+    cdr::String path = pathIter->second;
+
+    // Check for optional flag for looking in the latest published version.
+    char* query =
+      "   SELECT value, node_loc "
+      "     FROM query_term      "
+      "    WHERE doc_id = ?      "
+      "      AND path = ?        "
+      " ORDER BY node_loc        ";
+    ReportParameters::iterator pubIter = parm.find(L"Pub");
+    if (pubIter != parm.end())
+      query =
+      "   SELECT value, node_loc "
+      "     FROM query_term_pub  "
+      "    WHERE doc_id = ?      "
+      "      AND path = ?        "
+      " ORDER BY node_loc        ";
+
+    // Retrieve the values.
+    cdr::db::PreparedStatement ps = dbConnection.prepareStatement(query);
+    ps.setInt(1, docId.extractDocId());
+    ps.setString(2, path);
+    cdr::db::ResultSet rs = ps.executeQuery();
+    std::wostringstream result;
+    result << L"<ReportBody><![CDATA[\n"
+              L"<ReportName>" << getName() << L"</ReportName>\n";
+    while (rs.next())
+    {
+      cdr::String value = rs.getString(1);
+      cdr::String loc = rs.getString(2);
+      if (!value.isNull() && !value.empty())
+        result << L"<Value Loc='" << loc << "'>"
+               << cdr::entConvert(value) << L"</Value>\n";
+      else
+        result << L"<Value Loc='" << loc << L"'/>\n";
+    }
+    ps.close();
+
+    // Give them to the client.
+    result << L"]]></ReportBody>\n";
+    return result.str();
+  }
+
 #if 0
 struct TargetDoc { 
     int id; 
@@ -1103,7 +1101,7 @@ struct TargetDoc {
               L"<ReportName>" << getName() << L"</ReportName>\n";
 
 #if 1
-    result << L"Built map for " << links.size() << L"linking docs";
+    result << L"Built map for " << links.size() << L" linking docs";
 #else
     // Have to collect these and close the query so filter module can get the
     // documents.  Ideally, we'd like to put together a local struct
@@ -1153,6 +1151,7 @@ struct TargetDoc {
   BoardMember                   boardMember;
   GlossaryTermNames             glossaryTermNames;
   TermSets                      termSets;
+  ValuesForPath                 valuesForPath;
 #if 0
   PublishLinkedDocs             publishLinkedDocs;
 #endif
