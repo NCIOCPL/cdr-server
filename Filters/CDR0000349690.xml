@@ -5,6 +5,7 @@
 
      BZIssue::4664
      BZIssue::4685
+     BZIssue::4846
 
   -->
 
@@ -325,14 +326,24 @@
                                                            "/CT.gov ",
                                                            "Officials/",
                                                            $key))'/>
-    <xsl:if                       test = '$docId != ""'>
-     <PDQPerson>
-      <xsl:attribute               name = 'cdr:ref'>
-       <xsl:value-of             select = '$docId'/>
-      </xsl:attribute>
-      <xsl:value-of              select = '$key'/>
-     </PDQPerson>
-    </xsl:if>
+    <xsl:choose>
+     <xsl:when                     test = '$docId != ""'>
+      <PDQPerson>
+       <xsl:attribute              name = 'cdr:ref'>
+        <xsl:value-of            select = '$docId'/>
+       </xsl:attribute>
+       <xsl:value-of             select = '$key'/>
+      </PDQPerson>
+     </xsl:when>
+     <xsl:when                     test = '$newDoc = "Y" or
+                                           $newlyTransferredDoc = "Y"'>
+      <PDQPerson>
+       <xsl:processing-instruction name = 'xm-replace_text'>
+        <xsl:text>{PDQPerson}</xsl:text>
+       </xsl:processing-instruction>
+      </PDQPerson>
+     </xsl:when>
+    </xsl:choose>
    </OverallOfficial>
   </xsl:if>
  </xsl:template>
@@ -666,14 +677,25 @@
                                                            "/CT.gov ",
                                                            "Investigators/",
                                                            $key))'/>
-       <xsl:if                    test = '$docId != ""'>
-        <PDQPerson>
-         <xsl:attribute            name = 'cdr:ref'>
-          <xsl:value-of          select = '$docId'/>
-         </xsl:attribute>
-         <xsl:value-of           select = '$key'/>
-        </PDQPerson>
-       </xsl:if>
+       <xsl:choose>
+        <xsl:when                  test = '$docId != ""'>
+         <PDQPerson>
+          <xsl:attribute           name = 'cdr:ref'>
+           <xsl:value-of         select = '$docId'/>
+          </xsl:attribute>
+          <xsl:value-of          select = '$key'/>
+         </PDQPerson>
+        </xsl:when>
+        <xsl:when                  test = '$newDoc = "Y" or
+                                           $newlyTransferredDoc = "Y"'>
+         <PDQPerson>
+          <xsl:processing-instruction
+                                   name = 'xm-replace_text'>
+           <xsl:text>{PDQPerson}</xsl:text>
+          </xsl:processing-instruction>
+         </PDQPerson>
+        </xsl:when>
+       </xsl:choose>
       </Investigator>
      </xsl:if>
     </xsl:for-each>
