@@ -483,7 +483,7 @@ service.obj: service.c service.h
 #--------------------------------------------------------------------------
 
 ParseSchema.exe: ParseSchema.obj $(HDRS) $(CDRLIB)
-	$(CC) $(CFLAGS) ParseSchema.cpp $(LIBS) $(OBJS) $(LFLAGS) >> errs
+	$(CC) $(CFLAGS) ParseSchema.cpp /link $(LFLAGS) $(LIBS) $(OBJS) >> errs
 
 #--------------------------------------------------------------------------
 # Rule for building test client.
