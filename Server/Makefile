@@ -480,10 +480,14 @@ service.obj: service.c service.h
 
 #--------------------------------------------------------------------------
 # Rule for building schema parser.
+#
+# /OPT:NOREF bloats the code but prevents a warning on ADVAPI32.DLL
+#  being discarded by default /OPT:REF processing.
+# See Bugzilla issue 4663 comment #4.
 #--------------------------------------------------------------------------
-
 ParseSchema.exe: ParseSchema.obj $(HDRS) $(CDRLIB)
-	$(CC) $(CFLAGS) ParseSchema.cpp /link $(LFLAGS) $(LIBS) $(OBJS) >> errs
+	$(CC) $(CFLAGS) ParseSchema.cpp /link $(LFLAGS) /OPT:NOREF \
+          $(LIBS) $(OBJS) >> errs
 
 #--------------------------------------------------------------------------
 # Rule for building test client.
