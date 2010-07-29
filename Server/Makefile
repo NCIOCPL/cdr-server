@@ -163,10 +163,10 @@ install: cvsupdate
 	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) SABLOT=$(SABLOT) DBG=$(DBG) _install
 
 _all: init CdrServer.exe CdrTestClient.exe ParseSchema.exe CdrService.exe \
-    # CdrDocs
+    CdrDocs
 
 _install: CdrServer.exe CdrDocs
-	net stop Cdr
+	-net stop Cdr
 	$(CP) CdrServer.exe $(CDRBIN)
 	net start Cdr
 
@@ -250,12 +250,12 @@ CdrSearch_tab.c: CdrSearch.y $(HDRS)
 CdrDocs: $(DOCS)
 
 $(DOCS): $(HDRS)
-    if exist $(DOC) (rm $(DOC)ccdoc*html)
+    if exist $(DOC) (rm -f $(DOC)ccdoc*html $(DOC)default.htm $(DOC)ccdoc.db)
     if exist $(DOC) ( \
       ccdoc -html $(DOC) -db $(DOC)ccdoc.db -root cdr \
-            -header $(DOC)save/serverhdr.html $(HDRS) \
+            -header $(DOC)save/serverhdr.html \
+            -rootfile $(DOC)default.htm $(HDRS) \
     )
-    if exist $(DOC) ($(CP) $(DOC)ccdoc.cdr.pkg.html $(DOCS))
 
 #--------------------------------------------------------------------------
 # Generic rules for object files
