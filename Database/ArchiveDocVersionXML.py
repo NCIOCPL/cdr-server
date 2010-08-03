@@ -583,6 +583,11 @@ while i < cfgBatchCount:
         # Stats
         batchesStats += 1
         if cmd in ("copy", "null"):
+
+            # No more rows?
+            if cursor.rowcount == 0:
+                break
+
             versionStats += cursor.rowcount
         else:
             row = cursor.fetchone()
