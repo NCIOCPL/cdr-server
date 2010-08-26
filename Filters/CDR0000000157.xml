@@ -1,11 +1,6 @@
-<CdrDoc Type='Filter' Id='CDR0000000157'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Vendor Filter: Summary</DocTitle>
-<DocComment>CVS-V1.37: New Summary Denormalization (Bug 767)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml     version = "1.0"?>
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: Vendor Filter: Summary -->
 <!--
 ================================================================
 $Id$
@@ -13,7 +8,8 @@ $Id$
 Filter to create summary vendor output data.
    Written by Volker Englisch, 2003-08-12
 
-$Log: not supported by cvs2svn $
+BZIssue::4836 - Create new section at end of HP summaries
+
 ================================================================ -->
 <xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                             xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -37,18 +33,132 @@ $Log: not supported by cvs2svn $
  Variables needed to identify display of certain misc documents based on 
  document type
  ======================================================================= -->
- <xsl:variable                   name = "sumAudience"
-                               select = "/Summary/
-                                          SummaryMetaData/
-                                          SummaryAudience"/>
- <xsl:variable                   name = "language"
-                               select = "/Summary/
-                                          SummaryMetaData/
-                                          SummaryLanguage"/>
+ <xsl:variable                   name = "cgUrl"
+                               select = "'http://www.cancer.gov'"/>
+ <xsl:variable                   name = "cgBoardEN"
+                               select = "'/cancertopics/pdq'"/>
+ <xsl:variable                   name = "cgBoardES"
+                               select = "'/espanol/pdq'"/>
+ <xsl:variable                   name = "sumTitle"
+                               select = "normalize-space(
+                                           substring-before(
+                                           concat(
+                                           /Summary
+                                           /SummaryTitle, ':'), ':'))"/>
  <xsl:variable                   name = "sumType"
+                               select = "/Summary
+                                         /SummaryMetaData
+                                         /SummaryType"/>
+ <xsl:variable                   name = "sumAudience"
+                               select = "/Summary
+                                         /SummaryMetaData
+                                         /SummaryAudience"/>
+ <xsl:variable                   name = "language"
+                               select = "/Summary
+                                         /SummaryMetaData
+                                         /SummaryLanguage"/>
+ <xsl:variable                   name = "sumUrlText"
+                               select = "/Summary
+                                         /SummaryMetaData
+                                         /SummaryURL"/>
+ <xsl:variable                   name = "sumUrl"
+                               select = "/Summary
+                                         /SummaryMetaData
+                                         /SummaryURL/@cdr:xref"/>
+
+ <!--
+ Information needed to populate the "About This Summary" sections
+ ================================================================ -->
+ <xsl:variable                    name = "purposeText">
+  <xsl:choose>
+   <xsl:when                      test = "/Summary
+                                          /SummaryMetaData
+                                          /PurposeText">
+    <xsl:value-of               select = "/Summary
+                                          /SummaryMetaData
+                                          /PurposeText"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>*** UNSPECIFIED PURPOSE TEXT***</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:variable>
+
+ <xsl:variable                    name = "boardName">
+  <xsl:choose>
+   <xsl:when                      test = "$language = 'English'">
+    <xsl:for-each               select = "/Summary/
+                                           SummaryMetaData/
+                                           PDQBoard/
+                                           Board">
+     <xsl:if                      test = "not(contains(., 'Advisory'))">
+      <xsl:value-of             select = "."/>
+     </xsl:if>
+    </xsl:for-each>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:value-of               select = "/Summary/
+                                           SummaryMetaData/
+                                           PDQBoard/
+                                           BoardNameTranslation"/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:variable>
+
+ <xsl:variable                   name = "displayReviewers"
+                               select = "/Summary
+                                         /SummaryMetaData
+                                         /PDQBoard[
+                                              not(contains(Board, 'Advisory'))]
+                                         /ShowReviewerInfo"/>
+
+ <xsl:variable                   name = "sumLoe">
+  <xsl:choose>
+   <xsl:when                     test = "$language = 'English'">
+    <xsl:value-of              select = "/Summary
+                                         /SummaryMetaData
+                                         /PDQBoard
+                                         /LOESummary/@cdr:ref"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:value-of              select = "/Summary
+                                         /SummaryMetaData
+                                         /PDQBoard
+                                         /LOESummaryES/@cdr:ref"/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:variable>
+
+ <xsl:variable                   name = "sumLoeUrl">
+  <xsl:choose>
+   <xsl:when                     test = "$language = 'English'">
+    <!-- 
+    We need to do this little trick since some URLs are written as
+    http://www.cancer.gov and some as http://cancer.gov
+    ============================================================== -->
+    <xsl:value-of              select = "substring-after(
+                                           substring-after(
+                                             /Summary
+                                             /SummaryMetaData
+                                             /PDQBoard
+                                             /BoardLOEURL/@cdr:xref,
+                                             'http://'), 'cancer.gov')"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:value-of              select = "substring-after(
+                                         /Summary
+                                         /SummaryMetaData
+                                         /PDQBoard
+                                         /BoardLOEURLES/@cdr:xref,
+                                         'http://cancer.gov')"/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:variable>
+
+ <xsl:variable                   name = "reviewers"
                                select = "/Summary/
-                                          SummaryMetaData/
-                                          SummaryType"/>
+                                          SummaryMetaData//LeadReviewer"/>
+
  <xsl:variable                   name = "sumId" 
                                select = "/Summary/
                                           DocId"/>
@@ -193,7 +303,7 @@ $Log: not supported by cvs2svn $
    Display the About PDQ and To Learn More misc documents
    based on the entries of 
    Language        - English, Spanish
-   SummaryAudience - Patient (only Patient summaries get this)
+   SummaryAudience - Patient
    SummaryType     - Treatment, CAM, etc...
    EditorialBoard  - Pediatric, Adult  
    ============================================================= -->   
@@ -258,26 +368,31 @@ $Log: not supported by cvs2svn $
      The ContactUs template is only being applied to Supportive Care,
      Screening, and Prevention summaries (Patient and HP version).
      ================================================================ -->
-     <xsl:call-template          name = "ContactUs"/>
+     <xsl:call-template           name = "ContactUs"/>
 
-     <xsl:call-template          name = "MoreInformation"/>
+     <xsl:call-template           name = "MoreInformation"/>
+
+     <!--
+     "About this Summary" section is applied to all HP summaries
+     ================================================================= -->
+     <xsl:call-template          name = "AboutThisSummary"/>
 
     </xsl:otherwise>
    </xsl:choose>
    <!-- HP Summaries End-->
 
-   <xsl:if                       test = "TranslationOf">
+   <xsl:if                        test = "TranslationOf">
     <TranslationOf>
-     <xsl:attribute              name = "ref">
-      <xsl:value-of            select = "TranslationOf/@cdr:ref"/>
+     <xsl:attribute               name = "ref">
+      <xsl:value-of             select = "TranslationOf/@cdr:ref"/>
      </xsl:attribute>
     </TranslationOf>
    </xsl:if>
 
-   <xsl:if                       test = "PatientVersionOf">
+   <xsl:if                        test = "PatientVersionOf">
     <PatientVersionOf>
-     <xsl:attribute              name = "ref">
-      <xsl:value-of            select = "PatientVersionOf/@cdr:ref"/>
+     <xsl:attribute               name = "ref">
+      <xsl:value-of             select = "PatientVersionOf/@cdr:ref"/>
      </xsl:attribute>
     </PatientVersionOf>
    </xsl:if>
@@ -702,21 +817,71 @@ $Log: not supported by cvs2svn $
  <xsl:template                  match = "Para"
                                  mode = "MiscText">
   <xsl:param                     name = "miscDocId"/>
-  <xsl:param                   name = "curLocation">
+  <xsl:param                     name = "curLocation">
    <SectMetaData/>
   </xsl:param>
 
-  <Para>
-   <xsl:attribute                name = "id">
-    <xsl:value-of              select = "concat($miscDocId, ./@cdr:id)"/>
-   </xsl:attribute>
-   <xsl:apply-templates        select = "Para" 
-                                 mode = "copy"/>
-   <xsl:apply-templates>
-    <xsl:with-param             name = "curLocation"
-                               select = "$curLocation"/>
-   </xsl:apply-templates>
-  </Para>
+   <!--
+   The disclaimer section is different for treatment vs other
+   summaries.  Depending on the summary type only display one or the 
+   other paragraph from the misc. document.
+   =================================================================== -->
+   <xsl:choose>
+    <xsl:when                    test = "contains(./@cdr:id, '_treat')
+                                         or
+                                         contains(./@cdr:id, '_other')">
+     <xsl:choose>
+      <xsl:when                  test = "$sumType = 'Treatment'
+                                         and
+                                         contains(./@cdr:id, '_treat')">
+       <Para>
+        <xsl:attribute            name = "id">
+         <xsl:value-of          select = "concat($miscDocId, 
+                                          substring(./@cdr:id, 7))"/>
+        </xsl:attribute>
+        <xsl:apply-templates    select = "Para" 
+                                  mode = "copy"/>
+        <xsl:apply-templates>
+        <xsl:with-param           name = "curLocation"
+                                select = "$curLocation"/>
+        </xsl:apply-templates>
+       </Para>
+      </xsl:when>
+      <xsl:when                   test = "not($sumType = 'Treatment')
+                                         and
+                                         contains(./@cdr:id, '_other')">
+       <Para>
+        <xsl:attribute            name = "id">
+         <xsl:value-of          select = "concat($miscDocId, 
+                                          substring(./@cdr:id, 7))"/>
+        </xsl:attribute>
+        <xsl:apply-templates    select = "Para" 
+                                  mode = "copy"/>
+        <xsl:apply-templates>
+        <xsl:with-param           name = "curLocation"
+                                select = "$curLocation"/>
+        </xsl:apply-templates>
+       </Para>
+      </xsl:when>
+      <xsl:otherwise>
+       <!-- do nothing -->
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+     <Para>
+      <xsl:attribute              name = "id">
+       <xsl:value-of            select = "concat($miscDocId, ./@cdr:id)"/>
+      </xsl:attribute>
+      <xsl:apply-templates      select = "Para" 
+                                  mode = "copy"/>
+      <xsl:apply-templates>
+       <xsl:with-param            name = "curLocation"
+                                select = "$curLocation"/>
+      </xsl:apply-templates>
+     </Para>
+    </xsl:otherwise>
+   </xsl:choose>
  </xsl:template>
     
 
@@ -1154,6 +1319,314 @@ $Log: not supported by cvs2svn $
 
 
  <!-- 
+ ==============================================================
+ Replace the PlaceHolder link for the SummaryType
+ ============================================================== -->
+ <xsl:template                   match = "PlaceHolder[@name = 
+                                                       'PurposeOfSummary']">
+  <xsl:value-of                 select = "$purposeText"/>
+ </xsl:template>
+
+
+ <!-- 
+ =======================================================================
+ Replace the PlaceHolder link for the LeadReviewers.
+ This section is only displayed if the ShowReviewerInfo in the
+ Board Org record has been set to 'Yes'.
+ ======================================================================= -->
+ <xsl:template                   match = "PlaceHolder[@name = 
+                                                       'LeadReviewers']"
+                                  mode = "MiscText">
+
+  <!--
+  Text to be displayed in English/Spanish:
+    - The lead reviewer  for (summary name) is
+    - The lead reviewers for (summary name) are
+
+    - El revisor principal del sumario sobre (summary name) es
+    - Los revisores principales de los sumarios sobre (summary name) son
+  ===================================================================== -->
+  <xsl:if                         test = "$displayReviewers = 'Yes'">
+
+   <!-- 
+   The LOE summaries don't list a reviewer, so we will drop this 
+   paragraph if no reviewer exists.
+   In addition, the Overview Summaries are listing every board
+   member for that board and we don't want to display all of 
+   them.  We also drop this paragraph for Overview Summaries.
+   ============================================================= -->
+   <xsl:if                        test = "not(count($reviewers) = 0)">
+    <xsl:if                       test = "not(starts-with($sumTitle,
+                                              'Cancer Genetics Overview'))
+                                          and
+                                          not(starts-with($sumTitle,
+                                              'Cancer Prevention Overview'))
+                                          and
+                                          not(starts-with($sumTitle,
+                                              'Cancer Screening Overview'))">
+     <Para>
+      <xsl:choose>
+       <xsl:when                  test = "$language = 'English'">
+        <xsl:text>The lead reviewer</xsl:text>
+        <xsl:if                   test = "count($reviewers) &gt; 1">
+         <xsl:text>s</xsl:text>
+        </xsl:if>
+        <xsl:text> for </xsl:text>
+        <xsl:value-of           select = "$sumTitle"/>
+        <xsl:choose>
+         <xsl:when                test = "count($reviewers) &gt; 1">
+          <xsl:text> are</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> is</xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:choose>
+         <xsl:when                test = "count($reviewers) &gt; 1">
+          <xsl:text>Los revisores principales del sumario</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text>El revisor principal del sumario</xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
+        <xsl:text> sobre </xsl:text>
+        <xsl:value-of           select = "$sumTitle"/>
+        <xsl:choose>
+         <xsl:when                test = "count($reviewers) &gt; 1">
+          <xsl:text> son</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> es</xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:otherwise>
+      </xsl:choose>
+      <xsl:text>:</xsl:text>
+     </Para>
+ 
+     <ItemizedList Style="bullet">
+      <xsl:for-each             select = "$reviewers">
+       <xsl:sort                select = "@lname"/>
+       <ListItem>
+        <xsl:value-of           select = "."/>
+       </ListItem>
+      </xsl:for-each>
+     </ItemizedList>
+    </xsl:if>
+   </xsl:if>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ ==============================================================
+ Replace the PlaceHolder link for the BoardName
+ ============================================================== -->
+ <xsl:template                   match = "PlaceHolder[@name = 
+                                                       'BoardName'] |
+                                          PlaceHolder[@name = 
+                                                       'BoardNameLink']">
+  <xsl:choose>
+   <xsl:when                      test = "@name = 'BoardName'">
+    <xsl:choose>
+     <xsl:when                      test = "$boardName">
+      <xsl:value-of               select = "$boardName"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>ERROR </xsl:text>
+      <xsl:text>BoardName not specified</xsl:text>
+      <xsl:text> ERROR</xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>
+     <xsl:when                    test = "$boardName">
+      <xsl:element                name = "ExternalRef">
+       <xsl:attribute             name = "cdr:xref">
+        <xsl:choose>
+         <xsl:when                test = "$language = 'English'">
+          <xsl:choose>
+           <xsl:when              test = "$sumType = 'Treatment'">
+            <xsl:choose>
+             <xsl:when            test = "$ageGroup = 'Adult'">
+              <xsl:value-of     select = "concat(
+                                            $cgUrl, $cgBoardEN, 
+                                            '/adult-treatment-board')"/>
+             </xsl:when>
+             <xsl:otherwise>
+              <xsl:value-of     select = "concat(
+                                            $cgUrl, $cgBoardEN, 
+                                            '/pediatric-treatment-board')"/>
+             </xsl:otherwise>
+            </xsl:choose>
+           </xsl:when>
+           <xsl:when              test = "$sumType = 'Screening'
+                                          or
+                                          $sumType = 'Prevention'">
+            <xsl:value-of       select = "concat(
+                                            $cgUrl, $cgBoardEN, 
+                                            '/screening-prevention-board')"/>
+           </xsl:when>
+           <xsl:when              test = "$sumType = concat('Complementary ',
+                                                'and alternative medicine')">
+            <xsl:value-of       select = "concat(
+                                            $cgUrl, $cgBoardEN, 
+                                            '/cancer-cam-board')"/>
+           </xsl:when>
+           <xsl:when              test = "$sumType = 'Supportive care'">
+            <xsl:value-of       select = "concat(
+                                            $cgUrl, $cgBoardEN, 
+                                            '/supportive-care-board')"/>
+           </xsl:when>
+           <xsl:when              test = "$sumType = 'Genetics'">
+            <xsl:value-of       select = "concat(
+                                            $cgUrl, $cgBoardEN, 
+                                            '/cancer-genetics-board')"/>
+           </xsl:when>
+          </xsl:choose>
+         </xsl:when>
+         <!-- Links to Board in Spanish -->
+         <xsl:otherwise>
+          <xsl:choose>
+           <xsl:when              test = "$sumType = 'Treatment'">
+            <xsl:choose>
+             <xsl:when            test = "$ageGroup = 'Adult'">
+              <xsl:value-of     select = "concat(
+                                          $cgUrl, $cgBoardES,
+                                          '/consenjo-tratamientos-',
+                                          'adultos')"/>
+             </xsl:when>
+             <xsl:otherwise>
+              <xsl:value-of     select = "concat(
+                                          $cgUrl, $cgBoardES,
+                                          '/consejo-tratamientos-',
+                                          'pediatricos')"/>
+             </xsl:otherwise>
+            </xsl:choose>
+           </xsl:when>
+           <xsl:when              test = "$sumType = 'Supportive care'">
+            <xsl:value-of       select = "concat(
+                                          $cgUrl, $cgBoardES,
+                                          '/consejo-cuidados-medicos-',
+                                          'de-apoyo')"/>
+           </xsl:when>
+           <!--xsl:when           test = "$sumType = 'Screening'
+                                            or
+                                            $sumType = 'Prevention'">
+            <xsl:value-of       select = "concat(
+                                              $cgUrl, $cgBoardES, 
+                                              '/screening-prevention-board')"/>
+           </xsl:when -->
+           <!-- xsl:when          test = "$sumType = concat('Complementary ',
+                                                  'and alternative medicine')">
+            <xsl:value-of       select = "concat(
+                                              $cgUrl, $cgBoardES,
+                                              '/cancer-cam-board')"/>
+           </xsl:when -->
+           <!-- xsl:when          test = "$sumType = 'Genetics'">
+            <xsl:value-of       select = "concat(
+                                              $cgUrl, cgBoardES, 
+                                              '/cancer-genetics-board')"/>
+           </xsl:when -->
+          </xsl:choose>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:attribute>
+       <xsl:value-of              select = "$boardName"/>
+      </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>ERROR </xsl:text>
+      <xsl:text>BoardName not specified</xsl:text>
+      <xsl:text> ERROR</xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ==============================================================
+ Replace the PlaceHolder link for the PDQ Citation Sample
+ ============================================================== -->
+ <xsl:template                   match = "PlaceHolder[@name = 
+                                                       'PdqCitation']">
+  <xsl:text>National Cancer Institute: PDQ&#174; </xsl:text>
+  <xsl:value-of                 select = "$sumTitle"/>
+  <xsl:text>. Bethesda, MD: National Cancer Institute. </xsl:text>
+  <xsl:choose>
+   <xsl:when                      test = "$language = 'English'">
+    <xsl:text>Date last modified </xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>&#218;ltima actualizaci&#243;n: </xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+  <xsl:text> &lt;MM/DD/YYYY&gt;. </xsl:text>
+  <xsl:choose>
+   <xsl:when                      test = "$language = 'English'">
+    <xsl:text>Available at: </xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>Disponible en: </xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+  <xsl:element                    name = "ExternalRef">
+   <xsl:attribute                 name = "xref">
+    <xsl:value-of               select = "$sumUrl"/>
+   </xsl:attribute>
+   <!-- xsl:value-of                select = "$sumUrlText"/ -->
+   <xsl:value-of                select = "$sumUrl"/>
+  </xsl:element>
+  <!-- Emphasis> 
+   <xsl:text> (with a link to </xsl:text>
+   <xsl:value-of               select = "$sumUrl"/>
+   <xsl:text>)</xsl:text>
+  </Emphasis -->
+  <xsl:choose>
+   <xsl:when                      test = "$language = 'English'">
+    <xsl:text>.  Accessed </xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>.  Fecha de acceso: </xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+  <xsl:text>&lt;MM/DD/YYYY&gt;.</xsl:text>
+ </xsl:template>
+
+
+ <!-- 
+ ==============================================================
+ Replace the PlaceHolder link for the PDQ Citation Sample
+ ============================================================== -->
+ <xsl:template                   match = "PlaceHolder[@name = 
+                                                       'LOELink']">
+  <xsl:element                    name = "SummaryRef">
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "$sumLoe"/>
+   </xsl:attribute>
+   <xsl:attribute                 name = "url">
+    <xsl:value-of               select = "$sumLoeUrl"/>
+   </xsl:attribute>
+   <xsl:choose>
+    <xsl:when                     test = "$language = 'English'">
+     <xsl:text>formal evidence ranking system</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>sistema formal de jerarquizaci&#xF3;n </xsl:text>
+     <xsl:text>de la medicina factual</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:element>
+
+ </xsl:template>
+
+
+ <!-- 
  =========================================================================
  Template for in-line mark-up
  ========================================================================= -->
@@ -1172,7 +1645,7 @@ $Log: not supported by cvs2svn $
 
  <!-- 
  ====================================================================
- Templats needed for Table display
+ Templates needed for Table display
  ==================================================================== -->
  <!-- 
  ==================================================================== 
@@ -1881,6 +2354,73 @@ $Log: not supported by cvs2svn $
 
  <!-- 
  =========================================================================
+ Template to add the "About This Summary" misc. document to 
+ all HP summaries.
+ ========================================================================= -->
+ <xsl:template                   name = "AboutThisSummary">
+  <!--
+  *************************************************************
+  NOTE:  The ID for this document will need to be changed prior
+         to moving this filter to production
+  *************************************************************
+  -->
+  <xsl:choose>
+   <xsl:when                      test = "SummaryMetaData/
+                                          SummaryLanguage = 'English'">
+                                <!--
+                         BACH   select = "document(concat('cdr:CDR000684055',
+                         MAHLER select = "document(concat('cdr:CDR000671884',
+                                -->
+    <xsl:variable                 name = "miscDoc" 
+                                select = "document(concat('cdr:CDR000684055',
+                                                         '/last'))"/>
+    <SummarySection>
+     <xsl:attribute               name = "id">
+      <xsl:value-of             select = "'_AboutThis'"/>
+      <xsl:value-of             select = "$miscDoc/MiscellaneousDocument/
+                                                 MiscellaneousDocumentText/
+                                                 @cdr:id"/>
+     </xsl:attribute>
+
+     <Title>About This PDQ Summary</Title>
+     <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+      <xsl:with-param             name = "miscDocId"
+                                select = "'_AboutThis'"/>
+     </xsl:apply-templates>
+    </SummarySection>
+
+   </xsl:when>
+   <xsl:otherwise>
+                                <!--
+                        FRANCK  select = "document(concat('cdr:CDR0000684064',
+                        MAHLER  select = "document(concat('cdr:CDR0000671926',
+                                -->
+    <xsl:variable                 name = "miscDoc" 
+                                select = "document(concat('cdr:CDR0000684064',
+                                                         '/last'))"/>
+    <SummarySection>
+     <xsl:attribute               name = "id">
+      <xsl:value-of             select = "'_AboutThis'"/>
+      <xsl:value-of             select = "$miscDoc/MiscellaneousDocument/
+                                                 MiscellaneousDocumentText/
+                                                 @cdr:id"/>
+     </xsl:attribute>
+
+     <Title>Informaci&#xF3;n sobre este sumario del PDQ</Title>
+     <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+      <xsl:with-param             name = "miscDocId"
+                                select = "'_AboutThis'"/>
+     </xsl:apply-templates>
+    </SummarySection>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ =========================================================================
  Template to add the Q and A misc. document to CAM Patient Summaries
  ========================================================================= -->
  <xsl:template                   name = "QandACAM">
@@ -2328,28 +2868,4 @@ $Log: not supported by cvs2svn $
      <xsl:value-of              select = "$metaDataDoc"/>
     </xsl:element>
  </xsl:template>
-
-
- <!-- 
- =========================================================================
- ========================================================================= -->
-<!-- 
- <xsl:template                    name = "MiscDiagnosis">
-  <xsl:variable                   name = "MiscInfo" 
-                                select = "document(concat('cdr:name:',
-                                                        'TEST - VE TrialSearch',
-                                                        ';Standard wording',
-                                                          '/lastp'))"/>
-  
-  <xsl:apply-templates          select = "$MiscInfo/
-                                            MiscellaneousDocument/
-                                            MiscellaneousDocumentText/
-                                            Section/Para"
-                                  mode = "trialSearch"/>
- </xsl:template>
--->
-
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>
