@@ -25,26 +25,9 @@
   <xsl:variable               name = 'overallStatus'>
    <xsl:call-template         name = 'get_overall_status'/>
   </xsl:variable>
-  <clinical_study>
-   <xsl:for-each            select = "ProtocolIDs/OtherID">
-    <xsl:choose>
-     <xsl:when                test = "IDType = 'ClinicalTrials.gov ID'">
-      <xsl:attribute          name = "nct-id">
-       <xsl:value-of        select = "normalize-space(IDString){/>
-      </xsl:attribute>
-     </xsl:when>
-     <xsl:when                test = "IDType = 'CTEP ID'">
-      <xsl:attribute          name = "ctep-id">
-       <xsl:value-of        select = "normalize-space(IDString){/>
-      </xsl:attribute>
-     </xsl:when>
-     <xsl:when                test = "IDType = 'DCP ID'">
-      <xsl:attribute          name = "dcp-id">
-       <xsl:value-of        select = "normalize-space(IDString){/>
-      </xsl:attribute>
-     </xsl:when>
-    </xsl:choose>
-   </xsl:for-each>
+  <clinical_study           nct-id = "@@NCTTRIALID@@"
+                           ctep-id = "@@CTEPTRIALID@@"
+                            dcp-id = "@@DCPTRIALID@@">
    <xsl:if                    test = "$overallStatus != 'Recruiting' and
                                       $overallStatus != 'Not yet recruiting'">
     <xsl:attribute            name = "partial_upload">
@@ -265,12 +248,13 @@
     <xsl:variable             name = "loRef"
                             select = "@ref"/>
     <xsl:if                   test = "$loRef != ''">
-     <xsl:attribute           name = "ctep-id"
-                            select = "concat('@@CTEPID@@',
+     <xsl:attribute           name = "ctep-id">
+      <xsl:value-of         select = "concat('@@CTEPID@@',
                                              $loRef, '@@CTEPID@@')"/>
-     <xsl:value-of          select = "normailize-space(LeadOrgName)"/>
+     </xsl:attribute>
+     <xsl:value-of          select = "normalize-space(LeadOrgName)"/>
     </xsl:if>
-   </lead_org
+   </lead_org>
   </xsl:for-each>
   <xsl:variable               name = "leadSponsor">
    <xsl:value-of            select = "ProtocolAdminInfo/ProtocolLeadOrg
@@ -284,9 +268,11 @@
                             select = "ProtocolAdminInfo/ProtocolLeadOrg
                                       [LeadOrgRole = 'Primary']/@ref"/>
      <xsl:if                  test = "$sponsorRef != ''">
-      <xsl:attribute          name = "ctep-id"
-                            select = "concat('@@CTEPID@@', $sponsorRef,
+      <xsl:attribute          name = "ctep-id">
+       <xsl:value-of        select = "concat('@@CTEPID@@', $sponsorRef,
                                              '@@CTEPID@@')"/>
+      </xsl:attribute>
+     </xsl:if>
      <xsl:value-of          select = "$leadSponsor"/>
     </agency>
    </lead_sponsor>
@@ -320,9 +306,10 @@
       <xsl:variable           name = "collabRef"
                             select = "@ref"/>
        <xsl:if                test = "$collabRef != ''">
-        <xsl:attribute        name = "ctep-id"
-                            select = "concat('@@CTEPID@@', $collabRef,
+        <xsl:attribute        name = "ctep-id">
+         <xsl:value-of      select = "concat('@@CTEPID@@', $collabRef,
                                              '@@CTEPID@@')"/>
+        </xsl:attribute>
        </xsl:if>
       <xsl:value-of         select = "normalize-space(LeadOrgName)"/>
      </agency>
@@ -612,19 +599,22 @@
  Clinical Trials[dash]CancerType and the MenuParent = Disease/diagnosis;
  output the value of the PreferredTerm for that term record in the
  Condition element."
+ 2010-09-07: A decision was made on a conference call with
+ Kim, Charles, Lakshmi, and Margeret to simplify this logic,
+ exporting the terms used to code the trial in our repository
+ rather than collapsing the set down using our menu trees.
  ==================================================================== -->
  <xsl:template                name = "get_condition">
-  <xsl:text>@@CONDITIONS@@</xsl:text>
-   <Conditions>
-    <xsl:for-each           select = "ProtocolDetail/StudyCondition/
+  <xsl:for-each             select = "ProtocolDetail/StudyCondition/
                                       SpecificCondition |
                                       Eligibility/Diagnosis/SpecificDiagnosis">
-     <Condition>
-      <xsl:value-of         select = "@ref"/>
-     </Condition>
-    </xsl:for-each>
-   </Conditions>
-  <xsl:text>@@CONDITIONS@@</xsl:text>
+   <condition>
+    <xsl:attribute            name = "cdr-id">
+     <xsl:value-of          select = "@ref"/>
+    </xsl:attribute>
+    <xsl:value-of           select = "normalize-space()"/>
+   </condition>
+  </xsl:for-each>
  </xsl:template>
 
  <!--
@@ -711,9 +701,10 @@
                                       PersonNameInformation">
    <overall_official>
     <xsl:if                   test = "../@ref">
-     <xsl:attribute           name = "ctep-id"
-                            select = "concat('@@CTEPID@@', ../@ref,
+     <xsl:attribute           name = "ctep-id">
+      <xsl:value-of         select = "concat('@@CTEPID@@', ../@ref,
                                              '@@CTEPID@@')"/>
+     </xsl:attribute>
     </xsl:if>
     <xsl:if                   test = "GivenName">
      <first_name>
@@ -738,6 +729,7 @@
       <xsl:value-of         select = "."/>
      </xsl:for-each>
     </xsl:variable>
+    <xsl:if                   test = "$degrees != ''">
      <degrees>
       <xsl:value-of         select = "$degrees"/>
      </degrees>
@@ -792,9 +784,10 @@
    <location>
     <facility>
      <xsl:if                  test = "@ref">
-      <xsl:attribute          name = "ctep-id"
-                            select = "concat('@@CTEPID@@', @ref,
+      <xsl:attribute          name = "ctep-id">
+       <xsl:value-of        select = "concat('@@CTEPID@@', @ref,
                                              '@@CTEPID@@')"/>
+      </xsl:attribute>
      </xsl:if>
      <name>
       <xsl:value-of         select = "SiteName"/>
@@ -833,10 +826,11 @@
     <status>Recruiting</status>
     <xsl:for-each           select = "ProtPerson[1]">
      <contact>
-      <xsl:if                 test = "@ref"
-       <xsl:attribute         name = "ctep-id"
-                            select = "concat('@@CTEPID@@', @ref,
+      <xsl:if                 test = "@ref">
+       <xsl:attribute         name = "ctep-id">
+        <xsl:value-of       select = "concat('@@CTEPID@@', @ref,
                                              '@@CTEPID@@')"/>
+       </xsl:attribute>
       </xsl:if>
       <xsl:choose>
        <xsl:when              test = "PersonNameInformation">
@@ -867,6 +861,7 @@
          <xsl:value-of      select = "PersonNameInformation/
                                       ProfessionalSuffix"/>
         </xsl:variable>
+        <xsl:if               test = "$degrees != ''">
          <degrees>
           <xsl:value-of     select = "$degrees"/>
          </degrees>
@@ -878,36 +873,36 @@
         </last_name>
        </xsl:otherwise>
       </xsl:choose>
-      <xsl:variable         name = "phone">
+      <xsl:variable           name = "phone">
        <xsl:choose>
-        <xsl:when           test = "Contact/ContactDetail/Phone">
-         <xsl:value-of    select = "Contact/ContactDetail/Phone"/>
+        <xsl:when             test = "Contact/ContactDetail/Phone">
+         <xsl:value-of      select = "Contact/ContactDetail/Phone"/>
         </xsl:when>
-        <xsl:when           test = "Contact/ContactDetail/TollFreePhone">
-         <xsl:value-of    select = "Contact/ContactDetail/TollFreePhone"/>
+        <xsl:when             test = "Contact/ContactDetail/TollFreePhone">
+         <xsl:value-of      select = "Contact/ContactDetail/TollFreePhone"/>
         </xsl:when>
        </xsl:choose>
       </xsl:variable>
-      <xsl:variable         name = "email">
-       <xsl:value-of      select = "Contact/ContactDetail/Email"/>
+      <xsl:variable           name = "email">
+       <xsl:value-of        select = "Contact/ContactDetail/Email"/>
       </xsl:variable>
       <xsl:choose>
        
-       <xsl:when            test = "$phone != ''">
+       <xsl:when              test = "$phone != ''">
         <phone>
-         <xsl:value-of    select = "$phone"/>
+         <xsl:value-of      select = "$phone"/>
         </phone>
        </xsl:when>
        <xsl:otherwise>
         <xsl:message>
-         <xsl:value-of    select = "'Missing phone'"/>
+         <xsl:value-of      select = "'Missing phone'"/>
         </xsl:message>
         <phone>Not Available</phone>
        </xsl:otherwise>
       </xsl:choose>
-      <xsl:if               test = "$email != ''">
+      <xsl:if                 test = "$email != ''">
        <email>
-        <xsl:value-of     select = "$email"/>
+        <xsl:value-of       select = "$email"/>
        </email>
       </xsl:if>
      </contact>
@@ -942,6 +937,7 @@
     <url>
      <xsl:value-of          select = "@xref"/>
     </url>
+    <xsl:if                   test = ". != ''">
      <description>
       <xsl:value-of         select = "."/>
      </description>
@@ -992,8 +988,9 @@
                                       SpecificCondition |
                                       Eligibility/Diagnosis/SpecificDiagnosis">
    <keyword>
-    <xsl:attribute            name = "pdq-id"
-                            select = "@ref"/>
+    <xsl:attribute            name = "cdr-id">
+     <xsl:value-of          select = "@ref"/>
+    </xsl:attribute>
     <xsl:value-of           select = "."/>
    </keyword>
   </xsl:for-each>
