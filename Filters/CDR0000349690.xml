@@ -3,6 +3,9 @@
 <!--
      $Id$
 
+     BZIssue::3650
+     BZIssue::4444
+     BZIssue::4499
      BZIssue::4664
      BZIssue::4685
      BZIssue::4846
@@ -52,9 +55,12 @@
     </xsl:if>
    </xsl:for-each>
   </Sponsors>
+  <xsl:apply-templates           select = 'oversight_info'/>
   <xsl:apply-templates           select = 'overall_status'/>
+  <xsl:apply-templates           select = 'why_stopped'/>
   <xsl:apply-templates           select = 'start_date'/>
   <xsl:apply-templates           select = 'end_date'/>
+  <xsl:apply-templates           select = 'primary_completion_date'/>
   <xsl:apply-templates           select = 'location'/>
   <xsl:choose>
    <xsl:when                       test = '$newDoc = "Y" or
@@ -78,11 +84,31 @@
   <xsl:apply-templates           select = 'brief_summary'/>
   <xsl:apply-templates           select = 'detailed_description'/>
   <xsl:call-template               name = 'extractPhase'/>
+  <xsl:apply-templates           select = 'study_type'/>
+  <xsl:if                          test = 'primary_outcome | secondary_outcome'>
+   <CTOutcomes>
+    <xsl:apply-templates         select = 'primary_outcome | secondary_outcome'/>
+   </CTOutcomes>
+  </xsl:if>
+  <xsl:apply-templates           select = 'number_of_arms'/>
+  <xsl:apply-templates           select = 'number_of_groups'/>
+  <xsl:apply-templates           select = 'enrollment'/>
   <xsl:apply-templates           select = 'eligibility'/>
+  <xsl:apply-templates           select = 'biospec_retention'/>
+  <xsl:apply-templates           select = 'biospec_descr'/>
+  <ArmsOrGroups>
+   <xsl:if                         test = 'not(arm_group)'>
+    <xsl:attribute                 name = 'SingleArmOrGroupStudy'>
+     <xsl:value-of               select = '"Yes"'/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:apply-templates          select = 'arm_group'/>
+  </ArmsOrGroups>
   <CTGovIndexing>
    <xsl:apply-templates          select = 'study_design'/>
    <xsl:apply-templates          select = 'condition'/>
    <xsl:apply-templates          select = 'intervention'/>
+   <xsl:apply-templates          select = 'keyword'/>
   </CTGovIndexing>
   <xsl:choose>
    <xsl:when                       test = '$newDoc = "Y"'>
@@ -190,8 +216,16 @@
     <xsl:text>@@PDQAdminInfo@@</xsl:text>
    </xsl:otherwise>
   </xsl:choose>
+  <xsl:if                          test = 'link'>
+   <ProtocolRelatedLinks>
+    <xsl:apply-templates         select = 'link'/>
+   </ProtocolRelatedLinks>
+  </xsl:if>
+  <xsl:apply-templates           select = 'reference'/>
+  <xsl:apply-templates           select = 'results_reference'/>
   <xsl:apply-templates           select = 'verification_date'/>
   <xsl:apply-templates           select = 'lastchanged_date'/>
+  <xsl:apply-templates           select = 'firstreceived_date'/>
  </xsl:template>
 
  <xsl:template                    match = 'required_header'>
@@ -217,6 +251,13 @@
      <URL>
       <xsl:value-of              select = '$url'/>
      </URL>
+    </xsl:if>
+    <xsl:variable                  name = 'source'
+                                 select = 'normalize-space(../source)'/>
+    <xsl:if                        test = '$source != ""'>
+     <CTSource>
+      <xsl:value-of              select = '$source'/>
+     </CTSource>
     </xsl:if>
    </RequiredHeader>
   </xsl:if>
@@ -248,6 +289,20 @@
       <xsl:value-of               select = '$nctId'/>
      </NCTID>
     </xsl:if>
+    <xsl:for-each                 select = 'nct_alias'>
+     <xsl:if                        test = 'normalize-space() != ""'>
+      <NCT_Alias>
+       <xsl:value-of              select = 'normalize-space()'/>
+      </NCT_Alias>
+     </xsl:if>
+    </xsl:for-each>
+    <xsl:for-each                 select = '../acronym'>
+     <xsl:if                        test = 'normalize-space() != ""'>
+      <CTAcronym>
+       <xsl:value-of              select = 'normalize-space()'/>
+      </CTAcronym>
+     </xsl:if>
+    </xsl:for-each>
    </IDInfo>
   </xsl:if>
  </xsl:template>
@@ -460,11 +515,38 @@
   </xsl:if>
  </xsl:template>
 
+ <xsl:template                    match = 'oversight_info'>
+  <xsl:variable                    name = 'hasDmc'
+                                 select = 'normalize-space(has_dmc)'/>
+  <CTOversightInfo>
+   <xsl:for-each                 select = 'authority'>
+    <CTAuthority>
+     <xsl:value-of               select = '.'/>
+    </CTAuthority>
+   </xsl:for-each>
+   <xsl:if                         test = '$hasDmc != ""'>
+    <HasDMC>
+     <xsl:value-of               select = '$hasDmc'/>
+    </HasDMC>
+   </xsl:if>
+  </CTOversightInfo>
+ </xsl:template>
+
  <xsl:template                    match = 'overall_status'>
   <xsl:if                          test = 'normalize-space() != ""'>
    <OverallStatus>
     <xsl:call-template             name = 'mapStatus'/>
    </OverallStatus>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'why_stopped'>
+  <xsl:variable                    name = 'whyStopped'
+                                 select = 'normalize-space()'/>
+  <xsl:if                          test = '$whyStopped != ""'>
+   <ReasonStopped>
+    <xsl:value-of                select = '$whyStopped'/>
+   </ReasonStopped>
   </xsl:if>
  </xsl:template>
 
@@ -485,6 +567,26 @@
    <EndDate>
     <xsl:value-of                select = '$date'/>
    </EndDate>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'completion_date'>
+  <xsl:variable                    name = 'date'
+                                 select = 'normalize-space()'/>
+  <xsl:if                          test = '$date != ""'>
+   <CompletionDate>
+    <xsl:value-of                select = '$date'/>
+   </CompletionDate>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'primary_completion_date'>
+  <xsl:variable                    name = 'date'
+                                 select = 'normalize-space()'/>
+  <xsl:if                          test = '$date != ""'>
+   <PrimaryCompletionDate>
+    <xsl:value-of                select = '$date'/>
+   </PrimaryCompletionDate>
   </xsl:if>
  </xsl:template>
 
@@ -521,6 +623,150 @@
     </Phase>
    </xsl:otherwise>
   </xsl:choose>
+ </xsl:template>
+
+ <xsl:template                    match = 'study_type'>
+  <xsl:variable                    name = 'st'
+                                 select = 'normalize-space()'/>
+  <xsl:if                          test = '$st != ""'>
+   <CTStudyType>
+    <xsl:value-of                select = '$st'/>
+   </CTStudyType>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'primary_outcome | secondary_outcome'>
+  <CTOutcome>
+   <xsl:attribute                  name = 'OutcomeType'>
+    <xsl:choose>
+     <xsl:when                     test = 'name() = "primary_outcome"'>
+      <xsl:value-of              select = '"Primary"'/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of              select = '"Secondary"'/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:attribute>
+   <CTOutcomeMeasure>
+    <xsl:value-of                select = 'normalize-space(measure)'/>
+   </CTOutcomeMeasure>
+   <xsl:for-each                 select = 'time_frame'>
+    <CTOutcomeTimeFrame>
+    <xsl:value-of                select = 'normalize-space()'/>
+    </CTOutcomeTimeFrame>
+   </xsl:for-each>
+   <xsl:for-each                 select = 'safety_issue'>
+    <CTOutcomeSafetyIssue>
+    <xsl:value-of                select = 'normalize-space()'/>
+    </CTOutcomeSafetyIssue>
+   </xsl:for-each>
+  </CTOutcome>
+ </xsl:template>
+
+ <xsl:template                    match = 'number_of_arms'>
+  <xsl:variable                    name = 'noa'
+                                 select = 'normalize-space()'/>
+  <xsl:if                          test = '$noa != ""'>
+   <CTNumberOfArms>
+    <xsl:value-of                select = '$noa'/>
+   </CTNumberOfArms>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'number_of_groups'>
+  <xsl:variable                    name = 'nog'
+                                 select = 'normalize-space()'/>
+  <xsl:if                          test = '$nog != ""'>
+   <CTNumberOfGroups>
+    <xsl:value-of                select = '$nog'/>
+   </CTNumberOfGroups>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'enrollment'>
+  <xsl:variable                    name = 't'
+                                 select = 'normalize-space(@type)'/>
+  <CTEnrollment>
+   <xsl:if                         test = '$t != ""'>
+    <xsl:attribute                 name = 'Type'>
+     <xsl:value-of               select = '$t'/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:value-of                 select = 'normalize-space()'/>
+  </CTEnrollment>
+ </xsl:template>
+
+ <xsl:template                    match = 'arm_group'>
+  <ArmOrGroup>
+   <ArmOrGroupLabel>
+    <xsl:value-of                select = 'normalize-space(arm_group_label)'/>
+   </ArmOrGroupLabel>
+   <ArmOrGroupType>
+    <xsl:value-of                select = 'normalize-space(arm_group_type)'/>
+   </ArmOrGroupType>
+   <xsl:for-each                 select = 'description'>
+    <ArmOrGroupDescription>
+     <xsl:value-of               select = 'normalize-space()'/>
+    </ArmOrGroupDescription>
+   </xsl:for-each>
+  </ArmOrGroup>
+ </xsl:template>
+
+ <xsl:template                    match = 'biospec_retention'>
+  <xsl:variable                    name = 'br'
+                                 select = 'normalize-space()'/>
+  <xsl:if                          test = '$br != ""'>
+   <BiospecRetention>
+    <xsl:value-of                select = '$br'/>
+   </BiospecRetention>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'biospec_descr'>
+  <xsl:if                          test = 'normalize-space() != ""'>
+   <BiospecDescription>
+    <Para>
+     <xsl:value-of               select = '.'/>
+    </Para>
+   </BiospecDescription>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'link'>
+  <!-- Yes, I know it makes no sense to use a plural element name to
+       hold information for a single web site, but I didn't have a
+       choice. -->
+  <RelatedWebsites>
+   <xsl:attribute                  name = 'cdr:xref'>
+    <xsl:value-of                select = 'url'/>
+   </xsl:attribute>
+   <xsl:value-of                 select = 'description'/>
+  </RelatedWebsites>
+ </xsl:template>
+
+ <xsl:template                    match = 'reference | results_reference'>
+  <xsl:variable                    name = 'ename'>
+   <xsl:choose>
+    <xsl:when                      test = 'name() = "reference"'>
+     <xsl:value-of               select = '"CTReference"'/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of               select = '"CTResultsReference"'/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+  <xsl:element                     name = '{$ename}'>
+   <xsl:for-each                 select = 'citation'>
+    <CTCitation>
+     <xsl:value-of               select = 'normalize-space()'/>
+    </CTCitation>
+   </xsl:for-each>
+   <xsl:for-each                 select = 'PMID'>
+    <PMID>
+     <xsl:value-of               select = 'normalize-space()'/>
+    </PMID>
+   </xsl:for-each>
+  </xsl:element>
  </xsl:template>
 
  <xsl:template                    match = 'study_design'>
@@ -562,13 +808,54 @@
       <xsl:value-of              select = '$name'/>
      </CTInterventionName>
     </xsl:if>
+    <xsl:variable                  name = 'desc'
+                                 select = 'normalize-space(description)'/>
+    <xsl:if                        test = '$desc != ""'>
+     <CTInterventionDescription>
+      <xsl:value-of              select = '$desc'/>
+     </CTInterventionDescription>
+    </xsl:if>
+    <xsl:for-each                select = 'arm_group_label'>
+     <ArmOrGroupLabel>
+      <xsl:value-of              select = 'normalize-space()'/>
+     </ArmOrGroupLabel>
+    </xsl:for-each>
+    <xsl:for-each                select = 'other_name'>
+     <CTInterventionOtherName>
+      <xsl:value-of              select = 'normalize-space()'/>
+     </CTInterventionOtherName>
+    </xsl:for-each>
    </CTIntervention>
+  </xsl:if>
+ </xsl:template>
+
+ <xsl:template                    match = 'keyword'>
+  <xsl:variable                    name = 'keyword'
+                                 select = 'normalize-space()'/>
+  <xsl:if                          test = '$keyword != ""'>
+   <CTKeyword>
+    <xsl:value-of                select = '$keyword'/>
+   </CTKeyword>
   </xsl:if>
  </xsl:template>
 
  <xsl:template                    match = 'eligibility'>
   <xsl:if                          test = 'normalize-space() != ""'>
    <CTEligibility>
+    <xsl:variable                  name = 'studyPop'
+                                 select = 'normalize-space(study_pop)'/>
+    <xsl:if                        test = '$studyPop != ""'>
+     <CTStudyPop>
+      <Para>
+       <xsl:value-of             select = '$studyPop'/>
+      </Para>
+     </CTStudyPop>
+    </xsl:if>
+    <xsl:for-each                select = 'sampling_method'>
+     <CTSamplingMethod>
+      <xsl:value-of              select = 'normalize-space()'/>
+     </CTSamplingMethod>
+    </xsl:for-each>
     <xsl:variable                  name = 'criteria'
                                  select = 'normalize-space(criteria)'/>
     <xsl:if                        test = '$criteria != ""'>
@@ -789,6 +1076,14 @@
   </xsl:if>
  </xsl:template>
 
+ <xsl:template                    match = 'firstreceived_date'>
+  <xsl:if                          test = 'normalize-space() != ""'>
+   <FirstReceivedDate>
+    <xsl:value-of                select = 'normalize-space()'/>
+   </FirstReceivedDate>
+  </xsl:if>
+ </xsl:template>
+
  <!--
   Modified October 2007 at Lakshmi's request to pick up collaborators.
    -->
@@ -849,7 +1144,7 @@
     <xsl:text>Closed</xsl:text>
    </xsl:when>
    <xsl:when                       test = '$v = "Approved for marketing"'>
-    <xsl:text>Closed</xsl:text>
+    <xsl:text>Completed</xsl:text>
    </xsl:when>
    <xsl:when                       test = '$v = "No longer available"'>
     <xsl:text>Closed</xsl:text>
