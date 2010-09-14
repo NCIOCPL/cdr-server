@@ -1,11 +1,9 @@
-<CdrDoc Type='Filter' Id='CDR0000335437'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Denormalization Filter: Summary Citation Wrapper Add</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<?xml version="1.0"?>
+ <!-- 
+ ===================================================================
+ $Id$
+ BZIssue::4911
+ =================================================================== -->
 <xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              version = "1.0"
                            xmlns:cdr = "cips.nci.nih.gov/cdr">
@@ -40,6 +38,28 @@
     <xsl:variable               name = "pos"
                               select = "position()"/>
     <xsl:choose>
+
+     <!--
+     ==============================================================
+     Added logic to add the CitationWrapper element to sequences of
+     Citation elements inside a ReferenceList block without resorting
+     to recursion.  We can do this because we know that the Citation
+     children in a ReferenceList block have been put there by an
+     earlier filter in the denormalization filter set which only
+     puts Citation elements in the block.  We have to avoid recursion
+     because when several hundred contiguous citations are present
+     the filtering engine crashes the CDR server because memory is
+     exhausted.
+     ============================================================== -->
+     <xsl:when                  test = "name() = 'ReferenceList' and Citation">
+      <ReferenceList>
+       <CitationWrapper>
+        <xsl:for-each         select = 'Citation'>
+         <xsl:copy-of         select = "."/>
+        </xsl:for-each>
+       </CitationWrapper>
+      </ReferenceList>
+     </xsl:when>
      <xsl:when                  test = "name() != 'Citation'">
       <xsl:apply-templates    select = "."/>
      </xsl:when>
@@ -83,6 +103,3 @@
   </xsl:if>
  </xsl:template>
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>
