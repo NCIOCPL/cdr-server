@@ -1,21 +1,17 @@
-<CdrDoc Type='Filter' Id='CDR0000000125'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">PDQBoardMember Roster</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: PDQBoardMember Roster -->
 <!--
 ================================================================
-     $Id$
+$Id$
 
-     Filter to create the HTML output for a single board member.
-     The output of this filter will be concatenated for multiple
-     persons to create a complete roster report.
-                           Written by Volker Englisch, 2004-04-09
+Filter to create the HTML output for a single board member.
+The output of this filter will be concatenated for multiple
+persons to create a complete roster report.
+   Written by Volker Englisch, 2004-04-09
 
-     $Log: not supported by cvs2svn $
+BZIssue::4909 - Board Roster Report Change
+
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
@@ -33,6 +29,7 @@
                                 select = "'PdqBoardMemberRoster'"/>
  <xsl:param                       name = "eic"/>
  <xsl:param                       name = "assistant"/>
+ <xsl:param                       name = "subgroup"/>
  <xsl:param                       name = "otherInfo" select = "'Yes'"/>
  <!-- 
  ===============================================================
@@ -60,6 +57,17 @@
 
    <!--
    =====================================================================
+   If the subgroup parameter is selected via the web interface, display
+   the Subgroup Info 
+   ===================================================================== -->
+   <xsl:if                        test = "$subgroup = 'Yes'">
+    <xsl:apply-templates        select = "PDQBoardMemberInfo/
+                                          BoardMembershipDetails/
+                                          MemberOfSubgroup"/>
+   </xsl:if>
+
+   <!--
+   =====================================================================
    If the assistant parameter is selected via the web interface, display
    the Assistant Info 
    ===================================================================== -->
@@ -70,13 +78,10 @@
 
    <!--
    =====================================================================
-   Display the "Send Packet" information if either the assistant or the
-   additional address information is being displayed but not for the 
-   default report.
+   Display the "Send Packet" information if the additional address 
+   information is being displayed but not for the default report.
    ===================================================================== -->
-   <xsl:if                        test = "$assistant = 'Yes'
-                                         or
-                                         $otherInfo = 'Yes'">
+   <xsl:if                        test = "$otherInfo = 'Yes'">
     <table      xsl:use-attribute-sets = "table">
      <tr>
       <td       xsl:use-attribute-sets = "cell1of2">
@@ -281,7 +286,28 @@
   </table>
   <br/>
  </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Display the MemberOfSubgroup information
+ =================================================================== -->
+ <xsl:template                   match = "MemberOfSubgroup">
+  <xsl:choose>
+   <xsl:when                      test = "position() = 1">
+    <xsl:text>Member of Subgroup: </xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>, </xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+
+  <xsl:value-of                 select = "normalize-space(.)"/>
+
+  <xsl:if                         test = "position() = last()">
+   <p></p>
+  </xsl:if>
+ </xsl:template>
+
+
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>
