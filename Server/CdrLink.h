@@ -323,31 +323,12 @@ namespace cdr {
                             cdr::StringList&);
 
     /**
-     * Looks up the document types to which links can be made from a
-     * particular element type in a given source document type.
-     *
-     *  @param      conn        Reference to the connection object for the
-     *                           CDR database.
-     *  @param      srcElem     Reference to a string containing the source
-     *                           element name.
-     *  @param      srcDocType  Reference to a string containing the source
-     *                           document type.
-     *  @param      typeList    Reference to a list of keys into the doc_type
-     *                           table (out parameter).
-     *  @exception  cdr::Exception if a database or processing error occurs.
-     */
-    extern void findTargetDocTypes (cdr::db::Connection& conn,
-                                    const String&        srcElem,
-                                    const String&        srcDocType,
-                                    std::vector<int>&    typeList);
-
-    /**
      * Return the CdrSearchLinksResp element that represents target links
      * made from a particular element type in a given source document type.
      * It contains only the documents satisfying the link_properties. It
      * is designed for task: picklists with server-side filtering, and
      * hence it emphasizes on speed by not using other funtions in cdr::link.
-     * This is assumed to be a replacement of findTargetDocTypes.
+     * This is assumed to be a replacement for findTargetDocTypes().
      *
      *  @param      conn         Reference to the connection object for the
      *                            CDR database.
@@ -359,6 +340,9 @@ namespace cdr {
      *                            document title pattern.
      *  @param      maxRows      Maximum number of (id, title) pairs returned.
      *
+     *  @return                  String of serial XML containing qualifying
+     *                            doc IDs and titles, usually for a picklist.
+     *
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
     extern cdr::String getSearchLinksResp (cdr::db::Connection& conn,
@@ -368,19 +352,29 @@ namespace cdr {
                                     int                  maxRows);
 
     /**
-     * This handles the complex case for getSearchLinksResp with link
-     * properties present. Wanted to split the code for clarity.
-     * The properties could have only ids without values, which has
-     * not yet been implemented.
+     * Handles the link proprty specific code for CdrSearchLinksResp.
+     *
+     * Parses the rule values for each property ID, builds a parse
+     * tree, and generates and executes SQL for the rule.
      *
      *  @param      conn         Reference to the connection object for the
      *                            CDR database.
-     *  @param      link_id      Link type identifier.
-     *  @param      prop_ids     Reference to a list of property ids.                            document type.
-     *  @param      prop_values  Reference to a list of property values.
+     *  @param      link_id      Link type unique ID in link_type table.
+     *  @param      prop_ids     Reference to vector of unique IDs in
+     *                            link_properties table.
+     *  @param      prop_values  Reference to vector of string property
+     *                            values, one for each prop_id.  These are
+     *                            rules to compile.  If rule changed since
+     *                            last compile, a value compare will detect
+     *                            that and recompile it.
      *  @param      titlePattern Reference to a string containing the target
-     *                            document title pattern.
+     *                            document title pattern, e.g. "antibody%" to
+     *                            generate a picklist of qualifying docs
+     *                            with titles LIKE 'antibody%'
      *  @param      maxRows      Maximum number of (id, title) pairs returned.
+     *
+     *  @return                  String of serial XML containing qualifying
+     *                            doc IDs and titles, usually for a picklist.
      *
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
