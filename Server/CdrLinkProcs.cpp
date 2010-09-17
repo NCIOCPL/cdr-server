@@ -832,138 +832,6 @@ bool cdr::link::LinkChkPair::evalRule (
          ((cdr::link::LinkChkRelation *) rNode)->evalRelation (dbConn, docId));
 }
 
-/*
- * Get SQL WHERE clause for a particular link source, given the
- * document type and source element for the link.
- */
-/*
-bool getLinkTargetRestrictions (
-    cdr::db::Connection conn,
-    int                 docType,
-    cdr::String&        elemName,
-    std::string&        sql,
-    std::string&        tagColumn,
-    std::string&        valColumn
-) {
-    // Query to find a linkTargetContains property in the link
-    //   control tables, if there is one, given a specific document
-    //   type and element name for the source of the link.
-    std::string qry =
-        "SELECT value FROM "
-        "  link_properties lp, "
-        "  link_prop_type lpt, "
-        "  link_xml lx "
-        "WHERE "
-        "  lx.doc_type = ? AND "
-        "  lx.element = ? AND "
-        "  lx.link_id = lp.link_id AND "
-        "  lp.property_id = lpt.id AND "
-        "  lpt.name = 'linkTargetContains'";
-
-    // Execute it
-    cdr::db::PreparedStatement stmt = conn.prepareStatement (qry);
-    stmt.setInt (1, docType);
-    stmt.setString (2, elemName);
-    cdr::db::ResultSet rs = stmt.executeQuery();
-
-    // If no hits, that's okay, there's no rule concerning this link type
-    if (!rs.next())
-        return false;
-
-    // If we got a rule, convert it to a SQL WHERE clause
-    cdr::String rule = rs.getString (1);
-    cdr::link::LinkChkTargContains *ruleTree = findOrMakeRuleTree (rule);
-    cdr::link::LinkChkPair         *treeTop  = ruleTree->getTreeTop();
-    treeTop->makeWhere (sql, tagColumn, valColumn);
-
-    return true;
-}
-*/
-
-/*
- * Generate SQL for a complete parse tree - to be evaluated separately.
- *
- * XXXX THIS VERSION IS INADEQUATE
- *      PROBLEM IS THAT WE NEED MULTIPLE ALIASES FOR THE SAME tagColumn
- *      WHEN THERE IS A BOOLEAN OPERATOR PRESENT, E.G.
- *      where ((a.path='foo' and a.value='bar') and
- *             (b.path='whiz' and b.value='bang') and
- *             (a.id = b.id))
- *      PROBABLE SOLUTION IS:
- *          Assume, path, value, id are columns
- *          Generate sql as above
- *          Use a fixed sequence of aliases, e.g., L1, L2, L3 ...
- *          Return a count of aliases used.
- */
-/*
-void cdr::link::LinkChkNode::makeWhere (
-    std::string& sql,
-    std::string& tagColumn,
-    std::string& valColumn
-) {
-    // Enclose everything in parentheses
-    // It's not always necessary, but it never does any harm
-    sql += "(";
-
-    // If we're at a leaf node (cdr::link::LinkChkRelation), generate SQL
-    if (this->getNodeType() == typeRel) {
-
-        cdr::link::LinkChkRelation *node =
-                static_cast<cdr::link::LinkChkRelation*> (this);
-
-        // Parenthesize this node - safe and conservative
-        sql += "(";
-
-        // Append tag to search for in query_term table
-        sql += tagColumn;
-        sql += "=";
-        sql += node->getTag();
-
-        // Connector for value
-        sql += " AND ";
-
-        // Value
-        sql += valColumn;
-        if (node->getRelator() == cdr::link::relEqual)
-            sql += "=";
-        else if (node->getRelator() == cdr::link::relNotEqual)
-            sql += "<>";
-        sql += "'";
-        sql += node->getTag();
-        sql += "'";
-
-        sql += ")";
-    }
-
-    // Else it's an intermediate node.  Recursive descent.
-    else {
-        // Parenthesize this node - not always necessary, but why not?
-        sql += "(";
-
-        cdr::link::LinkChkPair *node  =
-                    static_cast<cdr::link::LinkChkPair*> (this);
-        cdr::link::LinkChkNode *lNode = node->getLNode();
-        cdr::link::LinkChkNode *rNode = node->getRNode();
-
-        // There's always a left node
-        lNode->makeWhere (sql, tagColumn, valColumn);
-
-        // Not always a right node
-        if (rNode) {
-            // Output the appropriate boolean operator between nodes
-            if (node->getConnector() == cdr::link::boolAnd)
-                sql += " AND ";
-            else if (node->getConnector() == cdr::link::boolOr)
-                sql += " OR ";
-            else
-                throw cdr::Exception (L"Invalid connector, can't happen");
-            rNode->makeWhere (sql, tagColumn, valColumn);
-        }
-
-        sql += ")";
-    }
-}
-*/
 
 /**
  * Generate sub-queries for a complete parse tree.
@@ -990,10 +858,13 @@ void cdr::link::LinkChkNode::makeSubQueries (
         cdr::link::LinkChkRelation *node =
                 static_cast<cdr::link::LinkChkRelation*> (this);
 
-        // If node tests for not equal or not exists, we need
+        // This function supports picklist generation
+        // Use the picklist as well as validation functions
+        // If node tests for not equal or not exists, we need to
         //   be sure the value does not exist in selected docs
-        // if (node->getRelator() == cdr::link::relNotEqual)
-        //     query += " NOT";
+        if (node->getRelator() == cdr::link::relNotEqual ||
+            node->getRelator() == cdr::link::pickListNotEqual)
+            query += " NOT";
 
         // Subquery for doc ids
         query += " EXISTS (SELECT qt.doc_id FROM query_term qt "
@@ -1010,18 +881,9 @@ void cdr::link::LinkChkNode::makeSubQueries (
             // Connector for value
             query += " AND ";
 
-            // Value
-            query += "qt.value";
-
-            // This function supports picklist generation
-            // Use the picklist as well as validation functions
-            if ((node->getRelator() == cdr::link::relEqual) ||
-                (node->getRelator() == cdr::link::pickListEqual))
-                query += "=";
-            else if ((node->getRelator() == cdr::link::relNotEqual) ||
-                     (node->getRelator() == cdr::link::pickListNotEqual))
-                query += "<>";
-            query += "'";
+            // Value equals 'value'
+            // Note that if it's != or -=, we handled that with NOT above
+            query += "qt.value='";
             query += node->getValue();
             query += "'";
         }
@@ -1059,28 +921,12 @@ void cdr::link::LinkChkNode::makeSubQueries (
 
         query += ")";
     }
-// DEBUG std::cout << "LinkProcsQry=\"" << query << "\"" << std::endl;
+// DEBUG
+// std::cout << "LinkProcsQry=\"" << query << "\"" << std::endl;
 }
 
 /**
- * Return the CdrSearchLinksResp element that represent target links
- * made from a particular element type in a given source document type.
- * It contains only the documents satisfying the link_properties. It
- * is designed for task: picklists with server-side filtering, and
- * hence it emphasizes speed by not using other funtions in cdr::link.
- * This is assumed to be a replacement of findTargetDocTypes.
- *
- *  @param      conn         Reference to the connection object for the
- *                            CDR database.
- *  @param      srcElem      Reference to a string containing the source
- *                            element name.
- *  @param      srcDocType   Reference to a string containing the source
- *                            document type.
- *  @param      titlePattern Reference to a string containing the target
- *                            document title pattern.
- *  @param      maxRows      Maximum number of (id, title) pairs returned.
- *
- *  @exception  cdr::Exception if a database or processing error occurs.
+ * See full comment prolog in CdrLink.h.
  */
 cdr::String cdr::link::getSearchLinksRespWithProp (
         cdr::db::Connection&      conn,
