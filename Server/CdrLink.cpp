@@ -2054,31 +2054,6 @@ static void updateFragList (
 } // updateFragList()
 
 
-void cdr::link::findTargetDocTypes (
-        cdr::db::Connection&    conn,
-        const cdr::String&      srcElem,
-        const cdr::String&      srcDocType,
-        std::vector<int>&       typeList)
-{
-    std::string qry = "SELECT lt.target_doc_type"
-                      "  FROM link_target lt,"
-                      "       link_xml lx,"
-                      "       doc_type dt"
-                      " WHERE lx.doc_type = dt.id"
-                      "   AND lx.element = ?"
-                      "   AND dt.name = ?"
-                      "   AND lt.source_link_type = lx.link_id";
-    typeList.clear();
-    cdr::db::PreparedStatement stmt = conn.prepareStatement(qry);
-    stmt.setString(1, srcElem);
-    stmt.setString(2, srcDocType);
-    cdr::db::ResultSet rs = stmt.executeQuery();
-    while (rs.next())
-        typeList.push_back(rs.getInt(1));
-
-} // findTargetDocTypes()
-
-
 /**
  * findDocType
  *
