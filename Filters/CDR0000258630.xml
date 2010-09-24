@@ -3,6 +3,7 @@
 <!-- Filter title: Module: Citation Formatting -->
 <!--
 BZIssue::4740 - Fixing formatted citation display
+BZIssue::4904 - Adding citation format for Database/Database record
 -->
 
 <xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -555,9 +556,11 @@ BZIssue::4740 - Fixing formatted citation display
  <!-- 
  ====================================================================
  Template to create CitationTitle
+ There exist citations with just a CitationTitle and nothing else.
+ Need to adjust punctuation accordingly.
  ==================================================================== -->
-<xsl:template                match = "CitationTitle | ArticleTitle">
- <xsl:param                   name = "period"
+ <xsl:template                   match = "CitationTitle | ArticleTitle">
+  <xsl:param                      name = "period"
                             select = "'Yes'"/>
  <xsl:value-of              select = "."/>
  <xsl:choose>
@@ -579,7 +582,21 @@ BZIssue::4740 - Fixing formatted citation display
      <xsl:text> </xsl:text>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:text>. </xsl:text>
+     <!-- Don't print a period for Database entries yet -->
+     <xsl:choose>
+      <xsl:when               test = "../CitationType = 'Database'">
+       <xsl:text> </xsl:text>
+      </xsl:when>
+      <!-- Suppress the period when nothing else gets printed -->
+      <xsl:when               test = "not(following-sibling::*)
+                                      and
+                                      not(//PublicationDetails/OtherPublicationInformation)">
+       <xsl:text></xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>. </xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:when>
@@ -593,6 +610,7 @@ BZIssue::4740 - Fixing formatted citation display
  <!-- 
  ====================================================================
  Template to handle different CitationType elements such as
+   Abstract, Book, Meeting Paper, Database, etc.
  ==================================================================== -->
 <xsl:template                match = "CitationType">
  <xsl:param                   name = "citType"
@@ -602,6 +620,20 @@ BZIssue::4740 - Fixing formatted citation display
                                       or
                                       $citType = 'Abstract [Internet]'">
    <xsl:text>[Abstract] </xsl:text>
+  </xsl:when>
+  <xsl:when                   test = "$citType = 'Database'
+                                      or
+                                      $citType = 'Database entry'">
+   <!-- Display the parent database for a database entry record -->
+   <xsl:if                    test = "$citType = 'Database entry'">
+    <xsl:text>In: </xsl:text>
+    <xsl:apply-templates    select = "../PublicationDetails/
+                                      PublishedIn/Citation//AuthorList"/>
+    <xsl:apply-templates    select = "../PublicationDetails/
+                                      PublishedIn/Citation//CitationTitle"/>
+   </xsl:if>
+
+   <xsl:text>[Database]. </xsl:text>
   </xsl:when>
   <xsl:when                   test = "$citType = 'Book chapter'
                                       or
@@ -622,17 +654,17 @@ BZIssue::4740 - Fixing formatted citation display
  ====================================================================
  Template to create MedlineTA
  ==================================================================== -->
-<xsl:template                match = "MedlineTA">
- <xsl:apply-templates       select = "node()"/>
- <xsl:text> </xsl:text>
-</xsl:template>
+ <xsl:template                match = "MedlineTA">
+  <xsl:apply-templates       select = "node()"/>
+  <xsl:text> </xsl:text>
+ </xsl:template>
 
 
  <!-- 
  ====================================================================
  Template to create JournalIssue
  ==================================================================== -->
-<xsl:template                match = "JournalIssue">
+ <xsl:template                match = "JournalIssue">
  <xsl:choose>
   <!-- Citation contains Volume and Issue information -->
   <xsl:when                   test = "Issue">
@@ -667,14 +699,14 @@ BZIssue::4740 - Fixing formatted citation display
   <xsl:value-of              select = "PubDate/Year"/>
   <xsl:text>.</xsl:text>
  </xsl:if>
-</xsl:template>
+ </xsl:template>
 
 
  <!-- 
  ====================================================================
  Template to create PublishedIn
  ==================================================================== -->
-<xsl:template                match = "PublishedIn">
+ <xsl:template                match = "PublishedIn">
  <xsl:param                   name = "citType"
                             select = "'Null'"/>
  
@@ -693,7 +725,10 @@ BZIssue::4740 - Fixing formatted citation display
     <xsl:with-param           name = "period"
                             select = "'Yes'"/>
    </xsl:apply-templates>
-   <xsl:apply-templates     select = "Citation//OtherPublicationInformation"/>
+   <xsl:apply-templates     select = "Citation//OtherPublicationInformation">
+    <xsl:with-param           name = "pubIn"
+                            select = "'Yes'"/>
+   </xsl:apply-templates>
    <xsl:text>, </xsl:text>
   </xsl:when>
   <xsl:when                   test = "$citType = 'Meeting Paper'
@@ -704,9 +739,24 @@ BZIssue::4740 - Fixing formatted citation display
                             select = "'Yes'"/>
    </xsl:apply-templates>
    <xsl:if                    test = "Citation//OtherPublicationInformation">
-    <xsl:apply-templates    select = "Citation//OtherPublicationInformation"/>
+    <xsl:apply-templates    select = "Citation//OtherPublicationInformation">
+     <xsl:with-param          name = "pubIn"
+                            select = "'Yes'"/>
+    </xsl:apply-templates>
     <xsl:text>, </xsl:text>
    </xsl:if>
+  </xsl:when>
+  <xsl:when                   test = "$citType = 'Database entry'">
+    <xsl:apply-templates    select = "Citation//PublicationInformation"/>
+    <xsl:choose>
+     <xsl:when                test = "../OtherPublicationInformation">
+      <xsl:text>, </xsl:text>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>. </xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+   <!-- do nothing -->
   </xsl:when>
   <xsl:otherwise>
    <xsl:apply-templates     select = "Citation//CitationTitle">
@@ -722,9 +772,32 @@ BZIssue::4740 - Fixing formatted citation display
  <!-- 
  ====================================================================
  Template to create OtherPublicationInformation
+ If the parameter 'pubIn'='Yes' the information is displayed as 
+ part of the PublishedIn element which changes the punctuation.
  ==================================================================== -->
  <xsl:template                   match = "OtherPublicationInformation">
-  <xsl:apply-templates          select = "PublicationInformation"/>
+  <xsl:param                      name = "pubIn"
+                                select = "'Null'"/>
+  <!-- Need to add a period if none exists but only if we're displaying
+       the OtherPublicationInformation as part of the actual citation,
+       not as part of the "PublishedIn" section -->
+  <xsl:choose>
+   <xsl:when                      test = "substring(PublicationInformation,
+                                           string-length(PublicationInformation)
+                                                    ) = '.'">
+    <xsl:apply-templates        select = "PublicationInformation"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:apply-templates        select = "PublicationInformation"/>
+    <xsl:choose>
+     <xsl:when                    test = "not($pubIn = 'Yes')
+                                          and
+                                          InternetInformation">
+      <xsl:text>.</xsl:text>
+     </xsl:when>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
 
   <xsl:apply-templates          select = "InternetInformation"/>
  </xsl:template>
