@@ -8,6 +8,7 @@
  * $Id$
  *
  * BZIssue::4767
+ * BZIssue::4920
  */
 
 // Eliminate annoying MS warnings about MS problems.
@@ -1279,6 +1280,8 @@ cdr::String cdr::CdrDoc::getSerialXml()
                        + L"' Id='" + textId + L"'>\n"
                        + L"<CdrDocCtl>\n"
                        + L" <DocTitle>" + title + L"</DocTitle>\n"
+                       + L" <DocActiveStatus>" + activeStatus
+                       + L"</DocActiveStatus>\n"
                        + L"</CdrDocCtl>\n"
                        + cdr::makeDocXml(denormXml)
                        + L"\n</CdrDoc>\n";
