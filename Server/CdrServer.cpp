@@ -379,7 +379,7 @@ size_t readBytes(int fd, size_t requested, char* buf)
         // of reading what it can and returning the number of bytes it got,
         // decides that if it can't read it all at once it won't read anything
         // at all.  So "bytesLeft" is no longer really "bytes left."
-        int chunkSize = 10240; // 1024 * 1024
+        size_t chunkSize = 10240; // 1024 * 1024
         if (bytesLeft > chunkSize)
             bytesLeft = chunkSize;
         int nRead = recv(fd, buf + totalRead, bytesLeft, 0);
