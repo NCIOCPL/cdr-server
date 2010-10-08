@@ -9,6 +9,7 @@
  *
  * BZIssue::4767
  * BZIssue::4920
+ * BZIssue::4925
  */
 
 // Eliminate annoying MS warnings about MS problems.
@@ -47,6 +48,8 @@ static int findHighestFragmentId (cdr::String& xml);
 
 static void auditDoc (cdr::db::Connection&, int, int, cdr::String,
                       cdr::String, cdr::String);
+
+static void auditAddedAction(cdr::db::Connection&, int, cdr::String);
 
 static void delQueryTerms (cdr::db::Connection&, int, char *);
 
@@ -790,6 +793,7 @@ static cdr::String cdrPutDoc (
                    docNode;     // Node containing CdrDoc
     cdr::dom::NamedNodeMap attrMap; // Map of attributes in DocCtl subelement
     cdr::dom::Node attr;        // Single attribute from map
+    cdr::String statusAction;   // possibly "(UN)BLOCK DOCUMENT"
 
     // Default values, may be replaced by elements in command
     cmdVersion        = false;
@@ -946,15 +950,21 @@ static cdr::String cdrPutDoc (
                               L"' with docs of type '" + doctype + L"'");
 
     // Make sure user is authorized for the desired active status.
+    // Also, prepare to record a BLOCK or UNBLOCK action.
     // Note that docs found via the DOCUMENT view can't have status='D'elete
-    if (doc.getDbActiveStatus() != doc.getActiveStatus()
-            && !session.canDo(dbConn, L"PUBLISH DOCUMENT", doctype)) {
+    if (doc.getDbActiveStatus() != doc.getActiveStatus()) {
+        if (!session.canDo(dbConn, L"PUBLISH DOCUMENT", doctype)) {
+            if (doc.getActiveStatus() == L"I")
+                throw cdr::Exception(L"User not authorized to block "
+                                     L"publication for this document");
+            else if (doc.getActiveStatus() == L"A")
+                throw cdr::Exception(L"User not authorized to remove "
+                                     L"publication block for this document");
+        }
         if (doc.getActiveStatus() == L"I")
-            throw cdr::Exception(L"User not authorized to block "
-                                 L"publication for this document");
-        else if (doc.getActiveStatus() == L"A")
-            throw cdr::Exception(L"User not authorized to remove "
-                                 L"publication block for this document");
+            statusAction = L"BLOCK DOCUMENT";
+        else
+            statusAction = L"UNBLOCK DOCUMENT";
     }
 
     // Make sure user is authorized to create the first publishable version.
@@ -1156,14 +1166,17 @@ static cdr::String cdrPutDoc (
     //     and the comment column in the audit_trail table would be for
     //     "why did you do it?" but no one has come up with a convincing
     //     use case.
-    if (cmdReason == L"")
+    if (cmdReason.empty())
         cmdReason = doc.getComment();
 
-    // Append audit info
+    // Append audit info (including separate record of (UN)BLOCK action).
     // Have to do this before checkIn so checkIn can use the exact same
     //   date-time, as taken from the audit trail.
-    auditDoc (dbConn, doc.getId(), session.getUserId(), action,
-              L"cdrPutDoc", cmdReason);
+    auditDoc(dbConn, doc.getId(), session.getUserId(), action, L"cdrPutDoc",
+             cmdReason);
+    if (!statusAction.empty())
+        auditAddedAction(dbConn, doc.getId(), statusAction);
+
     SHOW_ELAPSED("action audited", incrementalTimer);
 
     // Checkin must be performed either to checkin or version the doc.
@@ -1957,8 +1970,9 @@ static void auditDoc (
     actStmt.close();
 
     // Insert
-    std::string qry = "INSERT INTO audit_trail (document, dt, usr, action, "
-                      "program, comment) VALUES (?, GETDATE(), ?, ?, ?, ?)";
+    std::string qry =
+        "INSERT INTO audit_trail (document, usr, action, program, comment, dt)"
+        "     VALUES (?, ?, ?, ?, ?, GETDATE())";
     cdr::db::PreparedStatement stmt = dbConn.prepareStatement(qry);
     stmt.setInt (1, docId);
     stmt.setInt (2, userId);
@@ -1969,6 +1983,61 @@ static void auditDoc (
     stmt.close();
 }
 
+
+/**
+ * Log an auxiliary action (e.g., BLOCK DOCUMENT).  Assumes that the
+ * row in the audit_trail table to which this action should be connected
+ * is the most recently added row for this document, so this function
+ * must be invoked directly after a call to the auditDoc() function
+ * above.
+ *
+ * @param  dbConn       Database connection.
+ * @param  docId        Document ID.
+ * @param  action       E.g., "BLOCK DOCUMENT" or "UNBLOCK DOCUMENT"
+ */
+
+static void auditAddedAction (
+    cdr::db::Connection& dbConn,
+    int                  docId,
+    cdr::String          action
+) {
+
+    // Convert action string to expected code
+    std::string q1 = "SELECT id FROM action WHERE name = ?";
+    cdr::db::PreparedStatement s1 = dbConn.prepareStatement(q1);
+    s1.setString(1, action);
+    cdr::db::ResultSet r1 = s1.executeQuery();
+    if (!r1.next()) {
+        s1.close();
+        throw cdr::Exception(L"auditAddedAction: Bad action string '" + action);
+    }
+    int actionId = r1.getInt(1);
+    s1.close();
+
+    // Get date of most recent action for this document.
+    std::string q2 = "SELECT MAX(dt) FROM audit_trail WHERE document = ?";
+    cdr::db::PreparedStatement s2 = dbConn.prepareStatement(q2);
+    s2.setInt(1, docId);
+    cdr::db::ResultSet r2 = s2.executeQuery();
+    if (!r2.next()) {
+        s2.close();
+        throw cdr::Exception(L"missing audit information for " +
+                             cdr::stringDocId(docId));
+    }
+    cdr::String actionDate = r2.getString(1);
+    s2.close();
+
+    // Insert the new row.
+    std::string q3 =
+        "INSERT INTO audit_trail_added_action (document, dt, action) "
+         "     VALUES (?, ?, ?)                                      ";
+    cdr::db::PreparedStatement s3 = dbConn.prepareStatement(q3);
+    s3.setInt(1, docId);
+    s3.setString(2, actionDate);
+    s3.setInt(3, actionId);
+    cdr::db::ResultSet r3 = s3.executeQuery();
+    s3.close();
+}
 
 /**
  * Changes the active_status column for a row in the all_docs table.
@@ -2015,25 +2084,33 @@ cdr::String cdr::setDocStatus(Session&         session,
                                     : L"Unblocking document";
 
     // Find out if the user is authorized to change the doc status.
+    // Also get the existing status so we'll know if it's really being
+    // changed.
     db::PreparedStatement s1 = conn.prepareStatement(
-            "SELECT t.name            "
-            "  FROM doc_type t        "
-            "  JOIN all_docs d        "
-            "    ON d.doc_type = t.id "
-            " WHERE d.id = ?          ");
+            "SELECT t.name, d.active_status "
+            "  FROM doc_type t              "
+            "  JOIN all_docs d              "
+            "    ON d.doc_type = t.id       "
+            " WHERE d.id = ?                ");
     s1.setInt(1, docId);
     db::ResultSet r1 = s1.executeQuery();
     if (!r1.next())
         throw Exception(L"Invalid document ID " + docIdStr);
     String docType = r1.getString(1);
+    String oldStatus = r1.getString(2);
     s1.close();
     if (!session.canDo(conn, L"PUBLISH DOCUMENT", docType))
         throw Exception(L"User not authorized to change the status of " +
                         docType + L" documents");
 
     // Record the action.
-    auditDoc(conn, docId, session.getUserId(), L"MODIFY DOCUMENT",
-             L"SetDocStatus", comment);
+    if (oldStatus != newStatus) {
+        String action = newStatus == L"I" ? L"BLOCK DOCUMENT" :
+                                            L"UNBLOCK DOCUMENT";
+        auditDoc(conn, docId, session.getUserId(), L"MODIFY DOCUMENT",
+                 L"SetDocStatus", comment);
+        auditAddedAction(conn, docId, action);
+    }
 
     // Do it.
     db::PreparedStatement s2 = conn.prepareStatement(
