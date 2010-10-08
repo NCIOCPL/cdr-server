@@ -346,6 +346,11 @@ SELECT doc_id AS "CDRID"
   Usage attribute and with the SR attribute.
   Note:  This query must pass the CDR-ID of the English summary
          even for the Spanish documents.
+  Note2: The query joins to the query_term_pub table to get
+         the summaries.  This means that the publish preview
+         will not see the affiliation name for newly added 
+         board members until *after* a publishable version 
+         has been created.
   ============================================================ -->
   <xsl:if                         test = "not(contains(
                                            ../Board, 'Advisory'))">
@@ -387,7 +392,6 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
                                                    '~',
                                                    $sumNormIdEN))"/>
 
-
    <xsl:element                   name = "LeadReviewer">
     <!-- Adding last name as attribute to allow sorting by last name -->
     <xsl:attribute                name = "lname">
@@ -419,7 +423,12 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
                                                    /Person
                                                    /PersonNameInformation
                                                    /ProfessionalSuffix
-                                                   /StandardProfessionalSuffix">
+                                                   /StandardProfessionalSuffix |
+                                          $BoardMemberInfo
+                                                   /Person
+                                                   /PersonNameInformation
+                                                   /ProfessionalSuffix
+                                                   /CustomProfessionalSuffix">
      <xsl:text>, </xsl:text>
      <xsl:value-of              select = "."/>
     </xsl:for-each>
