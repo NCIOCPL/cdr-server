@@ -1,11 +1,6 @@
-<CdrDoc Type='Filter' Id='CDR0000339576'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Module: InLine Markup Formatter</DocTitle>
-<DocComment>CVS-V1.9: Add DocRef Element (Bug 1080)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: Module: InLine Markup Formatter -->
 <!--
 ================================================================
 $Id$
@@ -13,7 +8,8 @@ $Id$
 Filter handling all In-Line Markup elements of Summary Docs
 Written by Volker Englisch, 2004-07-16
 
-$Log: not supported by cvs2svn $
+BZIssue::4919 - [Summary] QC Report Bugs
+
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
@@ -1742,6 +1738,10 @@ $Log: not supported by cvs2svn $
       <xsl:text>lnone</xsl:text>     
      </xsl:when> 
     </xsl:choose> 
+    <xsl:if                       test = "@iod">
+     <xsl:text> </xsl:text>
+     <xsl:value-of               select = "@iod"/>
+    </xsl:if>
    </xsl:attribute>
    <xsl:call-template             name = "addIdLinkTarget">
     <xsl:with-param               name = "id"
@@ -1778,9 +1778,12 @@ $Log: not supported by cvs2svn $
   <!-- Handle ListItem now. -->
   <ul>
    <xsl:attribute                 name = "class">
+    <xsl:value-of               select = "@iod"/>
+   </xsl:attribute>
+   <xsl:attribute                 name = "class">
     <xsl:choose>
      <xsl:when                    test = "@Style = 'bullet'">        
-      <xsl:text>disc</xsl:text>   
+      <xsl:text>discy</xsl:text>   
      </xsl:when>
      <xsl:when                    test = "@Style = 'dash'">
       <xsl:text>square</xsl:text>      
@@ -1923,6 +1926,11 @@ $Log: not supported by cvs2svn $
  <xsl:template                   match = "ListItem">
   <xsl:if                         test = "not(. = '')">
    <li>
+    <xsl:for-each               select = "@iod">
+      <xsl:attribute               name = "class">
+       <xsl:value-of            select = "."/>
+      </xsl:attribute>
+     </xsl:for-each>
     <xsl:choose>
      <xsl:when                    test = "../@Compact">
       <xsl:apply-templates/>
@@ -2944,6 +2952,23 @@ $Log: not supported by cvs2svn $
  </xsl:template>
 
 
+ <!--
+ ======================================================================
+ Renaming the iod element to a class to apply CSS markup
+ ====================================================================== -->
+ <xsl:template                   match = "@iod">
+  <xsl:attribute                  name = "class">
+   <xsl:value-of                select = "."/>
+  </xsl:attribute>
+ </xsl:template>
+ <xsl:template                   match = "@iod"
+                                  mode = "compcactNo">
+  <xsl:attribute                  name = "class">
+   <xsl:value-of                select = "."/>
+  </xsl:attribute>
+ </xsl:template>
+
+
  <!-- 
  ======================================================================
  Default Template
@@ -2963,6 +2988,3 @@ $Log: not supported by cvs2svn $
   <xsl:apply-templates          select = "."/> 
  </xsl:template>
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>

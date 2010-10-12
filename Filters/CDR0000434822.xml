@@ -1,11 +1,6 @@
-<CdrDoc Type='Filter' Id='CDR0000434822'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Module: QC Filter Templates - Summary</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: Module: QC Filter Templates - Summary -->
 <!--
 ================================================================
 $Id$
@@ -17,13 +12,15 @@ Summary QC Reports
  the protocol QC reports.)
 Volker Englisch, 2005-05-11 
 
-$Log: not supported by cvs2svn $
+BZIssue::4919 - [Summary] QC Report Bugs
+
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
                exclude-result-prefixes = "cdr">
 
+ <xsl:output                    method = "html"/>
 
  <!-- 
  ======================================================================
@@ -112,9 +109,21 @@ $Log: not supported by cvs2svn $
    <xsl:apply-templates/>
   </b>
 
-  <xsl:if                         test = "../SummarySection">
-   <br /><br />
-  </xsl:if>
+  <!-- 
+  If a summary section contains nothing but a KeyPoint it needs to be
+  separated from the following summary section by a blank line.
+  However, we also need to make sure the KeyPoints table is not affected
+  ====================================================================== -->
+  <xsl:choose>
+   <xsl:when                      test = "not(following-sibling::*)
+                                          and
+                                          not(ancestor::KeyPointsList)">
+    <p/>
+   </xsl:when>
+   <xsl:otherwise>
+    <!-- Do nothing -->
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
  
@@ -574,6 +583,3 @@ $Log: not supported by cvs2svn $
   <hr/>
  </xsl:template>
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>

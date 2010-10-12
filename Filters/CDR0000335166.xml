@@ -4,6 +4,7 @@
 <!-- 
 
 BZIssue::4751 - Modify BU Reports to display LOERefs
+BZIssue::4919 - [Summary] QC Report Bugs
 
 ===============================================================
 Filter to create Vendor Genetics Professionals XML documents 
@@ -39,8 +40,12 @@ Filter to create Vendor Genetics Professionals XML documents
      <xsl:text>Table of Glossary Terms</xsl:text>
     </h1>
    </b>
-   <p/>
+   <xsl:if                    test = "$whoAmI = 'SummaryPatBU'">
+    <button id="gtButton" 
+        onclick="toggleText()">Click to display deleted Glossary Terms</button>
         
+    <p/>
+   </xsl:if>
    <table                   border = "1"> 
     <tr>
      <th>
@@ -63,6 +68,21 @@ Filter to create Vendor Genetics Professionals XML documents
            
     <xsl:for-each           select = "GlossaryTerm">
      <tr>
+       <!--
+       We want to be able to turn display of the rows on/off
+       ===================================================== -->
+       <xsl:choose>
+        <xsl:when             test = "GlossaryTermRef/Deletion">
+         <xsl:attribute       name = "class">
+          <xsl:text>gtTrDeletion</xsl:text>
+         </xsl:attribute>
+        </xsl:when>
+        <xsl:when             test = "GlossaryTermRef/Insertion">
+         <xsl:attribute       name = "class">
+          <xsl:text>gtTrInsertion</xsl:text>
+         </xsl:attribute>
+        </xsl:when>
+       </xsl:choose>
        <xsl:choose>
         <xsl:when             test = "GlossaryTermRef/Deletion">
          <xsl:choose>
