@@ -1,9 +1,10 @@
 # *********************************************************************
 #
-# $Id$
+# $Id: promoteFilter.py,v 1.2 2009-07-28 21:48:02 venglisc Exp $
 #
 # Promote filters to FRANCK and BACH
 #
+# $Log: not supported by cvs2svn $
 # Revision 1.1  2009/07/27 18:17:42  venglisc
 # Initial copy of the program to promote a filter to the CDR.  This program
 # is similar to promote.py but it retrieves the CVS copy via HTTP instead
@@ -14,7 +15,7 @@
 #----------------------------------------------------------------------
 # Import required modules.
 #----------------------------------------------------------------------
-import cdr, os, sys, string, socket, urllib2, time, pysvn
+import cdr, os, sys, string, socket, urllib2
 
 #----------------------------------------------------------------------
 # Edit only on Dev machine.
@@ -27,10 +28,9 @@ elif string.upper(localhost) == "BACH":
     localhost = "Prod"
 
 if len(sys.argv) < 4:
-    sys.stderr.write('usage: promoteFilter.py user passwd NNNNN\n')
+    sys.stderr.write('usage: promote.py user passwd NNNNN-V\n')
     sys.stderr.write('       NNNNN = filter ID\n')
-    sys.stderr.write('       user/passwd = NIH credentials\n')
-    #sys.stderr.write('           V = filter version (integer)\n')
+    sys.stderr.write('           V = filter version (integer)\n')
     sys.exit(1)
 
 #----------------------------------------------------------------------
@@ -44,8 +44,8 @@ l.write("tempPath: %s" % tmpPath)
 filtDir   = 'promoteFilters'
 filtPath  = '%s\\%s' % (tmpPath, filtDir)
 
-svnuid    = sys.argv[1]
-svnpwd    = sys.argv[2]
+user      = sys.argv[1]
+passwd    = sys.argv[2]
 filters   = sys.argv[3:]
 
 #----------------------------------------------------------------------
@@ -70,82 +70,6 @@ def getFilterVersion(docId, version = None):
 
     return file
 
-
-def updateSvn(svnid, svnpw, svncomment):
-    #----------------------------------------------------------------------
-    # Callback Functions to access SVN repository
-    #----------------------------------------------------------------------
-    def getLogin(realm, username, maySave):
-        #l.write("getLogin: realm=%s; username=%s; maySave=%s" % (realm,
-        #                                                          username,
-        #                                                          maySave))
-        return True, svnuid, svnpwd, False
-
-    def trustCert(td):
-        #l.write("trustCert: %s" % repr(td))
-        return True, td['failures'], False
-
-    # Set up svn strings and directories
-    svnbase = cdr.SVNBASE
-    now = time.strftime("%Y%m%d%H%M%S")
-    wd = "%s-%s" % (now, os.getpid())
-
-    l.write(" ")
-    l.write("Initializing SVN workspace:")
-    l.write("SVNBASE = %s" % svnbase)
-
-    errorMessage = ""
-
-    # If we're not in a SVN sandbox containing this file we exit again
-    # ----------------------------------------------------------------
-    try:
-        # Set up svn login
-        # ----------------
-        l.write(svncomment)
-        client = pysvn.Client()
-        client.callback_get_login = getLogin
-        client.callback_ssl_server_trust_prompt = trustCert
-
-        path = os.getcwd()
-        svnrev = client.update(path, recurse = False)
-        print "svnrev = %s" % svnrev
-    except Exception, info:
-        errorMessage = "Unknown failure running SVN command: %s" % str(info)
-    except:
-        errorMessage = "REALLY unknown failure running SVN command!!!"
-
-    l.write("SVN Done.")
-
-    return svnrev
-
-
-def statusSvn(docId, svnid, svnpw, svncomment):
-    #----------------------------------------------------------------------
-    # Callback Functions to access SVN repository
-    #----------------------------------------------------------------------
-    def getLogin(realm, username, maySave):
-        return True, svnuid, svnpwd, False
-
-    def trustCert(td):
-        return True, td['failures'], False
-
-    try:
-        # Set up svn login
-        # ----------------
-        l.write(svncomment)
-        client = pysvn.Client()
-        client.callback_get_login = getLogin
-        client.callback_ssl_server_trust_prompt = trustCert
-
-        path = os.getcwd()
-        status = client.status(path + 'CDR%10d.xml' % docId)
-        print "status = %s" % status
-    except:
-        return False
-
-    return status
-
-
 # ===================================================================
 # Main Starts here
 # ===================================================================
@@ -155,9 +79,9 @@ l.write('',                           stdout = False)
 
 # Prompt user for comment to use to promote filter
 # -------------------------------------------------
-svncomment    = raw_input('\nEnter text for filter comment: ') or None
-l.write("Comment: %s" % svncomment)
-if not svncomment:
+comment    = raw_input('\nEnter text for filter comment: ') or None
+l.write("Comment: %s" % comment)
+if not comment:
    l.write("*** Error:  Can't promote without comment")
    sys.exit("*** Error: Can't promote without comment")
 
@@ -173,38 +97,28 @@ for filtId in filters:
     # ------------------------------------------------------------------
     filterIds = cdr.exNormalize(filtId)
     docId     = filterIds[1]
-    #try:
-    #    cvsVersion = int(filterIds[2][1:])
-    #except:
-    #    l.write("*** Error:  Version must be an integer")
-    #    sys.exit("*** Error: Version must be an integer: %s" % str(cvsVersion))
+    try:
+        cvsVersion = int(filterIds[2][1:])
+    except:
+        l.write("*** Error:  Version must be an integer")
+        sys.exit("*** Error: Version must be an integer: %s" % str(cvsVersion))
 
     l.write("  CDR%010d.xml" % filterIds[1], stdout = True)
     l.write("  -----------------",           stdout = True)
     l.write("",                              stdout = True)
 
-    ## Filters must be migrated by CVS version when going to the 
-    ## production server
-    ## ---------------------------------------------------------
-    #if not cvsVersion:
-    ##    sys.exit("*** Error: Must specify Version")
+    # Filters must be migrated by CVS version when going to the 
+    # production server
+    # ---------------------------------------------------------
+    if not cvsVersion:
+        sys.exit("*** Error: Must specify Version")
 
-
-    rev = updateSvn(svnuid, svnpwd, svncomment)
-
-    svnInfo = statusSvn(docId, svnuid, svnpwd, svncomment)
-
-    print "Revision: %s" % rev
-    print "Info: %s" % svnInfo
-
-    sys.exit()
-
-    # Getting SVN info
+    # Getting CVS info
     # ------------------
     cvsFile = getFilterVersion(docId, cvsVersion)
 
     l.write("   Copy   Revision: 1.%s" % cvsVersion, stdout = True)
-    l.write('   Copy w/ comment: "%s"' % svncomment,    stdout = True)
+    l.write('   Copy w/ comment: "%s"' % comment,    stdout = True)
     l.write("",                                      stdout = True)
 
     # Checking out document before we can copy the filter
@@ -226,7 +140,7 @@ for filtId in filters:
         res = cdr.repDoc((user, passwd), 
                          file = cvsFile, 
                          checkIn = 'Y', ver = 'Y', val = 'Y', 
-                         svncomment = "CVS-V1.%s: %s" % (cvsVersion, svncomment))
+                         comment = "CVS-V1.%s: %s" % (cvsVersion, comment))
         print res
         l.write("----------------------------------------------------------",
                     stdout = True)

@@ -1,6 +1,6 @@
 # *********************************************************************
 #
-# $Id$
+# $Id: promoteFilter.py,v 1.2 2009-07-28 21:48:02 venglisc Exp $
 #
 # Promote filters to FRANCK and BACH
 #
@@ -44,34 +44,19 @@ l.write("tempPath: %s" % tmpPath)
 filtDir   = 'promoteFilters'
 filtPath  = '%s\\%s' % (tmpPath, filtDir)
 
+user      = 'venglisc'
+passwd    = 'gimte'
 svnuid    = sys.argv[1]
 svnpwd    = sys.argv[2]
 filters   = sys.argv[3:]
 
-#----------------------------------------------------------------------
-# Checking out the documents that need to be promoted via http.
-#----------------------------------------------------------------------
-def getFilterVersion(docId, version = None):
 
-    # Set up cvs strings and repository
-    # ---------------------------------
-    cvshost = "verdi.nci.nih.gov"
-    app     = 'cgi-bin/cdr/cvsweb.cgi/~checkout~/cdr/Filters'
-    rev     = '1.%s' % version
-    parms   = 'CDR%010d.xml?rev=%s;content-type=application/xml' % (docId, rev)
-    url     = 'http://%s/%s/%s' % (cvshost, app, parms)
-    reader  = urllib2.urlopen(url)
-    doc     = reader.read()
-
-    file= "CDR%010d_V%s.xml" % (docId, rev)
-    f   = open(file, 'w')
-    f.write(doc)
-    f.close()
-
-    return file
-
-
-def updateSvn(svnid, svnpw, svncomment):
+# -------------------------------------------------------------------------
+# Function to update the current working directory (a.k.a sandbox) to the
+# current revision.
+# Note:  By default we always want to update the latest repository copy
+# -------------------------------------------------------------------------
+def updateSvn(svnid, svnpw):
     #----------------------------------------------------------------------
     # Callback Functions to access SVN repository
     #----------------------------------------------------------------------
@@ -101,25 +86,27 @@ def updateSvn(svnid, svnpw, svncomment):
     try:
         # Set up svn login
         # ----------------
-        l.write(svncomment)
+        l.write("Updating directory to latest revision")
         client = pysvn.Client()
         client.callback_get_login = getLogin
         client.callback_ssl_server_trust_prompt = trustCert
 
         path = os.getcwd()
         svnrev = client.update(path, recurse = False)
-        print "svnrev = %s" % svnrev
     except Exception, info:
         errorMessage = "Unknown failure running SVN command: %s" % str(info)
     except:
         errorMessage = "REALLY unknown failure running SVN command!!!"
 
-    l.write("SVN Done.")
+    l.write("SVN update Done.")
 
     return svnrev
 
 
-def statusSvn(docId, svnid, svnpw, svncomment):
+# -------------------------------------------------------------------------
+# Function to get the last commit version of the filter to be udpated.
+# -------------------------------------------------------------------------
+def statusSvn(docId, svnid, svnpw):
     #----------------------------------------------------------------------
     # Callback Functions to access SVN repository
     #----------------------------------------------------------------------
@@ -132,18 +119,23 @@ def statusSvn(docId, svnid, svnpw, svncomment):
     try:
         # Set up svn login
         # ----------------
-        l.write(svncomment)
+        l.write("Getting filter info")
         client = pysvn.Client()
         client.callback_get_login = getLogin
         client.callback_ssl_server_trust_prompt = trustCert
 
         path = os.getcwd()
-        status = client.status(path + 'CDR%10d.xml' % docId)
-        print "status = %s" % status
+        filter = 'CDR%010d.xml' % docId
+        filename = path + '\\' + filter
+        status = client.status(filename)
+        docStatus = status[0]
+        revRep = docStatus.entry.revision.number
+        revDoc = docStatus.entry.commit_revision.number
     except:
         return False
 
-    return status
+    l.write("SVN status Done.")
+    return (revRep, revDoc)
 
 
 # ===================================================================
@@ -155,9 +147,9 @@ l.write('',                           stdout = False)
 
 # Prompt user for comment to use to promote filter
 # -------------------------------------------------
-svncomment    = raw_input('\nEnter text for filter comment: ') or None
-l.write("Comment: %s" % svncomment)
-if not svncomment:
+comment    = raw_input('\nEnter text for filter comment: ') or None
+l.write("Comment: %s" % comment)
+if not comment:
    l.write("*** Error:  Can't promote without comment")
    sys.exit("*** Error: Can't promote without comment")
 
@@ -166,6 +158,12 @@ l.write("Updating Filter(s) to current Repository Version", stdout = True)
 l.write("================================================", stdout = True)
 l.write("",                                                 stdout = True)
 
+# Updating sandbox to latest version
+# ----------------------------------
+rev = updateSvn(svnuid, svnpwd)
+l.write("Repository Rev:  %s" % rev[0].number, stdout = True)
+l.write("", stdout = True)
+
 for filtId in filters:
     # If a filter ID has been specified as "NNNNN-K" the "K" is an older
     # version of the document that should be promoted.  When using the 
@@ -173,42 +171,22 @@ for filtId in filters:
     # ------------------------------------------------------------------
     filterIds = cdr.exNormalize(filtId)
     docId     = filterIds[1]
-    #try:
-    #    cvsVersion = int(filterIds[2][1:])
-    #except:
-    #    l.write("*** Error:  Version must be an integer")
-    #    sys.exit("*** Error: Version must be an integer: %s" % str(cvsVersion))
+    filterDoc = 'CDR%010d.xml' % filterIds[1]
 
-    l.write("  CDR%010d.xml" % filterIds[1], stdout = True)
-    l.write("  -----------------",           stdout = True)
-    l.write("",                              stdout = True)
-
-    ## Filters must be migrated by CVS version when going to the 
-    ## production server
-    ## ---------------------------------------------------------
-    #if not cvsVersion:
-    ##    sys.exit("*** Error: Must specify Version")
-
-
-    rev = updateSvn(svnuid, svnpwd, svncomment)
-
-    svnInfo = statusSvn(docId, svnuid, svnpwd, svncomment)
-
-    print "Revision: %s" % rev
-    print "Info: %s" % svnInfo
-
-    sys.exit()
+    l.write("%s" % filterDoc,     stdout = True)
+    l.write("-----------------",  stdout = True)
 
     # Getting SVN info
     # ------------------
-    cvsFile = getFilterVersion(docId, cvsVersion)
+    revisions = statusSvn(docId, svnuid, svnpwd)
+    if not revisions:
+        sys.exit("\n*** Filter does not exist in working directory!!!")
+    l.write("Change Revision: %d" % revisions[1], stdout = True)
+    l.write("CDR comment:     %s" % comment,     stdout = True)
+    l.write("",                                   stdout = True)
 
-    l.write("   Copy   Revision: 1.%s" % cvsVersion, stdout = True)
-    l.write('   Copy w/ comment: "%s"' % svncomment,    stdout = True)
-    l.write("",                                      stdout = True)
-
-    # Checking out document before we can copy the filter
-    # ---------------------------------------------------
+    # Checking out document from CDR before we can update the filter
+    # --------------------------------------------------------------
     try:
         coDoc = cdr.getDoc((user, passwd), docId, 'Y')
         if coDoc.startswith("<Errors"):
@@ -224,9 +202,10 @@ for filtId in filters:
     # ------------------------------------------------------------
     try:
         res = cdr.repDoc((user, passwd), 
-                         file = cvsFile, 
+                         file = filterDoc, 
                          checkIn = 'Y', ver = 'Y', val = 'Y', 
-                         svncomment = "CVS-V1.%s: %s" % (cvsVersion, svncomment))
+                         comment = "SVN-R%d(%d): %s" % (revisions[0], 
+                                                        revisions[1], comment))
         print res
         l.write("----------------------------------------------------------",
                     stdout = True)
