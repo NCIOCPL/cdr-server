@@ -4,6 +4,7 @@
  * DBMS tables for the ICIC Central Database Repository
  *
  * BZIssue::4925
+ * BZIssue::4924 - Modify Summary Date Last Modified Report
  */
 
 /*
@@ -2094,7 +2095,8 @@ CREATE VIEW doc_save_action
          AS
      SELECT audit_trail.document doc_id, 
             audit_trail.dt save_date,
-            action.name save_action
+            action.name save_action,
+            audit_trail.usr save_user
        FROM audit_trail
        JOIN action
          ON action.id = audit_trail.action
