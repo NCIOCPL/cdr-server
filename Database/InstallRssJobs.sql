@@ -1,5 +1,5 @@
 /*
- * $Id: InstallRssJobs.sql,v 1.1 2005-03-08 15:23:17 bkline Exp $
+ * $Id$
  *
  * Script to install jobs to download and import RSS protocol info from
  * CTEP.

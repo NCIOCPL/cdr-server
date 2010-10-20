@@ -1,5 +1,5 @@
 /*
- * $Id: CreateLogins.sql,v 1.34 2008-12-19 17:05:08 bkline Exp $
+ * $Id$
  *
  * Run this script as database superuser to create the cdr user logins.
  *

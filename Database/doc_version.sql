@@ -1,5 +1,5 @@
 /*
- * $Id: doc_version.sql,v 1.1 2008-10-08 17:27:02 bkline Exp $
+ * $Id$
  *
  * Script to create the view for CDR document versions.  This is invoked
  * by db-refresh-postprocess.cmd after refreshing the CDR database on

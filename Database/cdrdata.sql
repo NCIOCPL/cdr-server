@@ -1,5 +1,5 @@
 /*
- * $Id: cdrdata.sql,v 1.5 2000-10-10 20:04:08 mruben Exp $
+ * $Id$
  *
  * $Log: not supported by cvs2svn $
  * Revision 1.4  2000/04/26 01:44:17  bkline

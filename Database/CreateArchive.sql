@@ -1,5 +1,5 @@
 /*
- * $Id: CreateArchive.sql,v 1.1 2009-03-19 21:32:07 ameyer Exp $
+ * $Id$
  *
  * Database and tables to receive copies of archived command and debug logs.
  *

@@ -1,6 +1,6 @@
 /*
  *
- * $Id: ExportDb.sql,v 1.1 2001-12-24 01:06:11 bkline Exp $
+ * $Id$
  *
  * Transfers newly generated cdr database from CDRDEV to MMDB2.
  *

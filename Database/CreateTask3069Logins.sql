@@ -1,5 +1,5 @@
 /*
- * $Id: CreateTask3069Logins.sql,v 1.1 2009-09-23 18:51:21 bkline Exp $
+ * $Id$
  */
 
 USE cdr_task3069

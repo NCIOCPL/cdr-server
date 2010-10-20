@@ -1,5 +1,5 @@
 /*
- * $Id: InstallEmailerJobs.sql,v 1.3 2005-03-08 14:43:35 bkline Exp $
+ * $Id$
  *
  * Script to install job to update emailer tracking information.
  *

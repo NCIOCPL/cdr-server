@@ -1,5 +1,5 @@
 /*
- * $Id: TruncateDebugLogs.sql,v 1.1 2003-07-06 20:23:39 bkline Exp $
+ * $Id$
  *
  * Drops and recreates command_log and debug_log tables, then
  * compacts the database.

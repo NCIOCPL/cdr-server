@@ -1,5 +1,5 @@
 /*
- * $Id: InstallCTGovJobs.sql,v 1.2 2004-01-12 19:14:57 bkline Exp $
+ * $Id$
  *
  * Script to install jobs to download and import protocols from
  * ClinicalTrials.gov.

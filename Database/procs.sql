@@ -1,5 +1,5 @@
 /*
- * $Id: procs.sql,v 1.21 2009-01-27 16:58:36 bkline Exp $
+ * $Id$
  *
  * Stored procedures for CDR.
  *

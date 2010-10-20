@@ -1,5 +1,5 @@
 /*
- * $Id: tables.sql,v 1.133 2009-09-25 15:03:00 bkline Exp $
+ * $Id$
  *
  * DBMS tables for the ICIC Central Database Repository
  *
