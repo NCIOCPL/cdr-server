@@ -3,110 +3,7 @@
  *
  * Run this script as database superuser to create the cdr user logins.
  *
- * $Log: not supported by cvs2svn $
- * Revision 1.33  2008/10/28 14:27:10  bkline
- * Added sp_revokedbaccess calls.
- *
- * Revision 1.32  2008/09/23 15:45:14  bkline
- * Modifications needed for the new cdr_archived_versions database.
- *
- * Revision 1.31  2008/07/18 03:17:08  ameyer
- * SELECT on external_map_nomap_pattern to CdrGuest.
- *
- * Revision 1.30  2008/05/01 21:24:44  ameyer
- * Added sp_defaultdb commands to insure that default databases are established
- * for our logins, matter whether or not the sp_addlogins execute.
- *
- * Revision 1.29  2008/01/10 22:26:50  ameyer
- * Added DELETE ON query TO CdrGuest to enable the Delete button to work
- * in CdrQueries.py.
- *
- * Revision 1.28  2007/10/29 15:11:12  bkline
- * Added views doc_save_action and doc_last_save.
- *
- * Revision 1.27  2007/08/22 17:01:55  bkline
- * Added three new views (pushed_doc, removed_doc, and publishable_version).
- *
- * Revision 1.26  2006/11/27 16:51:39  bkline
- * Added pub_proc_nlm table.
- *
- * Revision 1.25  2006/11/06 18:27:18  venglisc
- * Added SELECT permission to CdrPublishing and CdrGuest.
- *
- * Revision 1.24  2005/09/09 17:45:57  bkline
- * Added get_prot_person_connections.
- *
- * Revision 1.23  2005/08/15 18:31:23  bkline
- * Added GRANT statement for external_map_type table.
- *
- * Revision 1.22  2005/03/08 21:11:50  ameyer
- * Added rights for version_blob_usage and doc_blob_usage for
- * publishing and guest applications.
- *
- * Revision 1.21  2005/03/04 22:48:08  bkline
- * Added permissions for new import_xxx tables.
- *
- * Revision 1.20  2005/03/04 22:35:34  bkline
- * Added GRANT statement for new external_map_rule table.
- *
- * Revision 1.19  2005/01/07 16:28:47  bkline
- * Added rights for ctgov_export table.
- *
- * Revision 1.18  2004/07/02 20:27:20  bkline
- * Added GRANT statements for external map tables.
- *
- * Revision 1.17  2003/11/10 13:42:41  bkline
- * Added GRANT statements for ctgov_* tables.
- *
- * Revision 1.16  2003/08/12 12:50:18  bkline
- * Added grant for new zipcode table.
- *
- * Revision 1.15  2003/04/08 20:32:16  bkline
- * Added rights to query table for CdrGuest.
- *
- * Revision 1.14  2002/11/14 01:11:14  bkline
- * Granted SELECT privileges for filter_set* to CdrGuest.
- *
- * Revision 1.13  2002/11/08 15:38:40  pzhang
- * Rolled back to version 1.11 [left CdrGuest SELECT usr].
- *
- * Revision 1.12  2002/11/01 15:37:54  pzhang
- * Denied CdrGuest to select usr table.
- *
- * Revision 1.11  2002/11/01 05:20:39  ameyer
- * Granted delete rights on remailer_ids to CdrPublishing.  Allows process
- * to cleanup table rows used only during intermediate processing.
- *
- * Revision 1.10  2002/10/17 22:41:30  ameyer
- * Added batch_job permissions.
- *
- * Revision 1.9  2002/08/23 17:26:37  pzhang
- * Corrected mistakes.
- *
- * Revision 1.8  2002/08/23 17:23:24  pzhang
- * Added permission for PPC and PPCW
- *
- * Revision 1.7  2002/07/05 15:05:33  bkline
- * New views for primary pub jobs.
- *
- * Revision 1.6  2002/07/03 12:16:38  bkline
- * Added new views for reports.
- *
- * Revision 1.5  2002/06/07 20:06:35  bkline
- * New stored procedure to support the Person QC report.
- *
- * Revision 1.4  2002/06/04 18:50:58  ameyer
- * Granted rights on new remailer_ids table.
- *
- * Revision 1.3  2002/04/10 14:17:53  bkline
- * Granted SELECT rights to CdrGuest on failed_login_attempts view.
- *
- * Revision 1.2  2002/01/22 22:28:05  bkline
- * Added permissions for views.
- *
- * Revision 1.1  2001/12/24 01:06:11  bkline
- * Initial revision
- *
+ * BZIssue::4925
  */
 
 /*
@@ -540,4 +437,8 @@ GO
 GRANT SELECT ON client_log TO CdrGuest
 GO
 GRANT SELECT ON client_log TO CdrPublishing
+GO
+GRANT SELECT ON audit_trail_added_action TO CdrGuest
+GO
+GRANT SELECT ON audit_trail_added_action TO CdrPublishing
 GO
