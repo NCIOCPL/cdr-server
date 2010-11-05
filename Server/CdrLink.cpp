@@ -1919,7 +1919,12 @@ static int checkMissedFrags (
         srcId = rs.getInt    (2);
 
         // Is it pointing to a fragment actually in the current doc?
-        if (fragSet.find (frag) == fragSet.end()) {
+        // Only check if the source document isn't the same as the current
+        //   doc.  If it is, we've already checked this self-link in
+        //   validateLink().  Checking here could generate an error if the
+        //   self-link is in the link_net but has been removed from the doc
+        //   in this version which will soon be stored.
+        if (srcId != docId && fragSet.find (frag) == fragSet.end()) {
 
             // Not found, we have an error
             if (frag != lastFrag) {
