@@ -5,6 +5,7 @@
 
     BZIssue::4713 (added ELocationID)
     BZIssue::4719 (added ISSNLinking element)
+    BZIssue::4952 (catching up with NLM DTD changes)
 
   -->
 
@@ -97,7 +98,7 @@
   <complexType       name            = 'NCBIArticle'>
     <sequence>
       <element       name            = 'PMID'
-                     type            = 'NotEmptyString'/>
+                     type            = 'PMID'/>
       <element       name            = 'Article'
                      type            = 'Article'/>
       <element       name            = 'MedlineJournalInfo'
@@ -112,7 +113,7 @@
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
       <element       name            = 'PMID'
-                     type            = 'NotEmptyString'/>
+                     type            = 'PMID'/>
       <element       name            = 'DateCreated'
                      type            = 'CitationDate'/>
       <element       name            = 'DateCompleted'
@@ -127,6 +128,9 @@
                      type            = 'MedlineJournalInfo'/>
       <element       name            = 'ChemicalList'
                      type            = 'ChemicalList'
+                     minOccurs       = '0'/>
+      <element       name            = 'SupplMeshList'
+                     type            = 'SupplMeshList'
                      minOccurs       = '0'/>
       <element       name            = 'CitationSubset'
                      type            = 'NotEmptyString'
@@ -176,6 +180,12 @@
                      minOccurs       = '0'/>
     <attribute       name            = 'Status'
                      type            = 'CitationStatus'
+                     minOccurs       = '0'/>
+    <attribute       name            = 'VersionID'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+    <attribute       name            = 'VersionDate'
+                     type            = 'string'
                      minOccurs       = '0'/>
   </complexType>
 
@@ -346,7 +356,8 @@
            would be OK, though.
         -->
       <element       name            = 'AbstractText'
-                     type            = 'NotEmptyString'/>
+                     type            = 'AbstractText'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'CopyrightInformation'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
@@ -356,7 +367,7 @@
   <complexType       name            = 'OtherAbstract'>
     <sequence>
       <element       name            = 'AbstractText'
-                     type            = 'NotEmptyString'/>
+                     type            = 'AbstractText'/>
       <element       name            = 'CopyrightInformation'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
@@ -671,6 +682,23 @@
     </sequence>
   </complexType>
 
+  <complexType       name            = 'SupplMeshList'>
+    <sequence>
+      <element       name            = 'SupplMeshName'
+                     type            = 'SupplMeshName'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'SupplMeshName'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'Type'
+                     type            = 'SupplMeshNameType'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
   <complexType       name            = 'CommentsCorrections'>
     <sequence>
       <element       name            = 'CommentOn'
@@ -738,7 +766,7 @@
                      type            = 'NotEmptyString'/>
       <choice        minOccurs       = '0'>
         <element     name            = 'PMID'
-                     type            = 'NotEmptyString'/>
+                     type            = 'PMID'/>
         <element     name            = 'MedlineID'
                      type            = 'NotEmptyString'/>
       </choice>
@@ -780,6 +808,9 @@
       <extension     base            = 'NotEmptyString'>
         <attribute   name            = 'MajorTopicYN'
                      type            = 'YN'
+                     minOccurs       = '0'/>
+        <attribute   name            = 'Type'
+                     type            = 'TopicTextType'
                      minOccurs       = '0'/>
       </extension>
     </simpleContent>
@@ -864,6 +895,29 @@
                      type            = 'EIdType'/>
         <attribute   name            = 'ValidYN'
                      type            = 'YN'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'PMID'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'Version'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'AbstractText'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'Label'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+        <attribute   name            = 'NlmCategory'
+                     type            = 'NlmCategory'
                      minOccurs       = '0'/>
       </extension>
     </simpleContent>
@@ -1028,6 +1082,7 @@
       <enumeration   value           = 'HMD'/>
       <enumeration   value           = 'SIS'/>
       <enumeration   value           = 'NOTNLM'/>
+      <enumeration   value           = 'NLM-AUTO'/>
     </restriction>
   </simpleType>
 
@@ -1127,6 +1182,30 @@
     <restriction     base            = 'string'>
       <enumeration   value           = 'doi'/>
       <enumeration   value           = 'pii'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'NlmCategory'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'UNLABELLED'/>
+      <enumeration   value           = 'BACKGROUND'/>
+      <enumeration   value           = 'OBJECTIVE'/>
+      <enumeration   value           = 'METHODS'/>
+      <enumeration   value           = 'RESULTS'/>
+      <enumeration   value           = 'CONCLUSIONS'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'SupplMeshNameType'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Disease'/>
+      <enumeration   value           = 'Protocol'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'TopicTextType'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Geographic'/>
     </restriction>
   </simpleType>
 
