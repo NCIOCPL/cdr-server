@@ -58,29 +58,38 @@ BZIssue::4949 - Vendor Filter Changes for Display of DIS information
    Only display the following FDA section if the DrugReference includes
    a DrugReferenceLink with text node "FDA Approval for ..."
    ==================================================================== -->
-   <xsl:for-each                select = "DrugReference[@section='FDA']">
-    <Section>
-     <xsl:attribute               name = "cdr:id">
-      <xsl:text>_</xsl:text>
-      <xsl:value-of             select = "@section"/>
-     </xsl:attribute>
+   <xsl:choose>
+    <xsl:when                     test = "DrugReference[@section='FDA']">
+     <xsl:for-each                select = "DrugReference[@section='FDA']">
+      <Section>
+       <xsl:attribute               name = "cdr:id">
+        <xsl:text>_</xsl:text>
+        <xsl:value-of             select = "@section"/>
+       </xsl:attribute>
 
+       <Para><xsl:apply-templates select = "DrugReferenceLink"/></Para>
 
-     <Para><xsl:apply-templates select = "DrugReferenceLink"/></Para>
-
-     <!--
-       <Para>
-       Pronunciation: 
-       <xsl:apply-templates     select = "../DrugInfoMetaData/
+       <!--
+         <Para>
+         Pronunciation: 
+         <xsl:apply-templates     select = "../DrugInfoMetaData/
                                           GlossaryLink/
                                           GlossaryTermName/
                                           TermName/
                                           TermPronunciation"/>
-       </Para>
-     -->
-     <Para> </Para>
-    </Section>
-   </xsl:for-each>
+         </Para>
+       -->
+      </Section>
+     </xsl:for-each>
+    </xsl:when>
+    <!-- If no FDA section exists we need to add an empty para to prevent
+         display problems with vertical spacing on Cancer.gov. -->
+    <xsl:otherwise>
+     <Section>
+      <Para> </Para>
+     </Section>
+    </xsl:otherwise>
+   </xsl:choose>
 
    <!-- 
    This will display the main text of the DIS
@@ -267,14 +276,18 @@ BZIssue::4949 - Vendor Filter Changes for Display of DIS information
                                           TermName/
                                           TermPronunciation"
                                   mode = "copy"/>
-   <FDAExternalRef>
-    <xsl:attribute                name = "xref">
-      <xsl:value-of             select = "../DrugReference[@section='FDA']/
+
+   <xsl:if                        test = "../DrugReference[@section='FDA']/
+                                          DrugReferenceLink/@cdr:xref">
+    <FDAExternalRef>
+     <xsl:attribute               name = "xref">
+       <xsl:value-of            select = "../DrugReference[@section='FDA']/
                                           DrugReferenceLink/@cdr:xref"/>
-    </xsl:attribute>
-    <xsl:value-of               select = "../DrugReference[@section='FDA']/
+     </xsl:attribute>
+     <xsl:value-of              select = "../DrugReference[@section='FDA']/
                                           DrugReferenceLink"/>
-   </FDAExternalRef>
+    </FDAExternalRef>
+   </xsl:if>
   </xsl:copy>
  </xsl:template>
 
@@ -456,7 +469,11 @@ BZIssue::4949 - Vendor Filter Changes for Display of DIS information
     <xsl:value-of               select = "@cdr:id"/>
    </xsl:attribute>
 
-   <Title>Uses in Cancer Treatment</Title>
+   <xsl:if                        test = "not(/DrugInformationSummary
+                                                /DrugInfoMetaData
+                                                /DrugInfoType/@Combination)">
+    <Title>Uses in Cancer Treatment</Title>
+   </xsl:if>
 
   <xsl:apply-templates            mode = "copy"/>
   </Section>
