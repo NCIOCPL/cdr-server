@@ -109,23 +109,45 @@ BZIssue::4949 - Vendor Filter Changes for Display of DIS information
    Collect all @section=About-drug DrugReference elements to display 
    in a single section.
    ================================================================= -->
-   <xsl:if                        test = "DrugReference
+   <xsl:choose>
+    <xsl:when                      test = "DrugReference
                                            [@section='About_drug']">
-    <Section>
-     <xsl:attribute               name = "cdr:id">
-      <xsl:text>_About</xsl:text>
-     </xsl:attribute>
+     <Section>
+      <xsl:attribute               name = "cdr:id">
+       <xsl:text>_About</xsl:text>
+      </xsl:attribute>
 
-     <Title>
-      <xsl:text>About</xsl:text>
-      <xsl:text> </xsl:text>
-      <xsl:value-of             select = "Title"/>
-     </Title>
+      <Title>
+       <xsl:text>About</xsl:text>
+       <xsl:text> </xsl:text>
+       <xsl:text>(</xsl:text>
+       <xsl:value-of select = "count(DrugReference[@section='About_drug'])"/>
+       <xsl:text>) </xsl:text>
+       <xsl:value-of             select = "Title"/>
+      </Title>
 
-     <xsl:apply-templates       select = "DrugReference
+      <xsl:apply-templates       select = "DrugReference
                                           [@section='About_drug']"/>
-    </Section>
-   </xsl:if>
+     </Section>
+    </xsl:when>
+    <xsl:otherwise>
+     <Section>
+      <xsl:attribute               name = "cdr:id">
+       <xsl:text>_About</xsl:text>
+      </xsl:attribute>
+
+      <Title>
+       <xsl:text>About</xsl:text>
+       <xsl:text> </xsl:text>
+       <xsl:value-of             select = "Title"/>
+      </Title>
+      <xsl:call-template             name = "addDictionaryDefinition">
+       <xsl:with-param               name = "drugRefTypeNCI"
+                                select = "'Dict'"/>
+      </xsl:call-template>
+     </Section>
+    </xsl:otherwise>
+   </xsl:choose>
 
    <!--
    Next collect all @section=Research-results DrugReference elements
@@ -721,7 +743,7 @@ BZIssue::4949 - Vendor Filter Changes for Display of DIS information
 
  <!--
  =====================================================================
- Template to create US Brand Name
+ Template to create the dictionary definition
  ===================================================================== -->
  <xsl:template                    name = "addDictionaryDefinition">
   <xsl:param                      name = "drugRefTypeNCI"
@@ -758,7 +780,7 @@ BZIssue::4949 - Vendor Filter Changes for Display of DIS information
 
  <!--
  =====================================================================
- Template to create US Brand Name
+ Template to create the disclaimer
  ===================================================================== -->
  <xsl:template                    name = "briefDisclaimer">
       <xsl:variable               name = "miscDoc" 
