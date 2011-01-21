@@ -1,24 +1,20 @@
-<CdrDoc Type='Filter' Id='CDR0000505580'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Vendor Filter: DrugInfoSummary</DocTitle>
-<DocComment>N/A</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml  version = "1.0"?>
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: Module: Vendor Filter: DrugInfoSummary -->
 <!--
-================================================================
+====================================================================
 $Id$
 
 Filter to create DrugInfoSummary vendor output documents.
                               Volker Englisch, 2006-08-12
 
-$Log: not supported by cvs2svn $
-================================================================ -->
+BZIssue::4949 - Vendor Filter Changes for Display of DIS information
+
+==================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                             xmlns:cdr = "cips.nci.nih.gov/cdr"
-                               version = "1.0">
-    
+                               version = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+
  <xsl:output                    method = "xml" 
                   omit-xml-declaration = "no"/>
 
@@ -54,54 +50,42 @@ $Log: not supported by cvs2svn $
     <xsl:value-of               select = "Title"/>
    </DrugInfoTitle>
 
-   <xsl:apply-templates         select = "SummarySection"/>
-
    <!--
    The DrugReference elements will have to be displayed in this 
-   particular sort order:  FDA, NCI, NLM.
+   particular sort order:  NCI, NLM.
    ================================================================= -->
-   <!--
-   Collect all of the FDA DrugReference elements within a single FDA
-   display section.
-   ================================================================= -->
-   <xsl:if                        test = "DrugReference
-                                           [DrugReferenceType='FDA']">
-    <xsl:variable                 name = "drugRefTypeFDA"
-                                select = "DrugReference
-                                           [DrugReferenceType='FDA']/
-                                          DrugReferenceType"/>
-    <xsl:variable                 name = "miscDocFracIdFDA"
-                                select = "substring-after(
-                                            DrugReference
-                                             [DrugReferenceType='FDA']/
-                                            DrugReferenceDescription/
-                                            MiscellaneousDocument/
-                                              @cdr:ref, '#')"/>
-
-     <!-- 
-     Only display the following FDA section if the DrugReference includes
-     a DrugReferenceLink with text node "FDA Approval for ..."
-     ==================================================================== -->
-     <xsl:for-each              select = "DrugReference">
-      <xsl:if                     test = "starts-with(
-                                           DrugReferenceLink, 
-                                           'FDA Approval for')">
+   <!-- 
+   Only display the following FDA section if the DrugReference includes
+   a DrugReferenceLink with text node "FDA Approval for ..."
+   ==================================================================== -->
+   <xsl:for-each                select = "DrugReference[@section='FDA']">
     <Section>
      <xsl:attribute               name = "cdr:id">
       <xsl:text>_</xsl:text>
-      <xsl:value-of             select = "$drugRefTypeFDA"/>
+      <xsl:value-of             select = "@section"/>
      </xsl:attribute>
 
 
-       <Title>
-        <xsl:text>Information from the </xsl:text>
-        <xsl:value-of           select = "$drugRefTypeFDA"/>
-       </Title>
-       <xsl:apply-templates     select = "."/>
+     <Para><xsl:apply-templates select = "DrugReferenceLink"/></Para>
+
+     <!--
+       <Para>
+       Pronunciation: 
+       <xsl:apply-templates     select = "../DrugInfoMetaData/
+                                          GlossaryLink/
+                                          GlossaryTermName/
+                                          TermName/
+                                          TermPronunciation"/>
+       </Para>
+     -->
+     <Para> </Para>
     </Section>
-      </xsl:if>
-     </xsl:for-each>
-   </xsl:if>
+   </xsl:for-each>
+
+   <!-- 
+   This will display the main text of the DIS
+   ================================================-->
+   <xsl:apply-templates         select = "SummarySection"/>
 
    <!--
    Collect all of the NCI DrugReference elements within a single NCI
@@ -111,87 +95,41 @@ $Log: not supported by cvs2svn $
    ================================================================= -->
     <xsl:variable                 name = "drugRefTypeNCI"
                                 select = "'NCI'"/>
-    <xsl:variable                 name = "miscDocFracIdNCI"
-                                select = "substring-after(
-                                            DrugReference
-                                              [DrugReferenceType='NCI']/
-                                            DrugReferenceDescription/
-                                            MiscellaneousDocument/
-                                              @cdr:ref, '#')"/>
-
-    <Section>
-     <xsl:attribute               name = "cdr:id">
-      <xsl:text>_</xsl:text>
-      <xsl:value-of             select = "$drugRefTypeNCI"/>
-     </xsl:attribute>
-
-     <Title>
-      <xsl:text>Information from the </xsl:text>
-      <xsl:value-of             select = "$drugRefTypeNCI"/>
-     </Title>
-
-    <Para>
-     <xsl:attribute               name = "cdr:id">
-      <xsl:text>_</xsl:text>
-      <xsl:value-of             select = "$drugRefTypeNCI"/>
-      <xsl:text>_1</xsl:text>
-     </xsl:attribute>
-
-     <xsl:element                 name = "ExternalRef">
-      <xsl:attribute              name = "xref">
-       <xsl:text>http://www.cancer.gov/Templates/drugdictionary.aspx</xsl:text>
-       <xsl:text>?CdrID=</xsl:text>
-       <xsl:value-of            select = "number(
-                                           substring(
-                                            /DrugInformationSummary/
-                                            DrugInfoMetaData/
-                                            TerminologyLink/
-                                            Term/@cdr:ref, 4))"/>
-      </xsl:attribute>
-      <xsl:text>Definition from the NCI Drug Dictionary</xsl:text>
-     </xsl:element>
-     <xsl:text> - Detailed scientific definition and other names </xsl:text>
-     <xsl:text>for this drug.</xsl:text>
-    </Para>
-
-     <xsl:apply-templates       select = "DrugReference
-                                           [DrugReferenceType='NCI']"/>
-    </Section>
 
    <!--
-   Collect all of the FDA DrugReference elements within a single FDA
-   display section.
+   Collect all @section=About-drug DrugReference elements to display 
+   in a single section.
    ================================================================= -->
-   <xsl:if                        test = "DrugReference
-                                           [DrugReferenceType='NLM']">
-    <xsl:variable                 name = "drugRefTypeNLM"
-                                select = "DrugReference
-                                           [DrugReferenceType='NLM']/
-                                          DrugReferenceType"/>
-    <xsl:variable                 name = "miscDocFracIdNLM"
-                                select = "substring-after(
-                                            DrugReference
-                                             [DrugReferenceType='NLM']/
-                                            DrugReferenceDescription/
-                                            MiscellaneousDocument/
-                                              @cdr:ref, '#')"/>
+   <Section>
+    <xsl:attribute                name = "cdr:id">
+     <xsl:text>_About</xsl:text>
+    </xsl:attribute>
 
-    <Section>
-     <xsl:attribute               name = "cdr:id">
-      <xsl:text>_</xsl:text>
-      <xsl:value-of             select = "$drugRefTypeNLM"/>
-     </xsl:attribute>
+    <Title>
+     <xsl:text>About</xsl:text>
+     <xsl:text> </xsl:text>
+     <xsl:value-of              select = "Title"/>
+    </Title>
 
-     <Title>
-      <xsl:text>Information from the National Library of Medicine (</xsl:text>
-      <xsl:value-of             select = "$drugRefTypeNLM"/>
-      <xsl:text>)</xsl:text>
-     </Title>
+    <xsl:apply-templates        select = "DrugReference
+                                           [@section='About_drug']"/>
+   </Section>
 
-     <xsl:apply-templates       select = "DrugReference
-                                           [DrugReferenceType='NLM']"/>
-    </Section>
-   </xsl:if>
+   <!--
+   Next collect all @section=Research-results DrugReference elements
+   to display in a single section.
+   ================================================================= -->
+   <Section>
+    <xsl:attribute                name = "cdr:id">
+     <xsl:text>_Research</xsl:text>
+    </xsl:attribute>
+
+    <Title>
+     <xsl:text>Research Results</xsl:text>
+    </Title>
+    <xsl:apply-templates        select = "DrugReference
+                                           [@section='Research_results']"/>
+   </Section>
                
    <!--
    The Clinical Trials section should only be displayed for the Drug Info
@@ -257,48 +195,12 @@ $Log: not supported by cvs2svn $
       </xsl:choose>
      </DateFirstPublished>
     </xsl:otherwise>
-<!--
-    <xsl:otherwise>
-     <xsl:if                      test = "DatePubProc">
-      <DateFirstPublished>
-       <xsl:value-of            select = "DatePubProc"/>
-      </DateFirstPublished>
-     </xsl:if>
-    </xsl:otherwise>
--->
    </xsl:choose>
 
    <xsl:apply-templates         select = "DateLastModified"
                                   mode = "copy"/>
   </xsl:element>
  </xsl:template>
-
-
- <!--
- ===================================================================
- Template to display the OtherName elements.
- Only display the other name if it is not identical to the Preferred
- Name.
- =================================================================== -->
-<!--
- <xsl:template                   match = "OtherName">
-  <xsl:if                         test = "translate(OtherTermName, 
-                                             'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-                                             'abcdefghijklmnopqrstuvwxyz') != 
-                                          translate(../PreferredName,
-                                             'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-                                             'abcdefghijklmnopqrstuvwxyz')">
-   <OtherName>
-    <OtherTermName>
-     <xsl:value-of              select = "normalize-space(OtherTermName)"/>
-    </OtherTermName>
-    <OtherNameType>
-     <xsl:value-of              select = "OtherNameType"/>
-    </OtherNameType>
-   </OtherName>
-  </xsl:if>
- </xsl:template>
--->
 
 
  <!--
@@ -321,10 +223,6 @@ $Log: not supported by cvs2svn $
      <xsl:value-of              select = "URL/@cdr:xref"/>
     </xsl:attribute>
     <xsl:value-of               select = "URL"/>
-
-
-
-
    </DrugInfoURL>
 
    <xsl:if                        test = "Manufacturers">
@@ -364,6 +262,19 @@ $Log: not supported by cvs2svn $
    <xsl:apply-templates         select = "TerminologyLink/
                                           Term/
                                           USBrandNames"/>
+   <xsl:apply-templates         select = "GlossaryLink/
+                                          GlossaryTermName/
+                                          TermName/
+                                          TermPronunciation"
+                                  mode = "copy"/>
+   <FDAExternalRef>
+    <xsl:attribute                name = "xref">
+      <xsl:value-of             select = "../DrugReference[@section='FDA']/
+                                          DrugReferenceLink/@cdr:xref"/>
+    </xsl:attribute>
+    <xsl:value-of               select = "../DrugReference[@section='FDA']/
+                                          DrugReferenceLink"/>
+   </FDAExternalRef>
   </xsl:copy>
  </xsl:template>
 
@@ -374,14 +285,56 @@ $Log: not supported by cvs2svn $
  ReviewStatus is "Reviewed".
  =================================================================== -->
  <xsl:template                   match = "DrugReference">
-  <xsl:param                      name = "drugRefType"
-                                select = "DrugReferenceType"/>
+  <xsl:param                      name = "drugRefType">
+   <xsl:choose>
+    <xsl:when                     test = "@section = 'Research_results'">
+     <xsl:text>Research</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>About</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:param>
   <xsl:param                      name = "miscDocFracId"
                                 select = "substring-after(
                                             DrugReferenceDescription/
                                             MiscellaneousDocument/
                                               @cdr:ref, '#')"/>
+  <!--
+  If this is the DrugReference section linking to the MedlinePlus
+  Information we need to display the Dictionary Definition as the
+  second paragraph.  If the MedlinePlus information doesn't exist the
+  Dictionary Definition is to be displayed first.
+  =================================================================== -->
+  <xsl:if                         test = "@section = 'About_drug'">
+   <xsl:choose>
+    <xsl:when                     test = "position() = 1
+                                          and
+                                          not(starts-with(
+                                            normalize-space(DrugReferenceLink), 
+                                                            'MedlinePlus'))">
+     <xsl:call-template             name = "addDictionaryDefinition">
+      <xsl:with-param               name = "drugRefTypeNCI"
+                                select = "'Dict'"/>
+     </xsl:call-template>
+    </xsl:when>
+    <xsl:when                     test = "position() = 2
+                                          and
+                                          preceding-sibling::DrugReference[
+                                            starts-with(
+                                             normalize-space(DrugReferenceLink),
+                                                             'MedlinePlus')]">
+     <xsl:call-template             name = "addDictionaryDefinition">
+      <xsl:with-param               name = "drugRefTypeNCI"
+                                select = "'Dict'"/>
+     </xsl:call-template>
+    </xsl:when>
+   </xsl:choose>
+  </xsl:if>
 
+   <!--
+   Display all DrugReference sections
+   ================================== -->
    <xsl:apply-templates         select = "DrugReferenceDescription">
     <xsl:with-param               name = "drugRefType"
                                 select = "$drugRefType"/>
@@ -502,6 +455,8 @@ $Log: not supported by cvs2svn $
    <xsl:attribute                 name = "cdr:id">
     <xsl:value-of               select = "@cdr:id"/>
    </xsl:attribute>
+
+   <Title>Uses in Cancer Treatment</Title>
 
   <xsl:apply-templates            mode = "copy"/>
   </Section>
@@ -707,7 +662,7 @@ $Log: not supported by cvs2svn $
     <xsl:text>_ClinicalTrial_1</xsl:text>
    </xsl:attribute>
 
-   <Title>Clinical Trials</Title>
+   <Title>Clinical Trials Accepting Patients</Title>
    <Para id="_ClinicalTrial_2">
     <xsl:element                  name = "ExternalRef">
      <xsl:attribute               name = "xref">
@@ -722,7 +677,7 @@ $Log: not supported by cvs2svn $
       <xsl:text>&amp;idtype=1</xsl:text>
      </xsl:attribute>
 
-     <xsl:text>Clinical Trials for </xsl:text>
+     <xsl:text>Find Clinical Trials for </xsl:text>
      <xsl:call-template           name = "convertCase">
       <xsl:with-param             name = "convString" 
                                 select = "/DrugInformationSummary/
@@ -734,10 +689,47 @@ $Log: not supported by cvs2svn $
                                 select = "$setCase"/>
      </xsl:call-template>
     </xsl:element>
-    <xsl:text> - Check for trials from NCI's PDQ Cancer Clinical </xsl:text>
-    <xsl:text>Trials Registry now accepting patients.</xsl:text>
+    <xsl:text> - Check for trials from NCI's list of cancer </xsl:text>
+    <xsl:text>clinical trials now accepting patients.</xsl:text>
    </Para>
   </Section>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to create US Brand Name
+ ===================================================================== -->
+ <xsl:template                    name = "addDictionaryDefinition">
+  <xsl:param                      name = "drugRefTypeNCI"
+                                select = "'dada'"/>
+
+    <!-- 
+    Not certain where this section needs to be positioned
+    ===================================================== -->
+    <Para>
+     <xsl:attribute               name = "cdr:id">
+      <xsl:text>_</xsl:text>
+      <xsl:value-of             select = "$drugRefTypeNCI"/>
+      <xsl:text>_1</xsl:text>
+     </xsl:attribute>
+
+     <xsl:element                 name = "ExternalRef">
+      <xsl:attribute              name = "xref">
+       <xsl:text>http://www.cancer.gov/Templates/drugdictionary.aspx</xsl:text>
+       <xsl:text>?CdrID=</xsl:text>
+       <xsl:value-of            select = "number(
+                                           substring(
+                                            /DrugInformationSummary/
+                                            DrugInfoMetaData/
+                                            TerminologyLink/
+                                            Term/@cdr:ref, 4))"/>
+      </xsl:attribute>
+      <xsl:text>Definition from the NCI Drug Dictionary</xsl:text>
+     </xsl:element>
+     <xsl:text> - Detailed scientific definition and other names </xsl:text>
+     <xsl:text>for this drug.</xsl:text>
+    </Para>
  </xsl:template>
 
 
@@ -774,6 +766,3 @@ $Log: not supported by cvs2svn $
      </xsl:apply-templates>
  </xsl:template>
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>
