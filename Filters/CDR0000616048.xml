@@ -1,28 +1,24 @@
-<CdrDoc Type='Filter' Id='CDR0000616048'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Vendor Filter: GlossaryTermName</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: Vendor Filter: GlossaryTermName -->
 <!--
-================================================================
+====================================================================
 $Id$
 
 Filter to create Vendor XML for Glossary
 
-$Log: not supported by cvs2svn $
-================================================================ -->
-<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                             xmlns:cdr = "cips.nci.nih.gov/cdr"
-               exclude-result-prefixes = "cdr"
-                               version = "1.0">
+BZIssue::4973 - [Glossary] Modification to Publication Filters
 
- <xsl:include href = "cdr:name:Module: Vendor Filter Templates"/>
-    
+==================================================================== -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0"
+               exclude-result-prefixes = "cdr"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+
  <xsl:output                    method = "xml" 
-                  omit-xml-declaration = "no"/>  
+                  omit-xml-declaration = "no"/>
+
+ <xsl:include  href = "cdr:name:Module: Vendor Filter Templates"/>
 
  <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
  <xsl:param                       name = "DateFirstPub"
@@ -67,7 +63,11 @@ $Log: not supported by cvs2svn $
    <xsl:apply-templates         select = "TermName"/>
    
    <xsl:for-each                select = "GlossaryTermConcept/
-                                          TermDefinition">
+                                          TermDefinition[DefinitionStatus =
+                                                             'Approved' 
+                                                         or
+                                                         DefinitionStatus = 
+                                                           'Revision pending']">
     <TermDefinition>
      <xsl:apply-templates       select = "DefinitionText">
       <xsl:with-param             name = "language"
@@ -120,40 +120,52 @@ $Log: not supported by cvs2svn $
    However, we only want to do this if a translated concept definition
    exists for this term.
    =================================================================== -->
-   <xsl:choose>
-    <xsl:when                     test = "TranslatedName">
-     <xsl:apply-templates       select = "TranslatedName"/>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:if                      test = "GlossaryTermConcept/
-                                          TranslatedTermDefinition">
-      <SpanishTermName>
-       <xsl:value-of            select = "normalize-space(TermName/
-                                                           TermNameString)"/>
-       <xsl:text> (en ingl&#xE9;s)</xsl:text>
-      </SpanishTermName>
-     </xsl:if>
-    </xsl:otherwise>
-   </xsl:choose>
-
    <!--
-   Process the translated definition for the language
-   ================================================== -->
-   <xsl:for-each                select = "GlossaryTermConcept/
-                                          TranslatedTermDefinition">
-    <SpanishTermDefinition>
-     <xsl:apply-templates       select = "DefinitionText">
-      <xsl:with-param             name = "language"
+   If the TranslatedStatus is not 'Approved' or 'Revision pending'
+   don't display the Spanish definition.
+   =================================================================== -->
+   <xsl:if                        test = "GlossaryTermConcept/
+                                            TranslatedTermDefinition/
+                                            TranslatedStatus = 'Approved'
+                                          or
+                                          GlossaryTermConcept/
+                                            TranslatedTermDefinition/
+                                            TranslatedStatus = 'Revision pending'">
+    <xsl:choose>
+     <xsl:when                    test = "TranslatedName">
+      <xsl:apply-templates      select = "TranslatedName"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:if                     test = "GlossaryTermConcept/
+                                           TranslatedTermDefinition">
+       <SpanishTermName>
+        <xsl:value-of           select = "normalize-space(TermName/
+                                                            TermNameString)"/>
+        <xsl:text> (en ingl&#xE9;s)</xsl:text>
+       </SpanishTermName>
+      </xsl:if>
+     </xsl:otherwise>
+    </xsl:choose>
+ 
+    <!--
+    Process the translated definition for the language
+    ================================================== -->
+    <xsl:for-each               select = "GlossaryTermConcept/
+                                           TranslatedTermDefinition">
+     <SpanishTermDefinition>
+      <xsl:apply-templates      select = "DefinitionText">
+       <xsl:with-param            name = "language"
                                 select = "'es'"/>
-      <xsl:with-param             name = "audience"
+       <xsl:with-param            name = "audience"
                                 select = "Audience"/>
-     </xsl:apply-templates>
-     <xsl:apply-templates       select = "Dictionary"
+      </xsl:apply-templates>
+      <xsl:apply-templates      select = "Dictionary"
                                   mode = "copy"/>
-     <xsl:apply-templates       select = "Audience"
+      <xsl:apply-templates      select = "Audience"
                                   mode = "copy"/> 
-    </SpanishTermDefinition>
-   </xsl:for-each>
+     </SpanishTermDefinition>
+    </xsl:for-each>
+   </xsl:if>
 
 
    <!-- 
@@ -649,6 +661,3 @@ $Log: not supported by cvs2svn $
   </ExternalRef>
  </xsl:template>
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>
