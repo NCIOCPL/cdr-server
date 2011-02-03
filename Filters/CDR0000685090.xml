@@ -18,6 +18,18 @@
                             select = "'No'"/>
 
  <!--
+ =======================================================================
+ Pass-through template.
+ ======================================================================= -->
+ <xsl:template                   match = '@*|node()|comment()|
+                                          processing-instruction()'>
+  <xsl:copy>
+   <xsl:apply-templates         select = '@*|node()|comment()|
+                                          processing-instruction()'/>
+  </xsl:copy>
+ </xsl:template>
+ 
+<!--
  ====================================================================
  Root element.
  ==================================================================== -->
@@ -62,6 +74,7 @@
   <overall_status>
    <xsl:value-of            select = "$overallStatus"/>
   </overall_status>
+  @@LEAD-ORG-STATUS@@
   <xsl:call-template          name = "get_start_date"/>
   <xsl:call-template          name = "get_end_date"/>
   <xsl:call-template          name = "get_last_follow_up_date"/>
@@ -246,7 +259,7 @@
                                       [LeadOrgRole = 'Primary']">
    <lead_org>
     <xsl:variable             name = "loRef"
-                            select = "@ref"/>
+                            select = "LeadOrgName/@ref"/>
     <xsl:if                   test = "$loRef != ''">
      <xsl:attribute           name = "ctep-id">
       <xsl:value-of         select = "concat('@@CTEPID@@',
@@ -482,6 +495,9 @@
  <xsl:template                name = "get_start_date">
   <xsl:for-each             select = "ProtocolAdminInfo/StartDate">
    <start_date>
+    <xsl:attribute            name = "date_type">
+     <xsl:value-of          select = "@DateType"/>
+    </xsl:attribute>
     <xsl:value-of           select = "."/>
    </start_date>
   </xsl:for-each>
@@ -824,7 +840,7 @@
      </address>
     </facility>
     <status>Recruiting</status>
-    <xsl:for-each           select = "ProtPerson[1]">
+    <xsl:for-each           select = "ProtPerson">
      <contact>
       <xsl:if                 test = "@ref">
        <xsl:attribute         name = "ctep-id">
@@ -834,6 +850,9 @@
       </xsl:if>
       <xsl:choose>
        <xsl:when              test = "PersonNameInformation">
+        <xsl:attribute        name = 'role'>
+         <xsl:value-of      select = 'PersonRole'/>
+        </xsl:attribute>
         <xsl:variable         name = "givenName">
          <xsl:value-of      select = "PersonNameInformation/GivenName"/>
         </xsl:variable>
@@ -1022,8 +1041,9 @@
  <!--
  ====================================================================
  Extract specific information for the eligibility/criteria element.
+ Supporessed, so they'll get the markup we publish passed through.
  ==================================================================== -->
- <xsl:template               match = "EntryCriteria">
+ <xsl:template               match = "xxxEntryCriteria">
   <xsl:variable               name = "diseaseCharacteristics">
    <xsl:apply-templates     select = "DiseaseCharacteristics"/>
   </xsl:variable>
@@ -1061,9 +1081,9 @@
  Collapse down structured elements into text representation.
  ==================================================================== -->
  <xsl:template               match = "Objectives | Outline | ProjectedAccrual |
-                                      DiseaseCharacteristics |
-                                      PatientCharacteristics |
-                                      PriorConcurrentTherapy">
+                                      xxDiseaseCharacteristics |
+                                      xxPatientCharacteristics |
+                                      xxPriorConcurrentTherapy">
   <xsl:for-each             select = "Para | ItemizedList | OrderedList">
    <xsl:apply-templates     select = ".">
     <xsl:with-param           name = "indent"
@@ -1076,7 +1096,7 @@
  ====================================================================
  Normalize a Para element.
  ==================================================================== -->
- <xsl:template               match = "Para">
+ <xsl:template               match = "xxPara">
   <xsl:param                  name = "indent"/>
   <xsl:value-of             select = "concat($indent,
                                              normalize-space(.),
@@ -1089,7 +1109,7 @@
  specs for the NLM documents require that we suppress the distinction
  between ordered and itemized lists.
  ==================================================================== -->
- <xsl:template               match = "ItemizedList | OrderedList">
+ <xsl:template               match = "xxItemizedList | xxOrderedList">
   <xsl:param                  name = "indent"/>
   <xsl:text>&#10;</xsl:text>
   <xsl:for-each             select = "ListTitle">
@@ -1110,7 +1130,7 @@
  be represented with cumulative indentation (otherwise the nesting
  information is lost completely instead of just being obscured).
  ==================================================================== -->
- <xsl:template               match = "ListItem">
+ <xsl:template               match = "xxListItem">
   <xsl:param                  name = "indent"/>
   <xsl:for-each             select = "Para | ItemizedList | OrderedList |
                                       text()">
