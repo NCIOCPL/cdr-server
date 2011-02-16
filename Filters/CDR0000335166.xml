@@ -5,6 +5,8 @@
 
 BZIssue::4751 - Modify BU Reports to display LOERefs
 BZIssue::4919 - [Summary] QC Report Bugs
+BZIssue::4967 - [Summary] Modification to QC Reports to Show/Hide 
+                Certain Comments
 
 ===============================================================
 Filter to create Vendor Genetics Professionals XML documents 
@@ -20,6 +22,14 @@ Filter to create Vendor Genetics Professionals XML documents
  <xsl:param                   name = "DisplayGlossaryTermList"/>
  <xsl:param                   name = "DisplayLOETermList"/>
  <xsl:param                   name = "DisplayComments"
+                            select = "'N'"/>
+ <xsl:param                   name = "SourceComments"
+                            select = "'N'"/>
+ <xsl:param                   name = "DurationComments"
+                            select = "'N'"/>
+ <xsl:param                   name = "IncludeExtPerm"
+                            select = "'N'"/>
+ <xsl:param                   name = "IncludeIntAdv"
                             select = "'N'"/>
  <xsl:param                   name = "ShowStandardWording"/>
  <xsl:param                   name = "DisplayImages"
@@ -406,32 +416,217 @@ Filter to create Vendor Genetics Professionals XML documents
  <!-- 
  ================================================================
  Display Comments - Redline/Strikeout
- The comments are being displayed without insertion/deletion 
- markup for insertions but _with_ markup for deletions
+
+ The Comment template needs a little explaining:
+ Comments are entered with three attributes in XMetaL that 
+ control the display on the QC reports.  The three attributes are
+   audience = [Internal | External]
+   duration = [permanent]  (no value = non-permanent)
+   source   = [advisory-board]  (no value = editorial-board)
+
+ Based on these attributes the users want to be able to display
+ certain combinations of comments and they are entering their 
+ choice via the passed in parameters 
+   DisplayComments - A[ll], I[nternal], E[xternal]
+   DurationComments - A[ll], P[ermanent], R[regular]
+   SourceComments - A[ll], E[ditorial], [ad]V[isory]
+ These values are derived from three pairs of checkboxes on the 
+ input page:
+   Audience: Internal/External - On|Off
+   Duration: permanent/regular - On|Off
+   Source:   editorial/advisory - On|Off
+ Whenever one of these checkboxes gets unchecked, i.e. 'Internal',
+ these comments will *not* be shown on the QC report.  In the 
+ example, if 'Internal' is unchecked then even if a permanent 
+ comment exists and is checked to be displayed it will not be
+ shown in the report because the condition 'do not show internal
+ comments' would remove such a comment.
+ The IF-statement in this templeate is taking care of this 
+ situation.
+ Note: The display of comments is being suppressed by setting the 
+       respective CSS class to 'none' and defining the style to
+       {display: none}
+
+ It is getting interesting now because the users also want to 
+ combine some of these situations which are by definition 
+ mutually exclusive.  For instanse, we need to be able to display
+ all internal comments *and* all permanents comments.  Under the 
+ first IF-statement the external permanent comments would be 
+ excluded but they need to be displayed as well.
+ Similarily external comments should be displayed along with all
+ advisory board comments.
  ================================================================ -->
  <xsl:template               match = "Comment |
                                       ResponseToComment" 
                               mode = "RS">
 
+  <!-- xsl:text>111</xsl:text -->
   <xsl:variable               name = "myScope"
                             select = "name()"/>
 
   <xsl:if                     test = "substring(@audience, 1, 1) = 
-                                                          $DisplayComments
+                                                $DisplayComments
                                       or
                                       not(@audience) and $DisplayComments = 'I'
                                       or
                                       $DisplayComments = 'A'
                                       or 
                                       $whoAmI = 'DrugInfoSummary'">
+   <!-- xsl:text>111a</xsl:text -->
    <xsl:choose>
+    <xsl:when                 test = "Insertion">
+     <xsl:choose>
+      <xsl:when               test = "Insertion/@RevisionLevel = 'approved'">
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'cominsertappr'"/>
+       </xsl:call-template>
+       <!-- 
+       <span class="cominsertappr">
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [</xsl:text>
+
+          <xsl:choose>
+           <xsl:when          test = "@duration = 'permanent'
+                                      and
+                                      @source   = 'advisory-board'">
+            <xsl:text>Permanent-AB-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@duration = 'permanent'">
+            <xsl:text>Permanent-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@source = 'advisory-board'">
+            <xsl:text>AB-</xsl:text>
+           </xsl:when>
+          </xsl:choose>
+
+          <xsl:text>Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+       -->
+      </xsl:when>   
+      <xsl:when                 test = "Insertion/@RevisionLevel = 'proposed'">
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'cominsertprop'"/>
+       </xsl:call-template>
+       <!--
+       <span class="cominsertprop">
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [</xsl:text>
+
+          <xsl:choose>
+           <xsl:when          test = "@duration = 'permanent'
+                                      and
+                                      @source   = 'advisory-board'">
+            <xsl:text>Permanent-AB-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@duration = 'permanent'">
+            <xsl:text>Permanent-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@source = 'advisory-board'">
+            <xsl:text>AB-</xsl:text>
+           </xsl:when>
+          </xsl:choose>
+
+          <xsl:text>Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+       -->
+      </xsl:when>
+      <xsl:otherwise>
+       <!-- xsl:text>HHH </xsl:text -->
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'cominsertappr'"/>
+       </xsl:call-template>
+      </xsl:otherwise>
+
+       <!--
+       <span class="commentnormal">
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [</xsl:text>
+       -->
+          <!-- Adding Comment Prefix -->
+       <!--
+          <xsl:choose>
+           <xsl:when          test = "@duration = 'permanent'
+                                      and
+                                      @source   = 'advisory-board'">
+            <xsl:text>Permanent-AB-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@duration = 'permanent'">
+            <xsl:text>Permanent-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@source = 'advisory-board'">
+            <xsl:text>AB-</xsl:text>
+           </xsl:when>
+          </xsl:choose>
+
+          <xsl:text>Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+      </xsl:otherwise>
+      -->
+     </xsl:choose>
+    </xsl:when>
     <xsl:when                 test = "Deletion">
      <xsl:choose>
       <xsl:when               test = "Deletion/@RevisionLevel = 'approved'">
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'comdeleteappr'"/>
+       </xsl:call-template>
+       <!-- 
        <span class="comdeleteappr">
         <xsl:choose>
          <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
+          <xsl:text> [</xsl:text>
+
+          <xsl:choose>
+           <xsl:when          test = "@duration = 'permanent'
+                                      and
+                                      @source   = 'advisory-board'">
+            <xsl:text>Permanent-AB-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@duration = 'permanent'">
+            <xsl:text>Permanent-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@source = 'advisory-board'">
+            <xsl:text>AB-</xsl:text>
+           </xsl:when>
+          </xsl:choose>
+
+          <xsl:text>Comment: </xsl:text>
          </xsl:when>
          <xsl:otherwise>
           <xsl:text> [Response: </xsl:text>
@@ -440,12 +635,36 @@ Filter to create Vendor Genetics Professionals XML documents
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
+       -->
       </xsl:when>   
       <xsl:when                 test = "Deletion/@RevisionLevel = 'proposed'">
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'comdeleteprop'"/>
+       </xsl:call-template>
+       <!-- 
        <span class="comdeleteprop">
         <xsl:choose>
          <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
+          <xsl:text> [</xsl:text>
+
+          <xsl:choose>
+           <xsl:when          test = "@duration = 'permanent'
+                                      and
+                                      @source   = 'advisory-board'">
+            <xsl:text>Permanent-AB-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@duration = 'permanent'">
+            <xsl:text>Permanent-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@source = 'advisory-board'">
+            <xsl:text>AB-</xsl:text>
+           </xsl:when>
+          </xsl:choose>
+
+          <xsl:text>Comment: </xsl:text>
          </xsl:when>
          <xsl:otherwise>
           <xsl:text> [Response: </xsl:text>
@@ -454,12 +673,42 @@ Filter to create Vendor Genetics Professionals XML documents
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
+       -->
       </xsl:when>
+      <xsl:otherwise>
+       <!-- xsl:text>CCC </xsl:text -->
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'comdeleteappr'"/>
+       </xsl:call-template>
+
+      </xsl:otherwise>
+      <!-- 
       <xsl:otherwise>
        <span class="commentnormal">
         <xsl:choose>
          <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
+          <xsl:text> [</xsl:text>
+      -->
+          <!-- Adding Comment Prefix -->
+      <!--
+          <xsl:choose>
+           <xsl:when          test = "@duration = 'permanent'
+                                      and
+                                      @source   = 'advisory-board'">
+            <xsl:text>Permanent-AB-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@duration = 'permanent'">
+            <xsl:text>Permanent-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@source = 'advisory-board'">
+            <xsl:text>AB-</xsl:text>
+           </xsl:when>
+          </xsl:choose>
+
+          <xsl:text>Comment: </xsl:text>
          </xsl:when>
          <xsl:otherwise>
           <xsl:text> [Response: </xsl:text>
@@ -470,60 +719,38 @@ Filter to create Vendor Genetics Professionals XML documents
         <xsl:text>] </xsl:text>
        </span>
       </xsl:otherwise>
+      -->
      </xsl:choose>
     </xsl:when>
-    <xsl:when                 test = "Insertion">
-     <xsl:choose>
-      <xsl:when               test = "Insertion/@RevisionLevel = 'approved'">
-       <span class="cominsertappr">
-        <xsl:choose>
-         <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text> [Response: </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-        <xsl:apply-templates/>
-        <xsl:text>] </xsl:text>
-       </span>
-      </xsl:when>   
-      <xsl:when                 test = "Insertion/@RevisionLevel = 'proposed'">
-       <span class="cominsertprop">
-        <xsl:choose>
-         <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text> [Response: </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-        <xsl:apply-templates/>
-        <xsl:text>] </xsl:text>
-       </span>
-      </xsl:when>
-      <xsl:otherwise>
-       <span class="commentnormal">
-        <xsl:choose>
-         <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text> [Response: </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-        <xsl:apply-templates/>
-        <xsl:text>] </xsl:text>
-       </span>
-      </xsl:otherwise>
-     </xsl:choose>
-    </xsl:when>
+    <!--
+    This "when" is never reached because another one testing for Deletion
+    exists above.
+
     <xsl:when                 test = "Deletion">
       <xsl:if                   test = "Deletion/@RevisionLevel = 'proposed'">
        <span class="comdeleteprop">
         <xsl:choose>
          <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
+          <xsl:text> [</xsl:text>
+    -->
+
+          <!-- Adding Comment Prefix -->
+    <!--
+          <xsl:choose>
+           <xsl:when          test = "@duration = 'permanent'
+                                      and
+                                      @source   = 'advisory-board'">
+            <xsl:text>Permanent-AB-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@duration = 'permanent'">
+            <xsl:text>Permanent-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@source = 'advisory-board'">
+            <xsl:text>AB-</xsl:text>
+           </xsl:when>
+          </xsl:choose>
+
+          <xsl:text>Comment: </xsl:text>
          </xsl:when>
          <xsl:otherwise>
           <xsl:text> [Response: </xsl:text>
@@ -534,22 +761,64 @@ Filter to create Vendor Genetics Professionals XML documents
        </span>
       </xsl:if>
     </xsl:when>
+    -->
+    <!-- Display the comments without insertion/deletion markup -->
     <xsl:otherwise>
-     <span class="commentnormal">
-        <xsl:choose>
-         <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text> [Response: </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-      <xsl:apply-templates/>
-      <xsl:text>] </xsl:text>
-     </span>
+
+     <!-- xsl:text>AAA </xsl:text -->
+     <xsl:call-template       name = "listComment">
+      <xsl:with-param         name = "myScope"
+                            select = "$myScope"/>
+     </xsl:call-template>
+
     </xsl:otherwise>
    </xsl:choose>
   </xsl:if>
+
+  <xsl:call-template          name = "twoOptionsChecked">
+   <xsl:with-param            name = "whereAmI"
+                            select = "'111T'"/>
+    <xsl:with-param           name = "myScope"
+                            select = "$myScope"/>
+  </xsl:call-template>
+
+  <!--
+  Ensure that permanent, external comments are displayed even when
+  'Internal' has been selected
+  ================================================================ -->
+  <!-- 
+  <xsl:if                     test = "@audience = 'External'
+                                      and
+                                      @duration = 'permanent'
+                                      and
+                                      $DisplayComments = 'I'
+                                      and
+                                      $IncludeExtPerm = 'Y'">
+     <xsl:call-template       name = "listComment">
+      <xsl:with-param         name = "myScope"
+                            select = "$myScope"/>
+     </xsl:call-template>
+  </xsl:if>
+  -->
+
+ <!-- 
+ Ensure that internal, advisory-board comments are displayed even
+ when 'External' has been selected.
+ ================================================================ -->
+ <!-- 
+ <xsl:if                     test = "@audience = 'Internal'
+                                      and
+                                      @source = 'advisory-board'
+                                      and
+                                      $SourceComments = 'E'
+                                      and
+                                      $IncludeIntAdv = 'Y'">
+     <xsl:call-template       name = "listComment">
+      <xsl:with-param         name = "myScope"
+                            select = "$myScope"/>
+     </xsl:call-template>
+  </xsl:if>
+  -->
  </xsl:template>
 
 
@@ -564,6 +833,7 @@ Filter to create Vendor Genetics Professionals XML documents
  <xsl:template               match = "Comment |
                                       ResponseToComment">
 
+  <!-- xsl:text>222</xsl:text -->
   <xsl:variable               name = "myScope"
                             select = "name()"/>
 
@@ -573,14 +843,38 @@ Filter to create Vendor Genetics Professionals XML documents
                                       not(@audience) and $DisplayComments = 'I'
                                       or
                                       $DisplayComments = 'A'">
+   <!-- xsl:text>222a</xsl:text -->
    <xsl:choose>
     <xsl:when                 test = "Insertion">
      <xsl:choose>
       <xsl:when               test = "Insertion/@RevisionLevel = 'approved'">
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'cominsertappr'"/>
+       </xsl:call-template>
+       <!-- 
        <span class="cominsertappr">
         <xsl:choose>
          <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
+          <xsl:text> [</xsl:text>
+
+          <xsl:choose>
+           <xsl:when          test = "@duration = 'permanent'
+                                      and
+                                      @source   = 'advisory-board'">
+            <xsl:text>Permanent-AB-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@duration = 'permanent'">
+            <xsl:text>Permanent-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@source = 'advisory-board'">
+            <xsl:text>AB-</xsl:text>
+           </xsl:when>
+          </xsl:choose>
+
+          <xsl:text>Comment: </xsl:text>
          </xsl:when>
          <xsl:otherwise>
           <xsl:text> [Response: </xsl:text>
@@ -589,12 +883,36 @@ Filter to create Vendor Genetics Professionals XML documents
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
+       -->
       </xsl:when>   
-      <xsl:when                 test = "Insertion/@RevisionLevel = 'proposed'">
+      <xsl:when               test = "Insertion/@RevisionLevel = 'proposed'">
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'cominsertprop'"/>
+       </xsl:call-template>
+       <!--
        <span class="cominsertprop">
         <xsl:choose>
          <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
+          <xsl:text> [</xsl:text>
+
+          <xsl:choose>
+           <xsl:when          test = "@duration = 'permanent'
+                                      and
+                                      @source   = 'advisory-board'">
+            <xsl:text>Permanent-AB-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@duration = 'permanent'">
+            <xsl:text>Permanent-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@source = 'advisory-board'">
+            <xsl:text>AB-</xsl:text>
+           </xsl:when>
+          </xsl:choose>
+
+          <xsl:text>Comment: </xsl:text>
          </xsl:when>
          <xsl:otherwise>
           <xsl:text> [Response: </xsl:text>
@@ -603,55 +921,166 @@ Filter to create Vendor Genetics Professionals XML documents
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
+       -->
       </xsl:when>
       <xsl:otherwise>
-       <span class="commentnormal">
-        <xsl:choose>
-         <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text> [Response: </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-        <xsl:apply-templates/>
-        <xsl:text>] </xsl:text>
-       </span>
+       <!-- xsl:text>GGG </xsl:text -->
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'cominsertappr'"/>
+       </xsl:call-template>
+
       </xsl:otherwise>
      </xsl:choose>
     </xsl:when>
     <xsl:when                 test = "Deletion">
-     <xsl:if                   test = "Deletion/@RevisionLevel = 'proposed'">
-      <span class="comdeleteprop">
+     <xsl:choose>
+      <xsl:when               test = "Deletion/@RevisionLevel = 'approved'">
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'comdeleteappr'"/>
+       </xsl:call-template>
+       <!-- 
+       <span class="comdeleteappr">
         <xsl:choose>
          <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
+          <xsl:text> [</xsl:text>
+
+          <xsl:choose>
+           <xsl:when          test = "@duration = 'permanent'
+                                      and
+                                      @source   = 'advisory-board'">
+            <xsl:text>Permanent-AB-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@duration = 'permanent'">
+            <xsl:text>Permanent-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@source = 'advisory-board'">
+            <xsl:text>AB-</xsl:text>
+           </xsl:when>
+          </xsl:choose>
+
+          <xsl:text>Comment: </xsl:text>
          </xsl:when>
          <xsl:otherwise>
           <xsl:text> [Response: </xsl:text>
          </xsl:otherwise>
         </xsl:choose>
-       <xsl:apply-templates/>
-       <xsl:text>] </xsl:text>
-      </span>
-     </xsl:if>
+
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+       -->
+      </xsl:when>
+      <xsl:when               test = "Deletion/@RevisionLevel = 'proposed'">
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'comdeleteprop'"/>
+       </xsl:call-template>
+       <!--
+       <span class="comdeleteprop">
+        <xsl:choose>
+         <xsl:when            test = "$myScope = 'Comment'">
+          <xsl:text> [</xsl:text>
+
+          <xsl:choose>
+           <xsl:when          test = "@duration = 'permanent'
+                                      and
+                                      @source   = 'advisory-board'">
+            <xsl:text>Permanent-AB-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@duration = 'permanent'">
+            <xsl:text>Permanent-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@source = 'advisory-board'">
+            <xsl:text>AB-</xsl:text>
+           </xsl:when>
+          </xsl:choose>
+
+          <xsl:text>Comment: </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> [Response: </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+       -->
+      </xsl:when>
+      <xsl:otherwise>
+       <!-- xsl:text>DDD </xsl:text -->
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'comdeleteappr'"/>
+       </xsl:call-template>
+      </xsl:otherwise>
+     </xsl:choose>
     </xsl:when>
+    <!-- Display the comments without insertion/deletion markup -->
     <xsl:otherwise>
-     <span class="commentnormal">
-        <xsl:choose>
-         <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text> [Response: </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-      <xsl:apply-templates/>
-      <xsl:text>] </xsl:text>
-     </span>
+     <!-- xsl:text>FFF </xsl:text -->
+     <xsl:call-template       name = "listComment">
+      <xsl:with-param         name = "myScope"
+                            select = "$myScope"/>
+     </xsl:call-template>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:if>
+
+  <xsl:call-template          name = "twoOptionsChecked">
+   <xsl:with-param            name = "whereAmI"
+                            select = "'222T'"/>
+    <xsl:with-param           name = "myScope"
+                            select = "$myScope"/>
+  </xsl:call-template>
+
+  <!--
+  Ensure that permanent, external comments are displayed even when
+  'Internal' has been selected
+  ================================================================ -->
+  <!-- 
+  <xsl:if                     test = "@audience = 'External'
+                                      and
+                                      @duration = 'permanent'
+                                      and
+                                      $DisplayComments = 'I'
+                                      and
+                                      $IncludeExtPerm = 'Y'">
+   <xsl:call-template         name = "listComment">
+    <xsl:with-param           name = "myScope"
+                            select = "$myScope"/>
+   </xsl:call-template>
+  </xsl:if>
+  -->
+
+  <!-- 
+  Ensure that internal, advisory-board comments are displayed even
+  when 'External' has been selected.
+  ================================================================ -->
+  <!-- 
+  <xsl:if                     test = "@audience = 'Internal'
+                                      and
+                                      @source = 'advisory-board'
+                                      and
+                                      $SourceComments = 'E'
+                                      and
+                                      $IncludeIntAdv = 'Y'">
+   <xsl:call-template         name = "listComment">
+    <xsl:with-param           name = "myScope"
+                            select = "$myScope"/>
+   </xsl:call-template>
+  </xsl:if>
+  -->
+
  </xsl:template>
 
 
@@ -662,6 +1091,8 @@ Filter to create Vendor Genetics Professionals XML documents
  The comments are being displayed without insertion/deletion
  markup within insertion and are not displayed by default for 
  the deletions.
+ Note: Despite its mode name "compactNo" this template is used 
+       for the compact ItemizedList content
  ================================================================ -->
  <xsl:template               match = "Comment |
                                       ResponseToComment"
@@ -670,20 +1101,45 @@ Filter to create Vendor Genetics Professionals XML documents
   <xsl:variable               name = "myScope"
                             select = "name()"/>
 
+  <!-- xsl:text>333</xsl:text -->
   <xsl:if                     test = "substring(@audience, 1, 1) = 
-                                                          $DisplayComments
+                                                $DisplayComments
                                       or
                                       not(@audience) and $DisplayComments = 'I'
                                       or
                                       $DisplayComments = 'A'">
+   <!-- xsl:text>333a</xsl:text -->
    <xsl:choose>
     <xsl:when                 test = "Insertion">
      <xsl:choose>
       <xsl:when               test = "Insertion/@RevisionLevel = 'approved'">
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'cominsertappr'"/>
+       </xsl:call-template>
+       <!-- 
        <span class="cominsertappr">
         <xsl:choose>
          <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
+          <xsl:text> [</xsl:text>
+
+          <xsl:choose>
+           <xsl:when          test = "@duration = 'permanent'
+                                      and
+                                      @source   = 'advisory-board'">
+            <xsl:text>Permanent-AB-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@duration = 'permanent'">
+            <xsl:text>Permanent-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@source = 'advisory-board'">
+            <xsl:text>AB-</xsl:text>
+           </xsl:when>
+          </xsl:choose>
+
+          <xsl:text>Comment: </xsl:text>
          </xsl:when>
          <xsl:otherwise>
           <xsl:text> [Response: </xsl:text>
@@ -692,12 +1148,36 @@ Filter to create Vendor Genetics Professionals XML documents
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
+       -->
       </xsl:when>   
-      <xsl:when                 test = "Insertion/@RevisionLevel = 'proposed'">
+      <xsl:when               test = "Insertion/@RevisionLevel = 'proposed'">
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'cominsertprop'"/>
+       </xsl:call-template>
+       <!--
        <span class="cominsertprop">
         <xsl:choose>
          <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
+          <xsl:text> [</xsl:text>
+
+          <xsl:choose>
+           <xsl:when          test = "@duration = 'permanent'
+                                      and
+                                      @source   = 'advisory-board'">
+            <xsl:text>Permanent-AB-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@duration = 'permanent'">
+            <xsl:text>Permanent-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@source = 'advisory-board'">
+            <xsl:text>AB-</xsl:text>
+           </xsl:when>
+          </xsl:choose>
+
+          <xsl:text>Comment: </xsl:text>
          </xsl:when>
          <xsl:otherwise>
           <xsl:text> [Response: </xsl:text>
@@ -706,55 +1186,137 @@ Filter to create Vendor Genetics Professionals XML documents
         <xsl:apply-templates/>
         <xsl:text>] </xsl:text>
        </span>
+       -->
       </xsl:when>
       <xsl:otherwise>
-       <span class="commentnormal">
-        <xsl:choose>
-         <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text> [Response: </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-        <xsl:apply-templates/>
-        <xsl:text>] </xsl:text>
-       </span>
+       <!-- xsl:text>EEE </xsl:text -->
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'cominsertappr'"/>
+       </xsl:call-template>
+
       </xsl:otherwise>
      </xsl:choose>
     </xsl:when>
-    <xsl:when                  test = "Deletion">
-     <xsl:if                   test = "Deletion/@RevisionLevel = 'proposed'">
-      <span class="comdeleteprop">
+    <xsl:when                 test = "Deletion">
+     <xsl:choose>
+      <xsl:when               test = "Deletion/@RevisionLevel = 'proposed'">
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'comdeleteprop'"/>
+       </xsl:call-template>
+       <!-- 
+       <span class="comdeleteprop">
         <xsl:choose>
          <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
+          <xsl:text> [</xsl:text>
+
+          <xsl:choose>
+           <xsl:when          test = "@duration = 'permanent'
+                                      and
+                                      @source   = 'advisory-board'">
+            <xsl:text>Permanent-AB-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@duration = 'permanent'">
+            <xsl:text>Permanent-</xsl:text>
+           </xsl:when>
+           <xsl:when          test = "@source = 'advisory-board'">
+            <xsl:text>AB-</xsl:text>
+           </xsl:when>
+          </xsl:choose>
+
+          <xsl:text>Comment: </xsl:text>
          </xsl:when>
          <xsl:otherwise>
           <xsl:text> [Response: </xsl:text>
          </xsl:otherwise>
         </xsl:choose>
-       <xsl:apply-templates/>
-       <xsl:text>] </xsl:text>
-      </span>
-     </xsl:if>
+
+        <xsl:apply-templates/>
+        <xsl:text>] </xsl:text>
+       </span>
+       -->
+      </xsl:when>
+      <xsl:when               test = "Deletion/@RevisionLevel = 'approved'">
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'comdeleteappr'"/>
+       </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+       <!-- xsl:text>III </xsl:text -->
+       <xsl:call-template     name = 'listComment'>
+        <xsl:with-param       name = "myScope"
+                            select = "$myScope"/>
+        <xsl:with-param       name = "myCss"
+                            select = "'comdeleteappr'"/>
+       </xsl:call-template>
+
+      </xsl:otherwise>
+     </xsl:choose>
     </xsl:when>
+    <!-- Display the comments without insertion/deletion markup -->
     <xsl:otherwise>
-     <span class="commentnormal">
-        <xsl:choose>
-         <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [Comment: </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text> [Response: </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-      <xsl:apply-templates/>
-      <xsl:text>] </xsl:text>
-     </span>
+     <!-- xsl:text>BBB </xsl:text -->
+     <xsl:call-template       name = "listComment">
+      <xsl:with-param         name = "myScope"
+                            select = "$myScope"/>
+     </xsl:call-template>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:if>
+
+  <xsl:call-template          name = "twoOptionsChecked">
+   <xsl:with-param            name = "whereAmI"
+                            select = "'333T'"/>
+    <xsl:with-param           name = "myScope"
+                            select = "$myScope"/>
+  </xsl:call-template>
+
+  <!--
+  Ensure that permanent, external comments are displayed even when
+  'Internal' has been selected
+  ================================================================ -->
+  <!-- 
+  <xsl:if                     test = "@audience = 'External'
+                                      and
+                                      @duration = 'permanent'
+                                      and
+                                      $DisplayComments = 'I'
+                                      and
+                                      $IncludeExtPerm = 'Y'">
+   <xsl:call-template         name = "listComment">
+    <xsl:with-param           name = "myScope"
+                            select = "$myScope"/>
+   </xsl:call-template>
+  </xsl:if>
+  -->
+
+  <!-- 
+  Ensure that internal, advisory-board comments are displayed even
+  when 'External' has been selected.
+  ================================================================ -->
+  <!-- 
+  <xsl:if                     test = "@audience = 'Internal'
+                                      and
+                                      @source = 'advisory-board'
+                                      and
+                                      $SourceComments = 'E'
+                                      and
+                                      $IncludeIntAdv = 'Y'">
+   <xsl:call-template         name = "listComment">
+    <xsl:with-param           name = "myScope"
+                            select = "$myScope"/>
+   </xsl:call-template>
+  </xsl:if>
+  -->
+
  </xsl:template>
 
 
@@ -774,6 +1336,185 @@ Filter to create Vendor Genetics Professionals XML documents
     <xsl:apply-templates/>
    </xsl:otherwise>
   </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ ================================================================
+ Template to create the Comment markup based on the specified and
+ selected comment attributes.
+ ================================================================ -->
+ <xsl:template                name = "listComment">
+  <xsl:param                  name = "myScope"/>
+  <xsl:param                  name = "myCss"
+                            select = "'commentnormal'"/>
+
+  <xsl:element                name = "span">
+   <xsl:attribute             name = "class">
+    <xsl:value-of           select = "$myCss"/>
+
+    <xsl:choose>
+     <xsl:when                test = "$DisplayComments = 'A'">
+      <xsl:choose>
+       <xsl:when              test = "@audience = 'Internal'">
+        <xsl:text> com_intern</xsl:text>
+       </xsl:when> 
+       <xsl:otherwise>
+        <xsl:text> com_extern</xsl:text>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
+     <xsl:when                test = "$DisplayComments = 'I'">
+      <xsl:text> com_intern</xsl:text>
+     </xsl:when>
+     <xsl:when                test = "$DisplayComments = 'E'">
+      <xsl:text> com_extern</xsl:text>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text> none</xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+
+    <xsl:choose>
+     <xsl:when                test = "$SourceComments = 'A'">
+      <xsl:choose>
+       <xsl:when              test = "@source = 'advisory-board'">
+        <xsl:text> com_adv</xsl:text>
+       </xsl:when> 
+       <xsl:otherwise>
+        <xsl:text> com_edi</xsl:text>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
+     <xsl:when                test = "$SourceComments = 'V'
+                                     and
+                                     @source = 'advisory-board'">
+      <xsl:text> com_adv</xsl:text>
+     </xsl:when>
+     <xsl:when                test = "$SourceComments = 'E'
+                                      and
+                                      not(@source = 'advisory-board')">
+      <xsl:text> com_edi</xsl:text>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:choose>
+       <xsl:when              test = "$SourceComments = 'E'
+                                      and
+                                      @source = 'advisory-board'
+                                      and
+                                      $IncludeIntAdv = 'Y'">
+        <xsl:text> com_adv</xsl:text>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:text> none</xsl:text>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:otherwise>
+    </xsl:choose>
+
+    <xsl:choose>
+     <xsl:when                test = "$DurationComments = 'A'">
+      <xsl:choose>
+       <xsl:when              test = "@duration = 'permanent'">
+        <xsl:text> com_perm</xsl:text>
+       </xsl:when> 
+       <xsl:otherwise>
+        <xsl:text> com_temp</xsl:text>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
+     <xsl:when                test = "$DurationComments = 'P'
+                                        and
+                                        @duration = 'permanent'">
+      <xsl:text> com_perm</xsl:text>
+     </xsl:when>
+     <xsl:when                test = "$DurationComments = 'R'
+                                        and
+                                        not(@duration = 'permanent')">
+      <xsl:text> com_temp</xsl:text>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text> none</xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:attribute>
+
+   <xsl:choose>
+    <xsl:when                 test = "$myScope = 'Comment'">
+     <xsl:text> [</xsl:text>
+
+     <!-- Adding Comment Prefix -->
+     <xsl:choose>
+      <xsl:when               test = "@duration = 'permanent'
+                                      and
+                                      @source   = 'advisory-board'">
+       <xsl:text>Permanent-AB-</xsl:text>
+      </xsl:when>
+      <xsl:when               test = "@duration = 'permanent'">
+       <xsl:text>Permanent-</xsl:text>
+      </xsl:when>
+      <xsl:when               test = "@source = 'advisory-board'">
+       <xsl:text>AB-</xsl:text>
+      </xsl:when>
+     </xsl:choose>
+
+     <xsl:text>Comment: </xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text> [Response: </xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+
+   <xsl:apply-templates/>
+   <xsl:text>] </xsl:text>
+  </xsl:element>
+ </xsl:template>
+
+ <!--
+ ================================================================
+ Template that checks if a comment needs to be displayed due to 
+ the entry of two options (internal + permanent, external + adv)
+ ================================================================ -->
+ <xsl:template                name = "twoOptionsChecked">
+  <xsl:param                  name = "myScope"/>
+  <xsl:param                  name = "whereAmI"
+                            select = "'999'"/>
+
+  <!-- xsl:value-of             select = "$whereAmI"/ -->
+
+  <!--
+  Ensure that permanent, external comments are displayed even when
+  'Internal' has been selected
+  ================================================================ -->
+  <xsl:if                     test = "@audience = 'External'
+                                      and
+                                      @duration = 'permanent'
+                                      and
+                                      $DisplayComments = 'I'
+                                      and
+                                      $IncludeExtPerm = 'Y'">
+     <xsl:call-template       name = "listComment">
+      <xsl:with-param         name = "myScope"
+                            select = "$myScope"/>
+     </xsl:call-template>
+  </xsl:if>
+
+  <!-- 
+  Ensure that internal, advisory-board comments are displayed even
+  when 'External' has been selected.
+  ================================================================ -->
+  <xsl:if                     test = "@audience = 'Internal'
+                                      and
+                                      @source = 'advisory-board'
+                                      and
+                                      $SourceComments = 'A'
+                                      and
+                                      $IncludeIntAdv = 'Y'">
+     <xsl:call-template       name = "listComment">
+      <xsl:with-param         name = "myScope"
+                            select = "$myScope"/>
+     </xsl:call-template>
+  </xsl:if>
  </xsl:template>
 
 </xsl:transform>

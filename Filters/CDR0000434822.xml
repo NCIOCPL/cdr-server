@@ -13,6 +13,7 @@ Summary QC Reports
 Volker Englisch, 2005-05-11 
 
 BZIssue::4919 - [Summary] QC Report Bugs
+BZIssue::4970 - [Summary] Key Point display problems in QC reports
 
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -58,11 +59,9 @@ BZIssue::4919 - [Summary] QC Report Bugs
  ======================================================================== --> 
  <xsl:template                   match = "KeyPoints">
   <xsl:if                         test = "KeyPointsList/ListItem/KeyPoint">
-   <table align='center' border='1'>
+   <table class="kpBox">
     <tr>
-     <td align='middle'>
-      <b>Key Points for This Section</b>
-     </td>
+     <th class="kpBoxHdr">Key Points for This Section</th>
     </tr>
     <tr>
      <td>
@@ -99,7 +98,7 @@ BZIssue::4919 - [Summary] QC Report Bugs
   We don't want to add the id attribute to the KeyPoint box items but to 
   the items within the text
   ========================================================================= -->
-  <b>
+  <span class="kpHdr">
    <xsl:if                        test = "not($kpLink = 'False')">
     <xsl:call-template            name = "addIdLinkTarget">
      <xsl:with-param              name = "id"
@@ -107,7 +106,7 @@ BZIssue::4919 - [Summary] QC Report Bugs
     </xsl:call-template>
    </xsl:if>
    <xsl:apply-templates/>
-  </b>
+  </span>
 
   <!-- 
   If a summary section contains nothing but a KeyPoint it needs to be
@@ -124,6 +123,13 @@ BZIssue::4919 - [Summary] QC Report Bugs
     <!-- Do nothing -->
    </xsl:otherwise>
   </xsl:choose>
+
+  <!-- If a KeyPoint is followed immediately by a SummarySection this 
+       KeyPoint is considered the heading for sub-sections.  Add a line
+       break to separate this heading from the first sub-section heading -->
+  <xsl:if                         test = "following-sibling::SummarySection">
+   <p/>
+  </xsl:if>
  </xsl:template>
 
  
@@ -572,9 +578,11 @@ BZIssue::4919 - [Summary] QC Report Bugs
  10/08/2002 - took breaks out at end of titles.
  =================================================================== -->
  <xsl:template                    name = "displayTOC">
-  <ul Class="lnone">
+  <ul class="tocSection">
    <xsl:for-each                select = "SummarySection">
     <xsl:call-template            name = "TocSummarySection">
+     <xsl:with-param              name = "secID"
+                                select = "@cdr:id"/>
      <xsl:with-param              name = "level"
                                 select = "1"/>
     </xsl:call-template>  

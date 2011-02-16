@@ -1,11 +1,6 @@
-<CdrDoc Type='Filter' Id='CDR0000380957'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Module: STYLE RS Insertion Deletion</DocTitle>
-<DocComment>CVS-V1.1</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: Module: STYLE RS Insertion Deletion -->
 <!--
 ================================================================
 $Id$
@@ -13,7 +8,10 @@ $Id$
 CSS Definitions for Redline/Strikeout Summary QC Reports
 Written by Volker Englisch, 2004-07-16
 
-$Log: not supported by cvs2svn $
+BZIssue::4934 - [Summary] Change Display for Link Elements in QC Reports
+BZIssue::4967 - [Summary] Modification to QC Reports to Show/Hide 
+                Certain Comments
+
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
@@ -28,118 +26,168 @@ $Log: not supported by cvs2svn $
  /* ================================   */  
    .insertproposed    { color: green; }         /* Editorial board changes */
    .insertproposed_ad { color: green;           /* Advisory board changes  */
-                        font-style: italic;
-                        letter-spacing: 0.1em;}
+                         font-style: italic;
+                         letter-spacing: 0.1em;}
    .insertapproved    { color: red; }
-   .insertapproved_ad { color: red; 
-                        font-style: italic;
-                        letter-spacing: 0.1em;}
-                     /* font-variant: small-caps; } letter-spacing: 0.1em;*/
+
+   .insertapproved_ad,
+   .insertpublish_ad  { color: red; 
+                         font-style: italic;
+                         letter-spacing: 0.1em;}
+           
    .deleteproposed    { text-decoration: line-through;
-                        color: green; }
+                         color: green; }
    .deleteproposed_ad { text-decoration: line-through;
-                        color: green; 
-                        font-style: italic;
-                        letter-spacing: 0.1em;}
+                         color: green; 
+                         font-style: italic;
+                         letter-spacing: 0.1em;}
    .deleteapproved    { text-decoration: line-through; }
-   .deleteapproved_ad { text-decoration: line-through; 
-                        font-style: italic;
-                        letter-spacing: 0.1em;}
+
+   .deleteapproved_ad,
+   .deletepublish_ad  { text-decoration: line-through; 
+                         font-style: italic;
+                         letter-spacing: 0.1em;}
 
  /* Mark-up for the reference bullets */
  /* ================================= */
    .refdeleteprop    { color: green; 
-                       text-decoration: line-through; }
+                        text-decoration: line-through; }
    .refdeleteprop_ad { color: green; 
-                       text-decoration: line-through; 
-                       font-style: italic;
-                       letter-spacing: 0.1em;}
+                        text-decoration: line-through; 
+                        font-style: italic;
+                        letter-spacing: 0.1em;}
    .refdeleteappr    { text-decoration: line-through; }
    .refdeleteappr_ad { text-decoration: line-through; 
-                       font-style: italic;
-                       letter-spacing: 0.1em; }
+                        font-style: italic;
+                        letter-spacing: 0.1em; }
    .refinsertprop    { color: green; }
    .refinsertprop_ad { color: green; 
-                       font-style: italic;
-                       letter-spacing: 0.1em; }
+                        font-style: italic;
+                        letter-spacing: 0.1em; }
    .refinsertappr    { color: red; }
    .refinsertappr_ad { color: red; 
-                       font-style: italic;
-                       letter-spacing: 0.1em; }
+                        font-style: italic;
+                        letter-spacing: 0.1em; }
 
  /* Mark-up for the comment */
  /* ======================= */
-   .commentnormal    { color: white; 
-                       background-color: green;
-                       font-style: italic; 
-                       font-weight: bold; }
-   .commentnormal_ad { color: white;
-                       background-color: green; 
-                       font-style: italic; 
-                       font-weight: bold;
-                       letter-spacing: 0.1em; }
-   .cominsertprop    { color: green; 
-                       background-color: #AAA; 
-                       font-style: italic; 
-                       font-weight: bold; } 
-   .cominsertprop_ad { color: green; 
-                       background-color: #AAA; 
-                       font-style: italic; 
-                       font-weight: bold;
-                       letter-spacing: 0.1em; } 
-   .cominsertappr    { color: red;
-                       background-color: green; 
-                       font-style: italic;
-                       font-weight: bold; }
-   .cominsertappr_ad { color: red;
-                       background-color: green; 
-                       font-style: italic;
-                       font-weight: bold;
-                       letter-spacing: 0.1em; }
-   .comdeleteprop    { text-decoration: line-through;
-                       color: green; 
-                       background-color: #AAA; 
-                       font-style: italic; 
-                       font-weight: bold; } 
-   .comdeleteprop_ad { text-decoration: line-through;
-                       color: green; 
-                       background-color: #AAA; 
-                       font-style: italic; 
-                       font-weight: bold;
-                       letter-spacing: 0.1em; } 
-   .comdeleteappr    { text-decoration: line-through;
-                       color: black;
-                       background-color: green; 
-                       font-style: italic;
-                       font-weight: bold;}
-   .comdeleteappr_ad { text-decoration: line-through;
-                       color: black;
-                       background-color: green; 
-                       font-style: italic;
-                       font-weight: bold;
-                       letter-spacing: 0.1em; }
+    /***
+    This set of styles is needed to make all comment types display
+    differently: Internal/External/Permanent/Advisory/etc.
+    However, the users decided to only distinguish between internal
+    and external comments.  See the following style block
+    ===============================================================
+    .com_intern       { color: #00FFFF; }
+    .com_extern       { color: white; }
+    .com_perm         { background-color: #006666; }
+    .com_temp         { background-color: green; }
+    .com_adv          { letter-spacing: 0.1em; }
+    .com_edi          { letter-spacing: 0. em; }
+    .none             { display: none; }
+    ***/
+
+    .com_intern       { color: black; 
+                        background-color: #CFCFCF; }
+    .com_extern       { color: black; }
+    .com_perm         { background-color: none; }
+    .com_temp         { background-color: none; }
+    .com_adv          { letter-spacing: 0. em; }
+    .com_edi          { letter-spacing: 0. em; }
+    .none             { display: none; }
+
+    .commentnormal    { /* color: white; */ 
+                        /* background-color: green; */
+                        font-style: italic; 
+                        font-weight: bold; }
+    .commentnormal_ad { color: white;
+                        background-color: green; 
+                        font-style: italic; 
+                        font-weight: bold;
+                        letter-spacing: 0.1em; }
+    .cominsertprop    { color: green; 
+                        background-color: #AAA; 
+                        font-style: italic; 
+                        font-weight: bold; } 
+    .cominsertprop_ad { color: green; 
+                        background-color: #AAA; 
+                        font-style: italic; 
+                        font-weight: bold;
+                        letter-spacing: 0.1em; } 
+    .cominsertappr    { color: red;
+                        background-color: none;   /* changed from green; */ 
+                        font-style: italic;
+                        font-weight: bold; }
+    .cominsertappr_ad { color: red;
+                        background-color: none;   /* changed from green; */
+                        font-style: italic;
+                        font-weight: bold;
+                        letter-spacing: 0.1em; }
+    .comdeleteprop    { text-decoration: line-through;
+                        color: green; 
+                        background-color: #AAA; 
+                        font-style: italic; 
+                        font-weight: bold; } 
+    .comdeleteprop_ad { text-decoration: line-through;
+                        color: green; 
+                        background-color: #AAA; 
+                        font-style: italic; 
+                        font-weight: bold;
+                        letter-spacing: 0.1em; } 
+    .comdeleteappr    { text-decoration: line-through;
+                        color: black;
+                        background-color: none;   /* changed from green; */
+                        font-style: italic;
+                        font-weight: bold;}
+    .comdeleteappr_ad { text-decoration: line-through;
+                        color: black;
+                        background-color: none;   /* changed from green; */
+                        font-style: italic;
+                        font-weight: bold;
+                        letter-spacing: 0.1em; }
 
  /* Mark up other misc elements  */
  /* ===========================  */
-   .deleteGlossaryTerm    { text-decoration: line-through; }
-   .deleteGlossaryTerm_ad { text-decoration: line-through;
-                            font-style: italic;
-                            letter-spacing: 0.1em; }
-   .insertGlossaryTerm    { font-style: normal; }
-   .insertGlossaryTerm_ad { font-style: italic;
-                            letter-spacing: 0.1em; }
+   .deleteGlossaryTerm,
+   .deleteGlossaryTerm_pup  { text-decoration: line-through; 
+                               color: black; }
+   .deleteGlossaryTerm_prop { text-decoration: line-through; 
+                               color: green; }
+   .deleteGlossaryTerm_ad   { text-decoration: line-through;
+                               font-style: italic;
+                               letter-spacing: 0.1em; }
+   .insertGlossaryTerm,
+   .insertGlossaryTerm_pup  { font-style: normal; 
+                               color: red; }
+   .insertGlossaryTerm_prop { font-style: normal; 
+                               color: green; }
+   .insertGlossaryTerm_ad   { font-style: italic;
+                               color: red;
+                               letter-spacing: 0.1em; }
 
-   .deleteDisRef          { text-decoration: line-through;
-                            color: red; }
-   .insertDisRef          { font-style: normal;
-                            color: red; }
+   .deleteDisRef            { text-decoration: line-through;
+                               color: red; }
+   .insertDisRef            { font-style: normal;
+                               color: red; }
 
-  a.citationLink          { color: inherit;
-                            text-decoration: inherit; }
-  a.idLink                { color: inherit;
-                            text-decoration: underline; }
+  a.citationLink            { color: inherit;
+                              text-decoration: inherit; }
+  a.idLink                  { color: inherit;
+                              text-decoration: underline; }
+
+  span[class="insertGlossaryTerm"],
+  span[class="deleteGlossaryTerm"],
+  span[class="insertGlossaryTerm_prop"],
+  span[class="deleteGlossaryTerm_prop"],
+  span[class="insertGlossaryTerm_pup"],
+  span[class="deleteGlossaryTerm_pup"]
+                            { border: 1pt solid blue; }
+  span[class="insertGlossaryTerm"]:hover,
+  span[class="deleteGlossaryTerm"]:hover,
+  span[class="deleteGlossaryTerm_prop"]:hover,
+  span[class="insertGlossaryTerm_prop"]:hover,
+  span[class="deleteGlossaryTerm_pup"]:hover,
+  span[class="insertGlossaryTerm_pup"]:hover
+                            { background-color: #FFFF77; }
 
  </xsl:template>
-</xsl:transform>]]>
-</CdrDocXml>
-</CdrDoc>
+</xsl:transform>
