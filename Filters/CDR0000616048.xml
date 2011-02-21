@@ -8,6 +8,7 @@ $Id$
 Filter to create Vendor XML for Glossary
 
 BZIssue::4973 - [Glossary] Modification to Publication Filters
+BZIssue::4995 - [Glossary] Non Publishable Also Calls in the dictionary
 
 ==================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -300,14 +301,22 @@ BZIssue::4973 - [Glossary] Modification to Publication Filters
    <xsl:variable                  name = "sqlGTNQuery">
           SELECT n.value
             FROM query_term gtc
-            join query_term n
-              on n.doc_id = gtc.doc_id
-             and n.path = '/GlossaryTermName/' + ? + '/TermNameString'
-            join document d
-              on d.id = n.doc_id
+            JOIN query_term n
+              ON n.doc_id = gtc.doc_id
+             AND n.path = '/GlossaryTermName/' + ? + '/TermNameString'
+            JOIN document d
+              ON d.id = n.doc_id
+            JOIN query_term gts
+              ON d.id = gts.doc_id
+             AND (gts.path = '/GlossaryTermName/TermNameStatus'
+                  OR
+                  gts.path = '/GlossaryTermName/TranslatedName' +
+                             '/TranslatedNameStatus'
+                 )
            WHERE gtc.path = '/GlossaryTermName/GlossaryTermConcept/@cdr:ref'
              AND gtc.int_val = ?
              AND d.active_status = 'A'
+             AND gts.value in ('Approved', 'Revision pending')
              AND n.doc_id != ?
            order by n.value
    </xsl:variable>
