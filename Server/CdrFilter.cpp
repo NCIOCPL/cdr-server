@@ -2,206 +2,6 @@
  * $Id$
  *
  * Applies XSLT scripts to a document
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.58  2008/08/27 02:38:31  ameyer
- * Added functionality to lookupExternalValue() to make values non-mappable
- * if they match anything in the external_map_nomap_pattern table.
- *
- * Revision 1.57  2008/08/01 02:31:04  ameyer
- * Fixed incorrectly escaped parenthesis chars in regex.
- *
- * Revision 1.56  2007/08/03 19:06:11  bkline
- * Fixed serious memory allocation bug in parmstr function().
- *
- * Revision 1.55  2007/03/14 23:58:23  ameyer
- * Changed slashes to tildes to delimit query arguments in execXsltSqlQuery.
- * We need to be able to pass strings with slashes into SQL Server.
- *
- * Revision 1.54  2007/03/14 23:10:38  ameyer
- * Added cdrutil:/sql-query, plus some additional documentation.
- *
- * Revision 1.53  2006/09/01 02:07:54  ameyer
- * Added minor safety check on mappability.
- *
- * Revision 1.52  2006/05/04 22:45:47  ameyer
- * Numerous changes were introduced to support date-time limited filtering.
- * This is an interim release of these changes.  It appears to work and,
- * as far as we know, can be put into production, but more changes will come.
- * Some debugging statements for date-time limits have been left in the
- * source, but commented out.
- *
- * Revision 1.51  2005/12/09 17:03:01  bkline
- * Fixed typo (was assigning the wrong value to verificationDate variable).
- *
- * Revision 1.50  2005/10/27 12:37:58  bkline
- * Support for new function to calculate an artificial "verification
- * date" added.
- *
- * Revision 1.49  2005/08/02 15:00:04  ameyer
- * Put more try/catch wrappers around Sablotron calls.
- * Purpose is to better identify any internal Sablotron exceptions for
- * which identity would be lost if they just bubbled up to the top.
- *
- * Revision 1.48  2005/06/21 13:06:20  bkline
- * Added support for new 'bogus' column in external_map table.
- *
- * Revision 1.47  2005/03/04 02:53:39  ameyer
- * Added new parameter to parser constructor to ensure that parser memory
- * for filters does not hang around beyond its need.  Part of conversion
- * from xml4c to Xerces.
- *
- * Revision 1.46  2004/05/14 02:20:54  ameyer
- * Added cdrutil protocol callback for function denormalizeTerm.
- *
- * Revision 1.45  2004/04/30 01:35:03  ameyer
- * Added code, normally dormant, for timing filter execution by filter id.
- *
- * Revision 1.44  2004/03/31 03:05:53  ameyer
- * Took toUtf8() out from inside function call parentheses.
- * Bob has seen an MSVC bug in the past that makes this safer.
- *
- * Revision 1.43  2004/03/12 00:30:30  bkline
- * Replaced calls to obsolete Sablotron APIs.
- *
- * Revision 1.42  2004/02/20 00:34:42  ameyer
- * Removed a debugging line inadvertently left in.
- *
- * Revision 1.41  2004/02/19 22:12:36  ameyer
- * Reorganized code in order to add new function filterDocumentByScriptSetName().
- * Took some code out of existing functions in order to centralize filter
- * set processing, whether being called from a C++ function or by the command
- * processor to process an XML transaction.
- *
- * Revision 1.40  2003/11/18 16:29:54  bkline
- * Added code to insert unmapped values into the external_map table
- * so the External Map Failure report would be able to let the users
- * know what still needs mapping.
- *
- * Revision 1.39  2003/11/05 22:28:32  bkline
- * Added support for new extern-map function.
- *
- * Revision 1.38  2003/09/09 19:25:01  bkline
- * Added new custom function for validating U.S. ZIP codes.
- *
- * Revision 1.37  2003/08/04 17:03:26  bkline
- * Fixed breakage caused by upgrade to latest version of Microsoft's
- * C++ compiler.
- *
- * Revision 1.36  2003/06/10 20:06:50  ameyer
- * Modified repFilterSet to return <CdrRepFilterSetResp> instead of
- * <...Add...>.
- *
- * Revision 1.35  2003/06/05 15:36:32  bkline
- * Added new command for determining the last publishable version of
- * a CDR document.
- *
- * Revision 1.34  2003/03/14 02:01:40  bkline
- * Fixed garbage returns from cdr::String::getInt().
- *
- * Revision 1.33  2002/11/19 22:43:32  bkline
- * Fixed code for last and lastp version specifications to throw an error
- * if the requested version is not found.
- *
- * Revision 1.32  2002/11/14 13:23:58  bkline
- * Changed CdrFilter command to use filter sets.  Added CdrDelFilterSet
- * command.
- *
- * Revision 1.31  2002/11/12 11:44:37  bkline
- * Added filter set support.
- *
- * Revision 1.30  2002/10/03 02:56:08  bkline
- * Added a custom function to map a Cancer.gov GUID to a pretty URL.
- *
- * Revision 1.29  2002/09/29 01:43:20  bkline
- * Fixed bug in code to extract CDATA section (wasn't checking for missing
- * node).
- *
- * Revision 1.28  2002/09/07 18:14:53  bkline
- * Turned on const char** casts for Sablotron again.
- *
- * Revision 1.27  2002/09/04 22:01:58  bkline
- * Backing out upgrade to Sablotron 0.95 to avoid bug.
- *
- * Revision 1.26  2002/09/04 18:58:17  bkline
- * Upgraded Sablotron to 0.95.
- *
- * Revision 1.25  2002/07/15 18:55:08  bkline
- * Backed out casts until next upgrade of Sablotron.
- *
- * Revision 1.24  2002/07/12 20:29:24  bkline
- * Added DocTitle direct access.
- *
- * Revision 1.23  2002/06/07 13:52:10  bkline
- * Added support for last publishable linked document retrieval.
- *
- * Revision 1.22  2002/05/21 19:08:55  bkline
- * Implemented support for finding documents by title in URI.
- *
- * Revision 1.21  2002/04/04 19:06:12  bkline
- * Eliminated unused variable.  Fixed typo in comment.
- *
- * Revision 1.20  2002/03/07 12:58:52  bkline
- * Added missing break statement in switch (message handler).
- *
- * Revision 1.19  2002/03/07 02:03:21  bkline
- * Delayed throwing an exception until we are no longer in a Sablotron
- * callback function (which was causing a memory leak).
- *
- * Revision 1.18  2002/02/19 22:44:59  bkline
- * Added support for version attribute on Document element.
- *
- * Revision 1.17  2002/02/01 22:08:01  bkline
- * Fixed whitespace in XSLT error messages.
- *
- * Revision 1.16  2002/01/31 21:35:09  mruben
- * changed default format for current date
- *
- * Revision 1.15  2002/01/23 18:23:13  mruben
- * Changed components of CdrDocCtl from uri
- *
- * Revision 1.14  2002/01/08 18:19:12  mruben
- * Modified for reentrance.
- * Added support for nonstandard scheme cdrutil:
- *
- * Revision 1.13  2001/09/21 03:45:53  ameyer
- * Added filterDocumentByScriptId and fitlerDocumentByScriptTitle
- *
- * Revision 1.12  2001/09/20 20:13:31  mruben
- * added code for accessing versions -- needs testing
- *
- * Revision 1.11  2001/07/12 19:35:06  mruben
- * fixed error in message
- *
- * Revision 1.10  2001/06/19 18:54:29  mruben
- * addes API call and support for parms
- *
- * Revision 1.9  2001/05/08 15:00:00  mruben
- * fixed bug in generating filter results
- *
- * Revision 1.8  2001/05/04 17:00:49  mruben
- * added attribute to skip output
- *
- * Revision 1.7  2001/04/05 23:10:02  mruben
- * added specifying filter by name
- *
- * Revision 1.6  2001/03/19 17:17:43  mruben
- * added support for xsl:message
- *
- * Revision 1.5  2001/03/13 22:15:09  mruben
- * added ability to use CdrDoc element for filter
- *
- * Revision 1.4  2001/02/26 16:09:27  mruben
- * fixed error in exception safety
- *
- * Revision 1.3  2000/09/25 14:00:14  mruben
- * added cdrx protocol for XSLT URIs
- *
- * Revision 1.2  2000/08/24 13:43:11  mruben
- * added support for cdr: URIs
- *
- * Revision 1.1  2000/08/23 14:19:03  mruben
- * Initial revision
  */
 
 #if defined _MSC_VER
@@ -2088,12 +1888,13 @@ cdr::String cdr::getFilterSet(Session& session,
     // Start the response.
     std::wostringstream response;
     response << L"<CdrGetFilterSetResp><FilterSetName>"
-             << name
+             << cdr::entConvert(name)
              << L"</FilterSetName><FilterSetDescription>"
-             << desc
+             << cdr::entConvert(desc)
              << L"</FilterSetDescription>";
     if (!notes.isNull())
-        response << L"<FilterSetNotes>" << notes << L"</FilterSetNotes>";
+        response << L"<FilterSetNotes>" << cdr::entConvert(notes)
+                 << L"</FilterSetNotes>";
 
     // Find the filter set members.
     db::PreparedStatement q2 = connection.prepareStatement(
@@ -2129,14 +1930,14 @@ cdr::String cdr::getFilterSet(Session& session,
             response << L"<Filter DocId='"
                      << stringDocId(foreignKey)
                      << L"'>"
-                     << name
+                     << cdr::entConvert(name)
                      << L"</Filter>";
         }
         else {
             response << L"<FilterSet SetId='"
                      << foreignKey
                      << L"'>"
-                     << name
+                     << cdr::entConvert(name)
                      << L"</FilterSet>";
         }
     }
@@ -2250,7 +2051,7 @@ cdr::String cdr::getFilterSets(cdr::Session& session,
         response << L"<FilterSet SetId='"
                  << id
                  << L"'>"
-                 << name
+                 << cdr::entConvert(name)
                  << L"</FilterSet>";
     }
     response << L"</CdrGetFilterSetsResp>";
@@ -2290,7 +2091,7 @@ cdr::String cdr::getFilters(cdr::Session& session,
         response << L"<Filter DocId='"
                  << stringDocId(id)
                  << L"'>"
-                 << title
+                 << cdr::entConvert(title)
                  << L"</Filter>";
     }
     response << L"</CdrGetFiltersResp>";
