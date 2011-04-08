@@ -9,6 +9,7 @@ Filter to create DrugInfoSummary vendor output documents.
                               Volker Englisch, 2006-08-12
 
 BZIssue::4949 - Vendor Filter Changes for Display of DIS information
+BZIssue::5008 - [DIS] Relocate Link to MedlinePlus Information
 
 ==================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -69,16 +70,6 @@ BZIssue::4949 - Vendor Filter Changes for Display of DIS information
 
        <Para><xsl:apply-templates select = "DrugReferenceLink"/></Para>
 
-       <!--
-         <Para>
-         Pronunciation: 
-         <xsl:apply-templates     select = "../DrugInfoMetaData/
-                                          GlossaryLink/
-                                          GlossaryTermName/
-                                          TermName/
-                                          TermPronunciation"/>
-         </Para>
-       -->
       </Section>
      </xsl:for-each>
     </xsl:when>
@@ -114,9 +105,6 @@ BZIssue::4949 - Vendor Filter Changes for Display of DIS information
    Collect all @section=About-drug DrugReference elements to display 
    in a single section.
    ================================================================= -->
-   <xsl:choose>
-    <xsl:when                      test = "DrugReference
-                                           [@section='About_drug']">
      <Section>
       <xsl:attribute               name = "cdr:id">
        <xsl:text>_About</xsl:text>
@@ -128,28 +116,28 @@ BZIssue::4949 - Vendor Filter Changes for Display of DIS information
        <xsl:value-of             select = "Title"/>
       </Title>
 
-      <xsl:apply-templates       select = "DrugReference
-                                          [@section='About_drug']"/>
-     </Section>
-    </xsl:when>
-    <xsl:otherwise>
-     <Section>
-      <xsl:attribute               name = "cdr:id">
-       <xsl:text>_About</xsl:text>
-      </xsl:attribute>
-
-      <Title>
-       <xsl:text>About</xsl:text>
-       <xsl:text> </xsl:text>
-       <xsl:value-of             select = "Title"/>
-      </Title>
+      <!-- 
+      As the first section within the About-Drug paragraph display the
+      dictionary definition, then display the MedlinePlus section 
+      followed by everything else.
+      ================================================================ -->
       <xsl:call-template             name = "addDictionaryDefinition">
        <xsl:with-param               name = "drugRefTypeNCI"
                                 select = "'Dict'"/>
       </xsl:call-template>
+
+      <xsl:apply-templates       select = "DrugReference
+                                          [@section='About_drug'
+                                          and
+                                          starts-with(DrugReferenceLink, 
+                                                         'MedlinePlus')]"/>
+      <xsl:apply-templates       select = "DrugReference
+                                          [@section='About_drug'
+                                          and
+                                          not(
+                                          starts-with(DrugReferenceLink, 
+                                                         'MedlinePlus'))]"/>
      </Section>
-    </xsl:otherwise>
-   </xsl:choose>
 
    <!--
    Next collect all @section=Research-results DrugReference elements
@@ -338,42 +326,12 @@ BZIssue::4949 - Vendor Filter Changes for Display of DIS information
     </xsl:otherwise>
    </xsl:choose>
   </xsl:param>
+
   <xsl:param                      name = "miscDocFracId"
                                 select = "substring-after(
                                             DrugReferenceDescription/
                                             MiscellaneousDocument/
                                               @cdr:ref, '#')"/>
-  <!--
-  If this is the DrugReference section linking to the MedlinePlus
-  Information we need to display the Dictionary Definition as the
-  second paragraph.  If the MedlinePlus information doesn't exist the
-  Dictionary Definition is to be displayed first.
-  =================================================================== -->
-  <xsl:if                         test = "@section = 'About_drug'">
-   <xsl:choose>
-    <xsl:when                     test = "position() = 1
-                                          and
-                                          not(starts-with(
-                                            normalize-space(DrugReferenceLink), 
-                                                            'MedlinePlus'))">
-     <xsl:call-template             name = "addDictionaryDefinition">
-      <xsl:with-param               name = "drugRefTypeNCI"
-                                select = "'Dict'"/>
-     </xsl:call-template>
-    </xsl:when>
-    <xsl:when                     test = "position() = 2
-                                          and
-                                          preceding-sibling::DrugReference[
-                                            starts-with(
-                                             normalize-space(DrugReferenceLink),
-                                                             'MedlinePlus')]">
-     <xsl:call-template             name = "addDictionaryDefinition">
-      <xsl:with-param               name = "drugRefTypeNCI"
-                                select = "'Dict'"/>
-     </xsl:call-template>
-    </xsl:when>
-   </xsl:choose>
-  </xsl:if>
 
    <!--
    Display all DrugReference sections
