@@ -1,11 +1,4 @@
-<CdrDoc Type='Filter' Id='CDR0000361976'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Global Change: Add Terminology Link to Protocol</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
+<?xml version="1.0"?>
 
  <!--
  ===========================================================================
@@ -78,6 +71,7 @@
                                    LowAge|
                                    HighAge|
                                    AgeText|
+                                   Gender|
                                    @*|
                                    comment()|
                                    processing-instruction()">
@@ -134,14 +128,21 @@
 
  <!--
  ================================================================
- ProtocolDetail
+ ProtocolDetail (InScope) or PDQIndexing (CTGov)
+ XXX NOTE:
+    The definitions of these elements have diverged between InScope and
+    CTGov protocols.  The template rules below are still expected to 
+    work for both document types because the rules compensate for the
+    differences.  Further changes could make this strategy too difficult
+    to maintain.  Beware!
  ================================================================ -->
- <xsl:template            match = "ProtocolDetail">
+ <xsl:template            match = "ProtocolDetail|PDQIndexing">
   <xsl:copy>
 
    <!-- Copy up to and including first possible thing to add -->
    <xsl:apply-templates  select = "StudyType|
                                    StudyCategory|
+                                   ProtocolDesign|
                                    Condition|
                                    @*|
                                    comment()|
@@ -180,7 +181,7 @@
    </xsl:if>
  
    <!-- Rest of ProtocolDetail elements -->
-   <xsl:apply-templates  select = "EnteredBy|EntryDate"/>
+   <xsl:apply-templates  select = "Eligibility|EnteredBy|EntryDate"/>
 
   </xsl:copy>
 
@@ -276,6 +277,13 @@
     </xsl:if>
    </xsl:if>
   </xsl:copy>
+
+  <!-- Copy any following elements
+       These should only appear in InScopeProtocols, not CTGovProtocols
+       but there is no harm in including the template
+       -->
+  <xsl:apply-templates select = "ArmOrGroupLink|InterventionDescription"/>
+
  </xsl:template>
 
  <!--
@@ -289,6 +297,4 @@
   </xsl:message>
  </xsl:template>
 
-</xsl:transform>]]>
-</CdrDocXml>
-</CdrDoc>
+</xsl:transform>
