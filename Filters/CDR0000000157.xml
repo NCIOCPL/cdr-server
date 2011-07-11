@@ -2759,7 +2759,13 @@ BZIssue::5039 - Search string blurb for CAM summaries
   </xsl:choose>
 
   <xsl:choose>
-   <xsl:when                      test = "$audience = 'Patients'">
+   <!--
+   Patient Section (no CAM)
+   ========================================================== -->
+   <xsl:when                      test = "$audience = 'Patients'
+                                          and
+                                          not($sumType = 
+                                          'Complementary and alternative medicine')">
     <xsl:element                  name = "ExternalRef">
      <xsl:attribute               name = "xref">
       <xsl:text>http://www.cancer.gov/Search/ClinicalTrialsLink.aspx</xsl:text>
@@ -2769,6 +2775,42 @@ BZIssue::5039 - Search string blurb for CAM summaries
       <xsl:value-of             select = "number(substring($metaDataDocID,
                                                                       4))"/>
       <xsl:text>&amp;tt=1</xsl:text>
+      <xsl:text>&amp;format=1</xsl:text>
+      <xsl:text>&amp;cn=1</xsl:text>
+     </xsl:attribute>
+     <xsl:value-of              select = "$metaDataDoc"/>
+    </xsl:element>
+   </xsl:when>
+   <!--
+   CAM Section
+   ========================================================== -->
+   <xsl:when                      test = "$audience = 'Patients'
+                                          and
+                                          $sumType = 
+                                          'Complementary and alternative medicine'">
+    <xsl:element                  name = "ExternalRef">
+     <xsl:attribute               name = "xref">
+      <xsl:text>http://www.cancer.gov/Search/ClinicalTrialsLink.aspx</xsl:text>
+      <xsl:text>?id=</xsl:text>
+      <xsl:value-of             select = "number(substring($metaDataDocID,
+                                                                      4))"/>
+      <xsl:text>&amp;idtype=</xsl:text>
+      <xsl:choose>
+       <xsl:when                  test = "$metaDataType = 'Drug'">
+        <xsl:text>1</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "$metaDataType = 'Intervention'">
+        <xsl:text>5</xsl:text>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:text>0</xsl:text>
+       </xsl:otherwise>
+      </xsl:choose>
+      <!-- xsl:value-of             select = "$metaDataType"/>
+      <xsl:text>=</xsl:text>
+      <xsl:value-of             select = "number(substring($metaDataDocID,
+                                                                      4))"/ -->
+      <xsl:text>&amp;tt=0</xsl:text>
       <xsl:text>&amp;format=1</xsl:text>
       <xsl:text>&amp;cn=1</xsl:text>
      </xsl:attribute>
