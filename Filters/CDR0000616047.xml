@@ -1,11 +1,6 @@
-<CdrDoc Type='Filter' Id='CDR0000616047'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Denormalization Filter: GlossaryTermName</DocTitle>
-<ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: Denormalization Filter: GlossaryTermName -->
 <!--
  ================================================================
  $Id$
@@ -13,7 +8,6 @@
  Filter to denormalize summary data.
  Written by Volker Englisch, 2004-11-09
 
- $Log: not supported by cvs2svn $
  ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
@@ -44,12 +38,96 @@
   <xsl:variable                   name = "concept"
                                 select = "document(concat('cdr:', $conceptId,
                                                           '/last'))"/>
-  <xsl:element                    name = "GlossaryTermConcept">
+  <!-- xsl:element                    name = "GlossaryTermConcept">
    <xsl:attribute                 name = "cdr:ref">
     <xsl:value-of               select = "$conceptId"/>
    </xsl:attribute>
    <xsl:copy-of                 select = "$concept/
                                           GlossaryTermConcept/*"/>
+  </xsl:element -->
+  <xsl:element                    name = "GlossaryTermConcept">
+   <xsl:attribute                 name = "cdr:ref">
+    <xsl:value-of               select = "$conceptId"/>
+   </xsl:attribute>
+   <xsl:copy-of                 select = "$concept/
+                                            GlossaryTermConcept/
+                                            TermDefinition"/>
+   <xsl:copy-of                 select = "$concept/
+                                            GlossaryTermConcept/
+                                            TranslatedTermDefinition"/>
+   <xsl:copy-of                 select = "$concept/
+                                            GlossaryTermConcept/
+                                            TermType"/>
+   <xsl:apply-templates         select = "$concept/
+                                            GlossaryTermConcept/
+                                            RelatedInformation"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ =================================================================
+ Denormalize the GlossaryTermConcept information
+ ================================================================= -->
+ <xsl:template                   match = "RelatedInformation">
+  <xsl:copy>
+   <xsl:apply-templates         select = "RelatedDrugSummaryLink  |
+                                          RelatedSummaryRef       |
+                                          RelatedExternalRef"/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ =================================================================
+ Denormalize the GlossaryTermConcept information
+ ================================================================= -->
+ <xsl:template                   match = "RelatedSummaryRef">
+  <xsl:variable                   name = "relatedId"
+                                select = "@cdr:ref"/>
+
+  <xsl:variable                   name = "related"
+                                select = "document(concat('cdr:', $relatedId,
+                                                          '/lastp'))"/>
+  <xsl:element                    name = "{name()}">
+   <xsl:for-each                select = "@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+  <xsl:element                    name = "Summary">
+   <xsl:copy-of                 select = "$related/Summary/
+                                            SummaryMetaData"/>
+   <xsl:copy-of                 select = "$related/Summary/
+                                            SummaryTitle"/>
+  </xsl:element>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ =================================================================
+ Denormalize the GlossaryTermConcept information
+ ================================================================= -->
+ <xsl:template                   match = "RelatedDrugSummaryLink">
+  <xsl:variable                   name = "relatedId"
+                                select = "@cdr:ref"/>
+
+  <xsl:variable                   name = "related"
+                                select = "document(concat('cdr:', $relatedId,
+                                                          '/lastp'))"/>
+  <xsl:element                    name = "{name()}">
+   <xsl:for-each                select = "@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+  <xsl:element                    name = "DrugInformationSummary">
+   <xsl:copy-of                 select = "$related/DrugInformationSummary/
+                                            DrugInfoMetaData"/>
+   <xsl:copy-of                 select = "$related/DrugInformationSummary/
+                                            Title"/>
+  </xsl:element>
   </xsl:element>
  </xsl:template>
 
@@ -65,6 +143,3 @@
   </xsl:copy> 
  </xsl:template>
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>

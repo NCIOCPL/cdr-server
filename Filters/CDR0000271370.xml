@@ -1,24 +1,19 @@
-<CdrDoc Type='Filter' Id='CDR0000271370'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Module: Vendor Filter Templates</DocTitle>
-<DocComment>CVS-V1.15</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: Module: Vendor Filter Templates -->
 <!--
- ===========================================================================
- $Id$
+====================================================================
+$Id$
 
- Filter including misc Vendor filter templates.
+Filter including misc Vendor filter templates.
 
- $Log: not supported by cvs2svn $
- ===========================================================================
--->
+BZIssue::???? - Modify Vendor Filters to Include Audio
+
+==================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0"
                exclude-result-prefixes = "cdr"
-                               version = "1.0">
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
 
  <xsl:output                    method = "xml" 
                   omit-xml-declaration = "no"
@@ -47,29 +42,12 @@
  ==================================================================== -->
  <xsl:template                   match = "ProtocolRef"
                                   mode = "copy">
-  <!-- xsl:variable                   name = "pubVersion"
-                                select = "document(concat
-                                                    ('cdrutil:/get-pv-num/',
-                                                      @cdr:href))"/>
-  <xsl:choose>
-   <xsl:when                      test = "$pubVersion = -1">
-    <xsl:message             terminate = "no">
-     <xsl:text>Publishable Version of Protocol document </xsl:text>
-     <xsl:value-of              select = "@cdr:href"/>
-     <xsl:text> does not exist.&lt;BR/&gt;</xsl:text>
-    </xsl:message> 
-    <xsl:value-of               select = "concat(' ', .)"/>
-   </xsl:when>
-   <xsl:otherwise -->
-
-    <xsl:element                  name = "ProtocolRef">
-     <xsl:attribute               name = "href">
-      <xsl:value-of             select = "@cdr:href"/>
-     </xsl:attribute>
-     <xsl:apply-templates         mode = "copy"/>
-    </xsl:element>
-   <!-- /xsl:otherwise>
-  </xsl:choose -->
+  <xsl:element                    name = "ProtocolRef">
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "@cdr:href"/>
+   </xsl:attribute>
+   <xsl:apply-templates           mode = "copy"/>
+  </xsl:element>
 
  </xsl:template>
 
@@ -80,37 +58,47 @@
  message.
  ==================================================================== -->
  <xsl:template                   match = "ProtocolRef">
-  <!-- xsl:variable                   name = "pubVersion"
-                                select = "document(concat
-                                                    ('cdrutil:/get-pv-num/',
-                                                      @cdr:href))"/>
-  <xsl:choose>
-   <xsl:when                      test = "$pubVersion = -1">
-    <xsl:message             terminate = "no">
-     <xsl:text>Publishable Version of Protocol document </xsl:text>
-     <xsl:value-of              select = "@cdr:href"/>
-     <xsl:text> does not exist.&lt;BR/&gt;</xsl:text>
-    </xsl:message> 
-    <xsl:value-of               select = "concat(' ', .)"/>
-   </xsl:when>
-   <xsl:otherwise -->
-
-    <xsl:element                  name = "ProtocolRef">
-     <xsl:attribute               name = "href">
-      <xsl:value-of             select = "@cdr:href"/>
-     </xsl:attribute>
-     <xsl:apply-templates         mode = "copy"/>
-    </xsl:element>
-   <!-- /xsl:otherwise>
-  </xsl:choose -->
+  <xsl:element                    name = "ProtocolRef">
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "@cdr:href"/>
+   </xsl:attribute>
+   <xsl:apply-templates           mode = "copy"/>
+  </xsl:element>
  </xsl:template>
 
 
  <!--
  =========================================================================
- Template for MediaLink element (used by Summary and GlossaryTerm)
+ Template for MediaLink element (used by Summary, DIS and GlossaryTerm)
  ========================================================================= -->
  <xsl:template                   match = "MediaLink">
+  <xsl:param                      name = "audioLanguage"/>
+
+  <xsl:variable                   name = "mediaLinkType">
+   <xsl:choose>
+    <xsl:when                     test = "MediaID/Media/
+                                            PhysicalMedia/
+                                            ImageData/
+                                            ImageEncoding = 'JPEG'">
+     <xsl:value-of              select = "'image/jpeg'"/>
+    </xsl:when>
+    <xsl:when                     test = "MediaID/Media/
+                                            PhysicalMedia/
+                                            ImageData/
+                                            ImageEncoding = 'GIF'">
+     <xsl:value-of              select = "'image/gif'"/>
+    </xsl:when>
+    <xsl:when                     test = "MediaID/Media/
+                                            PhysicalMedia/
+                                            SoundData/
+                                            SoundEncoding = 'MP3'">
+     <xsl:value-of              select = "'audio/mpeg'"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of              select = "'unsupported media type'"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
 
   <!--
   This block is for a GlossaryTerm document with a MediaLink element 
@@ -122,7 +110,6 @@
                                           name(..) = 'GlossaryTermConcept'">
     <xsl:variable                 name = "mediaCdrRef"
                                 select = "MediaID/@cdr:ref"/>
-
     <xsl:variable                 name = "mediaLinkAlt"
                                 select = "@AlternativeText"/>
     <xsl:variable                 name = "mediaLinkInline"
@@ -146,6 +133,8 @@
      <xsl:call-template           name = "createMediaLink">
       <xsl:with-param             name = "mediaRef"
                                 select = "$mediaCdrRef"/>
+      <xsl:with-param             name = "mediaType"
+                                select = "$mediaLinkType"/>
       <xsl:with-param             name = "mediaAlt"
                                 select = "$mediaLinkAlt"/>
       <xsl:with-param             name = "mediaInline"
@@ -163,6 +152,8 @@
      </xsl:call-template>
     </xsl:for-each>
    </xsl:when>
+   <!-- xsl:when                      test = "$whoAmI = 'DrugInfo'">
+   </xsl:when -->
    <xsl:otherwise>
     <!-- 
     Create MediaLink element for Summary and GlossaryTerm (the
@@ -176,6 +167,9 @@
     =============================================================== --> 
     <xsl:variable                 name = "docLanguage">
      <xsl:choose>
+      <xsl:when                   test = "$audioLanguage">
+       <xsl:value-of            select = "$audioLanguage"/>
+      </xsl:when>
       <xsl:when                   test = "/Summary/
                                           SummaryMetaData/
                                           SummaryLanguage 
@@ -245,7 +239,11 @@
 
     <xsl:element                    name = "MediaLink">
      <xsl:attribute                 name = "ref">
-      <xsl:value-of               select = "MediaID/@cdr:ref"/>
+      <xsl:value-of               select = "MediaID/@cdr:ref |
+                                            MediaID/Media/@cdr:ref"/>
+     </xsl:attribute>
+     <xsl:attribute                 name = "type">
+      <xsl:value-of            select = "$mediaLinkType"/>
      </xsl:attribute>
 
      <!--
@@ -293,67 +291,71 @@
      Additionally, we were asked to set thumb='No' if the specified size of 
      the image is equal or greater then the actual size of the image so 
      that making the image clickable wouldn't result in a larger image size.
+     Note:  The above requirement only makes sense for image files.  There
+            won't be a thumb attribute for audio files.
      ======================================================================= -->
-     <xsl:choose>
-      <xsl:when                   test = "@thumb = 'No'">
-       <xsl:attribute             name = "thumb">
-        <xsl:value-of           select = "@thumb"/>
-       </xsl:attribute>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:variable              name = "displaySize">
-        <xsl:choose>
-         <xsl:when                test = "@size = 'full'">
-          <xsl:text>571</xsl:text>
-         </xsl:when>
-         <xsl:when                test = "@size = 'half'">
-          <xsl:text>274</xsl:text>
-         </xsl:when>
-         <xsl:when                test = "@size = 'third'">
-          <xsl:text>179</xsl:text>
-         </xsl:when>
-         <xsl:when                test = "@size = 'quarter'">
-          <xsl:text>131</xsl:text>
-         </xsl:when>
-         <xsl:when                test = "@size = 'fifth'">
-          <xsl:text>103</xsl:text>
-         </xsl:when>
-         <xsl:when                test = "@size = 'sixth'">
-          <xsl:text>84</xsl:text>
-         </xsl:when>
-         <xsl:when                test = "@size = 'as-is'">
-          <xsl:text>99999</xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-         <!--
-         If no size attribute has been specified the default size is
-            - summaries is half=274
-         ============================================================ -->
-          <xsl:if                 test = "/Summary">
+     <xsl:if                      test = "not($mediaLinkType = 'audio/mpeg')">
+      <xsl:choose>
+       <xsl:when                  test = "@thumb = 'No'">
+        <xsl:attribute            name = "thumb">
+         <xsl:value-of          select = "@thumb"/>
+        </xsl:attribute>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:variable             name = "displaySize">
+         <xsl:choose>
+          <xsl:when               test = "@size = 'full'">
+           <xsl:text>571</xsl:text>
+          </xsl:when>
+          <xsl:when               test = "@size = 'half'">
            <xsl:text>274</xsl:text>
-          </xsl:if>
-         </xsl:otherwise>
-        </xsl:choose>
-       </xsl:variable>
-
-       <xsl:choose>
-        <xsl:when                 test = "MediaID/Media/
+          </xsl:when>
+          <xsl:when               test = "@size = 'third'">
+           <xsl:text>179</xsl:text>
+          </xsl:when>
+          <xsl:when               test = "@size = 'quarter'">
+           <xsl:text>131</xsl:text>
+          </xsl:when>
+          <xsl:when               test = "@size = 'fifth'">
+           <xsl:text>103</xsl:text>
+          </xsl:when>
+          <xsl:when               test = "@size = 'sixth'">
+           <xsl:text>84</xsl:text>
+          </xsl:when>
+          <xsl:when               test = "@size = 'as-is'">
+           <xsl:text>99999</xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+          <!--
+          If no size attribute has been specified the default size is
+             - summaries is half=274
+          ============================================================ -->
+           <xsl:if                test = "/Summary">
+            <xsl:text>274</xsl:text>
+           </xsl:if>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:variable>
+ 
+        <xsl:choose>
+         <xsl:when                test = "MediaID/Media/
                                           PhysicalMedia/
                                           ImageData/
                                           ImageDimensions/
                                           WidthPixels &lt; $displaySize">
-         <xsl:attribute           name = "thumb">
-          <xsl:value-of         select = "'No'"/>
-         </xsl:attribute>
-        </xsl:when>
-        <xsl:otherwise>
-         <xsl:attribute           name = "thumb">
-          <xsl:value-of         select = "'Yes'"/>
-         </xsl:attribute>
-        </xsl:otherwise>
-       </xsl:choose>
-      </xsl:otherwise>
-     </xsl:choose>
+          <xsl:attribute          name = "thumb">
+           <xsl:value-of        select = "'No'"/>
+          </xsl:attribute>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:attribute          name = "thumb">
+           <xsl:value-of        select = "'Yes'"/>
+          </xsl:attribute>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:if>
 
      <!-- Optional Attributes -->
      <xsl:if                      test = "@cdr:id">
@@ -410,15 +412,6 @@
         </xsl:apply-templates>
        </xsl:when>
        <xsl:otherwise>
-<!--
-      <xsl:apply-templates      select = "MediaID/Media/
-                                          MediaContent/
-                                          Captions/
-                                          MediaCaption
-                                            [@language = $docLanguage
-                                             and
-                                             @audience = $docAudience]"/>
--->
         <xsl:apply-templates    select = "MediaID/Media/
                                           MediaContent/
                                           Captions/
@@ -469,6 +462,7 @@
  ====================================================================== -->
  <xsl:template                    name = "createMediaLink">
   <xsl:param                      name = "mediaRef"/>
+  <xsl:param                      name = "mediaType"/>
   <xsl:param                      name = "mediaAlt"/>
   <xsl:param                      name = "mediaInline"/>
   <xsl:param                      name = "mediaMinWidth"/>
@@ -497,6 +491,9 @@
   <xsl:element                    name = "MediaLink">
    <xsl:attribute                 name = "ref">
     <xsl:value-of               select = "$mediaRef"/>
+   </xsl:attribute>
+   <xsl:attribute                 name = "type">
+    <xsl:value-of               select = "$mediaType"/>
    </xsl:attribute>
 
    <!--
@@ -718,6 +715,3 @@
  <xsl:template                   match = "Comment | PdqKey"
                                   mode = "copy"/>
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>

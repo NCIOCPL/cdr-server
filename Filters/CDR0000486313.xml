@@ -2,13 +2,11 @@
 <!-- $Id$ -->
 <!-- Filter title: Denormalization Filter: DrugInfoSummary -->
 <!--
-  BZIssue::4781 - Have certain links to unpublished docs ignored
--->
-<!--
-
 ===============================================================
 Filter to denormalize Drug Information Summary data.
     Written by Volker Englisch, 2006-05-02
+
+BZIssue::4781 - Have certain links to unpublished docs ignored
 =============================================================== -->
 <xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
                              xmlns:cdr = 'cips.nci.nih.gov/cdr'
@@ -128,15 +126,44 @@ Filter to denormalize Drug Information Summary data.
 
   <xsl:element                    name = "{name()}">
    <GlossaryTermName>
+    <xsl:attribute                name = "cdr:ref">
+     <xsl:value-of              select = "@cdr:ref"/>
+    </xsl:attribute>
+
+    <xsl:apply-templates        select = "$glossDoc/GlossaryTermName/*"/>
+   </GlossaryTermName>
+  </xsl:element>
+
+ </xsl:template>
+
+
+
+ <!-- 
+ ======================================================================
+ Denormalize MediaLink
+ ====================================================================== -->
+ <xsl:template                    match = "MediaID">
+  <xsl:copy>
+   <!-- xsl:attribute                 name = "cdr:ref">
+    <xsl:value-of               select = "@cdr:ref"/>
+   </xsl:attribute -->
+  <xsl:variable                   name = "mediaID" 
+                                select = "@cdr:ref"/>
+
+  <xsl:variable                   name = "mediaDoc">
+   <xsl:copy-of                 select = "document(concat('cdr:', $mediaID,
+                                                           '/lastp'))"/>
+  </xsl:variable>
+
+
+  <xsl:element                    name = "Media">
    <xsl:attribute                 name = "cdr:ref">
     <xsl:value-of               select = "@cdr:ref"/>
    </xsl:attribute>
-
-   <xsl:copy-of                 select = "$glossDoc/GlossaryTermName/*"/>
-   </GlossaryTermName>
+   <xsl:copy-of                  select = "$mediaDoc/Media/PhysicalMedia"/>
   </xsl:element>
+  </xsl:copy>
  </xsl:template>
-
 
 
  <!-- 

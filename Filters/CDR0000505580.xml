@@ -26,6 +26,8 @@ BZIssue::5008 - [DIS] Relocate Link to MedlinePlus Information
                                 select = "''"/> 
  <xsl:param                       name = "setCase"
                                 select = "'proper'"/>
+ <xsl:variable                    name = "whoAmI"
+                                select = "'DrugInfo'"/>
 
  <!-- *
  ====================================================================
@@ -289,11 +291,32 @@ BZIssue::5008 - [DIS] Relocate Link to MedlinePlus Information
    <xsl:apply-templates         select = "TerminologyLink/
                                           Term/
                                           USBrandNames"/>
-   <xsl:apply-templates         select = "GlossaryLink/
+   <PronunciationInfo>
+    <xsl:apply-templates        select = "GlossaryLink/
                                           GlossaryTermName/
                                           TermName/
                                           TermPronunciation"
                                   mode = "copy"/>
+    <!--
+    We only include MediaLinks for audio here, those MediaLinks for 
+    images (coming from GlossaryTermConcept documents) are not planned
+    for the forseeable future.
+    =================================================================== -->
+    <xsl:apply-templates        select = "GlossaryLink/
+                                          GlossaryTermName/
+                                          TermName/
+                                          MediaLink">
+     <xsl:with-param              name = "audioLanguage"
+                                select = "'en'"/>
+    </xsl:apply-templates>
+    <xsl:apply-templates        select = "GlossaryLink/
+                                          GlossaryTermName/
+                                          TranslatedName/
+                                          MediaLink">
+     <xsl:with-param              name = "audioLanguage"
+                                select = "'es'"/>
+    </xsl:apply-templates>
+   </PronunciationInfo>
 
    <xsl:if                        test = "../DrugReference[@section='FDA']/
                                           DrugReferenceLink/@cdr:xref">

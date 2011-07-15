@@ -84,6 +84,21 @@ BZIssue::4995 - [Glossary] Non Publishable Also Calls in the dictionary
    </xsl:for-each>
 
    <!--
+   We're grouping all Media files together, first come the audio files
+   then come the images.
+   =================================================================== -->
+   <xsl:apply-templates         select = "TermName/
+                                            MediaLink">
+    <xsl:with-param               name = "audioLanguage"
+                                select = "'en'"/>
+   </xsl:apply-templates>
+   <xsl:apply-templates         select = "TranslatedName/
+                                            MediaLink">
+    <xsl:with-param               name = "audioLanguage"
+                                select = "'es'"/>
+   </xsl:apply-templates>
+
+   <!--
    Make sure we only have either a shared MediaLink for both, English and
    Spanish or we have individual once but not both
    ====================================================================== -->
@@ -193,7 +208,74 @@ BZIssue::4995 - [Glossary] Non Publishable Also Calls in the dictionary
                                           TermDefinition[Audience = 'Patient']/
                                           DateLastModified" 
                                   mode = "copy"/>
+  <xsl:apply-templates          select = "GlossaryTermConcept/
+                                            RelatedInformation"/>
+  
+  <!-- select = "GlossaryTermConcept/
+                                            RelatedExternalRef  |
+                                          GlossaryTermConcept/
+                                            RelatedSummaryRef   |
+                                          GlossaryTermConcept/
+                                            RelatedDrugSummaryRef"/ -->
   </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ ===================================================================== -->
+ <xsl:template                   match = "RelatedInformation">
+  <xsl:copy>
+   <xsl:apply-templates         select = "RelatedSummaryRef      |
+                                          RelatedDrugSummaryLink |
+                                          RelatedExternalRef"/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ ===================================================================== -->
+ <xsl:template                   match = "RelatedSummaryRef">
+   <xsl:element                   name = "{name()}">
+    <xsl:if                       test = "@UseWith">
+     <xsl:attribute               name = "UseWith">
+      <xsl:value-of             select = "@UseWith"/>
+     </xsl:attribute>
+    </xsl:if>
+    <xsl:attribute                name = "href">
+     <xsl:value-of                  select = "@cdr:ref"/>
+    </xsl:attribute>
+
+    <xsl:apply-templates        select = "Summary/SummaryTitle"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ ===================================================================== -->
+ <xsl:template                   match = "RelatedDrugSummaryLink">
+   <xsl:element                   name = "RelatedDrugSummaryRef">
+    <xsl:if                       test = "@UseWith">
+     <xsl:attribute               name = "UseWith">
+      <xsl:value-of             select = "@UseWith"/>
+     </xsl:attribute>
+    </xsl:if>
+    <xsl:attribute                name = "href">
+     <xsl:value-of                  select = "@cdr:ref"/>
+    </xsl:attribute>
+
+    <xsl:apply-templates        select = "DrugInformationSummary/Title"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ ===================================================================== -->
+ <xsl:template                   match = "RelatedExternalRef">
+  <xsl:copy-of                  select = "."/>
  </xsl:template>
 
 
@@ -222,6 +304,7 @@ BZIssue::4995 - [Glossary] Non Publishable Also Calls in the dictionary
     <SpanishTermName>
      <xsl:value-of              select = "normalize-space(TermNameString)"/>
     </SpanishTermName>
+
    </xsl:when>
    <xsl:when                      test = "@language = 'es'
                                           and
