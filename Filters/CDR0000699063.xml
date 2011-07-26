@@ -1,0 +1,688 @@
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id: CDR0000335424.xml 9919 2010-10-08 20:21:49Z volker $ -->
+<!-- Filter title: Denormalization Filter: Summary - QD -->
+<!--
+ ================================================================
+Quick and Dirty filter to denormalize summary data.
+This can be used to force the creation of the filter if a 
+denormalization link fails.
+   Written by Volker Englisch, 2003-08-12
+
+BZIssue::4990 - New "Quick & Dirty" QC report
+
+ ================================================================ -->
+<xsl:transform                xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                              xmlns:cdr = "cips.nci.nih.gov/cdr"
+                                version = "1.0">
+
+ <xsl:output                     method = "xml" 
+                   omit-xml-declaration = "no"
+                               encoding = "UTF-8"/>
+
+ <xsl:include href = "cdr:name:Module: Citation Denormalization - QD"/>
+ <xsl:include href = "cdr:name:Module: Multimedia Denormalization"/>
+
+ <xsl:variable                     name = "sumLanguage">
+  <xsl:choose>
+   <xsl:when                       test = "/Summary
+                                           /SummaryMetaData
+                                           /SummaryLanguage = 'English'">
+    <xsl:text>EN</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>ES</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:variable>
+
+ <xsl:variable                    name = "sumType"
+                                select = "/Summary
+                                          /SummaryMetaData
+                                          /SummaryType"/>
+
+  <xsl:variable                   name = "sumId">
+   <xsl:value-of                select = "document('cdrutil:/docid')"/>
+  </xsl:variable>
+  <xsl:variable                   name = "sumNormId"
+                                select = "number(
+                                           substring-before(
+                                           concat(
+                                           substring-after($sumId, 'CDR'),
+                                                               '#'), '#'))"/>
+  <xsl:variable                   name = "sumNormIdEN">
+   <xsl:choose>
+    <xsl:when                     test = "$sumLanguage = 'EN'">
+     <xsl:value-of              select = "$sumNormId"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:choose>
+      <xsl:when                   test = "/Summary/
+                                           TranslationOf/@cdr:ref">
+       <xsl:value-of            select = "number(
+                                           substring-before(
+                                           concat(
+                                           substring-after(/Summary
+                                                           /TranslationOf
+                                                           /@cdr:ref, 'CDR'),
+                                                               '#'), '#'))"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of            select = "number('9999999999')"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
+ <!-- 
+ =================================================================
+ Copy control information and generate current date
+ ================================================================= -->
+ <xsl:template                    match = "Summary">
+  <xsl:copy>
+   <xsl:apply-templates          select = "document('cdrutil:/docid')"/>
+   <xsl:apply-templates          select = "document('cdrx:/*/CdrCtl')"/>
+
+   <xsl:apply-templates/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ Test if a SummarySection is empty (no children, only white space)
+
+ Such an element may appear if a complete SummarySection has been
+ marked with the proposed insertion element and therefore all 
+ content gets stripped but the SummarySection tags itself are left
+ untouched.
+ ================================================================= -->
+ <xsl:template                   match = "SummarySection">
+  <xsl:choose>
+   <xsl:when                      test = "normalize-space(.)">
+    <xsl:copy>
+     <xsl:apply-templates       select = "node() | @*"/>
+    </xsl:copy>
+   </xsl:when>
+   <xsl:otherwise>
+    <!-- Do Nothing:  SummarySection is empty!  -->
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ Template to denormalize the Board elements
+ We also need the information of the LOE summaries.
+ ================================================================= -->
+ <xsl:template                   match = "Board">
+
+  <!--
+  For Spanish summaries we need to find the Board information by 
+  using the TranslationOf element and retrieving the information 
+  for the editorial board from the English version
+  ===================================================================== -->
+  <xsl:variable                   name = "sqlQueryESBoard">
+SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard', 
+       eb.int_val AS 'ENBoardID'
+  FROM query_term q
+  JOIN query_term eb
+    ON eb.doc_id = q.int_val
+   AND eb.path = '/Summary/SummaryMetaData/PDQBoard/Board/@cdr:ref'
+  JOIN query_term bt
+    ON eb.int_val = bt.doc_id
+   AND bt.path = '/Organization/OrganizationNameInformation/OfficialName/Name'
+ WHERE q.path = '/Summary/TranslationOf/@cdr:ref' 
+   AND bt.value not like '%Advisory%'
+   AND q.doc_id = ?
+  </xsl:variable>
+
+  <xsl:variable                   name = "queryRows"
+                                select = "document(
+                                          concat('cdrutil:/sql-query/',
+                                                   $sqlQueryESBoard,
+                                                   '~',
+                                                   $sumNormId))"/>
+
+
+  <!-- 
+  Assign the Board ID for English summaries
+  Assign the Board ID of the corresponding English summary for Spanish
+  ==================================================================== -->
+  <xsl:variable                   name = "BoardID">
+   <xsl:choose>
+    <xsl:when                     test = "$sumLanguage = 'EN'">
+     <xsl:value-of              select = "@cdr:ref"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:for-each              select = "$queryRows
+                                             /SqlResult
+                                             /row">
+      <xsl:value-of             select = "col[@name='ENBoard']"/>
+     </xsl:for-each>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
+  <xsl:variable                   name = "BoardInfo" 
+                                select = "document(concat('cdr:',$BoardID,
+                                                           '/last'))"/>
+   <xsl:choose>
+    <xsl:when                     test = "$sumLanguage = 'EN'">
+     <xsl:element                 name = "Board">
+      <xsl:attribute              name = "cdr:ref">
+       <xsl:value-of            select = "@cdr:ref"/>
+      </xsl:attribute>
+
+      <xsl:value-of             select = "$BoardInfo/Organization
+                                            /OrganizationNameInformation
+                                            /OfficialName
+                                            /Name"/>
+     </xsl:element>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:for-each              select = "$queryRows
+                                             /SqlResult
+                                             /row">
+      <xsl:element                name = "Board">
+       <xsl:attribute             name = "cdr:ref">
+        <xsl:value-of           select = "col[@name='ENBoard']"/>
+       </xsl:attribute>
+       <xsl:value-of            select = "$BoardInfo/Organization
+                                            /OrganizationNameInformation
+                                            /OfficialName
+                                            /Name"/>
+      </xsl:element>
+     </xsl:for-each>
+    </xsl:otherwise>
+   </xsl:choose>
+
+  <xsl:copy-of                  select = "$BoardInfo/Organization
+                                            /PDQBoardInformation
+                                            /ShowReviewerInfo"/>
+  <xsl:copy-of                   select = "$BoardInfo/Organization
+                                            /PDQBoardInformation
+                                            /BoardNameTranslation"/>
+
+  <xsl:variable                   name = "loeID"
+                                select = "$BoardInfo/Organization
+                                            /PDQBoardInformation
+                                            /LOESummary/@cdr:ref"/>
+
+  <!--
+  Advisory Boards may not list LOE information
+  ============================================ -->
+  <xsl:if                         test = "$loeID">
+   <xsl:variable                  name = "loeInfo"
+                                select = "document(concat('cdr:',$loeID,
+                                                           '/lastp'))"/>
+   <xsl:element                   name = "LOESummary">
+    <xsl:attribute                name = "cdr:ref">
+     <xsl:value-of              select = "$BoardInfo/Organization
+                                            /PDQBoardInformation
+                                            /LOESummary/@cdr:ref"/>
+    </xsl:attribute>
+    <xsl:value-of               select = "$loeInfo/Summary
+                                            /SummaryTitle"/>
+   </xsl:element>
+ 
+   <xsl:element                   name = "BoardLOEURL">
+    <xsl:attribute                name = "cdr:xref">
+     <xsl:value-of              select = "$loeInfo/Summary
+                                            /SummaryMetaData
+                                            /SummaryURL/@cdr:xref"/>
+    </xsl:attribute>
+    <xsl:value-of               select = "$loeInfo/Summary
+                                            /SummaryMetaData
+                                            /SummaryURL"/>
+   </xsl:element>
+
+   <!-- 
+   For the Spanish summaries we need to retrieve the LOE documents
+   from the information provided in the English board document.
+   This only needs to be done for the treatment, supportive care, CAM.
+   =================================================================== -->
+   <xsl:if                        test = "$sumType = 'Treatment'
+                                          or
+                                          $sumType = 'Supportive care'">
+   <xsl:variable                  name = "loeNormIDES"
+                                select = "number(
+                                           substring-before(
+                                           concat(
+                                           substring-after($loeID, 'CDR'),
+                                                               '#'), '#'))"/>
+   <xsl:variable                  name = "sqlQueryESLoe">
+SELECT doc_id AS "CDRID"
+  FROM query_term
+ WHERE int_val = ? 
+   AND path = '/Summary/TranslationOf/@cdr:ref'
+   </xsl:variable>
+
+   <xsl:variable                  name = "queryRowsLoe"
+                                select = "document(
+                                           concat('cdrutil:/sql-query/',
+                                                   $sqlQueryESLoe,
+                                                   '~',
+                                                   $loeNormIDES))"/>
+
+   <!-- xsl:value-of select = "$loeNormIDES"/ -->
+   
+   <xsl:variable                  name = "loeIDES">
+    <xsl:for-each               select = "$queryRowsLoe
+                                             /SqlResult
+                                             /row">
+     <xsl:value-of              select = "col[@name='CDRID']"/>
+    </xsl:for-each>
+   </xsl:variable>
+   <xsl:variable                  name = "loeInfoES"
+                                select = "document(concat('cdr:',
+                                          format-number($loeIDES,
+                                                        'CDR0000000000'),
+                                                           '/lastp'))"/>
+
+   <xsl:element                   name = "LOESummaryES">
+    <xsl:attribute                name = "cdr:ref">
+     <xsl:value-of              select = "format-number($loeIDES,
+                                                         'CDR0000000000')"/>
+    </xsl:attribute>
+    <xsl:value-of               select = "$loeInfoES/Summary
+                                            /SummaryTitle"/>
+   </xsl:element>
+ 
+   <xsl:element                   name = "BoardLOEURLES">
+    <xsl:attribute                name = "cdr:xref">
+     <xsl:value-of              select = "$loeInfoES/Summary
+                                            /SummaryMetaData
+                                            /SummaryURL/@cdr:xref"/>
+    </xsl:attribute>
+    <xsl:value-of               select = "$loeInfoES/Summary
+                                            /SummaryMetaData
+                                            /SummaryURL"/>
+   </xsl:element>
+   </xsl:if>
+  </xsl:if>
+
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ Template to denormalize the BoardMember elements
+ ================================================================= -->
+ <xsl:template                   match = "BoardMember">
+  <xsl:variable                   name = "BoardMemberID" 
+                                select = "@cdr:ref"/>
+  <xsl:variable                   name = "BoardMemberInfo" 
+                                select = "document(concat('cdr:', 
+                                                            $BoardMemberID,
+                                                            '/last'))"/>
+  <xsl:variable                   name = "personNormId"
+                                select = "number(
+                                           substring-before(
+                                           concat(
+                                           substring-after(@cdr:ref, 'CDR'),
+                                                               '#'), '#'))"/>
+  <!-- -->
+  <!--
+  The BoardMember names are formatted for use with the Mailers
+  ============================================================ -->
+  <xsl:element                    name = "BoardMember">
+   <xsl:attribute                 name = "cdr:ref">
+    <xsl:value-of               select = "@cdr:ref"/>
+   </xsl:attribute>
+
+   <xsl:value-of                select = "concat($BoardMemberInfo/
+                                                   Person/
+                                                   PersonNameInformation/
+                                                   SurName,
+                                                   ', ',
+                                                  $BoardMemberInfo/
+                                                   Person/
+                                                   PersonNameInformation/
+                                                   GivenName)"/>   
+  </xsl:element>
+
+  <!--
+  We need the board member name (including affiliation) but
+  we're unable to get this information from the Person document, 
+  so we will have to query the database to find the related
+  BoardMember document and then create a formatted string
+  for the display in the About This Summary section.
+  Only the Editorial Board Members need this, not the Advisory
+  Board members and we only pick up affiliation names without
+  Usage attribute and with the SR attribute.
+  Note:  This query must pass the CDR-ID of the English summary
+         even for the Spanish documents.
+  Note2: The query joins to the query_term_pub table to get
+         the summaries.  This means that the publish preview
+         will not see the affiliation name for newly added 
+         board members until *after* a publishable version 
+         has been created.
+  ============================================================ -->
+  <xsl:if                         test = "not(contains(
+                                           ../Board, 'Advisory'))">
+   <xsl:variable                  name = "sqlQueryName">
+SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID', 
+       b.doc_id AS 'BoardMember-ID', p.value AS 'BoardMember Name', 
+       an.value AS 'Affiliation Name', au.value AS 'Usage'
+  FROM query_term_pub s
+  JOIN query_term p
+    ON p.doc_id  = s.int_val
+  JOIN query_term b
+    ON s.int_val = b.int_val
+   AND b.path    = '/PDQBoardmemberInfo/BoardMemberName/@cdr:ref'
+  JOIN query_term an
+    ON an.doc_id = b.doc_id
+   AND an.path   = '/PDQBoardMemberInfo/Affiliations/' +
+                   'Affiliation/AffiliationName'
+  LEFT OUTER JOIN query_term au
+    ON au.doc_id = b.doc_id
+   AND au.path   = '/PDQBoardMemberInfo/Affiliations/Affiliation/@Usage'
+   AND LEFT(an.node_loc, 8) = LEFT(au.node_loc, 8)
+ WHERE s.path    = '/Summary/SummaryMetaData/PDQBoard/BoardMember/@cdr:ref' 
+   AND p.path    = '/Person/PersonNameInformation/SurName'
+   AND p.doc_id  = ? 
+   AND s.doc_id  = ?
+ ORDER BY au.value
+   </xsl:variable>
+
+   <!-- 
+   Note: Don't perform a normalize-space here since it would convert
+         the resulting node into a string
+   ================================================================== -->
+   <xsl:variable                  name = "queryRows"
+                                select = "document(
+                                           concat('cdrutil:/sql-query/',
+                                                   $sqlQueryName,
+                                                   '~',
+                                                   $personNormId,
+                                                   '~',
+                                                   $sumNormIdEN))"/>
+
+   <xsl:element                   name = "LeadReviewer">
+    <!-- Adding last name as attribute to allow sorting by last name -->
+    <xsl:attribute                name = "lname">
+     <xsl:value-of              select = "$BoardMemberInfo
+                                                   /Person
+                                                   /PersonNameInformation
+                                                   /SurName"/>
+    </xsl:attribute>
+    <xsl:value-of               select = "$BoardMemberInfo
+                                                   /Person
+                                                   /PersonNameInformation
+                                                   /GivenName"/>
+    <xsl:text> </xsl:text>
+    <xsl:if                       test = "$BoardMemberInfo
+                                                   /Person
+                                                   /PersonNameInformation
+                                                   /MiddleInitial">
+     <xsl:value-of              select = "$BoardMemberInfo
+                                                   /Person
+                                                   /PersonNameInformation
+                                                   /MiddleInitial"/>
+     <xsl:text> </xsl:text>
+    </xsl:if>
+    <xsl:value-of               select = "$BoardMemberInfo
+                                                   /Person
+                                                   /PersonNameInformation
+                                                   /SurName"/>
+    <xsl:for-each               select = "$BoardMemberInfo
+                                                   /Person
+                                                   /PersonNameInformation
+                                                   /ProfessionalSuffix
+                                                   /StandardProfessionalSuffix |
+                                          $BoardMemberInfo
+                                                   /Person
+                                                   /PersonNameInformation
+                                                   /ProfessionalSuffix
+                                                   /CustomProfessionalSuffix">
+     <xsl:text>, </xsl:text>
+     <xsl:value-of              select = "."/>
+    </xsl:for-each>
+
+    <!--
+    Don't display parenthesis if no affiliation name exists
+    ======================================================= -->
+    <xsl:if                       test = "$queryRows
+                                            /SqlResult
+                                            /row">
+     <xsl:text> (</xsl:text>
+     <xsl:for-each              select = "$queryRows
+                                           /SqlResult
+                                           /row">
+      <xsl:if                     test = "not(col[@name='Usage'] = 'BD')">
+       <xsl:value-of            select = "col[@name='Affiliation Name']"/>
+       <xsl:if                    test = "not(position() = last())">
+        <xsl:text> &amp; </xsl:text>
+       </xsl:if>
+      </xsl:if>
+     </xsl:for-each>
+     <xsl:text>)</xsl:text>
+    </xsl:if>
+   </xsl:element>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ Template to denormalize the Term elements
+ ================================================================= -->
+ <xsl:template                    match = "Term">
+  <xsl:variable                    name = "TermID" 
+                                 select = "@cdr:ref"/>
+  <xsl:variable                    name = "TermInfo" 
+                                 select = "document(concat('cdr:',$TermID,
+                                                           '/lastp'))"/>
+  <xsl:element                     name = "Term">
+   <xsl:attribute                  name = "cdr:ref">
+    <xsl:value-of                select = "@cdr:ref"/>
+   </xsl:attribute>
+
+   <xsl:value-of                 select = "$TermInfo/Term/
+                                            PreferredName"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ Template to denormalize the Term elements
+ ================================================================= -->
+ <xsl:template                    match = "Diagnosis | Intervention | Drug">
+  <xsl:variable                    name = "TermID" 
+                                 select = "@cdr:ref"/>
+
+  <xsl:variable                    name = "pubVersion">
+   <xsl:choose>
+    <xsl:when                      test = "@cdr:ref">
+     <xsl:value-of               select = "document(concat('cdrutil:', 
+                                                       '/get-pv-num/',
+                                                       @cdr:ref))"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>-1</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
+  <xsl:variable                   name = "TermInfo">
+   <xsl:choose>
+    <xsl:when                     test = "$pubVersion = 0">
+     <xsl:copy-of              select = "document(concat('cdr:',
+                                                           $SummaryRefID,
+                                                           '/last'))"/>
+    </xsl:when>
+    <xsl:when                     test = "$pubVersion = '0'
+                                          or
+                                          $pubVersion = '-1'">
+     <xsl:text>*** Denormalization Error: </xsl:text>
+     <xsl:value-of              select = "name()"/>
+     <xsl:text> ***</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:copy-of              select = "document(concat('cdr:', $TermID,
+                                                           '/lastp'))"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
+  <xsl:element                     name = "{name()}">
+   <xsl:attribute                  name = "cdr:ref">
+    <xsl:value-of                select = "@cdr:ref"/>
+   </xsl:attribute>
+
+   <xsl:value-of                 select = "$TermInfo/Term/
+                                            PreferredName"/>
+  </xsl:element>
+
+   <!-- 
+   Report an error if we couldn't find a publishable version or the
+   cdr:ref ID is empty
+   ================================================================ -->
+   <xsl:if                         test = "$pubVersion = '-1'">
+    <LinkError>
+     <xsl:value-of               select = "$TermInfo"/>
+    </LinkError>
+   </xsl:if>
+ </xsl:template>
+
+
+
+ <!-- 
+ =================================================================
+ Template to denormalize the SummaryRef elements
+ We need this denormalization in order to correctly create the 
+ link in the QC report to the listed summaries.
+ ================================================================= -->
+ <xsl:template                   match = "SummaryRef |
+                                          SummaryFragmentRef">
+  <xsl:variable                   name = "SummaryRefID" 
+                                select = "substring-before(
+                                            concat(@cdr:href, '#'), '#')"/>
+
+  <xsl:variable                   name = "thisSummaryId"
+                                select = "document('cdrutil:/docid')"/>
+  <xsl:variable                   name = "pubVersion">
+   <xsl:choose>
+    <xsl:when                     test = "@cdr:href
+                                          or
+                                          @href">
+     <xsl:value-of              select = "document(concat('cdrutil:', 
+                                                      '/get-pv-num/',
+                                                      @cdr:href | @href))"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>-1</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
+  <!--
+  If a SummaryRef or SummaryFragmentRef is pointing to itself and the summary
+  is new we can't expect a publishable version of the summary to exist.
+  In this case we need to allow to denormalize with the last version.
+  ====================================================================== -->
+  <xsl:variable                   name = "SummaryRefInfo">
+   <xsl:choose>
+    <xsl:when                     test = "$pubVersion = 0
+                                           and
+                                           $SummaryRefID = $thisSummaryId">
+     <xsl:copy-of              select = "document(concat('cdr:',
+                                                           $SummaryRefID,
+                                                           '/last'))"/>
+    </xsl:when>
+    <xsl:when                     test = "$pubVersion = '-1'">
+     <xsl:text>*** Denormalization Error: </xsl:text>
+     <xsl:value-of              select = "name()"/>
+     <xsl:text> ***</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:copy-of              select = "document(concat('cdr:',
+                                                           $SummaryRefID,
+                                                           '/lastp'))"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
+  <xsl:element                     name = "{name()}">
+   <xsl:attribute                  name = "cdr:href">
+    <xsl:value-of                select = "@cdr:href"/>
+   </xsl:attribute>
+
+   <SummaryRefText>
+    <xsl:value-of                select = "."/>
+   </SummaryRefText>
+
+   <LinkedSummary>
+    <LinkedSummaryType>
+     <xsl:value-of               select = "$SummaryRefInfo/Summary
+                                             /SummaryMetaData
+                                             /SummaryType"/>
+    </LinkedSummaryType>
+    <LinkedSummaryAudience>
+     <xsl:value-of               select = "$SummaryRefInfo/Summary
+                                             /SummaryMetaData
+                                             /SummaryAudience"/>
+    </LinkedSummaryAudience>
+
+    <xsl:if                        test = "$SummaryRefInfo/Summary
+                                             //KeyPoint">
+     <LinkedKeyPoints>
+      <xsl:value-of              select = "count($SummaryRefInfo/Summary
+                                             //KeyPoint)"/>
+     </LinkedKeyPoints>
+    </xsl:if>
+   </LinkedSummary>
+  </xsl:element>
+
+   <!-- 
+   Report an error if we couldn't find a publishable version or the
+   cdr:ref ID is empty
+   ================================================================ -->
+   <xsl:if                         test = "$pubVersion = '-1'">
+    <LinkError>
+     <xsl:value-of               select = "$SummaryRefInfo"/>
+    </LinkError>
+   </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ =================================================================
+ Template to denormalize the Term elements
+ ================================================================= -->
+ <xsl:template                    match = "MiscellaneousDocLink">
+  <xsl:variable                    name = "MiscID" 
+                                 select = "@cdr:ref"/>
+  <xsl:variable                    name = "MiscInfo" 
+                                 select = "document(concat('cdr:',$MiscID,
+                                                           '/lastp'))"/>
+  <xsl:variable                    name = "MiscIDFrag"
+                                 select = "substring-after($MiscID, '#')"/>
+  <xsl:element                     name = "MiscellaneousDocLink">
+   <xsl:attribute                  name = "cdr:ref">
+    <xsl:value-of                select = "@cdr:ref"/>
+   </xsl:attribute>
+
+   <xsl:copy-of                  select = "$MiscInfo/
+                                            MiscellaneousDocument/
+                                            MiscellaneousDocumentText//
+                                            Section[@cdr:id = $MiscIDFrag]"/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Template rule used to do XML to XML transformations which
+ copies any attribute node, or node that is child of of something 
+ ================================================================== -->
+ <xsl:template                    match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates          select = "@*|node()"/>
+  </xsl:copy> 
+ </xsl:template>
+
+</xsl:transform>
