@@ -2,7 +2,7 @@
 <!-- $Id$ -->
 <!-- Filter title: Module: QC Filter Templates - Summary -->
 <!--
-================================================================
+=========================================================================
 $Id$
 
 Filter Module to include all general formatting templates for 
@@ -15,8 +15,9 @@ Volker Englisch, 2005-05-11
 BZIssue::4919 - [Summary] QC Report Bugs
 BZIssue::4970 - [Summary] Key Point display problems in QC reports
 BZIssue::4990 - New "Quick & Dirty" QC report
+BZIssue::5065 - [Summaries] 2 More Patient Summary QC Report Display Options
 
-================================================================ -->
+========================================================================= -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -24,6 +25,10 @@ BZIssue::4990 - New "Quick & Dirty" QC report
 
  <xsl:output                    method = "html"/>
 
+ <xsl:param                       name = "ShowKPBox"
+                                select = "'N'"/>
+ <xsl:param                       name = "ShowLearnMoreSection"
+                                select = "'N'"/>
  <!-- 
  ======================================================================
  Remove the CdrDocCtl elements from the HTML output 
@@ -60,19 +65,28 @@ BZIssue::4990 - New "Quick & Dirty" QC report
  ======================================================================== --> 
  <xsl:template                   match = "KeyPoints">
   <xsl:if                         test = "KeyPointsList/ListItem/KeyPoint">
-   <table class="kpBox">
-    <tr>
-     <th class="kpBoxHdr">Key Points for This Section</th>
-    </tr>
-    <tr>
-     <td>
-      <xsl:if                     test = "KeyPointsList !=''">
-       <xsl:apply-templates/>
-      </xsl:if>
-     </td>
-    </tr>
-   </table>
-   <br />
+   <xsl:choose>
+    <xsl:when                     test = "$ShowKPBox = 'Y'">
+    <table class="kpBox">
+     <tr>
+      <th class="kpBoxHdr">Key Points for This Section</th>
+     </tr>
+     <tr>
+      <td>
+       <xsl:if                    test = "KeyPointsList !=''">
+        <xsl:apply-templates/>
+       </xsl:if>
+      </td>
+     </tr>
+    </table>
+    <br />
+    </xsl:when>
+    <xsl:otherwise>
+     <div class="gogreen">
+      <span class="kpHdr">Key Point box display suppressed</span>
+     </div>
+    </xsl:otherwise>
+   </xsl:choose>
   </xsl:if>
  </xsl:template>
 
@@ -349,14 +363,30 @@ BZIssue::4990 - New "Quick & Dirty" QC report
  Display Top SummarySection Title
  ============================================================== -->
  <xsl:template                   match = "SectionTitle/Title">
-  <h2>
-   <xsl:call-template             name = "addIdLinkTarget">
-    <xsl:with-param               name = "id"
-                                select = "../@cdr:id"/>
-   </xsl:call-template>
+  <xsl:variable                   name = "thisTitle">
+   <xsl:value-of                select = "."/>
+  </xsl:variable>
 
-   <xsl:apply-templates/>
-  </h2>
+  <xsl:choose>
+   <xsl:when                      test = "$ShowLearnMoreSection = 'N'
+                                          and
+                                          starts-with(self::Title, 
+                                                      'To Learn More About')">
+     <div class="gogreentlm">
+      <span class="kpHdr">To Learn More section display suppressed</span>
+     </div>
+   </xsl:when>
+   <xsl:otherwise>
+    <h2>
+     <xsl:call-template           name = "addIdLinkTarget">
+      <xsl:with-param             name = "id"
+                                select = "../@cdr:id"/>
+     </xsl:call-template>
+
+     <xsl:apply-templates/>
+    </h2>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
  

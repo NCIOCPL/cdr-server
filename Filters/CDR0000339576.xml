@@ -2,15 +2,16 @@
 <!-- $Id$ -->
 <!-- Filter title: Module: InLine Markup Formatter -->
 <!--
-================================================================
+==========================================================================
 Filter handling all In-Line Markup elements of Summary Docs
 Written by Volker Englisch, 2004-07-16
 
 BZIssue::4919 - [Summary] QC Report Bugs
 BZIssue::4934 - [Summary] Change Display for Link Elements in QC Reports
 BZIssue::4970 - [Summary] Key Point display problems in QC reports
+BZIssue::5065 - [Summaries] 2 More Patient Summary QC Report Display Options
 
-================================================================ -->
+========================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -1677,6 +1678,14 @@ BZIssue::4970 - [Summary] Key Point display problems in QC reports
                                 select = "child::Title"/>
 
   <xsl:choose>
+  <xsl:when                       test = "$ShowLearnMoreSection = 'N'
+                                          and
+                                          starts-with($title,
+                                                          'To Learn More')">
+   <!-- Do nothing - suppress this section -->
+  </xsl:when>
+  <xsl:otherwise>
+  <xsl:choose>
    <xsl:when                      test = "count($title) = 0">
     <span class="kpSection">
      <xsl:call-template             name = "addIdLinkTarget">
@@ -1689,6 +1698,8 @@ BZIssue::4970 - [Summary] Key Point display problems in QC reports
    <xsl:otherwise>
     <xsl:apply-templates/>
    </xsl:otherwise>
+  </xsl:choose>
+  </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
 
@@ -2073,41 +2084,27 @@ BZIssue::4970 - [Summary] Key Point display problems in QC reports
 
  <!-- 
  ======================================================================
- Template to replace the MediaID element with a little table as a 
+ Template to replace the MediaID element with a little div box as a 
  place holder for the image
  ====================================================================== -->
  <xsl:template                   match = "MediaID">
-  <!-- xsl:param                      name = "DisplayImages"
-                                select = "''"/ -->
   <xsl:choose>
    <xsl:when                      test = "$DisplayImages = 'Y'">
     <xsl:apply-templates        select = "."
                                   mode = "summary"/>
    </xsl:when>
    <xsl:otherwise>
-  <center>
-   <table width="100%" border="0" 
-          style="background-color: #CCFFFF" colspacing="3">
-    <xsl:call-template            name = "addIdLinkTarget">
-     <xsl:with-param              name = "id"
+    <div class="imagepadding">
+     <div class="gogreenimage">
+      <xsl:call-template          name = "addIdLinkTarget">
+       <xsl:with-param            name = "id"
                                 select = "../@cdr:id"/>
-    </xsl:call-template>
-    <tr>
-     <td width="30%" align="right" valign="top">
-      <br/>
-      <b>Image:</b>
-     </td>
-     <td width="70%" align="left">
-      <br/>
-      <xsl:text> </xsl:text>
+      </xsl:call-template>
+      <b>Image: </b>
       <xsl:value-of             select = "Media/
                                           MediaTitle"/>
-      <xsl:text> </xsl:text>
-      <br/><br/>
-     </td>
-    </tr>
-   </table>
-  </center>
+     </div>
+    </div>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
