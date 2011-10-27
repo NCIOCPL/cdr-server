@@ -9,6 +9,7 @@
       BZIssue::4837
       BZIssue::4850
       BZIssue::4891
+      BZIssue::4962
       BZIssue::5082
 
   -->
@@ -131,6 +132,9 @@
                      minOccurs       = '0'/>
       <element       name            = 'FirstReceivedDate'
                      type            = 'string'
+                     minOccurs       = '0'/>
+      <element       name            = 'CTRPInfo'
+                     type            = 'CTRPInfo'
                      minOccurs       = '0'/>
     </sequence>
     <attribute       name            = 'xmlns:cdr'
@@ -495,6 +499,10 @@
 
   <complexType       name            = 'CTAddress'>
     <sequence>
+      <element       name            = 'Street'
+                     type            = 'string'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'City'
                      type            = 'string'
                      minOccurs       = '0'/>
@@ -779,6 +787,9 @@
                      type            = 'string'/>
       <element       name            = 'CTGovOwnershipTransferDate'
                      type            = 'date'/>
+      <element       name            = 'ImportTrialFrom'
+                     type            = 'ImportTrialFrom'
+                     minOccurs       = '0'/>
       <element       name            = 'Comment'
                      type            = 'Comment'
                      minOccurs       = '0'
@@ -839,6 +850,109 @@
                      minOccurs       = '0'/>
     </sequence>
   </complexType>
+
+<!--=====================================================================-->
+<!--                             CTRP TYPES                              -->
+<!--=====================================================================-->
+  <complexType       name            = 'CTRPInfo'>
+    <sequence>
+      <element       name            = 'CTRPLocation'
+                     type            = 'CTRPLocation'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'CTRPLocation'>
+    <sequence>
+      <element       name            = 'CTRPFacility'
+                     type            = 'CTRPOrg'/>
+      <element       name            = 'CTRPStatus'
+                     type            = 'string'/>
+      <element       name            = 'CTRPContact'
+                     type            = 'CTRPPerson'
+                     minOccurs       = '0'/>
+      <element       name            = 'CTRPInvestigator'
+                     type            = 'CTRPPersonWithRole'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'CTRPOrg'>
+    <sequence>
+      <element       name            = 'PDQOrganization'
+                     type            = 'LinkedValue'/>
+      <element       name            = 'CTRPOrgName'
+                     type            = 'string'/>
+      <group         ref             = 'CTRPContactGroup'/>
+    </sequence>
+    <attribute       name            = 'po_id'
+                     type            = 'integer'/>
+    <attribute       name            = 'ctep_id'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+  </complexType>
+
+  <complexType       name            = 'CTRPPerson'>
+    <sequence>
+      <group         ref             = 'CTRPPersonNameGroup'/>
+      <group         ref             = 'CTRPContactGroup'/>
+    </sequence>
+    <attribute       name            = 'po_id'
+                     type            = 'integer'/>
+    <attribute       name            = 'ctep_id'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+  </complexType>
+
+  <complexType       name            = 'CTRPPersonWithRole'>
+    <sequence>
+      <group         ref             = 'CTRPPersonNameGroup'/>
+      <group         ref             = 'CTRPContactGroup'/>
+      <element       name            = 'Role'
+                     type            = 'string'/>
+    </sequence>
+    <attribute       name            = 'po_id'
+                     type            = 'integer'/>
+    <attribute       name            = 'ctep_id'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+  </complexType>
+
+  <group             name            = 'CTRPContactGroup'>
+    <sequence>
+      <element       name            = 'PostalAddress'
+                     type            = 'CTAddress'/>
+      <element       name            = 'Phone'
+                     type            = 'string'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'Fax'
+                     type            = 'string'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'Email'
+                     type            = 'string'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </group>
+
+  <group             name            = 'CTRPPersonNameGroup'>
+    <sequence>
+      <element       name            = 'PDQPerson'
+                     type            = 'LinkedValue'/>
+      <element       name            = 'GivenName'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+      <element       name            = 'MiddleInitial'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+      <element       name            = 'Surname'
+                     type            = 'string'/>
+    </sequence>
+  </group>
 
 <!--=====================================================================-->
 <!--                           SIMPLE TYPES                              -->
@@ -1101,6 +1215,12 @@
       <enumeration   value           = 'Cochrane collaboration'/>
       <enumeration   value           = 'Amendment sheet'/>
       <enumeration   value           = 'Investigator correspondence'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'ImportTrialFrom'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'CTRP'/>
     </restriction>
   </simpleType>
 
