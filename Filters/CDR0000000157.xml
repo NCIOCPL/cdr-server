@@ -10,6 +10,8 @@ Filter to create summary vendor output data.
 
 BZIssue::4836 - Create new section at end of HP summaries
 BZIssue::5039 - Search string blurb for CAM summaries
+BZIssue::5135 - Vendor filter changes to accomodate mobile elements 
+                and attributes
 
 ================================================================ -->
 <xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -54,6 +56,11 @@ BZIssue::5039 - Search string blurb for CAM summaries
                                select = "/Summary
                                          /SummaryMetaData
                                          /SummaryAudience"/>
+ <xsl:variable                   name = "sumAgeGroup"
+                               select = "/Summary
+                                         /SummaryMetaData
+                                         /PDQBoard
+                                         /Board"/>
  <xsl:variable                   name = "language"
                                select = "/Summary
                                          /SummaryMetaData
@@ -307,6 +314,9 @@ BZIssue::5039 - Search string blurb for CAM summaries
    SummaryAudience - Patient
    SummaryType     - Treatment, CAM, etc...
    EditorialBoard  - Pediatric, Adult  
+
+   The 'To Learn More' section needs to be suppressed from the 
+   output for the mobile site.
    ============================================================= -->   
    <xsl:choose>
     <xsl:when                    test = "SummaryMetaData/
@@ -428,9 +438,46 @@ BZIssue::5039 - Search string blurb for CAM summaries
  <!-- 
  ==================================================================
  SummarySection Template
+ The 'To Learn More About' and 'Changes to This Summary' 
+ SummarySections for Patients are coming from the CDR document and 
+ need to be marked with the mobile attribute to be excluded.
+ However, if the attribute has already been specified by the user, 
+ the user's entry takes precedence over the automated entry.
+ ================================================================== -->  
+ <xsl:template                  match = "SummarySection[substring(Title, 1, 19) 
+                                         = 'To Learn More About'] |
+                                         SummarySection[substring(Title, 1, 27)
+                                         = 'Informaci&#xF3;n adicional sobre']">
+
+  <SummarySection>
+   <xsl:if                       test = "./@cdr:id">
+    <xsl:attribute               name = "id">
+     <xsl:value-of             select = "./@cdr:id"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:choose>
+    <xsl:when                    test = "not(@IncludedDevices)
+                                         and
+                                         not(@ExcludedDevices)">
+     <xsl:attribute              name = "ExcludedDevices">
+      <xsl:text>mobile</xsl:text>
+     </xsl:attribute>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:call-template          name = "listDevicesAttribute"/>
+    </xsl:otherwise>
+   </xsl:choose>
+
+   <xsl:apply-templates        select = "*"/>
+  </SummarySection>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ SummarySection Template
  ================================================================== -->  
  <xsl:template                  match = "SummarySection">
-
   <!--
   ==================================================================
   Display the TopLevel "TrialSearch" section (for HP Summaries) and 
@@ -499,12 +546,34 @@ BZIssue::5039 - Search string blurb for CAM summaries
    </xsl:if>
   </xsl:if>
 
+  <!--
+  The 'Changes to This Summary' SummarySection will need to receive the
+  ExcludedDevices='mobile' attribute to suppress it from display on 
+  mobile devices.  However, if the attribute has already been specified
+  by the user, the user's entry takes precedence over the automated
+  entry.
+  ===================================================================== -->
   <SummarySection>
    <xsl:if                       test = "./@cdr:id">
     <xsl:attribute               name = "id">
      <xsl:value-of             select = "./@cdr:id"/>
     </xsl:attribute>
    </xsl:if>
+   <xsl:choose>
+    <xsl:when                    test = "SectMetaData/
+                                         SectionType = 'Changes to summary'
+                                         and 
+                                         not(@IncludedDevices)
+                                         and
+                                         not(@ExcludedDevices)">
+     <xsl:attribute              name = "ExcludedDevices">
+      <xsl:text>mobile</xsl:text>
+     </xsl:attribute>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:call-template          name = "listDevicesAttribute"/>
+    </xsl:otherwise>
+   </xsl:choose>
 
    <!--
    We need to suppress processing of the Reference Section since this
@@ -514,10 +583,12 @@ BZIssue::5039 - Search string blurb for CAM summaries
    those don't contain references.
    =================================================================== -->
    <xsl:apply-templates         select = "*[not(self::ReferenceList)]"/>
-   
+
    <xsl:if                        test = "$sumType = 'Treatment'
                                           or
-                                          $sumType = 'Complementary and alternative medicine'
+                                          $sumType = concat('Complementary',
+                                                            ' and alternative',
+                                                            ' medicine')
                                           or
                                           $sumType = 'Supportive care'">
     <xsl:call-template            name = "addTrialSearchSection">
@@ -543,8 +614,8 @@ BZIssue::5039 - Search string blurb for CAM summaries
  ==================================================================
  SummaryURL Template to drop trailing '/' 
  ================================================================== -->  
- <xsl:template                  match = "SummaryURL">
-  <SummaryURL>
+ <xsl:template                  match = "SummaryURL | MobileURL">
+  <xsl:element                   name = "{name()}">
     <xsl:attribute               name = "xref">
      <xsl:call-template           name = "getSummaryURL">
       <xsl:with-param             name = "url"
@@ -552,7 +623,7 @@ BZIssue::5039 - Search string blurb for CAM summaries
      </xsl:call-template>
     </xsl:attribute>
     <xsl:apply-templates         mode = "copy"/>
-  </SummaryURL>
+  </xsl:element>
  </xsl:template>
 
 
@@ -740,6 +811,7 @@ BZIssue::5039 - Search string blurb for CAM summaries
    <xsl:apply-templates        select = "SummaryDescription"
                                  mode = "copy"/>
    <xsl:apply-templates        select = "SummaryURL"/>
+   <xsl:apply-templates        select = "MobileURL"/>
    <xsl:apply-templates        select = "MainTopics"/>
    <xsl:apply-templates        select = "SecondaryTopics"/>
   </SummaryMetaData>
@@ -809,6 +881,7 @@ BZIssue::5039 - Search string blurb for CAM summaries
     <xsl:attribute               name = "id">
      <xsl:value-of             select = "./@cdr:id"/>
     </xsl:attribute>
+    <xsl:call-template            name = "listDevicesAttribute"/>
     <xsl:apply-templates/>
    </Para>
   </xsl:if>
@@ -846,6 +919,7 @@ BZIssue::5039 - Search string blurb for CAM summaries
          <xsl:value-of          select = "concat($miscDocId, 
                                           substring(./@cdr:id, 7))"/>
         </xsl:attribute>
+        <xsl:call-template            name = "listDevicesAttribute"/>
         <xsl:apply-templates    select = "Para" 
                                   mode = "copy"/>
         <xsl:apply-templates>
@@ -862,6 +936,7 @@ BZIssue::5039 - Search string blurb for CAM summaries
          <xsl:value-of          select = "concat($miscDocId, 
                                           substring(./@cdr:id, 7))"/>
         </xsl:attribute>
+        <xsl:call-template            name = "listDevicesAttribute"/>
         <xsl:apply-templates    select = "Para" 
                                   mode = "copy"/>
         <xsl:apply-templates>
@@ -880,6 +955,7 @@ BZIssue::5039 - Search string blurb for CAM summaries
       <xsl:attribute              name = "id">
        <xsl:value-of            select = "concat($miscDocId, ./@cdr:id)"/>
       </xsl:attribute>
+      <xsl:call-template            name = "listDevicesAttribute"/>
       <xsl:apply-templates      select = "Para" 
                                   mode = "copy"/>
       <xsl:apply-templates>
@@ -901,6 +977,7 @@ BZIssue::5039 - Search string blurb for CAM summaries
                                  mode = "trialSearch">
   <xsl:if                        test = "normalize-space(.)">
    <Para>
+    <xsl:call-template            name = "listDevicesAttribute"/>
     <xsl:apply-templates/>
    </Para>
   </xsl:if>
@@ -951,10 +1028,34 @@ BZIssue::5039 - Search string blurb for CAM summaries
      <xsl:value-of             select = "./@Compact"/>
     </xsl:attribute>
    </xsl:if>
+   <xsl:call-template            name = "listDevicesAttribute"/>
+
    <xsl:apply-templates/>
   </ItemizedList>
  </xsl:template>
     
+
+ <!-- 
+ =========================================================================
+ Template to add the IncludedDevices/ExcludedDevices attributes to the 
+ output stream.
+ ========================================================================= -->
+ <xsl:template                   name = "listDevicesAttribute">
+  <xsl:for-each                select = "./@ExcludedDevices | 
+                                         ./@IncludedDevices">
+   <xsl:choose>
+    <xsl:when                    test = ". = 'None'">
+     <!-- Do nothing, remove the attribute -->
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:attribute              name = "{name()}">
+      <xsl:value-of            select = "."/>
+     </xsl:attribute>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:for-each>
+ </xsl:template>
+
 
  <!-- 
  ==================================================================== 
@@ -979,6 +1080,9 @@ BZIssue::5039 - Search string blurb for CAM summaries
       <xsl:value-of            select = "./@Compact"/>
      </xsl:attribute>
     </xsl:if>
+
+   <xsl:call-template            name = "listDevicesAttribute"/>
+   
     <xsl:apply-templates/>
    </ItemizedList>
  </xsl:template>
@@ -1004,6 +1108,9 @@ BZIssue::5039 - Search string blurb for CAM summaries
      <xsl:value-of             select = "./@Compact"/>
     </xsl:attribute>
    </xsl:if>
+
+   <xsl:call-template            name = "listDevicesAttribute"/>
+   
    <xsl:apply-templates/>
   </OrderedList>
  </xsl:template>
@@ -1032,6 +1139,9 @@ BZIssue::5039 - Search string blurb for CAM summaries
      <xsl:value-of             select = "./@Compact"/>
     </xsl:attribute>
    </xsl:if>
+
+   <xsl:call-template            name = "listDevicesAttribute"/>
+   
    <xsl:apply-templates/>
   </OrderedList>
  </xsl:template>
@@ -1146,7 +1256,7 @@ BZIssue::5039 - Search string blurb for CAM summaries
 
  <!-- 
  ==================================================================
- Main MiscellaneousDocumentText Template
+ Main MiscellaneousDocLink Template
  ================================================================== -->  
  <xsl:template                  match = "MiscellaneousDocLink">
   <xsl:apply-templates           mode = "miscFragment">
@@ -1195,6 +1305,25 @@ BZIssue::5039 - Search string blurb for CAM summaries
       </xsl:attribute>
      </xsl:if>
     </xsl:otherwise>
+   </xsl:choose>
+
+   <!-- Mark this section to be excluded for mobile -->
+   <xsl:choose>
+    <xsl:when                    test = "$sumType = 'Treatment'
+                                         and
+                                         (
+                                          $miscDocId = '_AboutPDQ'
+                                          or
+                                          $miscDocId = '_GetMore')">
+                                         <!--
+                                         and
+                                         not(contains($sumAgeGroup, 
+                                                           'Pediatric'))">
+                                         -->
+     <xsl:attribute              name = "ExcludedDevices">
+      <xsl:text>mobile</xsl:text>
+     </xsl:attribute>
+    </xsl:when>
    </xsl:choose>
 
    <xsl:apply-templates          mode = "MiscText">
@@ -1645,6 +1774,7 @@ BZIssue::5039 - Search string blurb for CAM summaries
                                          QandADiv       | MarkedUpTitle  |
                                          Question       | Answer">
   <xsl:element                   name = "{name()}">
+   <xsl:call-template            name = "listDevicesAttribute"/>
    <xsl:apply-templates/>
   </xsl:element>
  </xsl:template>
@@ -1684,6 +1814,8 @@ BZIssue::5039 - Search string blurb for CAM summaries
      <xsl:value-of             select = "./@TabStyle"/>
     </xsl:attribute>
    </xsl:if>
+
+   <xsl:call-template           name = "listDevicesAttribute"/>
 
    <xsl:apply-templates/>
 
