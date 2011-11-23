@@ -1,29 +1,44 @@
-<CdrDoc Type='Filter' Id='CDR0000335519'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Module: Table Formatter</DocTitle>
-<DocComment>CVS-V1.4: Fixed Table Title (Bug 1136)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml      version = "1.0"?>
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: Module: Table Formatter -->
+<!--
+====================================================================
+$Id$
+
+Display a table-new format for text revisions
+written by C.Burg 7/30/2002
+10/10/2002 (CB) added exclude-result-prefixes
+10/07/2002 (CB) changed table width to 90% 
+10/07/2002 (CB) Modified to display center or left justified
+                width attribute changed to 11%
+
+BZIssue::5114 - [Summaries] Summary Frag Refs to Tables in QC Reports
+
+==================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                               version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0"
                exclude-result-prefixes = "cdr">
 
- <!-- 
- =================================================================
- Display a table-new format for text revisions
- written by C.Burg 7/30/2002
- 10/10/2002 (CB) added exclude-result-prefixes
- ================================================================= -->
+ <!--
+ ========================================================================
+ Template to format the table
+ ======================================================================== -->
  <xsl:template                   match = "Table">
-  <!-- 10/07/2002(CB) changed table width to 90% --> 
-  <!-- 10/07/2002(CB) Modified to display center or left justified
-                      width attribute changed to 11% -->   
+  <!--
   <table border='1' valign='top' cellspacing='0' cellpadding='5' width='100%'>
+  -->
+  <table class="tableBody">
+   <xsl:attribute                 name = "id">
+    <xsl:value-of               select = "@cdr:id"/>
+   </xsl:attribute>
+
    <xsl:apply-templates         select = "Title"
                                   mode = "table"/>          
+
+   <!--
+   Display the table header row
+   ======================================================== -->
    <xsl:for-each                select = "TGroup/THead/Row">
     <tr>
      <xsl:for-each              select = "entry">
@@ -84,42 +99,45 @@
     </tr>
    </xsl:for-each>
 
+   <!--
+   Display the table body rows
+   ======================================================== -->
    <xsl:for-each                select = "TGroup/TBody/Row">
     <tr>
      <xsl:for-each              select = "entry">
       <xsl:if                     test = "not(@NameEnd)"> 
        <xsl:if                    test = "@MoreRows">
         <xsl:variable            name  =  "rows" 
-	                        select = "@MoreRows"/>
-        <td rowspan='{$rows+1}' align='left'>
-	 <xsl:apply-templates   select = "."/>
-	 <xsl:text>&#160;</xsl:text>
-	</td>
+	                            select = "@MoreRows"/>
+        <td rowspan='{$rows+1}' class='ltext'>
+	     <xsl:apply-templates   select = "."/>
+	     <xsl:text>&#160;</xsl:text>
+	    </td>
        </xsl:if>
  
        <xsl:if                    test = "not(@MoreRows)">
         <xsl:choose>
          <xsl:when                test = "not(@Align)">
-          <td align='left'>
-	   <xsl:apply-templates select = "."/>
-	   <xsl:text>&#160;</xsl:text>
-	  </td>
+          <td class='ltext'>
+	       <xsl:apply-templates select = "."/>
+	       <xsl:text>&#160;</xsl:text>
+	      </td>
          </xsl:when>
          <xsl:when                test = "@Align">
           <xsl:variable           name = "align" 
 	                        select = "@Align"/>
           <td align='{$align}'>
-	   <xsl:apply-templates select = "."/>
-	   <xsl:text>&#160;</xsl:text>
-	  </td>
+	       <xsl:apply-templates select = "."/>
+	       <xsl:text>&#160;</xsl:text>
+	      </td>
          </xsl:when>
          <xsl:when                test = "@VAlign">
           <xsl:variable           name = "valign" 
 	                        select = "@VAlign"/>
           <td valign='{$valign}'>
-	   <xsl:apply-templates select = "."/>
-	   <xsl:text>&#160;</xsl:text>
-	  </td>
+	       <xsl:apply-templates select = "."/>
+	       <xsl:text>&#160;</xsl:text>
+	      </td>
          </xsl:when>
         </xsl:choose>
        </xsl:if>
@@ -128,7 +146,7 @@
       <xsl:if                     test = "@NameEnd"> 
        <xsl:if                    test = "@MoreRows">
         <xsl:variable             name = "rows" 
-	                        select = "@MoreRows"/>
+	                            select = "@MoreRows"/>
         <xsl:variable             name = "entrytype">
          <xsl:value-of          select = "2"/>
         </xsl:variable>
@@ -168,28 +186,38 @@
    </xsl:for-each>
   </table>
             
-  <xsl:if                         test = "TGroup/TFoot/Row/entry/@RowSep">
-   <table border='0'>
-    <xsl:for-each               select = "TGroup/TFoot/Row">
-     <tr>
-      <xsl:for-each             select = "entry">
-       <xsl:variable              name = "align" 
+  <!--
+  Display the table footer rows
+  ======================================================== -->
+  <xsl:choose>
+   <xsl:when                      test = "TGroup/TFoot/Row
+                                          and
+                                          TGroup/TFoot/Row/entry/@RowSep">
+    <table class="tableFooter1">
+     <xsl:for-each              select = "TGroup/TFoot/Row">
+      <tr>
+       <xsl:for-each            select = "entry">
+        <xsl:variable             name = "align" 
                                 select = "@Align"/>
-       <xsl:variable              name = "cols" 
+        <xsl:variable             name = "cols" 
                                 select = "../../../@Cols"/>
-       <td  align='{$align}' colspan='{$cols}'>
-        <i>
-	 <xsl:apply-templates/>
-	</i>
-       </td>
-      </xsl:for-each>
-     </tr>
-    </xsl:for-each>
-   </table>
-  </xsl:if>
+        <td  align='{$align}' colspan='{$cols}'>
+ 	    <xsl:apply-templates/>
+        </td>
+       </xsl:for-each>
+      </tr>
+     </xsl:for-each>
+    </table>
+   </xsl:when>
 
-  <table border='0'>
+   <!--
    <xsl:if                        test = "not(TGroup/TFoot/Row/entry/@RowSep)"> 
+   -->
+
+  <xsl:when                       test = "TGroup/TFoot/Row
+                                          and
+                                          not(TGroup/TFoot/Row/entry/@RowSep)">
+   <table class="tableFooter2">
     <xsl:for-each               select = "TGroup/TFoot/Row">
      <tr>
       <xsl:for-each             select = "entry">
@@ -215,19 +243,18 @@
         </xsl:when>
         <xsl:otherwise>
          <xsl:variable            name = "cols" 
-	                        select = "../../../@Cols"/>
+	                            select = "../../../@Cols"/>
          <td align='{$align}' colspan='{$cols}'>
-	  <i>
-	   <xsl:apply-templates/>
-	  </i>
-	 </td>
+	       <xsl:apply-templates/>
+	     </td>
         </xsl:otherwise>
        </xsl:choose>
       </xsl:for-each>
      </tr>
     </xsl:for-each> 
-   </xsl:if>
-  </table>
+   </table>
+  </xsl:when>
+  </xsl:choose>
  </xsl:template>
       
 
@@ -251,11 +278,11 @@
   <xsl:variable                   name = "nameend" 
                                 select = "$NameEnd"/> 
   <xsl:variable                   name = "firstCol" 
-                                select = "../../../ColSpec
-				           [@ColName = $namest]/@ColNum"/>
+                                select = "../../../ColSpec[@ColName = $namest]/
+                                            @ColNum"/>
   <xsl:variable                   name = "lastCol" 
-                                select = "../../../ColSpec
-				           [@ColName = $nameend]/@ColNum"/>
+                                select = "../../../ColSpec[@ColName = $nameend]/
+                                                      @ColNum"/>
   <xsl:variable                   name = "colspans" 
                                 select = "1 + $lastCol - $firstCol"/>
   <xsl:choose>
@@ -268,22 +295,20 @@
     </td>
    </xsl:when> 
    <xsl:when                      test = "$type = 2">            
-    <td align='left' rowspan='{$rows+1}' colspan='{$colspans}'>
+    <td class='ltext' rowspan='{$rows+1}' colspan='{$colspans}'>
      <xsl:apply-templates select = "."/>
      <xsl:text>&#160;</xsl:text>
     </td>
    </xsl:when> 
    <xsl:when                      test = "$type = 3">            
-    <td align='left' colspan='{$colspans}'>
+    <td class='ltext' colspan='{$colspans}'>
      <xsl:apply-templates       select = "."/>
      <xsl:text>&#160;</xsl:text>
     </td> 
    </xsl:when> 
    <xsl:when                      test = "$type = 4">            
-    <td align='{$AAlign}' colspan='{$colspans}'>
-     <i>
+    <td class="type4" align='{$AAlign}' colspan='{$colspans}'>
       <xsl:apply-templates/>
-     </i>
     </td>
    </xsl:when> 
   </xsl:choose>
@@ -301,6 +326,3 @@
   </caption>
  </xsl:template>
 </xsl:transform>
-]]>
-</CdrDocXml>
-</CdrDoc>
