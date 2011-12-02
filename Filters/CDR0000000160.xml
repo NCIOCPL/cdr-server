@@ -1,25 +1,33 @@
-<CdrDoc Type='Filter' Id='CDR0000000160'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Summaries Toc Report</DocTitle>
-<DocComment>CVS-V1.3: Initial Summary TOC Report (Bug 1231)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
-<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                               version = "1.0"
-                             xmlns:cdr = "cips.nci.nih.gov/cdr"
-               exclude-result-prefixes = "cdr">
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: Summaries Toc Report -->
+<!--
+====================================================================
+$Id$
 
- <xsl:output                    method = "html"/>
+Filter to create the table of content (TOC) for summaries up to
+a specified level.
 
- <xsl:include   href = "cdr:name:Module: STYLE Default"/>  
- <xsl:include   href = "cdr:name:Module: STYLE QC Summary"/>  
+Volker Englisch, 2003-08-12
+
+BZIssue::5104 - [Summaries] Changes to Summaries TOC Lists report
+
+==================================================================== -->
+<xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                            xmlns:cdr = "cips.nci.nih.gov/cdr"
+                              version = "1.0"
+              exclude-result-prefixes = "cdr">
+
+ <xsl:output                   method = "html"
+                             encoding = "UTF-8"/>
+
+ <xsl:include href = "cdr:name:Module: STYLE Default"/>  
+ <xsl:include href = "cdr:name:Module: STYLE QC Summary"/>  
      
  <xsl:variable                    name = "docID"
                                 select = "document('cdrutil:/docid')"/>
  <xsl:param                       name = "showLevel"
-                                select = "'3'"/>
+                                select = "'5'"/>
  <xsl:param                       name = "showId"
                                 select = "'N'"/>
  <!--
@@ -102,9 +110,39 @@
 
 
  <!-- 
+ =====================================================================
+ Display SummarySection in TOC.
+ ===================================================================== -->
+ <xsl:template                   match = "Title"
+                                  mode = "TOC">
+  <xsl:apply-templates            mode = "tocMarkup"/>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ Display SummarySection in TOC.
+ ===================================================================== -->
+ <xsl:template                   match = "Insertion | Deletion"
+                                  mode = "tocMarkup">
+  <xsl:variable                  name = "markup"
+                                select = "name()"/>
+  <xsl:element                   name = "span">
+   <xsl:attribute                name = "class">
+    <xsl:value-of               select = "$markup"/>
+    </xsl:attribute>
+
+  <xsl:value-of                 select = "."/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
  ================================================================
  This template deletes data elements not used in the display 
  ================================================================ -->
+ <xsl:template                 match = "*"/>
+ <!-- 
  <xsl:template                 match = "AltTitle           |
                                         DateLastModified   |
                                         Deletion           |
@@ -112,12 +150,14 @@
                                         DocId              | 
                                         Insertion          | 
                                         ItemizedList       |
+                                        LastReviewed       |
                                         MainTopics         | 
                                         OrderedList        | 
                                         Para               | 
                                         PatientVersionOf   | 
                                         PDQBoard           | 
                                         PdqKey             |
+                                        PurposeText        |
                                         ReplacementFor     |
                                         SecondaryTopics    | 
                                         SectionType        |
@@ -129,6 +169,5 @@
                                         SummaryType        |
                                         SummaryURL         |
                                         TranslationOf"/>
-</xsl:transform>]]>
-</CdrDocXml>
-</CdrDoc>
+-->
+</xsl:transform>
