@@ -1,0 +1,75 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- $Id$ -->
+<!-- Filter title: Denormalization Filter: Summary Count Tables and Figures -->
+<!--
+=====================================================================
+$Id: 10264 2011-11-18 18:34:20Z volker $
+
+Filter to set the table and figure numbers for automated numbering.
+Written by Volker Englisch, 2012-01-16
+
+BZIssue::5097 - [Summaries] Modifications to Publishing Filter to 
+                include Module content
+===================================================================== -->
+<xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                             xmlns:cdr = 'cips.nci.nih.gov/cdr'
+                               version = '1.0'>
+
+ <xsl:output                    method = 'xml'
+                 omit-xml-declaration = "no"
+                              encoding = 'utf-8'/>
+
+ <!--
+ ==============================================================
+ ============================================================== -->
+ <xsl:template                  match = "*">
+  <xsl:copy-of                 select = "*"/>
+  <xsl:apply-templates/>
+ </xsl:template>
+
+
+ <!--
+ ==============================================================
+ Template to count and list all table numbers
+ ============================================================== -->
+ <xsl:template                  match = "TableNumber">
+  <xsl:copy>
+   <xsl:attribute                name = "tableNumber">
+    <xsl:number level="any"/>
+   </xsl:attribute>
+   <xsl:attribute                name = "fragId">
+    <xsl:value-of  select = "../../@cdr:id"/>
+   </xsl:attribute>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ ==============================================================
+ Template to count and list all figure numbers
+ ============================================================== -->
+ <xsl:template                  match = "FigureNumber">
+  <xsl:copy>
+   <xsl:attribute                name = "figureNumber">
+    <xsl:number level="any"/>
+   </xsl:attribute>
+   <xsl:attribute                name = "fragId">
+    <xsl:value-of  select = "../../@cdr:id"/>
+   </xsl:attribute>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!-- 
+ ===================================================================
+ Template rule used to do XML to XML transformations which
+ copies any attribute node, or node that is child of of something 
+ ==================================================================== -->
+ <xsl:template                   match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates         select = "@*"/>
+   <xsl:apply-templates/>
+  </xsl:copy> 
+ </xsl:template>
+
+</xsl:transform>

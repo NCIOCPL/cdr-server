@@ -24,11 +24,42 @@ BZIssue::5097 - Modifications to Publishing Filter to include Module content
                               encoding = 'utf-8'/>
 
  <!-- 
+ =================================================================
+ Copy control information and generate current date
+ ================================================================= -->
+ <xsl:template                    match = "/">
+   <xsl:apply-templates/>
+ </xsl:template>
+
+
+ <!-- 
  ==================================================================
- Template to add the names of the board members from the English
- board to the Spanish summary.
+ Template to denormalize a module link into a section of a summary.
  ================================================================== -->
  <xsl:template                   match = "SummaryModuleLink">
+  <xsl:variable                   name = "moduleRef"
+                                select = "@cdr:ref"/>
+  <xsl:variable                   name = "moduleInfo"
+                                select = "document(concat('cdr:', $moduleRef,
+                                                            ''))"/>
+   <xsl:apply-templates         select = "$moduleInfo/
+                                           Summary/
+                                           SummarySection">
+    <xsl:with-param               name = "ref"
+                                select = "@cdr:ref"/>
+    <xsl:with-param               name = "module"
+                                select = "'_sm'"/>
+   </xsl:apply-templates>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Template to denormalize a module link into a section of a summary.
+ ================================================================== -->
+ <xsl:template                   match = "SummaryModuleLinkXXX"
+                                  mode = "module">
+  <xsl:text>Volker-m</xsl:text>
   <xsl:variable                   name = "moduleRef"
                                 select = "@cdr:ref"/>
   <xsl:variable                   name = "moduleInfo"
@@ -53,24 +84,42 @@ BZIssue::5097 - Modifications to Publishing Filter to include Module content
   <xsl:param                      name = "ref"/>
   <xsl:param                      name = "module"/>
   
-  <xsl:element                    name = "{name()}">
-   <xsl:choose>
-   <xsl:when                      test = "$ref">
-    <xsl:attribute                name = "cdr:ref">
-     <xsl:value-of              select = "$ref"/>
-    </xsl:attribute>
-    <xsl:attribute                name = "cdr:id">
+    <xsl:variable                 name = "modprefix">
      <xsl:value-of              select = "$module"/>
      <xsl:value-of              select = "concat('_', $ref)"/>
      <xsl:value-of              select = "@cdr:id"/>
+    </xsl:variable>
+
+  <xsl:element                    name = "{name()}">
+   <!--
+   If this section has been imported via a SummaryModuleLink add
+   an attribute to indicate this
+   ============================================================= -->
+   <xsl:if                        test = "$module = '_sm'">
+    <xsl:attribute                name = "thissection">
+     <xsl:value-of              select = "'module'"/>
     </xsl:attribute>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:attribute                name = "cdr:id">
-     <xsl:value-of              select = "@cdr:id"/>
-    </xsl:attribute>
-   </xsl:otherwise>
+   </xsl:if>
+
+   <!--
+   Also add a new cdr:id to keep ids unique within the document
+   ============================================================ -->
+   <xsl:choose>
+    <xsl:when                     test = "$ref">
+     <xsl:attribute               name = "cdr:ref">
+      <xsl:value-of             select = "$ref"/>
+     </xsl:attribute>
+     <xsl:attribute               name = "cdr:id">
+      <xsl:value-of             select = "$modprefix"/>
+     </xsl:attribute>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:attribute               name = "cdr:id">
+      <xsl:value-of             select = "@cdr:id"/>
+     </xsl:attribute>
+    </xsl:otherwise>
    </xsl:choose>
+
    <xsl:for-each                select = "@*">
     <xsl:if                       test = "not(name() = 'cdr:id')">
     <xsl:attribute                name = "{name()}">
@@ -79,11 +128,15 @@ BZIssue::5097 - Modifications to Publishing Filter to include Module content
     </xsl:if>
    </xsl:for-each>
 
-   <xsl:apply-templates           mode = "module">
+   <!-- xsl:apply-templates           mode = "module" -->
+   <xsl:apply-templates>
     <xsl:with-param               name = "ref"
                                 select = "$ref"/>
     <xsl:with-param               name = "module"
-                                select = "'_sm'"/>
+                                select = "$module"/>
+    <xsl:with-param               name = "modprefix"
+                                select = "$modprefix"/>
+                                <!-- select = "'_sm'"/ -->
    </xsl:apply-templates>
   </xsl:element>
  </xsl:template>
@@ -94,13 +147,14 @@ BZIssue::5097 - Modifications to Publishing Filter to include Module content
  Template to process all elements of SummarySections within a
  module
  ================================================================== -->
- <xsl:template                   match = 'SummarySection/*'
+ <xsl:template                   match = 'SummarySectionXXX/*'
                                   mode = "module">
   <xsl:param                      name = "ref"/>
   <xsl:param                      name = "module"/>
+  <xsl:text>mode: module</xsl:text>
 
   <xsl:copy>
-   <xsl:apply-templates         select = '@*|node()' 
+   <xsl:apply-templates         select = '@*|node()|SummaryModuleLink' 
                                   mode = "module">
     <xsl:with-param               name = "ref"
                                 select = "$ref"/>
@@ -115,8 +169,7 @@ BZIssue::5097 - Modifications to Publishing Filter to include Module content
  Template to pass on the module ID to elements within the 
  Insertion/Deletion elements
  ================================================================== -->
- <xsl:template                   match = 'Insertion | Deletion' 
-                                  mode = "module">
+ <xsl:template                   match = 'Insertion | Deletion'>
   <xsl:param                      name = "ref"/>
   <xsl:param                      name = "module"/>
 
@@ -127,7 +180,7 @@ BZIssue::5097 - Modifications to Publishing Filter to include Module content
     <xsl:with-param               name = "ref"
                                 select = "$ref"/>
     <xsl:with-param               name = "module"
-                                select = "'_sm'"/>
+                                select = "$module"/>
    </xsl:apply-templates>
   </xsl:copy>
  </xsl:template>
@@ -137,14 +190,22 @@ BZIssue::5097 - Modifications to Publishing Filter to include Module content
  ==================================================================
  Template to update the cdr:id value for elements with the module
  ================================================================== -->
- <xsl:template                   match = "@cdr:id"  
-                                  mode = "module">
+ <xsl:template                   match = "@cdr:id">
+  <!--                                mode = "module" -->
   <xsl:param                      name = "ref"/>
   <xsl:param                      name = "module"/>
+  <xsl:param                      name = "modprefix"/>
+
+  <xsl:if                         test = "$ref">
+  <xsl:attribute                  name = "dada">
+   <xsl:text>Volker</xsl:text>
+  </xsl:attribute>
+  </xsl:if>
 
   <xsl:choose>
    <xsl:when                      test = "$ref">
     <xsl:attribute                name = "cdr:id">
+     <xsl:value-of              select = "$modprefix"/>
      <xsl:value-of              select = "$module"/>
      <xsl:value-of              select = "concat('_', $ref)"/>
      <xsl:value-of              select = "."/>
@@ -184,7 +245,7 @@ BZIssue::5097 - Modifications to Publishing Filter to include Module content
  <!-- 
  ==================================================================
  Template rule used to do XML to XML transformations which
- copies any attribute node, or node that is child of of something 
+ copies any attribute node, or node that is child of something 
  (Everything that's not inside a SummaryModule or SummarySection)
  ================================================================== -->
  <xsl:template                   match = '@*|node()'>
