@@ -12,6 +12,9 @@ BZIssue::4836 - Create new section at end of HP summaries
 BZIssue::5039 - Search string blurb for CAM summaries
 BZIssue::5135 - Vendor filter changes to accomodate mobile elements 
                 and attributes
+BZIssue::5138 - [Deep linking] Changes to vendor filter to allow 
+                               deep-linking to PDQ content
+BZIssue::5154 - Order of sections in summaries on Cancer.gov
 
 ================================================================ -->
 <xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -317,6 +320,15 @@ BZIssue::5135 - Vendor filter changes to accomodate mobile elements
 
    The 'To Learn More' section needs to be suppressed from the 
    output for the mobile site.
+
+   Bug 5154:  The order of sections at the end of each summary
+              should now become (for HP only)
+              - Changes to this Summary
+              - About this PDQ Summary (HP) / About PDQ (patient)
+              - Get more information from NCI
+              For patient summaries, the Get More section will 
+              still need to be displayed before the Changes 
+              section but may change to be identical to the HPs.
    ============================================================= -->   
    <xsl:choose>
     <xsl:when                    test = "SummaryMetaData/
@@ -372,21 +384,46 @@ BZIssue::5135 - Vendor filter changes to accomodate mobile elements
 
       </xsl:otherwise>
      </xsl:choose>
+     <!--
+     "Get More Information to be added as last section
+     but not for the CAM summaries
+     This block adds the GetMore section to the end of the patient
+     summaries.  Commented out since it hasn't been decided if this 
+     should be implemented.    2012-01-18, VE.
+     ================================================================= -->
+     <!-- xsl:if                      test = "not($sumType =
+                                           concat('Complementary and ',
+                                                  'alternative medicine'))">
+      <xsl:call-template          name = "GetMoreInfo"/>
+     </xsl:if -->
+
     </xsl:when>
     <!-- HP Summaries -->
     <xsl:otherwise>
      <!--
      The ContactUs template is only being applied to Supportive Care,
      Screening, and Prevention summaries (Patient and HP version).
+     Note:  ContactUS => 'Questions or Comments about this Summary'
      ================================================================ -->
      <xsl:call-template           name = "ContactUs"/>
 
-     <xsl:call-template           name = "MoreInformation"/>
+     <!-- Need to suppress the "For More Information" section -->
+     <!-- xsl:call-template           name = "MoreInformation"/ -->
 
      <!--
      "About this Summary" section is applied to all HP summaries
      ================================================================= -->
      <xsl:call-template          name = "AboutThisSummary"/>
+
+     <!--
+     "Get More Information to be added as last section
+     but not for the CAM summaries
+     ================================================================= -->
+     <xsl:if                      test = "not($sumType =
+                                           concat('Complementary and ',
+                                                  'alternative medicine'))">
+      <xsl:call-template          name = "GetMoreInfo"/>
+     </xsl:if>
 
     </xsl:otherwise>
    </xsl:choose>
@@ -459,9 +496,13 @@ BZIssue::5135 - Vendor filter changes to accomodate mobile elements
     <xsl:when                    test = "not(@IncludedDevices)
                                          and
                                          not(@ExcludedDevices)">
-     <xsl:attribute              name = "ExcludedDevices">
-      <xsl:text>mobile</xsl:text>
-     </xsl:attribute>
+     <xsl:if                     test = "$sumAudience = 'Patients'
+                                         and
+                                         $sumType = 'Treatment'">
+      <xsl:attribute             name = "ExcludedDevices">
+       <xsl:text>mobile</xsl:text>
+      </xsl:attribute>
+     </xsl:if>
     </xsl:when>
     <xsl:otherwise>
      <xsl:call-template          name = "listDevicesAttribute"/>
@@ -517,32 +558,38 @@ BZIssue::5135 - Vendor filter changes to accomodate mobile elements
    <!--
    ================================================================
    Don't display the Get More section for the CAM summaries
+   
+   "Get More" has been moved to the end of the Summary for HPs
+   This block is to display the patient's GetMore section before 
+   the Changes section and after the To Learn More section
    ================================================================ -->
    <xsl:if                       test = "not($sumType =
                                            concat('Complementary and ',
                                                   'alternative medicine'))">
-    <xsl:choose>
-     <xsl:when                   test = "$language = 'English'">
-      <xsl:variable              name = "miscDoc" 
+    <xsl:if                      test = "$sumAudience = 'Patients'">
+     <xsl:choose>
+      <xsl:when                  test = "$language = 'English'">
+       <xsl:variable             name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000000367',
                                                          '/lastp'))"/>
-      <xsl:apply-templates     select = "$miscDoc/MiscellaneousDocument/
+       <xsl:apply-templates    select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
-       <xsl:with-param           name = "miscDocId"
+        <xsl:with-param          name = "miscDocId"
                                select = "'_GetMore'"/>
-      </xsl:apply-templates>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:variable              name = "miscDoc" 
+       </xsl:apply-templates>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:variable             name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000256873',
                                                          '/lastp'))"/>
-      <xsl:apply-templates     select = "$miscDoc/MiscellaneousDocument/
+       <xsl:apply-templates    select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
-       <xsl:with-param           name = "miscDocId"
+        <xsl:with-param          name = "miscDocId"
                                select = "'_GetMore'"/>
-      </xsl:apply-templates>
-     </xsl:otherwise>
-    </xsl:choose>
+       </xsl:apply-templates>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:if>
    </xsl:if>
   </xsl:if>
 
@@ -566,9 +613,13 @@ BZIssue::5135 - Vendor filter changes to accomodate mobile elements
                                          not(@IncludedDevices)
                                          and
                                          not(@ExcludedDevices)">
-     <xsl:attribute              name = "ExcludedDevices">
-      <xsl:text>mobile</xsl:text>
-     </xsl:attribute>
+     <xsl:if                     test = "$sumAudience = 'Patients'
+                                         and
+                                         $sumType = 'Treatment'">
+      <xsl:attribute             name = "ExcludedDevices">
+       <xsl:text>mobile</xsl:text>
+      </xsl:attribute>
+     </xsl:if>
     </xsl:when>
     <xsl:otherwise>
      <xsl:call-template          name = "listDevicesAttribute"/>
@@ -814,6 +865,18 @@ BZIssue::5135 - Vendor filter changes to accomodate mobile elements
    <xsl:apply-templates        select = "MobileURL"/>
    <xsl:apply-templates        select = "MainTopics"/>
    <xsl:apply-templates        select = "SecondaryTopics"/>
+
+   <!-- Comment out deep linking:  Needed for a later release -->
+   <!--
+   Move all the PermaTargIds to the SummaryMetaData section
+   ======================================================== -->
+   <!--
+   <xsl:if                       test = "//@PermaTargId">
+    <xsl:element                 name = "PermaTargs">
+     <xsl:apply-templates      select = "//@PermaTargId"/>
+    </xsl:element>
+   </xsl:if>
+   -->
   </SummaryMetaData>
  </xsl:template>
 
@@ -852,6 +915,32 @@ BZIssue::5135 - Vendor filter changes to accomodate mobile elements
   </SecondaryTopics>
  </xsl:template>
    
+
+   <!-- Comment out deep linking:  Needed for a later release -->
+ <!-- 
+ ============================================================= 
+ Template to move all of the PermaTargs inside the 
+ SummaryMetaData within a single block.
+ ============================================================= -->
+ <!-- 
+ <xsl:template                  match = "@PermaTargId">
+  <xsl:element                   name = "PermaTarg">
+   <xsl:attribute                name = "id">
+    <xsl:value-of              select = "../@cdr:id"/>
+   </xsl:attribute>
+   <xsl:attribute                name = "PermaTargId">
+    <xsl:value-of              select = "../@PermaTargId"/>
+   </xsl:attribute>
+   <xsl:attribute                name = "PermaTargTitle">
+    <xsl:value-of              select = "../@PermaTargTitle"/>
+   </xsl:attribute>
+   <xsl:attribute                name = "PermaTargUrl">
+    <xsl:value-of              select = "../@PermaTargUrl"/>
+   </xsl:attribute>
+  </xsl:element>
+ </xsl:template>
+ -->
+ 
 
  <!-- 
  ============================================================= 
@@ -1039,12 +1128,18 @@ BZIssue::5135 - Vendor filter changes to accomodate mobile elements
  =========================================================================
  Template to add the IncludedDevices/ExcludedDevices attributes to the 
  output stream.
+ If we find 'ExludedDevices=none' drop the attribute since it's 
+ meaningless.  Same for 'IncludeDevices=all'.
+ Also drop the attribute for HP summaries since only Patient summaries are
+ included to the mobile site.
  ========================================================================= -->
  <xsl:template                   name = "listDevicesAttribute">
   <xsl:for-each                select = "./@ExcludedDevices | 
                                          ./@IncludedDevices">
    <xsl:choose>
-    <xsl:when                    test = ". = 'None'">
+    <xsl:when                    test = ". = 'none'
+                                         or
+                                         $sumAudience = 'Health professionals'">
      <!-- Do nothing, remove the attribute -->
     </xsl:when>
     <xsl:otherwise>
@@ -1244,13 +1339,14 @@ BZIssue::5135 - Vendor filter changes to accomodate mobile elements
  Create the QandAEntry template including the renamed attribute for 
  the paragraph IDs. (cdr:ref ID needs to be renamed to id).
  ================================================================== -->
- <xsl:template                  match = "QandAEntry">
-   <QandAEntry>
-    <xsl:attribute               name = "id">
-     <xsl:value-of             select = "./@cdr:id"/>
-    </xsl:attribute>
-    <xsl:apply-templates/>
-   </QandAEntry>
+ <xsl:template                   match = "QandASet | QandAEntry">
+  <xsl:copy>
+   <xsl:attribute                 name = "id">
+    <xsl:value-of               select = "./@cdr:id"/>
+   </xsl:attribute>
+   <xsl:call-template             name = "listDevicesAttribute"/>
+   <xsl:apply-templates/>
+  </xsl:copy>
  </xsl:template>
     
 
@@ -1320,9 +1416,13 @@ BZIssue::5135 - Vendor filter changes to accomodate mobile elements
                                          not(contains($sumAgeGroup, 
                                                            'Pediatric'))">
                                          -->
-     <xsl:attribute              name = "ExcludedDevices">
-      <xsl:text>mobile</xsl:text>
-     </xsl:attribute>
+     <xsl:if                     test = "$sumAudience = 'Patients'
+                                         and
+                                         $sumType = 'Treatment'">
+      <xsl:attribute             name = "ExcludedDevices">
+       <xsl:text>mobile</xsl:text>
+      </xsl:attribute>
+     </xsl:if>
     </xsl:when>
    </xsl:choose>
 
@@ -1770,7 +1870,6 @@ BZIssue::5135 - Vendor filter changes to accomodate mobile elements
                                          Subscript      | Superscript    |
                                          GeneName       | ScientificName |
                                          ForeignName    | Note           |
-                                         QandASet       | 
                                          QandADiv       | MarkedUpTitle  |
                                          Question       | Answer">
   <xsl:element                   name = "{name()}">
@@ -2193,6 +2292,8 @@ BZIssue::5135 - Vendor filter changes to accomodate mobile elements
  =========================================================================
  Template to add the "More Information" misc. document to the summaries.
  Need to add the document in its appropriate language (English/Spanish).
+
+ Bug 5154:  Suppressing "More Information" section from all summaries
  ========================================================================= -->
  <xsl:template                   name = "MoreInformation">
 
@@ -2539,6 +2640,59 @@ BZIssue::5135 - Vendor filter changes to accomodate mobile elements
                                 select = "'_AboutThis'"/>
      </xsl:apply-templates>
     </SummarySection>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ =========================================================================
+ Template to add the "Get More Information" misc. document to all 
+ summaries.
+ ========================================================================= -->
+ <xsl:template                    name = "GetMoreInfo">
+  <xsl:choose>
+   <xsl:when                      test = "SummaryMetaData/
+                                          SummaryLanguage = 'English'">
+    <xsl:variable                 name = "miscDoc" 
+                                select = "document(concat('cdr:CDR000000367',
+                                                         '/lastp'))"/>
+    <!-- SummarySection>
+     <xsl:attribute               name = "id">
+      <xsl:value-of             select = "'_GetMore'"/>
+      <xsl:value-of             select = "$miscDoc/MiscellaneousDocument/
+                                                 MiscellaneousDocumentText/
+                                                 @cdr:id"/>
+     </xsl:attribute>
+
+     <Title>About This PDQ Summary</Title -->
+     <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+      <xsl:with-param             name = "miscDocId"
+                                select = "'_GetMore'"/>
+     </xsl:apply-templates>
+    <!-- /SummarySection -->
+
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:variable                 name = "miscDoc" 
+                                select = "document(concat('cdr:CDR0000256873',
+                                                         '/lastp'))"/>
+    <!-- SummarySection>
+     <xsl:attribute               name = "id">
+      <xsl:value-of             select = "'_GetMore'"/>
+      <xsl:value-of             select = "$miscDoc/MiscellaneousDocument/
+                                                 MiscellaneousDocumentText/
+                                                 @cdr:id"/>
+     </xsl:attribute>
+
+     <Title>Informaci&#xF3;n sobre este sumario del PDQ</Title -->
+     <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+      <xsl:with-param             name = "miscDocId"
+                                select = "'_GetMore'"/>
+     </xsl:apply-templates>
+    <!-- /SummarySection -->
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
