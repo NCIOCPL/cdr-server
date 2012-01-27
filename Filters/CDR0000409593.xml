@@ -7,6 +7,8 @@ BZIssue::4751 - Modify BU Reports to display LOERefs
 BZIssue::4919 - [Summary] QC Report Bugs
 BZIssue::4970 - [Summary] Key Point display problems in QC reports
 BZIssue::5075 - [Summary] No definition texts for Spanish B/U QC report
+BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
+                include Module content
 
 ===============================================================
 Filter to create Vendor Genetics Professionals XML documents 
@@ -266,6 +268,47 @@ Filter to create Vendor Genetics Professionals XML documents
  </xsl:template>
 
 
+ <!-- 
+ =================================================================
+ ================================================================= -->
+ <xsl:template                   match = "SummaryFragmentRef"
+                                  mode = "copy">
+   <xsl:element                   name = "{name()}">
+    <xsl:attribute                name = "cdr:href">
+     <!-- 
+     If the cdr:href is identical to the main doc ID just repeat it
+     ============================================================== -->
+     <xsl:choose>
+      <xsl:when                   test = "substring-before(@cdr:href, '#') =
+                                            /Summary/DocId">
+       <xsl:value-of            select = "@cdr:href"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:choose>
+        <!--
+        If the cdr:href is within a module pointing to the main do add
+        the main doc's CDR-ID
+        ============================================================== -->
+        <xsl:when                 test = "ancestor::SummarySection/@cdr:ref
+                                          = substring-before(@cdr:href, '#')">
+         <xsl:value-of          select = "concat(/Summary/DocId,
+                                                 '#_sm_',
+                                                 translate(@cdr:href, '#', ''))"/>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:value-of          select = "concat(/Summary/DocId,
+                                                 '#_sm_',
+                                                 translate(@cdr:href, '#', ''))"/>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:attribute>
+   <xsl:apply-templates        mode = "copy"/>
+   </xsl:element>
+ </xsl:template>  
+
+ 
  <!-- 
  =================================================================
  Default Template rule used to do XML to XML transformations which
