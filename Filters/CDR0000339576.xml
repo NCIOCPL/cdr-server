@@ -13,6 +13,9 @@ BZIssue::5065 - [Summaries] 2 More Patient Summary QC Report Display Options
 BZIssue::5116 - [Summaries] Personalized Word Macros for Summaries in MS Word
 BZIssue::5157 - [Summaries] HP Treatment summaries not retrieving GTN with 
                             Concept QC Report
+BZIssue::5159 - [Summaries] Changes to HP & Patient QC Report Interfaces and
+                            Display Options
+BZIssue::5134 - [Summaries] Citation Links in QC Reports
 
 ========================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -2141,6 +2144,7 @@ BZIssue::5157 - [Summaries] HP Treatment summaries not retrieving GTN with
    <xsl:when                      test = "$DisplayImages = 'Y'">
     <xsl:apply-templates        select = "."
                                   mode = "summary"/>
+    <xsl:call-template            name = "addCaption"/>
    </xsl:when>
    <xsl:otherwise>
     <div class="imagepadding">
@@ -2152,10 +2156,51 @@ BZIssue::5157 - [Summaries] HP Treatment summaries not retrieving GTN with
       <b>Image: </b>
       <xsl:value-of             select = "Media/
                                           MediaTitle"/>
+      <!-- xsl:if                     test = "following-sibling::Caption">
+       <xsl:apply-templates     select = "../Caption"
+                                  mode = "summary"/>
+      </xsl:if -->
      </div>
     </div>
+    <xsl:if                       test = "following-sibling::Caption">
+     <xsl:call-template           name = "addCaption"/>
+    </xsl:if>
    </xsl:otherwise>
   </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ======================================================================
+ Template handling Captions when images are being displayed as well
+ ====================================================================== -->
+ <xsl:template                    name = "addCaption">
+  <div class="caption" style="font-style: italic; text-align: center; 
+                              margin: 0 5% 0 5%;">
+   <xsl:value-of                select = "following-sibling::Caption"/>
+  </div>
+ </xsl:template>
+
+
+ <!-- 
+ ======================================================================
+ Template suppressing the Captions.
+ These are already dealt with as part of the MediaID template.
+ ====================================================================== -->
+ <xsl:template                   match = "Caption"/>
+
+
+ <!-- 
+ ======================================================================
+ Template handling Captions following the MediaID element in the case
+ that the images are being suppressed.  Image title and caption are 
+ being printed in one placeholder box.
+ ====================================================================== -->
+ <xsl:template                   match = "Caption"
+                                  mode = "summary">
+  <br/>
+  <b>Caption: </b>
+  <xsl:value-of                 select = "."/>
  </xsl:template>
 
 
@@ -2666,12 +2711,15 @@ BZIssue::5157 - [Summaries] HP Treatment summaries not retrieving GTN with
                                 select = "position()-1"/>
   <xsl:variable                   name = "ref" 
                                 select = "."/>
+  <xsl:variable                   name = "sectionID">
+   <xsl:call-template             name = "getSectionId"/>
+  </xsl:variable>
 
   <!--
   Displaying the Left Bracket of a list of citations with markup 
   ================================================================= -->
   <xsl:if                         test = "name(../node()[$firstRef])
-                                                            != 'Citation'">
+                                            != 'Citation'">
    <xsl:choose>
     <xsl:when                     test = "@InsertionOrDeletion = 'Insertion'">
      <xsl:choose>
@@ -2721,13 +2769,11 @@ BZIssue::5157 - [Summaries] HP Treatment summaries not retrieving GTN with
             <xsl:text>[</xsl:text>
            </span>
           </xsl:when>
-
           <xsl:otherwise>
            <span class="deleteapproved_ad">
             <xsl:text>[</xsl:text>
            </span>
           </xsl:otherwise>
-
          </xsl:choose>
         </xsl:otherwise>
        </xsl:choose>
@@ -2772,12 +2818,18 @@ BZIssue::5157 - [Summaries] HP Treatment summaries not retrieving GTN with
       <xsl:choose>
        <xsl:when                  test = "@RevisionLevel = 'proposed'">
         <span class="deleteproposed_ad">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:when>
        <xsl:otherwise>
         <span class="deleteapproved_ad">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:otherwise>
       </xsl:choose>
@@ -2786,12 +2838,18 @@ BZIssue::5157 - [Summaries] HP Treatment summaries not retrieving GTN with
       <xsl:choose>
        <xsl:when                  test = "@RevisionLevel = 'proposed'">
         <span class="deleteproposed">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:when>
        <xsl:otherwise>
         <span class="deleteapproved">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:otherwise>
       </xsl:choose>
@@ -2805,12 +2863,18 @@ BZIssue::5157 - [Summaries] HP Treatment summaries not retrieving GTN with
       <xsl:choose>
        <xsl:when                  test = "@RevisionLevel = 'proposed'">
         <span class="insertproposed_ad">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:when>
        <xsl:otherwise>
         <span class="insertapproved_ad">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:otherwise>
       </xsl:choose>
@@ -2819,12 +2883,18 @@ BZIssue::5157 - [Summaries] HP Treatment summaries not retrieving GTN with
       <xsl:choose>
        <xsl:when                  test = "@RevisionLevel = 'proposed'">
         <span class="insertproposed">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:when>
        <xsl:otherwise>
         <span class="insertapproved">
-         <xsl:value-of          select = "@refidx"/>
+         <xsl:call-template        name = "addCitationLink">
+          <xsl:with-param          name = "sectionID"
+                                 select = "$sectionID"/>
+         </xsl:call-template>
         </span>
        </xsl:otherwise>
       </xsl:choose>
@@ -2832,7 +2902,10 @@ BZIssue::5157 - [Summaries] HP Treatment summaries not retrieving GTN with
     </xsl:choose>
    </xsl:when>
    <xsl:otherwise>
-    <xsl:value-of               select = "@refidx"/>
+    <xsl:call-template            name = "addCitationLink">
+     <xsl:with-param              name = "sectionID"
+                                select = "$sectionID"/>
+    </xsl:call-template>
    </xsl:otherwise>
   </xsl:choose>
 
