@@ -8,6 +8,7 @@ $Id$
 Filter including misc Vendor filter templates.
 
 BZIssue::???? - Modify Vendor Filters to Include Audio
+BZIssue::5003 - [Summaries] Table Column Widths - Display on Cancer.gov 
 
 ==================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -722,4 +723,86 @@ BZIssue::???? - Modify Vendor Filters to Include Audio
   
  <xsl:template                   match = "Comment | PdqKey"
                                   mode = "copy"/>
+
+
+ <!--
+ ====================================================================
+ Template to convert the column width of a table specified by 
+       col1=1*, col2=1*, col3=2* 
+ into percentages 
+      col1=25.00%, col2=25.00%, col3=50.00%
+ ==================================================================== -->
+ <xsl:template                    name = "setColWidth">
+  <xsl:param                      name = "allCols"
+                                select = "'1,'"/>
+
+  <!--
+  Creating a variable that counts the number of "column units" (CU)
+  If the table contains 3 columns with the widths specified as
+   col1=*, col2=2*, col3=3* then the sum of column units is 6.
+  In order to convert the column widths to percentages (which
+  are understood by the browser) we're applying the folloing 
+  formula:
+     100 / CU * N = column width 
+  (in percent of the table width). N is the specified column width 
+  in column units. If the width is specified as '*' instead of 'N*'
+  the column width is set to '1'.
+  ================================================================== -->
+  <xsl:variable                   name = "myTotal">
+   <xsl:call-template             name = "getSum">
+    <xsl:with-param               name = "allCols"
+                                select = "$allCols"/>
+   </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:attribute                  name = "ColWidth">
+   <xsl:choose>
+    <xsl:when                     test = "@ColWidth = '*'">
+     <xsl:value-of              select = "format-number(100 div $myTotal,
+                                                        '#.00')"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of              select = "format-number(
+                                            substring-before(@ColWidth, '*') 
+                                                        * 100 div $myTotal,
+                                                        '#.00')"/>
+    </xsl:otherwise>
+   </xsl:choose>
+   <xsl:value-of                select = "'%'"/>
+  </xsl:attribute>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
+ Template to take a string of numbers separated by comma (',') and 
+ calculate the sum of those numbers.
+ The string is passed in the allCols parameter as '1, 2, 3,'.  
+ Recursively add the first element to the sum and continue to call
+ the function with the first element removed until allCols is empty.
+ ==================================================================== -->
+ <xsl:template                   name = "getSum">
+  <xsl:param                     name = "allCols"
+                               select = "."/>
+  <xsl:param                     name = "pSum"
+                               select = "0"/>
+
+  <xsl:choose>
+   <xsl:when                     test = "not(string-length($allCols) > 0)">
+    <xsl:value-of              select = "$pSum"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:variable                name = "vHead"
+                               select = "substring-before($allCols, ',')"/>
+    <xsl:call-template           name = "getSum">
+     <xsl:with-param             name = "allCols"
+                               select = "substring-after($allCols, ',')"/>
+     <xsl:with-param             name = "pSum"
+                               select = "$pSum + $vHead"/>
+    </xsl:call-template>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
 </xsl:transform>
+

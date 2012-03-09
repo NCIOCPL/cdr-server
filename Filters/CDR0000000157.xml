@@ -15,6 +15,7 @@ BZIssue::5135 - Vendor filter changes to accomodate mobile elements
 BZIssue::5138 - [Deep linking] Changes to vendor filter to allow 
                                deep-linking to PDQ content
 BZIssue::5154 - Order of sections in summaries on Cancer.gov
+BZIssue::5003 - [Summaries] Table Column Widths - Display on Cancer.gov 
 
 ================================================================ -->
 <xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -334,10 +335,49 @@ BZIssue::5154 - Order of sections in summaries on Cancer.gov
     <xsl:when                    test = "SummaryMetaData/
                                          SummaryAudience = 'Patients'">
      <!--
-     The ContactUs template is only being applied to Supportive Care,
+     The ContactUs template (changed to 'Questions and Comments ...) 
+     is only being applied to Supportive Care,
      Screening, and Prevention summaries (Patient and HP version).
      ================================================================ -->
-     <xsl:call-template          name = "ContactUs"/>
+     <xsl:call-template           name = "ContactUs"/>
+
+     <!--
+     ================================================================
+     Don't display the Get More section for the CAM summaries
+     
+     "Get More" has been moved to the end of the Summary for HPs
+     "Get More" has been moved just above the About PDQ section for patients.
+     This IF block add the section to the Patient summaries.
+     ================================================================ -->
+     <xsl:if                      test = "not($sumType =
+                                            concat('Complementary and ',
+                                                   'alternative medicine'))">
+      <xsl:if                     test = "$sumAudience = 'Patients'">
+       <xsl:choose>
+        <xsl:when                 test = "$language = 'English'">
+         <xsl:variable            name = "miscDoc" 
+                                select = "document(concat('cdr:CDR0000000367',
+                                                          '/lastp'))"/>
+         <xsl:apply-templates   select = "$miscDoc/MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+          <xsl:with-param         name = "miscDocId"
+                                select = "'_GetMore'"/>
+         </xsl:apply-templates>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:variable            name = "miscDoc" 
+                                select = "document(concat('cdr:CDR0000256873',
+                                                           '/lastp'))"/>
+         <xsl:apply-templates   select = "$miscDoc/MiscellaneousDocument/
+                                                   MiscellaneousDocumentText">
+          <xsl:with-param         name = "miscDocId"
+                                select = "'_GetMore'"/>
+         </xsl:apply-templates>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:if>
+     </xsl:if>
+
 
      <xsl:choose>
       <xsl:when                  test = "SummaryMetaData/
@@ -355,11 +395,11 @@ BZIssue::5154 - Order of sections in summaries on Cancer.gov
         <xsl:choose>
          <xsl:when               test = "SummaryMetaData/
                                          SummaryLanguage = 'English'">
-          <xsl:call-template     name = "AboutPdqEnglish"/>
+          <xsl:call-template     name = "AboutCAM"/>
          </xsl:when>
-         <xsl:otherwise>
+         <!-- xsl:otherwise>
           <xsl:call-template     name = "AboutPdqSpanish"/>
-         </xsl:otherwise>
+         </xsl:otherwise -->
         </xsl:choose>
 
         <!--
@@ -368,6 +408,7 @@ BZIssue::5154 - Order of sections in summaries on Cancer.gov
         <xsl:call-template       name = "QandACAM"/>
         <xsl:call-template       name = "ToLearnMore"/>
        </xsl:if>
+       <xsl:call-template      name = "AboutPdqEnglish"/>
       </xsl:when>
       <xsl:otherwise>
        <xsl:call-template        name = "ToLearnMore"/>
@@ -401,7 +442,8 @@ BZIssue::5154 - Order of sections in summaries on Cancer.gov
     <!-- HP Summaries -->
     <xsl:otherwise>
      <!--
-     The ContactUs template is only being applied to Supportive Care,
+     The ContactUs template (changed to 'Questions and Comments ...)
+     is only being applied to Supportive Care,
      Screening, and Prevention summaries (Patient and HP version).
      Note:  ContactUS => 'Questions or Comments about this Summary'
      ================================================================ -->
@@ -554,43 +596,6 @@ BZIssue::5154 - Order of sections in summaries on Cancer.gov
 
     </xsl:if>
    </xsl:if>
-
-   <!--
-   ================================================================
-   Don't display the Get More section for the CAM summaries
-   
-   "Get More" has been moved to the end of the Summary for HPs
-   This block is to display the patient's GetMore section before 
-   the Changes section and after the To Learn More section
-   ================================================================ -->
-   <xsl:if                       test = "not($sumType =
-                                           concat('Complementary and ',
-                                                  'alternative medicine'))">
-    <xsl:if                      test = "$sumAudience = 'Patients'">
-     <xsl:choose>
-      <xsl:when                  test = "$language = 'English'">
-       <xsl:variable             name = "miscDoc" 
-                               select = "document(concat('cdr:CDR0000000367',
-                                                         '/lastp'))"/>
-       <xsl:apply-templates    select = "$miscDoc/MiscellaneousDocument/
-                                                  MiscellaneousDocumentText">
-        <xsl:with-param          name = "miscDocId"
-                               select = "'_GetMore'"/>
-       </xsl:apply-templates>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:variable             name = "miscDoc" 
-                               select = "document(concat('cdr:CDR0000256873',
-                                                         '/lastp'))"/>
-       <xsl:apply-templates    select = "$miscDoc/MiscellaneousDocument/
-                                                  MiscellaneousDocumentText">
-        <xsl:with-param          name = "miscDocId"
-                               select = "'_GetMore'"/>
-       </xsl:apply-templates>
-      </xsl:otherwise>
-     </xsl:choose>
-    </xsl:if>
-   </xsl:if>
   </xsl:if>
 
   <!--
@@ -654,7 +659,46 @@ BZIssue::5154 - Order of sections in summaries on Cancer.gov
    ========================================================= -->
    <xsl:apply-templates       select = "ReferenceList"/>
 
+   <!--
+   ================================================================
+   Don't display the Get More section for the CAM summaries
+   
+   "Get More" has been moved to the end of the Summary for HPs
+   It has been moved to be displayed right after the Changes for 
+   Patients.
+   This block is to display the patient's GetMore section before 
+   the Changes section and after the To Learn More section
+   ================================================================ -->
+   <!-- xsl:if                       test = "not($sumType =
+                                           concat('Complementary and ',
+                                                  'alternative medicine'))">
+    <xsl:if                      test = "$sumAudience = 'Patients'">
+     <xsl:choose>
+      <xsl:when                  test = "$language = 'English'">
+       <xsl:variable             name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000000367',
+                                                         '/lastp'))"/>
+       <xsl:apply-templates    select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+        <xsl:with-param          name = "miscDocId"
+                               select = "'_GetMore'"/>
+       </xsl:apply-templates>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:variable             name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000256873',
+                                                         '/lastp'))"/>
+       <xsl:apply-templates    select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+        <xsl:with-param          name = "miscDocId"
+                               select = "'_GetMore'"/>
+       </xsl:apply-templates>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:if>
+   </xsl:if -->
   </SummarySection>
+
  </xsl:template>
 
 
@@ -2010,10 +2054,33 @@ BZIssue::5154 - Order of sections in summaries on Cancer.gov
      <xsl:value-of              select = "./@ColSep"/>
     </xsl:attribute>
    </xsl:if>
+   <!--
+   In order to specify the correct column width we'll need to
+   know the total number of "column units" (A column with the
+   width specified as '2*' has a width of 2 column units.) 
+   Here we're creating a string like '1,2,3,' listing each 
+   column's column units.  The string is passed to the template
+   setColWidth which calculates the width as a percentage of 
+   the total table width.
+   =========================================================== -->
    <xsl:if                        test = "./@ColWidth">
-    <xsl:attribute                name = "ColWidth">
-     <xsl:value-of              select = "./@ColWidth"/>
-    </xsl:attribute>
+    <xsl:call-template            name = "setColWidth">
+     <xsl:with-param              name = "allCols">
+      <xsl:for-each             select = "preceding-sibling::ColSpec |
+                                          self::ColSpec              |
+                                          following-sibling::ColSpec">
+       <xsl:choose>
+        <xsl:when                 test = "@ColWidth = '*'">
+         <xsl:value-of          select = "'1,'"/>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:value-of          select = "substring-before(@ColWidth, '*')"/>
+         <xsl:value-of          select = "','"/>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:for-each>
+     </xsl:with-param>
+    </xsl:call-template>
    </xsl:if>
    <xsl:if                        test = "./@RowSep">
     <xsl:attribute                name = "RowSep">
@@ -2506,7 +2573,7 @@ BZIssue::5154 - Order of sections in summaries on Cancer.gov
                                            concat('Complementary and ',
                                                   'alternative medicine')">
     <xsl:variable                name = "miscDoc" 
-                               select = "document(concat('cdr:CDR0000445621',
+                               select = "document(concat('cdr:CDR0000000366',
                                                          '/lastp'))"/>
     <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
@@ -2588,6 +2655,34 @@ BZIssue::5154 - Order of sections in summaries on Cancer.gov
                                select = "'_AboutPDQ'"/>
     </xsl:apply-templates>
    </xsl:when>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ =========================================================================
+ Template to add the English "About PDQ" misc. document to the summaries.
+ This gets only attached to the patient versions.
+ ========================================================================= -->
+ <xsl:template                   name = "AboutCAM">
+  <!-- 
+  English Summaries, Patient, Treatment 
+  ===================================== -->
+  <xsl:choose>
+   <xsl:when                     test = "SummaryMetaData/
+                                         SummaryType =
+                                           concat('Complementary and ',
+                                                  'alternative medicine')">
+    <xsl:variable                name = "miscDoc" 
+                               select = "document(concat('cdr:CDR0000445621',
+                                                         '/lastp'))"/>
+    <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText">
+     <xsl:with-param             name = "miscDocId"
+                               select = "'_AboutCAM'"/>
+    </xsl:apply-templates>
+   </xsl:when>
+   <!-- English Summaries, Patient, Genetics End -->
   </xsl:choose>
  </xsl:template>
 
