@@ -9,6 +9,8 @@ BZIssue::4970 - [Summary] Key Point display problems in QC reports
 BZIssue::5075 - [Summary] No definition texts for Spanish B/U QC report
 BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
                 include Module content
+BZIssue::5191 - [Summaries] Summary Fragment Refs not working in 
+                QC reports
 
 ===============================================================
 Filter to create Vendor Genetics Professionals XML documents 
@@ -276,7 +278,8 @@ Filter to create Vendor Genetics Professionals XML documents
    <xsl:element                   name = "{name()}">
     <xsl:attribute                name = "cdr:href">
      <!-- 
-     If the cdr:href is identical to the main doc ID just repeat it
+     If the cdr:href is identical to the main doc ID this is an
+     internal link: keep the link as-is
      ============================================================== -->
      <xsl:choose>
       <xsl:when                   test = "substring-before(@cdr:href, '#') =
@@ -286,8 +289,9 @@ Filter to create Vendor Genetics Professionals XML documents
       <xsl:otherwise>
        <xsl:choose>
         <!--
-        If the cdr:href is within a module pointing to the main do add
-        the main doc's CDR-ID
+        If the cdr:href is within a module pointing to the main doc
+        add the main doc's CDR-ID so we can correctly create the 
+        internal link
         ============================================================== -->
         <xsl:when                 test = "ancestor::SummarySection/@cdr:ref
                                           = substring-before(@cdr:href, '#')">
@@ -295,10 +299,11 @@ Filter to create Vendor Genetics Professionals XML documents
                                                  '#_sm_',
                                                  translate(@cdr:href, '#', ''))"/>
         </xsl:when>
+        <!--
+        If this is a fragment link to another document keep as-is
+        ============================================================== -->
         <xsl:otherwise>
-         <xsl:value-of          select = "concat(/Summary/DocId,
-                                                 '#_sm_',
-                                                 translate(@cdr:href, '#', ''))"/>
+         <xsl:value-of            select = "@cdr:href"/>
         </xsl:otherwise>
        </xsl:choose>
       </xsl:otherwise>
