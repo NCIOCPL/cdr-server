@@ -60,6 +60,7 @@ BZIssue::4964 - Modify QC reports to show CTRP info (RSS) on CT.gov trials
  <xsl:template                  match = "LeadSponsor |
                                          Collaborator |
                                          Facility/Name |
+                                         CTRPAffiliation/PDQOrganization |
                                          CTRPFacility/PDQOrganization">
   <xsl:choose>
    <xsl:when                     test = "@cdr:ref != ''">
@@ -106,6 +107,54 @@ BZIssue::4964 - Modify QC reports to show CTRP info (RSS) on CT.gov trials
   </xsl:element>
  </xsl:template>
 
+
+ <!--
+ ==============================================================
+ ============================================================== -->
+ <xsl:template                  match = "XXXCTRPOverallOfficial/PDQPerson">
+  <xsl:variable                  name = "docId"
+                               select = "@cdr:ref"/>
+  <xsl:variable                  name = "uri"
+                               select = "concat('cdrx:', $docId, '/last')"/>
+  <xsl:variable                  name = "doc"
+                               select = "document($uri)"/>
+  <xsl:element                   name = "{name()}">
+   <xsl:if                       test = "$docId != ''">
+    <xsl:attribute               name = "cdr:ref">
+     <xsl:value-of             select = "$docId"/>
+    </xsl:attribute>
+   </xsl:if>
+   <PersonNameInformation>
+    <xsl:choose>
+     <xsl:when                    test = "$doc/Person/PersonNameInformation">
+      <xsl:for-each             select = "$doc/Person/PersonNameInformation">
+       <xsl:apply-templates     select = "GivenName"/>
+       <xsl:apply-templates     select = "MiddleInitial"/>
+       <xsl:apply-templates     select = "SurName"/>
+      </xsl:for-each>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:apply-templates     select = "GivenName"/>
+      <xsl:apply-templates     select = "MiddleInitial"/>
+      <xsl:apply-templates     select = "Surname|SurName"/>
+     </xsl:otherwise>
+    </xsl:choose>
+    <xsl:if                      test = "ProfessionalSuffix != ''">
+     <ProfessionalSuffix>
+      <CustomProfessionalSuffix>
+       <xsl:value-of           select = "ProfessionalSuffix"/>
+      </CustomProfessionalSuffix>
+     </ProfessionalSuffix>
+    </xsl:if>
+   </PersonNameInformation>
+   <xsl:apply-templates        select = "Surname"/>
+   <xsl:apply-templates        select = "Role"/>
+   <xsl:apply-templates        select = "Phone"/>
+   <xsl:apply-templates        select = "Email"/>
+  </xsl:element>
+ </xsl:template>
+
+
  <!-- *
  ==============================================================
  Template for person links.  Can't use the getPerson template
@@ -120,6 +169,7 @@ BZIssue::4964 - Modify QC reports to show CTRP info (RSS) on CT.gov trials
                                          ContactBackup        |
                                          CTRPContact          |
                                          CTRPInvestigator     |
+                                         CTRPOverallOfficial  |
                                          Investigator">
   <xsl:variable                  name = "docId"
                                select = "PDQPerson/@cdr:ref"/>
@@ -156,11 +206,13 @@ BZIssue::4964 - Modify QC reports to show CTRP info (RSS) on CT.gov trials
      </ProfessionalSuffix>
     </xsl:if>
    </PersonNameInformation>
-   <xsl:apply-templates        select = "Role"/>
+   <xsl:apply-templates/>
+   <!-- xsl:apply-templates        select = "self::*[not(PDQPerson)]"/ -->
+   <!-- xsl:apply-templates        select = "Role"/>
    <xsl:apply-templates        select = "Affiliation"/>
    <xsl:apply-templates        select = "Phone"/>
    <xsl:apply-templates        select = "PhoneExt"/>
-   <xsl:apply-templates        select = "Email"/>
+   <xsl:apply-templates        select = "Email"/ -->
   </xsl:element>
  </xsl:template>
 
