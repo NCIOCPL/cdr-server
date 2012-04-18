@@ -16,6 +16,8 @@ BZIssue::5138 - [Deep linking] Changes to vendor filter to allow
                                deep-linking to PDQ content
 BZIssue::5154 - Order of sections in summaries on Cancer.gov
 BZIssue::5003 - [Summaries] Table Column Widths - Display on Cancer.gov 
+BZIssue::5097 - [Summaries] Modifications to Publishing Filter to 
+                include Module content
 
 ================================================================ -->
 <xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -851,13 +853,20 @@ BZIssue::5003 - [Summaries] Table Column Widths - Display on Cancer.gov
     </xsl:variable>
   
     <!--
-    The SummaryRef url attribute is populated from the xref attribute of
+    The SummaryRef's url attribute is populated from the xref attribute of
     the SummaryURL element displaying the full path without the domain
     ===================================================================== -->
     <SummaryRef>
      <xsl:attribute              name = "href">
-      <xsl:value-of            select = "$hrefId"/>
+      <xsl:call-template         name = "setHrefTarget">
+       <xsl:with-param           name = "myHrefId">
+        <xsl:value-of            select = "$hrefId"/>
+       </xsl:with-param>
+      </xsl:call-template>
      </xsl:attribute>
+     <!-- xsl:attribute              name = "href">
+      <xsl:value-of            select = "$hrefId"/>
+     </xsl:attribute -->
      <xsl:attribute              name = "url">
       <xsl:choose>
        <xsl:when                 test = "starts-with($url, 'http')">
@@ -880,6 +889,49 @@ BZIssue::5003 - [Summaries] Table Column Widths - Display on Cancer.gov
     </LOERef>
    </xsl:otherwise>
   </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template to suppress the auxiliary information for linked
+ summaries.
+ ================================================================== -->  
+ <xsl:template                    name = "setHrefTarget">
+  <xsl:param                      name = "myHrefId"/>
+   
+   <!--
+   If the href is identical to the main doc ID the link either goes
+   from a module to the main doc or from the main doc to the main doc.
+   In this case just display the href.
+   =================================================================== -->
+   <xsl:choose>
+    <xsl:when                     test = "substring-before($myHrefId, '#') 
+                                           = /Summary/DocId">
+     <xsl:value-of              select = "$myHrefId"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:choose>
+      <!--
+      If the cdr:href is within a module pointing to the main do add
+      the main doc's CDR-ID
+      ============================================================== -->
+      <xsl:when                 test = "ancestor::SummarySection/@cdr:ref
+                                        = substring-before(@cdr:href, '#')">
+       <xsl:value-of          select = "concat(/Summary/DocId,
+                                               '#_sm_',
+                                               translate(@cdr:href, '#', ''))"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of          select = "concat(/Summary/DocId,
+                                               '#_sm_',
+                                               translate(@cdr:href, '#', ''))"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    
+    </xsl:otherwise>
+   </xsl:choose>
+
  </xsl:template>
 
 
