@@ -985,6 +985,35 @@ CREATE TABLE link_fragment (
 )
 GO
 
+
+/*
+ * Control PermaTargId attributes used to uniquely identify sections
+ *  of a document with an unchanging ID that non-CDR web pages can use
+ *  to "deep link" to that section, i.e., to link to an anchor inside
+ *  the document, not just to the top level.
+ * We track these here to insure that PermaTargIds are unique across
+ *  the entire database and are never re-used.
+ * PermaTargIds should never be used for linking from one CDR document to
+ *  another.  Use cdr:id for that.  These are only for links from non-CDR
+ *  documents to CDR documents.  The validation criteria for the two kinds
+ *  of IDs are different.
+ *
+ *       targ_id    PermaTargID attribute, unique.
+ *        doc_id    ID of the document containing the PermaTargId.
+ * active_status    'A' active, 'D' deleted - never re-use.
+ *     dt_active    Datetime targ_id created.
+ *    dt_deleted    Datetime targ_id marked as deleted, never re-use
+ */
+CREATE TABLE link_permatarg (
+         targ_id    INTEGER IDENTITY PRIMARY KEY,
+          doc_id    INTEGER NOT NULL REFERENCES all_docs,
+   active_status    CHAR NOT NULL DEFAULT 'A' REFERENCES active_status,
+       dt_active    DATETIME NOT NULL,
+      dt_deleted    DATETIME NULL
+)
+GO
+
+
 /*************************************************************
  *      End link related tables
  *************************************************************/
