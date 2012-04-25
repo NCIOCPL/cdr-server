@@ -100,7 +100,37 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  </xsl:template>
 
 
- <!-- *
+ <!--
+ ====================================================================
+ Template to check the ALT attribute for the MediaLink and report a
+ warning if it is empty.
+ ==================================================================== -->
+ <xsl:template                   match = "MediaLink[@alt]"
+                                  mode = "copy">
+  <xsl:element                    name = "{name()}">
+   <xsl:apply-templates         select = "node() | @*" 
+                                  mode = "copy"/>
+  </xsl:element>
+
+  <xsl:variable                   name = "docID"
+                                select = "@ref"/>
+
+  <xsl:if                         test = "@alt = ''">
+   <xsl:message              terminate = "no">
+    <xsl:text>&lt;LI class="warning"&gt;</xsl:text>
+    <xsl:value-of               select = "name()"/>
+    <xsl:text> (</xsl:text>
+    <xsl:value-of               select = "concat('CDR', number(
+                                            substring-after($docID, 'CDR')))"/>
+    <xsl:text>)&lt;BR/&gt;</xsl:text>
+    <xsl:text>ALT attribute of MediaLink element is empty.</xsl:text>
+    <xsl:text>&lt;BR/&gt;&lt;/LI&gt;</xsl:text>
+   </xsl:message> 
+  </xsl:if>
+ </xsl:template>
+
+
+ <!--
  ====================================================================
  Update the ProtocolSite elements containing the attribute 
  SuppressContactInformation="Yes" to suppress Street, Phone, and Email 
