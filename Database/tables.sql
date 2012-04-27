@@ -1000,14 +1000,13 @@ GO
  *
  *       targ_id    PermaTargID attribute, unique.
  *        doc_id    ID of the document containing the PermaTargId.
- * active_status    'A' active, 'D' deleted - never re-use.
  *     dt_active    Datetime targ_id created.
  *    dt_deleted    Datetime targ_id marked as deleted, never re-use
+ *                  If null, permatarg is active.
  */
 CREATE TABLE link_permatarg (
          targ_id    INTEGER IDENTITY PRIMARY KEY,
           doc_id    INTEGER NOT NULL REFERENCES all_docs,
-   active_status    CHAR NOT NULL DEFAULT 'A' REFERENCES active_status,
        dt_active    DATETIME NOT NULL,
       dt_deleted    DATETIME NULL
 )
