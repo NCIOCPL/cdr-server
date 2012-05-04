@@ -1007,7 +1007,7 @@ GO
 CREATE TABLE link_permatarg (
          targ_id    INTEGER IDENTITY PRIMARY KEY,
           doc_id    INTEGER NOT NULL REFERENCES all_docs,
-       dt_active    DATETIME NOT NULL,
+       dt_active    DATETIME NOT NULL DEFAULT GETDATE(),
       dt_deleted    DATETIME NULL
 )
 GO
