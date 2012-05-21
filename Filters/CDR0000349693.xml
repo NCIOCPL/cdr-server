@@ -4,6 +4,8 @@
 <!--
 BZIssue::4675
 BZIssue::4772 - CTGovProtocol Vendor Filter Changes
+BZIssue::5043 - Modify vendor filters for CT.gov trials with RSS 
+                data from CTRP
 -->
 <xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
                              xmlns:cdr = 'cips.nci.nih.gov/cdr'
@@ -76,8 +78,20 @@ BZIssue::4772 - CTGovProtocol Vendor Filter Changes
   <xsl:apply-templates          select = 'PDQIndexing'/>
   <xsl:apply-templates          select = 'PDQAdminInfo/
                                           ProtocolSpecialCategory'/>
-  <xsl:apply-templates          select = 'Location | 
-                                          CTRPInfo/CTRPLocation'/>
+  <!--
+  If the document contains CTRPLocations, these will overwrite any 
+  other location we received.  Otherwise, display the regular
+  locations
+  ================================================================ -->
+  <xsl:choose>
+   <xsl:when                      test = "CTRPInfo/CTRPLocation">
+    <xsl:apply-templates        select = 'CTRPInfo/CTRPLocation'/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:apply-templates        select = 'Location'/>
+   </xsl:otherwise>
+  </xsl:choose>
+
   <xsl:apply-templates          select = 'VerificationDate'/>
   <xsl:apply-templates          select = 'LastChangedDate'/>
  </xsl:template>
@@ -264,10 +278,13 @@ BZIssue::4772 - CTGovProtocol Vendor Filter Changes
  ================================================================
  ================================================================ -->
  <xsl:template                   match = 'Location | CTRPLocation'>
-  <xsl:if                         test = 'normalize-space(Status) = "Active" or
+  <xsl:if                         test = 'normalize-space(Status) = "Active" 
+                                          or
                                           (normalize-space(
-                                           /CTGovProtocol/OverallStatus) = "Active"
-                                           and normalize-space(Status) = "")'>
+                                           /CTGovProtocol/OverallStatus) 
+                                                                  = "Active"
+                                           and 
+                                           normalize-space(Status) = "")'>
    <Location>
     <xsl:apply-templates        select = 'Facility |
                                           CTRPFacility |
@@ -667,9 +684,19 @@ BZIssue::4772 - CTGovProtocol Vendor Filter Changes
 
  <!--
  ================================================================
+ Template to extract the PersonNameInformation
  ================================================================ -->
  <xsl:template                    name = 'extractPersonalName'>
-  <xsl:apply-templates          select = '@cdr:ref'/>
+  <xsl:param                      name = 'contact'
+                                select = '"No"'/>
+
+  <!--
+  Don't display the cdr:ref attribute for the extraction of the contact
+  information.
+  ===================================================================== -->
+  <xsl:if                         test = '$contact = "No"'>
+   <xsl:apply-templates         select = '@cdr:ref'/>
+  </xsl:if>
   <xsl:apply-templates          select = 'PersonNameInformation/GivenName'/>
   <xsl:apply-templates          select = 'PersonNameInformation/MiddleInitial'/>
   <xsl:variable                   name = 'surname'
@@ -731,7 +758,8 @@ BZIssue::4772 - CTGovProtocol Vendor Filter Changes
  <!--
  ================================================================
  ================================================================ -->
- <xsl:template                   match = 'OverallContact | OverallContactBackup'>
+ <xsl:template                   match = 'OverallContact | 
+                                          OverallContactBackup'>
   <xsl:element                    name = '{name()}'>
    <xsl:call-template             name = 'extractContact'/>
   </xsl:element>
@@ -752,13 +780,94 @@ BZIssue::4772 - CTGovProtocol Vendor Filter Changes
  <!--
  ================================================================
  ================================================================ -->
+ <xsl:template                   match = 'Sponsors'>
+  <xsl:element                    name = '{name()}'>
+   <xsl:apply-templates         select = 'PDQSponsorship'/>
+   <xsl:apply-templates         select = 'LeadSponsor'/>
+   <!-- 
+   If the CTRP block exists don't display the CTGov Info but
+   replace it with the CTRP info
+
+   The above statement has been reverted per discussion with
+   LG.  Regardless if the CTRPOverallOfficial information 
+   exists or not we will always use the OverallOfficial
+   information since this should be identical or should be
+   modified to be so.
+   Reverting code - VE, 2012-05-21
+   ========================================================= -->
+   <!--
+   <xsl:choose>
+    <xsl:when                     test = '../CTRPInfo'>
+     <xsl:apply-templates       select = '../CTRPInfo/
+                                             CTRPOverallOfficial'/>
+     <xsl:apply-templates       select = '../CTRPInfo/
+                                             CTRPOverallOfficial'
+                                  mode = 'contact'/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates       select = 'OverallOfficial'/>
+     <xsl:apply-templates       select = 'OverallContact'/>
+    </xsl:otherwise>
+   </xsl:choose>
+   -->
+   <xsl:apply-templates         select = 'OverallOfficial'/>
+   <xsl:apply-templates         select = 'OverallContact'/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ================================================================
+ ================================================================ -->
+ <!-- 
+ <xsl:template                   match = 'OverallOfficial |
+                                          CTRPOverallOfficial'>
+ -->
  <xsl:template                   match = 'OverallOfficial'>
   <OverallOfficial>
    <xsl:call-template             name = 'extractPersonalName'/>
    <xsl:apply-templates         select = 'Role'/>
+   <!--
+   <xsl:apply-templates         select = 'Affiliation |
+                                          CTRPAffiliation'/>
+   -->
    <xsl:apply-templates         select = 'Affiliation'/>
   </OverallOfficial>
  </xsl:template>
+
+
+ <!--
+ ================================================================
+ ================================================================ -->
+ <!--
+ <xsl:template                   match = 'CTRPOverallOfficial'
+                                  mode = 'contact'>
+  <OverallContact>
+   <xsl:call-template             name = 'extractPersonalName'>
+    <xsl:with-param               name = 'contact'
+                                select = 'Yes'/>
+   </xsl:call-template>
+   <xsl:apply-templates         select = 'Phone[1] |
+                                          Email[1]'/>
+  </OverallContact>
+ </xsl:template>
+ -->
+
+
+ <!--
+ ================================================================
+ ================================================================ -->
+ <!--
+ <xsl:template                   match = 'CTRPAffiliation'>
+  <Affiliation>
+   <xsl:value-of                select = 'PDQOrganization/
+                                            Organization/
+                                            OrganizationNameInformation/
+                                            OfficialName/
+                                            Name'/>
+  </Affiliation>
+ </xsl:template>
+ -->
 
 
  <!--
