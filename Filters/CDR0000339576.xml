@@ -86,7 +86,6 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
  ====================================================================== -->
  <xsl:template                   match = "SummaryFragmentRef |
                                           LOEFragmentRef">
-
   <a>
    <!-- 
    Attribute to being able and specify the CSS for this link
@@ -109,7 +108,8 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
    =============================================================== -->
    <xsl:attribute                 name = "href">
     <!--
-    For reformatted patient summaries run a different QC report
+    Create an anker link if the link points to a location
+    within the same document
     =========================================================== -->
     <xsl:choose>
      <!-- Internal link -->
@@ -118,7 +118,27 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
       <xsl:value-of             select = "concat('#', 
                                             substring-after(@cdr:href, '#'))"/>
      </xsl:when>
-     <xsl:when                    test = "LinkedSummary
+     <!--
+     If the SummaryFragment CDR-ID is different from the document's
+     CDR-ID there are several possible scenarios:
+     a) We're linking to a different document or 
+     b) We're linking from a module to the main document or 
+        vise versa.
+     ========================================================== -->
+     <xsl:otherwise>
+      <xsl:choose>
+       <!--
+       Handle links from a module to the main document
+       =========================================================== -->
+       <xsl:when                  test = "//SummarySection[@cdr:ref]/@cdr:ref = 
+                                           substring-before(@cdr:href, '#')">
+        <xsl:value-of           select = "concat('#_sm_', 
+                                            translate(@cdr:href, '#', ''))"/>
+       </xsl:when>
+       <!--
+       For reformatted patient summaries run 'pat' QC report
+       =========================================================== -->
+       <xsl:when                    test = "LinkedSummary
                                             /LinkedSummaryAudience = 'Patients'
                                           and
                                           (LinkedSummary
@@ -128,7 +148,7 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
                                             /LinkedSummaryType = 
                                            concat('Complementary and ',
                                                   'alternative medicine'))">
-      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+        <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=',
                                              substring-before(@cdr:href, '#'),
                                                  '&amp;ReportType=pat',
@@ -136,15 +156,20 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
                                                  '#',
                                             substring-after(@cdr:href, '#'))"/>
 
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+       </xsl:when>
+       <!--
+       For old patient summaries and HP run regular QC report
+       =========================================================== -->
+       <xsl:otherwise>
+        <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=',
                                              substring-before(@cdr:href, '#'),
                                                  '&amp;Session=guest', 
                                                  '#',
                                             substring-after(@cdr:href, '#'))"/>
 
+       </xsl:otherwise>
+      </xsl:choose>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:attribute>
