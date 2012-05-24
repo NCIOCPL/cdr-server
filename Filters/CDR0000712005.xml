@@ -25,16 +25,18 @@ BZIssue::5097 - Modifications to Publishing Filter to include Module content
 
  <!-- 
  =================================================================
- Copy control information and generate current date
+ Start copying everything from the root down
  ================================================================= -->
- <xsl:template                    match = "/">
-   <xsl:apply-templates/>
+ <xsl:template                   match = "/">
+  <xsl:apply-templates/>
  </xsl:template>
 
 
  <!-- 
  ==================================================================
  Template to denormalize a module link into a section of a summary.
+ We also need to include those summary sections that are listed 
+ within insertion/deletion markup.
  ================================================================== -->
  <xsl:template                   match = "SummaryModuleLink">
   <xsl:variable                   name = "moduleRef"
@@ -44,30 +46,14 @@ BZIssue::5097 - Modifications to Publishing Filter to include Module content
                                                             ''))"/>
    <xsl:apply-templates         select = "$moduleInfo/
                                            Summary/
-                                           SummarySection">
-    <xsl:with-param               name = "ref"
-                                select = "@cdr:ref"/>
-    <xsl:with-param               name = "module"
-                                select = "'_sm'"/>
-   </xsl:apply-templates>
- </xsl:template>
-
-
- <!-- 
- ==================================================================
- Template to denormalize a module link into a section of a summary.
- ================================================================== -->
- <xsl:template                   match = "SummaryModuleLinkXXX"
-                                  mode = "module">
-  <xsl:text>Volker-m</xsl:text>
-  <xsl:variable                   name = "moduleRef"
-                                select = "@cdr:ref"/>
-  <xsl:variable                   name = "moduleInfo"
-                                select = "document(concat('cdr:', $moduleRef,
-                                                            ''))"/>
-   <xsl:apply-templates         select = "$moduleInfo/
+                                           SummarySection |
+                                          $moduleInfo/
                                            Summary/
-                                           SummarySection">
+                                           Insertion[child::SummarySection] |
+                                          $moduleInfo/
+                                           Summary/
+                                           Deletion[child::SummarySection]"
+                                  mode = "module">
     <xsl:with-param               name = "ref"
                                 select = "@cdr:ref"/>
     <xsl:with-param               name = "module"
@@ -79,8 +65,11 @@ BZIssue::5097 - Modifications to Publishing Filter to include Module content
  <!-- 
  ==================================================================
  Template to process all SummarySections
+ This template converts the cdr:id to be unique accross the new
+ document.  It also adds the cdr:id of the module document.
  ================================================================== -->
- <xsl:template                   match = "SummarySection">
+ <xsl:template                   match = "SummarySection" 
+                                  mode = "module">
   <xsl:param                      name = "ref"/>
   <xsl:param                      name = "module"/>
   
@@ -144,38 +133,43 @@ BZIssue::5097 - Modifications to Publishing Filter to include Module content
 
  <!-- 
  ==================================================================
- Template to process all elements of SummarySections within a
- module
+ Template to properly process a summary section that is included 
+ in Insertion/Deletion tags within the module document.
  ================================================================== -->
- <xsl:template                   match = 'SummarySectionXXX/*'
+ <xsl:template                   match = "Insertion | Deletion" 
                                   mode = "module">
   <xsl:param                      name = "ref"/>
   <xsl:param                      name = "module"/>
-  <xsl:text>mode: module</xsl:text>
 
   <xsl:copy>
-   <xsl:apply-templates         select = '@*|node()|SummaryModuleLink' 
+   <xsl:for-each                select = "@*">
+    <xsl:copy/>
+   </xsl:for-each>
+
+   <xsl:apply-templates         select = "SummarySection" 
                                   mode = "module">
-    <xsl:with-param               name = "ref"
+    <xsl:with-param               name = "module" 
+                                select = "$module"/>
+    <xsl:with-param               name = "ref" 
                                 select = "$ref"/>
-    <xsl:with-param               name = "module"
-                                select = "'_sm'"/>
    </xsl:apply-templates>
   </xsl:copy>
- </xsl:template>
-
- <!-- 
- ==================================================================
- Template to pass on the module ID to elements within the 
- Insertion/Deletion elements
- ================================================================== -->
- <xsl:template                   match = 'Insertion | Deletion'>
-  <xsl:param                      name = "ref"/>
-  <xsl:param                      name = "module"/>
-
-
-  <xsl:copy>
-   <xsl:apply-templates         select = '@*|node()'
+  <!-- 
+  <xsl:choose>
+   <xsl:when test = "$module">
+  aaa<xsl:copy>
+    <xsl:for-each select = "@*">
+     <xsl:copy/>
+    </xsl:for-each>
+    <xsl:apply-templates select = "SummarySection" mode="module">
+     <xsl:with-param name = "module" select = "$module"/>
+     <xsl:with-param name = "ref" select = "$ref"/>
+    </xsl:apply-templates>
+  </xsl:copy>
+   </xsl:when>
+   <xsl:otherwise>
+  bbb<xsl:copy>
+   <xsl:apply-templates         select = "@*|node()"
                                   mode = "module">
     <xsl:with-param               name = "ref"
                                 select = "$ref"/>
@@ -183,6 +177,9 @@ BZIssue::5097 - Modifications to Publishing Filter to include Module content
                                 select = "$module"/>
    </xsl:apply-templates>
   </xsl:copy>
+  </xsl:otherwise>
+  </xsl:choose>
+  -->
  </xsl:template>
 
 
@@ -191,16 +188,15 @@ BZIssue::5097 - Modifications to Publishing Filter to include Module content
  Template to update the cdr:id value for elements with the module
  ================================================================== -->
  <xsl:template                   match = "@cdr:id">
-  <!--                                mode = "module" -->
   <xsl:param                      name = "ref"/>
   <xsl:param                      name = "module"/>
   <xsl:param                      name = "modprefix"/>
 
-  <xsl:if                         test = "$ref">
+  <!-- xsl:if                         test = "$ref">
   <xsl:attribute                  name = "dada">
    <xsl:text>Volker</xsl:text>
   </xsl:attribute>
-  </xsl:if>
+  </xsl:if -->
 
   <xsl:choose>
    <xsl:when                      test = "$ref">
@@ -253,4 +249,54 @@ BZIssue::5097 - Modifications to Publishing Filter to include Module content
    <xsl:apply-templates         select = '@*|node()'/>
   </xsl:copy>
  </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ Template to process all elements of SummarySections within a
+ module
+ ================================================================== -->
+ <!-- 
+ <xsl:template                   match = 'SummarySectionXXX/*'
+                                  mode = "module">
+  <xsl:param                      name = "ref"/>
+  <xsl:param                      name = "module"/>
+  <xsl:text>mode: module</xsl:text>
+
+  <xsl:copy>
+   <xsl:apply-templates         select = '@*|node()|SummaryModuleLink' 
+                                  mode = "module">
+    <xsl:with-param               name = "ref"
+                                select = "$ref"/>
+    <xsl:with-param               name = "module"
+                                select = "'_sm'"/>
+   </xsl:apply-templates>
+  </xsl:copy>
+ </xsl:template>
+ -->
+
+
+ <!-- 
+ ==================================================================
+ Template to denormalize a module link into a section of a summary.
+ ================================================================== -->
+ <!-- 
+ <xsl:template                   match = "SummaryModuleLinkXXX"
+                                  mode = "module">
+  <xsl:text>Volker-m</xsl:text>
+  <xsl:variable                   name = "moduleRef"
+                                select = "@cdr:ref"/>
+  <xsl:variable                   name = "moduleInfo"
+                                select = "document(concat('cdr:', $moduleRef,
+                                                            ''))"/>
+   <xsl:apply-templates         select = "$moduleInfo/
+                                           Summary/
+                                           SummarySection">
+    <xsl:with-param               name = "ref"
+                                select = "@cdr:ref"/>
+    <xsl:with-param               name = "module"
+                                select = "'_sm'"/>
+   </xsl:apply-templates>
+ </xsl:template>
+ -->
 </xsl:transform>
