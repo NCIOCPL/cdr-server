@@ -758,13 +758,25 @@ BZIssue::5003 - [Summaries] Table Column Widths - Display on Cancer.gov
   <xsl:attribute                  name = "ColWidth">
    <xsl:choose>
     <xsl:when                     test = "@ColWidth = '*'">
-     <xsl:value-of              select = "format-number(100 div $myTotal,
-                                                        '#.00')"/>
+     <xsl:value-of              select = "format-number(
+                                            floor(1 div $myTotal * 100 * 100)
+                                               div 100, '#.00')"/>
     </xsl:when>
     <xsl:otherwise>
+     <!--
+     Our mailer program fails when the sum of all column numbers is
+     greater than 100% but rounding errors might cause this to be a 
+     problem.  To avoid this I'm multiplying the column width percentage
+     by 100 and apply the floor() function to cut-off the non-integer 
+     part.  Dividing the resulting number by 100 and using a display
+     format to 1/100th ensures no further rounding and allows the table
+     width to reach in a worst case 99.9% 
+     ===================================================================== -->
      <xsl:value-of              select = "format-number(
-                                            substring-before(@ColWidth, '*') 
-                                                        * 100 div $myTotal,
+                                            floor(
+                                              substring-before(@ColWidth, '*') 
+                                                div $myTotal * 100 * 100)
+                                                        div 100,
                                                         '#.00')"/>
     </xsl:otherwise>
    </xsl:choose>
