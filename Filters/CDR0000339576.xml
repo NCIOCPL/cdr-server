@@ -1908,10 +1908,25 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
      </xsl:when> 
     </xsl:choose> 
     <xsl:if                       test = "@iod">
-     <xsl:text> </xsl:text>
-     <xsl:value-of               select = "@iod"/>
+     <xsl:choose>
+      <xsl:when                   test = "@iod = 'Deletion'
+                                           and
+                                           descendant::Deletion[
+                                              @RevisionLevel='proposed']">
+       <!-- Proposed text for BU is displayed which means we only want to 
+            add the Deletion class specifier when the RevisionLevel is
+            not proposed because this specifier makes the text 
+            disappear via CSS -->
+       <xsl:text></xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text> </xsl:text>
+       <xsl:value-of            select = "@iod"/>
+      </xsl:otherwise>
+     </xsl:choose>
     </xsl:if>
    </xsl:attribute>
+
    <xsl:call-template             name = "addIdLinkTarget">
     <xsl:with-param               name = "id"
                                 select = "@cdr:id"/>
@@ -1947,9 +1962,6 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
   <!-- Handle ListItem now. -->
   <ul>
    <xsl:attribute                 name = "class">
-    <xsl:value-of               select = "@iod"/>
-   </xsl:attribute>
-   <xsl:attribute                 name = "class">
     <xsl:choose>
      <xsl:when                    test = "@Style = 'bullet'">        
       <xsl:text>disc</xsl:text>   
@@ -1961,7 +1973,26 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
       <xsl:text>lnone</xsl:text>     
      </xsl:when>
     </xsl:choose> 
+    <xsl:if                       test = "@iod">
+     <xsl:choose>
+      <xsl:when                   test = "@iod = 'Deletion'
+                                           and
+                                           descendant::Deletion[
+                                              @RevisionLevel='proposed']">
+       <!-- Proposed text for BU is displayed which means we only want to 
+            add the Deletion class specifier when the RevisionLevel is
+            not proposed because this specifier makes the text 
+            disappear via CSS -->
+       <xsl:text></xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text> </xsl:text>
+       <xsl:value-of            select = "@iod"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:if>
    </xsl:attribute>
+
    <xsl:call-template             name = "addIdLinkTarget">
     <xsl:with-param               name = "id"
                                 select = "@cdr:id"/>
@@ -1985,19 +2016,20 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
  Display an ordered list
  ===================================================================== -->
  <xsl:template                   match = "OrderedList">
-  <!-- Ensure that Para and List are separated by a blank line for Compact=No-->
+  <!-- Ensure that Para and List are separated by a blank 
+       line for Compact=No-->
   <xsl:if                         test = "not(preceding-sibling::self = 'Para')
                                           and
                                           ../../@Compact">
    <p/>
   </xsl:if>
   <xsl:apply-templates          select = "ListTitle"/>
+  <!-- Handle ListItem now. -->
   <ol>
-   <xsl:attribute                 name = "Class">
+   <xsl:attribute                 name = "class">
     <xsl:choose>
      <xsl:when                    test = "@Style = 'UAlpha'">        
       <xsl:text>A</xsl:text>
-
      </xsl:when>
      <xsl:when                    test = "@Style = 'LAlpha'">
       <xsl:text>little-alpha</xsl:text>
@@ -2016,6 +2048,7 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
      </xsl:otherwise>
     </xsl:choose>
    </xsl:attribute>
+
    <xsl:call-template             name = "addIdLinkTarget">
     <xsl:with-param               name = "id"
                                 select = "@cdr:id"/>
