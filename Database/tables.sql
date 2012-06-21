@@ -2117,6 +2117,31 @@ CREATE TABLE client_log
 GO
 
 /*
+ * Table to store the set of parameters submitted to QC reports.
+ * This table us used and populated by the program QcReports.py.
+ * The QC reports are being converted into MS-Word from IE but 
+ * MS-Word limits the URL to be passed to 256 characters.  We
+ * store the set of parameters in this table and only pass the
+ * record-ID to run the QC report for MS-Word.
+ *
+ *        id primary key for table
+ *  shortURL currently unused
+ *   longURL the list of parameters passed to the report module
+ *       usr the user ID running the report/storing the record
+ *           currently unused
+ *   created date and time when row has been created
+ *  lastused currently unused
+ */
+CREATE TABLE url_parm_set
+         (id INTEGER       IDENTITY PRIMARY KEY,
+    shortURL VARCHAR(150)      NULL,
+     longURL VARCHAR(2000) NOT NULL,
+         usr INTEGER           NULL,
+     created DATETIME      NOT NULL DEFAULT GETDATE(),
+    lastused DATETIME          NULL)
+GO
+
+/*
  * View on the audit trail for actions which save a document.
  */
 CREATE VIEW doc_save_action

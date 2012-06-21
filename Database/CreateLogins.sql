@@ -442,3 +442,5 @@ GRANT SELECT ON audit_trail_added_action TO CdrGuest
 GO
 GRANT SELECT ON audit_trail_added_action TO CdrPublishing
 GO
+GRANT SELECT, INSERT ON url_parm_set TO CdrGuest
+GO
