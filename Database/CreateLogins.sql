@@ -444,3 +444,17 @@ GRANT SELECT ON audit_trail_added_action TO CdrPublishing
 GO
 GRANT SELECT, INSERT ON url_parm_set TO CdrGuest
 GO
+GRANT SELECT ON ctrp_download_disposition TO CdrGuest
+GO
+GRANT SELECT ON ctrp_import_disposition TO CdrGuest
+GO
+GRANT SELECT ON ctrp_import TO CdrGuest
+GO
+GRANT SELECT ON ctrp_import_job TO CdrGuest
+GO
+GRANT SELECT ON ctrp_import_event TO CdrGuest
+GO
+GRANT SELECT ON ctrp_download_job TO CdrGuest
+GO
+GRANT SELECT ON ctrp_download TO CdrGuest
+GO

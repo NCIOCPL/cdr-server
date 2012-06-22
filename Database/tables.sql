@@ -2166,3 +2166,145 @@ CREATE VIEW doc_last_save
        FROM doc_save_action
    GROUP BY doc_id
 GO
+
+/*
+ * Outcome for each CTRP trial document during a download job.
+ *
+ *     disp_id  primary key, automatically generated
+ *   disp_name  string representing the disposition
+ *     comment  optional elaboration on the semantics of the value
+ */
+CREATE TABLE ctrp_download_disposition
+    (disp_id INTEGER     IDENTITY PRIMARY KEY,
+   disp_name VARCHAR(32) NOT NULL UNIQUE,
+     comment NTEXT           NULL)
+
+/*
+ * Outcome for each CTRP trial document during an import job.
+ *
+ *     disp_id  primary key, automatically generated
+ *   disp_name  string representing the disposition
+ *     comment  optional elaboration on the semantics of the value
+ */
+CREATE TABLE ctrp_import_disposition
+    (disp_id INTEGER     IDENTITY PRIMARY KEY,
+   disp_name VARCHAR(32) NOT NULL UNIQUE,
+     comment NTEXT           NULL)
+
+/* Populate the CTRP disposition tables */
+INSERT INTO ctrp_download_disposition (disp_name) VALUES ('new')
+INSERT INTO ctrp_download_disposition (disp_name) VALUES ('changed')
+INSERT INTO ctrp_download_disposition (disp_name) VALUES ('unchanged')
+INSERT INTO ctrp_download_disposition (disp_name) VALUES ('failure')
+INSERT INTO ctrp_download_disposition (disp_name) VALUES ('out of scope')
+INSERT INTO ctrp_download_disposition (disp_name) VALUES ('needs nct id')
+INSERT INTO ctrp_download_disposition (disp_name) VALUES ('rejected')
+INSERT INTO ctrp_download_disposition (disp_name) VALUES ('unmatched')
+INSERT INTO ctrp_import_disposition (disp_name) VALUES ('not yet reviewed')
+INSERT INTO ctrp_import_disposition  (disp_name) VALUES ('import requested')
+INSERT INTO ctrp_import_disposition (disp_name) VALUES ('imported')
+INSERT INTO ctrp_import_disposition (disp_name) VALUES ('rejected')
+
+/*
+ * One row in the this table for each download of a set of trial
+ * documents from CTRP.
+ *
+ *       job_id  primary key, automatically generated
+ *   downloaded  date/time the set was retrieved from CTRP
+ * job_filename  name of the file for the set in the form
+ *               CTRP-TRIALS-YYYY-MM-DD.zip
+ *      job_url  url used to retrieve the archive file for the set from CTRP
+ */
+CREATE TABLE ctrp_download_job
+     (job_id INTEGER     IDENTITY PRIMARY KEY,
+  downloaded DATETIME    NOT NULL,
+job_filename VARCHAR(80) NOT NULL,
+     job_url VARCHAR(256)    NULL)
+
+/*
+ * One row for each trial document found in each set of clinical trial
+ * documents retrieved from CTRP.
+ *
+ *      job_id  foreign key into the ctrp_download_job table
+ *     ctrp_id  unique identifier of the trial document in the CTRP system
+ * disposition  foreign key into the ctrp_download_disposition table
+ *     comment  optional notes on the trial's processing
+ */
+CREATE TABLE ctrp_download
+     (job_id INTEGER     NOT NULL REFERENCES ctrp_download_job,
+     ctrp_id VARCHAR(16) NOT NULL,
+ disposition INTEGER     NOT NULL REFERENCES ctrp_download_disposition,
+     comment NTEXT           NULL,
+ PRIMARY KEY (job_id, ctrp_id))
+
+/*
+ * One row for each CTRP trial document whose site information we
+ * need to import into the matching CTGovProtocol document.
+ *
+ *     ctrp_id  unique identifier of the trial document in the CTRP system
+ * disposition  foreign key into the ctrp_import_disposition table
+ *      cdr_id  foreign key into the CDR all_docs table; represents
+ *              the document for the CTGovProtocol into which the site
+ *              information from the CTRP document will be imported;
+ *              we might want to prohibit NULLs in this column after
+ *              the dust settles; over time the requirements for this
+ *              import software have varied wildly, so constraints like
+ *              this have been hard to nail down
+ *      nct_id  unique identifier of the trial in NLM's clinicaltrials.gov
+ *              system; not clear at this point how this will be used
+ *              (another point at which the requirements have been
+ *              extremely volatile), but I'm recording it
+ *     doc_xml  the serialized representation of the document received
+ *              from CTRP; will be NULL in cases where CIAT has provided
+ *              us with the mapping between the CDR ID and the CTRP ID
+ *              for a trial, but we haven't yet pulled the document
+ *              down from CTRP in the download software; we may also
+ *              have situations in which CIAT provides us with the
+ *              mapping relationship, and we have retrieved the XML
+ *              document from CTRP, but the CDR ID still represents
+ *              an InScopeProtocol document instead of a CTGovProtocol
+ *              document: in that case the import software will skip
+ *              over the trial until the InScopeProtocol document has
+ *              been converted to a CTGovProtocol document (after
+ *              "ownership" of the document has been transferred)
+ *     comment  optional notes on the processing of this trial
+ */
+CREATE TABLE ctrp_import
+    (ctrp_id VARCHAR(16) NOT NULL PRIMARY KEY,
+ disposition INTEGER     NOT NULL REFERENCES ctrp_import_disposition,
+      cdr_id INTEGER         NULL REFERENCES all_docs,
+      nct_id VARCHAR(16)     NULL,
+     doc_xml NTEXT           NULL,
+     comment NTEXT           NULL)
+
+/*
+ * One row in the this table for each job to sweep through the queue of
+ * site information to be import from CTRP documents into the corresponding
+ * CTGovProtocol documents and perform those imports.
+ *
+ *       job_id  primary key, automatically generated
+ *     imported  date/time the import job was run
+ */
+CREATE TABLE ctrp_import_job
+     (job_id INTEGER     IDENTITY PRIMARY KEY,
+    imported DATETIME    NOT NULL)
+
+/*
+ * Record of each attempt to import site information from the trial's
+ * CTRP document into the corresponding CTGovProtocol document.
+ *
+ *       job_id  foreign key into the ctrp_import_job table
+ *      ctrp_id  foreign key into the ctrp_import table
+ *       locked  flag (Y|N) indicating that the import failed because
+ *               the CTGovProtocol document was checked out by one of
+ *               the users
+ * mapping_gaps  flag (Y|N) indicating that the import failed because
+ *               we were unable to establish required links to CDR
+ *               organization, country, or political subunit documents.
+ */
+CREATE TABLE ctrp_import_event
+     (job_id INTEGER     NOT NULL REFERENCES ctrp_import_job,
+     ctrp_id VARCHAR(16) NOT NULL REFERENCES ctrp_import,
+      locked CHAR        NOT NULL DEFAULT 'N',
+mapping_gaps CHAR        NOT NULL DEFAULT 'N',
+ PRIMARY KEY (job_id, ctrp_id))
