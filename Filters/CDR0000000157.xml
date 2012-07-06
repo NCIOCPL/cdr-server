@@ -935,21 +935,51 @@ BZIssue::5210 - [Mobile] Include Screening and Prevention summaries
     <xsl:when                     test = "substring-before($myHrefId, '#') 
                                            = /Summary/DocId">
      <xsl:value-of              select = "$myHrefId"/>
+     <!-- xsl:text>__11</xsl:text -->
     </xsl:when>
     <xsl:otherwise>
      <xsl:choose>
       <!--
-      If the cdr:href is within a module pointing to the main do add
-      the main doc's CDR-ID
+      Note: For the test of the next two when-clauses we're assuming 
+            that a SummaryFragmentRef had been created (and the '#'
+            exists).  It doesn't make much sense to create an 
+            "internal" link that's *not* a fragment ref but a 
+            SummaryRef instead. -->
+
+      <!--
+      If the cdr:href is pointing from a module to the module we 
+      need to add the main doc's CDR-ID in front to be able and 
+      properly create "internal" links once the module has been 
+      merged with the main document.
       ============================================================== -->
       <xsl:when                 test = "ancestor::SummarySection/@cdr:ref
                                         = substring-before(@cdr:href, '#')">
        <xsl:value-of          select = "concat(/Summary/DocId,
                                                '#_sm_',
                                                translate(@cdr:href, '#', ''))"/>
+       <!-- xsl:text>__22</xsl:text -->
       </xsl:when>
+      <!--
+      If the cdr:href is *not* identical to the main doc ID the link
+      is either a regular link to a different summary or it is a 
+      link from the main to the module.  We need to add the main 
+      doc's CDR-ID in front just like above. 
+      ============================================================== -->
+      <xsl:when                 test = "//SummarySection[@thissection='module']
+                                         /@cdr:ref
+                                        = substring-before(@cdr:href, '#')">
+       <xsl:value-of          select = "concat(/Summary/DocId,
+                                               '#_sm_',
+                                               translate(@cdr:href, '#', ''))"/>
+       <!-- xsl:text>__33</xsl:text -->
+      </xsl:when>
+      <!--
+      If the cdr:href is not the main doc's ID or the module's ID
+      we can just copy the value for this regular SummaryRef. 
+      ============================================================== -->
       <xsl:otherwise>
        <xsl:value-of          select = "@cdr:href"/>
+       <!-- xsl:text>__44</xsl:text -->
       </xsl:otherwise>
      </xsl:choose>
     
