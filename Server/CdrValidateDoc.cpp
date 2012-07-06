@@ -530,10 +530,8 @@ cdr::String cdr::execValidateDoc (
         if (validationTypes.empty()
                 || validationTypes.find(L"Links") != validationTypes.npos) {
             MAKE_TIMER(linkValTimer);
-            cdr::link::cdrSetLinks ((cdr::dom::Node) docXml,
-                                    docObj->getConn(), docObj->getId(),
-                                    docTypeString, validRule,
-                                    docObj->getValCtl());
+            cdr::link::cdrSetLinks (docObj, (cdr::dom::Node) docXml,
+                                    validRule);
             SHOW_ELAPSED("Link validation", linkValTimer);
         }
     }
