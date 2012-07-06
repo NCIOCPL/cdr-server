@@ -457,6 +457,27 @@ namespace cdr {
              */
             int getErrorCount() const;
 
+            /**
+             * Set the Xml field to the serial content of the document.
+             *
+             * When this is done, if the Xml has changed, we have to force
+             * anything generated from it to be re-generated.  This can
+             * affect any of the following objects:
+             *
+             *   revisedXml - XML string with revision markup
+             *   errorIdXml - XML string with error ID attributes
+             *   docElem    - parse tree of the Xml.
+             *
+             * WARNING!
+             *   Except for initialization in the constructors, this
+             *   should be the ONLY WAY to set the value of the Xml
+             *   field.  Any other way is dangerous and probably less
+             *   optimized anyway.
+             *
+             * @param newXml    The new Xml to put in.
+             */
+            void setXml(cdr::String newXml);
+
         private:
             // Values corresponding to document table data
             int Id;                     // Numeric form of document id
@@ -495,27 +516,6 @@ namespace cdr {
 
             // Connection to the database
             cdr::db::Connection& docDbConn;
-
-            /**
-             * Set the Xml field to the serial content of the document.
-             *
-             * When this is done, if the Xml has changed, we have to force
-             * anything generated from it to be re-generated.  This can
-             * affect any of the following objects:
-             *
-             *   revisedXml - XML string with revision markup
-             *   errorIdXml - XML string with error ID attributes
-             *   docElem    - parse tree of the Xml.
-             *
-             * WARNING!
-             *   Except for initialization in the constructors, this
-             *   should be the ONLY WAY to set the value of the Xml
-             *   field.  Any other way is dangerous and probably less
-             *   optimized anyway.
-             *
-             * @param newXml    The new Xml to put in.
-             */
-            void setXml(cdr::String newXml);
 
             /**
              * Recursively finds all nodes in the tree which need to be
