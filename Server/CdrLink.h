@@ -274,27 +274,19 @@ namespace cdr {
      *
      * Called by execValidateDoc() for validation of new or modified docs.
      *
+     *  @param      docObj      Pointer to the CdrDoc object to validate.
      *  @param      node        Reference to a DOM parse tree for the XML
      *                           of the document to be written to the database.
-     *  @param      conn        Reference to the connection object for the
-     *                           CDR database.
-     *  @param      ui          Document UI, as an integer.
-     *  @param      docTypeStr  Document type name from the doc_type table
-     *                           for this document.  No checking is done
-     *                           either to insure that it's a valid type or
-     *                           that it's the right one for this document.
      *  @param      validRule   Relationship between validation and link_net
      *                           update.  Values are:
      *                             ValidateOnly
      *                             UpdateIfValid
      *                             UpdateUnconditionally
-     *  @param      errCtl      Reference to object to receive errors.
      *  @return                 Count of errors.
      *                           0 = complete success.
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
-    extern int cdrSetLinks (cdr::dom::Node&, cdr::db::Connection&,
-                   int, cdr::String, cdr::ValidRule, cdr::ValidationControl&);
+    extern int cdrSetLinks (cdr::CdrDoc*, cdr::dom::Node&, cdr::ValidRule);
 
     /**
      * Delete all link table entries for which a document is the source.
