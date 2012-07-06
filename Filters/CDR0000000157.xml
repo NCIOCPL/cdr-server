@@ -18,6 +18,8 @@ BZIssue::5154 - Order of sections in summaries on Cancer.gov
 BZIssue::5003 - [Summaries] Table Column Widths - Display on Cancer.gov 
 BZIssue::5097 - [Summaries] Modifications to Publishing Filter to 
                 include Module content
+BZIssue::5210 - [Mobile] Include Screening and Prevention summaries 
+                on mobile
 
 ================================================================ -->
 <xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -542,7 +544,13 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
                                          not(@ExcludedDevices)">
      <xsl:if                     test = "$sumAudience = 'Patients'
                                          and
-                                         $sumType = 'Treatment'">
+                                         (
+                                          $sumType = 'Treatment'
+                                          or
+                                          $sumType = 'Screening'
+                                          or
+                                          $sumType = 'Prevention'
+                                         )">
       <xsl:attribute             name = "ExcludedDevices">
        <xsl:text>mobile</xsl:text>
       </xsl:attribute>
@@ -622,7 +630,13 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
                                          not(@ExcludedDevices)">
      <xsl:if                     test = "$sumAudience = 'Patients'
                                          and
-                                         $sumType = 'Treatment'">
+                                         (
+                                          $sumType = 'Treatment'
+                                          or
+                                          $sumType = 'Screening'
+                                          or
+                                          $sumType = 'Prevention'
+                                         )">
       <xsl:attribute             name = "ExcludedDevices">
        <xsl:text>mobile</xsl:text>
       </xsl:attribute>
@@ -659,7 +673,19 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
    Now is the time to display the Reference section which 
    we suppressed earlier
    ========================================================= -->
-   <xsl:apply-templates       select = "ReferenceList"/>
+   <xsl:apply-templates         select = "ReferenceList"/>
+
+   <!--
+   Adding a disclaimer at the end of the Changes to this Summary
+   section for all HP summaries.
+   ============================================================== -->
+   <xsl:if                        test = "SectMetaData/
+                                           SectionType = 'Changes to summary'
+                                           and 
+                                           $sumAudience =
+                                              'Health professionals'">
+    <xsl:call-template            name = "addHPDisclaimer"/>
+   </xsl:if>
 
    <!--
    ================================================================
@@ -923,9 +949,7 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
                                                translate(@cdr:href, '#', ''))"/>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:value-of          select = "concat(/Summary/DocId,
-                                               '#_sm_',
-                                               translate(@cdr:href, '#', ''))"/>
+       <xsl:value-of          select = "@cdr:href"/>
       </xsl:otherwise>
      </xsl:choose>
     
@@ -961,18 +985,17 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
    <xsl:apply-templates        select = "MobileURL"/>
    <xsl:apply-templates        select = "MainTopics"/>
    <xsl:apply-templates        select = "SecondaryTopics"/>
+   <!-- xsl:apply-templates        select = "PermaTargs"/ -->
 
    <!-- Comment out deep linking:  Needed for a later release -->
    <!--
    Move all the PermaTargIds to the SummaryMetaData section
    ======================================================== -->
-   <!--
    <xsl:if                       test = "//@PermaTargId">
     <xsl:element                 name = "PermaTargs">
      <xsl:apply-templates      select = "//@PermaTargId"/>
     </xsl:element>
    </xsl:if>
-   -->
   </SummaryMetaData>
  </xsl:template>
 
@@ -1012,30 +1035,41 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
  </xsl:template>
    
 
-   <!-- Comment out deep linking:  Needed for a later release -->
  <!-- 
  ============================================================= 
  Template to move all of the PermaTargs inside the 
  SummaryMetaData within a single block.
  ============================================================= -->
- <!-- 
  <xsl:template                  match = "@PermaTargId">
   <xsl:element                   name = "PermaTarg">
-   <xsl:attribute                name = "id">
+   <xsl:attribute                name = "FragmentId">
     <xsl:value-of              select = "../@cdr:id"/>
    </xsl:attribute>
    <xsl:attribute                name = "PermaTargId">
     <xsl:value-of              select = "../@PermaTargId"/>
    </xsl:attribute>
    <xsl:attribute                name = "PermaTargTitle">
-    <xsl:value-of              select = "../@PermaTargTitle"/>
+    <xsl:choose>
+     <xsl:when                   test = "../@PermaTargTitle">
+      <xsl:value-of            select = "../@PermaTargTitle"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of            select = "/Summary
+                                         /SummaryTitle"/>
+      <xsl:if                    test = "../Title">
+       <xsl:text>;</xsl:text>
+       <xsl:value-of            select = "../Title"/>
+      </xsl:if>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:attribute>
+   <!-- PermaTargUrl is for future use 
    <xsl:attribute                name = "PermaTargUrl">
     <xsl:value-of              select = "../@PermaTargUrl"/>
    </xsl:attribute>
+   -->
   </xsl:element>
  </xsl:template>
- -->
  
 
  <!-- 
@@ -1166,6 +1200,24 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
     <xsl:apply-templates/>
    </Para>
   </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ ============================================================= 
+ Create the Para template for HP disclaimer
+ ============================================================= -->
+ <xsl:template                  match = "Para"
+                                 mode = "hpDisclaimer">
+  <xsl:param                     name = "miscDocId"/>
+
+  <xsl:copy>
+   <xsl:attribute                name = "id">
+    <xsl:value-of              select = "$miscDocId"/>
+    <xsl:value-of              select = "@cdr:id"/>
+   </xsl:attribute>
+    <xsl:apply-templates/>
+  </xsl:copy>
  </xsl:template>
 
 
@@ -1501,20 +1553,28 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
 
    <!-- Mark this section to be excluded for mobile -->
    <xsl:choose>
-    <xsl:when                    test = "$sumType = 'Treatment'
+    <xsl:when                    test = "($sumType = 'Treatment'
+                                          or
+                                          $sumType = 'Screening'
+                                          or
+                                          $sumType = 'Prevention'
+                                         )
                                          and
                                          (
                                           $miscDocId = '_AboutPDQ'
                                           or
-                                          $miscDocId = '_GetMore')">
+                                          $miscDocId = '_GetMore'
+                                          or
+                                          $miscDocId = '_ContactUs')">
                                          <!--
                                          and
                                          not(contains($sumAgeGroup, 
                                                            'Pediatric'))">
                                          -->
-     <xsl:if                     test = "$sumAudience = 'Patients'
+     <!-- xsl:if                     test = "$sumAudience = 'Patients'
                                          and
-                                         $sumType = 'Treatment'">
+                                         $sumType = 'Treatment'" -->
+     <xsl:if                     test = "$sumAudience = 'Patients'">
       <xsl:attribute             name = "ExcludedDevices">
        <xsl:text>mobile</xsl:text>
       </xsl:attribute>
@@ -1759,7 +1819,9 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
  <xsl:template                   match = "PlaceHolder[@name = 
                                                        'BoardName'] |
                                           PlaceHolder[@name = 
-                                                       'BoardNameLink']">
+                                                       'BoardNameLink'] |
+                                          PlaceHolder[@name = 
+                                                       'Adult_Treatment']">
   <xsl:choose>
    <xsl:when                      test = "@name = 'BoardName'">
     <xsl:choose>
@@ -1954,7 +2016,80 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
     </xsl:otherwise>
    </xsl:choose>
   </xsl:element>
+ </xsl:template>
 
+
+ <!-- 
+ ==============================================================
+ Replace the PlaceHolder link for the PDQ Citation Sample
+ This is part of the HPDisclaimer.
+ ============================================================== -->
+ <xsl:template                   match = "PlaceHolder[@name = 
+                                                       'AboutThisSummary']">
+  <xsl:variable                   name = "aboutThisDoc">
+   <xsl:choose>
+    <xsl:when                     test = "SummaryMetaData/
+                                          SummaryLanguage = 'English'">
+     <xsl:copy-of               select = "document(concat('cdr:CDR0000684055',
+                                                         '/last'))"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:copy-of               select = "document(concat('cdr:CDR0000684064',
+                                                         '/last'))"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
+  <xsl:element                    name = "SummaryRef">
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "$sumId"/>
+    <xsl:text>#_AboutThis</xsl:text>
+    <xsl:value-of               select = "$aboutThisDoc/MiscellaneousDocument/
+                                                 MiscellaneousDocumentText/
+                                                 @cdr:id"/>
+   </xsl:attribute>
+   <xsl:attribute                 name = "url">
+    <xsl:value-of               select = "$sumUrl"/>
+   </xsl:attribute>
+   <xsl:choose>
+    <xsl:when                     test = "$language = 'English'">
+     <xsl:text>About This PDQ Summary</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>Informaci&#xF3;n sobre este sumario del PDQ</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ ==============================================================
+ Replace the PlaceHolder link for the PDQ Citation Sample
+ ============================================================== -->
+ <xsl:template                   match = "PlaceHolder[@name = 
+                                                       'PDQ-DB']">
+  <xsl:element                    name = "ExternalRef">
+   <xsl:attribute                 name = "cdr:xref">
+    <xsl:choose>
+     <xsl:when                    test = "$language = 'English'">
+      <xsl:text>http://cancer.gov/cancertopics/pdq</xsl:text>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>http://www.cancer.gov/espanol/recursos/pdq</xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:attribute>
+   <xsl:choose>
+    <xsl:when                     test = "$language = 'English'">
+     <xsl:text>PDQ NCI's Comprehensive Cancer Database</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>Banco de datos de informaci&#xF3;n de c&#xE1;ncer </xsl:text>
+     <xsl:text>(PDQ&#174;)</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:element>
  </xsl:template>
 
 
@@ -2359,7 +2494,6 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
  ========================================================================= -->
  <!-- 
  =========================================================================
-
  Template to add the "Contact Us" misc. document to the Supportive Care
  summaries.  This gets added to the patient and HP version.
  ========================================================================= -->
@@ -2749,7 +2883,7 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
    <xsl:when                      test = "SummaryMetaData/
                                           SummaryLanguage = 'English'">
     <xsl:variable                 name = "miscDoc" 
-                                select = "document(concat('cdr:CDR000684055',
+                                select = "document(concat('cdr:CDR0000684055',
                                                          '/last'))"/>
     <SummarySection>
      <xsl:attribute               name = "id">
@@ -2941,6 +3075,35 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
    <!-- Spanish General Info Section End-->
    </xsl:choose>  
   </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ =========================================================================
+ Template to add the HP disclaimer to the Changes section.
+ ========================================================================= -->
+ <xsl:template                   name = "addHPDisclaimer">
+  <xsl:variable                  name = "miscDoc">
+   <xsl:choose>
+    <xsl:when                    test = "$language = 'English'">
+     <xsl:copy-of              select = "document(concat('cdr:CDR0000696953',
+                                                         '/last'))"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:copy-of              select = "document(concat('cdr:CDR0000696956',
+                                                         '/last'))"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
+  <xsl:apply-templates         select = "$miscDoc/MiscellaneousDocument/
+                                                  MiscellaneousDocumentText/
+                                                  Section/
+                                                  Para"
+                                 mode = "hpDisclaimer">
+   <xsl:with-param               name = "miscDocId"
+                               select = "'_disclaimerHP'"/>
+  </xsl:apply-templates>
  </xsl:template>
 
 
