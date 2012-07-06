@@ -534,8 +534,11 @@ void cdr::CdrDoc::setXml (
 ) {
     // If anything changed, discard dependent objects
     if (newXml != Xml) {
-        // Discards
-        parsed     = false;
+        // Parse tree may still exist, but a call to parseAvailable()
+        //   will discard and regenerate it
+        parsed = false;
+
+        // Discard revised serial XML, if there is any
         revisedXml = L"";
 
         // Put the new Xml in place
@@ -1138,11 +1141,9 @@ static cdr::String cdrPutDoc (
         //   was already parsed, or if not, parse it.  It also
         //   handles revision filtering before the parse.
         if (doc.parseAvailable())
-            cdr::link::cdrSetLinks (cdr::dom::Node(doc.getDocumentElement()),
-                                    dbConn,
-                                    doc.getId(), doc.getTextDocType(),
-                                    cdr::UpdateLinkTablesOnly,
-                                    doc.getValCtl());
+            cdr::link::cdrSetLinks (&doc,
+                                    cdr::dom::Node(doc.getDocumentElement()),
+                                    cdr::UpdateLinkTablesOnly);
         SHOW_ELAPSED("setting links", incrementalTimer);
     }
 
@@ -2892,6 +2893,7 @@ bool cdr::CdrDoc::isControlType()
 {
     return (!isContentType());
 }
+
 
 // Recursively collect all the query terms present in the document.
 void cdr::CdrDoc::collectQueryTerms(
