@@ -894,10 +894,11 @@ else
 */
 
     // Parts that we need from the CdrDoc object
-    cdr::db::Connection&   dbConn     = docObj->getConn();
-    cdr::String            docTypeStr = docObj->getTextDocType();
-    int                    ui         = docObj->getId();
-    cdr::ValidationControl errCtl     = docObj->getValCtl();
+    cdr::db::Connection&    dbConn     = docObj->getConn();
+    cdr::String             docTypeStr = docObj->getTextDocType();
+    int                     ui         = docObj->getId();
+    cdr::ValidationControl& errCtl     = docObj->getValCtl();
+// std::cout << "Top of cdrSetLinks: " << errCtl.getErrorCount() << std::endl;
 
     cdr::link::LnkList lnkList;     // List of all link objects from this doc
     cdr::StringSet uniqSet;         // For finding duplicate link info
@@ -988,7 +989,9 @@ else
 /*
 time(&now_t);
 now = localtime(&now_t);
-std::cout << "====== cdrSetLinks completed ===== " << asctime(now) << std::endl;*/
+std::cout << "====== cdrSetLinks completed ===== " << asctime(now) << std::endl;
+std::cout << "Bottom of cdrSetLinks: " << errCtl.getErrorCount() << std::endl;
+*/
     return err_count;
 
 } // cdrSetLinks()
