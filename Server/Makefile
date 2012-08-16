@@ -39,8 +39,6 @@ BISON  =bison
 LN     =link
 CP     =cp -f
 CVSUPD =svn update
-DOC    =$(DRV)/InetPub/wwwroot/cdr/ccdoc/
-DOCS   =$(DOC)default.htm
 CDRBIN =$(CDR)/bin
 SERVICE=$(CDRBIN)/CdrService.exe
 CFLAGS =$(INC) -W3 -GX -EHa -MD -GR -nologo
@@ -162,10 +160,9 @@ service: cvsupdate
 install: cvsupdate
 	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) SABLOT=$(SABLOT) DBG=$(DBG) _install
 
-_all: init CdrServer.exe CdrTestClient.exe ParseSchema.exe CdrService.exe \
-    CdrDocs
+_all: init CdrServer.exe CdrTestClient.exe ParseSchema.exe CdrService.exe
 
-_install: CdrServer.exe CdrDocs
+_install: CdrServer.exe
 	-net stop Cdr
 	$(CP) CdrServer.exe $(CDRBIN)
 	net start Cdr
@@ -241,21 +238,6 @@ CdrSearch_tab.obj: CdrSearch_tab.c $(HDRS)
 
 CdrSearch_tab.c: CdrSearch.y $(HDRS)
 	$(BISON) -p CdrSearch CdrSearch.y -o CdrSearch_tab.c
-
-#--------------------------------------------------------------------------
-# Rule for building CDR programmer documentation.
-# Uses hardwired "cp" command to force overwrite of readonly files
-# Only use this on the server.  See definition of CdrDocs above.
-#--------------------------------------------------------------------------
-CdrDocs: $(DOCS)
-
-$(DOCS): $(HDRS)
-    if exist $(DOC) (rm -f $(DOC)ccdoc*html $(DOC)default.htm $(DOC)ccdoc.db)
-    if exist $(DOC) ( \
-      ccdoc -html $(DOC) -db $(DOC)ccdoc.db -root cdr \
-            -header $(DOC)save/serverhdr.html \
-            -rootfile $(DOC)default.htm $(HDRS) \
-    )
 
 #--------------------------------------------------------------------------
 # Generic rules for object files
