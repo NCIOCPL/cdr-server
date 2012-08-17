@@ -4,44 +4,16 @@
  * Test client (C++ version) for sending commands to CDR server.
  *
  * Usage:
- *  CdrTestClient [command-file [host [port]]]
+ *  CdrTestClient [host [port [command-file]]]
  *
  * Example:
  *  CdrTestClient CdrCommandSamples.xml mmdb2
  *
  * Default for host is "localhost"; default for port is 2019.
- * If no command-line arguments are given, commands are read from standard
- * input.  Command buffer must be valid XML, conforming to the DTD
+ * If no command file is named, a test command is used.
+ * Command buffer must be valid XML, conforming to the DTD
  * CdrCommandSet.dtd, and the top-level element must be <CdrCommandSet>.
  * The encoding for the XML must be UTF-8.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.9  2008/10/03 23:54:05  bkline
- * Fixing problems flushed out by Visual Studio 2008.
- *
- * Revision 1.8  2004/03/31 03:29:55  ameyer
- * Added new parameter to set_exception_catcher.
- *
- * Revision 1.7  2004/03/17 20:58:28  bkline
- * Fixed setmode() call.
- *
- * Revision 1.6  2001/05/03 18:43:11  bkline
- * Used binary mode for file I/O.
- *
- * Revision 1.5  2001/01/18 14:57:05  bkline
- * Removed unused count variable.
- *
- * Revision 1.4  2001/01/18 14:51:50  bkline
- * Make "Server response:" header into a comment.
- *
- * Revision 1.3  2000/08/24 20:08:21  ameyer
- * Added NT structured exception handling for crashes.
- *
- * Revision 1.2  2000/04/17 03:16:12  bkline
- * Allowed "-" to mean standard input on command line.
- *
- * Revision 1.1  2000/04/15 14:10:50  bkline
- * Initial revision
  */
 
 // System headers.
@@ -66,38 +38,33 @@ const short CDR_PORT = 2019;
 // Local functions.
 static std::string  readFile(std::istream&);
 static void         cleanup() { WSACleanup(); }
+static void         showUsage(int, char**);
 
-int main(int ac, char **av)
+int main(int ac, char** av)
 {
     WSAData             wsadata;
-    char *              host;
     int                 sock;
     long                address;
     struct sockaddr_in  addr;
-    struct hostent *    ph;
+    struct hostent*     ph;
     std::string         requests;
 
+    // Show usage if requested.
+    showUsage(ac, av);
+
+    // Extract command-line arguments.
+    char* host = ac > 1 ? av[1] : "localhost";
+    int   port = ac > 2 ? atoi(av[2]) : CDR_PORT;
+    char* cmds = ac > 3 ? av[3] : NULL;
+    
     // In case of catastrophe, don't hang up on console
     // But do abort
     if (!getenv ("NOCATCHCRASH"))
         set_exception_catcher ("CdrTestClient.crash", 1);
 
-    /*
-    // Usage
-    if (ac > 1 && av[1][0] == '-' || av[1][0] == '/') {
-        if (av[1][1] == '?' || av[1][1] == 'h' || av[1][0] == 'H') {
-            std::cerr << "Submit commands to a CdrServer\n"
-                      << "usage: " << av[0]
-                      << " [command-file [host [port]]]"
-                      << std::endl;
-            exit(1);
-        }
-    }
-    */
-
-    // Load the requests.
-    if (ac > 1 && strcmp(av[1], "-")) {
-        std::ifstream is(av[1], std::ios::binary | std::ios::in);
+    // Load the requests (or use a canned test).
+    if (cmds) {
+        std::ifstream is(cmds, std::ios::binary | std::ios::in);
         if (!is) {
             std::cerr << av[1] << ": " << strerror(errno) << '\n';
             return EXIT_FAILURE;
@@ -105,10 +72,11 @@ int main(int ac, char **av)
         requests = readFile(is);
     }
     else {
-        setmode(fileno(stdin), O_BINARY);
-        requests = readFile(std::cin);
+        requests = "<CdrCommandSet><SessionId>guest</SessionId>";
+        requests += "<CdrCommand><CdrGetDoc><DocId>CDR0000043753</DocId>";
+        requests += "</CdrGetDoc></CdrCommand></CdrCommandSet>";
     }
-
+    
     // Initialize socket I/O.
     if (WSAStartup(0x0101, &wsadata) != 0) {
         std::cerr << "WSAStartup: " << WSAGetLastError() << '\n';
@@ -117,7 +85,6 @@ int main(int ac, char **av)
     atexit(cleanup);
 
     // Connect a socket to the server.
-    host = ac > 2 ? av[2] : "localhost";
     if (isdigit(host[0])) {
         if ((address = inet_addr(host)) == -1) {
             std::cerr << "invalid host name " << host << '\n';
@@ -129,28 +96,28 @@ int main(int ac, char **av)
     else {
         ph = gethostbyname(host);
         if (!ph) {
-            perror("gethostbyname");
+            std::cerr << "gethostbyname error: " << GetLastError() << "\n";
             return EXIT_FAILURE;
         }
         addr.sin_family = ph->h_addrtype;
         memcpy(&addr.sin_addr, ph->h_addr, ph->h_length);
     }
-    addr.sin_port = htons(ac > 3 ? atoi(av[3]) : CDR_PORT);
+    addr.sin_port = htons(port);
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
-        perror("socket");
+        std::cerr << "socket error: " << GetLastError() << "\n";
         return EXIT_FAILURE;
     }
-    if (connect(sock, (struct sockaddr *)&addr, sizeof addr) < 0) {
-        perror("connect");
+    if (connect(sock, (struct sockaddr*)&addr, sizeof addr) < 0) {
+        std::cerr << "connect error: " << GetLastError() << "\n";
         return EXIT_FAILURE;
     }
 
     // Send the commands to the server.
     unsigned long bytes = requests.size();
     unsigned long length = htonl(bytes);
-    if (send(sock, (char *)&length, sizeof length, 0) < 0) {
+    if (send(sock, (char*)&length, sizeof length, 0) < 0) {
         std::cerr << "send error: " << GetLastError() << '\n';
         return EXIT_FAILURE;
     }
@@ -175,7 +142,7 @@ int main(int ac, char **av)
     length = ntohl(length);
 
     // Catch the server's response.
-    char *response = new char[length + 1];
+    char* response = new char[length + 1];
     memset(response, 0, length + 1);
     totalRead = 0;
     while (totalRead < length) {
@@ -192,16 +159,16 @@ int main(int ac, char **av)
     return EXIT_SUCCESS;
 }
 
-std::string  readFile(std::istream& is)
+std::string readFile(std::istream& is)
 {
     int nBytes = 0;
-    char *bytes = new char[nBytes];
+    char* bytes = new char[nBytes];
     char buf[4096];
     while (is) {
         is.read(buf, sizeof buf);
         int n = is.gcount();
         if (n > 0) {
-            char *tmp = new char[nBytes + n];
+            char* tmp = new char[nBytes + n];
             if (nBytes > 0)
                 memcpy(tmp, bytes, nBytes);
             memcpy(tmp + nBytes, buf, n);
@@ -211,4 +178,17 @@ std::string  readFile(std::istream& is)
         }
     }
     return std::string(bytes, nBytes);
+}
+
+static void showUsage(int ac, char** av) {
+
+    if (ac < 2)
+        return;
+    if (strcmp(av[1], "-h") && strcmp(av[1], "-H") && strcmp(av[1], "/?"))
+        return;
+    std::cerr << "Submit commands to a CdrServer\n"
+              << "usage: " << av[0]
+              << " [host [port [command-file]]]"
+              << std::endl;
+    exit(1);
 }
