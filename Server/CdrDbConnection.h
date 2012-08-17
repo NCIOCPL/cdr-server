@@ -2,35 +2,6 @@
  * $Id$
  *
  * Interface for CDR wrapper for an ODBC database connection.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.9  2000/06/23 15:30:21  bkline
- * Added constants for logon strings.
- *
- * Revision 1.8  2000/05/21 00:53:35  bkline
- * Replaced public constructor with DriverManager::getConnection().
- *
- * Revision 1.7  2000/05/03 18:49:50  bkline
- * More ccdoc comments.
- *
- * Revision 1.6  2000/05/03 15:37:54  bkline
- * Fixed creation of db statements.
- *
- * Revision 1.5  2000/04/22 18:57:38  bkline
- * Added ccdoc comment markers for namespaces and @pkg directives.
- *
- * Revision 1.4  2000/04/22 15:35:15  bkline
- * Filled out documentation comments.  Made all ODBC-specific members
- * private.
- *
- * Revision 1.3  2000/04/22 09:35:43  bkline
- * Added transaction support and getLastIdent() method.
- *
- * Revision 1.2  2000/04/15 12:08:40  bkline
- * First non-stub version.
- *
- * Revision 1.1  2000/04/14 15:58:42  bkline
- * Initial revision
  */
 
 #ifndef CDR_DB_CONNECTION_
@@ -38,6 +9,7 @@
 
 #include <windows.h>
 #include <sqlext.h>
+#include <io.h>
 #include "CdrString.h"
 #include "CdrException.h"
 #include "CdrDbStatement.h"
@@ -53,6 +25,12 @@ namespace cdr {
         /** @pkg cdr.db */
 
         /**
+         * Flag indicating we've migrated the server to CBIIT hosting.
+         */
+        static const bool CBIIT_HOSTING = _access("d:\\cdr\\etc\\dbhost",
+                                                  0) == 0;
+        
+        /**
          * Default url for connection.
          */
         static const wchar_t * const url = L"odbc:cdr";
@@ -60,12 +38,14 @@ namespace cdr {
         /**
          * Default user ID for connection.
          */
-        static const wchar_t * const uid = L"cdr";
+        static const wchar_t * const uid = CBIIT_HOSTING ? L"CDRSQLACCOUNT"
+                                                         : L"cdr";
 
         /**
          * Default password for connection.
          */
-        static const wchar_t * const pwd = L"***REMOVED***";
+        static const wchar_t * const pwd = CBIIT_HOSTING ? L"***REMOVED***"
+                                                         : L"***REMOVED***";
 
         // Forward references.
         class ResultSet;
