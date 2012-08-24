@@ -458,3 +458,5 @@ GRANT SELECT ON ctrp_download_job TO CdrGuest
 GO
 GRANT SELECT ON ctrp_download TO CdrGuest
 GO
+GRANT SELECT ON client_log TO CdrGuest
+GO
