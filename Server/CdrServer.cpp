@@ -67,7 +67,7 @@ static void             logTopLevelFailure(const cdr::String what,
                                            unsigned long code);
 static bool             timeToShutdown = false;
 static bool             logCommands = true;
-static cdr::log::Log    log;
+static cdr::log::Log    cdrLog;
 
 /* This is a C++ function, but needs a C interface */
 static void excep_trans_func(unsigned int u, struct _EXCEPTION_POINTERS *pExp);
@@ -161,7 +161,7 @@ int main(int ac, char **av)
     atexit(cleanup);
     signal(SIGINT, controlC);
     std::cout << "initialized...\n";
-    log.Write("CdrServer", "Starting");
+    cdrLog.Write("CdrServer", "Starting");
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
@@ -293,7 +293,7 @@ int handleNextClient(int sock)
  */
 void cleanup()
 {
-    log.Write("CdrServer", "Stopping");
+    cdrLog.Write("CdrServer", "Stopping");
     WSACleanup();
 }
 
