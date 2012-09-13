@@ -4,7 +4,7 @@
 <!--
 BZIssue::4675
 BZIssue::4772 - CTGovProtocol Vendor Filter Changes
-BZIssue::5043 - Modify vendor filters for CT.gov trials with RSS 
+BZIssue::5034 - Modify vendor filters for CT.gov trials with RSS 
                 data from CTRP
 -->
 <xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
@@ -48,6 +48,7 @@ BZIssue::5043 - Modify vendor filters for CT.gov trials with RSS
   <xsl:apply-templates          select = 'BriefTitle'/>
   <xsl:apply-templates          select = 'OfficialTitle'/>
   <xsl:apply-templates          select = 'Sponsors'/>
+  <xsl:apply-templates          select = 'Collaborator'/>
   <xsl:apply-templates          select = 'BriefSummary'/>
   <xsl:apply-templates          select = 'DetailedDescription'/>
   <xsl:apply-templates          select = 'CTEligibility'/>
@@ -114,6 +115,9 @@ BZIssue::5043 - Modify vendor filters for CT.gov trials with RSS
 
  <!--
  ================================================================
+ Templage to populate the LeadSponsor and Collaborator elements.
+ For the Collaborator an extra type attribute needs to be 
+ specified.
  ================================================================ -->
  <xsl:template                   match = 'LeadSponsor | Collaborator'>
   <xsl:choose>
@@ -126,6 +130,11 @@ BZIssue::5043 - Modify vendor filters for CT.gov trials with RSS
        <xsl:value-of            select = 'Organization/@cdr:ref'/>
       </xsl:attribute>
      </xsl:if>
+     <xsl:if                      test = "name() = 'Collaborator'">
+      <xsl:attribute              name = "type">
+       <xsl:text>Organization</xsl:text>
+      </xsl:attribute>
+     </xsl:if>
      <xsl:value-of              select = 'Organization/
                                           OrganizationNameInformation/
                                           OfficialName/Name'/>
@@ -136,6 +145,11 @@ BZIssue::5043 - Modify vendor filters for CT.gov trials with RSS
      <xsl:attribute               name = 'ref'>
       <xsl:value-of             select = 'Person/@cdr:ref'/>
      </xsl:attribute>
+     <xsl:if                      test = "name() = 'Collaborator'">
+      <xsl:attribute              name = "type">
+       <xsl:text>Person</xsl:text>
+      </xsl:attribute>
+     </xsl:if>
      <xsl:call-template           name = 'concatPersonalName'>
       <xsl:with-param             name = 'nameInfo'
                                 select = 'Person/PersonNameInformation'/>
@@ -280,11 +294,16 @@ BZIssue::5043 - Modify vendor filters for CT.gov trials with RSS
  <xsl:template                   match = 'Location | CTRPLocation'>
   <xsl:if                         test = 'normalize-space(Status) = "Active" 
                                           or
+                                          normalize-space(CTRPStatus)
+                                                                  = "Active"
+                                          or
                                           (normalize-space(
                                            /CTGovProtocol/OverallStatus) 
                                                                   = "Active"
                                            and 
-                                           normalize-space(Status) = "")'>
+                                           normalize-space(Status) = ""
+                                           and
+                                           normalize-space(CTRPStatus) = "")'>
    <Location>
     <xsl:apply-templates        select = 'Facility |
                                           CTRPFacility |
@@ -297,7 +316,10 @@ BZIssue::5043 - Modify vendor filters for CT.gov trials with RSS
       <xsl:value-of             select = '/CTGovProtocol/OverallStatus'/>
      </Status>
     </xsl:if>
-    <xsl:apply-templates        select = 'Contact | ContactBackup | Investigator'/>
+    <xsl:apply-templates        select = 'Contact       |
+                                          ContactBackup |
+                                          CTRPContact   |
+                                          Investigator'/>
    </Location>
   </xsl:if>
  </xsl:template>
@@ -738,7 +760,7 @@ BZIssue::5043 - Modify vendor filters for CT.gov trials with RSS
  <!--
  ================================================================
  ================================================================ -->
- <xsl:template                   match = 'Contact'>
+ <xsl:template                   match = 'Contact | CTRPContact'>
   <CTGovContact>
    <xsl:call-template             name = 'extractContact'/>
   </CTGovContact>
@@ -784,6 +806,7 @@ BZIssue::5043 - Modify vendor filters for CT.gov trials with RSS
   <xsl:element                    name = '{name()}'>
    <xsl:apply-templates         select = 'PDQSponsorship'/>
    <xsl:apply-templates         select = 'LeadSponsor'/>
+   <xsl:apply-templates         select = 'Collaborator'/>
    <!-- 
    If the CTRP block exists don't display the CTGov Info but
    replace it with the CTRP info
