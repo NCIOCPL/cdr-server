@@ -1,0 +1,93 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- $Id$ -->
+<!-- Filter title: Format DIS SummarySection -->
+<xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                             xmlns:cdr = 'cips.nci.nih.gov/cdr'
+               exclude-result-prefixes = "cdr"
+                               version = '1.0'>
+
+ <xsl:output                    method = 'html'
+                              encoding = 'utf-8'/>
+
+ <xsl:include  href = "cdr:name:Module: Table Formatter"/>
+
+ <!--
+ ======================================================================
+ ====================================================================== -->
+ <xsl:template                   match = "/DrugInformationSummary">
+  <xsl:apply-templates          select = "SummarySection"/>
+ </xsl:template>
+
+
+ <xsl:template                   match = "SummarySection">
+  <xsl:apply-templates/>
+ </xsl:template>
+
+
+ <xsl:template                   match = "Para">
+  <p>
+   <xsl:apply-templates/>
+  </p>
+ </xsl:template>
+
+
+ <xsl:template                   match = "ItemizedList">
+  <ul>
+   <xsl:apply-templates/>
+  </ul>
+ </xsl:template>
+
+
+ <xsl:template                   match = "ListItem">
+  <li>
+   <xsl:apply-templates/>
+  </li>
+ </xsl:template>
+
+
+ <xsl:template                   match = "Strong">
+  <b>
+   <xsl:apply-templates/>
+  </b>
+ </xsl:template>
+
+ <xsl:template                   match = "entry">
+   <xsl:apply-templates/>
+ </xsl:template>
+
+ <xsl:template                   match = "Title">
+  <p>
+   <b>
+   <xsl:apply-templates/>
+   </b>
+  </p>
+ </xsl:template>
+
+ <xsl:template                   match = "ExternalRef">
+   <xsl:apply-templates/>
+ </xsl:template>
+
+ <xsl:template                   match = "GlossaryTermRef">
+  <xsl:element                    name = "a">
+   <xsl:attribute                 name = "href">
+    <xsl:text>/cgi-bin/cdr/Filter.py?DocId=</xsl:text>
+    <xsl:value-of               select = "@cdr:href"/>
+    <xsl:text>&amp;Filter=set:QC+GlossaryTermName+</xsl:text>
+    <xsl:text>with+Concept+Set</xsl:text>
+   </xsl:attribute>
+   <xsl:attribute                 name = "target">
+    <xsl:text>_blank</xsl:text>
+   </xsl:attribute>
+   <xsl:value-of                 select = "."/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!-- Sample template -->
+ <xsl:template                   match = '@*|node()'>
+  <xsl:copy>
+   <xsl:apply-templates         select = '@*|node()'/>
+  </xsl:copy>
+ </xsl:template>
+
+</xsl:transform>
