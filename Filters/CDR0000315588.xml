@@ -9,6 +9,8 @@ Module: Vendor Cleanup Templates
 
 BZIssue::4752
 BZIssue::4629 - Vendor filter changes for GenProf
+BZIssue::5254 - [Glossary] Modify vendor filter to suppress Related 
+                External Ref without definition
 
 Revision 1.25  2006/07/28 14:13:44  bkline
 Added template to strip OfficialProtocolTitle (which was needed for mailers).
@@ -674,6 +676,96 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
       <xsl:value-of         select = "@cdr:href | @href"/>
      </xsl:attribute -->
      <xsl:apply-templates     mode = "copy"/>
+    </xsl:element>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ Identify if a RelatedInformation element has been specified for the
+ Spanish language without an existing Spanish definition.
+ If this happens Gatekeeper complains and fails the document.
+ Drop the element if the translation doesn't exist and leave as is 
+ otherwise.
+ ===================================================================== -->
+ <xsl:template               match = "RelatedExternalRef[@UseWith = 'es'] |
+                                      RelatedSummaryRef[@UseWith = 'es']"
+                              mode = "copy">
+  <xsl:choose>
+   <xsl:when                   test = "not(/GlossaryTerm/
+                                           SpanishTermDefinition)">
+    <xsl:message          terminate = "no">
+     <xsl:text>&lt;LI class="warning"&gt;</xsl:text>
+     <xsl:value-of           select = "name()"/>
+     <xsl:text>[UseWith='es']&lt;BR/&gt;</xsl:text>
+     <xsl:text>Spanish RelatedExternalRef element exists but </xsl:text>
+     <xsl:text>Spanish Term Definition missing.&lt;/LI&gt;</xsl:text>
+    </xsl:message> 
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:element                name = "{name()}">
+    <xsl:for-each            select = "@*">
+     <xsl:choose>
+      <xsl:when                test = "starts-with(name(), 'cdr:')">
+       <xsl:attribute          name = "{substring-after(name(),':')}">
+        <xsl:value-of        select = "."/>
+       </xsl:attribute>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:attribute          name = "{name()}">
+        <xsl:value-of        select = "."/>
+       </xsl:attribute>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:for-each>
+    <xsl:apply-templates        mode = "copy"/>
+    </xsl:element>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ Identify if a MediaLink element has been specified for the
+ Spanish language without an existing Spanish definition (possibly the
+ definition status is not approved yet).
+ If this happens Gatekeeper complains and fails the document.
+ Drop the element if the translation doesn't exist and leave as is 
+ otherwise.
+ ===================================================================== -->
+ <xsl:template               match = "MediaLink[@language = 'es']"
+                              mode = "copy">
+  <xsl:choose>
+   <xsl:when                   test = "not(/GlossaryTerm/
+                                           SpanishTermDefinition)">
+    <xsl:message          terminate = "no">
+     <xsl:text>&lt;LI class="warning"&gt;</xsl:text>
+     <xsl:value-of           select = "name()"/>
+     <xsl:text>[language='es']&lt;BR/&gt;</xsl:text>
+     <xsl:text>Spanish MediaLink element exists but </xsl:text>
+     <xsl:text>Spanish Term Definition missing.&lt;/LI&gt;</xsl:text>
+    </xsl:message> 
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:element                name = "{name()}">
+    <xsl:for-each            select = "@*">
+     <xsl:choose>
+      <xsl:when                test = "starts-with(name(), 'cdr:')">
+       <xsl:attribute          name = "{substring-after(name(),':')}">
+        <xsl:value-of        select = "."/>
+       </xsl:attribute>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:attribute          name = "{name()}">
+        <xsl:value-of        select = "."/>
+       </xsl:attribute>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:for-each>
+    <xsl:apply-templates        mode = "copy"/>
     </xsl:element>
    </xsl:otherwise>
   </xsl:choose>
