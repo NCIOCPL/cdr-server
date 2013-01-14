@@ -9,6 +9,7 @@ Filter including misc Vendor filter templates.
 
 BZIssue::???? - Modify Vendor Filters to Include Audio
 BZIssue::5003 - [Summaries] Table Column Widths - Display on Cancer.gov 
+BZIssue::5274 - Mobile images in Spanish Summaries
 
 ==================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -747,6 +748,8 @@ BZIssue::5003 - [Summaries] Table Column Widths - Display on Cancer.gov
   (in percent of the table width). N is the specified column width 
   in column units. If the width is specified as '*' instead of 'N*'
   the column width is set to '1'.
+  If users are setting a column width of '0*' it's overwritten
+  to '1*'.  We don't support a '0' value to suppress a column.
   ================================================================== -->
   <xsl:variable                   name = "myTotal">
    <xsl:call-template             name = "getSum">
@@ -757,7 +760,9 @@ BZIssue::5003 - [Summaries] Table Column Widths - Display on Cancer.gov
 
   <xsl:attribute                  name = "ColWidth">
    <xsl:choose>
-    <xsl:when                     test = "@ColWidth = '*'">
+    <xsl:when                     test = "@ColWidth = '*'
+                                          or
+                                          @ColWidth = '0*'">
      <xsl:value-of              select = "format-number(
                                             floor(1 div $myTotal * 100 * 100)
                                                div 100, '#.00')"/>
