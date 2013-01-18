@@ -1,29 +1,33 @@
-<CdrDoc Type='Filter' Id='CDR0000000064'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">DocTitle for Summary</DocTitle>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
-<xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                version="1.0"
-                xmlns:cdr="cips.nci.nih.gov/cdr">
- <xsl:output method="text"/>
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: DocTitle for Summary -->
+<!--
+================================================================
+Filter written by C.Burg - 8/29/2001
+This program is a filter to display the health professional titles
 
+BZIssue::4809 - Invalid warning messages in Status and Error Report
+BZIssue::5277 - Update Summary DocTitle Filter
+
+================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+               exclude-result-prefixes = "cdr"
+                               version = "1.0">
+
+ <xsl:output                    method = "text"/>
   
-  <!--Filter written by C.Burg - 8/29/2001 -->
-  <!-- This program is a filter to display the health professional
-        titles  -->
-      
-<!-- Display summary title -->
-<xsl:template match="Summary"> 
-<xsl:for-each select="SummaryTitle">
- <xsl:value-of select="."/>;<xsl:text/>
-</xsl:for-each>
-<xsl:for-each select="SummaryMetaData">
-<xsl:value-of select="concat(SummaryType,';',SummaryAudience)"/>
-</xsl:for-each>
-</xsl:template>
-</xsl:transform>]]>
-</CdrDocXml>
-</CdrDoc>
+ <!-- Display summary title -->
+ <xsl:template                   match = "Summary"> 
+  <xsl:value-of                 select = "SummaryTitle"/>
+  <xsl:if                         test = "@ModuleOnly = 'Yes'">
+   <xsl:text> [Module]</xsl:text>
+  </xsl:if>
+  <xsl:text>;</xsl:text>
+  <xsl:value-of                 select = "SummaryMetaData/
+                                            SummaryType"/>
+  <xsl:text>;</xsl:text>
+  <xsl:value-of                 select = "SummaryMetaData/
+                                            SummaryAudience"/>
+ </xsl:template>
+</xsl:transform>
