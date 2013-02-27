@@ -3082,19 +3082,157 @@ cdr::String cdr::mailerCleanup(Session&         session,
 }
 
 /**
+ * Add a change request to the ptargPairs vector.
+ */
+void cdr::CdrDoc::addPermaTargIdChange(
+    ptargOp     targOp,
+    cdr::String targIdStr
+) {
+    ptargPairs.push_back(ptargPair(targOp, targIdStr));
+}
+
+/**
+ * Is a PermaTargId queued for update?
+ */
+bool cdr::CdrDoc::isPermaTargChangeQueued(
+    ptargOp targOp,
+    int     targIdNum
+) {
+    // Search for it
+    ptargPairVector::iterator pv;
+    for (pv=ptargPairs.begin(); pv!=ptargPairs.end(); pv++) {
+        if (pv->first == targOp) {
+            // We found a requested operation
+            // Convert the string to integer and compare
+            if (pv->second.getInt() == targIdNum) {
+
+                // Found it
+                return true;
+            }
+        }
+    }
+
+    // It wasn't there
+    return false;
+}
+
+
+/**
+ * Apply all of the changes in ptargPairs.
+ */
+void cdr::CdrDoc::applyPermaTargChanges() {
+
+    // If there are no changes, there's nothing to do
+    if (ptargPairs.empty())
+        return;
+
+    // The string to modify and the recipient of changes
+    cdr::String docXml = getXml();
+    cdr::String newXml;
+
+    // Walk through the vector, checking for insert requests
+    ptargPairVector::iterator pv;
+    for (pv=ptargPairs.begin(); pv!=ptargPairs.end(); pv++) {
+        if (pv->first == Insert) {
+
+            // Create a new PermaTargId in the database
+            cdr::db::PreparedStatement insStmt = docDbConn.prepareStatement(
+                "INSERT INTO link_permatarg (doc_id) VALUES (?)");
+            insStmt.setInt(1, Id);
+            insStmt.executeUpdate();
+
+            // Get the newly created PermaTargId
+            int permaTargId = docDbConn.getLastIdent();
+            insStmt.close();
+
+            // Update the serial XML
+            cdr::String errStr;
+            cdr::FilterParmVector parmv;
+            parmv.push_back (std::pair<cdr::String,cdr::String>
+                (L"addTargValue", cdr::String::toString (permaTargId)));
+            cdr::String newXml = cdr::filterDocumentByScriptTitle(
+                               docXml, L"Add PermaTargId",
+                               docDbConn, &errStr, &parmv);
+            if (errStr.size() > 0)
+                addError(errStr);
+
+            // Make new output XML input for further inserts or deletes
+            docXml = newXml;
+        }
+        else if (pv->first == Delete) {
+
+            // Get string form of id to delete, e.g. "123-DELETE".
+            cdr::String permaTargStr(pv->second);
+
+            // Get the integer ID part from the attribute value
+            int permaTargId = permaTargStr.getInt();
+
+            // Is it in the database and active?
+            // This was already checked in ckPermaTargNode(), but I'm
+            //  checking it again here in order to uncouple this from
+            //  access to the map of ID => counters
+            cdr::db::PreparedStatement chkStmt = docDbConn.prepareStatement(
+                "SELECT COUNT(targ_id) FROM link_permatarg "
+                " WHERE doc_id = ? AND targ_id = ? AND dt_deleted IS NULL");
+            chkStmt.setInt(1, Id);
+            chkStmt.setInt(2, permaTargId);
+            cdr::db::ResultSet rs = chkStmt.executeQuery();
+            int countId = 0;
+            if (rs.next())
+                countId = rs.getInt(1);
+            chkStmt.close();
+
+            if (countId == 0) {
+                // This has already been reported in ckPermaTargNode()
+            }
+            else if (countId > 1) {
+                // Impossible unless the database is corrupt
+                // Identity constraint on the targ_id col prevents it
+                cdr::String errMsg =
+                    L"Multiple link_permatarg entries for doc=" +
+                      textId + L", PermaTargId=" + permaTargStr +
+                    L".  Can't happen!";
+                throw cdr::Exception(errMsg);
+            }
+            else {
+                // Passed all checks
+                // Inactivate the entry in the database
+                cdr::db::PreparedStatement delStmt =
+                    docDbConn.prepareStatement(
+                    "UPDATE link_permatarg "
+                    "   SET dt_deleted = GETDATE()"
+                    " WHERE doc_id = ? AND targ_id = ?");
+                delStmt.setInt(1, Id);
+                delStmt.setInt(2, permaTargId);
+                delStmt.executeUpdate();
+                delStmt.close();
+
+                // Delete it from the serial XML
+                cdr::String errStr;
+                cdr::FilterParmVector parmv;
+                parmv.push_back (std::pair<cdr::String,cdr::String>
+                    (L"delTargValue", cdr::String::toString (permaTargStr)));
+                cdr::String newXml = cdr::filterDocumentByScriptTitle(
+                    docXml, L"Delete PermaTargId", docDbConn, &errStr, &parmv);
+
+                if (errStr.size() > 0)
+                    addError(errStr);
+
+                // Ready for next operation
+                docXml = newXml;
+            }
+        }
+    }
+
+    // Establish the new XML string as the string for this doc
+    setXml(docXml);
+}
+
+/**
  * Add cdr-eid attributes to every element in a document.
  *
  * This function was written to provide higher performance as compared to
  * the Sablotron implementation of xsl:number.
- *
- * Assumptions:
- *    The document is well formed.  Our usage of this function only
- *    occurs after some other logic has caused the document to be parsed
- *    and an exception thrown if the document was not well-formed.
- *    If this assumption does not obtain, there is a very small danger
- *    that we could run off the end of the document string while
- *    attempting to examine up to two or three characters beyond
- *    a recognized start tag or comment end delimiter.
  *
  * @param docStr        The serialized document to process.
  *
@@ -3107,6 +3245,7 @@ static cdr::String addCdrEidAttrs(
 ) {
     const wchar_t *p;         // Pointr into docStr
     const wchar_t *endp;      // Pointer to char after last char of docStr
+    const wchar_t *stopp;     // Search this far, a bit before endp
     wchar_t c;          // Single char at p
     wchar_t c1;         // Single char at p+1
     int     nextEid;    // cdr-eid value
@@ -3120,9 +3259,16 @@ static cdr::String addCdrEidAttrs(
     nextEid = 1;
 
     inTag = inComment = false;
+
+    // We process from the start to end of string
+    // The -3 on stopp prevents our looking ahead to beyond the end
+    //   of the string in cases of malformed documents with an open tag
+    //   or comment at the end and we examine *p, *p+1, and *p+2
+    // Should never happen but if it does, we're protected
     p     = docStr.c_str();
     endp  = p + wcslen(p);
-    while (p < endp) {
+    stopp = endp - 3;
+    while (p < stopp) {
         c = *p++;
         if (c == '<' && !inComment) {
             c1 = *p;
@@ -3153,6 +3299,10 @@ static cdr::String addCdrEidAttrs(
         // Output original char from docStr
         os << c;
     }
+
+    // We stopped at stopp, 3 bytes short of endp, copy those extra bytes
+    while (p < endp)
+        os << *p++;
 
     // Finished docStr, return output
     return cdr::String(os.str());
