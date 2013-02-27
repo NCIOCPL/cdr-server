@@ -1,8 +1,9 @@
 #pragma warning(disable : 4786) // While including iostream
+
 #include <iostream> // DEBUG
 #include <time.h>   // DEBUG
 
-/* XXXX
+/*
  * Possible optimizations if needed:
  *
  *  1. Search control tables only once for a transaction, retrieving
@@ -227,13 +228,7 @@ static int checkPermaTargs (cdr::CdrDoc*, cdr::dom::Node&,
 static int ckPermaTargNode (cdr::CdrDoc*, cdr::dom::Node&,
                             std::map<int, int>&, const cdr::ValidRule);
 
-static int insertPermaTarg(cdr::CdrDoc *);
-
-static void deletePermaTarg (cdr::CdrDoc *, std::map<int, int>&,
-                             const cdr::String, wchar_t *);
-
-static int checkMissedPermaTargs(std::map<int, int>& targCtrs,
-                                 cdr::ValidationControl& errCtl);
+static int checkMissedPermaTargs(cdr::CdrDoc*, std::map<int, int>& targCtrs);
 
 // Update queries to execute when deleting or replacing link info
 // Terminate list with null string
@@ -971,19 +966,6 @@ else
     // Add checks and updates for PermaTargIds, if there are any of them
     err_count += checkPermaTargs(docObj, xmlNode, validRule);
 
-    // XXXX
-    //      If we are deleting text from nodes, we might do part
-    //      or all of it here.  Might delete the nodes in validateLink()
-    //      then reconstruct the XML string here
-    //      But we only do it if we are actually updating something.
-    //      If just validating a document on which editing may continue,
-    //      we don't want to change anything under the eyes of the human
-    //      editor.
-    //      The other, probably more efficient, place to delete text
-    //      from nodes is in the filter module.  It simply ignores the
-    //      text to be deleted when copying from its input to its output.
-    // XXXX
-
     SHOW_ELAPSED("leaving cdrSetLinks", setLinksTimer);
 
 /*
@@ -1709,10 +1691,6 @@ static int linkTree (
                                        L"\" used more than once");
             }
 
-            // XXX PermaTargIds could be checked here for maximum
-            // XXX efficiency.  However it makes the code more complicated
-            // XXX and we'll only do this if experience proves the need
-
             // Does the node have children?
             cdr::dom::Node child = node.getFirstChild();
             if (child != 0) {
@@ -1877,6 +1855,7 @@ void cdr::link::updateLinkNet (
             "             target_frag, "
             "             url)         "
             "     VALUES (?,?,?,?,?,?) ");
+
     for (rsi = rowsToInsert->begin(); rsi != rowsToInsert->end(); ++rsi) {
         // XXX This is a stopgap measure.  Problems should be detected and
         //     reported when the link tree is built.
@@ -2258,9 +2237,6 @@ cdr::String cdr::link::getSearchLinksResp (
  * Finds the denormalized text for a CDR link if the link can be pasted
  * given the current context.
  *
- * XXX This is Bob's stub version.  Alan will supply the real version which
- * knows about fragment links.
- *
  * Takes standard parameters for a CdrCommand.
  */
 
@@ -2392,33 +2368,25 @@ static int checkPermaTargs (
 
     // Allocate a map of database PermaTargId => count of occurrences found
     std::map<int, int> targCtrs;
-// std::cout << "Start checkPermaTargs: vRule = " << vRule << std::endl;
     initPermaTargMap(targCtrs, docObj->getConn(), docObj->getId());
-// std::cout << "Back from initPermaTargMap()" << std::endl;
 
     // Optimization: Only process the document If there is anything in
     //    database map or any PermaTargIds in the document
     // const wchar_t *xml = docObj->getXml().c_str();
-// std::cout << "Size of PermaTargMap = " << targCtrs.size() << std::endl;
     cdr::String xmlStr = docObj->getXml();
-// std::cout << "Got XML as a cdr::String" << std::endl;
-// std::cout << "Size of XML as cdr::String = " << xmlStr.length() << std::endl;
     const wchar_t *xml = xmlStr.c_str();
-// std::cout << "Got XML as a wide C string" << std::endl;
-// std::cout << "Wide C string length = " << wcslen(xml) << std::endl;
     if (targCtrs.size() > 0 || wcsstr(xml, L"PermaTargId") != NULL) {
-// std::cout << "Checking required validation for docId=" << docObj->getId() << "  vRule=" << vRule << std::endl;
+
         // Check all of the PermaTargIds in this document
-// std::cout << "First call to top of ckPermaTargNode()" << std::endl;;
         errCount += ckPermaTargNode(docObj, xmlNode, targCtrs, vRule);
-// std::cout << "Back from top of ckPermaTargNode()" << std::endl;
 
         // Check for any that should be in the document but aren't
-// std::cout << "Call checkMissedPermaTargs()" << std::endl;
-        errCount += checkMissedPermaTargs(targCtrs, docObj->getValCtl());
-// std::cout << "Back from checkMissedPermaTargs()" << std::endl;
-    }
+        errCount += checkMissedPermaTargs(docObj, targCtrs);
 
+        // If there were any insertions or deletions to do, a vector
+        //  of changes to apply will have been built in docObj.  They'll
+        //  be applied later.  See CdrValidateDoc.cpp.
+    }
     return errCount;
 }
 
@@ -2508,7 +2476,8 @@ static int ckPermaTargNode(
 
     // Walk the DOM nodes looking for PermaTargId attributes
     // This version checks EVERY node.  If this turns out to be
-    //   a performance issue, we can just check elements of
+    //   a performance issue, we can just check elements of those
+    //   document types and element types that can have PermaTargIds
     while (node != 0) {
         if (node.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
 
@@ -2519,7 +2488,7 @@ static int ckPermaTargNode(
             cdr::dom::Element elem(node);
             cdr::String targValue = elem.getAttribute(L"PermaTargId");
             if (!targValue.empty()) {
-// std::wcout << "Processing PermaTargId=" << targValue << "  updating=" << updating << std::endl;
+
                 // Protect against pathologically long targValue
                 // if (wcslen(targValue.c_str()) > MAX_TARGVALUE)
                 if (targValue.length() > MAX_TARGVALUE)
@@ -2541,9 +2510,25 @@ static int ckPermaTargNode(
                             swprintf(errMsg,
                                 L"Illegal PermaTargId delete request=%s",
                                 targValue.c_str());
-                        else if (updating)
-                            deletePermaTarg(docObj, targCtrs,
-                                            targValue, errMsg);
+                        else {
+                            // The integer ID value must be in the database
+                            // Otherwise it can't be deleted
+                            if (targCtrs.find(targValNum) == targCtrs.end()) {
+                                swprintf(errMsg,
+                                   L"Attempting to delete PermaTargId=%d"
+                                   L" but that ID is not in the database "
+                                   L" as a registered PermaTargId in this doc",
+                                   targValNum);
+                            }
+                            else {
+                               // Record the need to delete this node
+                               // Changes will actually only be applied if
+                               //  we're updating, but we need to record this
+                               //  so checkMissedPermaTargs() will work
+                               docObj->addPermaTargIdChange(cdr::Delete,
+                                                            targValue);
+                            }
+                        }
                     }
                     else
                         swprintf(errMsg,
@@ -2557,15 +2542,16 @@ static int ckPermaTargNode(
                 else if (targValue == L"0") {
                     // New nodes are only processed if we're updating the DB
                     if (updating)
-                        // Insert a new node, getting the value back
-                        int newTargValue = insertPermaTarg(docObj);
+                        // Record the need to insert a new node
+                        docObj->addPermaTargIdChange(cdr::Insert, targValue);
                 }
                 else {
                     // Check that this PermaTargId is known
-                    if (targCtrs.find(targValNum) == targCtrs.end())
+                    if (targCtrs.find(targValNum) == targCtrs.end()) {
                         swprintf(errMsg,
                           L"PermaTargId=%d not in the database for this doc",
                           targValNum);
+                    }
                     else {
                         int count = ++targCtrs[targValNum];
                         if (count != 1)
@@ -2574,17 +2560,22 @@ static int ckPermaTargNode(
                                 targValNum);
                     }
                 }
-// std::wcout << "Done processing PermaTargId=" << targValue << std::endl;
             }
 
             // Store errors
             if (*errMsg) {
+                // XXX Would like to replace this with stored integers, not
+                //     nodes
                 // Get the error ID for this node
                 cdr::dom::Element elem(node);
                 cdr::String eidValue = elem.getAttribute(L"cdr-eid");
                 if (eidValue.empty())
                     eidValue = L"";
-                docObj->getValCtl().addError(errMsg, eidValue);
+
+                // Store it with the current context
+                cdr::ValidationControl& valCtl = docObj->getValCtl();
+                valCtl.setElementContext(node);
+                valCtl.addError(errMsg, eidValue);
 
                 // Add to counter
                 errCount++;
@@ -2606,135 +2597,6 @@ static int ckPermaTargNode(
 
 
 /**
- * Create a new PermaTargId, inserting it in the database and in the XML.
- *
- * A subroutine of ckPermaTargNode().
- *
- * Insert a new PermaTargId in the database and in the XML.
- *
- *  @param docObj           Pointer to doc object for error associations
- *
- *  @return                 New PermaTargId value, as an integer.
- */
-static int insertPermaTarg(
-    cdr::CdrDoc *docObj
-) {
-    // Update the database
-    cdr::db::Connection dbConn = docObj->getConn();
-    cdr::db::PreparedStatement insStmt = dbConn.prepareStatement(
-        "INSERT INTO link_permatarg (doc_id) VALUES (?)");
-    insStmt.setInt(1, docObj->getId());
-    insStmt.executeUpdate();
-
-    // Get the newly created PermaTargId
-    int permaTargId = dbConn.getLastIdent();
-    insStmt.close();
-// std::cout << "Inserted new PermaTargId=" << permaTargId << " in database" << std::endl;
-    // Update the serial XML
-    cdr::String errStr;
-    cdr::FilterParmVector pv;
-    pv.push_back (std::pair<cdr::String,cdr::String>
-        (L"addTargValue", cdr::String::toString (permaTargId)));
-    cdr::String newXml = cdr::filterDocumentByScriptTitle(docObj->getXml(),
-                               L"Add PermaTargId", dbConn, &errStr, &pv);
-
-    // Save the new XML in place of the original
-    // Note:
-    //   We don't need to reparse the document yet to go on and process the
-    //   additional PermaTargIds in the original doc.  The old parse tree
-    //   is perfectly adequate for that.
-    //   However, any function needing an accurate parse tree must call
-    //   parseAvailable(), which will reparse the document.
-    //   That should be universal in the CDR now.
-    // See setXml() and parseAvailable().
-    docObj->setXml(newXml);
-
-// std::cout << "Done insertion of new PermaTargId=" << permaTargId << std::endl;
-    return permaTargId;
-}
-
-
-/**
- * Inactivate existing PermaTargId in the database and delete it from the XML.
- *
- * Subroutine of ckPermaTargNode().
- *
- *  @param docObj           Pointer to doc object for error associations
- *  @param targStrs         Map of PermaTargId=>counters.  Update it.
- *  @param permaTargStr     String form of id to delete, e.g. "123-DELETE".
- *  @param errMsg           Buffer to fill with error message, if any.
- */
-static void deletePermaTarg (
-    cdr::CdrDoc         *docObj,
-    std::map<int, int>& targCtrs,
-    const cdr::String   permaTargStr,
-    wchar_t             *errMsg
-) {
-    // Get the integer ID part from the PermaTargId attribute value
-    int permaTargId = permaTargStr.getInt();
-// std::wcout << "Deleting PermaTargId=" << permaTargStr << std::endl;
-
-    // Is it in the database and active?
-    // It would be faster to just look at targCtrs, but it would
-    //   save only milliseconds per year.  So lets check the
-    //   indisputable source.
-    cdr::db::Connection dbConn = docObj->getConn();
-    cdr::db::PreparedStatement chkStmt = dbConn.prepareStatement(
-        "SELECT COUNT(targ_id) FROM link_permatarg "
-        " WHERE doc_id = ? AND targ_id = ? AND dt_deleted IS NULL");
-    chkStmt.setInt(1, docObj->getId());
-    chkStmt.setInt(2, permaTargId);
-    cdr::db::ResultSet rs = chkStmt.executeQuery();
-    int countId = 0;
-    if (rs.next())
-        countId = rs.getInt(1);
-    chkStmt.close();
-
-    if (countId == 0) {
-        swprintf(errMsg,
-          L"Attempt to -DELETE PermaTargId=%d, but it's not in the database",
-          permaTargId);
-        return;
-    }
-    else if (countId > 1) {
-        // This can't happen unless the DB is corrupt.
-        // The database identity constraint on the targ_id col prevents it.
-        swprintf(errMsg,
-      L"%d link_permatarg entries for doc=%d, PermaTargId=%d, can't happen!",
-            countId, docObj->getId(), permaTargId);
-        throw cdr::Exception(errMsg);
-    }
-    else {
-        // Passed all checks
-        // Inactivate the entry in the database
-        cdr::db::PreparedStatement delStmt = dbConn.prepareStatement(
-            "UPDATE link_permatarg "
-            "   SET dt_deleted = GETDATE()"
-            " WHERE doc_id = ? AND targ_id = ?");
-        delStmt.setInt(1, docObj->getId());
-        delStmt.setInt(2, permaTargId);
-        delStmt.executeUpdate();
-        delStmt.close();
-
-        // Delete it from the serial XML
-        // See Note in insertPermaTarg() above
-        cdr::String errStr;
-        cdr::FilterParmVector pv;
-        pv.push_back (std::pair<cdr::String,cdr::String>
-            (L"delTargValue", cdr::String::toString (permaTargStr)));
-        cdr::String newXml = cdr::filterDocumentByScriptTitle(docObj->getXml(),
-                           L"Delete PermaTargId", dbConn, &errStr, &pv);
-        docObj->setXml(newXml);
-
-        // Delete it from the map so that checkMissedPermaTargs() won't
-        //   think this should be in the document.
-        targCtrs.erase(permaTargId);
-    }
-// std::wcout << "Done deleting PermaTargId=" << permaTargStr << std::endl;
-}
-
-
-/**
  * Check for PermaTargIds that were in the database but aren't in the doc
  *
  * Of course we can't produce any error ID values for these.
@@ -2747,8 +2609,8 @@ static void deletePermaTarg (
  *  @return                 Count of errors.
  */
 static int checkMissedPermaTargs(
-    std::map<int, int>&     targCtrs,
-    cdr::ValidationControl& errCtl
+    cdr::CdrDoc*         docObj,
+    std::map<int, int>&  targCtrs
 ) {
 // std::cout << "Entering checkMissedPermaTargs()" << std::endl;
 
@@ -2762,15 +2624,19 @@ static int checkMissedPermaTargs(
     std::map<int, int>::const_iterator i = targCtrs.begin();
     while (i != targCtrs.end()) {
         if (i->second == 0) {
-            swprintf(msg,
-                L"PermaTargId %d should be in this document but is missing",
-                  i->first);
-            errCtl.addError(msg);
-            ++errCount;
+            // A PermaTargId (first) wasn't in the XML (second)
+            // Is it queued for deletion?
+            if (!docObj->isPermaTargChangeQueued(cdr::Delete, i->first)) {
+
+                swprintf(msg,
+                   L"PermaTargId %d should be in this document but is missing",
+                     i->first);
+                docObj->getValCtl().addError(msg);
+                ++errCount;
+            }
         }
         ++i;
     }
 
-// std::cout << "Exiting checkMissedPermaTargs()" << std::endl;
     return errCount;
 }
