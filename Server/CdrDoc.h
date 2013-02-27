@@ -82,6 +82,26 @@ namespace cdr {
         unknown             // Don't currently know the status
     } VerPubStatus;
 
+    /**
+     * Two types of operation are allowed on PermaTargIds during link
+     * processing.  See ckPermaTargNode() in CdrLink.cpp.
+     */
+    typedef enum {
+        Insert,         // Inserting a new permaTargId
+        Delete          // Delete a permaTargId
+    } ptargOp;
+
+    /**
+     * Pairs of operation + permaTargId.  ID always 0 when operation==Insert
+     */
+    typedef std::pair<ptargOp, cdr::String> ptargPair;
+
+    /**
+     * 0 or more PermaTargIds can be processed in one doc.
+     * A vector stores up all of the IDs to process.
+     */
+    typedef std::vector<ptargPair> ptargPairVector;
+
     // Object to represent one row in the query_term table.
     struct QueryTerm {
         int         doc_id;
@@ -428,8 +448,10 @@ namespace cdr {
             cdr::Blob   getBlobData()      {return blobData;}
             cdr::db::Connection& getConn() {return docDbConn;}
             cdr::dom::Element& getDocumentElement() {return docElem;}
+            cdr::VerPubStatus getVerPubStatus()     {return verPubStatus;}
+
+            // Setters
             void setValStatus(const cdr::String& vs) {valStatus = vs;}
-            cdr::VerPubStatus getVerPubStatus() {return verPubStatus;}
             void setVerPubStatus(cdr::VerPubStatus pvs) {verPubStatus=pvs;}
 
             // Return a reference to the ValidationControl object
@@ -478,6 +500,62 @@ namespace cdr {
              */
             void setXml(cdr::String newXml);
 
+            /**
+             * Store a change to PermaTargIds that will be required when
+             * updating a record that has inserted or deleted PermaTargIds.
+             *
+             *  @param targOp       Operation to perform, Insert or Delete
+             *  @param targIdStr    Id on which to perform op, "0" for Insert.
+             */
+            void addPermaTargIdChange(ptargOp targOp, cdr::String targIdStr);
+
+            /**
+             * Answer the question: Has an action on a PermaTargId been queued
+             * for execution?
+             *
+             * Used to allow the validation checks to ignore errors that are
+             * about to be corrected when the queued operations are performed.
+             *
+             *  @param targOp       Operation to check: Insert or Delete.
+             *  @param targIdNum    PermaTargId number to check for.
+             *
+             *  @return             True = Yes, this operation is queued.
+             *                      Else false.
+             */
+            bool isPermaTargChangeQueued(ptargOp targOp, int targIdNum);
+
+            /**
+             * Apply all required changes to the PermaTargIds in a document.
+             *
+             * CdrLink.cpp ckPermaTargNode(), applied recursively to all
+             * nodes, built a vector of pairs of operation identifiers
+             * (Insert or Delete) + attribute values that were actually
+             * found in the document XML.
+             *
+             * This function processes those pairs, performing the inserts
+             * or deletes.
+             *
+             * It applies them one at a time, generating an amended xml
+             * string after each application which is fed into the next.
+             * It also performs any required database updates.
+             *
+             * At the end, it replaces the document XML with the transformed
+             * version using setXml().
+             *
+             * WARNING:
+             *
+             *    This function modifies the XML in the document.  It is
+             *    safest to call this function after we're done with
+             *    all functions using the DOM parse tree used in validation.
+             *
+             *  @return     Void.
+             *
+             *  @throws cdr::Exception  If a serious error is encountered
+             *                          that implies corruption of the
+             *                          document or the database.
+             */
+            void applyPermaTargChanges();
+
         private:
             // Values corresponding to document table data
             int Id;                     // Numeric form of document id
@@ -513,6 +591,10 @@ namespace cdr {
                                         //   filtering, or wherever.
             ContentOrControl conType;   // Treat as content or control info
             cdr::ValidationControl valCtl; // Holds error info
+
+            // Vector of PermaTargId changes to apply.
+            // Pairs of (op {Insert|Delete}, PermaTargId)
+            ptargPairVector ptargPairs;
 
             // Connection to the database
             cdr::db::Connection& docDbConn;
