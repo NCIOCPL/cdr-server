@@ -552,7 +552,7 @@ cdr::String cdr::execValidateDoc (
     if (wcscmp(status, L"M")) {
         // Were there any true errors, not just warnings?
         int hardErrorCount = 0;
-        ValidationControl valCtl = docObj->getValCtl();
+        ValidationControl& valCtl = docObj->getValCtl();
         hardErrorCount += valCtl.getLevelCount(cdr::ELVL_ERROR);
         hardErrorCount += valCtl.getLevelCount(cdr::ELVL_FATAL);
 
@@ -563,8 +563,15 @@ cdr::String cdr::execValidateDoc (
     // Update database and object status
     docObj->setValStatus(status);
     if (validRule == cdr::UpdateUnconditionally ||
-            (validRule == cdr::UpdateIfValid && docObj->getErrorCount() == 0))
+        (validRule == cdr::UpdateIfValid && docObj->getErrorCount() == 0)) {
+
+        // Apply any required PermaTargId changes - very rare
+        // Only updated the link_permatarg table if validRule says update
+        docObj->applyPermaTargChanges();
+
+        // Update validation status
         setValStatus (docObj->getConn(), docObj->getId(), status);
+    }
 
     // Report the outcome
     SHOW_ELAPSED("Validation cleanup", valCleanupTimer);
