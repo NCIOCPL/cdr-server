@@ -117,6 +117,7 @@ GO
  *         name  unique logon name used by this user
  *     password  plain text string used to authenticate this user's identity
  *     hashedpw  use this instead of password if hashing available
+ * login_failed  count of consecutive failures, reset to 0 on success
  *      created  date and time the user's account was added to the system
  *     fullname  optional string giving the user's full name
  *       office  optional identification of the office in which the user works
@@ -132,6 +133,7 @@ CREATE TABLE usr
         name VARCHAR(32) NOT NULL UNIQUE,
     password VARCHAR(32) NOT NULL,
     hashedpw VARBINARY(2048) NULL,
+login_failed INTEGER     NOT NULL DEFAULT 0,
      created DATETIME    NOT NULL,
     fullname VARCHAR(100)    NULL,
       office VARCHAR(100)    NULL,
