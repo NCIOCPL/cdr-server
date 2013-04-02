@@ -48,8 +48,11 @@
 #include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
 
-cdr::String cdr::logon(cdr::Session& session, 
-                       const cdr::dom::Node& node, 
+static const int MAX_FAILED_LOGONS = 10;
+
+// CdrCommand.h
+cdr::String cdr::logon(cdr::Session& session,
+                       const cdr::dom::Node& node,
                        cdr::db::Connection& conn)
 {
     // Extract the parameters from the command.  Caller catches exceptions.
@@ -66,68 +69,72 @@ cdr::String cdr::logon(cdr::Session& session,
         child = child.getNextSibling();
     }
 
-    // Look up the user in the database.
-    static const char selectQuery[] = "SELECT id, name, password "
-                                        "FROM usr "  
-                                       "WHERE name = ?";
-    cdr::db::PreparedStatement select = conn.prepareStatement(selectQuery);
-    select.setString(1, userName);
-    cdr::db::ResultSet rs = select.executeQuery();
-    if (!rs.next()) {
-        cdr::log::pThreadLog->Write(L"Failed logon attempt (invalid user name)",
-                L"name: " + userName + L"; password: " + password);
+    int failCount = cdr::getLoginFailedCount(conn, userName);
+    if (failCount == -1)
+        // Record for this username doesn't exist
+        throw cdr::Exception(L"Invalid logon credentials");
+
+    // If user has tried too many times, don't go any further
+    if (failCount > MAX_FAILED_LOGONS) {
+        // Keep track of count to help find problematic user IDs
+        cdr::setLoginFailedCount(conn, userName, 1);
+
+        // But block login
+        throw cdr::Exception(L"Too many consecutive login failures.  "
+            L"Please ask administrative staff to reset your password.");
+    }
+
+    // Look up the user in the database, checking name & pw to get ID
+    int userId = cdr::chkIdPassword(userName, password, conn);
+    if (userId == -1) {
+        // Increment the login failure count
+        cdr::setLoginFailedCount(conn, userName, 1);
+
+        // Block the user
         throw cdr::Exception(L"Invalid logon credentials");
     }
-    int id                 = rs.getInt(1);
-    cdr::String dbName     = rs.getString(2);
-    cdr::String dbPassword = rs.getString(3);
-    if (userName != dbName) {
-        cdr::log::pThreadLog->Write(
-                L"Failed logon attempt (user name case mismatch)",
-                L"user typed: " + userName + L"; name in database: " + dbName);
-        throw cdr::Exception(L"Invalid logon credentials");
-    }
-    if (password != dbPassword) {
-        cdr::log::pThreadLog->Write(L"Failed logon attempt (invalid password)",
-                L"name: " + userName + L"; password: " + password);
-        throw cdr::Exception(L"Invalid logon credentials");
-    }
-   
-    // Create a new row in the session table.
-    char idBuf[256];
-    unsigned long now = (unsigned long)time(0);
-    unsigned long ticks = clock();
-    static char randomChars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    static size_t nRandomChars = sizeof randomChars - 1;
-    srand(ticks);
-    sprintf(idBuf, "%lX-%06lX-%03d-%c%c%c%c%c%c%c%c%c%c%c%c",
-        now, ticks & 0xFFFFFF, id % 1000, 
-        randomChars[rand() % nRandomChars],
-        randomChars[rand() % nRandomChars],
-        randomChars[rand() % nRandomChars],
-        randomChars[rand() % nRandomChars],
-        randomChars[rand() % nRandomChars],
-        randomChars[rand() % nRandomChars],
-        randomChars[rand() % nRandomChars],
-        randomChars[rand() % nRandomChars],
-        randomChars[rand() % nRandomChars],
-        randomChars[rand() % nRandomChars],
-        randomChars[rand() % nRandomChars],
-        randomChars[rand() % nRandomChars]);
-    cdr::String sessionId = idBuf;
-    static const char insertQuery[] = 
-        "INSERT INTO session(name, usr, initiated, last_act)"
-        "     VALUES (?, ?, GETDATE(), GETDATE())";
-    cdr::db::PreparedStatement insert = conn.prepareStatement(insertQuery);
-    insert.setString(1, sessionId);
-    insert.setInt(2, id);
-    insert.executeQuery();
-    
+
+    // Create a new session in the database
+    cdr::String sessionId = createSessionRecord(userId, userName, conn);
+
     // Populate the session object.
     session.lookupSession(sessionId, conn);
+
+    // Clear the record of failed logins if needed
+    if (failCount > 0)
+        cdr::setLoginFailedCount(conn, userName, 0);
 
     // Send back the command response.
     cdr::String response = L"  <CdrLogonResp>\n   <SessionId>";
     response += sessionId + L"</SessionId>\n  </CdrLogonResp>\n";
+    return response;
+}
+
+
+// CdrCommand.h
+cdr::String cdr::dupSession(
+    cdr::Session&   session,
+    const cdr::dom::Node& node,
+    cdr::db::Connection&  conn
+) {
+    int         oldSessionId;
+    cdr::String oldSessionName,
+                newSessionName;
+
+    // Don't need to parse the command, the session identifiers are
+    //  already parsed out in the Session object
+    oldSessionId   = session.getId();
+    oldSessionName = session.getName();
+
+    // Replicate it
+    cdr::String comment =
+            L"Session duplicated from id=" + String::toString(oldSessionId);
+    newSessionName = duplicateSessionRecord(oldSessionName, conn, comment);
+
+    // Send back the command response.
+    cdr::String response = L"  <CdrDupSessionResp>\n";
+    response += L"   <sessionId>" + oldSessionName + L"</SessionId>\n";
+    response += L"   <newSessionId>" + newSessionName + L"</newSessionId>\n";
+    response += L"  </CdrDupSessionResp>\n";
     return response;
 }
