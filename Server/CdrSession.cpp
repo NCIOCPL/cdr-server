@@ -435,15 +435,22 @@ static bool dbHasHash(
     try {
         cdr::db::PreparedStatement ps = conn.prepareStatement(qry);
         cdr::db::ResultSet rs = ps.executeQuery();
-        hashed = rs.getString(1);
+        if (rs.next())
+            hashed = rs.getString(1);
+        else
+            hashed = L"";
         ps.close();
         if (hashed.isNull() || hashed == L"")
             // Function is supported but algorithm is not
             testresult = false;
     }
-    catch (...) {
+    catch (cdr::Exception e) {
         // HASHBYTES function is unsupported
         testresult = false;
+
+        // Log what happened just in case it's not what we expected
+        cdr::log::pThreadLog->Write(L"dbHasHash generated exception: ",
+                                      e.what());
     }
 
     // Don't have to try again
