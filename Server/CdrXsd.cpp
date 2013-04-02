@@ -2447,8 +2447,7 @@ void verifyElementSequence(
         }
 
         // This is the new context for any errors we find
-        // errCtl.setElementContext(static_cast<cdr::dom::Element&>(child));
-        errCtl.setElementContext(child);
+        errCtl.setElementContext(static_cast<cdr::dom::Element&>(child));
 
         // Find the element's name and type so we can validate it.
         cdr::String elemName = child.getNodeName();
