@@ -162,6 +162,25 @@ namespace cdr {
                               const dom::Node&  node,
                               db::Connection&   conn);
 
+
+    /**
+     * Creates a new session from the specified existing session.
+     *
+     * The new session is registered for the user of the existing session
+     * and will continue active when the existing session is logged out.
+     *
+     *  @param      session     information about the existing session.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String dupSession (Session&          session,
+                              const dom::Node&  node,
+                              db::Connection&   conn);
+
     /**
      * Closes the current session.
      *
