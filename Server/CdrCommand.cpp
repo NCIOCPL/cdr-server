@@ -152,6 +152,7 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
     };
     static CommandMap map[] = {
         CommandMap(L"CdrLogon",              cdr::logon),
+        CommandMap(L"CdrDupSession",         cdr::dupSession),
         CommandMap(L"CdrLogoff",             cdr::logoff),
         CommandMap(L"CdrCheckAuth",          cdr::checkAuth),
         CommandMap(L"CdrAddGrp",             cdr::addGrp),
