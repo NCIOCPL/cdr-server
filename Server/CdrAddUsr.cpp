@@ -25,13 +25,13 @@
  * Adds a row to the user table, as well as one row to the grp_usr table for
  * each group to which the user has been assigned.
  */
-cdr::String cdr::addUsr(cdr::Session& session, 
+cdr::String cdr::addUsr(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
-                        cdr::db::Connection& conn) 
+                        cdr::db::Connection& conn)
 {
     // Make sure our user is authorized to add users.
     if (!session.canDo(conn, L"CREATE USER", L""))
-        throw 
+        throw
             cdr::Exception(L"CREATE USER action not authorized for this user");
 
     // Extract the data elements from the command node.
@@ -66,6 +66,10 @@ cdr::String cdr::addUsr(cdr::Session& session,
     if (password.isNull())
         throw cdr::Exception(L"Missing password");
 
+    // Don't create the record if the password fails standards
+    // Throws exception if pw fails
+    testPasswordString(password);
+
     // Make sure the user doesn't already exist.
     std::string select = "SELECT COUNT(*) FROM usr WHERE name = ?";
     cdr::db::PreparedStatement usrQuery = conn.prepareStatement(select);
@@ -74,12 +78,14 @@ cdr::String cdr::addUsr(cdr::Session& session,
     if (!usrRs.next())
         throw cdr::Exception(L"Failure checking unique user name");
     int count = usrRs.getInt(1);
+    usrQuery.close();
+
     if (count != 0)
         throw cdr::Exception(L"User name already exists");
 
     // Add a new row to the usr table.
     conn.setAutoCommit(false);
-    std::string insert = 
+    std::string insert =
         "INSERT INTO usr(name,"
         "                password,"
         "                created,"
@@ -88,17 +94,20 @@ cdr::String cdr::addUsr(cdr::Session& session,
         "                email, "
         "                phone,"
         "                comment)"
-        "        VALUES (?, ?, GETDATE(), ?, ?, ?, ?, ?)";
+        "        VALUES (?, 'tHiS-W1LlBEEreP8sEd', GETDATE(), ?, ?, ?, ?, ?)";
     cdr::db::PreparedStatement usrInsert = conn.prepareStatement(insert);
     usrInsert.setString(1, uName);
-    usrInsert.setString(2, password);
-    usrInsert.setString(3, fullName);
-    usrInsert.setString(4, office);
-    usrInsert.setString(5, email);
-    usrInsert.setString(6, phone);
-    usrInsert.setString(7, comment);
+    usrInsert.setString(2, fullName);
+    usrInsert.setString(3, office);
+    usrInsert.setString(4, email);
+    usrInsert.setString(5, phone);
+    usrInsert.setString(6, comment);
     usrInsert.executeQuery();
     int usrId = conn.getLastIdent();
+    usrInsert.close();
+
+    // Install the password for new user
+    session.setUserPw(conn, uName, password, true);
 
     // Add groups to which user is assigned, if any.
     if (grpList.size() > 0) {
@@ -114,11 +123,14 @@ cdr::String cdr::addUsr(cdr::Session& session,
             if (!rs.next())
                 throw cdr::Exception(L"Unknown group", gName);
             int grpId = rs.getInt(1);
+            grpQuery.close();
+
             std::string insert = "INSERT INTO grp_usr(grp, usr) VALUES(?, ?)";
             cdr::db::PreparedStatement ps = conn.prepareStatement(insert);
             ps.setInt(1, grpId);
             ps.setInt(2, usrId);
             ps.executeQuery();
+            ps.close();
         }
     }
 
