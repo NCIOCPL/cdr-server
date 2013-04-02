@@ -80,12 +80,12 @@ namespace cdr {
         String getUserName() const { return uName; }
 
         /**
-         * Accessor method for the value used for the <code>Status</code> 
-         * attribute of the <code>CdrResponse</code> element.  Initialized 
-         * to "success" by the command dispatcher prior to invocation of 
-         * the command handler for each command.  Can be modified (for 
+         * Accessor method for the value used for the <code>Status</code>
+         * attribute of the <code>CdrResponse</code> element.  Initialized
+         * to "success" by the command dispatcher prior to invocation of
+         * the command handler for each command.  Can be modified (for
          * example, to "warning") by the command handler if appropriate, using
-         * the <code>setStatus()</code> method.  If an exception is caught 
+         * the <code>setStatus()</code> method.  If an exception is caught
          * by the command dispatcher, the attribute will be set to "error".
          *
          *  @return         string representing outcome of processing of
@@ -97,10 +97,23 @@ namespace cdr {
          * Used by a command handler to change the status reflecting the
          * outcome of command processing from the default of L"success".
          *
-         *  @param  status  string representing outcome of processing of 
+         *  @param  status  string representing outcome of processing of
          *                  last command.
          */
         void setStatus(const String& status) { lastStatus = status; }
+
+        /**
+         * Set a user's password to a new value.  For systems supporing
+         * hashed passwords, stores only a hash value.
+         *
+         * @param conn      database connection.
+         * @param userName  unique short name of the user to modify,
+         *                   may or may not be the same as the Session user.
+         * @param password  new password.
+         * @param newUser   true=new user, false=existing user
+         */
+        void setUserPw(db::Connection&, const String&, const String&,
+                       const bool);
 
         /**
          * Accessor method for the blob sent by the client as part of
@@ -116,7 +129,7 @@ namespace cdr {
          * Used by preprocessor of command set buffer to store any blob
          * it finds in what the client sent.
          *
-         *  @param  blob  string representing outcome of processing of 
+         *  @param  blob  string representing outcome of processing of
          *                  last command.
          */
         void setClientBlob(const Blob& blob) { iBlob = blob; }
@@ -169,12 +182,12 @@ namespace cdr {
          *                          string for an action which is not
          *                          associated with any particular document
          *                          type.
-         *  @return                 <code>true</code> iff the user is 
+         *  @return                 <code>true</code> iff the user is
          *                          authorized to perform the specified
          *                          action.
          */
-        bool canDo(db::Connection&    connection, 
-                   const cdr::String& action, 
+        bool canDo(db::Connection&    connection,
+                   const cdr::String& action,
                    const cdr::String& docType) const;
 
         /**
@@ -188,12 +201,12 @@ namespace cdr {
          *                          specified action.
          *  @param  action          name of the action to be checked.
          *  @param  docId           integer document ID
-         *  @return                 <code>true</code> iff the user is 
+         *  @return                 <code>true</code> iff the user is
          *                          authorized to perform the specified
          *                          action.
          */
-        bool canDo(db::Connection&    connection, 
-                   const cdr::String& action, 
+        bool canDo(db::Connection&    connection,
+                   const cdr::String& action,
                    int docId) const;
 
     private:
@@ -232,7 +245,7 @@ namespace cdr {
          * <code>CdrResponse</code> element.  Initialized to "success" by the
          * command dispatcher prior to invocation of the command handler for
          * each command.  Can be modified (for example, to "warning") by the
-         * command handler if appropriate.  If an exception is caught by the 
+         * command handler if appropriate.  If an exception is caught by the
          * command dispatcher, the attribute will be set to "error".
          */
         String lastStatus;
@@ -245,6 +258,112 @@ namespace cdr {
          */
         Blob iBlob;
     };
+
+    /**
+     * Create a new session row in the database.
+     *
+     * This does not create a session object.  It just creates a new row
+     * in the database with a new, random session ID.  It can be called
+     * either for a new session or to duplicate one (q.v.).
+     *
+     * Note: No password checking is done.  Password authentication will
+     * be done elsewhere, possibly using Active Directory.
+     *
+     *  @param userId       Unique ID of user for whom session will be created.
+     *  @param userName     Double check of usrId, must match db usr.name
+     *  @param conn         Open database connection.
+     *  @param comment      Optional reason for session.
+     *
+     *  @return             New string form session ID.
+     *
+     *  @throws cdr::Exception if name/password failure.
+     */
+    String createSessionRecord(
+            const int      userId,
+            const String&  userName,
+            db::Connection conn,
+            const String&  comment = false);
+
+    /**
+     * Duplicate a session record.
+     *
+     * Used when a user starts a batch job that requires a logged in session
+     * in order to run.  The user might queue the batch job and then logout,
+     * causing his existing session to be logged out and unusable when the
+     * batch job starts.
+     *
+     *  @param oldSession   Session string name for a logged in session.
+     *  @param conn         Open database connection.
+     *  @param comment      Optional comment - why duplicating a session.
+     *                      Default stores null in the session table.
+     *
+     *  @return             New session name
+     *
+     *  @throws cdr::Exception if oldSession does not exist or is inactive.
+     */
+    String duplicateSessionRecord(
+        const String&   oldSession,
+        db::Connection& conn,
+        const String&   comment = false);
+
+    /**
+     * Check the format of a password.  Does it match the rules we establish
+     * for a safe password.
+     *
+     *  @param password     String to check.
+     *
+     *  @throws cdr::Exception if password fails any test.
+     */
+    void testPasswordString(const cdr::String& password);
+
+    /**
+     * Determine if a passed password matches the password for the
+     * passed user name.
+     *
+     * This function will likely be modified or abandoned if/when we move to
+     * authentication via external NIH Active Directory resources.
+     *
+     *  @param userName     The unique short name of the user's usr record.
+     *  @param password     Matching password.
+     *  @param conn         Open database connection.
+     *
+     *  @return             ID of the user, -1 if not found.
+     */
+    int chkIdPassword(
+        String&         userName,
+        String&         password,
+        db::Connection& conn);
+
+    /**
+     * Get the current count of consecutive failed logins for a user.
+     *
+     *  @param conn         Open database connection.
+     *  @param userName     Unique short name of the user's usr record
+     *
+     *  @return             Integer count, -1 if user unknown
+     */
+    int getLoginFailedCount(
+        db::Connection&    conn,
+        const cdr::String& userName);
+
+    /**
+     * Clear or increment the current count of consecutive failed logins
+     * for a user.
+     *
+     *  @param conn         Open database connection.
+     *  @param userName     Unique short name of the user's usr record.
+     *  @param counter      0 = set the count to 0, i.e., clear it.
+     *                      1 = add one to the count, i.e., increment it.
+     *
+     *  @return             New value of login_failed count, or -1 if user
+     *                      is not found.
+     *
+     *  @throws cdr::Exception if anything other than 0 or 1 counter passed.
+     */
+    int setLoginFailedCount(
+        db::Connection&    conn,
+        const cdr::String& userName,
+        int                counter);
 }
 
 #endif
