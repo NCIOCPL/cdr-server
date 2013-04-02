@@ -284,7 +284,7 @@ cdr::link::CdrLink::CdrLink (
     srcField = fldNode.getNodeName ();
 
     // The ValidationControl object also uses the node to report errors
-    errCtl.setElementContext(fldNode);
+    errCtl.setElementContext(element);
 
     // Get link type for this link based on doctype and field
     // Also finds out what table to check against
