@@ -24,13 +24,13 @@
  * grp_usr table joined to that row, and replaces them with a fresh set from
  * the command.
  */
-cdr::String cdr::modUsr(cdr::Session& session, 
+cdr::String cdr::modUsr(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
-                        cdr::db::Connection& conn) 
+                        cdr::db::Connection& conn)
 {
     // Make sure our user is authorized to add users.
     if (!session.canDo(conn, L"MODIFY USER", L""))
-        throw 
+        throw
             cdr::Exception(L"MODIFY USER action not authorized for this user");
 
     // Extract the data elements from the command node.
@@ -64,8 +64,8 @@ cdr::String cdr::modUsr(cdr::Session& session,
     }
     if (uName.size() == 0)
         throw cdr::Exception(L"Missing user name");
-    if (password.isNull())
-        throw cdr::Exception(L"Missing password");
+    // if (password.isNull())
+    //     throw cdr::Exception(L"Missing password");
 
     // Look up the user.
     std::string query = "SELECT id FROM usr WHERE name = ?";
@@ -82,7 +82,6 @@ cdr::String cdr::modUsr(cdr::Session& session,
     conn.setAutoCommit(false);
     query = "UPDATE usr"
             "   SET name     = ?,"
-            "       password = ?,"
             "       fullname = ?,"
             "       office   = ?,"
             "       email    = ?,"
@@ -91,14 +90,19 @@ cdr::String cdr::modUsr(cdr::Session& session,
             " WHERE id       = ?";
     cdr::db::PreparedStatement update = conn.prepareStatement(query);
     update.setString(1, uName);
-    update.setString(2, password);
-    update.setString(3, fullName);
-    update.setString(4, office);
-    update.setString(5, email);
-    update.setString(6, phone);
-    update.setString(7, comment);
-    update.setInt   (8, usrId);
+    update.setString(2, fullName);
+    update.setString(3, office);
+    update.setString(4, email);
+    update.setString(5, phone);
+    update.setString(6, comment);
+    update.setInt   (7, usrId);
     update.executeQuery();
+
+    // If password is null, leave it alone, else replace it and clear failures
+    if (!password.isNull() && password != L"") {
+        session.setUserPw(conn, uName, password, false);
+        cdr::setLoginFailedCount(conn, uName, 0);
+    }
 
     // Clear out existing group assignments.
     query = "DELETE grp_usr WHERE usr = ?";
@@ -112,21 +116,26 @@ cdr::String cdr::modUsr(cdr::Session& session,
         while (i != grpList.end()) {
             const cdr::String gName = *i++;
 
-            // Do INSERT the hard way so we can determine success.
+            // Convert group name to unique ID
+            // Do this separately from the insert so we can make error check
             query = "SELECT id FROM grp WHERE name = ?";
             cdr::db::PreparedStatement grpQuery =
                 conn.prepareStatement(query);
             grpQuery.setString(1, gName);
-            cdr::db::ResultSet rs = 
+            cdr::db::ResultSet rs =
                 grpQuery.executeQuery();
             if (!rs.next())
                 throw cdr::Exception(L"Unknown group", gName);
             int grpId = rs.getInt(1);
+            grpQuery.close();
+
+            // Link group to user
             query = "INSERT INTO grp_usr(grp, usr) VALUES(?, ?)";
             cdr::db::PreparedStatement insert = conn.prepareStatement(query);
             insert.setInt(1, grpId);
             insert.setInt(2, usrId);
             insert.executeQuery();
+            insert.close();
         }
     }
 
