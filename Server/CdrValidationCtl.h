@@ -1,10 +1,9 @@
 /**
- * Definitions of validation control classes.
+ * Definitions of validation control class.
  *
  * Objects of these classes are primarily used in CdrValidateDoc.cpp.
  * However, access to some complex validation information is also required
- * in CdrDoc.cpp.  Therefore these classes are defined in a separate
- * header file that can be included by both.
+ * in CdrDoc.cpp.
  *
  * The code standing behind these classes is all defined in
  * CdrValidateDoc.cpp.
@@ -41,6 +40,12 @@ namespace cdr {
     /** @pkg cdr */
 
     /**
+     * A validation error has no context info, i.e., we don't know what
+     * element the error occurred in.
+     */
+    const cdr::String NO_ERROR_CONTEXT = L"";
+
+    /**
      * Values distinguishing different kinds of errors.
      */
     enum ErrType {
@@ -56,67 +61,6 @@ namespace cdr {
         ELVL_WARNING,
         ELVL_ERROR,
         ELVL_FATAL
-    };
-
-    /**
-     * The context of a particular validation error.
-     *
-     * For now, the context of validation is simply the element node
-     * for the element within which the error is recognized.  This may
-     * be the element we were examining when we decided there was an
-     * error, or it may be an ancestor of that element.
-     *
-     * Later on we might have more information here, which is why
-     * we're creating our own object wrapper around the node.
-     */
-    class ValidationElementContext {
-        public:
-            /**
-             * Default constructor.
-             */
-            ValidationElementContext ();
-
-            /**
-             * Constructor
-             *
-             *  @param cNode    The dom node for an element.
-             */
-            ValidationElementContext (cdr::dom::Node& cNode);
-
-            /**
-             * Accessor.
-             *
-             * @return          The dom node as what it really is.
-             */
-            cdr::dom::Node& getNode() {
-                return contextNode;
-            }
-
-            /**
-             * Accessor.
-             *
-             * @return          True = contextNode has been set.
-             */
-            bool contextEstablished() {
-                return hasContext;
-            }
-
-            /**
-             * Get the CDR error id attribute value associated with this
-             * element.
-             *
-             *  @return         The value of this node's cdr-eid attribute.
-             *  @throws         cdr::Exception if no cdr-eid attr.  The
-             *                  caller should know if these exist.
-             */
-            cdr::String getErrorIdValue();
-
-        private:
-            // Always an element node
-            cdr::dom::Element contextNode;
-
-            // Except when there isn't one
-            bool hasContext;
     };
 
     /**
@@ -136,8 +80,7 @@ namespace cdr {
              *  @param msg      Error message for users.
              *  @param errorId  Value of cdr-eid to force to be used.
              */
-            ValidationError (ValidationElementContext& ctxt,
-                             cdr::String& msg, cdr::String& errorId);
+            ValidationError (cdr::String& msg, cdr::String& errorId);
 
             /**
              * Access the msssage.
@@ -186,14 +129,9 @@ namespace cdr {
              *
              * @return          True = contextNode has been set.
              */
-            bool hasContext() {
-                return errCtxt.contextEstablished();
-            }
+            bool hasContext();
 
         private:
-            // The context node for the error
-            ValidationElementContext errCtxt;
-
             // cdr-eid error attribute for element with this error
             // NOTE: This attribute should have been named "cdr:eid",
             //    however a bug in XMetal's XPath implementation made
@@ -202,7 +140,7 @@ namespace cdr {
             //    the XMetal vendor, but we have decided to implement
             //    a workaround by using the non-namespaced attribute
             //    name "cdr-eid".
-            cdr::String errId;
+            cdr::String errIdStr;
 
             // Categories of errors
             ErrType errType;
@@ -231,22 +169,32 @@ namespace cdr {
             /**
              * Set the current element context.
              *
+             * The element context is the value of the cdr-eid attribute
+             * found in the element that had the error.  As we traverse the
+             * dom tree we remember the current node by saving this value
+             * in the ValidationControl object.  The next error to be
+             * added, which may come from a routine that doesn't have
+             * access to the dom node, picks up this value as the current
+             * context.
+             *
              * A validation program uses this to record where it is in
-             * the document when testing validation rules.
+             * the document when testing validation rules.  Our XMetal
+             * client can use these to position a cursor on the element
+             * with the error.
              *
              * Sometimes errors pertain to a document as a whole.  In
-             * that case, the element context should be set to 0.
+             * that case NO_ERROR_CONTEXT is stored in the context.
              *
-             *  @param ctxtNode     Context DOM node.  0=No element context.
+             *  @param ctxtNode     Context DOM node.  ""=No element context.
              */
-            void setElementContext (cdr::dom::Node& ctxtNode);
+            void setElementContext (const cdr::dom::Element& ctxtNode);
 
             /**
              * Declare an error.
              *
              * The message and current context will be remembered.
              *
-             * The errId parameter shows the value of the cdr-eid to use
+             * The errorId parameter shows the value of the cdr-eid to use
              * in reporting this error.  Normally, the program declaring
              * an error doesn't know this value, we use the currentCtxt
              * to find the attribute.
@@ -258,9 +206,11 @@ namespace cdr {
              * reported cdr:eref to have the value it wants.
              *
              *  @param msg          Error message.
-             *  @param errorId      Value of cdr-eid to force to be used.
+             *  @param errorId      Value of cdr-eid to force to use if
+             *                      there is no current context.
              */
-            void addError (cdr::String msg, cdr::String errorId=L"");
+            void addError (cdr::String msg,
+                           cdr::String errorId=NO_ERROR_CONTEXT);
 
             /**
              * Modify the type of the last error.
@@ -376,10 +326,7 @@ namespace cdr {
             // Current element context for the next error we find
             // We might need a stack of these, but we'll try to get
             //   away without that for now
-            ValidationElementContext currentCtxt;
-
-            // True = the currentCtxt has been set
-            bool currentContextSet;
+            cdr::String currentCtxt;
 
             // True = we're using error IDs.  Other software must have
             //   generated the ids into the XML.

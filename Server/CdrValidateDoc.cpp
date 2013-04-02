@@ -43,54 +43,26 @@ static void setValStatus(
         int                    docId,
         const wchar_t*         status);
 
-// Default constructor for element context of a validation error, no node yet
-cdr::ValidationElementContext::ValidationElementContext()
-{
-    // No context element has yet been identified
-    hasContext  = false;
-}
-// Constructor for element context of a validation error with a node
-cdr::ValidationElementContext::ValidationElementContext(
-    cdr::dom::Node& cNode
-) {
-    contextNode = cNode;
-    hasContext  = true;
-}
-
-// Access the cdr-eid associated with the context node.
-cdr::String cdr::ValidationElementContext::getErrorIdValue()
-{
-    if (!hasContext)
-        throw new cdr::Exception(L"getErrorIdValue: "
-                L"Attempt to get cdr-eid attribute for missing context node");
-
-    cdr::String attrValue = contextNode.getAttribute(L"cdr-eid");
-    if (attrValue.empty()) {
-        cdr::String elemName = contextNode.getNodeName();
-
-        throw cdr::Exception(L"getErrorIdValue: "
-                L"No cdr-eid associated with context element '" +
-                elemName + L"'");
-    }
-
-    return attrValue;
-}
-
-// Constructor for internal representation of one validation error
+// Constructor using the error attribute value
 cdr::ValidationError::ValidationError(
-    ValidationElementContext& ctxt,
-    cdr::String&              msg,
-    cdr::String&              errorId
+    cdr::String& msg,
+    cdr::String& errorId
 ) {
     // Store passed parms
-    errCtxt = ctxt;
-    errMsg  = msg;
-    errId   = errorId;
+    errMsg   = msg;
+    errIdStr = errorId;
 
     // Set default values for type and error level
     // Use setLastErrorType() or setLastErrorLevel() if change is required
     errType  = ETYPE_VALIDATION;
     errLevel = ELVL_ERROR;
+}
+
+// Does an error have context associated with it?
+bool cdr::ValidationError::hasContext() {
+    if (errIdStr == cdr::NO_ERROR_CONTEXT)
+        return false;
+    return true;
 }
 
 // Extract an error in XML string format
@@ -101,11 +73,7 @@ cdr::String cdr::ValidationError::toXmlString(
     cdr::String errStr = L"<Err";
     if (includeLocator && hasContext()) {
         // If there was an errorId specifically set, use it
-        cdr::String eref = errId;
-
-        // If not specifically set, and a context node exists, use that
-        if (eref.size() == 0 && hasContext())
-            eref = errCtxt.getErrorIdValue();
+        cdr::String eref = errIdStr;
 
         if (eref.size() > 0)
             errStr += L" eref='" + eref + L"'";
@@ -155,17 +123,17 @@ cdr::ValidationControl::ValidationControl()
 {
     // Assume no error locators unless they are requested later
     usingErrorIds = false;
-
-    // Uses default contstructor for currentCtxt - no context yet
-    currentContextSet = false;
 }
 
 // Remember what element we're validating
 void cdr::ValidationControl::setElementContext(
-    cdr::dom::Node& ctxtNode
+    const cdr::dom::Element& ctxtNode
 ) {
-    currentCtxt       = cdr::ValidationElementContext(ctxtNode);
-    currentContextSet = true;
+    cdr::String attrValue = ctxtNode.getAttribute(L"cdr-eid");
+    if (attrValue.empty())
+        currentCtxt = cdr::NO_ERROR_CONTEXT;
+    else
+        currentCtxt = attrValue;
 }
 
 // Add one error
@@ -174,7 +142,7 @@ void cdr::ValidationControl::addError(
     cdr::String errorId
 ) {
     // Create the error using the current context node for context
-    ValidationError ve(currentCtxt, msg, errorId);
+    ValidationError ve(msg, errorId);
 
     // Add it to the sequence of errors
     errVector.push_back(ve);
