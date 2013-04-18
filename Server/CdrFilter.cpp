@@ -37,6 +37,12 @@ using std::string;
 using std::vector;
 using std::wostringstream;
 
+// DEBUG
+extern "C" long HeapBytesAllocated(void);
+extern "C" long HeapBlocksAllocated(void);
+extern "C" void MarkHeap(void);
+extern "C" void DumpMarkedHeap(void);
+
 const int MAX_FILTER_SET_DEPTH = 20;
 
 static int getDocIdFromTitle(const cdr::String& title,
@@ -814,6 +820,10 @@ for (int i=0; i<alen; i++) {
                      cdr::FilterParmVector* parms,
                      ThreadData* thread_data)
   {
+// XXX FOR DEBUG - DISABLE Sablotron TO SEE IF MEMORY LEAK PERSISTS
+// result = document;
+// return 0;
+// std::cout << "Heap size at start of processStrings: " << HeapBytesAllocated() << std::endl;
       int         rc = 0;
       const char* s  = script.c_str();
       const char* d  = document.c_str();
@@ -957,6 +967,7 @@ for (int i=0; i<alen; i++) {
               }
           }
 
+// std::cout << "  Heap size at end of processStrings: " << HeapBytesAllocated() << std::endl;
           return rc;
       }
       catch (...) {
@@ -2457,8 +2468,8 @@ static string execXsltDedupIDs(const string& parms) {
 
     // All the input IDs are parsed here
     int buflen = parms.size() + 1;
-    char *buf;         // Plain IDs copied here for tokenizing
-    char *normBuf;     // Normalized here
+    char *buf     = NULL;   // Plain IDs copied here for tokenizing
+    char *normBuf = NULL;   // Normalized here
 
     // Pointers to the two buffers
     char *bufp;
@@ -2524,6 +2535,13 @@ static string execXsltDedupIDs(const string& parms) {
         }
 
         result += "</result>\n";
+
+        // Cleanup
+        delete normBuf;
+        normBuf = NULL;
+        delete buf;
+        buf = NULL;
+
     } catch (...) {
         if (normBuf)
             delete normBuf;
