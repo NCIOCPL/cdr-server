@@ -27,7 +27,7 @@
 #define RE_PAT_URI          L"^http://work.this.out.later.com$"
 #define RE_PAT_MULTI_OR     L"abc|def|mno.*"
 
-main()
+int main()
 {
     struct Test {
         const wchar_t*  pattern;

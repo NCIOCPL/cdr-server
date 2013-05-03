@@ -166,7 +166,7 @@ std::string readFile(std::istream& is)
     char buf[4096];
     while (is) {
         is.read(buf, sizeof buf);
-        int n = is.gcount();
+        int n = (int)is.gcount();
         if (n > 0) {
             char* tmp = new char[nBytes + n];
             if (nBytes > 0)
