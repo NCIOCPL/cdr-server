@@ -2369,7 +2369,7 @@ static string execXsltSqlQuery(const string& parms,
 
     // Count question mark placeholders in the query
     pos = 0;
-    while ((pos = qry.find_first_of("?", pos)) != string.npos) {
+    while ((pos = qry.find_first_of("?", pos)) != string::npos) {
         ++qmarkCount;
         ++pos;
     }
