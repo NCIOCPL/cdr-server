@@ -127,11 +127,16 @@ GO
  *      expired  optional date/time this account was (or will be) deactivated
  *      comment  optional free-text description of additional characteristics
  *               for this user account
+ *
+ * Note:
+ *   There used to be a column for passwords that has been removed for
+ *   tightened security purposes.
+ *     Plain text string used to authenticate this user's identity
+ *     password VARCHAR(32) NOT NULL
  */
 CREATE TABLE usr
          (id INTEGER     IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
-    password VARCHAR(32) NOT NULL,
     hashedpw VARBINARY(2048) NULL,
 login_failed INTEGER     NOT NULL DEFAULT 0,
      created DATETIME    NOT NULL,
