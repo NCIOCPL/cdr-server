@@ -149,6 +149,15 @@ login_failed INTEGER     NOT NULL DEFAULT 0,
 GO
 
 /*
+ *
+ */
+CREATE VIEW open_usr AS
+     SELECT id, name, created, fullname, office, email, phone, expired,
+            comment
+       FROM usr
+GO
+
+/*
  * Sessions created on behalf of individual users.
  *
  *           id  automatically generated primary key for the table

@@ -460,3 +460,5 @@ GRANT SELECT ON ctrp_download TO CdrGuest
 GO
 GRANT SELECT ON client_log TO CdrGuest
 GO
+GRANT SELECT ON open_usr TO CdrGuest
+GO
