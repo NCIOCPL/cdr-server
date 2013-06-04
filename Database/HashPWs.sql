@@ -72,10 +72,8 @@ COMMIT TRANSACTION
 ------------------------------------------------------------------
 -- Remove the password column from the usr table
 -- 
--- This version finds the constraints manually.  The DB admin must
--- find the constraints and drop them before dropping the table.
+-- If there are constraints, the DB admin may have to find 
+-- the constraints and drop them before dropping the table.
 ------------------------------------------------------------------
 USE cdr
--- Find constraints on usr.password
--- Remove the plain text passwords
--- ALTER TABLE usr DROP password
+ALTER TABLE usr DROP password
