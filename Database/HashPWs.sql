@@ -75,5 +75,5 @@ COMMIT TRANSACTION
 -- If there are constraints, the DB admin may have to find 
 -- the constraints and drop them before dropping the table.
 ------------------------------------------------------------------
-USE cdr
-ALTER TABLE usr DROP password
+-- USE cdr
+-- ALTER TABLE usr DROP password
