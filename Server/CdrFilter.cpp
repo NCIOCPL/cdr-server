@@ -950,8 +950,8 @@ for (int i=0; i<alen; i++) {
               try {
                   cdr::db::Connection dbConn =
                       cdr::db::DriverManager::getConnection (cdr::db::url,
-                                                             cdr::db::uid,
-                                                             cdr::db::pwd);
+                                                     cdr::db::uid,
+                                                     cdr::db::getCdrDbPw());
                   std::string insQry =
                       "INSERT INTO filter_profile (id, millis, dt) "
                       "     VALUES (?, ?, GETDATE())";
@@ -2711,7 +2711,7 @@ void cdr::buildFilterString2IdMap() {
     cdr::db::Connection dbConn =
         cdr::db::DriverManager::getConnection (cdr::db::url,
                                                cdr::db::uid,
-                                               cdr::db::pwd);
+                                               cdr::db::getCdrDbPw());
 
     // Get all docs of type Filter
     cdr::db::Statement stmt = dbConn.createStatement();
@@ -2798,8 +2798,16 @@ static void makeNomapRegex (
         firstPat = false;
 
         // Each subpattern must match starting at the
-        //   beginning of a value string
+        //   beginning of a value string.
+        // 2013-05-28 (RMK): We're not using the groups, and Microsoft
+        //   has a limit (31) on the number of captured groups a regular
+        //   expression can have, so we use the (?:...) syntax to
+        //   create non-capturing groups.  Adding these two characters
+        //   to the buffer is still within the 8-character extra padding
+        //   we gave ourselves when the buffer was created.
         *nextp++ = (PATCHAR) '(';
+        *nextp++ = (PATCHAR) '?';
+        *nextp++ = (PATCHAR) ':';
         *nextp++ = (PATCHAR) '^';
 
         // Process each char until done or buffer full

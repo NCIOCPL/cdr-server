@@ -3,13 +3,14 @@
  *
  * Test driver for cdr::RegEx class.
  *
- * $Log: not supported by cvs2svn $
- * Revision 1.1  2000/05/03 15:09:48  bkline
- * Initial revision
- *
+ * Added an extra test 2013-05-29 to verify that if we use non-capturing
+ * groups we can have constructed expressions with very large numbers of
+ * OR-ed groups.
  */
 
 #include <iostream>
+#include <cstdlib>
+#include <cstring>
 #include "CdrRegEx.h"
 #include "CdrException.h"
 
@@ -27,14 +28,20 @@
 #define RE_PAT_URI          L"^http://work.this.out.later.com$"
 #define RE_PAT_MULTI_OR     L"abc|def|mno.*"
 
+#define NPHRASES 10000
+#define PHRASE_LEN 32
+
 int main()
 {
+    wchar_t phrase[PHRASE_LEN + 1], target[PHRASE_LEN + 1];
+    static wchar_t expression[NPHRASES * (PHRASE_LEN + 5)];
     struct Test {
         const wchar_t*  pattern;
         const wchar_t*  string;
         bool            expectedResult;
     };
     static Test tests[] = {
+        { expression,           target,                             true  },
         { RE_PAT_DOC_ID,        L"CDR0014355892",                   true  },
         { RE_PAT_DOC_ID,        L"CDR0014355892a",                  false },
         { RE_PAT_DOC_ID,        L"CDR001435892",                    false },
@@ -56,6 +63,29 @@ int main()
         { RE_PAT_MULTI_OR,      L"abc|def|mno.*",                   false },
         { L")",                 L"SHOULD TRIGGER EXCEPTION",        false },
     };
+    wchar_t* e = expression;
+    srand((unsigned int)time(NULL));
+    wchar_t* chars = L"0123456789"
+                     L"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                     L"abcdefghijklmnopqrstubwsyz ";
+    size_t nchars = wcslen(chars);
+    for (size_t n = 0; n < NPHRASES; ++n) {
+        if (n > 0)
+            *e++ = L'|';
+        *e++ = L'(';
+        *e++ = L'?';
+        *e++ = L':';
+        wchar_t* p = phrase;
+        for (size_t i = 0; i < PHRASE_LEN; ++i) {
+            wchar_t c = chars[rand() % nchars];
+            *e++ = *p++ = c;
+        }
+        *p++ = L'\0';
+        *e++ = L')';
+        if (n == 500)
+            wcscpy_s(target, PHRASE_LEN + 1, phrase);
+    }
+    *e++ = L'\0';
     int nTests = 0, nFailures = 0, nExceptions = 0, nSuccesses = 0;
 
     cdr::RegEx re;
@@ -64,9 +94,15 @@ int main()
         ++nTests;
         try {
 
-            std::wcout << L"--------PATTERN: "
-                       << tests[i].pattern
-                       << std::endl;
+            if (i > 0)
+                std::wcout << L"--------PATTERN: "
+                           << tests[i].pattern
+                           << std::endl;
+            else
+                std::cout << "--------PATTERN: [constructed "
+                          << wcslen(expression)
+                          << "-character expression]"
+                          << std::endl;
             std::wcout << L"         STRING: "
                        << tests[i].string
                        << std::endl;
@@ -78,7 +114,7 @@ int main()
             bool outcome = re.match(tests[i].string);
             std::wcout << L"  ACTUAL RESULT: "
                        << std::boolalpha
-                       << tests[i].expectedResult
+                       << outcome
                        << std::endl;
             if (outcome != tests[i].expectedResult) {
                 ++nFailures;

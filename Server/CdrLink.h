@@ -257,7 +257,7 @@ namespace cdr {
             cdr::String ref;            // Full reference as string
             cdr::String chkType;        // Check for P)ub V)er or C)WD target
             cdr::String trgFrag;        // #Fragment part of ref, if any
-            const cdr::dom::Node&
+            const cdr::dom::Node
                         fldNode;        // DOM node in parsed xml
             bool        hasData;        // True=denormalized data in node
             LinkStyle   style;          // cdr:ref, cdr:href, xlink:href

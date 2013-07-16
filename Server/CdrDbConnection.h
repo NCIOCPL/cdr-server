@@ -29,7 +29,7 @@ namespace cdr {
          */
         static const bool CBIIT_HOSTING = _access("d:\\cdr\\etc\\dbhost",
                                                   0) == 0;
-        
+
         /**
          * Default url for connection.
          */
@@ -42,10 +42,16 @@ namespace cdr {
                                                          : L"cdr";
 
         /**
-         * Default password for connection.
+         * Lookup the database password used for the current hosting
+         * environment (CBIIT, OCE), the current tier (DEV, QA, PROD),
+         * and the CdrServer application.
+         *
+         * We used to store passwords as constants here, similar to
+         * "url" above.
+         *
+         *  @return Password as a constant wide character C string.
          */
-        static const wchar_t * const pwd = CBIIT_HOSTING ? L"***REMOVED***"
-                                                         : L"***REMOVED***";
+        const cdr::String getCdrDbPw();
 
         // Forward references.
         class ResultSet;
@@ -53,7 +59,7 @@ namespace cdr {
 
         /**
          * Implements JDBC-like interface of same name for CDR database
-         * connections.  Also includes a non-standard method for asking 
+         * connections.  Also includes a non-standard method for asking
          * SQL Server for the current IDENTITY value.
          */
         class Connection {
@@ -135,7 +141,7 @@ namespace cdr {
             /**
              * Turning off auto-commit starts an open transaction,
              * which can be committed or rolled back.  A new connection
-             * is started with auto-commit turned on, effectively making 
+             * is started with auto-commit turned on, effectively making
              * each query into a self-contained transaction, committed
              * if successful.  When auto-commit is turned off, any
              * open transactions on the connection are committed.
@@ -266,7 +272,7 @@ namespace cdr {
              *  @param  pwd     password for the database account.
              *  @return         new <code>Connection</code> object.
              */
-            static Connection getConnection(const cdr::String& url, 
+            static Connection getConnection(const cdr::String& url,
                                             const cdr::String& uid,
                                             const cdr::String& pwd);
         };

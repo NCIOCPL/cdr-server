@@ -91,7 +91,8 @@ cdr::log::Log __declspec(thread) * cdr::log::pThreadLog;
  * while processing an exception, we can keep trying to log things
  * inappropriately.
  */
-static bool __declspec(thread) inLogging = false;
+static bool __declspec(thread) inLogging1 = false;
+static bool __declspec(thread) inLogging2 = false;
 
 /**
  * Directory for logging - for OSLogFile.
@@ -190,11 +191,19 @@ void cdr::log::Log::Write (
     const cdr::String MsgSrc,   // Name of module or whatever caller wants
     const cdr::String Msg       // Message
 ) {
+    if (inLogging1) {
+        cdr::String srcPlusMsg = MsgSrc + L"=" + Msg;
+        WriteFile(L"Recursion in 2 arg Write", srcPlusMsg);
+        return;
+    }
+    inLogging1 = true;
+
     // Create a database connection and write data
     try {
         cdr::db::Connection dbConn =
             cdr::db::DriverManager::getConnection (cdr::db::url,
-                                                   cdr::db::uid, cdr::db::pwd);
+                                                   cdr::db::uid,
+                                                   cdr::db::getCdrDbPw());
         this->Write (MsgSrc, Msg, dbConn);
     }
     catch (cdr::Exception& e) {
@@ -208,6 +217,7 @@ void cdr::log::Log::Write (
         WriteFile (L"CdrLog DB Write Failed", L"Unknown exception");
         WriteFile (MsgSrc, Msg);
     }
+    inLogging1 = false;
 }
 
 
@@ -224,9 +234,9 @@ void cdr::log::Log::Write (
 ) {
 
     // Avoid looping
-    if (inLogging)
+    if (inLogging2)
         return;
-    inLogging = true;
+    inLogging2 = true;
 
     // Copies to handle truncation if necessary
     // Efficient since copy is only deep when truncation occurs
@@ -257,8 +267,6 @@ void cdr::log::Log::Write (
     insert.setString (2, cpySrc);
     insert.setString (3, cpyMsg);
 
-#define WE_GET_IT_WORKING 1
-#ifdef WE_GET_IT_WORKING
     // Store it
     try {
         insert.executeQuery ();
@@ -268,11 +276,8 @@ void cdr::log::Log::Write (
         // Don't re-throw exception.  Would probably cause a loop.
         WriteFile (MsgSrc, Msg);
     }
-#else
-    WriteFile (MsgSrc, Msg);
-#endif
 
-    inLogging = false;
+    inLogging2 = false;
 }
 
 /**

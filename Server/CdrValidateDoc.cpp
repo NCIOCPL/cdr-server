@@ -141,7 +141,12 @@ void cdr::ValidationControl::addError(
     cdr::String msg,
     cdr::String errorId
 ) {
-    // Create the error using the current context node for context
+    // If no explicit errorId passed, take the ValidationCtl currentCtxt,
+    //  which may have something (or may also be set to NO_ERROR_CONTEXT)
+    if (errorId == cdr::NO_ERROR_CONTEXT)
+        errorId = currentCtxt;
+
+    // Create the error object
     ValidationError ve(msg, errorId);
 
     // Add it to the sequence of errors

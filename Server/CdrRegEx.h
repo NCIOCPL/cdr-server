@@ -2,17 +2,6 @@
  * $Id$
  *
  * CDR wrapper for regular expression processing.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.3  2002/03/07 18:15:54  bkline
- * Update for new version of regex package.
- *
- * Revision 1.2  2000/05/04 11:52:35  bkline
- * More ccdoc comments.
- *
- * Revision 1.1  2000/05/03 15:41:36  bkline
- * Initial revision
- *
  */
 
 #ifndef CDR_REGEX_
@@ -30,7 +19,7 @@
 // of the methods in std::runtime_error are defined inline.
 #pragma warning(disable : 4275)
 
-#include <boost/regex.hpp>
+#include <regex>
 #include "CdrString.h"
 
 /**@#-*/
@@ -42,20 +31,14 @@ namespace cdr {
     /** @pkg cdr */
 
     /**
-     * Wrapper class for John Maddock's regular expression package (in case we
+     * Wrapper class for Microsoft's regular expression package (in case we
      * need to replace that package at some future time without modifying code
      * throughout the rest of the system).  First version exposes only the
      * functionality needed by the Document Validation module.  Additional
      * features will be added as needed.  In particular, this first version
      * does not yet support retrieval of the matched substrings.
-     * <P>
-     * Note that Maddock's implementation uses Win32 calls on the Windows
-     * platform.  This is probably a good thing, providing those calls provide
-     * more efficient handling of Unicode character classification than is
-     * present in other packages I've seen (including Henry Spencer's), which
-     * is I suspect why he's using the platform-specific calls.
      */
-    class RegEx : private boost::wregex {
+    class RegEx : private std::wregex {
 
     public:
 
@@ -121,14 +104,6 @@ namespace cdr {
          *                          default is <code>false</code>.
          */
         RegEx(const std::string& pattern, bool ignoreCase = false);
-
-        /**
-         * Accessor method for object's regular expression string.
-         *
-         *  @return                 new <code>String</code> object containing
-         *                          UTF-16 encoded regular expression pattern.
-         */
-        String getPattern() const;
 
         /**
          * Reports whether the specified string matches the object's regular

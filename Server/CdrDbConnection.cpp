@@ -40,6 +40,19 @@
 #include "CdrException.h"
 #include "CdrLock.h"
 
+// Included for use by getpw
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <cctype>
+#include <string.h>
+#include <sys/stat.h>
+
+#define TIERFILE "d:/etc/cdrtier.rc"
+#define DBPWFILE "d:/etc/cdrdbpw"
+
+
+
 // XXX For debugging memory leaks.
 #ifdef HEAPDEBUG
 static int activeConnections;
@@ -58,9 +71,9 @@ HENV cdr::db::Connection::henv = SQL_NULL_HENV;
  *
  *  @exception cdr::Exception if ODBC error encountered.
  */
-cdr::db::Connection::Connection(const SQLCHAR* dsn, 
-                                const SQLCHAR* uid, 
-                                const SQLCHAR* pwd) 
+cdr::db::Connection::Connection(const SQLCHAR* dsn,
+                                const SQLCHAR* uid,
+                                const SQLCHAR* pwd)
     : autoCommit(false), hdbc(SQL_NULL_HDBC), refCount(1)
 {
     master = this;
@@ -75,7 +88,7 @@ cdr::db::Connection::Connection(const SQLCHAR* dsn,
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
             throw cdr::Exception(L"Failure allocating database environment",
                                  getErrorMessage(rc, henv, 0, 0));
-        rc = SQLSetEnvAttr(henv, SQL_ATTR_ODBC_VERSION, 
+        rc = SQLSetEnvAttr(henv, SQL_ATTR_ODBC_VERSION,
                            (void *)SQL_OV_ODBC3, 0);
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
             throw cdr::Exception(L"Failure setting database environment",
@@ -86,7 +99,7 @@ cdr::db::Connection::Connection(const SQLCHAR* dsn,
         throw cdr::Exception(L"Failure allocating database connection",
                              getErrorMessage(rc, henv, hdbc, 0));
     rc = SQLConnect(hdbc, const_cast<SQLCHAR*>(dsn), SQL_NTS,
-                          const_cast<SQLCHAR*>(uid), SQL_NTS, 
+                          const_cast<SQLCHAR*>(uid), SQL_NTS,
                           const_cast<SQLCHAR*>(pwd), SQL_NTS);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
         hdbc = SQL_NULL_HDBC;
@@ -192,7 +205,7 @@ cdr::String cdr::db::Connection::getErrorMessage(SQLRETURN sqlReturn,
     SDWORD          nativeError;
     SWORD           messageLength;
     SQLRETURN       rc;
-    
+
     switch (sqlReturn) {
         case SQL_SUCCESS:
             errString += L"NO ERROR";
@@ -245,9 +258,9 @@ void cdr::db::Connection::setAutoCommit(bool val)
     if (getAutoCommit() == val)
         return;
     SQLUINTEGER setting = val ? SQL_AUTOCOMMIT_ON : SQL_AUTOCOMMIT_OFF;
-    SQLRETURN rc = SQLSetConnectAttr(hdbc, 
-                                     SQL_ATTR_AUTOCOMMIT, 
-                                     reinterpret_cast<SQLPOINTER>(setting), 
+    SQLRETURN rc = SQLSetConnectAttr(hdbc,
+                                     SQL_ATTR_AUTOCOMMIT,
+                                     reinterpret_cast<SQLPOINTER>(setting),
                                      0);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
         throw cdr::Exception(L"Failure setting auto commit",
@@ -303,7 +316,7 @@ int cdr::db::Connection::getLastIdent()
  * Returns a string representing the CDR DBMS's idea of the
  * current time.
  */
-cdr::String cdr::db::Connection::getDateTimeString() 
+cdr::String cdr::db::Connection::getDateTimeString()
 {
     if (isClosed())
         throw cdr::Exception(
@@ -323,7 +336,7 @@ cdr::db::Statement cdr::db::Connection::createStatement()
     return cdr::db::Statement(*this);
 }
 
-cdr::db::PreparedStatement 
+cdr::db::PreparedStatement
 cdr::db::Connection::prepareStatement(const std::string& s)
 {
     if (isClosed())
@@ -343,8 +356,8 @@ cdr::db::Connection::prepareStatement(const std::string& s)
  *  @param  pwd     password for the database account.
  *  @return         new <code>Connection</code> object.
  */
-cdr::db::Connection 
-cdr::db::DriverManager::getConnection(const cdr::String& url_, 
+cdr::db::Connection
+cdr::db::DriverManager::getConnection(const cdr::String& url_,
                                       const cdr::String& uid_,
                                       const cdr::String& pwd_)
 {
@@ -353,10 +366,184 @@ cdr::db::DriverManager::getConnection(const cdr::String& url_,
                 L"DriverManager::getConnection(): Unsupported connection type",
                 url_);
 
+    // Remove "odbc:" prefix and convert all parms to std strings
     std::string dsn = url_.toUtf8().substr(5);
     std::string uid = uid_.toUtf8();
     std::string pwd = pwd_.toUtf8();
+
+    if (pwd.length() == 0)
+        throw cdr::Exception(L"getConnection has empty pwd");
+    if (uid.length() == 0)
+        throw cdr::Exception(L"getConnection has empty uid");
+
+/**
+ * For DEBUG only.
+ *
+ * For debugging connection failures, we can record all connection attempts
+ * to a log file.  The file will contain a unique sequential ID for the
+ * connection attempt, a datetime stamp, and the dsn, uid, and pw.
+ *
+ * static long        s_DebugSequentialId  = 0L;
+ * static std::string s_DebugConnectionLog = "d:/cdr/Log/ServerConn.log";
+ *
+ * char buf[1000];
+ * sprintf (buf, "id=%ld  dsn=[%s]  uid=[%s]  pwd=[%s]", ++s_DebugSequentialId,
+ *                dsn.c_str(), uid.c_str(), pwd.c_str());
+ * cdr::log::WriteFile(L"conn", buf, s_DebugConnectionLog);
+ */
+
     return Connection(reinterpret_cast<const SQLCHAR*>(dsn.c_str()),
                       reinterpret_cast<const SQLCHAR*>(uid.c_str()),
                       reinterpret_cast<const SQLCHAR*>(pwd.c_str()));
+}
+
+
+/**
+ * Examine a line from the password file to see if it starts with
+ * the specified key (ignoring case differences).  Also ignore
+ * leading and trailing whitespace.
+ *
+ *  @param line         Search this line for a pw for our situation.
+ *  @param key          Prefix prepended to pw in the password file.
+ *                      Example: "CBIIT:PROD:CDR:CDRSQLACCOUNT:"
+ *
+ *  @return             Password string or "" if not found.
+ */
+static std::string findpw(const std::string& line, const std::string& key) {
+
+    // Get pointers to the beginning and one past the end of the line buffer.
+    const char* p = line.c_str();
+    const char* q = p + line.size();
+
+    // Walk past leading whitespace.
+    while (p < q) {
+        if (!isspace(*p))
+            break;
+        ++p;
+    }
+
+    // Back up end pointer to beginning of any trailing whitespace.
+    while (p < q) {
+        if (!isspace(*(q - 1)))
+            break;
+        --q;
+    }
+
+    // See if the rest of the buffer starts with the key.
+    const char* k = key.c_str();
+    while (*k && p < q) {
+        if (std::toupper(*k) != std::toupper(*p))
+            return "";
+        ++k;
+        ++p;
+    }
+
+    // Return the rest of the string (sans trailing whitespzce).
+    std::string pw(p, q - p);
+    return pw;
+}
+
+/**
+ * Determine the tier (DEV, QA, PROD, etc.) of the current server by
+ * reading a configuration file.
+ *
+ * NOTE:
+ *   Leading or trailing spaces will cause the function to fail.
+ *   This will show up in an exception msg like:
+ *      "getCdrDbPw cannot find password for CBIIT:DEV :CDR:CDRSQLACCOUNT"
+ *
+ *  @return name of the tier.
+ *
+ *  @throw cdr::Exception if TIERFILE is not opened.
+ */
+static std::string getTier() {
+    std::ifstream s(TIERFILE);
+    if (s.good()) {
+        std::string line;
+        std::getline(s, line);
+        return line;
+    }
+
+    // Couldn't open file
+    std::string emsg = "getTier cannot open tierfile: \"";
+    emsg += strerror(errno);
+    throw cdr::Exception(cdr::String(emsg));
+}
+
+/**
+ * Look in the CDR password file for the SQL Server password used
+ * to log into the CDR database on this tier.  If the password
+ * file isn't there, assume we're on a server hosted by OCE, and
+ * return the password used on all tiers for that environment.
+ * Remember the password we found in the file, so we can skip
+ * the step of looking in the file if we're satisfied that the
+ * file hasn't changed since the last time we looked.  If we
+ * don't find the password, return the string used for the CBIIT
+ * DEV server.
+ *
+ * Note: This only handles the ":CDR:CDRSQLACCOUNT:" login account.
+ */
+const cdr::String cdr::db::getCdrDbPw() {
+
+    // Remember the file's modification time.
+    static struct _stat last_check;
+
+    // DEBUG
+    // Uncomment the following line to build a server that
+    //  always fails to connect.
+    // return cdr::String("fubarTesting");
+
+    // Cache the password so we can optimize future calls.
+    static std::string pw;
+
+    // Find the time the password file was last modified.
+    struct _stat this_check;
+    int result = _stat(DBPWFILE, &this_check);
+
+    // If the file isn't there at all, or we can't read it, do not proceed
+    if (result) {
+        // Zero out the static struct in case of truly bizarre _stat behavior,
+        //  i.e., _stat() modified the struct but returned failure.
+        memset(&last_check, 0, sizeof(last_check));
+
+        // Record the error
+        std::string emsg = "getCdrDbPw() cannot stat resource: ";
+        emsg += strerror(errno);
+        throw cdr::Exception(cdr::String(emsg));
+    }
+
+    // If the password file hasn't changed, use the cached value.
+    // The first time through here the compiler will have initialized the
+    //  static struct last_check to all zeros.  The equality comparison
+    //  will produce false because this_check.st_mtime cannot be zero.
+    if (this_check.st_mtime == last_check.st_mtime) {
+        if (pw.empty()) {
+            // Guard against case where the line for the password is missing
+            //  in the password resource file.
+            throw cdr::Exception(L"Password not found in password file");
+        }
+        return pw;
+    }
+
+    last_check = this_check;
+
+    // Should appear once at startup and again each time PW file is edited
+    cdr::log::WriteFile(L"getCdrDbPw", L"Reading password resource file");
+
+    // Construct the key for the password we're looking for.
+    std::string key = "CBIIT:" + getTier() + ":CDR:CDRSQLACCOUNT:";
+
+    // Walk through the lines in the file looking for the key.
+    std::string line;
+    std::ifstream s(DBPWFILE);
+    while (s.good()) {
+        std::getline(s, line);
+        pw = findpw(line, key);
+        if (!pw.empty())
+            return cdr::String(pw);
+    }
+    // If the pw is not found, nothing useful can be done.
+    wchar_t tmpbuf[1000];
+    swprintf(tmpbuf, L"getCdrDbPw cannot find password for [%s]", key);
+    throw cdr::Exception(cdr::String(tmpbuf));
 }

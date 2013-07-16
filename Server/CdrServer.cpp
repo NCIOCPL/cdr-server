@@ -207,7 +207,18 @@ int main(int ac, char **av)
     //   CdrFilter.h / .cpp.
     // It's easier and more efficient to initialize this
     //   before multi-threading begins.
-    cdr::buildFilterString2IdMap();
+    try {
+        cdr::buildFilterString2IdMap();
+    }
+    catch (const cdr::Exception& e) {
+        logTopLevelFailure(L"Exception from buildFilterString2IdMap: "
+                           + e.what(), 0L);
+        return EXIT_FAILURE;
+    }
+    catch (...) {
+        logTopLevelFailure(L"Unknown exception in buildFilterString2IdMap", 0L);
+        return EXIT_FAILURE;
+    }
 
     while (!timeToShutdown) {
         try {
@@ -293,7 +304,13 @@ int handleNextClient(int sock)
  */
 void cleanup()
 {
-    cdrLog.Write("CdrServer", "Stopping");
+    // If cleaning up after a crash, the Write() routine may do some
+    //  unsafe things.  Using WriteFile() instead.
+    // A possible alternative is to have a static variable "normalExit" = false
+    //  then set it to true in all normal exit routines.  If (normalExit)
+    //  call Write(), else WriteFile()
+    // cdrLog.Write("CdrServer", "Stopping");
+    cdr::log::WriteFile("CdrServer", "Stopping");
     WSACleanup();
 }
 
@@ -314,7 +331,7 @@ void realDispatcher(const ThreadArgs* threadArgs) {
     cdr::db::Connection conn =
         cdr::db::DriverManager::getConnection(cdr::db::url,
                                               cdr::db::uid,
-                                              cdr::db::pwd);
+                                              cdr::db::getCdrDbPw());
     cdr::String now = conn.getDateTimeString();
     now[10] = L'T';
 #ifndef _NDEBUG
@@ -550,7 +567,7 @@ const std::string stripBlob(const std::string& buf, cdr::Session& session) {
     sprintf(blobTag, "<CdrDocBlob size='%u'/>", blobLen);
     return buf.substr(0, openTagPos) + blobTag + buf.substr(tailStart);
 }
- 
+
 /**
  * Parses command set buffer, extracts each command and has it
  * processed.  Wraps all the responses in a buffer, which is returned
@@ -876,8 +893,8 @@ void __cdecl sessionSweep(void* arg) {
             if (counter++ % 60 == 0) {
                 cdr::db::Connection conn =
                     cdr::db::DriverManager::getConnection(cdr::db::url,
-                                                          cdr::db::uid,
-                                                          cdr::db::pwd);
+                                                      cdr::db::uid,
+                                                      cdr::db::getCdrDbPw());
                 cdr::db::Statement s = conn.createStatement();
                 int rows = s.executeUpdate(query);
 #ifdef LOGSWEEP

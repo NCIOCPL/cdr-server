@@ -4,15 +4,6 @@
 #
 # Rules for building CDR server.
 #
-# The 'VCVER' macro is created so that we can point the linker to the
-# correct location for the regular expression libraries.  The values
-# track the versions of the Microsoft runtime libraries (e.g., 7 or
-# 71 or 8), not the version numbers for the C++ compiler (which jump
-# around with a less predictable pattern).
-#
-# $Log: not supported by cvs2svn $
-# Initial revision: 2000/04/11 14:15:32  bkline
-# See svn log for history.
 #--------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------
@@ -22,31 +13,32 @@
 DRV    =d:
 CDR    =$(DRV)/cdr
 XERCES =$(DRV)/usr/xerces
-XERINC =$(XERCES)/src
+XERINC =$(XERCES)/include
 !IF "$(DBG)" == ""
-XERLIB =$(XERCES)/lib/xerces-c_2
+XERLIB =$(XERCES)/lib/xerces-c_3
 !ELSE
-XERLIB =$(XERCES)/lib/xerces-c_2D
+XERLIB =$(XERCES)/lib/xerces-c_3D
 !ENDIF
 SABLOT =$(DRV)/usr/sablot
-REGEX  =$(DRV)/usr/regex
-VCVER  =71
-REVER  =vc$(VCVER)
 CDRINC =.
-INC    =-I$(XERINC) -I$(SABLOT)/include -I$(CDRINC) -I$(REGEX)
+INC    =-I$(XERINC) -I$(SABLOT)/include -I$(CDRINC)
 CC     =cl
 BISON  =bison
 LN     =link
 CP     =cp -f
-CVSUPD =svn update
+SVNUPD =svn update
 CDRBIN =$(CDR)/bin
+CDRLDIR=$(CDR)/lib
+CDRSVR =$(CDRBIN)/CdrServer.exe
 SERVICE=$(CDRBIN)/CdrService.exe
-CFLAGS =$(INC) -W3 -GX -EHa -MD -GR -nologo
-LFLAGS =/LIBPATH:$(XML4C)/lib /LIBPATH:$(SABLOT)/lib \
-        /LIBPATH:$(CDR)/lib /LIBPATH:$(REGEX)/libs/regex/build/$(REVER)
+SECURE =-D_CRT_SECURE_NO_WARNINGS
+NONSTD =-D_CRT_NONSTDC_NO_DEPRECATE -D_CRT_NON_CONFORMING_SWPRINTFS
+COMPAT =$(SECURE) $(NONSTD)
+CFLAGS =$(INC) -W3 -EHca -MD -GR -nologo $(COMPAT)
+LFLAGS =/LIBPATH:$(SABLOT)/lib /LIBPATH:$(CDR)/lib
 CDRLIB =cdr.lib
-LIBS   =$(CDRLIB) $(XERLIB).lib sablot.lib wsock32.lib odbc32.lib user32.lib \
-        AdvAPI32.lib
+THRDPTY=$(XERLIB).lib sablot.lib
+LIBS   =$(CDRLIB) $(THRDPTY) wsock32.lib odbc32.lib user32.lib AdvAPI32.lib 
 SVCFLGS=-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT \
         -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MT
 !IF "$(DBG)" == ""
@@ -103,12 +95,11 @@ LIBOBJS=CdrString.obj \
         CdrSession.obj \
         CdrParserInput.obj \
         CdrRegEx.obj \
-        CdrValidateDoc.obj \
         CdrVersion.obj \
         CdrTiming.obj \
         catchexp.obj \
-        analyzeException.obj \
-        CdrCommand.obj \
+        analyzeException.obj
+OBJS   =CdrCommand.obj \
         CdrLogon.obj \
         CdrLogoff.obj \
         CdrCheckAuth.obj \
@@ -124,6 +115,7 @@ LIBOBJS=CdrString.obj \
         CdrListUsrs.obj \
         CdrActions.obj \
         CdrDoc.obj \
+        CdrValidateDoc.obj \
         CdrLink.obj \
         CdrLinkProcs.obj \
         CdrSearch.obj \
@@ -148,23 +140,24 @@ LIBOBJS=CdrString.obj \
 #--------------------------------------------------------------------------
 # Targets
 #--------------------------------------------------------------------------
-all: cvsupdate
-	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) SABLOT=$(SABLOT) DBG=$(DBG) _all
+all: svnupdate
+	$(MAKE) DRV=$(DRV) SABLOT=$(SABLOT) DBG=$(DBG) _all
 
-cvsupdate:
-	$(CVSUPD)
+svnupdate:
+	$(SVNUPD)
 
-service: cvsupdate
-	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) SABLOT=$(SABLOT) DBG=$(DBG) CdrService.exe
+service: svnupdate
+	$(MAKE) DRV=$(DRV) SABLOT=$(SABLOT) DBG=$(DBG) $(SERVICE)
 
-install: cvsupdate
-	$(MAKE) VCVER=$(VCVER) DRV=$(DRV) SABLOT=$(SABLOT) DBG=$(DBG) _install
+install: svnupdate
+	$(MAKE) DRV=$(DRV) SABLOT=$(SABLOT) DBG=$(DBG) _install
 
-_all: init CdrServer.exe CdrTestClient.exe ParseSchema.exe CdrService.exe
+_all: init CdrServer.exe CdrTestClient.exe
 
 _install: CdrServer.exe
 	-net stop Cdr
 	$(CP) CdrServer.exe $(CDRBIN)
+	$(CP) $(CDRLIB) $(CDRLDIR)
 	net start Cdr
 
 #--------------------------------------------------------------------------
@@ -179,15 +172,15 @@ init:
 # Rule for building CDR server.
 #--------------------------------------------------------------------------
 
-CdrServer.exe: CdrServer.obj $(CDRLIB)
-	$(LN) $(LFLAGS) /out:CdrServer.exe CdrServer.obj $(LIBS) >> errs
+CdrServer.exe: CdrServer.obj $(OBJS) $(CDRLIB)
+	$(LN) $(LFLAGS) /out:CdrServer.exe CdrServer.obj $(OBJS) $(LIBS) >> errs
 
 #--------------------------------------------------------------------------
 # Rule for building CDR service.
 #--------------------------------------------------------------------------
 
-CdrService.exe: CdrService.obj service.obj
-	$(CC) -MT CdrService.obj service.obj advapi32.lib
+$(SERVICE): CdrService.obj service.obj
+	$(CC) -MT -Fe$(SERVICE) CdrService.obj service.obj advapi32.lib
 
 CdrService.obj: CdrService.c service.h
 	$(CC) -c $(SVCFLGS) CdrService.c
@@ -196,27 +189,24 @@ service.obj: service.c service.h
 	$(CC) -c $(SVCFLGS) service.c
 
 #--------------------------------------------------------------------------
-# Rule for building schema parser.
-#
-# /OPT:NOREF bloats the code but prevents a warning on ADVAPI32.DLL
-#  being discarded by default /OPT:REF processing.
-# See Bugzilla BZIssue::4663 comment #4.
-#--------------------------------------------------------------------------
-ParseSchema.exe: ParseSchema.obj $(HDRS) $(CDRLIB)
-	$(CC) $(CFLAGS) ParseSchema.cpp /link $(LFLAGS) /ignore:4089 $(LIBS) >> errs
-
-#--------------------------------------------------------------------------
-# Rule for building test client.
+# Rules for building test clients.
 #--------------------------------------------------------------------------
 
 CdrTestClient.exe: CdrTestClient.cpp $(CDRLIB)
 	$(CC) $(CFLAGS) CdrTestClient.cpp /link /LIBPATH:$(CDR)/lib \
     cdr.lib wsock32.lib
+tCdrRegEx.exe: tCdrRegEx.cpp $(CDRLIB)
+	$(CC) $(CFLAGS) tCdrRegEx.cpp CdrRegEx.obj CdrString.obj CdrLog.obj \
+    CdrDbConnection.obj CdrDbResultSet.obj CdrDbStatement.obj \
+    CdrDbPreparedStatement.obj CdrDom.obj $(XERLIB).lib wsock32.lib \
+    odbc32.lib advapi32.lib
 
 #--------------------------------------------------------------------------
 # We're not doing dependency checking.
 # Any change to any header file recompiles all the source.
 #--------------------------------------------------------------------------
+$(OBJS): $(HDRS)
+
 $(LIBOBJS): $(HDRS)
 
 CdrServer.obj: CdrServer.cpp $(HDRS)
@@ -248,9 +238,8 @@ CdrSearch_tab.c: CdrSearch.y $(HDRS)
 .cpp.obj:
 	$(CC) -c $(CFLAGS) $*.cpp >> errs
 
-
 #--------------------------------------------------------------------------
 # Cleanup rules.
 #--------------------------------------------------------------------------
 clean:
-	rm -f *.obj *~ *.bak CdrSearch_tab.c CdrSearch.tab.c ccdoc.ctf cdr.lib
+	rm -f *.obj *~ *.bak CdrSearch_tab.c CdrSearch.tab.c cdr.lib
