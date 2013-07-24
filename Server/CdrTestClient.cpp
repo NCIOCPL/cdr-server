@@ -39,6 +39,7 @@ const short CDR_PORT = 2019;
 static std::string  readFile(std::istream&);
 static void         cleanup() { WSACleanup(); }
 static void         showUsage(int, char**);
+static const std::string currentDateTime();
 
 int main(int ac, char** av)
 {
@@ -56,7 +57,7 @@ int main(int ac, char** av)
     char* host = ac > 1 ? av[1] : "localhost";
     int   port = ac > 2 ? atoi(av[2]) : CDR_PORT;
     char* cmds = ac > 3 ? av[3] : NULL;
-    
+
     // In case of catastrophe, don't hang up on console
     // But do abort
     if (!getenv ("NOCATCHCRASH"))
@@ -76,7 +77,7 @@ int main(int ac, char** av)
         requests += "<CdrCommand><CdrGetDoc><DocId>CDR0000043753</DocId>";
         requests += "</CdrGetDoc></CdrCommand></CdrCommandSet>";
     }
-    
+
     // Initialize socket I/O.
     if (WSAStartup(0x0101, &wsadata) != 0) {
         std::cerr << "WSAStartup: " << WSAGetLastError() << '\n';
@@ -106,10 +107,12 @@ int main(int ac, char** av)
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
+        std::cerr << currentDateTime() << "\n";
         std::cerr << "socket error: " << GetLastError() << "\n";
         return EXIT_FAILURE;
     }
     if (connect(sock, (struct sockaddr*)&addr, sizeof addr) < 0) {
+        std::cerr << currentDateTime() << "\n";
         std::cerr << "connect error: " << GetLastError() << "\n";
         return EXIT_FAILURE;
     }
@@ -118,11 +121,13 @@ int main(int ac, char** av)
     unsigned long bytes = requests.size();
     unsigned long length = htonl(bytes);
     if (send(sock, (char*)&length, sizeof length, 0) < 0) {
-        std::cerr << "send error: " << GetLastError() << '\n';
+        std::cerr << currentDateTime() << "\n";
+        std::cerr << "send1 error: " << GetLastError() << '\n';
         return EXIT_FAILURE;
     }
     if (send(sock, requests.c_str(), bytes, 0) < 0) {
-        std::cerr << "send error: " << GetLastError() << '\n';
+        std::cerr << currentDateTime() << "\n";
+        std::cerr << "send2 error: " << GetLastError() << '\n';
         return EXIT_FAILURE;
     }
 
@@ -133,7 +138,8 @@ int main(int ac, char** av)
         int leftToRead = sizeof lengthBytes - totalRead;
         int bytesRead = recv(sock, lengthBytes + totalRead, leftToRead, 0);
         if (bytesRead < 0) {
-            std::cerr << "recv error: " << GetLastError() << '\n';
+            std::cerr << currentDateTime() << "\n";
+            std::cerr << "recv1 error: " << GetLastError() << '\n';
             return EXIT_FAILURE;
         }
         totalRead += bytesRead;
@@ -149,7 +155,8 @@ int main(int ac, char** av)
         int leftToRead = length - totalRead;
         int bytesRead = recv(sock, response + totalRead, leftToRead, 0);
         if (bytesRead < 0) {
-            std::cerr << "recv error: " << GetLastError() << '\n';
+            std::cerr << currentDateTime() << "\n";
+            std::cerr << "recv2 error: " << GetLastError() << '\n';
             return EXIT_FAILURE;
         }
         totalRead += bytesRead;
@@ -178,6 +185,23 @@ std::string readFile(std::istream& is)
         }
     }
     return std::string(bytes, nBytes);
+}
+
+/**
+ * Get a datetime stamp for errors.
+ *
+ * Returns a non-modifiable string
+ */
+static const std::string currentDateTime() {
+    time_t     now = time(0);
+    struct tm  tstruct;
+    char       buf[80];
+    tstruct = *localtime(&now);
+    // Visit http://www.cplusplus.com/reference/clibrary/ctime/strftime/
+    // for more information about date/time format
+    strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+
+    return std::string(buf);
 }
 
 static void showUsage(int ac, char** av) {
