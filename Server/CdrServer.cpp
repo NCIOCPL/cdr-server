@@ -343,7 +343,7 @@ void realDispatcher(const ThreadArgs* threadArgs) {
     //   log whatever it wants to.
     cdr::log::pThreadLog = new cdr::log::Log;
     cdr::String threadId = cdr::String::toString(GetCurrentThreadId());
-    cdr::log::pThreadLog->Write(L"Thread Starting", threadId);
+    // cdr::log::pThreadLog->Write(L"Thread Starting", threadId);
 
     // Set new structured exception handler that throws cdr::Exception
     _set_se_translator (excep_trans_func);
@@ -368,7 +368,7 @@ void realDispatcher(const ThreadArgs* threadArgs) {
     }
 
     // Thread is about to go, done with thread specific log
-    cdr::log::pThreadLog->Write(L"Thread Stopping", threadId);
+    // cdr::log::pThreadLog->Write(L"Thread Stopping", threadId);
     delete cdr::log::pThreadLog;
     closesocket(threadArgs->fd);
     delete threadArgs;
