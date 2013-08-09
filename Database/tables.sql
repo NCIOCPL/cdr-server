@@ -5,6 +5,7 @@
  *
  * BZIssue::4925
  * BZIssue::4924 - Modify Summary Date Last Modified Report
+ * BZIssue::5294 (OCECDR-3595) - new ctrp_id column for ctgov_import table
  */
 
 /*
