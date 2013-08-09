@@ -1847,6 +1847,10 @@ GO
  *                 basic query
  *        comment  user comments, if any
  *          phase  captures the phase of the trial for reporting
+ *        ctrp_id  optional ID in the form NCI-2099-99999 (where 9 represents
+ *                 any decimal digit; drawn from the first org_study_id or
+ *                 secondary_id found in the clinical trial document received
+ *                 from NLM; added for request BZIssue::5294 (OCECDR-3295)
  */
 CREATE TABLE ctgov_import
      (nlm_id VARCHAR(16)   NOT NULL PRIMARY KEY,
