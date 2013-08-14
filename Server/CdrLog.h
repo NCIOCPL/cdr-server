@@ -120,6 +120,97 @@ namespace cdr {
 
     };
 
+    class LogTime {
+
+        private:
+            /**
+             * Milliseconds since system boot.  Used for comparing times.
+             *
+             * NOTE: Clock resolution may differ on different hardware and
+             * different versions of Windows.  The same program produced
+             * different results when tested on one of our Windows Server
+             * 2008 machines and one of our Windows 7 machines.
+             *
+             * The Windows API function always produces a millisecond count
+             * but it's not always accurate to the millisecond.
+             */
+            DWORD tickCount;
+
+            // Structure containing year, month, day, etc.
+            SYSTEMTIME sysTime;
+
+        public:
+            /**
+             * Constructor.  Initializes the LogTime object with the current
+             * time at the instant of construction.
+             */
+            LogTime();
+
+            /**
+             * Get the count of millisecond clock ticks since the last
+             * boot.
+             *
+             *  @return     Milliseconds since last boot as an unsigned long.
+             */
+            unsigned long getTickCount() {
+                return (unsigned long) tickCount;
+            }
+
+            /**
+             * Format the local time stored in the object to a string.
+             *
+             * Example: "2013-08-13 17:07:44.123"
+             *
+             *  @return             String formatted as above.
+             */
+            cdr::String getLocalTimeStr();
+
+            /**
+             * Get the difference, in milliseconds, between two LogTime
+             * objects.
+             *
+             *  @param startTime    Reference to a LogTime object previously
+             *                      initialized.
+             *
+             *  @return             Difference, in seconds between this
+             *                      and the passed object.
+             */
+            unsigned long diffTime(const LogTime &startTime);
+
+            /**
+             * Difference in seconds, as a string, with decimal milliseconds.
+             *
+             * Example: "297.123"
+             *
+             *  @param startTime    Reference to a LogTime object previously
+             *                      initialized.
+             *
+             *  @return             Difference, in seconds between this
+             *                      and the passed object.
+             */
+            cdr::String diffSecondsStr(const LogTime &startTime);
+
+            /**
+             * Difference between two objects in a human readable string,
+             * formatted into days, hours, minutes, seconds.
+             *
+             * Example: "3d 17h 5m 1.513s"
+             *
+             *  @param startTime    Reference to a LogTime object previously
+             *                      initialized.
+             *
+             *  @return             Difference, as human readable string.
+             */
+            cdr::String diffTimeStr(const LogTime &startTime);
+
+            /**
+             * Add milliseconds to a tickCount.  Used only for testing.
+             *
+             *  @param addCount     Number of milliseconds to add.
+             */
+            void addTickCount(unsigned long addCount);
+    };
+
     /**
      * Change the default logging directory.
      * Must call this before any logging is done.
