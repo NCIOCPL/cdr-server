@@ -110,12 +110,99 @@ static std::string CdrLogDir = "d:/cdr/log";
  */
 static std::string OSLogFile = "/CdrLogErrs";
 
+// Time constants based on milliseconds
+static const unsigned long LogT_sec = 1000LU;
+static const unsigned long LogT_min = LogT_sec * 60LU;
+static const unsigned long LogT_hr  = LogT_min * 60LU;
+static const unsigned long LogT_day = LogT_hr  * 24LU;
+
 // Class static variables
 int    cdr::log::Log::s_LogId     = 0;
 HANDLE cdr::log::Log::s_hLogMutex = 0;
 
+// LogTime contructor
+cdr::log::LogTime::LogTime() {
+    // Win API function for milliseconds since sys startup
+    tickCount = GetTickCount();
+
+    // Win API function for date time
+    GetLocalTime(&sysTime);
+}
+
+// Get date time in ISO format
+cdr::String cdr::log::LogTime::getLocalTimeStr() {
+    char buf[80];
+    std::sprintf(buf, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
+                 sysTime.wYear, sysTime.wMonth, sysTime.wDay,
+                 sysTime.wHour, sysTime.wMinute, sysTime.wSecond,
+                 sysTime.wMilliseconds);
+    cdr::String timeStr(buf);
+
+    return timeStr;
+}
+
+// How many milliseconds between startTime and this.time
+unsigned long cdr::log::LogTime::diffTime(const cdr::log::LogTime &startTime) {
+
+    unsigned long difference =
+        (unsigned long) (tickCount - startTime.tickCount);
+    return difference;
+}
+
+// Difference between times, string format
+cdr::String cdr::log::LogTime::diffSecondsStr(const cdr::log::LogTime &startTime) {
+    unsigned long diffSecs = diffTime(startTime);
+    unsigned long secs     = diffSecs / 1000UL;
+    unsigned long mills    = diffSecs % 1000UL;
+
+    std::stringstream os;
+    os << secs << "." << mills;
+
+    return cdr::String(os.str());
+}
+
+
+// Difference in long string format
+cdr::String cdr::log::LogTime::diffTimeStr(const cdr::log::LogTime &startTime) {
+    unsigned long diff  = diffTime(startTime);
+    unsigned long days  = 0L;
+    unsigned long hours = 0L;
+    unsigned long mins  = 0L;
+    unsigned long secs  = 0L;
+
+    std::stringstream os;
+    if (diff > LogT_day) {
+        days  = diff / LogT_day;
+        diff -= days * LogT_day;
+        os << days << "d ";
+    }
+    if (diff > LogT_hr) {
+        hours = diff / LogT_hr;
+        diff -= hours * LogT_hr;
+        os << hours << "h ";
+    }
+    if (diff > LogT_min) {
+        mins  = diff / LogT_min;
+        diff -= mins * LogT_min;
+        os << mins << "m ";
+    }
+    if (diff > LogT_sec) {
+        secs  = diff / LogT_sec;
+        diff -= secs * LogT_sec;
+        os << secs;
+    }
+
+    os << "." << diff << "s";
+
+    return os.str();
+}
+
+// For test
+void cdr::log::LogTime::addTickCount(unsigned long addCount) {
+    tickCount += addCount;
+}
 /**
- * Constructor.
+ * Log constructor.
  *   Creates object suitable for use anywhere in the current thread.
  *   Creates a unique thread identifier to stamp all messages written
  *      from this thread.
@@ -203,7 +290,8 @@ void cdr::log::Log::Write (
         cdr::db::Connection dbConn =
             cdr::db::DriverManager::getConnection (cdr::db::url,
                                                    cdr::db::uid,
-                                                   cdr::db::getCdrDbPw());
+                                                   cdr::db::getCdrDbPw(),
+                                                   cdr::db::connLogWrite);
         this->Write (MsgSrc, Msg, dbConn);
     }
     catch (cdr::Exception& e) {
@@ -318,18 +406,9 @@ void cdr::log::WriteFile (
     DWORD stat    = WaitForSingleObject (hMutex, 5000);
 
 
-    // Set datetime
-    time_t ltime;
-    time (&ltime);
-    /*
-     * Can't use this, because of a bug in Microsoft's multi-threaded
-     * runtime library.
-     *
-     * wchar_t *wct = _wctime (&ltime);
-     */
-    const char* ascTime = asctime(localtime(&ltime));
-    cdr::String timeStr(ascTime);
-
+    // Get datetime
+    LogTime     logTime;
+    cdr::String timeStr = logTime.getLocalTimeStr();
 
     // If no filename given, construct a default
     if (fname.empty())
@@ -342,17 +421,19 @@ void cdr::log::WriteFile (
     if (os) {
 
         // Datetime, source, message
-        os << L"---" << timeStr.c_str()
-           << L">>>" << msgSrc.c_str()
-           << L":\n" << msg.c_str() << std::endl;
+        os << timeStr << L"  ";
+
+        if (msgSrc.length() > 0)
+           os << msgSrc.c_str() << ": ";
+        os << msg.c_str() << std::endl;
     }
     else {
         // Last resort is stderr
-        std::wcerr << L"---" << timeStr.c_str()
-                   << L">>>" << msgSrc.c_str()
-                   << L":\n" << msg.c_str() << std::endl;
+        std::wcerr << timeStr << L"  ";
+        if (msgSrc.length() > 0)
+            std::wcerr << msgSrc.c_str() << L": ";
+        std::wcerr << msg.c_str() << std::endl;
     }
-
 
     // Release mutex
     if (stat == WAIT_OBJECT_0 || stat == WAIT_ABANDONED)
