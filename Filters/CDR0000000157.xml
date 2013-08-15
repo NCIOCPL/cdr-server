@@ -22,6 +22,9 @@ BZIssue::5210 - [Mobile] Include Screening and Prevention summaries
                 on mobile
 BZIssue::5184 - New text for Changes to This Summary section
 BZIssue::5274 - Mobile images in Spanish Summaries
+BZIssue::OCECDR-3592 - About This PDQ Summary section for Patient Summaries 
+BZIssue::OCECDR-3638 - Change vendor filter to add "exclude from mobile" 
+                       attribute to sections of CAM patient summaries
 
 ================================================================ -->
 <xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -341,6 +344,13 @@ BZIssue::5274 - Mobile images in Spanish Summaries
     <xsl:when                    test = "SummaryMetaData/
                                          SummaryAudience = 'Patients'">
      <!--
+     "About this Summary" section is applied to all HP summaries
+     This section used to be for HP summaries only but is now being 
+     added to Patient summaries as well (with a different misc doc).
+     ================================================================= -->
+     <xsl:call-template          name = "AboutThisSummary"/>
+
+     <!--
      The ContactUs template (changed to 'Questions and Comments ...) 
      is only being applied to Supportive Care,
      Screening, and Prevention summaries (Patient and HP version).
@@ -356,8 +366,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
      This IF block add the section to the Patient summaries.
      ================================================================ -->
      <xsl:if                      test = "not($sumType =
-                                            concat('Complementary and ',
-                                                   'alternative medicine'))">
+                                            concat('Complementary and',
+                                                   ' alternative medicine'))">
       <xsl:if                     test = "$sumAudience = 'Patients'">
        <xsl:choose>
         <xsl:when                 test = "$language = 'English'">
@@ -388,8 +398,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
      <xsl:choose>
       <xsl:when                  test = "SummaryMetaData/
                                          SummaryType = 
-                                           concat('Complementary and ',
-                                                  'alternative medicine')">
+                                           concat('Complementary and',
+                                                  ' alternative medicine')">
        <!--
        We add the misc. documents to all CAM patient summaries except for 
        the two Overview summaries (English and Spanish)
@@ -414,11 +424,18 @@ BZIssue::5274 - Mobile images in Spanish Summaries
         <xsl:call-template       name = "QandACAM"/>
         <xsl:call-template       name = "ToLearnMore"/>
        </xsl:if>
+       <!--
+       AboutPDQ has been replaced with 'AboutThisSummary'
+       ==================================================
        <xsl:call-template      name = "AboutPdqEnglish"/>
+       -->
       </xsl:when>
       <xsl:otherwise>
        <xsl:call-template        name = "ToLearnMore"/>
 
+       <!--
+       AboutPDQ has been replaced with 'AboutThisSummary'
+       ==================================================
        <xsl:choose>
         <xsl:when                test = "SummaryMetaData/
                                          SummaryLanguage = 'English'">
@@ -428,6 +445,7 @@ BZIssue::5274 - Mobile images in Spanish Summaries
          <xsl:call-template      name = "AboutPdqSpanish"/>
         </xsl:otherwise>
        </xsl:choose>
+       -->
 
       </xsl:otherwise>
      </xsl:choose>
@@ -460,6 +478,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
 
      <!--
      "About this Summary" section is applied to all HP summaries
+     This section used to be for HP summaries only but is now being 
+     added to Patient summaries as well (with a different misc doc).
      ================================================================= -->
      <xsl:call-template          name = "AboutThisSummary"/>
 
@@ -468,8 +488,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
      but not for the CAM summaries
      ================================================================= -->
      <xsl:if                      test = "not($sumType =
-                                           concat('Complementary and ',
-                                                  'alternative medicine'))">
+                                           concat('Complementary and',
+                                                  ' alternative medicine'))">
       <xsl:call-template          name = "GetMoreInfo"/>
      </xsl:if>
 
@@ -552,6 +572,10 @@ BZIssue::5274 - Mobile images in Spanish Summaries
                                           $sumType = 'Screening'
                                           or
                                           $sumType = 'Prevention'
+                                          or
+                                          $sumType = concat('Complementary',
+                                                            ' and alternative',
+                                                            ' medicine')
                                          )">
       <xsl:attribute             name = "ExcludedDevices">
        <xsl:text>mobile</xsl:text>
@@ -590,9 +614,9 @@ BZIssue::5274 - Mobile images in Spanish Summaries
    ===================================================================== -->
    <xsl:if                        test = "$sumType = 'Treatment'
                                           or
-                                          $sumType = concat('Complementary ',
-                                                            'and alternative ',
-                                                            'medicine')
+                                          $sumType = concat('Complementary',
+                                                            ' and alternative',
+                                                            ' medicine')
                                           or
                                           ($sumType = 'Supportive care'
                                             and
@@ -624,8 +648,11 @@ BZIssue::5274 - Mobile images in Spanish Summaries
     </xsl:attribute>
    </xsl:if>
    <xsl:choose>
-    <xsl:when                    test = "SectMetaData/
+    <xsl:when                    test = "(SectMetaData/
                                          SectionType = 'Changes to summary'
+                                         or
+                                         SectMetaData/
+                                         SectionType = 'Current clinical trials')
                                          and 
                                          not(@IncludedDevices)
                                          and
@@ -638,6 +665,10 @@ BZIssue::5274 - Mobile images in Spanish Summaries
                                           $sumType = 'Screening'
                                           or
                                           $sumType = 'Prevention'
+                                          or
+                                          $sumType = concat('Complementary',
+                                                            ' and alternative',
+                                                            ' medicine')
                                          )">
       <xsl:attribute             name = "ExcludedDevices">
        <xsl:text>mobile</xsl:text>
@@ -1590,6 +1621,10 @@ BZIssue::5274 - Mobile images in Spanish Summaries
                                           $sumType = 'Screening'
                                           or
                                           $sumType = 'Prevention'
+                                          or
+                                          $sumType = concat('Complementary',
+                                                            ' and alternative',
+                                                            ' medicine')
                                          )
                                          and
                                          (
@@ -1597,7 +1632,13 @@ BZIssue::5274 - Mobile images in Spanish Summaries
                                           or
                                           $miscDocId = '_GetMore'
                                           or
-                                          $miscDocId = '_ContactUs')">
+                                          $miscDocId = '_ContactUs'
+                                          or
+                                          $miscDocId = '_AboutCAM'
+                                          or
+                                          $miscDocId = '_QandA'
+                                          or
+                                          $miscDocId = '_ToLearnMore')">
                                          <!--
                                          and
                                          not(contains($sumAgeGroup, 
@@ -1896,8 +1937,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
                                             $cgUrl, $cgBoardEN, 
                                             '/screening-prevention-board')"/>
            </xsl:when>
-           <xsl:when              test = "$sumType = concat('Complementary ',
-                                                'and alternative medicine')">
+           <xsl:when              test = "$sumType = concat('Complementary',
+                                                ' and alternative medicine')">
             <xsl:value-of       select = "concat(
                                             $cgUrl, $cgBoardEN, 
                                             '/cancer-cam-board')"/>
@@ -1947,8 +1988,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
                                           '/deteccion-prevencion-',
                                           'consejoeditorial')"/>
            </xsl:when>
-           <!-- xsl:when          test = "$sumType = concat('Complementary ',
-                                                  'and alternative medicine')">
+           <!-- xsl:when          test = "$sumType = concat('Complementary',
+                                                  ' and alternative medicine')">
             <xsl:value-of       select = "concat(
                                               $cgUrl, $cgBoardES,
                                               '/cancer-cam-board')"/>
@@ -2590,8 +2631,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
   <xsl:variable                  name = "miscDoc">
    <xsl:choose>
     <xsl:when                    test = "SummaryMetaData/SummaryType =
-                                           concat('Complementary and ',
-                                                  'alternative medicine')">
+                                           concat('Complementary and',
+                                                  ' alternative medicine')">
      <xsl:choose>
       <xsl:when                  test = "$language = 'English'">
        <xsl:copy-of            select = "document(concat('cdr:CDR0000256925',
@@ -2646,8 +2687,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
     <xsl:choose>
      <xsl:when                   test = "SummaryMetaData/
                                          SummaryType =
-                                           concat('Complementary and ',
-                                                  'alternative medicine')">
+                                           concat('Complementary and',
+                                                  ' alternative medicine')">
       <xsl:variable              name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000445623',
                                                          '/lastp'))"/>
@@ -2683,8 +2724,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
     <xsl:choose>
      <xsl:when                   test = "SummaryMetaData/
                                          SummaryType =
-                                           concat('Complementary and ',
-                                                  'alternative medicine')">
+                                           concat('Complementary and',
+                                                  ' alternative medicine')">
       <xsl:variable              name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000446984',
                                                          '/lastp'))"/>
@@ -2722,6 +2763,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
  =========================================================================
  Template to add the English "About PDQ" misc. document to the summaries.
  This gets only attached to the patient versions.
+ 
+ AboutPDQ has been replaced with 'AboutThisSummary' (Aug 2013)
  ========================================================================= -->
  <xsl:template                   name = "AboutPdqEnglish">
   <!-- 
@@ -2793,8 +2836,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
    </xsl:when>
    <xsl:when                     test = "SummaryMetaData/
                                          SummaryType =
-                                           concat('Complementary and ',
-                                                  'alternative medicine')">
+                                           concat('Complementary and',
+                                                  ' alternative medicine')">
     <xsl:variable                name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000000366',
                                                          '/lastp'))"/>
@@ -2813,6 +2856,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
  =========================================================================
  Template to add the Spanish "About PDQ" misc. document to the summaries.
  This gets only attached to the patient versions.
+ 
+ AboutPDQ has been replaced with 'AboutThisSummary' (Aug 2013)
  ========================================================================= -->
  <xsl:template                   name = "AboutPdqSpanish">
   <!-- 
@@ -2867,8 +2912,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
    </xsl:when>
    <xsl:when                     test = "SummaryMetaData/
                                          SummaryType =
-                                           concat('Complementary and ',
-                                                  'alternative medicine')">
+                                           concat('Complementary and',
+                                                  ' alternative medicine')">
     <xsl:variable                name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000446985',
                                                          '/lastp'))"/>
@@ -2894,8 +2939,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
   <xsl:choose>
    <xsl:when                     test = "SummaryMetaData/
                                          SummaryType =
-                                           concat('Complementary and ',
-                                                  'alternative medicine')">
+                                           concat('Complementary and',
+                                                  ' alternative medicine')">
     <xsl:variable                name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000445621',
                                                          '/lastp'))"/>
@@ -2914,14 +2959,39 @@ BZIssue::5274 - Mobile images in Spanish Summaries
  =========================================================================
  Template to add the "About This Summary" misc. document to 
  all HP summaries.
+ As of Aug. 2013 this section is now also being added to the patient 
+ summaries.
  ========================================================================= -->
  <xsl:template                   name = "AboutThisSummary">
   <xsl:choose>
    <xsl:when                      test = "SummaryMetaData/
                                           SummaryLanguage = 'English'">
-    <xsl:variable                 name = "miscDoc" 
-                                select = "document(concat('cdr:CDR0000684055',
+    <!--
+    Setting misc document value for EN/ES/HP/Pat
+    ============================================ -->
+    <xsl:variable                 name = "miscDoc"> 
+     <xsl:choose>
+      <xsl:when                   test = "SummaryMetaData/
+                                          SummaryAudience = 
+                                                      'Health professionals'">
+       <xsl:copy-of             select = "document(concat('cdr:CDR0000684055',
                                                          '/last'))"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <!--
+       *** The CDR-ID of this document on PROD will differ from DEV 
+           until the next refresh of the CDR database on DEV        ***
+       ================================================================ -->
+       <!--
+       <xsl:copy-of             select = "document(concat('cdr:CDR0000751603',
+                                                          '/last'))"/>
+       -->
+       <xsl:copy-of             select = "document(concat('cdr:CDR0000747682',
+                                                         '/last'))"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:variable>
+
     <SummarySection>
      <xsl:attribute               name = "id">
       <xsl:value-of             select = "'_AboutThis'"/>
@@ -2929,6 +2999,16 @@ BZIssue::5274 - Mobile images in Spanish Summaries
                                                  MiscellaneousDocumentText/
                                                  @cdr:id"/>
      </xsl:attribute>
+     <!-- 
+     HP summaries will not be published on mobile.  Adding attribute only
+     for patient summaries
+     ==================================================================== -->
+     <xsl:if                      test = "SummaryMetaData/
+                                          SummaryAudience = 'Patients'">
+      <xsl:attribute              name = "ExcludedDevices">
+       <xsl:text>mobile</xsl:text>
+      </xsl:attribute>
+     </xsl:if>
 
      <Title>About This PDQ Summary</Title>
      <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
@@ -2940,9 +3020,32 @@ BZIssue::5274 - Mobile images in Spanish Summaries
 
    </xsl:when>
    <xsl:otherwise>
-    <xsl:variable                 name = "miscDoc" 
-                                select = "document(concat('cdr:CDR0000684064',
+    <!--
+    Setting misc document value for EN/ES/HP/Pat
+    ============================================ -->
+    <xsl:variable                 name = "miscDoc"> 
+     <xsl:choose>
+      <xsl:when                   test = "SummaryMetaData/
+                                          SummaryAudience = 
+                                                      'Health professionals'">
+       <xsl:copy-of             select = "document(concat('cdr:CDR0000684064',
                                                          '/last'))"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <!--
+       *** The CDR-ID of this document on PROD will differ from DEV 
+           until the next refresh of the CDR database on DEV        ***
+       ================================================================ -->
+       <!--
+       <xsl:copy-of             select = "document(concat('cdr:CDR0000751604',
+                                                          '/last'))"/>
+       -->
+       <xsl:copy-of             select = "document(concat('cdr:CDR0000747683',
+                                                         '/last'))"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:variable>
+
     <SummarySection>
      <xsl:attribute               name = "id">
       <xsl:value-of             select = "'_AboutThis'"/>
@@ -2950,6 +3053,17 @@ BZIssue::5274 - Mobile images in Spanish Summaries
                                                  MiscellaneousDocumentText/
                                                  @cdr:id"/>
      </xsl:attribute>
+     <!-- 
+     HP summaries will not be published on mobile.  Adding attribute only
+     for patient summaries
+     ==================================================================== -->
+     <xsl:if                      test = "SummaryMetaData/
+                                          SummaryAudience = 'Patients'">
+      <xsl:attribute              name = "ExcludedDevices">
+       <xsl:text>mobile</xsl:text>
+      </xsl:attribute>
+     </xsl:if>
+
 
      <Title>Informaci&#xF3;n sobre este sumario del PDQ</Title>
      <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
@@ -3450,9 +3564,9 @@ BZIssue::5274 - Mobile images in Spanish Summaries
     <xsl:when                    test = "$sumType = 'Supportive care'">
      <xsl:text>tt=2</xsl:text>
     </xsl:when>
-    <xsl:when                    test = "$sumType = concat('Complementary ',
-                                                           'and alternative ',
-                                                           'medicine')">
+    <xsl:when                    test = "$sumType = concat('Complementary',
+                                                           ' and alternative',
+                                                           ' medicine')">
      <xsl:text>tt=0</xsl:text>
     </xsl:when>
     <xsl:otherwise>
@@ -3485,9 +3599,9 @@ BZIssue::5274 - Mobile images in Spanish Summaries
     <!--
     Include non-US trials for CAM searches
     ====================================== -->
-    <xsl:if                     test = "not($sumType = concat('Complementary ',
-                                                           'and alternative ',
-                                                           'medicine'))">
+    <xsl:if                     test = "not($sumType = concat('Complementary',
+                                                           ' and alternative',
+                                                           ' medicine'))">
      <xsl:text>&amp;</xsl:text>
      <xsl:value-of            select = "$country"/>
     </xsl:if>
