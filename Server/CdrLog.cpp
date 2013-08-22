@@ -68,6 +68,9 @@
 #include "CdrDbResultSet.h"
 #include "CdrLog.h"
 
+// Globals
+extern short Glbl_DEFAULT_CDR_PORT;
+extern short Glbl_CurrentServerPort;
 
 /**
  * Thread global pointer to thread specific instance of a log object.
@@ -413,6 +416,15 @@ void cdr::log::WriteFile (
     // If no filename given, construct a default
     if (fname.empty())
         fname = CdrLogDir + OSLogFile;
+
+    // If non-standard port, append port number to log file
+    // Avoids interspersing log messages from different processes in one file
+    // Distinguishes standard from experimental outputs
+    if (Glbl_CurrentServerPort != Glbl_DEFAULT_CDR_PORT) {
+        char buf[10];
+        sprintf(buf, "_%d", Glbl_CurrentServerPort);
+        fname += buf;
+    }
 
     // Try to log the message whether or not we got exclusive access
     // When writing to a file, we don't truncate the data - don't
