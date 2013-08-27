@@ -50,6 +50,7 @@ SVCFLGS=-DDEBUG $(SVCFLGS)
 !ENDIF
 HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrBlobExtern.h \
+        $(CDRINC)/CdrCtl.h \
         $(CDRINC)/CdrCommand.h \
         $(CDRINC)/CdrDbConnection.h \
         $(CDRINC)/CdrDbPreparedStatement.h \
@@ -100,6 +101,7 @@ LIBOBJS=CdrString.obj \
         catchexp.obj \
         analyzeException.obj
 OBJS   =CdrCommand.obj \
+        CdrCtl.obj \
         CdrLogon.obj \
         CdrLogoff.obj \
         CdrCheckAuth.obj \
