@@ -1328,6 +1328,22 @@ namespace cdr {
                                db::Connection&  conn);
 
     /**
+     * Create or inactivate values in the cdr ctl table, and/or install them
+     * in an in-memory map.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String setCtlValues(Session&         session,
+                               const dom::Node& node,
+                               db::Connection&  conn);
+
+    /**
      * Records an event which occurred in a CDR client process.
      *
      *  @param      session     contains information about the current user.
