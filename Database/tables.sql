@@ -1841,6 +1841,7 @@ GO
  *                 basic query
  *        comment  user comments, if any
  *          phase  captures the phase of the trial for reporting
+ *   dup_reported  when did we report the duplicate to CIAT (if ever)?
  *        ctrp_id  optional ID in the form NCI-2099-99999 (where 9 represents
  *                 any decimal digit; drawn from the first org_study_id or
  *                 secondary_id found in the clinical trial document received
@@ -1860,7 +1861,9 @@ CREATE TABLE ctgov_import
  reason_dropped VARCHAR(512)   NULL,
        force CHAR          NOT NULL DEFAULT 'N',
      comment NTEXT             NULL,
-       phase VARCHAR(20)       NULL)
+       phase VARCHAR(20)       NULL,
+dup_reported DATETIME          NULL,
+     ctrp_id VARCHAR(16)       NULL)
 GO
 CREATE INDEX ctgov_import_title ON ctgov_import(title)
 GO
