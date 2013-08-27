@@ -38,6 +38,7 @@
 #include "CdrDbConnection.h"
 #include "CdrDbResultSet.h"
 #include "CdrException.h"
+#include "CdrCtl.h"
 #include "CdrLock.h"
 
 // Included for use by getpw
@@ -51,13 +52,45 @@
 #define TIERFILE "d:/etc/cdrtier.rc"
 #define DBPWFILE "d:/etc/cdrdbpw"
 
+/**
+ * The following are defined for debugging purposes.
+ *
+ * Originally these were defined via conditional compilation, but they
+ * are now part of the regular CdrServer.  However they are only used
+ * when ctl table entries direct their use.
+ *
+ * There is no performance penalty for defining them and no significant
+ * memory cost.
+ */
 
+// Total connections since CdrServer start
+static int totalConnections;
 
-// XXX For debugging memory leaks.
-#ifdef HEAPDEBUG
+// Total currently active
 static int activeConnections;
+
+// Highest number active at any one time
+static int highConnections;
+
+// Total active for each caller
+static int activeCalls[cdr::db::connThatsAllFolks];
+
+// Highest number active for each caller
+static int highCalls[cdr::db::connThatsAllFolks];
+
+// Logfile for connection statistics
+static std::string connLogFile =
+        cdr::log::getDefaultLogDir() + "/" + "ServerConns.log";
+
+// Set true for verbose logging
+static bool verboseLogging = true;
+
+// For thread safety
 static const char* const ActiveConnectionsMutex = "ActiveConnectionsMutex";
-#endif
+
+// Forward declaration
+static void logConnections(char *src);
+
 
 /**
  * ODBC environment handle shared by all CDR connections.
@@ -73,9 +106,35 @@ HENV cdr::db::Connection::henv = SQL_NULL_HENV;
  */
 cdr::db::Connection::Connection(const SQLCHAR* dsn,
                                 const SQLCHAR* uid,
-                                const SQLCHAR* pwd)
-    : autoCommit(false), hdbc(SQL_NULL_HDBC), refCount(1)
+                                const SQLCHAR* pwd,
+                                const cdr::db::ConnectCaller callerId)
+    : autoCommit(false), hdbc(SQL_NULL_HDBC), refCount(1), whoCalled(callerId)
 {
+    // Object's variable = True = track database connection pool usage
+    checkConnections = false;
+
+    // Default timeout for connections
+    int loginTimeout = 60;
+    try {
+        if (getCtlValue(L"dbConn", "CheckConnections") != L"")
+            checkConnections = true;
+        cdr::String timeoutStr = getCtlValue(L"dbConn", "ConnectionTimeout");
+        if (timeoutStr != L"")
+            loginTimeout = timeoutStr.getInt();
+    }
+    catch (const cdr::Exception& e) {
+        // CdrServer makes a call to get a connection to use in loading
+        //  the ctl table into memory.  In that first ever call to
+        //  getConnection(), the table is not loaded and the call to
+        //  getCtlValue() will fail with an exception.
+        // That's okay.  Leave the value we were searching for in its
+        //  initial state - which should be legal (because we'll make it so.)
+        // Subsequent calls should work.
+        //
+        // Reference e to silence warning
+        e.what();
+    }
+
     master = this;
     SQLRETURN rc;
     if (henv == SQL_NULL_HENV) {
@@ -98,25 +157,59 @@ cdr::db::Connection::Connection(const SQLCHAR* dsn,
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
         throw cdr::Exception(L"Failure allocating database connection",
                              getErrorMessage(rc, henv, hdbc, 0));
+
+    // Set a login timeout, no error until this many seconds have passed
+    rc = SQLSetConnectAttr(hdbc, SQL_ATTR_LOGIN_TIMEOUT,
+                           (SQLPOINTER) &loginTimeout, 0);
+    if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+        throw cdr::Exception(L"Failure setting database connection timeout",
+                             getErrorMessage(rc, henv, hdbc, 0));
+
     rc = SQLConnect(hdbc, const_cast<SQLCHAR*>(dsn), SQL_NTS,
                           const_cast<SQLCHAR*>(uid), SQL_NTS,
                           const_cast<SQLCHAR*>(pwd), SQL_NTS);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
-        hdbc = SQL_NULL_HDBC;
+        // Don't do this here, it deletes access to error messages
+        // hdbc = SQL_NULL_HDBC;
+
+        // Add a delay.  If connection failed don't try immediately again
+        cdr::log::WriteFile("Connection constructor",
+                            "Waiting 20 seconds after a connection failure");
+        Sleep(20000);
         throw cdr::Exception(L"Failure connecting to database",
                              getErrorMessage(rc, henv, hdbc, 0));
     }
     setAutoCommit(true);
-#ifdef HEAPDEBUG
-    HANDLE mutex = CreateMutex(0, false, ActiveConnectionsMutex);
-    if (mutex != 0) {
-        cdr::Lock lock(mutex, 1000);
-        if (lock.m) {
-            ++activeConnections;
+
+    // If we're debug/checking connection processing
+    if (checkConnections) {
+        HANDLE mutex = CreateMutex(0, false, ActiveConnectionsMutex);
+        if (mutex != 0) {
+            cdr::Lock lock(mutex, 1000);
+            if (lock.m) {
+                // Increment connection counters
+                ++activeConnections;
+                ++totalConnections;
+                ++activeCalls[callerId];
+
+                // Have we hit a new high?
+                bool newHigh = false;
+                if (activeConnections > highConnections) {
+                    highConnections = activeConnections;
+                    newHigh         = true;
+                }
+                if (activeCalls[callerId] > highCalls[callerId]) {
+                    highCalls[callerId] = activeCalls[callerId];
+                    newHigh         = true;
+                }
+
+                // Log if new high or if we're configured to always log
+                if (newHigh || verboseLogging)
+                    logConnections("New");
+            }
+            CloseHandle(mutex);
         }
-		CloseHandle(mutex);
     }
-#endif
 }
 
 /**
@@ -129,6 +222,7 @@ cdr::db::Connection::Connection(const SQLCHAR* dsn,
 cdr::db::Connection::Connection(const Connection& c) : hdbc(c.hdbc),
       master(const_cast<Connection*>(&c))
 {
+    whoCalled = c.whoCalled;
     ++master->refCount;
     //std::cerr << "Connection copy constructor; refCount=" << master->refCount
     //          << "\n";;
@@ -146,6 +240,7 @@ cdr::db::Connection::Connection(const Connection& c) : hdbc(c.hdbc),
 cdr::db::Connection& cdr::db::Connection::operator=(const Connection& c)
 {
     hdbc        = c.hdbc;
+    whoCalled   = c.whoCalled;
     master      = const_cast<Connection*>(&c);
     ++master->refCount;
     return *this;
@@ -170,19 +265,26 @@ void cdr::db::Connection::close()
     if (isClosed())
         throw cdr::Exception(
                 L"Connection::close(): Connection already closed.");
-#ifdef HEAPDEBUG
-    HANDLE mutex = CreateMutex(0, false, ActiveConnectionsMutex);
-    if (mutex != 0) {
-        cdr::Lock lock(mutex, 1000);
-        if (lock.m) {
-            if (activeConnections < 1)
-                throw cdr::Exception(
-                    L"Connection::close(): No connections open.");
-            --activeConnections;
+
+    if (checkConnections) {
+        HANDLE mutex = CreateMutex(0, false, ActiveConnectionsMutex);
+        if (mutex != 0) {
+            cdr::Lock lock(mutex, 1000);
+            if (lock.m) {
+                if (activeConnections < 1)
+                    throw cdr::Exception(
+                        L"Connection::close(): No connections open.");
+
+                // Decrement and log
+                --activeConnections;
+                --activeCalls[whoCalled];
+                if (verboseLogging)
+                    logConnections("Del");
+            }
+            CloseHandle(mutex);
         }
-		CloseHandle(mutex);
     }
-#endif
+
     SQLDisconnect(hdbc);
     SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
     master->hdbc = SQL_NULL_HDBC;
@@ -354,12 +456,14 @@ cdr::db::Connection::prepareStatement(const std::string& s)
  *                  ODBC DSN for the connection.
  *  @param  uid     login ID for the database.
  *  @param  pwd     password for the database account.
+ *  @param callerId identifies caller for resource tracking
  *  @return         new <code>Connection</code> object.
  */
 cdr::db::Connection
 cdr::db::DriverManager::getConnection(const cdr::String& url_,
                                       const cdr::String& uid_,
-                                      const cdr::String& pwd_)
+                                      const cdr::String& pwd_,
+                                      const cdr::db::ConnectCaller callerId)
 {
     if (url_.length() < 6 || url_.substr(0, 5) != L"odbc:")
         throw cdr::Exception(
@@ -394,7 +498,8 @@ cdr::db::DriverManager::getConnection(const cdr::String& url_,
 
     return Connection(reinterpret_cast<const SQLCHAR*>(dsn.c_str()),
                       reinterpret_cast<const SQLCHAR*>(uid.c_str()),
-                      reinterpret_cast<const SQLCHAR*>(pwd.c_str()));
+                      reinterpret_cast<const SQLCHAR*>(pwd.c_str()),
+                      callerId);
 }
 
 
@@ -489,8 +594,9 @@ const cdr::String cdr::db::getCdrDbPw() {
     static struct _stat last_check;
 
     // DEBUG
-    // Uncomment the following line to build a server that
+    // Uncomment the following lines to build a server that
     //  always fails to connect.
+    // cdr::log::WriteFile("getCdrDbPw", "Failing on purpose for testing");
     // return cdr::String("fubarTesting");
 
     // Cache the password so we can optimize future calls.
@@ -546,4 +652,32 @@ const cdr::String cdr::db::getCdrDbPw() {
     wchar_t tmpbuf[1000];
     swprintf(tmpbuf, L"getCdrDbPw cannot find password for [%s]", key);
     throw cdr::Exception(cdr::String(tmpbuf));
+}
+
+/**
+ * Format and log information about the current state of the connection
+ * counters used for debugging connection activity.
+ *
+ * This code is only called when this.checkConnections == true.
+ *
+ * All data comes from static variables conditionally defined when needed.
+ *
+ *  @param src  Acquiring or releasing a connection
+ */
+static void logConnections(char *src) {
+
+    std::wostringstream os;
+
+    // Total connections, total active, highest ever
+    os << "  " << src << " Total: " << totalConnections
+       << "  Active: " << activeConnections
+       << "/" << highConnections;
+
+    // active and high for each callerId
+    os << "  By caller:";
+    for (int i=0; i<cdr::db::connThatsAllFolks; i++)
+        os << " " << activeCalls[i] << "/" << highCalls[i];
+
+    // Dump it to the logfile
+    cdr::log::WriteFile("", os.str(), connLogFile);
 }
