@@ -19,6 +19,7 @@
 
 // Project headers.
 #include "catchexp.h"
+#include "CdrCtl.h"
 #include "CdrCommand.h"
 #include "CdrSession.h"
 #include "CdrDom.h"
@@ -30,8 +31,14 @@
 #include "CdrFilter.h"
 #include "CdrBlob.h"
 
+// Enable other modules to behave differently if not on CDR_PORT
+short Glbl_DEFAULT_CDR_PORT  = 2019;
+short Glbl_CurrentServerPort = Glbl_DEFAULT_CDR_PORT;
+
+// True = echo info to cerr about bytes read and requested
+static bool s_recvInfo2console = false;
+
 // Local constants.
-const short CDR_PORT = 2019;
 const int   CDR_QUEUE_SIZE = 10;
 const int   MAX_DIR_SIZE = 256;
 const unsigned int MAX_REQUEST_LENGTH = 150000000;
@@ -77,7 +84,7 @@ static void excep_trans_func(unsigned int u, struct _EXCEPTION_POINTERS *pExp);
  * a new thread to handle each incoming connection.
  *
  * usage: CdrServer {port {log drive}}
- *    default port          = CDR_PORT = 2019
+ *    default port          = Glbl_DEFAULT_CDR_PORT = 2019
  *    default logging drive = "d"  See CdrLog.cpp
  *
  */
@@ -86,8 +93,9 @@ int main(int ac, char **av)
     WSAData             wsadata;
     int                 sock;
     struct sockaddr_in  addr;
-    short               port = CDR_PORT;
+    short               port = Glbl_DEFAULT_CDR_PORT;
     char                *defaultDir = NULL;
+
 
     // Find out whether we should suppress command logging.
     if (getenv("SUPPRESS_CDR_COMMAND_LOGGING"))
@@ -97,6 +105,27 @@ int main(int ac, char **av)
         port = atoi(av[1]);
         SET_HEAP_DEBUGGING(true);
         std::cout << "heap debugging\n" << std::endl;
+    }
+
+    // Make port number available to other modules
+    Glbl_CurrentServerPort = port;
+
+    // Perform initial load of the control table from disk
+    // We do this early because:
+    //  1. Control tables could be used anywhere.
+    //  2. Initial load should be before multi-threading starts.
+    try {
+        cdr::db::Connection conn =
+            cdr::db::DriverManager::getConnection(cdr::db::url,
+                                                  cdr::db::uid,
+                                                  cdr::db::getCdrDbPw(),
+                                                  cdr::db::connServerLoadCtl);
+        cdr::loadCtlTableIntoMemory(conn);
+    }
+    catch (const cdr::Exception& e) {
+        logTopLevelFailure(L"Exception from loadCtlTableIntoMemory: "
+                           + e.what(), 0L);
+        return EXIT_FAILURE;
     }
 
     // Should logs go somewhere else than the default?
@@ -223,6 +252,13 @@ int main(int ac, char **av)
     while (!timeToShutdown) {
         try {
             MEM_START();
+
+            // How much do we echo to the console
+            if (cdr::getCtlValue(L"Debug", L"Echo recv info") == L"")
+                s_recvInfo2console = false;
+            else
+                s_recvInfo2console = true;
+
             int rc = handleNextClient(sock);
             if (rc != EXIT_SUCCESS)
                 return rc;
@@ -275,8 +311,11 @@ int handleNextClient(int sock)
     threadArgs->fd = fd;
     strncpy(threadArgs->clientAddress, inet_ntoa(client_addr.sin_addr),
             sizeof(threadArgs->clientAddress) - 1);
-    std::cout << "client IP address: " << threadArgs->clientAddress
-              << std::endl;
+
+    if (s_recvInfo2console)
+        std::cout << "client IP address: " << threadArgs->clientAddress
+                  << std::endl;
+
 #ifndef SINGLE_THREAD_DEBUGGING
     int tries = 5;
     while (_beginthread(dispatcher, 0, (void*)threadArgs) == -1) {
@@ -331,7 +370,8 @@ void realDispatcher(const ThreadArgs* threadArgs) {
     cdr::db::Connection conn =
         cdr::db::DriverManager::getConnection(cdr::db::url,
                                               cdr::db::uid,
-                                              cdr::db::getCdrDbPw());
+                                              cdr::db::getCdrDbPw(),
+                                      cdr::db::connServerRealDispatch);
     cdr::String now = conn.getDateTimeString();
     now[10] = L'T';
 #ifndef _NDEBUG
@@ -400,7 +440,8 @@ size_t readBytes(int fd, size_t requested, char* buf)
         if (bytesLeft > chunkSize)
             bytesLeft = chunkSize;
         int nRead = recv(fd, buf + totalRead, bytesLeft, 0);
-        std::cerr << "got " << totalRead << " of " << requested << " bytes\n";
+        if (s_recvInfo2console)
+            std::cerr << "got " << totalRead << " of " <<requested <<" bytes\n";
         if (nRead < 0)
             return 0;
         if (nRead == 0) {
@@ -892,9 +933,11 @@ void __cdecl sessionSweep(void* arg) {
         try {
             if (counter++ % 60 == 0) {
                 cdr::db::Connection conn =
-                    cdr::db::DriverManager::getConnection(cdr::db::url,
-                                                      cdr::db::uid,
-                                                      cdr::db::getCdrDbPw());
+                    cdr::db::DriverManager::getConnection(
+                                      cdr::db::url,
+                                      cdr::db::uid,
+                                      cdr::db::getCdrDbPw(),
+                                      cdr::db::connServerSessionSweep);
                 cdr::db::Statement s = conn.createStatement();
                 int rows = s.executeUpdate(query);
 #ifdef LOGSWEEP
