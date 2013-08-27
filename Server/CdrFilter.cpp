@@ -950,8 +950,9 @@ for (int i=0; i<alen; i++) {
               try {
                   cdr::db::Connection dbConn =
                       cdr::db::DriverManager::getConnection (cdr::db::url,
-                                                     cdr::db::uid,
-                                                     cdr::db::getCdrDbPw());
+                                             cdr::db::uid,
+                                             cdr::db::getCdrDbPw(),
+                                             cdr::db::connFilterProfile);
                   std::string insQry =
                       "INSERT INTO filter_profile (id, millis, dt) "
                       "     VALUES (?, ?, GETDATE())";
@@ -2711,7 +2712,8 @@ void cdr::buildFilterString2IdMap() {
     cdr::db::Connection dbConn =
         cdr::db::DriverManager::getConnection (cdr::db::url,
                                                cdr::db::uid,
-                                               cdr::db::getCdrDbPw());
+                                               cdr::db::getCdrDbPw(),
+                                               cdr::db::connFilterIdMap);
 
     // Get all docs of type Filter
     cdr::db::Statement stmt = dbConn.createStatement();
