@@ -227,6 +227,8 @@ cdr::Command cdr::lookupCommand(const cdr::String& name)
         CommandMap(L"CdrGetSpanishGlossaryMap", cdr::getSpanishGlossaryMap),
         CommandMap(L"CdrAddExternalMapping", cdr::addExternalMapping),
         CommandMap(L"CdrSetDocStatus",       cdr::setDocStatus),
+        CommandMap(L"CdrSetCtl",             cdr::setCtlValues),
+        // CommandMap(L"CdrGetCtl",             cdr::getCtlValue),
         CommandMap(L"CdrLogClientEvent",     cdr::logClientEvent),
         CommandMap(L"CdrShutdown",           cdr::shutdown)
     };
