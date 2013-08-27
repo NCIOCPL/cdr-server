@@ -53,6 +53,21 @@ namespace cdr {
          */
         const cdr::String getCdrDbPw();
 
+        /**
+         * Enumeration used for identifying callers to getConnection.
+         * Used for tracking any possible resource leaks.
+         * See CONNDEBUG code in CdrDbConnection.cpp.
+         */
+        typedef enum ConnectCaller {
+            connServerLoadCtl,
+            connServerRealDispatch,
+            connServerSessionSweep,
+            connLogWrite,
+            connFilterProfile,
+            connFilterIdMap,
+            connThatsAllFolks
+        } ConnectCaller;
+
         // Forward references.
         class ResultSet;
         class DriverManager;
@@ -206,7 +221,8 @@ namespace cdr {
              * class is used for creating new <Code>Connection</code>
              * objects, in keeping with the JDBC interfaces.
              */
-            Connection(const SQLCHAR*, const SQLCHAR*, const SQLCHAR*);
+            Connection(const SQLCHAR*, const SQLCHAR*, const SQLCHAR*,
+                       const ConnectCaller);
 
             /**
              * Unimplemented (blocked) default constructor.
@@ -247,9 +263,27 @@ namespace cdr {
             Connection* master;
 
             /**
+             * Identity of the caller opening the connection.
+             * Used to look for resource leaks or exceptional usage.
+             */
+            ConnectCaller whoCalled;
+
+            /**
              * Reference counting support.
              */
             int         refCount;
+
+            /**
+             * If our heap, pool, timing, or other database connection
+             * checking was enabled at the time a connection was created,
+             * we have to complete processing of the checking, even if
+             * checking was turned off in the meantime - and vice versa
+             * if it was off when we started.
+             *
+             * This variable records whether checking was on when the
+             * connection was created.
+             */
+            bool checkConnections;
         };
 
         /**
@@ -266,15 +300,17 @@ namespace cdr {
              * is used to reduce the number of actual connections which have
              * to be built up and torn down.
              *
-             *  @param  url     string of the form "odbc:dsn" where dsn is
+             *  @param url      string of the form "odbc:dsn" where dsn is
              *                  ODBC DSN for the connection.
-             *  @param  uid     login ID for the database.
-             *  @param  pwd     password for the database account.
+             *  @param uid      login ID for the database.
+             *  @param pwd      password for the database account.
+             *  @param callerId identifies caller for resource tracking
              *  @return         new <code>Connection</code> object.
              */
             static Connection getConnection(const cdr::String& url,
                                             const cdr::String& uid,
-                                            const cdr::String& pwd);
+                                            const cdr::String& pwd,
+                                            const ConnectCaller callerId);
         };
     }
 }
