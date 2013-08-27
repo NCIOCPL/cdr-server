@@ -40,3 +40,9 @@ CREATE TABLE ctl
      created DATETIME        NOT NULL,
  inactivated DATETIME        NULL)
 GO
+
+GRANT SELECT ON ctl TO CdrGuest
+GO
+
+GRANT SELECT ON ctl TO CdrPublishing
+GO
