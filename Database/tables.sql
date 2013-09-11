@@ -316,6 +316,11 @@ GO
  *           id  automatically generated primary key for the document table
  *   val_status  foreign key reference into the doc_status table
  *     val_date  date validation processing was last performed on document
+ *               WARNING:
+ *                  val_date is the date last validated, not the date last
+ *                  stored.  It is legal and common to store an unvalidated
+ *                  current working document which causes val_status to be set
+ *                  to 'U' but leaves val_date alone.
  *     doc_type  foreign key reference into the doc_type table
  *        title  required string containing title for document; Titles will
  *               not be required to be unique
