@@ -17,9 +17,9 @@ GO
  */
 IF NOT EXISTS (SELECT * 
                  FROM master.dbo.syslogins 
-                WHERE loginname = 'cdr')
+                WHERE loginname = 'CdrSqlAccount')
 BEGIN
-    EXEC sp_addlogin 'cdr', '***REMOVED***', 'cdr', 'us_english'
+    EXEC sp_addlogin 'CdrSqlAccount', '@@DBOPW@@', 'cdr', 'us_english'
 END
 GO
 
@@ -27,7 +27,7 @@ IF NOT EXISTS (SELECT *
                  FROM master.dbo.syslogins 
                 WHERE loginname = 'CdrGuest')
 BEGIN
-    EXEC sp_addlogin 'CdrGuest', 'readonly', 'cdr', 'us_english'
+    EXEC sp_addlogin 'CdrGuest', '@@GUESTPW@@', 'cdr', 'us_english'
 END
 GO
 
@@ -35,7 +35,7 @@ IF NOT EXISTS (SELECT *
                  FROM master.dbo.syslogins 
                 WHERE loginname = 'CdrPublishing')
 BEGIN
-    EXEC sp_addlogin 'CdrPublishing', '***REMOVED***', 'cdr', 'us_english'
+    EXEC sp_addlogin 'CdrPublishing', '@@PUBPW@@', 'cdr', 'us_english'
 END
 GO
 
@@ -48,7 +48,7 @@ GO
  * So we will unconditionally set the defaults here.
  */
 
-EXEC sp_defaultdb 'cdr', 'cdr'
+EXEC sp_defaultdb 'CdrSqlAccount', 'cdr'
 GO
 EXEC sp_defaultdb 'CdrGuest', 'cdr'
 GO
@@ -58,7 +58,7 @@ GO
 /* Take care of permissions for the database of older versions. */
 USE cdr_archived_versions
 GO
-sp_changedbowner 'cdr'
+sp_changedbowner 'CdrSqlAccount'
 GO
 sp_revokedbaccess 'CdrGuest'
 GO
@@ -85,9 +85,9 @@ GO
  */
 IF EXISTS (SELECT * 
              FROM dbo.sysusers 
-            WHERE name = 'cdr' 
+            WHERE name = 'CdrSqlAccount'
               AND UID < 16382)
-	EXEC sp_revokedbaccess 'cdr'
+	EXEC sp_revokedbaccess 'CdrSqlAccount'
 GO
 
 IF EXISTS (SELECT * 
@@ -115,16 +115,18 @@ GO
 /*
  * Make cdr database owner.
  */
-EXEC sp_changedbowner 'cdr'
+EXEC sp_changedbowner 'CdrSqlAccount'
 GO
 
 /*
  * Grant specific rights to the other two new users.
  */
-
-GRANT SELECT ON usr TO CdrGuest
-GO
+@@USRGUESTACCESS@@
 GRANT SELECT ON usr TO CdrPublishing
+GO
+GRANT SELECT ON open_usr TO CdrGuest
+GO
+GRANT SELECT ON open_usr TO CdrPublishing
 GO
 GRANT SELECT ON session TO CdrGuest
 GO
@@ -459,10 +461,4 @@ GO
 GRANT SELECT ON ctrp_download TO CdrGuest
 GO
 GRANT SELECT ON client_log TO CdrGuest
-GO
-GRANT SELECT ON open_usr TO CdrGuest
-GO
-GRANT SELECT ON ctl TO CdrGuest
-GO
-GRANT SELECT ON ctl TO CdrPublishing
 GO
