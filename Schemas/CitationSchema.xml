@@ -6,7 +6,7 @@
     BZIssue::4713 (added ELocationID)
     BZIssue::4719 (added ISSNLinking element)
     BZIssue::4952 (catching up with NLM DTD changes)
-
+    JIRA::OCECDR-3664 (more breakage by NLM)
   -->
 
 <schema              xmlns           = 'http://www.w3.org/2001/XMLSchema'>
@@ -88,7 +88,6 @@
       <element       name            = 'ModifiedRecord'
                      type            = 'Yes'
                      minOccurs       = '0'/>
-      <!-- default should be set to "No" -->
       <element       name            = 'Comment'
                      type            = 'Comment'
                      minOccurs       = '0'/>
@@ -138,6 +137,9 @@
                      maxOccurs       = 'unbounded'/>
       <element       name            = 'CommentsCorrections'
                      type            = 'CommentsCorrections'
+                     minOccurs       = '0'/>
+      <element       name            = 'CommentsCorrectionsList'
+                     type            = 'CommentsCorrectionsList'
                      minOccurs       = '0'/>
       <element       name            = 'GeneSymbolList'
                      type            = 'GeneSymbolList'
@@ -222,7 +224,8 @@
                      type            = 'AuthorList'
                      minOccurs       = '0'/>
       <element       name            = 'Language'
-                     type            = 'NotEmptyString'/>
+                     type            = 'NotEmptyString'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'DataBankList'
                      type            = 'DataBankList'
                      minOccurs       = '0'/>
@@ -234,7 +237,8 @@
       <element       name            = 'VernacularTitle'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
-      <choice        minOccurs       = '0'>
+      <choice        minOccurs       = '0'
+                     maxOccurs       = 'unbounded'>
         <element     name            = 'ElectronicPubDate'
                      type            = 'CitationDate'/>
         <element     name            = 'ArticleDate'
@@ -367,13 +371,17 @@
   <complexType       name            = 'OtherAbstract'>
     <sequence>
       <element       name            = 'AbstractText'
-                     type            = 'AbstractText'/>
+                     type            = 'AbstractText'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'CopyrightInformation'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
     </sequence>
     <attribute       name            = 'Type'
                      type            = 'OtherAbstractType'/>
+    <attribute       name            = 'Language'
+                     type            = 'string'
+                     minOccurs       = '0'/>
   </complexType>
 
   <complexType       name            = 'AuthorList'>
@@ -404,6 +412,10 @@
         <element     name            = 'CollectiveName'
                      type            = 'NotEmptyString'/>
       </choice>
+      <element       name            = 'Identifier'
+                     type            = 'NameIdentifier'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'Affiliation'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
@@ -411,6 +423,15 @@
     <attribute       name            = 'ValidYN'
                      type            = 'YN'
                      minOccurs       = '0'/>
+  </complexType>
+
+  <complexType       name            = 'NameIdentifier'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'Source'
+                     type            = 'string'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
   <group             name            = 'PersonalName'>
@@ -504,6 +525,9 @@
                      type            = 'NotEmptyString'/>
       <element       name            = 'ArticleIdList'
                      type            = 'ArticleIdList'/>
+      <element       name            = 'ObjectList'
+                     type            = 'ObjectList'
+                     minOccurs       = '0'/>
     </sequence>
   </complexType>
 
@@ -699,65 +723,88 @@
     </simpleContent>
   </complexType>
 
-  <complexType       name            = 'CommentsCorrections'>
+  <complexType       name            = 'CommentsCorrectionsList'>
     <sequence>
-      <element       name            = 'CommentOn'
-                     type            = 'RefTemplate'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'CommentIn'
-                     type            = 'RefTemplate'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'ErratumIn'
-                     type            = 'RefTemplate'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'ErratumFor'
-                     type            = 'RefTemplate'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'PartialRetractionIn'
-                     type            = 'RefTemplate'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'PartialRetractionOf'
-                     type            = 'RefTemplate'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'RepublishedFrom'
-                     type            = 'RefTemplate'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'RepublishedIn'
-                     type            = 'RefTemplate'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'RetractionOf'
-                     type            = 'RefTemplate'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'RetractionIn'
-                     type            = 'RefTemplate'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'UpdateIn'
-                     type            = 'RefTemplate'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'UpdateOf'
-                     type            = 'RefTemplate'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'SummaryForPatientsIn'
-                     type            = 'RefTemplate'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'OriginalReportIn'
-                     type            = 'RefTemplate'
-                     minOccurs       = '0'
+      <element       name            = 'CommentsCorrections'
+                     type            = 'CommentsCorrections'
                      maxOccurs       = 'unbounded'/>
     </sequence>
+  </complexType>
+
+  <complexType       name            = 'CommentsCorrections'>
+    <choice>
+      <sequence>
+        <element     name            = 'CommentOn'
+                     type            = 'RefTemplate'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+        <element     name            = 'CommentIn'
+                     type            = 'RefTemplate'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+        <element     name            = 'ErratumIn'
+                     type            = 'RefTemplate'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+        <element     name            = 'ErratumFor'
+                     type            = 'RefTemplate'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+        <element     name            = 'PartialRetractionIn'
+                     type            = 'RefTemplate'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+        <element     name            = 'PartialRetractionOf'
+                     type            = 'RefTemplate'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+        <element     name            = 'RepublishedFrom'
+                     type            = 'RefTemplate'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+        <element     name            = 'RepublishedIn'
+                     type            = 'RefTemplate'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+        <element     name            = 'RetractionOf'
+                     type            = 'RefTemplate'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+        <element     name            = 'RetractionIn'
+                     type            = 'RefTemplate'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+        <element     name            = 'UpdateIn'
+                     type            = 'RefTemplate'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+        <element     name            = 'UpdateOf'
+                     type            = 'RefTemplate'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+        <element     name            = 'SummaryForPatientsIn'
+                     type            = 'RefTemplate'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+        <element     name            = 'OriginalReportIn'
+                     type            = 'RefTemplate'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      </sequence>
+      <sequence>
+        <element     name            = 'RefSource'
+                     type            = 'NotEmptyString'/>
+        <element     name            = 'PMID'
+                     type            = 'PMID'
+                     minOccurs       = '0'/>
+        <element     name            = 'Note'
+                     type            = 'GeneralText'
+                     minOccurs       = '0'/>
+      </sequence>
+    </choice>
+    <attribute       name            = 'RefType'
+                     type            = 'CommentsCorrectionsRefType'
+                     minOccurs       = '0'/>
   </complexType>
 
   <complexType       name            = 'RefTemplate'>
@@ -869,6 +916,10 @@
   <complexType       name            = 'Investigator'>
     <sequence>
       <group         ref             = 'PersonalName'/>
+      <element       name            = 'Identifier'
+                     type            = 'NameIdentifier'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
       <element       name            = 'Affiliation'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
@@ -919,6 +970,34 @@
         <attribute   name            = 'NlmCategory'
                      type            = 'NlmCategory'
                      minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
+  </complexType>
+
+  <complexType       name            = 'ObjectList'>
+    <sequence>
+      <element       name            = 'Object'
+                     type            = 'Object'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'Object'>
+    <sequence>
+      <element       name            = 'Param'
+                     type            = 'Param'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+    <attribute       name            = 'Type'
+                     type            = 'string'/>
+  </complexType>
+
+  <complexType       name            = 'Param'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'Name'
+                     type            = 'string'/>
       </extension>
     </simpleContent>
   </complexType>
@@ -982,8 +1061,10 @@
       <enumeration   value           = 'pubmed'/>
       <enumeration   value           = 'medline'/>
       <enumeration   value           = 'pmcid'/>
+      <enumeration   value           = 'pmcbook'/>
       <enumeration   value           = 'pmc'/>
       <enumeration   value           = 'mid'/>
+      <enumeration   value           = 'bookaccession'/>
     </restriction>
   </simpleType>
 
@@ -996,6 +1077,7 @@
       <enumeration   value           = 'revised'/>
       <enumeration   value           = 'aheadofprint'/>
       <enumeration   value           = 'retracted'/>
+      <enumeration   value           = 'ecollection'/>
       <enumeration   value           = 'pmc'/>
       <enumeration   value           = 'pmcr'/>
       <enumeration   value           = 'pubmed'/>
@@ -1083,6 +1165,7 @@
       <enumeration   value           = 'SIS'/>
       <enumeration   value           = 'NOTNLM'/>
       <enumeration   value           = 'NLM-AUTO'/>
+      <enumeration   value           = 'HHS'/>
     </restriction>
   </simpleType>
 
@@ -1154,6 +1237,7 @@
       <enumeration   value           = 'Print-Electronic'/>
       <enumeration   value           = 'Electronic'/>
       <enumeration   value           = 'Electronic-Print'/>
+      <enumeration   value           = 'Electronic-eCollection'/>
     </restriction>
   </simpleType>
 
@@ -1193,6 +1277,7 @@
       <enumeration   value           = 'METHODS'/>
       <enumeration   value           = 'RESULTS'/>
       <enumeration   value           = 'CONCLUSIONS'/>
+      <enumeration   value           = 'UNASSIGNED'/>
     </restriction>
   </simpleType>
 
@@ -1206,6 +1291,28 @@
   <simpleType        name            = 'TopicTextType'>
     <restriction     base            = 'string'>
       <enumeration   value           = 'Geographic'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'CommentsCorrectionsRefType'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'CommentOn'/>
+      <enumeration   value           = 'CommentIn'/>
+      <enumeration   value           = 'ErratumIn'/>
+      <enumeration   value           = 'ErratumFor'/>
+      <enumeration   value           = 'PartialRetractionIn'/>
+      <enumeration   value           = 'PartialRetractionOf'/>
+      <enumeration   value           = 'RepublishedFrom'/>
+      <enumeration   value           = 'RepublishedIn'/>
+      <enumeration   value           = 'RetractionOf'/>
+      <enumeration   value           = 'RetractionIn'/>
+      <enumeration   value           = 'UpdateIn'/>
+      <enumeration   value           = 'UpdateOf'/>
+      <enumeration   value           = 'SummaryForPatientsIn'/>
+      <enumeration   value           = 'OriginalReportIn'/>
+      <enumeration   value           = 'ReprintOf'/>
+      <enumeration   value           = 'ReprintIn'/>
+      <enumeration   value           = 'Cites'/>
     </restriction>
   </simpleType>
 
