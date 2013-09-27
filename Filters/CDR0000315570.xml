@@ -1,13 +1,19 @@
-<CdrDoc Type='Filter' Id='CDR0000315570'>
-<CdrDocCtl>
-<DocValStatus readonly="yes">U</DocValStatus>
-<DocActiveStatus readonly="yes">A</DocActiveStatus>
-<DocTitle readonly="yes">Summary Changes Report</DocTitle>
-<DocComment>CVS-V1.3: Include File Name Change (Bug 842)</DocComment><ReadyForReview readonly="yes">N</ReadyForReview>
-</CdrDocCtl>
-<CdrDocXml><![CDATA[<?xml version="1.0"?>
-<xsl:transform                xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                                version = "1.0">
+<?xml version = "1.0" encoding="utf-8"?>
+<!-- $Id$ -->
+<!-- Filter title: Summary Changes Report -->
+<!--
+=========================================================================
+$Id$
+
+Summary Changes Report
+
+BZIssue::4809 - Invalid warning messages in Status and Error Report
+BZIssue::OCECDR-3648 - Changes to Summaries Reports - Comments displaying
+========================================================================= -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0">
+
+ <xsl:output                    method = "html"/>
 
  <!--
    =========================================================================
@@ -15,52 +21,34 @@
    but this filter is cloning the approached used by the QC report at the
    request of Margaret and Lakshmi, so I'm doing the same.
    ========================================================================= -->
- <xsl:import  href = "cdr:name:Module: InLine Markup Formatter"/>
+ <xsl:include href = "cdr:name:Module: InLine Markup Formatter"/>
  <xsl:include href = "cdr:name:Module: Table Formatter"/>
-
- <xsl:output                     method = "html"/>
 
  <xsl:variable                    name = "whoAmI"
                                 select = "'SummaryChanges'"/>
 
- <xsl:template                    match = "/">
-  <xsl:apply-templates           select = "Summary/SummarySection
-                                           [SectMetaData/SectionType = 
-                                            'Changes to summary']"/>
+ <xsl:template                   match = "/">
+  <xsl:apply-templates          select = "Summary/SummarySection
+                                          [SectMetaData/SectionType = 
+                                           'Changes to summary']"/>
  </xsl:template>
 
- <xsl:template                    match = "SummarySection">
+ <xsl:template                   match = "SummarySection">
   <h2>
    <xsl:text>Publishable Version Date: @@PubVerDate@@</xsl:text>
    <br />
-   <xsl:value-of                 select = "Title"/>
+   <xsl:value-of                select = "Title"/>
   </h2>
   <xsl:apply-templates/>
  </xsl:template>
 
- <xsl:template                    match = "SummarySection/Title |
-                                           SummarySection/SectMetaData"/>
+ <!--
+ ========================================================================
+ Template to suppress the Title, SectMetaData, and Comments from the
+ output on the Changes report.
+ ======================================================================== -->
+ <xsl:template                   match = "SummarySection/Title |
+                                          SummarySection/SectMetaData |
+                                          Comment"/>
 
-<!--
- <xsl:template                    match = "Para">
-  <p>
-   <xsl:apply-templates          select = "text()|Strong|SummaryFragmentRef"/>
-  </p>
- </xsl:template>
-
- <xsl:template                    match = "Strong">
-  <b>
-   <xsl:apply-templates          select = "text()|SummaryFragmentRef"/>
-  </b>
- </xsl:template>
-
- <xsl:template                    match = "SummaryFragmentRef">
-  <span                           class = "SectionRef">
-   <xsl:value-of                 select = "."/>
-  </span>
- </xsl:template>
--->
-
-</xsl:transform>]]>
-</CdrDocXml>
-</CdrDoc>
+</xsl:transform>
