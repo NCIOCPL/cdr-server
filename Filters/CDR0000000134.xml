@@ -4,6 +4,7 @@
 <!--
 BZIssue::4703 - Suppress Clin. Trials search string
 BZIssue::4778 - Display multiple OtherNameTypes
+OCECDR-3588 - Links from Drug Dictionary to NCI Thesaurus
 -->
 <!-- 
 ===================================================================
@@ -233,25 +234,35 @@ Filter to create the vendor Terminology XML
    </xsl:if>
 
 
+
    <!--
-   Conctruct the URL for NCI concept ID
+   Conctruct the URL for NCI concept ID but only if the 
+   ID is published already
    ======================================================== -->
-   <xsl:text> (</xsl:text>
-   <xsl:element                  name = "ExternalRef">
-    <xsl:attribute               name = "xref">
-     <xsl:text>http://ncit.nci.nih.gov/</xsl:text>
-     <xsl:text>ncitbrowser/ConceptReport.jsp?</xsl:text>
-     <xsl:text>dictionary=NCI%20Thesaurus&#x26;code=</xsl:text> 
-     <xsl:value-of             select = "normalize-space(
+   <xsl:variable                  name = "conceptId">
+    <xsl:value-of               select = "normalize-space(
                                             ../../OtherName/
                                             SourceInformation/
                                             VocabularySource/
                                             SourceTermId)"/>
-    </xsl:attribute>
-    <xsl:value-of              select = "../DefinitionSource/
+   </xsl:variable>
+
+   <xsl:if                        test = "/Term/
+                                           NCIThesaurusConcept[@Public = 'Yes']
+                                           = $conceptId">
+    <xsl:text> (</xsl:text>
+    <xsl:element                  name = "ExternalRef">
+     <xsl:attribute               name = "xref">
+      <xsl:text>http://ncit.nci.nih.gov/</xsl:text>
+      <xsl:text>ncitbrowser/ConceptReport.jsp?</xsl:text>
+      <xsl:text>dictionary=NCI%20Thesaurus&#x26;code=</xsl:text> 
+      <xsl:value-of             select = "$conceptId"/>
+     </xsl:attribute>
+     <xsl:value-of              select = "../DefinitionSource/
                                           DefinitionSourceName"/>
-   </xsl:element>
-   <xsl:text>)</xsl:text>
+    </xsl:element>
+    <xsl:text>)</xsl:text>
+   </xsl:if>
   </xsl:copy>
  </xsl:template>
 
