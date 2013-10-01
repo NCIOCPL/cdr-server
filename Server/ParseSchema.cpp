@@ -1,31 +1,7 @@
 /*
  * $Id: ParseSchema.cpp,v 1.8 2002-01-22 22:44:56 bkline Exp $
  *
- * Prototype for CDR schema parser.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.7  2001/04/16 18:02:29  bkline
- * Replaced writeDtd() (which wrote directly to standard output) with
- * makeDtd() which builds and returns a UTF-16 string.
- *
- * Revision 1.6  2001/04/15 13:00:43  bkline
- * Upgraded to match XML Schema 2001 release candidate.
- *
- * Revision 1.5  2001/03/21 02:47:57  bkline
- * Support for more schema features.  Better support for mixed content.
- * Moved NMTOKEN check to library code.
- *
- * Revision 1.4  2001/01/02 22:56:54  bkline
- * Fixed handling of mixed content in DTD; added NMTOKEN support.
- *
- * Revision 1.3  2000/12/21 22:25:28  bkline
- * Enhanced exception handling.
- *
- * Revision 1.2  2000/04/11 21:24:09  bkline
- * Used type information for attributes.
- *
- * Revision 1.1  2000/04/11 17:57:44  bkline
- * Initial revision
+ * Prototype for CDR schema parser.  See ../Validation/Makefile.
  */
 
 // System headers.
@@ -40,6 +16,10 @@
 
 // Local support functions.
 static std::string readSchemaFile(const char*);
+
+// Don't really need these, except for link dependencies.
+short Glbl_DEFAULT_CDR_PORT = 2019;
+short Glbl_CurrentServerPort = Glbl_DEFAULT_CDR_PORT;
 
 /**
  * Parses schema document, extracts document type information, and
@@ -111,7 +91,7 @@ std::string readSchemaFile(const char* name)
     if (!is)
         throw cdr::Exception(L"Unable to open schema file");
     is.seekg(0, std::ios::end);
-    size_t n = is.tellg();
+    size_t n = (size_t)is.tellg();
     is.seekg(0, std::ios::beg);
     char* p = new char[n];
     is.read(p, n);
