@@ -9,6 +9,8 @@ Filter to create Vendor XML for Glossary
 
 BZIssue::4973 - [Glossary] Modification to Publication Filters
 BZIssue::4995 - [Glossary] Non Publishable Also Calls in the dictionary
+OCECDR-3528: Ability to put links to other Dictionary terms in More 
+             Information block on Cancer.gov
 
 ==================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -228,7 +230,8 @@ BZIssue::4995 - [Glossary] Non Publishable Also Calls in the dictionary
   <xsl:copy>
    <xsl:apply-templates         select = "RelatedSummaryRef      |
                                           RelatedDrugSummaryLink |
-                                          RelatedExternalRef"/>
+                                          RelatedExternalRef     |
+                                          RelatedGlossaryTermNameLink"/>
   </xsl:copy>
  </xsl:template>
 
@@ -244,7 +247,7 @@ BZIssue::4995 - [Glossary] Non Publishable Also Calls in the dictionary
      </xsl:attribute>
     </xsl:if>
     <xsl:attribute                name = "href">
-     <xsl:value-of                  select = "@cdr:ref"/>
+     <xsl:value-of              select = "@cdr:ref"/>
     </xsl:attribute>
 
     <xsl:apply-templates        select = "Summary/SummaryTitle"/>
@@ -263,7 +266,7 @@ BZIssue::4995 - [Glossary] Non Publishable Also Calls in the dictionary
      </xsl:attribute>
     </xsl:if>
     <xsl:attribute                name = "href">
-     <xsl:value-of                  select = "@cdr:ref"/>
+     <xsl:value-of              select = "@cdr:ref"/>
     </xsl:attribute>
 
     <xsl:apply-templates        select = "DrugInformationSummary/Title"/>
@@ -276,6 +279,20 @@ BZIssue::4995 - [Glossary] Non Publishable Also Calls in the dictionary
  ===================================================================== -->
  <xsl:template                   match = "RelatedExternalRef">
   <xsl:copy-of                  select = "."/>
+ </xsl:template>
+
+
+ <!-- 
+ =====================================================================
+ ===================================================================== -->
+ <xsl:template                   match = "RelatedGlossaryTermNameLink">
+   <xsl:element                   name = "RelatedGlossaryTermRef">
+    <xsl:attribute                name = "href">
+     <xsl:value-of              select = "@cdr:ref"/>
+    </xsl:attribute>
+
+    <xsl:apply-templates/>
+  </xsl:element>
  </xsl:template>
 
 

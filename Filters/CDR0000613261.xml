@@ -1,6 +1,6 @@
 <?xml version = "1.0" encoding="utf-8"?>
 <!-- $Id$ -->
-<!-- Filter title: Glossary Term Concept QC Report filter -->
+<!-- Filter title: Glossary Term Concept QC Report Filter -->
 <!--
 ================================================================
 $Id$
@@ -9,6 +9,8 @@ Filter to display Glossary Term Concept QC Reports
 Volker Englisch         2007-09-20
 
 BZIssue::5166 - QC reports showing in table format
+OCECDR-3528: Ability to put links to other Dictionary terms in More 
+             Information block on Cancer.gov
 
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -568,8 +570,9 @@ BZIssue::5166 - QC reports showing in table format
  ================================================================== -->
  <xsl:template                   match = "RelatedInformation">
   <xsl:apply-templates          select = "RelatedSummaryRef"/>
-  <xsl:apply-templates          select = "RelatedDrugSummaryRef"/>
+  <xsl:apply-templates          select = "RelatedDrugSummaryLink"/>
   <xsl:apply-templates          select = "RelatedExternalRef"/>
+  <xsl:apply-templates          select = "RelatedGlossaryTermNameLink"/>
  </xsl:template>
 
 
@@ -577,8 +580,9 @@ BZIssue::5166 - QC reports showing in table format
  ==================================================================
  Template to display the RelatedInformation elements
  ================================================================== -->
- <xsl:template                   match = "RelatedSummaryRef     |
-                                          RelatedDrugSummaryRef |
+ <xsl:template                   match = "RelatedSummaryRef           |
+                                          RelatedDrugSummaryLink      |
+                                          RelatedGlossaryTermNameLink |
                                           RelatedExternalRef">
   <tr>
    <td          xsl:use-attribute-sets = "cell1of2">
@@ -587,12 +591,12 @@ BZIssue::5166 - QC reports showing in table format
       <xsl:when                  test = "name() = 'RelatedSummaryRef'">
        <xsl:if                   test = "not(
                                          preceding-sibling::RelatedSummaryRef)">
-        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;Summary Ref</xsl:text>
+        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;Summary Link</xsl:text>
        </xsl:if>
       </xsl:when>
-      <xsl:when                  test = "name() = 'RelatedDrugSummaryRef'">
+      <xsl:when                  test = "name() = 'RelatedDrugSummaryLink'">
        <xsl:if                   test = "not(
-                                        preceding-sibling::RelatedDrugSummaryRef
+                                        preceding-sibling::RelatedDrugSummaryLink
                                               )">
         <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;Drug Ref</xsl:text>
        </xsl:if>
@@ -602,6 +606,13 @@ BZIssue::5166 - QC reports showing in table format
                                         preceding-sibling::RelatedExternalRef
                                               )">
         <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;External Ref</xsl:text>
+       </xsl:if>
+      </xsl:when>
+      <xsl:when                  test = "name() = 'RelatedGlossaryTermNameLink'">
+       <xsl:if                   test = "not(
+                                        preceding-sibling::RelatedGlossaryTermNameLink
+                                              )">
+        <xsl:text>&#xa0;&#xa0;&#xa0;&#xa0;Glossary Term</xsl:text>
        </xsl:if>
       </xsl:when>
      </xsl:choose>
