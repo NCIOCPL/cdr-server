@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+
+ <!--
+ ===========================================================================
+ Check the Intervention elements in an InScopeProtocol document to determine
+ if any are missing InterventionNameLink subelements.
+
+ If an expected element is missing, produce a non-terminating warning
+ message.  This is not illegal, but the user needs to know about it.
+
+ Initially written to be run on documents which have undergone a global
+ terminology change, but could be used in other contexts if desired.
+
+ There are no changes to the document.  Input doc => Output doc.
+
+                                        Author: Alan Meyer
+                                          Date: February, 2004
+ =========================================================================== -->
+<xsl:transform       xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                     xmlns:cdr = "cips.nci.nih.gov/cdr"
+                       version = "1.0">
+
+ <xsl:output            method = "xml"/>
+ <!--
+ ================================================================
+ Default rule, copy all document elements to output via recursion
+ ================================================================ -->
+ <xsl:template            match = "@*|comment()|*|
+                                  processing-instruction()|text()">
+  <xsl:copy>
+   <xsl:apply-templates  select = "@*|comment()|*|
+                                  processing-instruction()|text()"/>
+  </xsl:copy>
+ </xsl:template>
+
+ <!--
+ ================================================================
+ Check subelements of Intervention
+ ================================================================ -->
+ <xsl:template            match = "Intervention">
+  <!-- Are we missing a NameLink element? -->
+  <xsl:choose>
+   <xsl:when               test = "InterventionNameLink"/>
+   <xsl:otherwise>
+    <xsl:message terminate="no">No InterventionNameLink elements found for InterventionType=<xsl:value-of select="InterventionType/@cdr:ref"/>
+    </xsl:message>
+   </xsl:otherwise>
+  </xsl:choose>
+
+  <!-- Copy everything to output -->
+  <xsl:copy>
+   <xsl:apply-templates  select = "@*|comment()|*|
+                                  processing-instruction()|text()"/>
+  </xsl:copy>
+ </xsl:template>
+
+</xsl:transform>
