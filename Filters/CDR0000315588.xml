@@ -415,6 +415,10 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  ====================================================================
  Drop the CIPSContact attribute which is needed for mailers only.
  Ditto for UsedFor, MailAbstractTo.
+ Note: This template only handles the English version of the 
+       SourceTitle.  The Spanish version is handled specially in a
+       different template, so the removal of the SourceTitle has to
+       be handled within that template.
  ==================================================================== -->
  <xsl:template               match = "@UsedFor        |
                                       @CIPSContact    | 
@@ -695,37 +699,39 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  Drop the element if the translation doesn't exist and leave as is 
  otherwise.
  ===================================================================== -->
- <xsl:template               match = "RelatedExternalRef[@UseWith = 'es'] |
-                                      RelatedSummaryRef[@UseWith = 'es']"
-                              mode = "copy">
+ <xsl:template                   match = "RelatedExternalRef[@UseWith = 'es'] |
+                                          RelatedSummaryRef[@UseWith = 'es']"
+                                  mode = "copy">
   <xsl:choose>
-   <xsl:when                   test = "not(/GlossaryTerm/
+   <xsl:when                      test = "not(/GlossaryTerm/
                                            SpanishTermDefinition)">
-    <xsl:message          terminate = "no">
+    <xsl:message             terminate = "no">
      <xsl:text>&lt;LI class="warning"&gt;</xsl:text>
-     <xsl:value-of           select = "name()"/>
+     <xsl:value-of              select = "name()"/>
      <xsl:text>[UseWith='es']&lt;BR/&gt;</xsl:text>
      <xsl:text>Spanish RelatedExternalRef element exists but </xsl:text>
      <xsl:text>Spanish Term Definition missing.&lt;/LI&gt;</xsl:text>
     </xsl:message> 
    </xsl:when>
    <xsl:otherwise>
-    <xsl:element                name = "{name()}">
-    <xsl:for-each            select = "@*">
-     <xsl:choose>
-      <xsl:when                test = "starts-with(name(), 'cdr:')">
-       <xsl:attribute          name = "{substring-after(name(),':')}">
-        <xsl:value-of        select = "."/>
-       </xsl:attribute>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:attribute          name = "{name()}">
-        <xsl:value-of        select = "."/>
-       </xsl:attribute>
-      </xsl:otherwise>
-     </xsl:choose>
-    </xsl:for-each>
-    <xsl:apply-templates        mode = "copy"/>
+    <xsl:element                  name = "{name()}">
+
+     <xsl:for-each              select = "@*[name(.) != 'SourceTitle']">
+      <xsl:choose>
+       <xsl:when                  test = "starts-with(name(), 'cdr:')">
+        <xsl:attribute            name = "{substring-after(name(),':')}">
+         <xsl:value-of          select = "."/>
+        </xsl:attribute>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:attribute            name = "{name()}">
+         <xsl:value-of          select = "."/>
+        </xsl:attribute>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:for-each>
+
+     <xsl:apply-templates         mode = "copy"/>
     </xsl:element>
    </xsl:otherwise>
   </xsl:choose>
@@ -853,7 +859,7 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  Note:  This is not needed anymore.  We now display the Safety 
         attribute.
  ===================================================================== -->
- <xsl:template                    match = "XXXOutcome[@Safety]"
+ <xsl:template                   match = "XXXOutcome[@Safety]"
                                   mode = "copy">
 
   <xsl:comment>Safety comment needed for CTGovExport submission</xsl:comment>
