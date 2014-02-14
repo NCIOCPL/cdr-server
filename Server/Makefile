@@ -30,7 +30,7 @@ SVNUPD =svn update
 CDRBIN =$(CDR)/bin
 CDRLDIR=$(CDR)/lib
 CDRSVR =$(CDRBIN)/CdrServer.exe
-SERVICE=$(CDRBIN)/CdrService.exe
+SERVICE=CdrService.exe
 SECURE =-D_CRT_SECURE_NO_WARNINGS
 NONSTD =-D_CRT_NONSTDC_NO_DEPRECATE -D_CRT_NON_CONFORMING_SWPRINTFS
 COMPAT =$(SECURE) $(NONSTD)
@@ -159,7 +159,6 @@ _all: init CdrServer.exe CdrTestClient.exe
 _install: CdrServer.exe
 	-net stop Cdr
 	$(CP) CdrServer.exe $(CDRBIN)
-	$(CP) $(CDRLIB) $(CDRLDIR)
 	net start Cdr
 
 #--------------------------------------------------------------------------
@@ -191,17 +190,26 @@ service.obj: service.c service.h
 	$(CC) -c $(SVCFLGS) service.c
 
 #--------------------------------------------------------------------------
+# Rules for building tool for shutting down the server from a test-mode
+# run.
+#--------------------------------------------------------------------------
+
+ShutdownCdr.exe: ShutdownCdr.cpp
+	$(CC) $(CFLAGS) ShutdownCdr.cpp wsock32.lib
+
+#--------------------------------------------------------------------------
 # Rules for building test clients.
 #--------------------------------------------------------------------------
 
-CdrTestClient.exe: CdrTestClient.cpp $(CDRLIB)
-	$(CC) $(CFLAGS) CdrTestClient.cpp /link /LIBPATH:$(CDR)/lib \
-    cdr.lib wsock32.lib
-tCdrRegEx.exe: tCdrRegEx.cpp $(CDRLIB)
+CdrTestClient.exe: CdrTestClient.cpp catchexp.obj analyzeException.obj
+	$(CC) $(CFLAGS) CdrTestClient.cpp catchexp.obj analyzeException.obj \
+    wsock32.lib
+
+tCdrRegEx.exe: tCdrRegEx.cpp $(CDRLIB) CdrCtl.obj CdrSession.obj
 	$(CC) $(CFLAGS) tCdrRegEx.cpp CdrRegEx.obj CdrString.obj CdrLog.obj \
     CdrDbConnection.obj CdrDbResultSet.obj CdrDbStatement.obj \
-    CdrDbPreparedStatement.obj CdrDom.obj $(XERLIB).lib wsock32.lib \
-    odbc32.lib advapi32.lib
+    CdrCtl.obj CdrDbPreparedStatement.obj CdrDom.obj CdrSession.obj \
+    $(XERLIB).lib wsock32.lib odbc32.lib advapi32.lib
 
 #--------------------------------------------------------------------------
 # We're not doing dependency checking.

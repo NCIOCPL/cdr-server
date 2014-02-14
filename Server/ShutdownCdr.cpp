@@ -4,10 +4,10 @@
  * Program for submitting command to shut down the CDR server.
  *
  * Usage:
- *  CdrTestClient uid pwd [host [port]]
+ *  ShutdownCdr uid pwd [host [port]]
  *
  * Example:
- *  CdrTestClient rmk ***REDACTED*** mmdb2
+ *  ShutdownCdr rmk pw localhost 2020
  *
  * Default for host is "localhost"; default for port is 2019.
  */
@@ -27,10 +27,7 @@ const short CDR_PORT = 2019;
 // Local functions.
 static void         cleanup() { WSACleanup(); }
 
-main(int ac, char **av)
-{
-    int                 count;
-    std::string         requests;
+int main(int ac, char **av) {
 
     // Check the command line.
     if (ac < 3) {

@@ -31,8 +31,11 @@
 #define NPHRASES 10000
 #define PHRASE_LEN 32
 
-int main()
-{
+short Glbl_DEFAULT_CDR_PORT  = 2019;
+short Glbl_CurrentServerPort = Glbl_DEFAULT_CDR_PORT;
+
+int main() {
+
     wchar_t phrase[PHRASE_LEN + 1], target[PHRASE_LEN + 1];
     static wchar_t expression[NPHRASES * (PHRASE_LEN + 5)];
     struct Test {
