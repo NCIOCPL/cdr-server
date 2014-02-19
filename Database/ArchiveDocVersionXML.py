@@ -26,40 +26,15 @@ SCRIPT = "ArchiveDocVersionXML"
 TIMEOUT = 60 * 60 * 18
 
 # Messages here
-logf    = None
-LOGFILE = "%s.log" % SCRIPT
-LOGPATH = os.path.join(cdr.DEFAULT_LOGDIR, LOGFILE)
+logf        = None
+logFileName = "%s.log" % SCRIPT
+logDirName  = cdr.DEFAULT_LOGDIR
+logFullName = os.path.join(cdr.DEFAULT_LOGDIR, logFileName)
 
 # Set program defaults
 cfgBatchSize  = 1000
 cfgBatchCount = 999999999
-cfgSingleUser = True
-
-# For optimization purposes, we'd like to know what's happening
-# with the SQL Server log files.
-import socket
-host = socket.gethostname().lower()
-if host == 'bach':
-    cdrsqllog = "D:/mssqldata/MSSQL/Data/cdr_log.LDF"
-    arcsqllog = "D:/DB/MSSQL/Data/cdr_archived_versions_log.LDF"
-elif host == 'franck':
-    cdrsqllog = "D:/DB/cdr_log.ldf"
-    arcsqllog = "D:/Program Files/Microsoft SQL Server/MSSQL/Data" \
-                "/cdr_archived_versions_log.LDF"
-elif host == 'mahler':
-    cdrsqllog = "D:/mssqldata/MSSQL/Data/cdr_log.LDF"
-    arcsqllog = "D:/mssqldata/MSSQL/Data/cdr_archived_versions_log.ldf"
-
-def logFileSizes():
-    """
-    Log the current SQL Server database transaction log sizes.
-    Used to help us figure out optimal batchsize values.
-    """
-    global cdrsqllog, arcsqllog, logf
-
-    logf.write(["Size of transaction logs:",
-                "  cdr: %12d" % os.path.getsize(cdrsqllog),
-                "  arc: %12d" % os.path.getsize(arcsqllog)], stdout=True)
+cfgSingleUser = False
 
 
 def fatal(msg):
@@ -75,7 +50,7 @@ def fatal(msg):
 
     if logf:
         logf.write(fatalMsg, stderr=True)
-        sys.stderr.write("Message logged to %s\n" % LOGPATH)
+        sys.stderr.write("Message logged to %s\n" % logFullName)
 
     else:
         sys.stderr.write(fatalMsg)
@@ -91,17 +66,16 @@ def usage():
 Move doc_version XML from the cdr to the cdr_archived_version database
 on the server on which this script is run.
 
-usage: %s {options} user_id password command
+usage: %s {options} command
     options:
         --batchsize num   Copy this many rows in a batch.
                           High batchsize = most efficient.
                           Default=%d.
         --batchcount num  Copy this many batches, useful for debugging.
                           Default=all.
-        --multiuser       Run in multi-user mode, useful for testing.
-                          Default for copy and null commands is to stop the
-                          CdrServer, CdrPublishing, and place SQL Server in
-                          single user mode, restoring all after the run.
+        --logpath dirpath Write messages to dirpath/%s.
+                          Append if file already exists.
+                          Default = %s.
         --help            Print this usage message.
 
     commands:
@@ -117,22 +91,35 @@ usage: %s {options} user_id password command
 
     However, either form is safe to run by itself.
 
-    Errors are reported to stderr and to logfile:
-        %s
+    Errors are reported to stderr and appended to logfile.
 
 Considerations to think about:
 
- 1. Is there a current, verified backup of both the cdr and
+    Is there a current, verified backup of both the cdr and
     cdr_archived_versions?
- 2. Do you want to run in single user mode?
-    a. Have users been notified that the system will be unavailable?
-    b. Has monitoring software like Big Brother been turned off?
-""" % (SCRIPT, cfgBatchSize, LOGPATH))
+
+    Have users been notified if a slowdown in operations is expected?
+
+Notes:
+
+    The option to run with the database in single user mode has been removed
+    for compatibility with the CBIIT environment.  Read the code if you need
+    to try it anyway.
+""" % (SCRIPT, cfgBatchSize, logFileName, logDirName))
     sys.exit(1)
 
 class SingleUser:
     """
     Controls all info used to go in or out of single user mode.
+
+    Single user mode for the database used to be the default but is now
+    optional and hidden.  It is optional because it is conceivable that there
+    migght be a case where it can work and be useful and the code is already
+    written and tested in the old OCE environment.
+
+    It is hidden because it is untested in the CBIIT environment and does
+    things that, if they are even allowed, could be deleterious to other
+    users of CBIIT servers.
     """
     def __init__(self, logf):
         """
@@ -418,11 +405,12 @@ class SingleUser:
 
 
 # Usage
-if len(sys.argv) < 3 or sys.argv[1] == '--help':
+if len(sys.argv) < 2 or sys.argv[1] == '--help':
+    print("len1=%d" % len(sys.argv))
     usage()
 
 # Args
-opts = "batchsize= batchcount= multiuser help".split()
+opts = "batchsize= batchcount= logpath= singleuser help".split()
 try:
     optlist, args = getopt.getopt(sys.argv[1:], "", opts)
 except getopt.error, info:
@@ -440,25 +428,46 @@ for opt in optlist:
             cfgBatchCount = int(opt[1])
         except ValueError:
             fatal("--batchcount requires numeric argument")
-    elif opt[0] == "--multiuser":
-        cfgSingleUser = False
+    elif opt[0] == "--logpath":
+        # Construct new full filename and test accessibility
+        logDirName  = opt[1]
+        logFullName = os.path.join(logDirName, logFileName)
+        try:
+            fp = open(logFullName, "a")
+        except IOError as e:
+            fatal("Cannot access %s: %s" % (logFullName, e.strerror))
+        fp.close()
+    elif opt[0] == "--singleuser":
+        cfgSingleUser = True
 
 # All command line args received?
-if len(args) != 3:
+if len(args) != 1:
+    print("len2=%d" % len(args))
     usage()
 
-usr = args[0]
-pw  = args[1]
-cmd = args[2].lower()
+# usr = args[0]
+# pw  = args[1]
+# cmd = args[2].lower()
+cmd = args[0].lower()
 
-# Check user credentials
-session = cdr.login(usr, pw)
-if session.startswith("<Err"):
-    fatal("Unable to log in user '%s': %s" % (usr, session))
-
-# But don't need them for anything else and session will close
-#   anyway if we go to single user mode
-cdr.logout(session)
+##########
+# Check user credentials.
+#
+# Removed the following.  If CBIIT is running the script, they would
+# need CDR credentials - which they don't have and it might be inconvenient
+# to give them.
+#
+# NOTE: If userid and password are to be required again, must re-add
+#       them to command line parameter processing.
+#
+# session = cdr.login(usr, pw)
+# if session.startswith("<Err"):
+#     fatal("Unable to log in user '%s': %s" % (usr, session))
+#
+# # But don't need them for anything else and session will close
+# #   anyway if we go to single user mode
+# cdr.logout(session)
+##########
 
 # Construct queries based on config parameters
 insertQry = """
@@ -529,18 +538,17 @@ if cmd in ("reportcopy", "reportnull"):
 # For debug
 progParms = """
 Program parameters:
-    user          = %s
     command       = %s
     cfgBatchSize  = %d
     cfgBatchCount = %d
     cfgSingleUser = %s
-""" % (usr, cmd, cfgBatchSize, cfgBatchCount, cfgSingleUser)
+    logFullName   = %s
+""" % (cmd, cfgBatchSize, cfgBatchCount, cfgSingleUser, logFullName)
 
 # Start logging
-logf = cdr.Log(LOGFILE, logPID=False)
+logf = cdr.Log(logFileName, logDirName, logPID=False)
 logf.write(progParms)
 logf.write("Will execute query: %s" % qry)
-logFileSizes()
 
 ######## DEBUG #########
 # sys.exit(1)
@@ -578,7 +586,6 @@ while i < cfgBatchCount:
         logf.write("Starting query", stdout=True)
         cursor.execute(qry, timeout=TIMEOUT)
         logf.write("Finished query", stdout=True)
-        logFileSizes()
 
         # Stats
         batchesStats += 1
