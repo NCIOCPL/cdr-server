@@ -1,51 +1,67 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- $Id$ -->
 <!-- Filter title: DocTitle for Term -->
-   <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                    version="1.0"
-                  xmlns:cdr="cips.nci.nih.gov/cdr">
-   <xsl:output method="text"/>
-   <!--Filter written by C.Burg - 10/30/2001 -->
+<!--
+================================================================
+$Id$
 
-   <!-- ==========================================================
-          This program is a filter to display the Terminology
-          titles  
-        ==========================================================-->
-          <xsl:template match="Term">
+DocTitle Filter: Terminology
 
-   <!-- ======================================
-         Display Preferred Term name 
-        ======================================-->
-      <xsl:if test="PreferredName">
-         <xsl:for-each select="PreferredName">
-            <xsl:value-of select="."/>;<xsl:text/>
-         </xsl:for-each>
-      </xsl:if>
+OCECDR-3717: Term with ampersand character in it produces errors
+             in protocols
 
-      <!-- ====================================
-            Display Term Type 
-           ====================================-->
-         <xsl:if test="TermType/TermTypeName">
-         <xsl:for-each select="TermType/TermTypeName">
-         <xsl:value-of select="."/>;<xsl:text/>
-         </xsl:for-each>
-         </xsl:if>
+Filter written by C.Burg - 10/30/2001
+================================================================ -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0">
+ <xsl:output                    method = "html"/>
 
-      <!-- =========================================
-            Display Semantic Type 
-            Modified 10/09/2002 (CB) to replace SemanticTypeText
-            with SematicType
-           ========================================= -->
+ <!-- 
+ ===============================================================
+ This program is a filter to display the Terminology titles  
+ =============================================================== -->
+ <xsl:template                   match = "Term">
+  <!-- 
+  ==============================================================
+  Display Preferred Term name 
+  ============================================================== -->
+  <xsl:if                         test = "PreferredName">
+   <xsl:value-of                select = "PreferredName"/>
+   <xsl:text>;</xsl:text>
+  </xsl:if>
 
-        <xsl:if test="SemanticType">
-        <xsl:for-each select="SemanticType">
-        <xsl:variable name="Ref" select="@cdr:ref"/>
-        <xsl:variable name="SemTypeID" select="@cdr:ref"/>
-        <xsl:variable name="SemTypeInfo" select="document(concat ('cdr:',$SemTypeID,'/lastp'))"/>
-        <xsl:value-of select="$SemTypeInfo/Term/PreferredName"/>
-        <xsl:if test="position() !=last()">;<xsl:text/></xsl:if>
-        </xsl:for-each>
-        </xsl:if>
-        </xsl:template>
+  <!-- 
+  ==============================================================
+  Display Term Type 
+  ============================================================== -->
+  <xsl:if                         test = "TermType/TermTypeName">
+   <xsl:for-each                select = "TermType/TermTypeName">
+    <xsl:value-of               select = "."/>
+    <xsl:text>;</xsl:text>
+   </xsl:for-each>
+  </xsl:if>
 
-  </xsl:transform>
+  <!-- 
+  ==============================================================
+  Display Semantic Type 
+  Modified 10/09/2002 (CB) to replace SemanticTypeText with 
+  SematicType
+  ============================================================== -->
+  <xsl:if                         test = "SemanticType">
+   <xsl:for-each                select = "SemanticType">
+    <xsl:variable                 name = "Ref" 
+                                select = "@cdr:ref"/>
+    <xsl:variable                 name = "SemTypeID" 
+                                select = "@cdr:ref"/>
+    <xsl:variable                 name = "SemTypeInfo" 
+                                select = "document(concat ('cdr:',$SemTypeID,
+                                                                  '/lastp'))"/>
+    <xsl:value-of               select = "$SemTypeInfo/Term/PreferredName"/>
+    <xsl:if                       test = "position() != last()">
+     <xsl:text>;</xsl:text>
+    </xsl:if>
+   </xsl:for-each>
+  </xsl:if>
+ </xsl:template>
+</xsl:transform>
