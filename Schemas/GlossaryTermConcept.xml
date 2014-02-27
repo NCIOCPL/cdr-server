@@ -26,6 +26,23 @@
      >duplicate audience values not allowed</assert>
     </rule>
    </pattern>
+
+   <!--=================================================================-->
+    If there's more than one RelatedExternalRef, each one must have a 
+    UseWith attribute, otherwise Publish Preview objects.
+   <!--=================================================================-->
+   <pattern>
+    <rule            context         = '/GlossaryTermConcept/RelatedInformation'>
+     <assert         test            = 
+                            "(count(/GlossaryTermConcept/RelatedInformation
+                                    /RelatedExternalRef) &lt; 2) or (
+                             count(/GlossaryTermConcept/RelatedInformation
+                                    /RelatedExternalRef) =
+                             count(/GlossaryTermConcept/RelatedInformation
+                                    /RelatedExternalRef/@UseWith))"
+     >If more than one RelatedExternalRef, each must have UseWith attr</assert>
+    </rule>
+   </pattern>
 <!--
    <pattern>
     <rule            context         = 'TermDefinition'>
@@ -247,9 +264,9 @@
                      type            = 'string'
                      minOccurs       = '0'/>
 
-        <!-- Language(s) of linking document; e.g.: UseWith='en sp' -->
+        <!-- Language(s) of linking document; e.g.: UseWith='en' or 'es' -->
         <attribute   name            = 'UseWith'
-                     type            = 'NMTOKENS'
+                     type            = 'UseWithLanguage'
                      minOccurs       = '0'/>
       </extension>
     </simpleContent>
@@ -261,9 +278,9 @@
         <attribute   name            = 'cdr:ref'
                      type            = 'DocId'/>
 
-        <!-- Language(s) of linking document; e.g.: UseWith='en sp' -->
+        <!-- Language(s) of linking document; e.g.: UseWith='en' or 'es' -->
         <attribute   name            = 'UseWith'
-                     type            = 'NMTOKENS'
+                     type            = 'UseWithLanguage'
                      minOccurs       = '0'/>
       </extension>
     </simpleContent>
@@ -345,6 +362,13 @@
   <!-- Spanish is all we handle right now. -->
   <simpleType        name            = 'GlossaryLanguage'>
     <restriction     base            = 'string'>
+      <enumeration   value           = 'es'/>
+    </restriction>
+  </simpleType>
+
+  <simpleType        name            = 'UseWithLanguage'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'en'/>
       <enumeration   value           = 'es'/>
     </restriction>
   </simpleType>
