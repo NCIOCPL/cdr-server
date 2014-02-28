@@ -1234,9 +1234,9 @@ cdr::String cdr::lastVersions(Session& session,
            << L"</LastVersionNum>\n";
 
   // Find last publishable version, if any
+  // Note: publishable version is unvalidated for doc types like filters
   db::PreparedStatement pubPs = dbConnection.prepareStatement(
-     "SELECT max(num) FROM doc_version WHERE id = ? "
-     "AND val_status = 'V' AND publishable = 'Y'");
+     "SELECT max(num) FROM doc_version WHERE id = ? AND publishable = 'Y'");
   pubPs.setInt(1, docId);
   db::ResultSet pubRs = pubPs.executeQuery();
   if (pubRs.next()) {
