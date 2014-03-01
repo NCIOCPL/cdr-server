@@ -297,7 +297,7 @@ namespace
   };
 
   /*************************************************************************/
-  /* Find corresponding patient version for HP summary.
+  /* Find corresponding patient version for HP summary.                    */
   /*************************************************************************/
   class PatientSummary : public cdr::Report
   {
@@ -312,7 +312,7 @@ namespace
   };
 
   /*************************************************************************/
-  /* Find corresponding person document linked from board member document.
+  /* Find corresponding person document linked from board member document. */
   /*************************************************************************/
   class BoardMember : public cdr::Report
   {
@@ -327,13 +327,28 @@ namespace
   };
 
   /*************************************************************************/
-  /* Find GlossaryTermName documents linked to a GlossaryTermConcept doc.
+  /* Find GlossaryTermName documents linked to a GlossaryTermConcept doc.  */
   /*************************************************************************/
   class GlossaryTermNames : public cdr::Report
   {
     public:
       GlossaryTermNames() :
           cdr::Report("Glossary Term Names") {}
+
+    private:
+      virtual cdr::String execute(cdr::Session& session,
+                                  cdr::db::Connection& dbConnection,
+                                  cdr::Report::ReportParameters parm);
+  };
+
+  /*************************************************************************/
+  /* Find Term documents used to represent genetics syndromes.             */
+  /*************************************************************************/
+  class GeneticsSyndromes : public cdr::Report
+  {
+    public:
+      GeneticsSyndromes() :
+          cdr::Report("Genetics Syndromes") {}
 
     private:
       virtual cdr::String execute(cdr::Session& session,
@@ -1150,6 +1165,7 @@ struct TargetDoc {
   PatientSummary                patientSummary;
   BoardMember                   boardMember;
   GlossaryTermNames             glossaryTermNames;
+  GeneticsSyndromes             geneticsSyndromes;
   TermSets                      termSets;
   ValuesForPath                 valuesForPath;
 #if 0
@@ -1285,6 +1301,44 @@ struct TargetDoc {
                << L"'>"
                << cdr::entConvert(name)
                << L"</GlossaryTermName>\n";
+    }
+    result << L"]]></ReportBody>\n";
+    select.close();
+    return result.str();
+  }
+
+  cdr::String GeneticsSyndromes::execute(cdr::Session& session,
+                                         cdr::db::Connection& dbConnection,
+                                         cdr::Report::ReportParameters parm)
+  {
+    char* query =
+        "  SELECT n.doc_id, n.value                                     "
+        "    FROM query_term n                                          "
+        "    JOIN query_term t                                          "
+        "      ON n.doc_id = t.doc_id                                   "
+        "     AND LEFT(n.node_loc, 8) = LEFT(t.node_loc, 8)             "
+        "    JOIN query_term s                                          "
+        "      ON n.doc_id = s.doc_id                                   "
+        "     AND LEFT(n.node_loc, 8) = LEFT(s.node_loc, 8)             "
+        "   WHERE n.path = '/Term/MenuInformation/MenuItem/DisplayName' "
+        "     AND t.path = '/Term/MenuInformation/MenuItem/MenuType'    "
+        "     AND s.path = '/Term/MenuInformation/MenuItem/MenuStatus'  "
+        "     AND s.value = 'Online'                                    "
+        "     AND t.value = 'Genetics Professionals--GeneticSyndrome'   "
+        "ORDER BY 2                                                     ";
+    cdr::db::Statement select = dbConnection.createStatement();
+    cdr::db::ResultSet rs = select.executeQuery(query);
+    wostringstream result;
+    result << L"<ReportBody><![CDATA[\n"
+              L"<ReportName>" << getName() << L"</ReportName>\n";
+    while (rs.next()) {
+        int id = rs.getInt(1);
+        cdr::String title = rs.getString(2);
+        result << L"<ReportRow><DocId>"
+               << cdr::stringDocId(id)
+               << L"</DocId><DocTitle>"
+               << cdr::entConvert(title)
+               << L"</DocTitle></ReportRow>\n";
     }
     result << L"]]></ReportBody>\n";
     select.close();
