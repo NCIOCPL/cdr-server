@@ -6,6 +6,7 @@
  * BZIssue::595
  * BZIssue::1363
  * BZIssue::4839
+ * JIRA::OCECDR-3732 - custom support for genetics syndrome picklists
  */
 
 #if defined _MSC_VER
@@ -1311,23 +1312,30 @@ struct TargetDoc {
                                          cdr::db::Connection& dbConnection,
                                          cdr::Report::ReportParameters parm)
   {
+    cdr::String titlePattern;
+    ReportParameters::iterator i = parm.find(L"TitlePattern");
+    if (i != parm.end())
+        titlePattern = i->second;
+    if (titlePattern.empty())
+        titlePattern = L"%";
+    std::wcout << L"titlePattern: " << titlePattern << std::endl;
     char* query =
-        "  SELECT n.doc_id, n.value                                     "
-        "    FROM query_term n                                          "
+        "  SELECT DISTINCT d.id, d.title                                "
+        "    FROM document d                                            "
         "    JOIN query_term t                                          "
-        "      ON n.doc_id = t.doc_id                                   "
-        "     AND LEFT(n.node_loc, 8) = LEFT(t.node_loc, 8)             "
+        "      ON t.doc_id = d.id                                       "
         "    JOIN query_term s                                          "
-        "      ON n.doc_id = s.doc_id                                   "
-        "     AND LEFT(n.node_loc, 8) = LEFT(s.node_loc, 8)             "
-        "   WHERE n.path = '/Term/MenuInformation/MenuItem/DisplayName' "
-        "     AND t.path = '/Term/MenuInformation/MenuItem/MenuType'    "
+        "      ON s.doc_id = t.doc_id                                   "
+        "     AND LEFT(s.node_loc, 8) = LEFT(t.node_loc, 8)             "
+        "   WHERE t.path = '/Term/MenuInformation/MenuItem/MenuType'    "
         "     AND s.path = '/Term/MenuInformation/MenuItem/MenuStatus'  "
         "     AND s.value = 'Online'                                    "
         "     AND t.value = 'Genetics Professionals--GeneticSyndrome'   "
+        "     AND d.title LIKE ?                                        "
         "ORDER BY 2                                                     ";
-    cdr::db::Statement select = dbConnection.createStatement();
-    cdr::db::ResultSet rs = select.executeQuery(query);
+    cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
+    select.setString(1, titlePattern);
+    cdr::db::ResultSet rs = select.executeQuery();
     wostringstream result;
     result << L"<ReportBody><![CDATA[\n"
               L"<ReportName>" << getName() << L"</ReportName>\n";
