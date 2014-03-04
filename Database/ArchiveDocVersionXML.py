@@ -35,6 +35,7 @@ logFullName = os.path.join(cdr.DEFAULT_LOGDIR, logFileName)
 cfgBatchSize  = 1000
 cfgBatchCount = 999999999
 cfgSingleUser = False
+cfgReadOnly   = False
 
 
 def fatal(msg):
@@ -76,6 +77,7 @@ usage: %s {options} command
         --logpath dirpath Write messages to dirpath/%s.
                           Append if file already exists.
                           Default = %s.
+        --readonly        Uses SQL account that can read but not write to DB.
         --help            Print this usage message.
 
     commands:
@@ -125,6 +127,10 @@ class SingleUser:
         """
         Initialize.
         """
+        global cfgReadOnly
+        if cfgReadOnly:
+            fatal("Cannot go into single user mode when in read only mode")
+
         self.logf = logf
 
         # True  = Single-user mode
@@ -410,7 +416,7 @@ if len(sys.argv) < 2 or sys.argv[1] == '--help':
     usage()
 
 # Args
-opts = "batchsize= batchcount= logpath= singleuser help".split()
+opts = "batchsize= batchcount= logpath= readonly singleuser help".split()
 try:
     optlist, args = getopt.getopt(sys.argv[1:], "", opts)
 except getopt.error, info:
@@ -437,6 +443,8 @@ for opt in optlist:
         except IOError as e:
             fatal("Cannot access %s: %s" % (logFullName, e.strerror))
         fp.close()
+    elif opt[0] == "--readonly":
+        cfgReadOnly = True
     elif opt[0] == "--singleuser":
         cfgSingleUser = True
 
@@ -572,8 +580,11 @@ if cfgSingleUser:
     conn = suObj.setSingleUser()
 else:
     try:
-        conn = cdrdb.connect()
-        conn.setAutoCommit(True)
+        if cfgReadOnly:
+            conn = cdrdb.connect("CdrGuest")
+        else:
+            conn = cdrdb.connect()
+            conn.setAutoCommit(True)
     except cdrdb.Error, info:
         fatal("Unable to connect to SQL Server: %s" % info)
 
