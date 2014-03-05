@@ -58,6 +58,18 @@ SELECT COUNT(q1.doc_id) AS cnt
      >More than one Summary has the same SummaryURL with no WillReplace element</assert>
     </rule>
    </pattern>
+   <pattern>
+    <rule            context         = 'PatientVersionOf'>
+     <assert test = '/Summary/SummaryMetaData/SummaryLanguage = 
+       document(concat("cdrutil:/sql-query/
+          SELECT value
+            FROM query_term
+           WHERE path = &apos;/Summary/SummaryMetaData/SummaryLanguage&apos;
+             AND doc_id = ?~",
+             string(number(substring(@cdr:ref,4)))))/SqlResult/row/col'
+     >SummaryLanguage in Patient and linked-to HP Summary must match</assert>
+    </rule>
+   </pattern>
   </appInfo>
  </annotation>
 
