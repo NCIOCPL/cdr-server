@@ -3,6 +3,7 @@
 <!-- Filter title: Copy XML for GeneticsProfessional -->
 <!--
 BZIssue::4629
+OCECDR-3715: [Genetic Professional] Filter to sort Family Syndromes
 -->
 <xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
                              xmlns:cdr = 'cips.nci.nih.gov/cdr'
@@ -16,7 +17,15 @@ BZIssue::4629
  <xsl:include  href = "cdr:name:Module: Vendor Address Templates"/>
 
  <!--
+ The key is used to identify unique nodes of cancer syndromes
+ ============================================================ -->
+ <xsl:key      name = "sort-familialsyndrome"
+              match = "Term/DisplayName"
+                use = "."/>
+
+ <!--
  =========================================================================== 
+ Template to sort the TermMenus
  =========================================================================== -->
  <xsl:template                   match = "TermMenus"
                                   mode = "copy">
@@ -59,18 +68,61 @@ BZIssue::4629
 
  <!--
  =========================================================================== 
+ Template to remove the TermMenu and SqlResult elements from the output
  =========================================================================== -->
  <xsl:template                  match = "TermMenu  |
                                          SqlResult"/>
 
  <!--
  =========================================================================== 
+ Template to sort the FamilialCancerSyndrome
  =========================================================================== -->
- <xsl:template                   match = "*">
+ <xsl:template                   match = "GeneticsProfessionalDetails"
+                                  mode = "copy">
   <xsl:copy>
-   <xsl:apply-templates           mode = "copy"/>
+   <xsl:apply-templates         select = "*[not(self::FamilialCancerSyndrome)]
+                                           [not(self::MemberOfGeneticsSociety)]"
+                                  mode = "copy"/>
+
+   <xsl:apply-templates         select = "FamilialCancerSyndrome"
+                                  mode = "sorting">
+    <xsl:sort                   select = "Term/DisplayName"/>
+   </xsl:apply-templates>
+   <xsl:apply-templates         select = "MemberOfGeneticsSociety"
+                                  mode = "copy"/>
   </xsl:copy>
  </xsl:template>
 
+
+ <!--
+ =========================================================================== 
+ Template to display the sorted FamilialCancerSyndrome based on the 
+ DisplayName.  Additionally, we only pick up the first of each 
+ FamilialCancerSyndrome node for which the Term/DisplayName are 
+ identical (de-duping with the help of a key).
+ =========================================================================== -->
+ <xsl:template                   match = "FamilialCancerSyndrome"
+                                  mode = "sorting">
+  <xsl:if                         test = "Term/DisplayName[count(.|key('sort-familialsyndrome',.)[1])=1]">
+   <xsl:apply-templates         select = "."/>
+  </xsl:if>
+<!-- 
+<xsl:apply-templates
+ select="Term/DisplayName[count(.|key('sort-familialsyndrome',.)[1])=1]">
+</xsl:apply-templates>
+-->
+   
+ </xsl:template>
+
+
+ <!--
+ =========================================================================== 
+ =========================================================================== -->
+ <xsl:template                   match = "@* | node()">
+  <xsl:copy>
+   <xsl:apply-templates         select = "@* | node()"  
+                                  mode = "copy"/>
+  </xsl:copy>
+ </xsl:template>
 
 </xsl:transform>
