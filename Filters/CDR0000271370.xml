@@ -104,7 +104,7 @@ BZIssue::5274 - Mobile images in Spanish Summaries
 
   <!--
   This block is for a GlossaryTerm document with a MediaLink element 
-  shared between the English and Spanish version like the "chest x-ray"
+  shared between the English and Spanish version like the "peau d'orange"
   ======================================================================= -->
   <xsl:choose>
    <xsl:when                      test = "$whoAmI = 'GlossaryTerm'
@@ -291,18 +291,14 @@ BZIssue::5274 - Mobile images in Spanish Summaries
      This is done only for images (not for audio files) as the captions 
      may be written for HP or patients (a.k.a. the genetics or the 
      patient dictionary).
+     Note:  
+       This section is called for MediaLinks NOT shared between the 
+       English and Spanish version.
      =================================================================== -->
      <xsl:if                      test = "/GlossaryTermName
                                           and
                                           not($mediaLinkType = 'audio/mpeg')">
-      <xsl:attribute              name = "audience">
-       <xsl:value-of            select = "translate(../Audience, ' ', '_')"/>
-       <!-- For some strange reason the Audience element uses singular 
-            rather than plural values but the DTD specifies plurals for
-            all of it's audience attribute values
-            The final values are:  [Patients | Health_professionals] -->
-       <xsl:text>s</xsl:text>
-      </xsl:attribute>
+      <xsl:call-template          name = "addAudience"/>
      </xsl:if>
 
      <!--
@@ -488,6 +484,9 @@ BZIssue::5274 - Mobile images in Spanish Summaries
  <!--
  ======================================================================
  Named template to create the media captions for GlossaryTerm documents
+ This template is used when an image is shared between the English and
+ Spanish definition.  In this case we're creating one MediaLink item
+ for each language and the default audience is 'Patients'.
  ====================================================================== -->
  <xsl:template                    name = "createMediaLink">
   <xsl:param                      name = "mediaRef"/>
@@ -568,6 +567,14 @@ BZIssue::5274 - Mobile images in Spanish Summaries
    <xsl:attribute                 name = "language">
     <xsl:value-of               select = "$capLanguage"/>
    </xsl:attribute>
+
+   <!--
+   For images in GlossaryTerm documents we need to add an audience
+   attribute
+   =============================================================== -->
+   <xsl:if                        test = "/GlossaryTermName">
+    <xsl:call-template            name = "addAudience"/>
+   </xsl:if>
 
    <!--
    Per request from Cancer.gov the thumb attribute will always be set to
@@ -732,6 +739,39 @@ BZIssue::5274 - Mobile images in Spanish Summaries
     </xsl:choose>
    </xsl:otherwise>
   </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ======================================================================
+ For GlossaryTerm documents the audience attribute is being added.
+ This is done only for images (not for audio files) as the captions 
+ may be written for HP or patients (a.k.a. the genetics or the 
+ patient dictionary).
+
+ Note: 
+   For some reason the Audience element uses singular rather than 
+   plural values but the DTD specifies plurals for all of it's audience 
+   element and attribute values
+   The final values are:  [Patients | Health_professionals]
+ ====================================================================== -->
+ <xsl:template                    name = "addAudience">  
+  <xsl:attribute                  name = "audience">
+   <xsl:choose>
+    <!--
+    This section is for MediaLinks within each language/dictionary section -->
+    <xsl:when                     test = "../Audience">
+     <xsl:value-of              select = "translate(../Audience, ' ', '_')"/>
+     <xsl:text>s</xsl:text>
+    </xsl:when>
+    <!--
+    This section is for MediaLinks shared between English and Spanish
+    The default audience is always 'Patients' -->
+    <xsl:otherwise>
+     <xsl:text>Patients</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:attribute>
  </xsl:template>
 
 
