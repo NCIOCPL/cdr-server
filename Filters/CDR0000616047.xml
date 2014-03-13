@@ -11,6 +11,7 @@
 BZIssue::5115 - Images Missing from GlossaryTerms
 OCECDR-3528: Ability to put links to other Dictionary terms in More 
              Information block on Cancer.gov
+CDECDR-3735: [Media] Audio files ready to be uploaded
 
  ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -74,7 +75,7 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
 
  <!--
  =================================================================
- Denormalize the GlossaryTermConcept information
+ Template to collect all RelatedInformation elements
  ================================================================= -->
  <xsl:template                   match = "RelatedInformation">
   <xsl:copy>
@@ -88,7 +89,7 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
 
  <!--
  =================================================================
- Denormalize the GlossaryTermConcept information
+ Template to create the RelatedSummaryRef element
  ================================================================= -->
  <xsl:template                   match = "RelatedSummaryRef">
   <xsl:variable                   name = "relatedId"
@@ -115,7 +116,7 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
 
  <!--
  =================================================================
- Denormalize the GlossaryTermConcept information
+ Template to create the RelatedDrugSummaryLink element
  ================================================================= -->
  <xsl:template                   match = "RelatedDrugSummaryLink">
   <xsl:variable                   name = "relatedId"
@@ -137,6 +138,54 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
                                             Title"/>
   </xsl:element>
   </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ =================================================================
+ Template to remove MediaLink elements if they are pointing to 
+ blocked documents.
+ ================================================================= -->
+ <xsl:template                   match = "MediaLink">
+  <xsl:variable                   name = "mediaNormId"
+                                select = "number(
+                                           substring-before(
+                                           concat(
+                                           substring-after(MediaID/@cdr:ref, 
+                                                       'CDR'), '#'), '#'))"/>
+  
+  <xsl:variable                   name = "sqlStatusQuery">
+          SELECT active_status
+            FROM document
+           WHERE id = ?
+  </xsl:variable>
+  
+  <xsl:variable                   name = "sqlStatusRows" 
+                                select = "document(
+                                           concat('cdrutil:/sql-query/',
+                                                   $sqlStatusQuery,
+                                                   '~',
+                                                   $mediaNormId))"/>
+  
+  <xsl:variable                   name = "sqlStatusResult">
+   <xsl:copy-of                 select = "$sqlStatusRows"/>
+  </xsl:variable>
+
+
+  <!--
+  Only include active media documents (active_status = 'A')
+  ========================================================= -->
+  <xsl:if                         test = "$sqlStatusResult/
+                                            SqlResult/row/col = 'A'">
+  <xsl:copy>
+   <xsl:for-each                select = "@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+   <xsl:apply-templates/>
+  </xsl:copy>
+  </xsl:if>
  </xsl:template>
 
 
