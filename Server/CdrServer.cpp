@@ -375,7 +375,7 @@ void realDispatcher(const ThreadArgs* threadArgs) {
     cdr::String now = conn.getDateTimeString();
     now[10] = L'T';
 #ifndef _NDEBUG
-    std::wcout << L"NOW=" << now << L"\n";
+    // std::wcout << L"NOW=" << now << L"\n";
 #endif
 
     // Create thread specific log pointer
