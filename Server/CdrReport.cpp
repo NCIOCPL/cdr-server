@@ -581,7 +581,7 @@ namespace
     while (rs.next())
     {
       int         id    = rs.getInt(1);
-      cdr::String title = rs.getString(2);
+      cdr::String title = cdr::entConvert(rs.getString(2));
       cdr::String type  = rs.getString(3);
       if (id != currentId)
       {
@@ -663,7 +663,7 @@ namespace
     while (rs.next())
     {
       int         id    = rs.getInt(1);
-      cdr::String title = rs.getString(2);
+      cdr::String title = cdr::entConvert(rs.getString(2));
       result << L"<ReportRow>\n"
                 L"<DocId>" << cdr::stringDocId(id) << L"</DocId>\n"
                 L"<DocTitle>" << title << L"</DocTitle>\n"
@@ -788,7 +788,7 @@ namespace
         result << L"<ReportRow><DocId>"
                << cdr::stringDocId(poId)
                << L"</DocId><DocTitle>"
-               << poName
+               << cdr::entConvert(poName)
                << L"</DocTitle>"
                << groupElem;
         prevId = poId;
@@ -862,7 +862,7 @@ namespace
       result << L"<ReportRow><DocId>"
              << cdr::stringDocId(*idIter++)
              << L"</DocId><DocTitle>"
-             << *titleIter++
+             << cdr::entConvert(*titleIter++)
              << L"</DocTitle>"
              << cdr::filterDocument(docXml, filterXml, dbConnection, 0, &parms)
              << L"</ReportRow>";
