@@ -308,8 +308,11 @@ cdr::cache::Term * cdr::cache::Term::getTerm(
             nodeName = node.getNodeName();
 
             // Preferred name of the Term
+            // We store it as an std::string in utf-8 with reserved chars
+            //   replaced by character entities (e.g., "&amp;")
             if (nodeName == L"PreferredName")
-              pTerm->name = cdr::dom::getTextContent(node).toUtf8();
+              pTerm->name =
+                  cdr::entConvert(cdr::dom::getTextContent(node)).toUtf8();
 
             // Save PdqKey to use as an attribute
             if (nodeName == L"PdqKey")
