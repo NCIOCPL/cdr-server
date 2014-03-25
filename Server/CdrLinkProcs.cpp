@@ -987,7 +987,7 @@ cdr::String cdr::link::getSearchLinksRespWithProp (
         swprintf(tmp, L"<QueryResult><DocId>CDR%010ld</DocId>"
                       L"<DocTitle>%.500s</DocTitle>"
                       L"</QueryResult>",
-                 id, title.c_str());
+                 id, cdr::entConvert(title).c_str());
         response += tmp;
     }
     if (rows > 0)

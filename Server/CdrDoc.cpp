@@ -1293,7 +1293,8 @@ cdr::String cdr::CdrDoc::getSerialXml()
                        + textDocType
                        + L"' Id='" + textId + L"'>\n"
                        + L"<CdrDocCtl>\n"
-                       + L" <DocTitle>" + title + L"</DocTitle>\n"
+                       + L" <DocTitle>" + cdr::entConvert(title)
+                       + L"</DocTitle>\n"
                        + L" <DocActiveStatus>" + activeStatus
                        + L"</DocActiveStatus>\n"
                        + L"</CdrDocCtl>\n"

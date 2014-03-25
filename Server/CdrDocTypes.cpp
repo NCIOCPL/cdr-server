@@ -125,7 +125,7 @@ cdr::String cdr::listSchemaDocs(Session&          session,
     // Pull in the names from the result set.
     cdr::String response;
     while (r.next()) {
-        String name = r.getString(1);
+        String name = cdr::entConvert(r.getString(1));
         if (name.length() < 1)
             continue;
         if (response.size() == 0)
