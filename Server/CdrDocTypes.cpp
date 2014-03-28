@@ -125,12 +125,12 @@ cdr::String cdr::listSchemaDocs(Session&          session,
     // Pull in the names from the result set.
     cdr::String response;
     while (r.next()) {
-        String name = cdr::entConvert(r.getString(1));
+        String name = r.getString(1);
         if (name.length() < 1)
             continue;
         if (response.size() == 0)
             response = L"<CdrListSchemaDocsResp>";
-        response += L"<DocTitle>" + name + L"</DocTitle>";
+        response += L"<DocTitle>" + cdr::entConvert(name) + L"</DocTitle>";
     }
     if (response.size() == 0)
         return L"<CdrListSchemaDocsResp/>";
@@ -275,7 +275,7 @@ cdr::String cdr::getDocType(Session&          session,
         resp << L"</LinkingElements>";
     }
     if (!comment.isNull())
-        resp << L"<Comment>" << comment << L"</Comment>";
+        resp << L"<Comment>" << cdr::entConvert(comment) << L"</Comment>";
     resp << L"</CdrGetDocTypeResp>";
     return resp.str();
 }
@@ -625,8 +625,8 @@ cdr::String cdr::getCssFiles(Session&          session,
         // Preserve Latin-1 encoding; these files aren't using utf-8.
         cdr::String css(blob.size(), L'\0');
         std::copy(blob.begin(), blob.end(), css.begin());
-        resp += L"<File><Name>" + title + L"</Name><Data>"
-                                + css   + L"</Data></File>";
+        resp += L"<File><Name>" + cdr::entConvert(title) + L"</Name><Data>"
+                                + cdr::entConvert(css)   + L"</Data></File>";
     }
 
     // Send back the set.
