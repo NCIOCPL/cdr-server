@@ -94,7 +94,7 @@ cdr::String cdr::getAction(cdr::Session& session,
     cdr::String resp = L"<CdrGetActionResp>"
                        L"<Name>" + name + L"</Name>"
                        L"<DoctypeSpecific>" + flag + L"</DoctypeSpecific>"
-                       L"<Comment>" + comment + L"</Comment>"
+                       L"<Comment>" + cdr::entConvert(comment) + L"</Comment>"
                        L"</CdrGetActionResp>";
     return resp;
 }
