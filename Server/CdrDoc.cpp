@@ -393,12 +393,12 @@ cdr::CdrDoc::CdrDoc (
     // Copy info into this object
     valStatus      = rs.getString (1);
     valDate        = rs.getString (2);
-    title          = cdr::entConvert (rs.getString (3));
+    title          = rs.getString (3);
     dbActiveStatus = rs.getString (4);
     DocType        = rs.getInt (5);
     setXml(rs.getString (6));
     lastFragmentId = rs.getInt (7);
-    comment        = cdr::entConvert (rs.getString (8));
+    comment        = rs.getString (8);
     textDocType    = rs.getString (9);
     cdr::Int tfi   = rs.getInt (10);
     cdr::Int sdi   = rs.getInt (11);
@@ -515,7 +515,7 @@ cdr::CdrDoc::CdrDoc (
     valStatus    = rs.getString(1);
     valDate      = rs.getString(2);
     verPubStatus = (rs.getString(3) == L"Y") ? publishable : nonPublishable;
-    title        = cdr::entConvert (rs.getString(4));
+    title        = rs.getString(4);
     setXml(rs.getString(5));
     DocType      = rs.getInt(6);
     textDocType  = rs.getString(7);
