@@ -16,9 +16,9 @@
 #include "CdrDbResultSet.h"
 #include <iostream>
 
-cdr::String cdr::getTree(cdr::Session& session, 
+cdr::String cdr::getTree(cdr::Session& session,
                          const cdr::dom::Node& commandNode,
-                         cdr::db::Connection& conn) 
+                         cdr::db::Connection& conn)
 {
     // Make sure our user is authorized to retrieve group information.
     if (!session.canDo(conn, L"GET TREE", L""))
@@ -76,10 +76,11 @@ cdr::String cdr::getTree(cdr::Session& session,
         int id            = rs2.getInt(1);
         cdr::String title = rs2.getString(2);
         resp << L"<Term><Id>" << id << L"</Id>"
-             << L"<Name>" << title << L"</Name></Term>\n";
+             << L"<Name>" << cdr::entConvert(title) << L"</Name></Term>\n";
+        // Other parts of this XML fragment are integers not needing entConvert
     }
     resp << L"</Terms>\n";
-    
+
     // All done.
     resp << L"</CdrGetTreeResp>\n";
     return resp.str();
