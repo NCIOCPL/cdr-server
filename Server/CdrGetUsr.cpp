@@ -86,26 +86,26 @@ cdr::String cdr::getUsr(cdr::Session& session,
     // Initialize a successful response.
     cdr::String response = cdr::String(L"  <CdrGetUsrResp>\n"
                                        L"   <UserName>")
-                                     + uName
+                                     + cdr::entConvert(uName)
                                      + L"</UserName>\n"
                                      + L"   <Password>"
-                                     + password
+                                     + cdr::entConvert(password)
                                      + L"</Password>\n";
     if (fullname.size() > 0)
         response += L"   <FullName>"
-                 +  fullname
+                 +  cdr::entConvert(fullname)
                  +  L"</FullName>\n";
     if (office.size() > 0)
         response += L"   <Office>"
-                 +  office
+                 +  cdr::entConvert(office)
                  +  L"</Office>\n";
     if (email.size() > 0)
         response += L"   <Email>"
-                 +  email
+                 +  cdr::entConvert(email)
                  +  L"</Email>\n";
     if (phone.size() > 0)
         response += L"   <Phone>"
-                 +  phone
+                 +  cdr::entConvert(phone)
                  +  L"</Phone>\n";
 
     // Find the groups to which this user is assigned.
@@ -118,11 +118,12 @@ cdr::String cdr::getUsr(cdr::Session& session,
     grpSelect.setInt(1, uid);
     cdr::db::ResultSet grpRs = grpSelect.executeQuery();
     while (grpRs.next())
-        response += L"   <GrpName>" + grpRs.getString(1) + L"</GrpName>\n";
+        response += L"   <GrpName>" + cdr::entConvert(grpRs.getString(1))
+                 +  L"</GrpName>\n";
 
     // Add the comment if present.
     if (!comment.isNull() && comment.size() > 0)
-        response += L"   <Comment>" + comment + L"</Comment>\n";
+        response += L"   <Comment>" + cdr::entConvert(comment)+L"</Comment>\n";
 
     // Report success.
     return response + L"  </CdrGetUsrResp>\n";
