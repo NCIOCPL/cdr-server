@@ -707,7 +707,7 @@ void sendErrorResponse(int fd, const cdr::String& errMsg,
     cdr::String response = L"<CdrResponseSet Time='"
                          + when
                          + L"'>\n <Errors>\n  <Err>"
-                         + errMsg
+                         + cdr::entConvert(errMsg)
                          + L"</Err>\n </Errors>\n</CdrResponseSet>\n";
     sendResponse(fd, response);
 }
@@ -795,7 +795,7 @@ cdr::String processCommand(cdr::Session& session,
                                           + cmdName
                                           + L"Resp>\n"
                                           + L"   <Errors>\n    <Err>"
-                                          + e.what()
+                                          + cdr::entConvert(e.what())
                                           + L"</Err>\n   </Errors>\n"
                                           + L"  </"
                                           + cmdName
@@ -814,7 +814,7 @@ cdr::String processCommand(cdr::Session& session,
                                           + cmdName
                                           + L"Resp><Errors><Err>"
                                           + cdr::String(tBuf)
-                                          + cdr::String(de->msg)
+                                        + cdr::entConvert(cdr::String(de->msg))
                                           + L"</Err></Errors></"
                                           + cmdName
                                           + L"Resp></CdrResponse>");
@@ -835,7 +835,7 @@ cdr::String processCommand(cdr::Session& session,
                                           + cmdName
                                           + L"Resp><Errors>"
                                           + L"<Err>SAX Parse Exception: "
-                                          + spe.getMessage()
+                                          + cdr::entConvert(spe.getMessage())
                                           + locString
                                           + L"</Err></Errors></"
                                           + cmdName
