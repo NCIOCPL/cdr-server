@@ -577,8 +577,8 @@ int cdr::link::cdrDelLinks (
         cdr::String frag  = breakRs.getString (3);
 
         // Construct informative error message
-        cdr::String errMsg = L"Document " + idStr + L": (" + title +
-              L") links to this document";
+        cdr::String errMsg = L"Document " + idStr + L": ("
+                     + cdr::entConvert(title) + L") links to this document";
         if (frag.size() > 0)
             errMsg += L" Fragment(" + frag + L")";
 
@@ -1232,7 +1232,8 @@ cdr::String cdr::getLinkType (
     resp += L"  <Name>" + linkName + L"</Name>\n";
     resp += L"  <LinkChkType>" + linkName + L"</LinkChkType>\n";
     if (!comment.isNull())
-        resp += L"  <LinkTypeComment>" + comment +  L"</LinkTypeComment>\n";
+        resp += L"  <LinkTypeComment>" + cdr::entConvert(comment)
+             +  L"</LinkTypeComment>\n";
 
     // All doctype + element fields which can contain this link
     cdr::db::PreparedStatement rstmt = conn.prepareStatement (
@@ -1247,8 +1248,8 @@ cdr::String cdr::getLinkType (
 
     while (srs.next()) {
         resp += L"  <LinkSource>\n";
-        resp += L"    " + cdr::tagWrap (srs.getString(1), "SrcDocType") + L"\n";
-        resp += L"    " + cdr::tagWrap (srs.getString(2), "SrcField") + L"\n";
+        resp += L"    " + cdr::tagWrap (srs.getString(1), L"SrcDocType") + L"\n";
+        resp += L"    " + cdr::tagWrap (srs.getString(2), L"SrcField") + L"\n";
         resp += L"  </LinkSource>\n";
     }
 
@@ -1276,14 +1277,14 @@ cdr::String cdr::getLinkType (
     cdr::String propComment;
     while (prs.next()) {
         resp += L"  <LinkProperties>\n";
-        resp += L"    " + cdr::tagWrap (prs.getString(1), "LinkProperty")
+        resp += L"    " + cdr::tagWrap (prs.getString(1), L"LinkProperty")
              + L"\n";
-        resp += L"    " + cdr::tagWrap (prs.getString(2), "PropertyValue")
-             + L"\n";
+        resp += L"    " + cdr::tagWrap (cdr::entConvert(prs.getString(2)),
+                L"PropertyValue") + L"\n";
         propComment = prs.getString (3);
         if (!(propComment.isNull()))
-            resp += L"    " + cdr::tagWrap (propComment, "PropertyComment")
-                 + L"\n";
+            resp += L"    " + cdr::tagWrap (cdr::entConvert(propComment),
+                    L"PropertyComment") + L"\n";
         resp += L"  </LinkProperties>\n";
     }
 
@@ -1345,8 +1346,8 @@ cdr::String cdr::listLinkProps (
         resp += L"    " + cdr::tagWrap (rs.getString(1), L"Name") + L"\n";
         comment = rs.getString (2);
         if (!(comment.isNull()))
-            resp += L"    " + cdr::tagWrap (comment, L"Comment")
-                 + L"\n";
+            resp += L"    " + cdr::tagWrap (cdr::entConvert(comment),
+                    L"Comment") + L"\n";
         resp += L"  </LinkProperty>/n";
     }
 
@@ -2329,7 +2330,7 @@ cdr::String cdr::pasteLink (
 
     // Send back the response.
     String rsp = L"<CdrPasteLinkResp><DenormalizedContent>"
-               + denormalizedData
+               + cdr::entConvert(denormalizedData)
                + L"</DenormalizedContent></CdrPasteLinkResp>";
     return rsp;
 
