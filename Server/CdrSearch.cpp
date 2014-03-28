@@ -59,8 +59,8 @@ typedef std::vector<SearchParam> SearchParams;
 
 static std::string extractParams(const cdr::String&, SearchParams&);
 
-cdr::String cdr::search(cdr::Session& session, 
-                        const cdr::dom::Node& node, 
+cdr::String cdr::search(cdr::Session& session,
+                        const cdr::dom::Node& node,
                         cdr::db::Connection& conn)
 {
     // Extract the query from the command buffer.
@@ -89,7 +89,7 @@ cdr::String cdr::search(cdr::Session& session,
     try {
         CdrSearchparse(static_cast<void*>(&qp));
     }
-    catch (cdr::Exception&) { 
+    catch (cdr::Exception&) {
         // std::wcout << L"LAST TOKEN: " << input.getLastTok() << std::endl;
         throw;
     }
@@ -115,20 +115,20 @@ cdr::String cdr::search(cdr::Session& session,
 
     // Construct the response.
     cdr::String response = L"  <CdrSearchResp>\n";
-    
+
     int rows = 0;
     while (rs.next()) {
         if (rows++ == 0)
             response += L"   <QueryResults>\n";
         int         id      = rs.getInt(1);
-        cdr::String title   = cdr::entConvert(rs.getString(2));
+        cdr::String title   = rs.getString(2);
         cdr::String docType = rs.getString(3);
         wchar_t tmp[1000];
         swprintf(tmp, L"    <QueryResult>\n     <DocId>CDR%010ld</DocId>\n"
                       L"     <DocType>%s</DocType>\n"
                       L"     <DocTitle>%.500s</DocTitle>\n"
-                      L"    </QueryResult>\n", 
-                 id, docType.c_str(), title.c_str());
+                      L"    </QueryResult>\n",
+                 id, docType.c_str(), cdr::entConvert(title).c_str());
         response += tmp;
     }
     if (rows > 0)
@@ -247,13 +247,13 @@ cdr::String cdr::QueryNode::getSql() const
         return cdr::String(L"NOT(") + right->getSql() + L")";
     case BOOLEAN:
         if (op == AND)
-            return cdr::String(L"(") + left->getSql() 
-                                     + L") AND (" 
+            return cdr::String(L"(") + left->getSql()
+                                     + L") AND ("
                                      + right->getSql()
                                      + L")";
         else if (op == OR)
-            return cdr::String(L"(") + left->getSql() 
-                                     + L") OR (" 
+            return cdr::String(L"(") + left->getSql()
+                                     + L") OR ("
                                      + right->getSql()
                                      + L")";
         else
@@ -261,13 +261,13 @@ cdr::String cdr::QueryNode::getSql() const
     case ASSERTION:
         switch (lValueType) {
         case ATTR:
-            return cdr::String(L"attr.path = ")        + markString(L"/" 
+            return cdr::String(L"attr.path = ")        + markString(L"/"
                                                        + lValueName)
                                                        + L" AND attr.value"
-                                                       + getOpString() 
+                                                       + getOpString()
                                                        + markString(rValue);
         case DOC_ID:
-            return cdr::String(L"document.id")         + getOpString() 
+            return cdr::String(L"document.id")         + getOpString()
                                                        + markInt(strip(rValue));
         case CREATOR:
             return cdr::String(L"creator.name")        + getOpString()
@@ -388,8 +388,8 @@ void cdr::Query::freeNodes(cdr::QueryNode* n)
     }
 }
 
-cdr::String cdr::searchLinks(cdr::Session& session, 
-                             const cdr::dom::Node& node, 
+cdr::String cdr::searchLinks(cdr::Session& session,
+                             const cdr::dom::Node& node,
                              cdr::db::Connection& conn)
 {
     // See if the client has requested a cap on the number of rows.
@@ -426,8 +426,8 @@ cdr::String cdr::searchLinks(cdr::Session& session,
     else if (titlePattern.empty())
         throw cdr::Exception(L"Missing required TargetTitlePattern element");
 
-    // Get the response for CdrSearchLinksResp. 
-    return cdr::link::getSearchLinksResp(conn, elemName, docType, 
+    // Get the response for CdrSearchLinksResp.
+    return cdr::link::getSearchLinksResp(conn, elemName, docType,
                                          titlePattern, maxRows);
 }
 
@@ -444,8 +444,8 @@ cdr::String cdr::searchLinks(cdr::Session& session,
  *                          command response.
  *  @exception  cdr::Exception if a database or processing error occurs.
  */
-cdr::String cdr::listQueryTermRules(cdr::Session& session, 
-                                    const cdr::dom::Node& node, 
+cdr::String cdr::listQueryTermRules(cdr::Session& session,
+                                    const cdr::dom::Node& node,
                                     cdr::db::Connection& conn)
 {
     // Start with an empty response.
@@ -481,8 +481,8 @@ cdr::String cdr::listQueryTermRules(cdr::Session& session,
  *                          command response.
  *  @exception  cdr::Exception if a database or processing error occurs.
  */
-cdr::String cdr::listQueryTermDefs(cdr::Session& session, 
-                                   const cdr::dom::Node& node, 
+cdr::String cdr::listQueryTermDefs(cdr::Session& session,
+                                   const cdr::dom::Node& node,
                                    cdr::db::Connection& conn)
 {
     // Start with an empty response.
@@ -529,8 +529,8 @@ cdr::String cdr::listQueryTermDefs(cdr::Session& session,
  *                          command response.
  *  @exception  cdr::Exception if a database or processing error occurs.
  */
-cdr::String cdr::addQueryTermDef(cdr::Session& session, 
-                                 const cdr::dom::Node& node, 
+cdr::String cdr::addQueryTermDef(cdr::Session& session,
+                                 const cdr::dom::Node& node,
                                  cdr::db::Connection& conn)
 {
     // Make sure the user is authorized to do this.
@@ -626,8 +626,8 @@ cdr::String cdr::addQueryTermDef(cdr::Session& session,
  *                          command response.
  *  @exception  cdr::Exception if a database or processing error occurs.
  */
-cdr::String cdr::delQueryTermDef(cdr::Session& session, 
-                                 const cdr::dom::Node& node, 
+cdr::String cdr::delQueryTermDef(cdr::Session& session,
+                                 const cdr::dom::Node& node,
                                  cdr::db::Connection& conn)
 {
     // Make sure the user is authorized to do this.
