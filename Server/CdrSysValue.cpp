@@ -244,7 +244,7 @@ cdr::String cdr::sysValue (
      cdr::String tag = cmd + L"Resp";
      cdr::String resp = L"<" + tag + L">";
      if (!retValue.isNull())
-          resp += L"\n <Value>" + retValue + L"</Value>\n";
+          resp += L"\n <Value>" + cdr::entConvert(retValue) + L"</Value>\n";
      resp += L"</" + tag + L">\n";
 
      return resp;
