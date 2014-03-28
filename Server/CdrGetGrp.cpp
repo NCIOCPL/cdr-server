@@ -23,9 +23,9 @@
 #include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
 
-cdr::String cdr::getGrp(cdr::Session& session, 
+cdr::String cdr::getGrp(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
-                        cdr::db::Connection& conn) 
+                        cdr::db::Connection& conn)
 {
     // Make sure our user is authorized to retrieve group information.
     if (!session.canDo(conn, L"GET GROUP", L""))
@@ -99,7 +99,8 @@ cdr::String cdr::getGrp(cdr::Session& session,
 
     // Add the comment if present.
     if (!comment.isNull() && comment.size() > 0)
-        response += L"   <Comment>" + comment + L"</Comment>\n";
+        response += L"   <Comment>" + cdr::entConvert(comment)
+                 +  L"</Comment>\n";
 
 
     // Report success.
