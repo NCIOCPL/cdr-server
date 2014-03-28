@@ -1174,7 +1174,7 @@ cdr::String cdr::listVersions(Session& session,
              << L"</Date>";
     if (!comment.isNull())
       response << L"<Comment>"
-               << entConvert(comment.c_str())
+               << cdr::entConvert(comment.c_str())
                << L"</Comment>";
     response << L"</Version>";
   }
