@@ -32,7 +32,7 @@ using std::string;
 using std::wistringstream;
 using std::wostringstream;
 
-static cdr::String applyNamedFilter(const cdr::String&, 
+static cdr::String applyNamedFilter(const cdr::String&,
                                     const cdr::String&,
                                     cdr::FilterParmVector*,
                                     cdr::db::Connection& dbConnection);
@@ -77,7 +77,7 @@ cdr::String cdr::Report::doReport(cdr::Session& session,
 {
   Report* report = NULL;
   ReportParameters parm;
-  
+
   for (cdr::dom::Node child = commandNode.getFirstChild();
        child != NULL;
        child = child.getNextSibling())
@@ -131,7 +131,7 @@ cdr::String cdr::Report::doReport(cdr::Session& session,
 
   if (report == NULL)
     throw cdr::Exception(L"missing report name");
-  
+
   return L"<CdrReportResp>"
        + report->execute(session, dbConnection, parm)
        + L"</CdrReportResp>";
@@ -198,7 +198,7 @@ namespace
   class ProtocolUpdatePersonsPicklist : public cdr::Report
   {
     public:
-      ProtocolUpdatePersonsPicklist() : 
+      ProtocolUpdatePersonsPicklist() :
           cdr::Report("Protocol Update Persons Picklist") {}
 
     private:
@@ -213,7 +213,7 @@ namespace
   class PersonLocations : public cdr::Report
   {
     public:
-      PersonLocations() : 
+      PersonLocations() :
           cdr::Report("Person Locations Picklist") {}
 
     private:
@@ -228,7 +228,7 @@ namespace
   class PersonAddressFragment : public cdr::Report
   {
     public:
-      PersonAddressFragment() : 
+      PersonAddressFragment() :
           cdr::Report("Person Address Fragment") {}
 
     private:
@@ -243,7 +243,7 @@ namespace
   class ParticipatingOrgs : public cdr::Report
   {
     public:
-      ParticipatingOrgs() : 
+      ParticipatingOrgs() :
           cdr::Report("Participating Organizations Picklist") {}
 
     private:
@@ -258,7 +258,7 @@ namespace
   class DatedActions : public cdr::Report
   {
     public:
-      DatedActions() : 
+      DatedActions() :
           cdr::Report("Dated Actions") {}
 
     private:
@@ -273,7 +273,7 @@ namespace
   class MenuTermTree : public cdr::Report
   {
     public:
-      MenuTermTree() : 
+      MenuTermTree() :
           cdr::Report("Menu Term Tree") {}
 
     private:
@@ -394,7 +394,7 @@ namespace
   class PublishLinkedDocs : public cdr::Report
   {
     public:
-      PublishLinkedDocs() : 
+      PublishLinkedDocs() :
           cdr::Report("Publish Linked Docs") {}
 
     private:
@@ -448,7 +448,7 @@ namespace
                    "  AND a.dt = (SELECT MAX(aa.dt) FROM audit_trail aa "
                    "              WHERE aa.document = a.document) "
                    "ORDER BY c.id ASC";
-      
+
     cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
     select.setInt(1, day);
     select.setInt(2, month);
@@ -456,7 +456,7 @@ namespace
     select.setInt(4, day);
     select.setInt(5, month);
     select.setInt(6, year);
-    
+
     cdr::db::ResultSet rs = select.executeQuery();
 
     wostringstream result;
@@ -507,7 +507,7 @@ namespace
                    "          WHERE c.dt_in IS NULL        "
                    "            AND u.name = ?             "
                    "       ORDER BY c.id                   ";
-      
+
     cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
     select.setString(1, userId);
     cdr::db::ResultSet rs = select.executeQuery();
@@ -545,7 +545,7 @@ namespace
       throw cdr::Exception(L"Must specify SearchTerm");
     cdr::String titlePattern = i->second;
 
-    string query = 
+    string query =
         "         SELECT d.id,                                     "
         "                d.title,                                  "
         "                q.value                                   "
@@ -559,10 +559,10 @@ namespace
         "            AND t.name = 'Organization'                   "
         "       ORDER BY d.title,                                  "
         "                d.id                                      ";
-      
+
     cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
     select.setString(1, titlePattern);
-    
+
     cdr::db::ResultSet rs = select.executeQuery();
 
     wostringstream result;
@@ -581,7 +581,7 @@ namespace
     while (rs.next())
     {
       int         id    = rs.getInt(1);
-      cdr::String title = cdr::entConvert(rs.getString(2));
+      cdr::String title = rs.getString(2);
       cdr::String type  = rs.getString(3);
       if (id != currentId)
       {
@@ -590,8 +590,9 @@ namespace
         {
           result << L"<ReportRow>\n"
                     L"<DocId>" << cdr::stringDocId(currentId) << L"</DocId>\n"
-                    L"<DocTitle>" << currentTitle << L"</DocTitle>\n"
-                    L"<Group>" << group << L"</Group>\n"
+                    L"<DocTitle>" << cdr::entConvert(currentTitle)
+                                  << L"</DocTitle>\n"
+                    L"<Group>" << cdr::entConvert(group) << L"</Group>\n"
                     L"</ReportRow>\n";
         }
 
@@ -603,7 +604,7 @@ namespace
 
       // Is the organization a group?
       for (size_t i = 0; i < sizeof grpTypes / sizeof *grpTypes; ++i) {
-        if (type == grpTypes[i]) 
+        if (type == grpTypes[i])
         {
           group = L"Yes";
           break;
@@ -617,8 +618,9 @@ namespace
     {
       result << L"<ReportRow>\n"
                 L"<DocId>" << cdr::stringDocId(currentId) << L"</DocId>\n"
-                L"<DocTitle>" << currentTitle << L"</DocTitle>\n"
-                L"<Group>" << group << L"</Group>\n"
+                L"<DocTitle>" << cdr::entConvert(currentTitle)
+                              << L"</DocTitle>\n"
+                L"<Group>" << cdr::entConvert(group) << L"</Group>\n"
                 L"</ReportRow>\n";
     }
     result << L"]]></ReportBody>\n";
@@ -634,7 +636,7 @@ namespace
     if (i == parm.end())
       throw cdr::Exception(L"Must specify LeadOrg");
     cdr::String leadOrg = i->second;
-    string query = 
+    string query =
         "SELECT DISTINCT d.id,                                          "
         "                d.title                                        "
         "           FROM document d                                     "
@@ -651,10 +653,10 @@ namespace
         "                             '/PersonRole'                     "
         "            AND t2.value   = 'Protocol Update Person'          "
         "            AND LEFT(t1.node_loc, 8) = LEFT(t2.node_loc, 8)    ";
-      
+
     cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
     select.setInt(1, leadOrg.extractDocId());
-    
+
     cdr::db::ResultSet rs = select.executeQuery();
 
     wostringstream result;
@@ -663,10 +665,10 @@ namespace
     while (rs.next())
     {
       int         id    = rs.getInt(1);
-      cdr::String title = cdr::entConvert(rs.getString(2));
+      cdr::String title = rs.getString(2);
       result << L"<ReportRow>\n"
                 L"<DocId>" << cdr::stringDocId(id) << L"</DocId>\n"
-                L"<DocTitle>" << title << L"</DocTitle>\n"
+                L"<DocTitle>" << cdr::entConvert(title) << L"</DocTitle>\n"
                 L"</ReportRow>\n";
     }
 
@@ -776,7 +778,7 @@ namespace
       cdr::Int    piId   = rs.getInt(4);
       cdr::String piName = rs.getString(5);
       cdr::String fragId = rs.getString(6);
-      if (poId != prevId) 
+      if (poId != prevId)
       {
         cdr::String groupElem;
         if (poPath.find(L"MainMemberOf") != cdr::String::npos)
@@ -832,7 +834,7 @@ namespace
                    "             ON t.id = d.doc_type    "
                    "          WHERE t.name = ?           "
                    "            AND q.path LIKE '%/DatedAction/ActionDate'";
-      
+
     cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
     select.setString(1, docType);
     cdr::db::ResultSet rs = select.executeQuery();
@@ -919,7 +921,7 @@ namespace
         "            AND c.value != 'Offline'                                 "
         "       ORDER BY a.doc_id                                             "
         ;
-      
+
     cdr::db::PreparedStatement ps = dbConnection.prepareStatement(query);
     ps.setString(1, menuType);
     cdr::db::ResultSet rs = ps.executeQuery();
@@ -929,20 +931,20 @@ namespace
     while (rs.next())
     {
       int         docId       = rs.getInt(1);
-      cdr::String termName    = cdr::entConvert(rs.getString(2));
-      cdr::String menuType    = cdr::entConvert(rs.getString(3));
-      cdr::String menuStatus  = cdr::entConvert(rs.getString(4));
+      cdr::String termName    = rs.getString(2);
+      cdr::String menuType    = rs.getString(3);
+      cdr::String menuStatus  = rs.getString(4);
       cdr::String displayName = rs.getString(5);
       cdr::Int    parentId    = rs.getInt(6);
-      cdr::String sortString   = cdr::entConvert(rs.getString(7));
+      cdr::String sortString  = rs.getString(7);
       result << L"<MenuItem><TermId>"
              << docId
              << L"</TermId><TermName>"
-             << termName
+             << cdr::entConvert(termName)
              << L"</TermName><MenuType>"
-             << menuType
+             << cdr::entConvert(menuType)
              << L"</MenuType><MenuStatus>"
-             << menuStatus
+             << cdr::entConvert(menuStatus)
              << L"</MenuStatus>";
       if (!displayName.isNull() && !displayName.empty())
           result << L"<DisplayName>"
@@ -953,7 +955,7 @@ namespace
                  << parentId
                  << L"</ParentId>";
       result << L"<SortString>"
-             << sortString
+             << cdr::entConvert(sortString)
              << L"</SortString>";
       result << L"</MenuItem>\n";
     }
@@ -985,7 +987,7 @@ namespace
         "      AND t.value LIKE ?                   "
         "      AND v.publishable = 'Y'              "
         " GROUP BY v.id;                            ";
-      
+
     cdr::db::PreparedStatement ps = dbConnection.prepareStatement(query);
     ps.setString(1, setType);
     cdr::db::ResultSet rs = ps.executeQuery();
@@ -1067,9 +1069,9 @@ namespace
   }
 
 #if 0
-struct TargetDoc { 
-    int id; 
-    cdr::String docType; 
+struct TargetDoc {
+    int id;
+    cdr::String docType;
     TargetDoc(int i, const cdr::String& dt) : id(i), docType(dt) {}
 };
 
@@ -1095,7 +1097,7 @@ struct TargetDoc {
                    "           JOIN doc_type t           "
                    "             ON t.id = d.doc_type    "
                    "          WHERE t.name <> 'Citation' ";
-      
+
     cdr::db::Statement select = dbConnection.createStatement();
     cdr::db::ResultSet rs = select.executeQuery(query);
     std::map<int, std::vector<TargetDoc> > links;
@@ -1187,7 +1189,7 @@ struct TargetDoc {
                    "  FROM query_term                               "
                    " WHERE path = '/Summary/TranslationOf/@cdr:ref' "
                    "   AND int_val = ?                              ";
-      
+
     cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
     select.setInt(1, englishSummary.extractDocId());
     cdr::db::ResultSet rs = select.executeQuery();
@@ -1219,7 +1221,7 @@ struct TargetDoc {
                    "  FROM query_term                               "
                    " WHERE path = '/Summary/PatientVersionOf/@cdr:ref' "
                    "   AND int_val = ?                              ";
-      
+
     cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
     select.setInt(1, hpSummary.extractDocId());
     cdr::db::ResultSet rs = select.executeQuery();
@@ -1251,7 +1253,7 @@ struct TargetDoc {
                    " WHERE path = '/PDQBoardMemberInfo'       "
                    "            + '/BoardMemberName/@cdr:ref' "
                    "   AND int_val = ?                        ";
-      
+
     cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
     select.setInt(1, personId.extractDocId());
     cdr::db::ResultSet rs = select.executeQuery();
@@ -1286,7 +1288,7 @@ struct TargetDoc {
                    "          WHERE n.path = '/GlossaryTermName'             "
                    "                       + '/GlossaryTermConcept/@cdr:ref' "
                    "            AND n.int_val = ?                            ";
-      
+
     cdr::db::PreparedStatement select = dbConnection.prepareStatement(query);
     select.setInt(1, conceptId.extractDocId());
     cdr::db::ResultSet rs = select.executeQuery();
