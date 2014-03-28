@@ -628,7 +628,7 @@ for (int i=0; i<alen; i++) {
         else if (type == L"DocTitle") {
           //std::wcout << L"getDocTitle for " << uid << L"\n";
           u.doc = "<CdrDocTitle>"
-                + getDocTitle(uid, connection).toUtf8()
+                + cdr::entConvert(getDocTitle(uid, connection)).toUtf8()
                 + "</CdrDocTitle>";
         }
         else
@@ -1038,7 +1038,7 @@ cdr::String getDocTitle(const cdr::String& id, cdr::db::Connection& conn)
   if (!rs.next())
     throw cdr::Exception(L"Document not found", id);
   cdr::String title = rs.getString(1);
-  return cdr::entConvert(title);
+  return title;
 }
 
 // Version that accepts filter document title
@@ -2406,7 +2406,7 @@ static string execXsltSqlQuery(const string& parms,
 
         // All columns
         for (int i=1; i<= colCount; i++) {
-            cdr::String wValue = cdr::entConvert(rs.getString(i));
+            cdr::String wValue = rs.getString(i);
             sprintf(buf, "\n  <col id='%d' name='%s'", i,
                     colNames[i-1].c_str());
             // sprintf(buf, "\n  <col id='%d'", i);
@@ -2416,7 +2416,7 @@ static string execXsltSqlQuery(const string& parms,
                 result += " null='Y'/>";
             else
                 // Copy in full value
-                result += ">" + wValue.toUtf8() + "</col>";
+                result += ">" + cdr::entConvert(wValue).toUtf8() + "</col>";
         }
 
         // Row termination
