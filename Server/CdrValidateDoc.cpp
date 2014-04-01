@@ -113,6 +113,14 @@ cdr::String cdr::ValidationError::toXmlString(
     }
 
     // Add the error message and terminator
+    // Note:
+    //  No entity conversion is done here.  A study of the code shows that
+    //   entity conversion has already been performed in CdrXsd errors and is
+    //   not needed in others because they are constant strings, reports of
+    //   CDR-IDs, etc.
+    //  Calling entConvert() here would therefore seem to do no good and
+    //   might do harm from double conversions.
+    //  See JIRA issue OCECDR-3744 for discussions of entity conversion.
     errStr += L">" + errMsg + L"</Err>\n";
 
     return errStr;
