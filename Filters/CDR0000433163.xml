@@ -7,7 +7,7 @@
  Filter to create a Media Content QC Report 
  Written by Volker Englisch
 
- $Log: not supported by cvs2svn $
+ OCECDR-3728: [Media] Add Permission Info to QC Report
  ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
@@ -109,6 +109,7 @@
 
    <xsl:apply-templates         select = "PhysicalMedia"/>
    <xsl:apply-templates         select = "MediaSource"/>
+   <xsl:apply-templates         select = "PermissionInformation"/>
    <xsl:apply-templates         select = "MediaContent"/>
    <xsl:apply-templates         select = "ProposedUse"/>
    <xsl:apply-templates         select = "ProcessingStatuses"/>
@@ -215,6 +216,172 @@
   <span class="lbold">Media Source</span>
   <xsl:apply-templates          select = "OriginalSource |
                                           DerivedFrom"/>
+ </xsl:template>
+
+
+ <!-- 
+ =======================================================================
+ Template to display Physical Media Information
+ ======================================================================= -->
+ <xsl:template                   match = "PermissionInformation">
+  <p/>
+  <span class="lbold">Permission Information</span>
+
+  <table        xsl:use-attribute-sets = "table">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Permission Requested</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:value-of              select = "PermissionRequested"/>
+    </td>
+   </tr>
+   <xsl:if                        test = "PermissionRequestDate">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Request Date</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "PermissionRequestDate"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "PermissionResponse">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Response</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of             select = "PermissionResponse"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "PermissionResponseDate">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Response Date</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:value-of          select    = "PermissionResponseDate"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "PermissionExpirationDate">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Expiration</b>
+     </td>
+     <td>
+      <xsl:value-of          select    = "PermissionExpirationDate"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "PublisherPermissionText">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Publisher Text</b>
+     </td>
+     <td>
+      <xsl:value-of          select    = "PublisherPermissionText"/>
+     </td>
+    </tr>
+   </xsl:if>
+  </table>
+
+   <xsl:apply-templates         select = "ApprovedUse"/>
+   <p/>
+
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:if                        test = "SpanishTranslationPermissionRequested">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Spanish Permission Requested</b>
+     </td>
+     <td>
+      <xsl:value-of             select = "SpanishTranslationPermissionRequested"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "SpanishTranslationPermissionResponse">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Spanish Permission Response</b>
+     </td>
+     <td>
+      <xsl:value-of             select = "SpanishTranslationPermissionResponse"/>
+     </td>
+    </tr>
+   </xsl:if>
+  </table>
+  <p/>
+  <table        xsl:use-attribute-sets = "table">
+   <xsl:if                        test = "CitationLink">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Citation(s)</b>
+     </td>
+     <td>
+      <ul>
+      <xsl:for-each             select = "CitationLink">
+       <li>
+        <xsl:value-of           select = "."/>
+        <xsl:call-template        name = "createCitationQcLink"/>
+       </li>
+      </xsl:for-each>
+      </ul>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "Comment">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Comment(s)</b>
+     </td>
+     <td>
+      <ul>
+      <xsl:for-each             select = "Comment">
+       <li>
+        <xsl:value-of           select = "."/>
+       </li>
+      </xsl:for-each>
+      </ul>
+     </td>
+    </tr>
+   </xsl:if>
+  </table>
+  <p/>
+ </xsl:template>
+
+
+ <!--
+ =======================================================================
+ Template to create the link to a GlossaryTerm QC report with Concept
+ ======================================================================= -->
+ <xsl:template                   name = "createCitationQcLink">
+     <xsl:variable                name = "docRef"
+                                select = "@cdr:ref"/>
+     <xsl:variable                name = "cdrId"
+                                select = "concat('CDR', 
+                                           number(
+                                            substring-after(
+                                             substring-before(
+                                              concat($docRef, '#'), '#'), 
+                                                                   'CDR')))"/>
+     <xsl:text> (</xsl:text>
+     <xsl:element                 name = "a">
+      <xsl:attribute              name = "href">
+       <xsl:value-of            select = "concat('/cgi-bin/cdr/',
+                                                 'QcReport.py?Session=guest',
+                                                 '&amp;DocId=',
+                                                 $cdrId)"/>
+      
+      </xsl:attribute>
+      <xsl:attribute              name = "target">
+       <xsl:text>new</xsl:text>
+      </xsl:attribute>
+      <xsl:value-of             select = "$cdrId"/>
+      </xsl:element>
+     <xsl:text>)</xsl:text>
  </xsl:template>
 
 
@@ -869,10 +1036,17 @@
  =======================================================================
  Template to display the Proposed Use Information
  ======================================================================= -->
- <xsl:template                   match = "ProposedUse">
+ <xsl:template                   match = "ProposedUse | ApprovedUse">
   <p/>
 
-  <span class="lbold">Proposed Use</span>
+  <xsl:choose>
+   <xsl:when                      test = "name() = 'ProposedUse'">
+    <span class="lbold">Proposed Use</span>
+   </xsl:when>
+   <xsl:otherwise>
+    <span class="lbold">Approved Use</span>
+   </xsl:otherwise>
+  </xsl:choose>
   <table        xsl:use-attribute-sets = "table">
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
