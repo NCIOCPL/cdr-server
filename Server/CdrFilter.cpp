@@ -470,6 +470,15 @@ for (int i=0; i<alen; i++) {
             ;
           if (p != NULL)
           {
+            // Note:
+            //  The following code wraps messages returned by Sablotron,
+            //  extracts the text of messages, and wraps the text in
+            //  <message></message> tags.
+            //  No entity conversion is done.
+            //  No one has reported problems in the 12 years this code has
+            //  been in production, so we are not changing anything now
+            //  See JIRA issue OCECDR-3744 for discussion of the issues.
+            //    AHM - 2014-04-01.
             static const char xsl_msgheader[] = "xsl:message (";
             char* q = *p + 4;
             if (strncmp(q, xsl_msgheader, sizeof xsl_msgheader - 1) == 0)
