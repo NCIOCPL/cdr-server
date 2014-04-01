@@ -16,12 +16,6 @@ pubPw = cdrpw.password(env, tier, "cdr", "CdrPublishing")
 script = script.replace("@@DBOPW@@", dboPw)
 script = script.replace("@@GUESTPW@@", guestPw)
 script = script.replace("@@PUBPW@@", pubPw)
-if tier == "PROD":
-    script = script.replace("@@USRGUESTACCESS@@", "")
-else:
-    script = script.replace("@@USRGUESTACCESS@@", """
-GRANT SELECT ON usr TO CdrGuest
-GO""")
 now = time.strftime("%Y%m%d%H%M%S")
 name = "CreateLogins-%s.sql" % now
 fp = open(name, "wb")

@@ -121,7 +121,8 @@ GO
 /*
  * Grant specific rights to the other two new users.
  */
-@@USRGUESTACCESS@@
+GRANT SELECT ON usr TO CdrGuest
+GO
 GRANT SELECT ON usr TO CdrPublishing
 GO
 GRANT SELECT ON open_usr TO CdrGuest
