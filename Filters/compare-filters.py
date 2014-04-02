@@ -48,7 +48,7 @@ now = time.strftime("%Y%m%d%H%M%S")
 fp = open("filter-diffs.%s" % now, "w")
 for title in sorted(local):
     if title not in repository:
-        print "Only in the CDR: %s" % repr(local[title].title)
+        print "Only in SVN: %s" % repr(local[title].title)
     else:
         localXml = local[title].doc
         repoXml = repository[title].doc.encode("utf-8").replace("\r", "")
@@ -62,5 +62,4 @@ for title in sorted(local):
 fp.close()
 for title in sorted(repository):
     if title not in local:
-        print "Only in %s: %s" % (repr(directory),
-                                  repr(repository[title].title))
+        print "Only in the CDR: %s" % repr(repository[title].title)
