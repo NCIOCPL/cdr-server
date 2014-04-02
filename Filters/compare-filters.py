@@ -5,18 +5,29 @@
 # Compare filters in Subversion against those in the CDR.
 #
 #----------------------------------------------------------------------
-import cdr
 import cdrdb
+import difflib
 import glob
 import re
 import sys
 import time
 
+def compare(me, you):
+    differ = difflib.Differ()
+    diffs = differ.compare(me.splitlines(True),you.splitlines(True))
+
+    changes = []
+    for line in diffs:
+        if line[0] != ' ':
+            changes.append(line)
+    return "".join(changes)
+
 class Filter:
-    def __init__(self, title, doc, filename=None):
+    def __init__(self, title, doc, filename=None, doc_id=None):
         self.title = title
         self.doc = doc
         self.filename = filename
+        self.doc_id = doc_id
 
 directory = len(sys.argv) > 2 and sys.argv[2] or "."
 local = {}
@@ -28,11 +39,11 @@ for name in glob.glob("%s/CDR00*.xml" % directory):
     title = match.group(1).strip()
     local[title.lower()] = Filter(title, doc, name)
 repository = {}
-query = cdrdb.Query("document d", "d.title", "d.xml")
+query = cdrdb.Query("document d", "d.id", "d.title", "d.xml")
 query.join("doc_type t", "t.id = d.doc_type")
 query.where(cdrdb.Query.Condition("t.name", "Filter"))
-for title, doc in query.execute().fetchall():
-    repository[title.strip().lower()] = Filter(title, doc.encode("utf-8"))
+for doc_id, title, doc in query.execute().fetchall():
+    repository[title.strip().lower()] = Filter(title, doc, doc_id=doc_id)
 now = time.strftime("%Y%m%d%H%M%S")
 fp = open("filter-diffs.%s" % now, "w")
 for title in sorted(local):
@@ -40,11 +51,13 @@ for title in sorted(local):
         print "Only in the CDR: %s" % repr(local[title].title)
     else:
         localXml = local[title].doc
-        repoXml = repository[title].doc.replace("\r", "")
-        diff = cdr.diffXmlDocs(localXml, repoXml)
+        repoXml = repository[title].doc.encode("utf-8").replace("\r", "")
+        diff = compare(localXml, repoXml)
         if diff:
             fp.write("%s\n" % local[title].filename)
             print (" %s " % local[title].title).center(78, "*")
+            print "< SVN DOCUMENT %s" % local[title].filename
+            print "> CDR DOCUMENT CDR%010d" % repository[title].doc_id
             print diff
 fp.close()
 for title in sorted(repository):
