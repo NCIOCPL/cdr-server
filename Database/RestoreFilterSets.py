@@ -4,8 +4,6 @@
 #
 # Drop, recreate, and populate the filter sets on the development server.
 #
-# $Log: not supported by cvs2svn $
-#
 #----------------------------------------------------------------------
 import cdrdb, sys
 
@@ -13,8 +11,9 @@ def unFix(s):
     if not s: return None
     return s.replace("@@TAB@@", "\t").replace("@@NL@@", "\n")
 
-filterSets       = open("FilterSets.tab").readlines()
-filterSetMembers = open("FilterSetMembers.tab").readlines()
+filterSets = [unicode(line, "utf-8") for line in open("FilterSets.tab")]
+filterSetMembers = [unicode(line, "utf-8")
+                    for line in open("FilterSetMembers.tab")]
 conn             = cdrdb.connect()
 cursor           = conn.cursor()
 try:
