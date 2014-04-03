@@ -55,7 +55,9 @@ for title in sorted(local):
         diff = compare(localXml, repoXml)
         if diff:
             fp.write("%s\n" % local[title].filename)
-            print (" %s " % local[title].title).center(78, "*")
+            print "diff %s %s" % (local[title].filename,
+                                  repr(local[title].title))
+            #print (" %s " % local[title].title).center(78, "*")
             print "< SVN DOCUMENT %s" % local[title].filename
             print "> CDR DOCUMENT CDR%010d" % repository[title].doc_id
             print diff
