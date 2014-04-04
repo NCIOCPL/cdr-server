@@ -12,10 +12,11 @@ import re
 import sys
 import time
 
-def compare(me, you):
+def compare(me, you, full=False):
     differ = difflib.Differ()
     diffs = differ.compare(me.splitlines(True),you.splitlines(True))
-
+    if full:
+        return "".join(diffs)
     changes = []
     for line in diffs:
         if line[0] != ' ':
@@ -29,7 +30,8 @@ class Filter:
         self.filename = filename
         self.doc_id = doc_id
 
-directory = len(sys.argv) > 2 and sys.argv[2] or "."
+directory = len(sys.argv) > 1 and sys.argv[1] or "."
+full_diffs = len(sys.argv) > 2 and sys.argv[2] == "-f"
 local = {}
 for name in glob.glob("%s/CDR00*.xml" % directory):
     doc = open(name).read()
@@ -60,7 +62,10 @@ for title in sorted(local):
             #print (" %s " % local[title].title).center(78, "*")
             print "< SVN DOCUMENT %s" % local[title].filename
             print "> CDR DOCUMENT CDR%010d" % repository[title].doc_id
-            print diff
+            if full_diffs:
+                print compare(localXml, repoXml, full_diffs)
+            else:
+                print diff
 fp.close()
 for title in sorted(repository):
     if title not in local:
