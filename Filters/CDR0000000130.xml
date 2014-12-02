@@ -1,57 +1,59 @@
-<?xml      version = "1.0"?>
+<?xml version = "1.0"?>
 <!-- $Id$ -->
 <!-- Filter title: Documentation Help Screens Filter -->
 
 <!--Filter written by C.Burg - 3/14/2002 -->
 <!-- ===========================================================
-           Filter to display XMetal Help Screens 
+           Filter to display XMetal Help Screens
       ============================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
-                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+               exclude-result-prefixes = "cdr">
 
  <xsl:import    href = "cdr:name:Module: InLine Markup Formatter"/>
  <xsl:include   href = "cdr:name:Module: Table Formatter"/>
- <xsl:include   href = "cdr:name:Module: STYLE Default"/>  
-        
+ <xsl:include   href = "cdr:name:Module: STYLE Default"/>
+
  <xsl:output                    method = "html"
-                                indent = "no"/>
+                              encoding = "utf-8"
+                                indent = "yes"/>
 
 
  <xsl:template                   match = "/">
-  <HTML>
-   <HEAD>
-    <xsl:variable                 name = "cdrdocs" 
+  <xsl:text disable-output-escaping='yes'>&lt;!DOCTYPE html>
+</xsl:text>
+  <html>
+   <head>
+    <xsl:variable                 name = "cdrdocs"
                                 select = "document('cdrx:/*/CdrCtl')"/>
-    <TITLE>
+    <title>
      <xsl:value-of              select = "document('cdrutil:/docid')"/>
      <xsl:text>: </xsl:text>
      <xsl:value-of              select = "substring-before($cdrdocs/
                                           CdrDocCtl/DocTitle,';')"/>
-    </TITLE>
-     
-    <!--Inline sytle sheet to display H2 and H4 headers in Navy -->
-    <STYLE type='text/css'>
-     <xsl:call-template           name = "defaultStyle"/>  
+    </title>
 
+    <!--Inline sytle sheet to display H2 and H4 headers in Navy -->
+    <style>
+     <xsl:call-template           name = "defaultStyle"/>
+     * { font-family: Arial, Helvetica, sans-serif }
      h2, h3,h4 {color: Navy}
-     p { +.4mm }
-    </STYLE>
-   </HEAD>
-   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif'/> 
+    </style>
+   </head>
    <xsl:apply-templates         select = "Documentation"/>
-  </HTML>
+  </html>
  </xsl:template>
 
 
  <xsl:template                   match = "Documentation">
-  <BODY>
+  <body>
    <xsl:apply-templates/>
-  </BODY>
+  </body>
  </xsl:template>
 
 
- <!-- 
+ <!--
  ============================================================
  Display the Title of the Help Screen
  ============================================================ -->
@@ -65,7 +67,7 @@
  </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
  Display a topic section title
  ====================================================================  -->
@@ -76,19 +78,19 @@
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==============================================================
- Do not display these data elements 
+ Do not display these data elements
  ============================================================== -->
  <xsl:template                   match = "Metadata | DateLastModified"/>
 
 
- <!-- 
+ <!--
  ==============================================================
  Display Related Topic
  ============================================================== -->
  <xsl:template                   match = "TopicRelationship">
-  <xsl:for-each                 select = "//RelatedTopic">  
+  <xsl:for-each                 select = "//RelatedTopic">
    <b>
     <xsl:value-of               select = "@RelationshipType"/>
     <xsl:text>:</xsl:text>
@@ -102,7 +104,7 @@
      </xsl:attribute>
      <xsl:value-of              select = "."/>
      <br />
- 
+
      <xsl:if                      test = "position() = last()">
       <br />
      </xsl:if>
@@ -110,12 +112,12 @@
    </xsl:for-each>
   </xsl:for-each>
  </xsl:template>
-       
 
- <!-- 
+
+ <!--
  ====================================================================
  Display the last modified date on top of the document.
- It is displayed as "Last Reviewed" to give an incentive of updating 
+ It is displayed as "Last Reviewed" to give an incentive of updating
  a document with an old date.
  ====================================================================  -->
  <xsl:template                   match = "DateLastModified"
@@ -127,7 +129,7 @@
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Display a Note element without markup
  ===================================================================== -->
@@ -139,7 +141,17 @@
     <xsl:text>] </xsl:text>
    </font>
   </i>
- </xsl:template> 
+ </xsl:template>
 
+ <!--
+ =====================================================================
+ Display a Tip element in a separate paragraph.
+ ===================================================================== -->
+ <xsl:template               match = "Tip">
+  <p style="color: green; font-style: italic">
+    <xsl:text>TIP: </xsl:text>
+    <xsl:apply-templates/>
+  </p>
+ </xsl:template>
 
 </xsl:transform>
