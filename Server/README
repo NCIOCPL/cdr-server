@@ -1,217 +1,60 @@
-To build the CDR server, run nmake with no explicit target (but
-see the notes below about building debugging versus non-debugging
-versions of the server).
-To install, run nmake with the target install.
-If the components that the makefile expects to find are not on the D:
-drive, add DRV=x: to the invocation of nmake, with x being the drive
-where you are building.  For more details, see documentation in the
-makefile itself.
+Instructions for building the CDR server using Visual Studio 2010
+=================================================================
 
-Slightly older, more complicated information is listed below, in case 
-you need to debug the third-party libraries.  To build the CDR Server 
-you need to perform the following steps (where the instructions say
-"add ... to the system search path" you only need to do this if the
-the directory specified is not already in the system search path):
+What you'll need:
+-----------------
 
- 1. Install expat.
+ * Visual Studio 2010
+ * bison and yacc (available from http://www.cygwin.com/)
+ * Subversion client (also available from cygwin)
+ * A connection to the internet
+ * An account on the CBIIT subversion server
+
+Build steps (substitute local drive letter for X: below):
+---------------------------------------------------------
+
+ 1. Install expat
   - go to http://sourceforge.net/projects/expat
   - download the latest expat_win32bin package (an .exe file)
-  - run the executable package, installing to d:\usr\expat
-  - add d:\usr\expat\libs to the system search path
+  - run the executable package, installing to X:\usr\expat
 
- 2. Install Sablotron.
-  - go to http://www.gingerall.com/charlie/ga/xml/p_sab.xml
-  - download the latest Sablotron full pack into d:/Downloads
-  - unzip
-  - move Sablot-x.xx to d:\usr\sablot
-  - move js-x.x_xxx to d:\usr\js
-  - move libiconv-x.x to d:\usr\iconv
-  - add d:\usr\sablot\bin to the system search path
-  - add d:\usr\js\bin to the system search path
-  - add d:\usr\iconv\bin to the system search path
+ 2. Build Sablotron
+  - Go to X:\usr
+  - svn export https://ncisvn.nci.nih.gov/svn/oce_cdr/trunk/Sablot
+  - cd Sablot
+  - nmake -f makefile.msvc > errs
+  - examine errs file for problems
 
- 3. Install xerces (used to use xml4c).
-  - go to http://xml.apache.org/xerces-c
-  - if the latest version is later than ours then:
-    - if there is a binary on the download page that used the
-      same version of MSVC that we use:
-      - download the latest binary drop for Windows NT
-      - unzip
-    - else:
-      - download the source
-      - unzip
-      - build the "release" version using Visual Studio on Mahler
-        will need to use the Microsoft "solution" file, currently
-        found in:
-         xerces-c-src_2_6_0\Projects\Win32\VC7\xerces-all\xerces-all.sln
-        it may be necessary to twiddle the Configuration in the build
-        menus.
-      - build the debug version
-  - remove d:\usr\xerces_old if it exists
-  - rename d:\usr\xerces to d:\usr\xerces_old
-  - create d:\usr\xerces\bin
-  - find and copy:
-      xerces-c_x_x.dll
-      xerces-c_x_xD.dll (debug version)
-    to d:\usr\xerces\bin
+ 3. Install xerces.
+  - go to http://xml.apache.org/xerces-c/download.cgi
+  - download xerces-c-x.x.x-x86-windows-vc-10.0.zip (where x.x.x is the
+    latest release version of the package; e.g. 3.1.1)
+  - unpack the zipfile
+  - move the unpacked files to X:\usr\xerces
 
- 4. Install regex++
-  - go to http://www.boostpro.com/products/free
-  - download the latest BoostPro installer
-  - launch the installer
-  - agree to the licences
-  - select Multithread (DLL) for VS 9.0
-  - uncheck all packages except Boost Headers and Regex
-  - set installation target as d:\usr\regex
-  - answer "yes" when asked about adding binaries to the PATH
+ 4. Ensure that there is a path to each of the dlls. Add to the path:
+  - X:\usr\expat\Bin
+  - X:\usr\Sablot\bin
+  - X:\usr\xerces\bin
 
- 5. Check out and build the server source code
-  - cvs checkout cdr/server
-  - cd cdr\server
-  - nmake DRV=d: [or b: for Bach, f: for Franck]
+ 5. Export and build the server source code
+  - svn export https://ncisvn.nci.nih.gov/svn/oce_cdr/branches/Server-VS2010
+  - cd Server-VS2010
+  - nmake DRV=X:
 
 In addition to the DLLs installed by the steps above, the following 
-two DLLs must be copied to c:\winnt\system32, if they are not already
-in the search path:
+two DLLs must be copied to the search path, if they are not already
+installed (available from
+http://www.microsoft.com/en-us/download/details.aspx?id=5555):
 
-    msvcp90.dll
-    msvcr90.dll
+    msvcp100.dll
+    msvcr100.dll
 
-============================================================================
+If you are testing the server on your own workstation, you will need
+to set up an ODBC connection with the name 'cdr' and connection
+parameters which connect with the CDR databases.  It is important
+to make sure that you set up a 32-bit ODBC connection object.  The
+easiest way to do that if you're running a 64-bit build of Windows
+is to invoke the ODBC connection manager directly:
 
-Debugging Sablotron
--------------------
-
-Here's how to build Sablotron for debugging:
-
- 1. Download latest source bundle.
- 2. Unpack.
- 3. Change to top directory of bundle
- 4. set EXPAT=d:\usr\expat\source
- 5. set EXPAT_LIB=..\libs\libexpat.lib
- 6. set JS=d:\usr\js
- 7. set ICONV=d:\usr\iconv
- 8. ln d:/usr/iconv/lib/iconv.lib d:/usr/iconv/src/iconv.lib
- 9. nmake -f Makefile.nt DBG=1
-10. Check out a fresh set of CDR Server sources.
-11. nmake SABLOT=d:/path/to/debug/version/of/Sablotron
-
-============================================================================
-
-I have modified the Makefile for the CDR server to split the debugging
-and production builds.  Now by default "nmake" builds a binary which
-will work on any of the three servers (BACH, FRANCK, or MAHLER), but
-without debugging symbols.  To build a debug version of CdrServer.exe,
-use "nmake DBG=1".  I have split Cdr.lib into Cdr.lib and Cdrd.lib, but
-I don't have separate directories for the object modules, so you need to
-make sure that you do a "make clean" between builds if you're switching
-back and forth between debug and production in the same directory.  The
-simpler and safer approach is to use separate directories for different
-builds.  More frequently now I just create a new temporary directory
-from cvs when I want to build the server.
-
-When all the third-party packages are in sync between the three machines
-you can just copy the production binary for CdrServer.exe directly from
-MAHLER.  This even works most of the time when the third-party packages
-are not all in sync, but not all of the time.  The approach which always
-works is to use Alan's DRV variable to point the makefile at the machine
-for which the target is being built.  So for example, if I want to build
-a new server for BACH, and I'm not sure the third-party packages are all
-compatible between BACH and MAHLER, I do the following:
-
- 1. Open a connection to MAHLER (telnet or Terminal Server).
- 2. Map a drive to \\BACH\d$ (for example B:).
- 3. Change to B:\tmp.
- 4. Check out the server code (cvs co server).
- 5. Change to the server directory.
- 6. Invoke "nmake DRV=B:".
- 7. Open a connection to BACH.
- 8. Stop the CDR service.
- 9. Copy the new CdrServer.exe to d:\cdr\bin.
-10. Restart the CDR service.
-11. Clean up the temporary build directory.
-
-The extra steps toward the end are necessary because of course the "NET
-START" and "NET STOP" commands in the _install target rule wouldn't work
-on BACH if invoked on MAHLER.
-
-============================================================================
-
-The dependencies for the server are listed below:
-
-  * icu (Unicode support package needed by xml4c, below)
-    you can skip this if you're using the binary drop for xml4c
-    download latest sources from:
-        http://www.alphaworks.ibm.com/aw.nsf/download/xml4c or
-        http://oss.software.ibm.com/icu/download/
-    unpack to /usr/icu
-    use /usr/icu/source/allinone/allinone.dsw workspace to build everything
-        (Build/Batch Build/Rebuild All)
-    make sure /usr/icu/bin/Release is in the search path (or Debug, for
-        debugging)
-    
-  * xml4c (XML parser used directly by CDR Server)
-    download latest sources from:
-        http://www.alphaworks.ibm.com/aw.nsf/download/xml4c or
-    unpack to /usr/xml4c
-    use /usr/xml4c/Projects/Win32/VC6/xerces-all/xerces-all.dsw to
-        build everything
-    alternate approach, if you're certain you won't need to debug from 
-        source code, is to pick up the latest binary drop for Win32;
-        if you do this, you don't need (or want) /usr/icu/bin/Release
-        in your search path
-    make sure /usr/xml4c/bin is in your search path
-
-  * expat (parser used by Sablotron's XSL/T processor)
-    download latest sources from:
-        http://sourceforge.net/projects/expat
-    unpack to /usr/expat
-    use /usr/expat/source/expat.dsw to build everything
-    copy /usr/expat/source/lib/Release/expat.dll to /cdr/bin
-
-  * js (javascript interpreter; used by sablotron)
-    download latest sources from:
-        ftp://ftp.mozilla.org/pub/mozilla.org/js/
-        (on mmdb2 or cdrdev you can just use 'cvs update' in /usr/js/src)
-    unpack to /usr/js
-    cd /usr/js/src
-    open jsinterp.c
-    add #include "jsiter.c" at top of file
-    save and close jsiterp.c
-    build in /usr/js/src with 'nmake -f js.mak CFG="js - Win32 Release"'
-    build in /usr/js/src with 'nmake -f js.mak CFG="js - Win32 Debug"'
-    copy /usr/js/src/Release/js32.dll to /cdr/bin
-    copy /usr/js/src/Debug/jsshell.exe to /cdr/bin
-
-  * iconv (encoding support for sablotron)
-    download latext libiconv from:
-        http://gnuwin32.sourceforge.net/packages/libiconv.htm
-    unpack to /usr/libiconv
-    build in /usr/libiconv with 'nmake -f Makefile.msvc DLL=1 MFLAGS=-MD'
-    copy /usr/libiconv/lib/iconv.dll to /cdr/bin
-
-  * sablot (XSL/T parser)
-    download latest sources from:
-        http://www.gingerall.com/charlie/ga/xml/p_sab.xml
-    unpack to /usr/sablot
-    tweak src/Makefile.nt so ICONV and JS paths are correct
-    build the release library using (all on one line):
-        nmake EXPAT=D:\usr\Expat\Source\lib \
-              EXPAT_LIB=release\expat.lib \
-              ICONV=d:\cdr\bin \
-              JS=d:\cdr\bin \
-              -f Makefile.nt
-        
-    if you are debugging, unpack to /cdrdbg/sablot and build with
-        nmake EXPAT=D:\usr\Expat\Source\lib \
-              EXPAT_LIB=debug\expat.lib \
-              ICONV=d:\cdr\bin \
-              JS=d:\cdr\bin \
-              -f Makefile.nt
-
-  * regex (regular expression library)
-    download latest sources from:
-        http://ourworld.compuserve.com/homepages/John_Maddock/regexpp.htm
-    unpack to /usr/regex
-    use /usr/regex/libs/regex/build/vc6.mak to build the libraries
-    copy vc6\vc6-re300l.dll to \cdr\bin
+       %windir%\SysWOW64\odbcad32.exe
