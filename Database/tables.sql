@@ -3,6 +3,26 @@
  *
  * DBMS tables for the ICIC Central Database Repository
  *
+ * This script contains the definitions for the tables and views
+ * contained in the two CDR database, as well as documentation for
+ * those tables and views and each of the columns which they contain.
+ *
+ * The two tables which form the core of the repository are the
+ * all_docs and the all_doc_versions tables (used through the
+ * corresponding views document and doc_version). The xml columns
+ * in these tables contain the serialization for all of the CDR
+ * XML documents. Everything else in the system exists to support
+ * these documents. The other tables include:
+ *  - tables to record user accounts, session, groups, and permissions
+ *  - tables to control different document types
+ *  - tables to support workflow (document locking, auditing, etc.)
+ *  - tables to hold multimedia and other blobs associated with documents
+ *  - tables to manage inter-document linking
+ *  - tables to support document search/selection
+ *  - tables to map internal identifiers to identifiers in external systems
+ *  - tables to manage publication and other batch jobs
+ *  - tables to manage import from and export to external systems
+ *
  * BZIssue::4925
  * BZIssue::4924 - Modify Summary Date Last Modified Report
  * BZIssue::5294 (OCECDR-3595) - new ctrp_id column for ctgov_import table
@@ -51,7 +71,7 @@ GO
 USE cdr
 GO
 
-/* 
+/*
  * Common data elements (requirement 2.1.6).  All data tags beginning with
  * 'Z' must appear in this table, effectively creating a reserved namespace
  * for controlled data elements used throughout the system, to ensure that
@@ -74,7 +94,7 @@ CREATE TABLE common
          dtd NVARCHAR(255)    NULL)
 GO
 
-/* 
+/*
  * Named and typed values used to control various run-time settings.
  *
  * Software in the CdrServer enforces a constraint that only one grp+name
@@ -102,7 +122,7 @@ CREATE TABLE ctl
  inactivated DATETIME        NULL)
 GO
 
-/* 
+/*
  * Users authorized to work with the CDR.  Note that connection information is
  * not stored in the database, but is instead tracked by the server
  * application directly at runtime.
@@ -156,7 +176,7 @@ GO
  *
  *           id  automatically generated primary key for the table
  *         name  newly generated string which identifies the session for
- *               purposes of the external client interface.  Returned to 
+ *               purposes of the external client interface.  Returned to
  *               the client as SessionId
  *          usr  identifies the user on whose behalf the session has been
  *               created
@@ -174,7 +194,7 @@ CREATE TABLE session
      comment VARCHAR(255)    NULL)
 GO
 
-/* 
+/*
  * Tells whether the document type is in XML, or in some other format, such
  * as Microsoft Word 95, JPEG, HTML, PNG, etc.
  *
@@ -188,12 +208,12 @@ CREATE TABLE format
      comment VARCHAR(255)    NULL)
 GO
 
-/* 
+/*
  * Every document stored in the repository must have a type represented by a
  * row in this table.
  *
  *           id  automatically generated primary key for the doc_type table;
- *               since the id is unique throughout the repository, this 
+ *               since the id is unique throughout the repository, this
  *               column satisfies requirement 2.3.2
  *         name  display name for this document type; e.g. PROTOCOL
  *       format  identifies whether document is in XML, or some other format,
@@ -206,12 +226,12 @@ GO
  *               the perspective of the repository system (for example, PNG
  *               ILLUSTRATION) have a DTD for the XML information carried for
  *               the document.
- *   xml_schema  CDR doc id of the document containing the XML schema 
+ *   xml_schema  CDR doc id of the document containing the XML schema
  *               which identifies requirements of the elements of documents
  *               of this type; required even for "unstructured"
  *               document types.
  *  schema_date  Date/time when schema was last modified.
- *          css  stylesheet for use by the client for editing documents of 
+ *          css  stylesheet for use by the client for editing documents of
  *               this type.
  * title_filter  Identifier (document id) of XSLT filter for generating
  *               a document title from this document type.
@@ -235,7 +255,7 @@ title_filter INT             NULL,
      comment VARCHAR(255)    NULL)
 GO
 
-/* 
+/*
  * Functions (a.k.a "actions") which can be performed on documents.
  *
  *               id  automatically generated primary key for the action table
@@ -243,7 +263,7 @@ GO
  *                   e.g., ADD DOCUMENT
  * doctype_specific  whether permissions are assigned separately for each
  *                   document type for this action
- *          comment  optional free-text description of additional 
+ *          comment  optional free-text description of additional
  *                   characteristics for this function
  */
     CREATE TABLE action
@@ -253,8 +273,8 @@ doctype_specific CHAR(1)      DEFAULT 'N',
          comment VARCHAR(255) NULL)
 GO
 
-/* 
- * Groups used to assign permissions; users can belong to more than one. 
+/*
+ * Groups used to assign permissions; users can belong to more than one.
  *
  *           id  automatically generated primary key for the grp table
  *         name  display name used to identify the group to the user; for
@@ -270,8 +290,8 @@ CREATE TABLE grp
      comment VARCHAR(255)    NULL)
 GO
 
-/* 
- * Set of legal status codes for documents in the repository. 
+/*
+ * Set of legal status codes for documents in the repository.
  *
  *           id  primary key for the doc_status table; e.g., P
  *         name  display name shown to the user for this document status;
@@ -304,9 +324,9 @@ CREATE TABLE active_status
      comment VARCHAR(255) NULL)
 GO
 
-/* 
+/*
  * Unit of storage managed by the Central Database Repository.  One row
- * contains one XML document - though that document may be a small 
+ * contains one XML document - though that document may be a small
  * metadata description of a larger multimedia or other blob.
  *
  * The all_docs tables contains all rows for all documents, regardless
@@ -341,7 +361,7 @@ GO
  *               also be NULL for any document which was imported from an
  *               external system (e.g., PDQ) for which we cannot ever know
  *               when first publication took place; these documents will
- *               have the value 'N' for the 
+ *               have the value 'N' for the
  * first_pub_knowable
  *               column, in which case the publication subsystem must never
  *               insert a non-NULL value into the first_pub column.
@@ -383,12 +403,12 @@ GO
  * Couldn't do this until now, because the all_docs table hadn't been
  * defined yet.
  */
-ALTER TABLE doc_type 
-        ADD CONSTRAINT fk_doc_type__xml_schema 
+ALTER TABLE doc_type
+        ADD CONSTRAINT fk_doc_type__xml_schema
 FOREIGN KEY (xml_schema)
  REFERENCES all_docs
 GO
-ALTER TABLE doc_type 
+ALTER TABLE doc_type
         ADD CONSTRAINT fk_doc_type__title_filter
 FOREIGN KEY (title_filter)
  REFERENCES all_docs
@@ -418,8 +438,8 @@ GO
  *   not valid.
  */
 CREATE VIEW publishable_version AS
-     SELECT * 
-       FROM doc_version 
+     SELECT *
+       FROM doc_version
       WHERE publishable = 'Y'
         AND val_status = 'V'
 GO
@@ -434,7 +454,7 @@ CREATE TABLE ready_for_review
      (doc_id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs)
 GO
 
-/* 
+/*
  * Record of a document's having been checked out.  Retained even after it has
  * been checked back in.  Note that queued requests to check a document out
  * are not represented in the database.  These are instead tracked directly by
@@ -462,7 +482,7 @@ CREATE TABLE checkout
  PRIMARY KEY (id, dt_out))
 GO
 
-/* 
+/*
  * Non-XML data for document.
  *
  * Blobs and documents are partly independent.  A new blob, with a new
@@ -473,7 +493,7 @@ GO
  * stays the same.
  *
  * However, a blob may only be associated with one current working
- * document - its XML metada.  And a current working document may 
+ * document - its XML metada.  And a current working document may
  * only be associated with one blob.  Other documents may reference
  * a blob by linking to its associated XML metadata.
  *
@@ -535,8 +555,8 @@ CREATE INDEX ver_blob_doc_idx ON version_blob_usage(doc_id, doc_version)
 CREATE INDEX ver_blob_blob_idx ON version_blob_usage(blob_id)
 GO
 
-/* 
- * Names document attributes associated with a particular document. 
+/*
+ * Names document attributes associated with a particular document.
  * Requirement 2.3.1.  This can store any values which need to be used for
  * filtering selections without the need for searching through the full
  * documents.  Could also be used to help support ORDER BY extractions.  Note
@@ -567,7 +587,7 @@ CREATE TABLE doc_attr
  PRIMARY KEY (id, name, num))
 GO
 
-/* 
+/*
  * Names of sets of external values which correspond to CDR documents.
  *
  *           id  automatically generated primary key for the table
@@ -589,7 +609,7 @@ CREATE TABLE external_map_usage
      comment NVARCHAR(255)    NULL)
 GO
 
-/* 
+/*
  * Map of values used by external systems to identify entities (such as
  * persons or organizations) which correspond to CDR documents.  This
  * table provides virtual lookup tables for mapping (for example) the
@@ -648,15 +668,15 @@ CREATE TABLE external_map_nomap_pattern
      pattern NVARCHAR(356) NOT NULL)
 GO
 
-/* 
+/*
  * Actions performed on documents which modified the data.  Requirement 4.1.3.
  *
  *     document  identifies the document on which this action was performed
- *           dt  date/time the modified version of the document was stored 
+ *           dt  date/time the modified version of the document was stored
  *               in the repository
  *          usr  user account responsible for the changes
  *       action  identification of the action which was performed
- *      program  optional identification of the program used to perform the 
+ *      program  optional identification of the program used to perform the
  *               action
  *      comment  optional free-form text explanation of the changes
  */
@@ -670,7 +690,7 @@ CREATE TABLE audit_trail
  PRIMARY KEY (document, dt))
 GO
 
-/* 
+/*
  * Additional action associated with a row in the audit_trail table.
  * The immediate use for this table is to record explicitly when the
  * all_docs.active_status value changes between 'A' (active) and 'I'
@@ -716,10 +736,10 @@ GO
 CREATE INDEX debug_log_recorded_idx ON debug_log(recorded)
 GO
 
-/* 
- * Version control.  This is now implemented with a base table whose xml  
+/*
+ * Version control.  This is now implemented with a base table whose xml
  * column can be set to NULL, in which case the document for the version cat
- * be retrieved from a separate database with a single table to store the     
+ * be retrieved from a separate database with a single table to store the
  * older versions of documents.  New versions have their xml stored
  * directly in the base table.  Every year (or six months if we need to do it
  * more frequently) the xml is moved to the separate database and the xml
@@ -769,13 +789,35 @@ CREATE TABLE all_doc_versions
 GO
 
 /*
+ * View which makes the siphoning off of older XML to a separate table
+ * transparent to the rest of the system. See description of the
+ * all_doc_versions table above.
+ */
+CREATE VIEW doc_version
+AS
+         SELECT v.id, v.num, v.dt, v.updated_dt, v.usr,
+                v.val_status, v.val_date,
+                v.publishable, v.doc_type, v.title,
+                xml = CASE
+                    WHEN v.xml IS NOT NULL THEN v.xml
+                    ELSE a.xml
+                END,
+                comment
+           FROM all_doc_versions v
+LEFT OUTER JOIN cdr_archived_versions.dbo.doc_version_xml a
+             ON a.id = v.id
+            AND a.num = v.num
+GO
+
+
+/*
  * Marks a version for later retrieval by name.  Note that a single version of
  * a given document can be marked with more than one label (or with none at
  * all).
  *
  *           id  automatically generated primary key for the version_label
  *               table
- *        label  identification of a logical version; used to mark the common 
+ *        label  identification of a logical version; used to mark the common
  *               version for a collection of documents in order to be able to
  *               retrieve that version of those documents at a later point in
  *               time, without knowing the individual version number for each
@@ -803,13 +845,13 @@ CREATE TABLE doc_version_label
          num INTEGER NOT NULL,
  PRIMARY KEY (label, document))
 GO
-  
-/* 
+
+/*
  * Permission for a document-type specific action, assigned to a group.
  *
  *          grp  group to which this permission is assigned
  *       action  identification of action which is permitted
- *     doc_type  identification of document type for which the action is 
+ *     doc_type  identification of document type for which the action is
  *               allowed
  *      comment  optional free-text annotation of any notes about the
  *               assignment of this permission to the group
@@ -822,7 +864,7 @@ CREATE TABLE grp_action
  PRIMARY KEY (grp, action, doc_type))
 GO
 
-/* 
+/*
  * Membership of groups.
  *
  *          grp  group to which this user account has been assigned
@@ -867,7 +909,7 @@ GO
 
 /*
  * Link source control.
- * Checked by link validation software to determine whether 
+ * Checked by link validation software to determine whether
  *  a particular field is allowed to contain a particular link type.
  * A particular field may only contain one link type.  Otherwise
  *  the presence of a field with an href would not be enough to
@@ -923,7 +965,7 @@ GO
 
 /*
  * Properties of links.
- * Checked by link validation software to determine whether 
+ * Checked by link validation software to determine whether
  *  any given link or link set has the specified properties.
  *
  *     link_id   Identifier for a type of link.
@@ -947,7 +989,7 @@ GO
  * Link network.
  * A database modelling all of the links found in the xml of all CDR
  *  documents.  It allows us to find all documents linked to any given
- *  document, either as source or target, without having to examine 
+ *  document, either as source or target, without having to examine
  *  the documents themselves.
  * If target doc format is not CDR xml, then url is used and target_doc
  *  and target_frag are null
@@ -1168,6 +1210,7 @@ GO
 
 /*
  * Table for tracking CDR development tasks.
+ * Obsolete.
  */
 CREATE TABLE dev_task
          (id INTEGER     IDENTITY PRIMARY KEY,
@@ -1308,7 +1351,7 @@ CREATE TABLE pub_proc_doc
      removed CHAR(1)          NULL DEFAULT 'N',
       subdir VARCHAR(32)      NULL DEFAULT '',
   CONSTRAINT pub_proc_doc_fk        PRIMARY KEY(pub_proc, doc_id, doc_version),
-  CONSTRAINT pub_proc_doc_fk_docver FOREIGN KEY(doc_id, doc_version) 
+  CONSTRAINT pub_proc_doc_fk_docver FOREIGN KEY(doc_id, doc_version)
                                     REFERENCES doc_version)
 GO
 
@@ -1332,7 +1375,7 @@ CREATE TABLE remailer_ids
          doc INTEGER      NOT NULL,
      tracker INTEGER      NOT NULL,
    recipient INTEGER      NULL,
-  CONSTRAINT remailer_ids_doc_fk FOREIGN KEY (doc) 
+  CONSTRAINT remailer_ids_doc_fk FOREIGN KEY (doc)
                                  REFERENCES all_docs,
   CONSTRAINT remailer_ids_tracker_fk FOREIGN KEY (tracker)
                                      REFERENCES all_docs,
@@ -1455,9 +1498,9 @@ CREATE VIEW control_docs
               FROM document
               JOIN doc_type
                 ON doc_type.id = document.doc_type
-             WHERE doc_type.name IN ('css', 
-                                     'Filter', 
-                                     'PublishingSystem', 
+             WHERE doc_type.name IN ('css',
+                                     'Filter',
+                                     'PublishingSystem',
                                      'schema')
 GO
 
@@ -1476,10 +1519,10 @@ GO
 /*
  * Alternate definition of same view (different view column names).
  */
-CREATE VIEW doc_created          
-AS 
+CREATE VIEW doc_created
+AS
     SELECT document AS doc_id, MIN(dt) AS created
-      FROM audit_trail           
+      FROM audit_trail
   GROUP BY document
 GO
 
@@ -1512,30 +1555,30 @@ GO
 /*
  * Terminology tree display support.
  */
-CREATE VIEW orphan_terms 
-AS 
-    SELECT DISTINCT d.title            
+CREATE VIEW orphan_terms
+AS
+    SELECT DISTINCT d.title
                FROM document d,
-                    query_term q           
+                    query_term q
               WHERE d.id = q.doc_id
-                AND q.path = '/Term/TermPrimaryType'             
-                AND q.value <> 'glossary term'  
-                AND NOT EXISTS (SELECT *                    
+                AND q.path = '/Term/TermPrimaryType'
+                AND q.value <> 'glossary term'
+                AND NOT EXISTS (SELECT *
                                   FROM query_term q2
-                                 WHERE q2.doc_id = d.id                     
+                                 WHERE q2.doc_id = d.id
                                    AND q2.path = '/Term/TermParent/@cdr:ref')
 GO
 
 /*
  * More terminology tree display support.
  */
-CREATE VIEW TermsWithParents 
-AS 
-    SELECT d.id, d.xml   
+CREATE VIEW TermsWithParents
+AS
+    SELECT d.id, d.xml
       FROM document d,
-           doc_type t  
-     WHERE d.doc_type = t.id    
-       AND t.name     = 'Term'    
+           doc_type t
+     WHERE d.doc_type = t.id
+       AND t.name     = 'Term'
        AND d.xml LIKE '%<TermParent%'
 GO
 
@@ -1557,7 +1600,7 @@ GO
 CREATE VIEW doc_info AS
              SELECT d.id        doc_id,
                     d.title     doc_title,
-                    d.active_status doc_status, 
+                    d.active_status doc_status,
                     t.name      doc_type,
                     u1.fullname created_by,
                     a1.dt       created_date,
@@ -1667,11 +1710,11 @@ GO
  *   force_push  flag indicating that the document can be pushed
  *               to Cancer.gov even if it is identical with what
  *               we sent with the previous job.
- *       cg_new  indicates whether this document is missing from 
+ *       cg_new  indicates whether this document is missing from
  *               the live Cancer.gov site or the Cancer.gov Preview
  *               stage; set to 'N' in the normal case; set to 'Y'
  *               for documents which were pushed to Cancer.gov
- *               but later failed processing; this allows the 
+ *               but later failed processing; this allows the
  *               module which groups published documents which
  *               must all fail together to recognize which documents
  *               aren't really available on Cancer.gov, even though
@@ -1694,7 +1737,7 @@ GO
  *         last_sent  date/time of the most recent export to NLM.
  * drop_notification  date/time we last told NLM the trial has been pulled
  *                    from Cancer.gov.
- *              
+ *
  */
      CREATE TABLE pub_proc_nlm
               (id INTEGER      NOT NULL PRIMARY KEY REFERENCES all_docs,
@@ -1706,13 +1749,13 @@ GO
 
 /*
  * Table used to hold working information on transactions to
- * Cancer.Gov. The information will be permanently stored to 
- * pub_proc_cg and pub_proc_doc after transactions to Cancer.Gov 
- * are completed. The information will be deleted after they are 
+ * Cancer.Gov. The information will be permanently stored to
+ * pub_proc_cg and pub_proc_doc after transactions to Cancer.Gov
+ * are completed. The information will be deleted after they are
  * updated successfully to pub_proc_cg and pub_proc_doc.
- * 
+ *
  * This table rather than a temporary table is created to guarantee
- * the state of pub_proc_doc and pub_proc_cg can be kept in sync 
+ * the state of pub_proc_doc and pub_proc_cg can be kept in sync
  * with Cancer.Gov.
  *
  *           id  primary key of document sent to Cancer.Gov.
@@ -1734,7 +1777,7 @@ GO
 
 /*
  * Debugging table for tracking commands.
- *  
+ *
  *       thread  logging ID used to identify this thread since the process
  *               started.
  *     received  date/time the command set was received by the server.
@@ -1811,7 +1854,7 @@ CREATE TABLE sys_value
 GO
 
 /*
- * Table of valid values for disposition status of documents imported 
+ * Table of valid values for disposition status of documents imported
  * from ClinicalTrials.gov.
  *
  *           id  uniquely identifies the status value
@@ -1953,7 +1996,7 @@ GO
  *      dt  Date/time of invocation
  *
  * Typical usage is:
- *   SELECT id AS FilterID, COUNT(millis) AS Count, AVG(millis) AS AvgMils, 
+ *   SELECT id AS FilterID, COUNT(millis) AS Count, AVG(millis) AS AvgMils,
  *          MAX(millis) AS Max, MIN(millis) AS Min, STDEV(millis) AS StdDev
  *     FROM filter_profile
  *    WHERE dt BETWEEN (... AND ...)
@@ -1981,7 +2024,7 @@ CREATE TABLE ctgov_export
 GO
 
 /*
- * Table of valid values for disposition status of documents imported 
+ * Table of valid values for disposition status of documents imported
  * from an outside organization.
  *
  *           id  uniquely identifies the status value
@@ -2016,7 +2059,7 @@ GO
  *    source_id  uniquely identifies the document within the external
  *               organization
  *        title  optional title used to display the document's name
- *          xml  unmodified XML document as downloaded from the external 
+ *          xml  unmodified XML document as downloaded from the external
  *               source
  *   downloaded  date/time of download
  *  disposition  foreign key into ctgov_disposition table
@@ -2071,7 +2114,7 @@ GO
  *
  *          job  foreign key into import_job table
  *          doc  foreign key into import_doc table
- *       locked  'Y' if we were unable to modify the document because it was 
+ *       locked  'Y' if we were unable to modify the document because it was
  *               locked; otherwise 'N'
  *          new  'Y' if this is the first import of the document; otherwise 'N'
  * needs_review  'Y' if anomalies were detected which may require user review;
@@ -2143,7 +2186,7 @@ GO
 /*
  * Table to store the set of parameters submitted to QC reports.
  * This table us used and populated by the program QcReports.py.
- * The QC reports are being converted into MS-Word from IE but 
+ * The QC reports are being converted into MS-Word from IE but
  * MS-Word limits the URL to be passed to 256 characters.  We
  * store the set of parameters in this table and only pass the
  * record-ID to run the QC report for MS-Word.
@@ -2170,7 +2213,7 @@ GO
  */
 CREATE VIEW doc_save_action
          AS
-     SELECT audit_trail.document doc_id, 
+     SELECT audit_trail.document doc_id,
             audit_trail.dt save_date,
             action.name save_action,
             audit_trail.usr save_user
@@ -2185,7 +2228,7 @@ GO
  */
 CREATE VIEW doc_last_save
          AS
-     SELECT doc_id, 
+     SELECT doc_id,
             MAX(save_date) last_save_date
        FROM doc_save_action
    GROUP BY doc_id
