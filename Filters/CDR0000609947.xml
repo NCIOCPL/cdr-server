@@ -6,6 +6,8 @@
 BZIssue::4675 - Create URLInfo Block
 BZIssue::5149 - [Mobile/Deeplinking] Changes to vendor filter to strip out
 BZIssue::5274 - Mobile images in Spanish Summaries
+OCEPROJECT-2877: Post-processing vendor filter change to update Summary
+                 title
 
 ==========================================================================
 Filter to create Vendor Person XML documents 
@@ -22,6 +24,12 @@ Filter to create Vendor Person XML documents
   <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
 
   <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
+  <xsl:param                      name = "audience"
+                                select = "/Summary/SummaryMetaData
+                                                  /SummaryAudience"/>
+  <xsl:param                      name = "language"
+                                select = "/Summary/SummaryMetaData
+                                                  /SummaryLanguage"/>
   <xsl:param                      name = "DateFirstPub"
                                 select = "''"/>
 
@@ -49,6 +57,46 @@ Filter to create Vendor Person XML documents
   <xsl:apply-templates        select = "*" 
                                 mode = "copy"/>
  </xsl:template>
+
+
+ <!--
+ Remove the '-for HP' text from the SummaryTitle
+ The text has been added for Cancer.gov only
+ ======================================================= -->
+ <xsl:template                 match = "SummaryTitle"
+                                mode = "copy">
+  <xsl:copy>
+   <xsl:variable                name = "beforeEN"
+                              select = "substring-before(., '&#8211;f')"/>
+   <xsl:variable                name = "beforeES"
+                              select = "substring-before(., '&#8211;p')"/>
+   <xsl:variable                name = "afterEN"
+                              select = "substring-after(., 
+                                        '&#8211;for health professionals')"/>
+   <xsl:variable                name = "afterES"
+                              select = "substring-after(., 
+                                        '&#8211;para profesionales de salud')"/>
+   <!-- Only need to modify title for HP summaries -->
+   <xsl:choose>
+    <xsl:when                   test = "$audience = 'Patients'">
+     <xsl:value-of            select = "."/>
+    </xsl:when>
+    <!-- Strip out 'for HP' from title based on language value -->
+    <xsl:otherwise>
+     <xsl:choose>
+      <xsl:when                   test = "$language = 'Spanish'">
+       <xsl:value-of            select = "concat($beforeES, $afterES)"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of            select = "concat($beforeEN, $afterEN)"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:otherwise>
+   </xsl:choose>
+   <!-- xsl:apply-templates/ -->
+  </xsl:copy>
+ </xsl:template>
+
 
  <!--
  Remove various elements from the licensee output

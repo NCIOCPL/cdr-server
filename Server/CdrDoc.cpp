@@ -38,7 +38,7 @@
 #include <iostream>
 #include <string>
 // Uncomment following line to activate timing code.
-// #define CDR_TIMINGS 1
+#define CDR_TIMINGS 1
 #include "CdrTiming.h"
 
 static cdr::String cdrPutDoc (cdr::Session&, const cdr::dom::Node&,
@@ -2249,6 +2249,7 @@ void updateQueryTermTable(
     int   docId,
     char* tblName
 ) {
+    MAKE_TIMER(queryTermsTimer);
     // Determine which rows need to be deleted, which need to be added.
     cdr::QueryTermSet wantedTerms, unwantedTerms;
     cdr::QueryTermSet::const_iterator i;
@@ -2259,13 +2260,14 @@ void updateQueryTermTable(
     for (i = oldTerms.begin(); i != oldTerms.end(); ++i)
         if (newTerms.find(*i) == newTerms.end())
             unwantedTerms.insert(*i);
+    SHOW_ELAPSED("determined wanted/unwanted terms", queryTermsTimer);
 
     // Sometimes it's just faster to wipe out the rows and start fresh.
     if (unwantedTerms.size() > 1000 &&
         unwantedTerms.size() > newTerms.size() / 2) {
         delQueryTerms(conn, docId, tblName);
         termsToInsert = &newTerms;
-        // SHOW_ELAPSED("finished wholesale term deletion", queryTermsTimer);
+        SHOW_ELAPSED("finished wholesale term deletion", queryTermsTimer);
     }
     else {
 
@@ -2288,6 +2290,7 @@ void updateQueryTermTable(
             delStmt.executeUpdate();
         }
         delStmt.close();
+        SHOW_ELAPSED("finished selective term deletion", queryTermsTimer);
     }
 
     // Insert new rows.
@@ -2306,12 +2309,10 @@ void updateQueryTermTable(
         insStmt.executeUpdate();
     }
     insStmt.close();
-    /*
-    SHOW_ELAPSED((cdr::String("finished inserting ") +
-                  cdr::String::toString(termsToInsert->size()) +
-                  cdr::String(" new terms")).toUtf8().c_str(),
+    SHOW_ELAPSED((cdr::String(cdr::String("finished inserting ") +
+                              cdr::String::toString(termsToInsert->size()) +
+                              cdr::String(" new terms"))).toUtf8().c_str(),
                   queryTermsTimer);
-    */
 }
 
 /**
@@ -2382,7 +2383,9 @@ void cdr::CdrDoc::updateQueryTerms(
     // Gather all the old terms from the old CWD and process them
     if (doCWD) {
         getExistingTerms(docDbConn, oldTerms, Id, "query_term");
+        SHOW_ELAPSED("collected existing query_term rows", queryTermsTimer);
         updateQueryTermTable(docDbConn, oldTerms, newTerms, Id, "query_term");
+        SHOW_ELAPSED("updated query_term table", queryTermsTimer);
     }
 
     // If the version we're saving is publishable, do it for query_term_pub
@@ -2390,8 +2393,10 @@ void cdr::CdrDoc::updateQueryTerms(
         // Uses the same new terms but gets (possibly) different old terms
         oldTerms.clear();
         getExistingTerms(docDbConn, oldTerms, Id, "query_term_pub");
+        SHOW_ELAPSED("got existing query_term_pub rows", queryTermsTimer);
         updateQueryTermTable(docDbConn, oldTerms, newTerms, Id,
                              "query_term_pub");
+        SHOW_ELAPSED("updated query_term_pub table", queryTermsTimer);
     }
 }
 

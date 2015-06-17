@@ -2,17 +2,6 @@
  * $Id$
  *
  * Specialized Statement class for handling parameterized queries.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.3  2000/10/05 18:16:31  mruben
- * added support for Blob
- *
- * Revision 1.2  2000/05/03 22:04:43  bkline
- * More ccdoc comments.
- *
- * Revision 1.1  2000/05/03 15:38:34  bkline
- * Initial revision
- *
  */
 
 #ifndef CDR_DB_PREPARED_STATEMENT_
@@ -61,8 +50,8 @@ namespace cdr {
 
             /**
              * Submits a SQL request to the CDR database and returns the
-             * number of rows affected for an UPDATE, INSERT, or DELETE 
-             * statement.  Other SQL statements (including DDL) can be 
+             * number of rows affected for an UPDATE, INSERT, or DELETE
+             * statement.  Other SQL statements (including DDL) can be
              * submitted using this method, but if the query is not an
              * UPDATE, INSERT, or DELETE statement the return value is
              * undefined.
@@ -104,7 +93,7 @@ namespace cdr {
              *  @param  val     value to be plugged into the query.
              */
             void        setBytes(int pos, const cdr::Blob& val);
-            
+
             /**
              * Closes any open cursors associated with the query,
              * making it available for re-use.  Also clears parameter list.
@@ -139,7 +128,7 @@ namespace cdr {
              *  @param  q       narrow-character string containing SQL
              *                  query for the statement.
              */
-            PreparedStatement(Connection& c, const std::string& q) 
+            PreparedStatement(Connection& c, const std::string& q)
                 : Statement(c), query(q) {}
 
             /**
@@ -148,11 +137,11 @@ namespace cdr {
             std::string query;
 
             /**
-             * Positional parameter to be plugged in just before the query is 
+             * Positional parameter to be plugged in just before the query is
              * run.
              */
             struct Parameter {
-                
+
                 /**
                  * Position of the parameter in the SQL query string.
                  */
@@ -193,13 +182,13 @@ namespace cdr {
             /**
              * For convenience, and as a workaround for MSVC++ bugs.
              */
-            typedef std::vector<Parameter*> ParamVector;
+            typedef std::list<Parameter*> ParamList;
 
             /**
              * Remembers parameters to be bound to the query when it is
              * executed.
              */
-            ParamVector paramVector;
+            ParamList params;
 
             /**
              * Unimplemented (blocked) assignment operator.

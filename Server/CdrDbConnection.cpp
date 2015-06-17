@@ -49,9 +49,6 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#define TIERFILE "d:/etc/cdrtier.rc"
-#define DBPWFILE "d:/etc/cdrdbpw"
-
 /**
  * The following are defined for debugging purposes.
  *
@@ -562,7 +559,12 @@ static std::string findpw(const std::string& line, const std::string& key) {
  *  @throw cdr::Exception if TIERFILE is not opened.
  */
 static std::string getTier() {
-    std::ifstream s(TIERFILE);
+
+    // Set the name of the tier file for the Windows drive we're using
+    char tierFile[] = "x:/etc/cdrtier.rc";
+    cdr::db::replaceDriveLetter(tierFile);
+
+    std::ifstream s(tierFile);
     if (s.good()) {
         std::string line;
         std::getline(s, line);
@@ -575,6 +577,58 @@ static std::string getTier() {
     throw cdr::Exception(cdr::String(emsg));
 }
 
+/**
+ * Return the Windows drive letter on which the CDR is running.
+ *
+ * Exception if not found.
+ */
+char cdr::db::findCdrDrive() {
+
+    // Cache the result here
+    static char s_CdrDrive = 0;
+
+    // Only need to test once.  If cache is initialized, we're good to go
+    if (s_CdrDrive)
+        return s_CdrDrive;
+
+    // Assume the server is always running in {drive}:/cdr/Bin
+    // Note: This can fail in exotic cases, e.g.
+    //       CDR installed in c:\cdr\cdr
+    //       subst f: c:\cdr    {We want to run the cdr on f:}
+    //       Copy of CdrServer.exe put in c:\cdr\bin as well as f:\cdr\bin
+    //       We find c before f.  Bummer!
+    //       But, hey, that won't happen, will it?
+    char fname[] = "x:/cdr/Bin/CdrServer.exe";
+    struct _stat statBuf;
+
+    char letters[] = {'d', 'c', 'e', 'f'};
+
+    // Try to find fname with x replaced by each of the letters
+    for (int i=0; i<sizeof(letters)/sizeof(char); i++) {
+        *fname = letters[i];
+        if (_stat(fname, &statBuf) == 0) {
+            // Found.  Cache it and return
+            s_CdrDrive = letters[i];
+            return s_CdrDrive;
+        }
+    }
+
+    // If we got here, none of the drive letters we tried have the CDR
+    throw cdr::Exception(L"No CDR default drive found for CdrServer");
+}
+
+/**
+ * Replace the first character of a char buf with the cdr drive letter.
+ *
+ * See CdrDbConnection.h
+ */
+void cdr::db::replaceDriveLetter(char *fname) {
+
+    char drvLetter = findCdrDrive();
+    fname[0] = drvLetter;
+
+    return;
+}
 /**
  * Look in the CDR password file for the SQL Server password used
  * to log into the CDR database on this tier.  If the password
@@ -593,6 +647,10 @@ const cdr::String cdr::db::getCdrDbPw() {
     // Remember the file's modification time.
     static struct _stat last_check;
 
+    // Identify database password file for the drive we're running on
+    char dbpwFile[] = "x:/etc/cdrdbpw";
+    cdr::db::replaceDriveLetter(dbpwFile);
+
     // DEBUG
     // Uncomment the following lines to build a server that
     //  always fails to connect.
@@ -604,7 +662,7 @@ const cdr::String cdr::db::getCdrDbPw() {
 
     // Find the time the password file was last modified.
     struct _stat this_check;
-    int result = _stat(DBPWFILE, &this_check);
+    int result = _stat(dbpwFile, &this_check);
 
     // If the file isn't there at all, or we can't read it, do not proceed
     if (result) {
@@ -641,7 +699,7 @@ const cdr::String cdr::db::getCdrDbPw() {
 
     // Walk through the lines in the file looking for the key.
     std::string line;
-    std::ifstream s(DBPWFILE);
+    std::ifstream s(dbpwFile);
     while (s.good()) {
         std::getline(s, line);
         pw = findpw(line, key);

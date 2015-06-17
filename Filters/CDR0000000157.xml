@@ -28,6 +28,8 @@ OCECDR-3638: Change vendor filter to add "exclude from mobile"
 OCECDR-3668: Clinical trials text for pediatric and adult treatment studies
 OCECDR-3528: Ability to put links to other Dictionary terms in More 
              Information block on Cancer.gov
+OCECDR-3824: Filter changes for new Spanish CAM summaries
+OCEPROJECT-2876: CDR - Vendor Filter Change to Modify Summary Titles
 
 ================================================================ -->
 <xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -170,11 +172,12 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
    </xsl:when>
    <xsl:otherwise>
     <xsl:value-of              select = "substring-after(
-                                         /Summary
-                                         /SummaryMetaData
-                                         /PDQBoard
-                                         /BoardLOEURLES/@cdr:xref,
-                                         'http://cancer.gov')"/>
+                                           substring-after(
+                                             /Summary
+                                             /SummaryMetaData
+                                             /PDQBoard
+                                             /BoardLOEURLES/@cdr:xref,
+                                             'http://'), 'cancer.gov')"/>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:variable>
@@ -406,10 +409,8 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
 
 
      <xsl:choose>
-      <xsl:when                  test = "SummaryMetaData/
-                                         SummaryType = 
-                                           concat('Complementary and',
-                                                  ' alternative medicine')">
+      <xsl:when                  test = "$sumType = concat('Complementary and',
+                                                    ' alternative medicine')">
        <!--
        We add the misc. documents to all CAM patient summaries except for 
        the two Overview summaries (English and Spanish)
@@ -417,16 +418,7 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
        <xsl:if                   test = "$sumId != 'CDR0000446574'
                                          and
                                          $sumId != 'CDR0000448614'">
-
-        <xsl:choose>
-         <xsl:when               test = "SummaryMetaData/
-                                         SummaryLanguage = 'English'">
-          <xsl:call-template     name = "AboutCAM"/>
-         </xsl:when>
-         <!-- xsl:otherwise>
-          <xsl:call-template     name = "AboutPdqSpanish"/>
-         </xsl:otherwise -->
-        </xsl:choose>
+        <xsl:call-template       name = "AboutCAM"/>
 
         <!--
         The CAM patient summaries receive two additional misc documents
@@ -1081,6 +1073,20 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
  <xsl:template                  match = "SummaryTitle">
   <SummaryTitle>
    <xsl:apply-templates          mode = "copy"/>
+
+   <!-- The following text is for Cancer.gov only and will need to be
+        removed in a post-process -->
+  <xsl:if                        test = "$sumAudience = 'Health professionals'">
+   <xsl:choose>
+    <xsl:when                     test = "$language = 'English'">
+     <xsl:text>&#8211;for health professionals</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>&#8211;para profesionales de salud</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+   </xsl:if>
+
    <xsl:text> (PDQ&#xAE;)</xsl:text>
   </SummaryTitle>
  </xsl:template>
@@ -1998,12 +2004,14 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
                                           '/deteccion-prevencion-',
                                           'consejoeditorial')"/>
            </xsl:when>
-           <!-- xsl:when          test = "$sumType = concat('Complementary',
+           <xsl:when              test = "$sumType = concat('Complementary',
                                                   ' and alternative medicine')">
             <xsl:value-of       select = "concat(
                                               $cgUrl, $cgBoardES,
-                                              '/cancer-cam-board')"/>
-           </xsl:when -->
+                                              '/medicina-complementaria',
+                                              '-alternativa-consejo',
+                                              '-editorial')"/>
+           </xsl:when>
            <!-- xsl:when          test = "$sumType = 'Genetics'">
             <xsl:value-of       select = "concat(
                                               $cgUrl, cgBoardES, 
@@ -2013,7 +2021,7 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
          </xsl:otherwise>
         </xsl:choose>
        </xsl:attribute>
-       <xsl:value-of              select = "$boardName"/>
+       <xsl:value-of            select = "$boardName"/>
       </xsl:element>
      </xsl:when>
      <xsl:otherwise>
@@ -2942,25 +2950,50 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
  Template to add the English "About PDQ" misc. document to the summaries.
  This gets only attached to the patient versions.
  ========================================================================= -->
- <xsl:template                   name = "AboutCAM">
-  <!-- 
-  English Summaries, Patient, Treatment 
-  ===================================== -->
+ <xsl:template                    name = "AboutCAM">
   <xsl:choose>
-   <xsl:when                     test = "SummaryMetaData/
-                                         SummaryType =
-                                           concat('Complementary and',
-                                                  ' alternative medicine')">
-    <xsl:variable                name = "miscDoc" 
-                               select = "document(concat('cdr:CDR0000445621',
-                                                         '/lastp'))"/>
-    <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
-                                                  MiscellaneousDocumentText">
-     <xsl:with-param             name = "miscDocId"
-                               select = "'_AboutCAM'"/>
-    </xsl:apply-templates>
+   <xsl:when                      test = "SummaryMetaData/
+                                          SummaryType =
+                                            concat('Complementary and',
+                                                   ' alternative medicine')">
+    <xsl:choose>
+     <xsl:when                    test = "$language = 'English'">
+      <xsl:variable               name = "miscDoc" 
+                                select = "document(concat('cdr:CDR0000445621',
+                                                              '/lastp'))"/>
+      <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
+                                                     MiscellaneousDocumentText">
+       <xsl:with-param            name = "miscDocId"
+                                select = "'_AboutCAM'"/>
+      </xsl:apply-templates>
+     </xsl:when>
+     <xsl:otherwise>
+       <!--
+       *** The CDR-ID of this document on PROD will differ from DEV 
+           until the next refresh of the CDR database on DEV        ***
+       ================================================================ -->
+       <!--  
+       *** PROD VERSION ***
+      <xsl:variable               name = "miscDoc" 
+                                select = "document(concat('cdr:CDR0000446985',
+                                                              '/lastp'))"/>
+       *** DEV VERSION ***
+      <xsl:variable               name = "miscDoc" 
+                                select = "document(concat('cdr:CDR0000759356',
+                                                              '/lastp'))"/>
+       -->
+      <xsl:variable               name = "miscDoc" 
+                                select = "document(concat('cdr:CDR0000446985',
+                                                              '/lastp'))"/>
+      <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
+                                                     MiscellaneousDocumentText">
+       <xsl:with-param            name = "miscDocId"
+                                select = "'_AboutCAM'"/>
+      </xsl:apply-templates>
+     </xsl:otherwise>
+    </xsl:choose>
+
    </xsl:when>
-   <!-- English Summaries, Patient, Genetics End -->
   </xsl:choose>
  </xsl:template>
 
@@ -2977,27 +3010,17 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
    <xsl:when                      test = "SummaryMetaData/
                                           SummaryLanguage = 'English'">
     <!--
-    Setting misc document value for EN/ES/HP/Pat
+    Setting misc document value for EN/HP/Pat
     ============================================ -->
     <xsl:variable                 name = "miscDoc"> 
      <xsl:choose>
-      <xsl:when                   test = "SummaryMetaData/
-                                          SummaryAudience = 
-                                                      'Health professionals'">
+      <xsl:when                   test = "$sumAudience='Health professionals'">
        <xsl:copy-of             select = "document(concat('cdr:CDR0000684055',
                                                          '/last'))"/>
       </xsl:when>
       <xsl:otherwise>
-       <!--
-       *** The CDR-ID of this document on PROD will differ from DEV 
-           until the next refresh of the CDR database on DEV        ***
-       ================================================================ -->
        <xsl:copy-of             select = "document(concat('cdr:CDR0000751603',
                                                           '/last'))"/>
-       <!--
-       <xsl:copy-of             select = "document(concat('cdr:CDR0000747682',
-                                                         '/last'))"/>
-       -->
       </xsl:otherwise>
      </xsl:choose>
     </xsl:variable>
@@ -3013,8 +3036,7 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
      HP summaries will not be published on mobile.  Adding attribute only
      for patient summaries
      ==================================================================== -->
-     <xsl:if                      test = "SummaryMetaData/
-                                          SummaryAudience = 'Patients'">
+     <xsl:if                      test = "$sumAudience = 'Patients'">
       <xsl:attribute              name = "ExcludedDevices">
        <xsl:text>mobile</xsl:text>
       </xsl:attribute>
@@ -3031,27 +3053,17 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
    </xsl:when>
    <xsl:otherwise>
     <!--
-    Setting misc document value for EN/ES/HP/Pat
+    Setting misc document value for ES/HP/Pat
     ============================================ -->
     <xsl:variable                 name = "miscDoc"> 
      <xsl:choose>
-      <xsl:when                   test = "SummaryMetaData/
-                                          SummaryAudience = 
-                                                      'Health professionals'">
+      <xsl:when                   test = "$sumAudience='Health professionals'">
        <xsl:copy-of             select = "document(concat('cdr:CDR0000684064',
                                                          '/last'))"/>
       </xsl:when>
       <xsl:otherwise>
-       <!--
-       *** The CDR-ID of this document on PROD will differ from DEV 
-           until the next refresh of the CDR database on DEV        ***
-       ================================================================ -->
        <xsl:copy-of             select = "document(concat('cdr:CDR0000751604',
                                                           '/last'))"/>
-       <!--
-       <xsl:copy-of             select = "document(concat('cdr:CDR0000747683',
-                                                         '/last'))"/>
-       -->
       </xsl:otherwise>
      </xsl:choose>
     </xsl:variable>
@@ -3067,8 +3079,7 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
      HP summaries will not be published on mobile.  Adding attribute only
      for patient summaries
      ==================================================================== -->
-     <xsl:if                      test = "SummaryMetaData/
-                                          SummaryAudience = 'Patients'">
+     <xsl:if                      test = "$sumAudience = 'Patients'">
       <xsl:attribute              name = "ExcludedDevices">
        <xsl:text>mobile</xsl:text>
       </xsl:attribute>

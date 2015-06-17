@@ -14,32 +14,7 @@
  *   <SessionId>38F855FF-3-5D3O701PBFCG</SessionId>
  *  </CdrLogonResp>
  *
- * $Log: not supported by cvs2svn $
- * Revision 1.8  2003/08/04 17:03:26  bkline
- * Fixed breakage caused by upgrade to latest version of Microsoft's
- * C++ compiler.
- *
- * Revision 1.7  2002/06/07 13:54:06  bkline
- * Added case-sensitive check of user name at Lakshmi's request (issue #257).
- *
- * Revision 1.6  2002/04/10 14:32:14  bkline
- * Added logging of failed login attempts.
- *
- * Revision 1.5  2000/06/23 15:28:01  bkline
- * Fixed bug which was causing the size of the session.name column to be
- * exceeded.
- *
- * Revision 1.4  2000/05/03 15:25:41  bkline
- * Fixed database statement creation.
- *
- * Revision 1.3  2000/04/16 21:43:26  bkline
- * Modified composition of sessionId slightly.  Added call to lookupSession.
- *
- * Revision 1.2  2000/04/15 14:05:10  bkline
- * First debugged version.
- *
- * Revision 1.1  2000/04/15 12:23:14  bkline
- * Initial revision
+ * JIRA::OCECDR-3849 - Integrate CDR login with NIH Active Directory
  */
 
 #include <ctime>
@@ -48,7 +23,44 @@
 #include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
 
-static const int MAX_FAILED_LOGONS = 10;
+// Create session for a user authenticated by Windows.
+static cdr::String windowsLogon(cdr::db::Connection& conn,
+                                const cdr::String& windowsName,
+                                cdr::Session& session) {
+
+    // Find the CDR account for the Windows user.
+    int usrId = 0;
+    cdr::String usrName;
+    cdr::db::PreparedStatement select = conn.prepareStatement(
+        "SELECT id, name"
+        "  FROM usr"
+        " WHERE name = ?"
+        "   AND expired IS NULL"
+        "   AND password = ''"
+        "   AND hashedpw = HASHBYTES('SHA1', '')");
+    select.setString(1, windowsName);
+    cdr::db::ResultSet rs = select.executeQuery();
+    if (rs.next()) {
+        usrId = rs.getInt(1);
+        usrName = rs.getString(2);
+    }
+    select.close();
+    if (!usrId || usrName.empty()) {
+        cdr::log::pThreadLog->Write(L"Windows user not found", windowsName);
+        throw cdr::Exception(L"Invalid logon credentials");
+    }
+
+    // Create a new session row in the database
+    cdr::String sessionId = createSessionRecord(usrId, usrName, conn);
+
+    // Populate the session object.
+    session.lookupSession(sessionId, conn);
+
+    // Send back the command response.
+    cdr::String response = L"<CdrLogonResp><SessionId>" + sessionId +
+        L"</SessionId></CdrLogonResp>";
+    return response;
+}
 
 // CdrCommand.h
 cdr::String cdr::logon(cdr::Session& session,
@@ -69,26 +81,12 @@ cdr::String cdr::logon(cdr::Session& session,
         child = child.getNextSibling();
     }
 
-    int failCount = cdr::getLoginFailedCount(conn, userName);
-    if (failCount == -1)
-        // Record for this username doesn't exist
-        throw cdr::Exception(L"Invalid logon credentials");
-
-    // If user has tried too many times, don't go any further
-    if (failCount > MAX_FAILED_LOGONS) {
-        // Keep track of count to help find problematic user IDs
-        cdr::setLoginFailedCount(conn, userName, 1);
-
-        // But block login
-        throw cdr::Exception(L"Too many consecutive login failures.  "
-            L"Please ask administrative staff to reset your password.");
-    }
+    if (password.empty())
+        return windowsLogon(conn, userName, session);
 
     // Look up the user in the database, checking name & pw to get ID
     int userId = cdr::chkIdPassword(userName, password, conn);
     if (userId == -1) {
-        // Increment the login failure count
-        cdr::setLoginFailedCount(conn, userName, 1);
 
         // Block the user
         throw cdr::Exception(L"Invalid logon credentials");
@@ -100,16 +98,11 @@ cdr::String cdr::logon(cdr::Session& session,
     // Populate the session object.
     session.lookupSession(sessionId, conn);
 
-    // Clear the record of failed logins if needed
-    if (failCount > 0)
-        cdr::setLoginFailedCount(conn, userName, 0);
-
     // Send back the command response.
     cdr::String response = L"  <CdrLogonResp>\n   <SessionId>";
     response += sessionId + L"</SessionId>\n  </CdrLogonResp>\n";
     return response;
 }
-
 
 // CdrCommand.h
 cdr::String cdr::dupSession(

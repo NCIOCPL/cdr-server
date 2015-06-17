@@ -44,9 +44,13 @@
 #include <iostream> // XXX Substitute logging when in place.
 #include "CdrDom.h"
 #include "CdrException.h"
+#include "CdrDbConnection.h"
 #include <xercesc/framework/MemBufInputSource.hpp> // XXX Do we still need this?
 #include <xercesc/sax/SAXParseException.hpp>
 #include <xercesc/sax/ErrorHandler.hpp>
+
+// Name of the log file, 'x' replaced at run-time
+#define DOMLOG_NAME "x:\\cdr\\Log\\DomLog"
 
             /**
              * Max number of Xerces Parsers that we allocate.
@@ -373,9 +377,14 @@ std::wostream& operator<<(std::wostream& os, const cdr::dom::Node& node)
 
 // Log messages, no action if fails
 static FILE *fp = 0;
+static FILE *openDomLog() {
+    char fname[] = DOMLOG_NAME;
+    cdr::db::replaceDriveLetter(fname);
+    return(fopen(fname, "a"));
+}
 void domLog(const char *msg1) {
     if (!fp)
-        fp = fopen("d:\\cdr\\Log\\DomLog", "a");
+        fp = openDomLog();
     if (fp) {
         fprintf (fp, "=(%d) %s\n", GetCurrentThreadId(), msg1);
         fflush(fp);
@@ -383,7 +392,7 @@ void domLog(const char *msg1) {
 }
 void domLog(const char *msg1, const cdr::String& msg2) {
     if (!fp)
-        fp = fopen("d:\\cdr\\Log\\DomLog", "a");
+        fp = openDomLog();
     if (fp) {
         fprintf (fp, "=(%d) %s \"%s\"\n", GetCurrentThreadId(),
                  msg1, msg2.toUtf8().c_str());

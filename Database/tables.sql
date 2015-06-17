@@ -361,9 +361,8 @@ GO
  *               also be NULL for any document which was imported from an
  *               external system (e.g., PDQ) for which we cannot ever know
  *               when first publication took place; these documents will
- *               have the value 'N' for the
- * first_pub_knowable
- *               column, in which case the publication subsystem must never
+ *               have the value 'N' for the first_pub_knowable column,
+ *               in which case the publication subsystem must never
  *               insert a non-NULL value into the first_pub column.
  */
       CREATE TABLE all_docs
@@ -1737,7 +1736,6 @@ GO
  *         last_sent  date/time of the most recent export to NLM.
  * drop_notification  date/time we last told NLM the trial has been pulled
  *                    from Cancer.gov.
- *
  */
      CREATE TABLE pub_proc_nlm
               (id INTEGER      NOT NULL PRIMARY KEY REFERENCES all_docs,
@@ -2375,3 +2373,30 @@ CREATE TABLE ctrp_import_event
       locked CHAR        NOT NULL DEFAULT 'N',
 mapping_gaps CHAR        NOT NULL DEFAULT 'N',
  PRIMARY KEY (job_id, ctrp_id))
+
+/*
+ * Record of having asked for a pronunciation audio clip for the names
+ * for a glossary entry found in a particular GlossaryTermName document.
+ *
+ *      cdr_id   primary key for the GlossaryTermName document
+ * spreadsheet   name of the spreadsheet in which the request was included
+ *    requeted   the date the request was generated
+ */
+CREATE TABLE glossary_term_audio_request
+     (cdr_id INTEGER      NOT NULL PRIMARY KEY REFERENCES all_docs,
+ spreadsheet VARCHAR(256) NOT NULL,
+   requested DATE         NOT NULL)
+
+/*
+ * Record of clinical trial document set fetched from CTRP. Used to
+ * figure out what we've already downloaded when the nightly job
+ * connects to their server.
+ *
+ *    set_id  primary key for the table
+ *  filename  name of the zipfile created by CTRP
+ * processed  date and time successful processing was completed
+ */
+CREATE TABLE ctrp_trial_set
+     (set_id INTEGER IDENTITY PRIMARY KEY,
+    filename VARCHAR(64) NOT NULL UNIQUE,
+   processed DATETIME NOT NULL)

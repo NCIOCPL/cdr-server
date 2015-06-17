@@ -7,6 +7,7 @@
     BZIssue::4719 (added ISSNLinking element)
     BZIssue::4952 (catching up with NLM DTD changes)
     JIRA::OCECDR-3664 (more breakage by NLM)
+    JIRA::OCECDR-3825 (more changes at NLM)
   -->
 
 <schema              xmlns           = 'http://www.w3.org/2001/XMLSchema'>
@@ -419,10 +420,25 @@
       <element       name            = 'Affiliation'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
+      <element       name            = 'AffiliationInfo'
+                     type            = 'AffiliationInfo'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
     </sequence>
     <attribute       name            = 'ValidYN'
                      type            = 'YN'
                      minOccurs       = '0'/>
+  </complexType>
+
+  <complexType       name            = 'AffiliationInfo'>
+    <sequence>
+      <element       name            = 'Affiliation'
+                     type            = 'NotEmptyString'/>
+      <element       name            = 'Identifier'
+                     type            = 'NameIdentifier'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
   </complexType>
 
   <complexType       name            = 'NameIdentifier'>
@@ -684,9 +700,19 @@
   <complexType       name            = 'PublicationTypeList'>
     <sequence>
       <element       name            = 'PublicationType'
-                     type            = 'NotEmptyString'
+                     type            = 'PublicationType'
                      maxOccurs       = 'unbounded'/>
     </sequence>
+  </complexType>
+
+  <complexType       name            = 'PublicationType'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'UI'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
   <complexType       name            = 'ChemicalList'>
@@ -702,8 +728,18 @@
       <element       name            = 'RegistryNumber'
                      type            = 'NotEmptyString'/>
       <element       name            = 'NameOfSubstance'
-                     type            = 'NotEmptyString'/>
+                     type            = 'NameOfSubstance'/>
     </sequence>
+  </complexType>
+
+  <complexType       name            = 'NameOfSubstance'>
+    <simpleContent>
+      <extension     base            = 'string'>
+        <attribute   name            = 'UI'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+      </extension>
+    </simpleContent>
   </complexType>
 
   <complexType       name            = 'SupplMeshList'>
@@ -719,6 +755,9 @@
       <extension     base            = 'string'>
         <attribute   name            = 'Type'
                      type            = 'SupplMeshNameType'/>
+        <attribute   name            = 'UI'
+                     type            = 'string'
+                     minOccurs       = '0'/>
       </extension>
     </simpleContent>
   </complexType>
@@ -859,6 +898,9 @@
         <attribute   name            = 'Type'
                      type            = 'TopicTextType'
                      minOccurs       = '0'/>
+        <attribute   name            = 'UI'
+                     type            = 'string'
+                     minOccurs       = '0'/>
       </extension>
     </simpleContent>
   </complexType>
@@ -923,6 +965,10 @@
       <element       name            = 'Affiliation'
                      type            = 'NotEmptyString'
                      minOccurs       = '0'/>
+      <element       name            = 'AffiliationInfo'
+                     type            = 'AffiliationInfo'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
     </sequence>
     <attribute       name            = 'ValidYN'
                      type            = 'YN'
@@ -1320,6 +1366,8 @@
 
   <simpleType        name            = 'CommentsCorrectionsRefType'>
     <restriction     base            = 'string'>
+      <enumeration   value           = 'AssociatedDataset'/> 
+      <enumeration   value           = 'AssociatedPublication'/>
       <enumeration   value           = 'CommentOn'/>
       <enumeration   value           = 'CommentIn'/>
       <enumeration   value           = 'ErratumIn'/>
@@ -1337,7 +1385,7 @@
       <enumeration   value           = 'ReprintOf'/>
       <enumeration   value           = 'ReprintIn'/>
       <enumeration   value           = 'Cites'/>
-    </restriction>
+   </restriction>
   </simpleType>
 
 </schema>

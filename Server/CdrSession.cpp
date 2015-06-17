@@ -3,37 +3,7 @@
  *
  * Session control information.
  *
- * $Log: not supported by cvs2svn $
- * Revision 1.10  2002/08/23 02:03:43  ameyer
- * Now normalizing action string whitespace in canDo().
- *
- * Revision 1.9  2002/06/18 22:16:03  ameyer
- * Bug fix in new getCanDo().
- *
- * Revision 1.8  2002/06/18 20:44:46  ameyer
- * Oops, return from CanDo should be "<CdrCanDoResp>...".
- *
- * Revision 1.7  2002/06/18 20:34:08  ameyer
- * Added CdrCanDo command.
- *
- * Revision 1.6  2000/10/30 17:41:00  mruben
- * added canDo for document number
- *
- * Revision 1.5  2000/05/03 15:25:41  bkline
- * Fixed database statement creation.
- *
- * Revision 1.4  2000/04/22 09:30:22  bkline
- * Fixed a couple of typo bugs.
- *
- * Revision 1.3  2000/04/21 13:59:00  bkline
- * Added canDo() method.
- *
- * Revision 1.2  2000/04/17 03:10:21  bkline
- * Fixed typo in wide string constant.
- *
- * Revision 1.1  2000/04/16 21:38:32  bkline
- * Initial revision
- *
+ * JIRA::OCECDR-3849 - Integrate CDR login with NIH Active Directory
  */
 
 #include <ctime>
@@ -45,8 +15,6 @@
 #include "CdrDbPreparedStatement.h"
 #include "CdrDbResultSet.h"
 #include "CdrException.h"
-
-// #include <iostream> // DEBUG
 
 // The password hashing algorithm to try
 static std::string s_hashAlgo = "SHA1";
@@ -286,65 +254,6 @@ int cdr::chkIdPassword(
     return usrId;
 }
 
-void cdr::testPasswordString(
-    const cdr::String& password
-) {
-    const wchar_t *p;   // Characters in the password
-    int c;              // Single char from the password
-    int hasUpper = 0;   // Characteristics we have found
-    int hasLower = 0;
-    int hasDigit = 0;
-    int hasPunct = 0;
-
-    // Minimum length
-    if (password.length() < 8)
-        throw cdr::Exception("Passwords must be at least 8 characters");
-    if (password.length() > 32)
-        // This is only necessary while we allow plain text pw's
-        throw cdr::Exception(
-                "Sorry, the maximum length of passwords is 32 characters");
-
-    p = password.c_str();
-    while (*p) {
-        c = (int) *p;
-        // Test for legal char types
-        if (iswupper(c))
-            hasUpper = 1;
-        else if (iswlower(c))
-            hasLower = 1;
-        else if (iswdigit(c))
-            hasDigit = 1;
-        else if (iswpunct(c))
-            hasPunct = 1;
-        else
-            throw cdr::Exception("Invalid character in password.  "
-                    "Please only use letters, numbers, and punctuation.");
-
-        // Test for some illegal characters
-        if (c == '\'' || c == '"' || c == ' ')
-            throw cdr::Exception(
-                    "Sorry, quote marks may not be used in CDR passwords");
-        if (c == ' ')
-            throw cdr::Exception(
-                    "Sorry, spaces may not be used in CDR passwords");
-        if (c > 127)
-            throw cdr::Exception(
-                    "Sorry, Unicode chars may not be used in CDR passwords");
-        if (c < 32)
-            // Check above should prevent this but - belt and suspenders
-            throw cdr::Exception("Control chars may not be used in passwords");
-
-        ++p;
-    }
-
-    int sumTypes = hasUpper + hasLower + hasDigit + hasPunct;
-    if (sumTypes < 3)
-        throw cdr::Exception("Passwords must have 3 of the 4 categories of "
-                "upper case, lower case, numbers, or punctuation.");
-
-    return;
-}
-
 void cdr::Session::setUserPw (
     cdr::db::Connection& conn,
     const cdr::String&   userName,
@@ -352,19 +261,6 @@ void cdr::Session::setUserPw (
     const bool           newUser
 ) {
     std::string qry;            // Update query
-
-    // If the session's user isn't the owner of the pw, is he
-    //  allowed to change the owner's password?
-    if (uName != userName) {
-        if ((newUser && !canDo(conn, L"CREATE USER", L"")) ||
-                        !canDo(conn, L"MODIFY USER", L""))
-            throw cdr::Exception(
-                L"User is not authorized to change other user's password");
-    }
-
-    // Check that the password meets security requirements, exception if not
-    // Passwords that have passed checks are SQL injection safe
-    testPasswordString(password);
 
     // Can we hash the password?
     if (dbHasHash(conn, s_hashAlgo)) {
@@ -385,9 +281,8 @@ void cdr::Session::setUserPw (
         stmt.executeQuery();
         stmt.close();
     }
-    // XXX Do this unconditionally until testing is complete
-    // else
-    {
+    else {
+
         qry =
             "UPDATE usr "
             "   SET password = ?"
@@ -457,61 +352,6 @@ static bool dbHasHash(
     tested = true;
 
     return testresult;
-}
-
-
-int cdr::getLoginFailedCount(
-    cdr::db::Connection& conn,
-    const cdr::String&   userName
-) {
-    int count;
-
-    // Get the count from the user record
-    cdr::db::PreparedStatement ps = conn.prepareStatement(
-            "SELECT login_failed FROM usr WHERE name = ?");
-    ps.setString(1, userName);
-    cdr::db::ResultSet rs = ps.executeQuery();
-    if (rs.next())
-        count = rs.getInt(1);
-    else
-        count = -1;
-    ps.close();
-
-    return count;
-}
-
-
-int cdr::setLoginFailedCount(
-    cdr::db::Connection& conn,
-    const cdr::String&   userName,
-    int                  counter
-) {
-    if (counter != 1 && counter != 0)
-        // This could only be a bug
-        throw cdr::Exception(
-            L"Invalid counter=" + cdr::String::toString(counter) +
-            L" passed to setLoginFailedCount - please inform support staff.");
-
-    // Get current count
-    int oldCount = getLoginFailedCount(conn, userName);
-    if (oldCount == -1)
-        // User not found
-        return oldCount;
-
-    // Generate the new count
-    int newCount = 0;
-    if (counter != 0)
-        newCount = oldCount + 1;
-
-    // Store it
-    cdr::db::PreparedStatement ps = conn.prepareStatement(
-        "UPDATE usr SET login_failed = ? WHERE name = ?");
-    ps.setInt(1, newCount);
-    ps.setString(2, userName);
-    ps.executeQuery();
-    ps.close();
-
-    return newCount;
 }
 
 

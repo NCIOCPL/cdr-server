@@ -26,9 +26,14 @@ namespace cdr {
 
         /**
          * Flag indicating we've migrated the server to CBIIT hosting.
+         *
+         * Note 2015-01-29:
+         *  This flag was used in only one place, and only in this file.
+         *  I'm changing that one place to not use it and commenting this
+         *  out.
          */
-        static const bool CBIIT_HOSTING = _access("d:\\cdr\\etc\\dbhost",
-                                                  0) == 0;
+        // static const bool CBIIT_HOSTING = _access("d:\\cdr\\etc\\dbhost",
+        //                                           0) == 0;
 
         /**
          * Default url for connection.
@@ -38,8 +43,31 @@ namespace cdr {
         /**
          * Default user ID for connection.
          */
-        static const wchar_t * const uid = CBIIT_HOSTING ? L"CDRSQLACCOUNT"
-                                                         : L"cdr";
+        // static const wchar_t * const uid = CBIIT_HOSTING ? L"CDRSQLACCOUNT"
+        //                                                  : L"cdr";
+        static const wchar_t * const uid = L"CDRSQLACCOUNT";
+
+        /**
+         * Determines the Windows drive letter on which the CDR is
+         * running.  Used if the CDR is installed on a server on
+         * something other than the usual default d: drive.
+         *
+         *  @return             single character drive letter, e.g., 'c'.
+         *
+         *  @throws             cdr::Exception if drive not determined.
+         */
+        char findCdrDrive();
+
+        /**
+         * Replace the first char of a plain old null terminated string
+         * with the drive letter on which we're running the CDR.
+         *
+         * Example use:
+         *    char fname[] = "x:/etc/cdrapphosts.rc"
+         *    cdr::db::replaceDriveLetter(fname);
+         *    // Result = "d:/etc/cdrapphosts.rc" on most of our servers.
+         */
+        void replaceDriveLetter(char *fname);
 
         /**
          * Lookup the database password used for the current hosting

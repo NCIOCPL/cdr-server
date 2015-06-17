@@ -15,24 +15,24 @@ GO
 /*
  * Create the three logins, each defaulting to the CDR databas
  */
-IF NOT EXISTS (SELECT * 
-                 FROM master.dbo.syslogins 
+IF NOT EXISTS (SELECT *
+                 FROM master.dbo.syslogins
                 WHERE loginname = 'CdrSqlAccount')
 BEGIN
     EXEC sp_addlogin 'CdrSqlAccount', '@@DBOPW@@', 'cdr', 'us_english'
 END
 GO
 
-IF NOT EXISTS (SELECT * 
-                 FROM master.dbo.syslogins 
+IF NOT EXISTS (SELECT *
+                 FROM master.dbo.syslogins
                 WHERE loginname = 'CdrGuest')
 BEGIN
     EXEC sp_addlogin 'CdrGuest', '@@GUESTPW@@', 'cdr', 'us_english'
 END
 GO
 
-IF NOT EXISTS (SELECT * 
-                 FROM master.dbo.syslogins 
+IF NOT EXISTS (SELECT *
+                 FROM master.dbo.syslogins
                 WHERE loginname = 'CdrPublishing')
 BEGIN
     EXEC sp_addlogin 'CdrPublishing', '@@PUBPW@@', 'cdr', 'us_english'
@@ -83,23 +83,23 @@ GO
  * Re-create user access to avoid problems caused by restoring from a backup
  * made on another machine.
  */
-IF EXISTS (SELECT * 
-             FROM dbo.sysusers 
+IF EXISTS (SELECT *
+             FROM dbo.sysusers
             WHERE name = 'CdrSqlAccount'
               AND UID < 16382)
 	EXEC sp_revokedbaccess 'CdrSqlAccount'
 GO
 
-IF EXISTS (SELECT * 
-             FROM dbo.sysusers 
-            WHERE name = 'CdrGuest' 
+IF EXISTS (SELECT *
+             FROM dbo.sysusers
+            WHERE name = 'CdrGuest'
               AND UID < 16382)
 	EXEC sp_revokedbaccess 'CdrGuest'
 GO
 
-IF EXISTS (SELECT * 
-             FROM dbo.sysusers 
-            WHERE name = 'CdrPublishing' 
+IF EXISTS (SELECT *
+             FROM dbo.sysusers
+            WHERE name = 'CdrPublishing'
               AND UID < 16382)
 	EXEC sp_revokedbaccess 'CdrPublishing'
 GO
@@ -466,4 +466,8 @@ GO
 GRANT SELECT ON ctl TO CdrGuest
 GO
 GRANT SELECT ON ctl TO CdrPublishing
+GO
+GRANT SELECT ON glossary_term_audio_request to CdrGuest
+GO
+GRANT SELECT ON ctrp_trial_set TO CdrGuest
 GO

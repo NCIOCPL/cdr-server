@@ -2,20 +2,6 @@
  * $Id$
  *
  * Implementation of class for prepared CDR SQL queries.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.4  2001/01/17 21:50:10  bkline
- * Added executeUpdate() method.
- *
- * Revision 1.3  2000/10/23 14:09:31  mruben
- * added setBytes
- *
- * Revision 1.2  2000/08/10 15:00:22  bkline
- * Fixed problem with string values exactly 2000 characters long.
- *
- * Revision 1.1  2000/05/03 15:17:10  bkline
- * Initial revision
- *
  */
 
 #include <iostream>
@@ -35,7 +21,7 @@ cdr::db::PreparedStatement::PreparedStatement(const PreparedStatement& ps)
 {
     std::cerr << "COPY CONSTRUCTOR FOR PreparedStatement; *pRefCount="
         << *pRefCount << '\n';
-    if (paramVector.size() > 0)
+    if (!params.empty())
         throw cdr::Exception(L"PreparedStatement is already in use"
                              L" and cannot be copied");
 }
@@ -66,12 +52,12 @@ void cdr::db::PreparedStatement::close()
 void cdr::db::PreparedStatement::clearParameters()
 {
     //std::cerr << "PreparedStatement::clearParameters()\n";
-    for (size_t i = 0; i < paramVector.size(); ++i) {
-        Parameter* p = paramVector[i];
+    for (ParamList::iterator i = params.begin(); i != params.end(); ++i) {
+        Parameter* p = *i;
         delete [] p->value;
         delete p;
     }
-    paramVector.clear();
+    params.clear();
 }
 
 /**
@@ -81,10 +67,10 @@ void cdr::db::PreparedStatement::clearParameters()
 cdr::db::ResultSet cdr::db::PreparedStatement::executeQuery()
 {
     SQLRETURN rc;
-    for (size_t i = 0; i < paramVector.size(); ++i) {
-        Parameter* p = paramVector[i];
-        rc = SQLBindParameter(hstmt, p->position, SQL_PARAM_INPUT, 
-                                     p->cType, p->sType, 
+    for (ParamList::iterator i = params.begin(); i != params.end(); ++i) {
+        Parameter* p = *i;
+        rc = SQLBindParameter(hstmt, p->position, SQL_PARAM_INPUT,
+                                     p->cType, p->sType,
                                      p->len, 0, p->value, 0, &p->cb);
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
             throw cdr::Exception(L"Failure binding parameter",
@@ -103,16 +89,19 @@ cdr::db::ResultSet cdr::db::PreparedStatement::executeQuery()
 int cdr::db::PreparedStatement::executeUpdate()
 {
     SQLRETURN rc;
-    for (size_t i = 0; i < paramVector.size(); ++i) {
-        Parameter* p = paramVector[i];
-        rc = SQLBindParameter(hstmt, p->position, SQL_PARAM_INPUT, 
-                                     p->cType, p->sType, 
+    for (ParamList::iterator i = params.begin(); i != params.end(); ++i) {
+        Parameter* p = *i;
+        rc = SQLBindParameter(hstmt, p->position, SQL_PARAM_INPUT,
+                                     p->cType, p->sType,
                                      p->len, 0, p->value, 0, &p->cb);
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
             throw cdr::Exception(L"Failure binding parameter",
                                  getErrorMessage(rc));
     }
-    return static_cast<cdr::db::Statement*>(this)->executeUpdate(query.c_str());
+    SQLINTEGER count = static_cast<cdr::db::Statement*>(this)
+        ->executeUpdate(query.c_str());
+    clearParameters();
+    return count;
 }
 
 /**
@@ -136,7 +125,7 @@ void cdr::db::PreparedStatement::setString(int pos, const cdr::String& val)
         p->cb    = SQL_NTS;
         memcpy(p->value, val.c_str(), p->len);
     }
-    paramVector.push_back(p);
+    params.push_back(p);
 }
 
 #if 0
@@ -144,7 +133,7 @@ void cdr::db::PreparedStatement::setString(int pos, const cdr::String& val)
  * Saves a copy of the string value <code>val</code> for the <code>pos</code>
  * parameter of the current query.  This version handles narrow-character
  * strings.  The third parameter is optional and defaults to false.
- * 
+ *
  *  @deprecated
  */
 void cdr::db::PreparedStatement::setString(int pos, const std::string& val, bool null)
@@ -164,7 +153,7 @@ void cdr::db::PreparedStatement::setString(int pos, const std::string& val, bool
         p->cb    = SQL_NTS;
         memcpy(p->value, val.c_str(), p->len);
     }
-    paramVector.push_back(p);
+    params.push_back(p);
 }
 #endif
 
@@ -189,7 +178,7 @@ void cdr::db::PreparedStatement::setInt(int pos, const cdr::Int& val)
         int i    = val;
         memcpy(p->value, &i, sizeof(int));
     }
-    paramVector.push_back(p);
+    params.push_back(p);
 }
 
 
@@ -202,7 +191,7 @@ void cdr::db::PreparedStatement::setBytes(int pos, const cdr::Blob& val)
     Parameter* p = new Parameter;
     p->position  = pos;
     p->cType     = SQL_C_BINARY;
-    p->sType     = val.size() >= 2000 ? SQL_LONGVARBINARY : SQL_VARBINARY; 
+    p->sType     = val.size() >= 2000 ? SQL_LONGVARBINARY : SQL_VARBINARY;
     if (val.isNull()) {
         p->len   = 1; // Required by ODBC even for NULL data!
         p->value = 0;
@@ -214,6 +203,5 @@ void cdr::db::PreparedStatement::setBytes(int pos, const cdr::Blob& val)
         p->cb    = p->len;
         memcpy(p->value, val.c_str(), p->len);
     }
-    paramVector.push_back(p);
+    params.push_back(p);
 }
-

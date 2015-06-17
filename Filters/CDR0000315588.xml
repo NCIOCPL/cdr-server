@@ -9,13 +9,13 @@ Module: Vendor Cleanup Templates
 
 BZIssue::4752
 BZIssue::4629 - Vendor filter changes for GenProf
-BZIssue::5254 - [Glossary] Modify vendor filter to suppress Related 
+BZIssue::5254 - [Glossary] Modify vendor filter to suppress Related
                 External Ref without definition
-OCECDR-3528: Ability to put links to other Dictionary terms in More 
+OCECDR-3528: Ability to put links to other Dictionary terms in More
              Information block on Cancer.gov
+OCECDR-3869: Support for linking to blocked trials
+OCECTS-116 - Add nct_id attribute to ProtocolRef element
 
-Revision 1.25  2006/07/28 14:13:44  bkline
-Added template to strip OfficialProtocolTitle (which was needed for mailers).
 ================================================================ -->
 <xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
                              xmlns:cdr = 'cips.nci.nih.gov/cdr'
@@ -59,12 +59,12 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
     <xsl:apply-templates    select = "GenerationSuffix"
                               mode = "copy"/>
 
-    <!-- 
+    <!--
     If the ProfessionalSuffix element is prepared for the vendor output
     it's created from the Standard/Custom-ProfessionalSuffix elements
     (when clause).
     However, if the ProfessionalSuffic element is only to be copied -
-    because it's the second pass of this filter module - the element 
+    because it's the second pass of this filter module - the element
     only needs to be copied as is (otherwise clause).
     ==================================================================== -->
     <xsl:choose>
@@ -112,7 +112,7 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  <xsl:template                   match = "MediaLink[@alt]"
                                   mode = "copy">
   <xsl:element                    name = "{name()}">
-   <xsl:apply-templates         select = "node() | @*" 
+   <xsl:apply-templates         select = "node() | @*"
                                   mode = "copy"/>
   </xsl:element>
 
@@ -121,7 +121,7 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
 
   <xsl:if                         test = "@alt = ''
                                           and
-                                          substring-before(@type, '/') = 
+                                          substring-before(@type, '/') =
                                                                    'image'">
    <xsl:message              terminate = "no">
     <xsl:text>&lt;LI class="warning"&gt;</xsl:text>
@@ -132,18 +132,18 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
     <xsl:text>)&lt;BR/&gt;</xsl:text>
     <xsl:text>ALT attribute of MediaLink element is empty.</xsl:text>
     <xsl:text>&lt;BR/&gt;&lt;/LI&gt;</xsl:text>
-   </xsl:message> 
+   </xsl:message>
   </xsl:if>
  </xsl:template>
 
 
  <!--
  ====================================================================
- Update the ProtocolSite elements containing the attribute 
- SuppressContactInformation="Yes" to suppress Street, Phone, and Email 
+ Update the ProtocolSite elements containing the attribute
+ SuppressContactInformation="Yes" to suppress Street, Phone, and Email
  elements.
- Since the OrgSite and PrivatePracticeSite elements are already 
- converted to a ProtocolSite element at this point this is taking 
+ Since the OrgSite and PrivatePracticeSite elements are already
+ converted to a ProtocolSite element at this point this is taking
  care of both address types.
  Two templates are needed:
  a) Template to remove the SuppressContactInformation attribute itself
@@ -202,7 +202,7 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
 
  <!-- *
  ====================================================================
- Update the ClinicalTrialsOffice elements containing the attribute 
+ Update the ClinicalTrialsOffice elements containing the attribute
  ctOffice="Yes" to suppress Street element.
  Two templates are needed:
  a) Template to remove the ctOffice attribute itself
@@ -230,15 +230,15 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  <!--
  =================================================================
  Template to remove empty SummarySections
- Note: This template must be placed _before_ the template to 
-       alter the id attributes for the misc. docs to allow that 
+ Note: This template must be placed _before_ the template to
+       alter the id attributes for the misc. docs to allow that
        one to be processesed first, if appropriate.  The server is
-       using the template it sees last first, if they have the 
+       using the template it sees last first, if they have the
        same name.
  This template will _not_ check if a summary section created from
  a misc. document is possibly empty (since it's processed with the
  other template) which will mean the summary will fail to load on
- Cancer.gov.  However, we shouldn't silently load summaries 
+ Cancer.gov.  However, we shouldn't silently load summaries
  without proper misc. information anyway.
  ================================================================= -->
  <xsl:template                 match = "//SummarySection"
@@ -290,15 +290,15 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  Template to copy all nodes as is but change the id attribute values
  by appending a text value '_ForMoreInfo'.
  ==================================================================== -->
- <xsl:template                   match = "@* | *" 
+ <xsl:template                   match = "@* | *"
                                   mode = "misc">
   <xsl:element                    name = "{name()}">
    <xsl:for-each                select = "@*">
     <xsl:attribute                name = "{name()}">
      <xsl:choose>
       <xsl:when                   test = "name() = 'id'">
-       <!-- 
-       The CAM summaries already contain the '_ForMoreInfo' value on 
+       <!--
+       The CAM summaries already contain the '_ForMoreInfo' value on
        the first level nodes.  Don't append again.
        =============================================================== -->
        <xsl:choose>
@@ -415,13 +415,13 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  ====================================================================
  Drop the CIPSContact attribute which is needed for mailers only.
  Ditto for UsedFor, MailAbstractTo.
- Note: This template only handles the English version of the 
+ Note: This template only handles the English version of the
        SourceTitle.  The Spanish version is handled specially in a
        different template, so the removal of the SourceTitle has to
        be handled within that template.
  ==================================================================== -->
  <xsl:template               match = "@UsedFor        |
-                                      @CIPSContact    | 
+                                      @CIPSContact    |
                                       @MailAbstractTo |
                                       @SourceTitle"
                               mode = "copy"/>
@@ -437,7 +437,7 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  <xsl:template               match = "OverallContactBackup/@ref"
                               mode = "copy"/>
  <xsl:template               match = "OverallContactBackup/@ref"/>
-                               
+
 
  <!--
  Drop native attribute for the TollFreePhone element.  This attribute
@@ -446,45 +446,45 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  <xsl:template               match = "TollFreePhone/@native |
                                       PostalAddress/@native"
                               mode = "copy"/>
-                               
 
- <!-- 
+
+ <!--
  =====================================================================
  Suppress nodes with or without copy mode that are not to be displayed
  in vendor output.
  ===================================================================== -->
  <xsl:template               match = "Fax |
                                       DocId |
-                                      PdqKey | 
+                                      PdqKey |
                                       Comment |
                                       CdrDocCtl |
                                       CIPSContact |
                                       ProtocolDesign |
                                       StandardWording |
                                       OrganizationDetails |
-                                      AdministrativeInformation | 
+                                      AdministrativeInformation |
                                       PRACTICELOCATIONS/WebSite |
                                       PRACTICELOCATIONS[@UsedFor='GPMailer']"
                                       />
-  
+
  <xsl:template               match = "Fax |
                                       DocId |
-                                      PdqKey | 
+                                      PdqKey |
                                       Comment |
                                       CdrDocCtl |
                                       CIPSContact |
                                       ProtocolDesign |
                                       StandardWording |
                                       OrganizationDetails |
-                                      AdministrativeInformation | 
+                                      AdministrativeInformation |
                                       PRACTICELOCATIONS/WebSite |
                                       PRACTICELOCATIONS[@UsedFor='GPMailer']"
                               mode = "copy"/>
 
 
- <!-- 
+ <!--
  =====================================================================
- Suppress PoliticalUnitShortName nodes with or without copy mode.  
+ Suppress PoliticalUnitShortName nodes with or without copy mode.
  However, keep the element for the PoliticalSubUnit document type.
  ===================================================================== -->
  <xsl:template               match = "PoliticalSubUnitShortName">
@@ -494,7 +494,7 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
    </xsl:copy>
   </xsl:if>
  </xsl:template>
-  
+
  <xsl:template               match = "PoliticalSubUnitShortName"
                               mode = "copy">
   <xsl:if                     test = "name(..) = 'PoliticalSubUnit'">
@@ -505,7 +505,7 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Don't export protocol lead organizations with status of "Withdrawn."
  ===================================================================== -->
@@ -517,7 +517,7 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
                                        StatusName = 'Withdrawn']"
                               mode = "copy"/>
 
- <!-- 
+ <!--
  =====================================================================
  Don't display LeadOrgPersonnel with Public="No" attribute.
  ===================================================================== -->
@@ -527,7 +527,7 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Don't keep LeadOrgPersonnel whose only role is 'Update person'
  and ensure that the Public="No" attribute does not exist.
@@ -562,16 +562,16 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
     <xsl:apply-templates    select = "Contact"
                               mode = "copy"/>
    </ProtPerson>
-  </xsl:if>  
+  </xsl:if>
  </xsl:template>
 
  <!--
  ====================================================================
  Drop the Email and Phone elements with attribute Public = 'No'.
- Note:  Since the QC report needs these displayed it is being 
+ Note:  Since the QC report needs these displayed it is being
         filtered out at the last step creating the vendor output.
  ==================================================================== -->
- <xsl:template               match = "Email | 
+ <xsl:template               match = "Email |
                                       Phone"
                               mode = "copy">
   <xsl:if                     test = "not(@Public)">
@@ -594,7 +594,7 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  <!--
  ====================================================================
  Drop the WebSite element with attribute native = 'no'.
- Note:  Since the QC report needs this displayed it is being 
+ Note:  Since the QC report needs this displayed it is being
         filtered out at the last step creating the vendor output.
  ==================================================================== -->
  <xsl:template               match = "WebSite"
@@ -620,7 +620,7 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Suppress the ProtocolIDs/OtherID node from vendor output but only
  if the IDType is "CTEP ID".
@@ -636,12 +636,35 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
 
  <!--
  =========================================================================
+ Drop ProtocolRef markup when an NCT ID is not present.
+ ========================================================================= -->
+ <xsl:template               match = "ProtocolRef"
+                              mode = "copy">
+  <xsl:choose>
+   <xsl:when                  test = "@nct_id != ''">
+    <ProtocolRef>
+     <xsl:attribute           name = "href">
+      <xsl:value-of         select = "@href"/>
+     </xsl:attribute>
+     <xsl:attribute           name = "nct_id">
+      <xsl:value-of         select = "@nct_id"/>
+     </xsl:attribute>
+     <xsl:apply-templates     mode = "copy"/>
+    </ProtocolRef>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:apply-templates      mode = "copy"/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+ <!--
+ =========================================================================
  Identify if an element with an href attribute points to a non-publishable
  document.  If it does remove the element tags and display a warning
  message.
  ========================================================================= -->
- <xsl:template               match = "ProtocolRef | LOERef |
-                                      SummaryRef  | GlossaryTermRef"
+ <xsl:template               match = "LOERef | SummaryRef | GlossaryTermRef"
                               mode = "copy">
   <xsl:variable               name = "docID"
                             select = "@cdr:href | @href"/>
@@ -660,7 +683,7 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
      <xsl:text>)&lt;BR/&gt;</xsl:text>
      <xsl:text>Publishable Version of linked Document </xsl:text>
      <xsl:text>does not exist.&lt;BR/&gt;&lt;/LI&gt;</xsl:text>
-    </xsl:message> 
+    </xsl:message>
     <xsl:value-of           select = "concat(' ', .)"/>
    </xsl:when>
    <xsl:otherwise>
@@ -689,12 +712,12 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Identify if a RelatedInformation element has been specified for the
  Spanish language without an existing Spanish definition.
  If this happens Gatekeeper complains and fails the document.
- Drop the element if the translation doesn't exist and leave as is 
+ Drop the element if the translation doesn't exist and leave as is
  otherwise.
  ===================================================================== -->
  <xsl:template                   match = "RelatedExternalRef[@UseWith = 'es'] |
@@ -709,7 +732,7 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
      <xsl:text>[UseWith='es']&lt;BR/&gt;</xsl:text>
      <xsl:text>Spanish RelatedExternalRef element exists but </xsl:text>
      <xsl:text>Spanish Term Definition missing.&lt;/LI&gt;</xsl:text>
-    </xsl:message> 
+    </xsl:message>
    </xsl:when>
    <xsl:otherwise>
     <xsl:element                  name = "{name()}">
@@ -736,13 +759,13 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Identify if a MediaLink element has been specified for the
  Spanish language without an existing Spanish definition (possibly the
  definition status is not approved yet).
  If this happens Gatekeeper complains and fails the document.
- Drop the element if the translation doesn't exist and leave as is 
+ Drop the element if the translation doesn't exist and leave as is
  otherwise.
  ===================================================================== -->
  <xsl:template               match = "MediaLink[@language = 'es']"
@@ -758,7 +781,7 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
      <xsl:text>[language='es']&lt;BR/&gt;</xsl:text>
      <xsl:text>Spanish MediaLink element exists but </xsl:text>
      <xsl:text>Spanish Term Definition missing.&lt;/LI&gt;</xsl:text>
-    </xsl:message> 
+    </xsl:message>
    </xsl:when>
    <xsl:otherwise>
     <xsl:element                name = "{name()}">
@@ -783,17 +806,17 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Template to remove the Summary denormalized data from the SummaryRef
- element which is needed to create the links for the QC reports 
+ element which is needed to create the links for the QC reports
  properly.
  ===================================================================== -->
  <xsl:template               match = "SummaryRef/Summary"
                               mode = "copy"/>
 
 
- <!-- 
+ <!--
  =====================================================================
  Add a bullet to the Eligibility Criteria list of InScopeProtocols
  The new ListItem element is being added to each top level Itemized
@@ -831,10 +854,10 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Suppress the ArmsOrGroups element and replace with a comment.
- This is neccessary in order to allow submission of the documents to 
+ This is neccessary in order to allow submission of the documents to
  ClinicalTrials.gov using the CTGovExport utility.
  (The template can be removed after Bug 4123 is in production, VE.)
  ===================================================================== -->
@@ -846,15 +869,15 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
    <xsl:value-of                select = "document('cdrutil:/date/%25B %25#d, %25Y %25#I:%25M% 25p')"/>
    <xsl:text>)</xsl:text>
   </xsl:comment>
- </xsl:template>  
+ </xsl:template>
 
- <!-- 
+ <!--
  =====================================================================
  Suppress the new Safety attribute and add a comment.
- This is neccessary in order to allow submission of the documents to 
+ This is neccessary in order to allow submission of the documents to
  ClinicalTrials.gov using the CTGovExport utility.
 
- Note:  This is not needed anymore.  We now display the Safety 
+ Note:  This is not needed anymore.  We now display the Safety
         attribute.
  ===================================================================== -->
  <xsl:template                   match = "XXXOutcome[@Safety]"
@@ -873,6 +896,6 @@ Added template to strip OfficialProtocolTitle (which was needed for mailers).
 
    <xsl:apply-templates/>
   </xsl:element>
- </xsl:template>  
+ </xsl:template>
 
 </xsl:transform>

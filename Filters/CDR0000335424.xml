@@ -9,13 +9,16 @@ Filter to denormalize summary data.
    Written by Volker Englisch, 2003-08-12
 
 BZIssue::4836 - Create new section at end of HP summaries
+OCECDR-3824: Filter changes for new Spanish CAM summaries
+OCECDR-3869: Support for linking to blocked trials
+OCECTS-116 - Add nct_id attribute to ProtocolRef element
 
  ================================================================ -->
 <xsl:transform                xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                               xmlns:cdr = "cips.nci.nih.gov/cdr"
                                 version = "1.0">
 
- <xsl:output                     method = "xml" 
+ <xsl:output                     method = "xml"
                    omit-xml-declaration = "no"
                                encoding = "UTF-8"/>
 
@@ -66,7 +69,7 @@ BZIssue::4836 - Create new section at end of HP summaries
    </xsl:choose>
   </xsl:variable>
 
- <!-- 
+ <!--
  =================================================================
  Copy control information and generate current date
  ================================================================= -->
@@ -80,12 +83,12 @@ BZIssue::4836 - Create new section at end of HP summaries
  </xsl:template>
 
 
- <!-- 
+ <!--
  =================================================================
  Test if a SummarySection is empty (no children, only white space)
 
  Such an element may appear if a complete SummarySection has been
- marked with the proposed insertion element and therefore all 
+ marked with the proposed insertion element and therefore all
  content gets stripped but the SummarySection tags itself are left
  untouched.
  ================================================================= -->
@@ -103,7 +106,7 @@ BZIssue::4836 - Create new section at end of HP summaries
  </xsl:template>
 
 
- <!-- 
+ <!--
  =================================================================
  Template to denormalize the Board elements
  We also need the information of the LOE summaries.
@@ -111,12 +114,12 @@ BZIssue::4836 - Create new section at end of HP summaries
  <xsl:template                   match = "Board">
 
   <!--
-  For Spanish summaries we need to find the Board information by 
-  using the TranslationOf element and retrieving the information 
+  For Spanish summaries we need to find the Board information by
+  using the TranslationOf element and retrieving the information
   for the editorial board from the English version
   ===================================================================== -->
   <xsl:variable                   name = "sqlQueryESBoard">
-SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard', 
+SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
        eb.int_val AS 'ENBoardID'
   FROM query_term q
   JOIN query_term eb
@@ -125,7 +128,7 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
   JOIN query_term bt
     ON eb.int_val = bt.doc_id
    AND bt.path = '/Organization/OrganizationNameInformation/OfficialName/Name'
- WHERE q.path = '/Summary/TranslationOf/@cdr:ref' 
+ WHERE q.path = '/Summary/TranslationOf/@cdr:ref'
    AND bt.value not like '%Advisory%'
    AND q.doc_id = ?
   </xsl:variable>
@@ -138,7 +141,7 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
                                                    $sumNormId))"/>
 
 
-  <!-- 
+  <!--
   Assign the Board ID for English summaries
   Assign the Board ID of the corresponding English summary for Spanish
   ==================================================================== -->
@@ -157,7 +160,7 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
    </xsl:choose>
   </xsl:variable>
 
-  <xsl:variable                   name = "BoardInfo" 
+  <xsl:variable                   name = "BoardInfo"
                                 select = "document(concat('cdr:',$BoardID,
                                                            '/last'))"/>
    <xsl:choose>
@@ -218,7 +221,7 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
     <xsl:value-of               select = "$loeInfo/Summary
                                             /SummaryTitle"/>
    </xsl:element>
- 
+
    <xsl:element                   name = "BoardLOEURL">
     <xsl:attribute                name = "cdr:xref">
      <xsl:value-of              select = "$loeInfo/Summary
@@ -230,7 +233,7 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
                                             /SummaryURL"/>
    </xsl:element>
 
-   <!-- 
+   <!--
    For the Spanish summaries we need to retrieve the LOE documents
    from the information provided in the English board document.
    This only needs to be done for the treatment, supportive care, CAM.
@@ -241,7 +244,11 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
                                           or
                                           $sumType = 'Screening'
                                           or
-                                          $sumType = 'Prevention'">
+                                          $sumType = 'Prevention'
+                                          or
+                                          $sumType = concat('Complementary ',
+                                                            'and alternative ',
+                                                            'medicine')">
    <xsl:variable                  name = "loeNormIDES"
                                 select = "number(
                                            substring-before(
@@ -251,7 +258,7 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
    <xsl:variable                  name = "sqlQueryESLoe">
 SELECT doc_id AS "CDRID"
   FROM query_term
- WHERE int_val = ? 
+ WHERE int_val = ?
    AND path = '/Summary/TranslationOf/@cdr:ref'
    </xsl:variable>
 
@@ -263,7 +270,7 @@ SELECT doc_id AS "CDRID"
                                                    $loeNormIDES))"/>
 
    <!-- xsl:value-of select = "$loeNormIDES"/ -->
-   
+
    <xsl:variable                  name = "loeIDES">
     <xsl:for-each               select = "$queryRowsLoe
                                              /SqlResult
@@ -285,7 +292,7 @@ SELECT doc_id AS "CDRID"
     <xsl:value-of               select = "$loeInfoES/Summary
                                             /SummaryTitle"/>
    </xsl:element>
- 
+
    <xsl:element                   name = "BoardLOEURLES">
     <xsl:attribute                name = "cdr:xref">
      <xsl:value-of              select = "$loeInfoES/Summary
@@ -302,15 +309,15 @@ SELECT doc_id AS "CDRID"
  </xsl:template>
 
 
- <!-- 
+ <!--
  =================================================================
  Template to denormalize the BoardMember elements
  ================================================================= -->
  <xsl:template                   match = "BoardMember">
-  <xsl:variable                   name = "BoardMemberID" 
+  <xsl:variable                   name = "BoardMemberID"
                                 select = "@cdr:ref"/>
-  <xsl:variable                   name = "BoardMemberInfo" 
-                                select = "document(concat('cdr:', 
+  <xsl:variable                   name = "BoardMemberInfo"
+                                select = "document(concat('cdr:',
                                                             $BoardMemberID,
                                                             '/last'))"/>
   <xsl:variable                   name = "personNormId"
@@ -336,12 +343,12 @@ SELECT doc_id AS "CDRID"
                                                   $BoardMemberInfo/
                                                    Person/
                                                    PersonNameInformation/
-                                                   GivenName)"/>   
+                                                   GivenName)"/>
   </xsl:element>
 
   <!--
   We need the board member name (including affiliation) but
-  we're unable to get this information from the Person document, 
+  we're unable to get this information from the Person document,
   so we will have to query the database to find the related
   BoardMember document and then create a formatted string
   for the display in the About This Summary section.
@@ -352,15 +359,15 @@ SELECT doc_id AS "CDRID"
          even for the Spanish documents.
   Note2: The query joins to the query_term_pub table to get
          the summaries.  This means that the publish preview
-         will not see the affiliation name for newly added 
-         board members until *after* a publishable version 
+         will not see the affiliation name for newly added
+         board members until *after* a publishable version
          has been created.
   ============================================================ -->
   <xsl:if                         test = "not(contains(
                                            ../Board, 'Advisory'))">
    <xsl:variable                  name = "sqlQueryName">
-SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID', 
-       b.doc_id AS 'BoardMember-ID', p.value AS 'BoardMember Name', 
+SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
+       b.doc_id AS 'BoardMember-ID', p.value AS 'BoardMember Name',
        an.value AS 'Affiliation Name', au.value AS 'Usage'
   FROM query_term_pub s
   JOIN query_term p
@@ -376,14 +383,14 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
     ON au.doc_id = b.doc_id
    AND au.path   = '/PDQBoardMemberInfo/Affiliations/Affiliation/@Usage'
    AND LEFT(an.node_loc, 8) = LEFT(au.node_loc, 8)
- WHERE s.path    = '/Summary/SummaryMetaData/PDQBoard/BoardMember/@cdr:ref' 
+ WHERE s.path    = '/Summary/SummaryMetaData/PDQBoard/BoardMember/@cdr:ref'
    AND p.path    = '/Person/PersonNameInformation/SurName'
-   AND p.doc_id  = ? 
+   AND p.doc_id  = ?
    AND s.doc_id  = ?
  ORDER BY au.value
    </xsl:variable>
 
-   <!-- 
+   <!--
    Note: Don't perform a normalize-space here since it would convert
          the resulting node into a string
    ================================================================== -->
@@ -461,14 +468,14 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
  </xsl:template>
 
 
- <!-- 
+ <!--
  =================================================================
  Template to denormalize the Term elements
  ================================================================= -->
  <xsl:template                    match = "Term">
-  <xsl:variable                    name = "TermID" 
+  <xsl:variable                    name = "TermID"
                                  select = "@cdr:ref"/>
-  <xsl:variable                    name = "TermInfo" 
+  <xsl:variable                    name = "TermInfo"
                                  select = "document(concat('cdr:',$TermID,
                                                            '/lastp'))"/>
   <xsl:element                     name = "Term">
@@ -482,14 +489,14 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
  </xsl:template>
 
 
- <!-- 
+ <!--
  =================================================================
  Template to denormalize the Term elements
  ================================================================= -->
  <xsl:template                    match = "Diagnosis | Intervention | Drug">
-  <xsl:variable                    name = "TermID" 
+  <xsl:variable                    name = "TermID"
                                  select = "@cdr:ref"/>
-  <xsl:variable                    name = "TermInfo" 
+  <xsl:variable                    name = "TermInfo"
                                  select = "document(concat('cdr:',$TermID,
                                                            '/lastp'))"/>
   <xsl:element                     name = "{name()}">
@@ -503,7 +510,7 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
  </xsl:template>
 
 
- <!-- 
+ <!--
  =================================================================
  Template to denormalize the summary section intervention terms
  ================================================================= -->
@@ -511,9 +518,9 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
  <xsl:template                   match = "Diagnosis    |
                                           Intervention |
                                           Drug">
-  <xsl:variable                   name = "termID" 
+  <xsl:variable                   name = "termID"
                                 select = "@cdr:ref"/>
-  <xsl:variable                   name = "termDoc" 
+  <xsl:variable                   name = "termDoc"
                                 select = "document(concat('cdr:',$termID,
                                                            '/lastp'))"/>
   <xsl:element                    name = "{name()}">
@@ -528,22 +535,89 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
  </xsl:template>
 -->
 
- <!-- 
+ <!--
+ =================================================================
+ Find the NCT ID for the clinical trial identified in the ProtocolRef
+ element and add it as the nct_id attribute. The path for finding
+ the ID depends on whether the trial's document is an CTGovProtocol
+ document or an (obsolete) InScopeProtocol document. It's guaranteed
+ that both paths can't be present for the same document, so it works
+ to concatenate the results of the two queries below. If neither is
+ present, we'll have an empty value for the nct_id variable (and
+ attribute).
+ ================================================================= -->
+ <xsl:template                   match = "ProtocolRef">
+  <xsl:variable                   name = "cdr_ref"
+                                select = "@cdr:href"/>
+  <xsl:variable                   name = "cdr_id"
+                                select = "number(
+                                           substring-before(
+                                            concat(
+                                             substring-after($cdr_ref, 'CDR'),
+                                             '#'
+                                            ), '#'))"/>
+  <xsl:variable                   name = "ctg_query">
+SELECT value
+  FROM query_term
+ WHERE path = '/CTGovProtocol/IDInfo/NCTID'
+   AND doc_id = ?
+  </xsl:variable>
+  <xsl:variable                   name = "ctg_result"
+                                select = "document(
+                                          concat('cdrutil:/sql-query/',
+                                                 $ctg_query, '~', $cdr_id))"/>
+
+  <xsl:variable                   name = "ctg_nct_id"
+                                select = "$ctg_result/SqlResult/row
+                                           /col[@name='value']"/>
+  <xsl:variable                   name = "inscope_query">
+SELECT s.value
+  FROM query_term s
+  JOIN query_term t
+    ON s.doc_id = t.doc_id
+   AND LEFT(s.node_loc, 8) = LEFT(t.node_loc, 8)
+ WHERE s.path = '/InScopeProtocol/ProtocolIDs/OtherID/IDString'
+   AND t.path = '/InScopeProtocol/ProtocolIDs/OtherID/IDType'
+   AND t.value = 'ClinicalTrials.gov ID'
+   AND s.doc_id = ?
+  </xsl:variable>
+  <xsl:variable                   name = "inscope_result"
+                                select = "document(
+                                          concat('cdrutil:/sql-query/',
+                                                 $inscope_query, '~',
+                                                 $cdr_id))"/>
+
+  <xsl:variable                   name = "inscope_nct_id"
+                                select = "$inscope_result/SqlResult/row
+                                           /col[@name='value']"/>
+  <xsl:variable                   name = "nct_id"
+                                select = "concat($ctg_nct_id,
+                                                 $inscope_nct_id)"/>
+  <ProtocolRef>
+   <xsl:attribute                  name = "nct_id">
+    <xsl:value-of                select = "$nct_id"/>
+   </xsl:attribute>
+   <xsl:apply-templates          select = "@*|node()"/>
+  </ProtocolRef>
+ </xsl:template>
+
+
+ <!--
  =================================================================
  Template to denormalize the SummaryRef elements
- We need this denormalization in order to correctly create the 
+ We need this denormalization in order to correctly create the
  link in the QC report to the listed summaries.
  ================================================================= -->
  <xsl:template                    match = "SummaryRef |
                                            SummaryFragmentRef">
-  <xsl:variable                    name = "SummaryRefID" 
+  <xsl:variable                    name = "SummaryRefID"
                                  select = "substring-before(
                                              concat(@cdr:href, '#'), '#')"/>
 
   <xsl:variable                    name = "thisSummaryId"
                                  select = "document('cdrutil:/docid')"/>
   <xsl:variable                    name = "pubVersion"
-                                 select = "document(concat('cdrutil:', 
+                                 select = "document(concat('cdrutil:',
                                                            '/get-pv-num/',
                                                        @cdr:href | @href))"/>
 
@@ -603,14 +677,14 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
  </xsl:template>
 
 
- <!-- 
+ <!--
  =================================================================
  Template to denormalize the Term elements
  ================================================================= -->
  <xsl:template                    match = "MiscellaneousDocLink">
-  <xsl:variable                    name = "MiscID" 
+  <xsl:variable                    name = "MiscID"
                                  select = "@cdr:ref"/>
-  <xsl:variable                    name = "MiscInfo" 
+  <xsl:variable                    name = "MiscInfo"
                                  select = "document(concat('cdr:',$MiscID,
                                                            '/lastp'))"/>
   <xsl:variable                    name = "MiscIDFrag"
@@ -628,15 +702,15 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==================================================================
  Template rule used to do XML to XML transformations which
- copies any attribute node, or node that is child of of something 
+ copies any attribute node, or node that is child of of something
  ================================================================== -->
  <xsl:template                    match = "@*|node()">
   <xsl:copy>
    <xsl:apply-templates          select = "@*|node()"/>
-  </xsl:copy> 
+  </xsl:copy>
  </xsl:template>
 
 </xsl:transform>

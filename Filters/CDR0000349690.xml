@@ -11,6 +11,7 @@
      BZIssue::4685
      BZIssue::4846
      BZIssue::4942
+     JIRA::OCECTS-113 - fetch trials from CTRP instead of NLM
 
   -->
 
@@ -23,10 +24,6 @@
 
  <xsl:param                        name = 'newDoc'
                                  select = '"Y"'/>
- <xsl:param                        name = 'newlyTransferredDoc'
-                                 select = '"N"'/>
- <xsl:param                        name = 'hasCtrpSites'
-                                 select = '"N"'/>
  <xsl:param                        name = 'importDateTime'/>
 
  <xsl:template                    match = '/'>
@@ -41,7 +38,7 @@
   <xsl:apply-templates           select = 'brief_title'/>
   <xsl:apply-templates           select = 'official_title'/>
   <Sponsors>
-   <xsl:call-template              name = 'pdqSponsorshipStub'/>
+   <!-- xsl:call-template              name = 'pdqSponsorshipStub'/ -->
    <xsl:apply-templates          select = 'sponsors'/>
    <xsl:apply-templates          select = 'overall_official'/>
    <xsl:for-each                 select = 'overall_contact'>
@@ -65,12 +62,9 @@
   <xsl:apply-templates           select = 'start_date'/>
   <xsl:apply-templates           select = 'end_date'/>
   <xsl:apply-templates           select = 'primary_completion_date'/>
-  <xsl:if                          test = '$hasCtrpSites = "N"'>
-   <xsl:apply-templates          select = 'location'/>
-  </xsl:if>
+  <xsl:apply-templates           select = 'location'/>
   <xsl:choose>
-   <xsl:when                       test = '$newDoc = "Y" or
-                                           $newlyTransferredDoc = "Y"'>
+   <xsl:when                       test = '$newDoc = "Y"'>
     <ProtocolProcessingDetails>
      <ProcessingStatus>Newly imported</ProcessingStatus>
      <EnteredBy>CTGovImport</EnteredBy>
@@ -80,7 +74,7 @@
      <ProcessingEndDateTime>
       <xsl:value-of              select = '$importDateTime'/>
      </ProcessingEndDateTime>
-     <Comment>Imported from ClinicalTrials.gov at NLM</Comment>
+     <Comment>Imported from CTRP at NCI</Comment>
     </ProtocolProcessingDetails>
    </xsl:when>
    <xsl:otherwise>
@@ -232,11 +226,6 @@
   <xsl:apply-templates           select = 'verification_date'/>
   <xsl:apply-templates           select = 'lastchanged_date'/>
   <xsl:apply-templates           select = 'firstreceived_date'/>
-  <xsl:if                        test   = '$newDoc = "N"'>
-   <xsl:if                       test   = '$newlyTransferredDoc = "N"'>
-    <xsl:text>@@CTRPInfo@@</xsl:text>
-   </xsl:if>
-  </xsl:if>
  </xsl:template>
 
  <xsl:template                    match = 'required_header'>
@@ -358,17 +347,6 @@
   <xsl:variable                    name = 'agency'
                                  select = 'normalize-space()'/>
   <xsl:if                          test = '$agency != ""'>
-   
-   <xsl:variable                   name = 'cdrId'
-                                 select = 'document(concat("cdrutil:/",
-                                                           "extern-map",
-                                                           "/CT.gov Agencies/",
-                                                           $agency))'/>
-   <xsl:if                         test = '$cdrId != ""'>
-    <xsl:attribute                 name = 'cdr:ref'>
-     <xsl:value-of               select = '$cdrId'/>
-    </xsl:attribute>
-   </xsl:if>
    <xsl:value-of                 select = '$agency'/>
   </xsl:if>
  </xsl:template>
@@ -380,36 +358,6 @@
     <xsl:call-template             name = 'extractDegrees'/>
     <xsl:call-template             name = 'extractRole'/>
     <xsl:call-template             name = 'extractAffiliation'/>
-    <xsl:variable                  name = 'key'
-                                 select = 'concat(
-                                           normalize-space(first_name), "|",
-                                           normalize-space(middle_name), "|",
-                                           normalize-space(last_name), "|",
-                                           normalize-space(affiliation))'/>
-    <xsl:variable                  name = 'docId'
-                                 select = 'document(concat("cdrutil:/",
-                                                           "extern-map",
-                                                           "/CT.gov ",
-                                                           "Officials/",
-                                                           $key))'/>
-    <xsl:choose>
-     <xsl:when                     test = '$docId != ""'>
-      <PDQPerson>
-       <xsl:attribute              name = 'cdr:ref'>
-        <xsl:value-of            select = '$docId'/>
-       </xsl:attribute>
-       <xsl:value-of             select = '$key'/>
-      </PDQPerson>
-     </xsl:when>
-     <xsl:when                     test = '$newDoc = "Y" or
-                                           $newlyTransferredDoc = "Y"'>
-      <PDQPerson>
-       <xsl:processing-instruction name = 'xm-replace_text'>
-        <xsl:text>{PDQPerson}</xsl:text>
-       </xsl:processing-instruction>
-      </PDQPerson>
-     </xsl:when>
-    </xsl:choose>
    </OverallOfficial>
   </xsl:if>
  </xsl:template>
@@ -515,7 +463,7 @@
    </BriefSummary>
   </xsl:if>
  </xsl:template>
- 
+
  <xsl:template                    match = 'detailed_description'>
   <xsl:if                          test = 'normalize-space() != ""'>
    <DetailedDescription>
@@ -918,23 +866,6 @@
                                  select = 'normalize-space(name)'/>
       <xsl:if                      test = '$fName != ""'>
        <Name>
-        <xsl:variable              name = 'key'
-                                 select = 'concat($fName, "|",
-                                           normalize-space(address/city), "|",
-                                           normalize-space(address/state), "|",
-                                           normalize-space(address/zip), "|",
-                                           normalize-space(address/country))'/>
-        <xsl:variable              name = 'docId'
-                                 select = 'document(concat("cdrutil:/",
-                                                           "extern-map",
-                                                           "/CT.gov ",
-                                                           "Facilities/",
-                                                           $key))'/>
-        <xsl:if                    test = '$docId != ""'>
-         <xsl:attribute            name = 'cdr:ref'>
-          <xsl:value-of          select = '$docId'/>
-         </xsl:attribute>
-        </xsl:if>
         <xsl:value-of            select = '$fName'/>
        </Name>
       </xsl:if>
@@ -962,38 +893,6 @@
        <xsl:call-template          name = 'extractNameElements'/>
        <xsl:call-template          name = 'extractDegrees'/>
        <xsl:call-template          name = 'extractRole'/>
-       <xsl:variable               name = 'key'
-                                 select = 'concat(
-                                           normalize-space
-                                                    (../facility/name), "|",
-                                           normalize-space(first_name), "|",
-                                           normalize-space(middle_name), "|",
-                                           normalize-space(last_name))'/>
-       <xsl:variable               name = 'docId'
-                                 select = 'document(concat("cdrutil:/",
-                                                           "extern-map",
-                                                           "/CT.gov ",
-                                                           "Investigators/",
-                                                           $key))'/>
-       <xsl:choose>
-        <xsl:when                  test = '$docId != ""'>
-         <PDQPerson>
-          <xsl:attribute           name = 'cdr:ref'>
-           <xsl:value-of         select = '$docId'/>
-          </xsl:attribute>
-          <xsl:value-of          select = '$key'/>
-         </PDQPerson>
-        </xsl:when>
-        <xsl:when                  test = '$newDoc = "Y" or
-                                           $newlyTransferredDoc = "Y"'>
-         <PDQPerson>
-          <xsl:processing-instruction
-                                   name = 'xm-replace_text'>
-           <xsl:text>{PDQPerson}</xsl:text>
-          </xsl:processing-instruction>
-         </PDQPerson>
-        </xsl:when>
-       </xsl:choose>
       </Investigator>
      </xsl:if>
     </xsl:for-each>
@@ -1012,11 +911,15 @@
      </City>
     </xsl:if>
 
-    <!-- Per Lakshmi 2003-12-11: drop states we can't map, but remember 
+    <!-- Per Lakshmi 2003-12-11: drop states we can't map, but remember
          the mapping failure. -->
     <xsl:variable                  name = 'sName'
                                  select = 'normalize-space(state)'/>
-    <xsl:if                        test = '$sName != ""'>
+    <xsl:variable                  name = 'cName'
+                                 select = 'normalize-space(country)'/>
+    <xsl:if                        test = '$sName != "" and (
+                                           $cName = "United States" or
+                                           $cName = "Canada")'>
      <xsl:variable                 name = 'stateId'
                                  select = 'document(concat("cdrutil:/",
                                                            "extern-map",
@@ -1031,8 +934,6 @@
       </PoliticalSubUnit_State>
      </xsl:if>
     </xsl:if>
-    <xsl:variable                  name = 'cName'
-                                 select = 'normalize-space(country)'/>
     <xsl:if                        test = '$cName != ""'>
      <Country>
       <xsl:attribute               name = 'cdr:ref'>
@@ -1097,6 +998,7 @@
 
  <!--
   Modified October 2007 at Lakshmi's request to pick up collaborators.
+  Suppressed (above) 2015-04-10 for switch to CTRP data.
    -->
  <xsl:template                     name = 'pdqSponsorshipStub'>
   <xsl:text>@@PDQSPONSORSHIP=|</xsl:text>

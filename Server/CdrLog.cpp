@@ -100,10 +100,11 @@ static bool __declspec(thread) inLogging2 = false;
 /**
  * Directory for logging - for OSLogFile.
  * Also may be used elsewhere.
+ * String is initially empty.  See getDefaultLogDir().
  * Changed from constant to variable to allow overrides
  * in invocation of the CdrServer.
  */
-static std::string CdrLogDir = "d:/cdr/log";
+static std::string CdrLogDir;
 
 /**
  * Name of OS based logfile.
@@ -385,6 +386,13 @@ void cdr::log::setDefaultLogDir(std::string dir) {
  *   Returns drive + directory.
  */
 std::string cdr::log::getDefaultLogDir() {
+    // If it's not set, initialize with default on current drive
+    if (CdrLogDir.empty()) {
+        char fname[] = "x:/cdr/log";
+        cdr::db::replaceDriveLetter(fname);
+        CdrLogDir = std::string(fname);
+    }
+
     return CdrLogDir;
 }
 
@@ -415,7 +423,7 @@ void cdr::log::WriteFile (
 
     // If no filename given, construct a default
     if (fname.empty())
-        fname = CdrLogDir + OSLogFile;
+        fname = getDefaultLogDir() + OSLogFile;
 
     // If non-standard port, append port number to log file
     // Avoids interspersing log messages from different processes in one file

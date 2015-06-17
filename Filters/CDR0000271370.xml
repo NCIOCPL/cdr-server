@@ -8,8 +8,10 @@ $Id$
 Filter including misc Vendor filter templates.
 
 BZIssue::???? - Modify Vendor Filters to Include Audio
-BZIssue::5003 - [Summaries] Table Column Widths - Display on Cancer.gov 
+BZIssue::5003 - [Summaries] Table Column Widths - Display on Cancer.gov
 BZIssue::5274 - Mobile images in Spanish Summaries
+OCECDR-3869: Support for linking to blocked trials
+OCECTS-116 - Add nct_id attribute to ProtocolRef element
 
 ==================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -17,7 +19,7 @@ BZIssue::5274 - Mobile images in Spanish Summaries
                exclude-result-prefixes = "cdr"
                              xmlns:cdr = "cips.nci.nih.gov/cdr">
 
- <xsl:output                    method = "xml" 
+ <xsl:output                    method = "xml"
                   omit-xml-declaration = "no"
                               encoding = "UTF-8"/>
 
@@ -38,32 +40,53 @@ BZIssue::5274 - Mobile images in Spanish Summaries
 
  <!--
  ====================================================================
- Identify if a ProtocolRef element points to a non-publishable
- document.  If it does remove the element tags and display a warning
- message.
+ Keep ProtocolRef markup, but strip the 'cdr' prefix from attributes.
+ As far as I (Bob) can tell, this is redundant, as it is also done in
+ the Vendor Cleanup Templates module, but Volker isn't sure there
+ aren't cases where one module is used without the other.
  ==================================================================== -->
- <xsl:template                   match = "ProtocolRef"
-                                  mode = "copy">
+ <xsl:template                   match = "ProtocolRef">
   <xsl:element                    name = "ProtocolRef">
-   <xsl:attribute                 name = "href">
-    <xsl:value-of               select = "@cdr:href"/>
-   </xsl:attribute>
+   <xsl:for-each                select = "@*">
+    <xsl:choose>
+     <xsl:when                    test = "starts-with(name(), 'cdr:')">
+      <xsl:attribute              name = "{substring-after(name(),':')}">
+       <xsl:value-of            select = "."/>
+      </xsl:attribute>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:attribute              name = "{name()}">
+       <xsl:value-of            select = "."/>
+      </xsl:attribute>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:for-each>
    <xsl:apply-templates           mode = "copy"/>
   </xsl:element>
-
  </xsl:template>
 
  <!--
  ====================================================================
- Identify if a ProtocolRef element points to a non-publishable
- document.  If it does remove the element tags and display a warning
- message.
+ Same as the previous template, but using copy mode. Keeping the
+ duplicate path on Volker's advice. Clean this up when we do CDR 2.0.
  ==================================================================== -->
- <xsl:template                   match = "ProtocolRef">
+ <xsl:template                   match = "ProtocolRef"
+                                  mode = "copy">
   <xsl:element                    name = "ProtocolRef">
-   <xsl:attribute                 name = "href">
-    <xsl:value-of               select = "@cdr:href"/>
-   </xsl:attribute>
+   <xsl:for-each                select = "@*">
+    <xsl:choose>
+     <xsl:when                    test = "starts-with(name(), 'cdr:')">
+      <xsl:attribute              name = "{substring-after(name(),':')}">
+       <xsl:value-of            select = "."/>
+      </xsl:attribute>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:attribute              name = "{name()}">
+       <xsl:value-of            select = "."/>
+      </xsl:attribute>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:for-each>
    <xsl:apply-templates           mode = "copy"/>
   </xsl:element>
  </xsl:template>
@@ -103,7 +126,7 @@ BZIssue::5274 - Mobile images in Spanish Summaries
   </xsl:variable>
 
   <!--
-  This block is for a GlossaryTerm document with a MediaLink element 
+  This block is for a GlossaryTerm document with a MediaLink element
   shared between the English and Spanish version like the "peau d'orange"
   ======================================================================= -->
   <xsl:choose>
@@ -157,16 +180,16 @@ BZIssue::5274 - Mobile images in Spanish Summaries
    <!-- xsl:when                      test = "$whoAmI = 'DrugInfo'">
    </xsl:when -->
    <xsl:otherwise>
-    <!-- 
+    <!--
     Create MediaLink element for Summary and GlossaryTerm (the
     MediaLink element is NOT shared between the English and Spanish
     version)
     ===============================================================
     Define language variable to select the caption and alt text
     Note:  This only applies for summary document and GlossaryTerm
-           document with a MediaLink child element of the 
+           document with a MediaLink child element of the
            TermDefinition or SpanishTermDefinition
-    =============================================================== --> 
+    =============================================================== -->
     <xsl:variable                 name = "docLanguage">
      <xsl:choose>
       <xsl:when                   test = "$audioLanguage">
@@ -174,10 +197,10 @@ BZIssue::5274 - Mobile images in Spanish Summaries
       </xsl:when>
       <xsl:when                   test = "/Summary/
                                           SummaryMetaData/
-                                          SummaryLanguage 
+                                          SummaryLanguage
                                             = 'Spanish'
                                           or
-                                          name(..) 
+                                          name(..)
                                             = 'TranslatedTermDefinition'">
        <xsl:text>es</xsl:text>
       </xsl:when>
@@ -187,17 +210,17 @@ BZIssue::5274 - Mobile images in Spanish Summaries
      </xsl:choose>
     </xsl:variable>
 
-    <!-- 
+    <!--
     Define audience variable to select the alt text
-    =============================================== -->     
+    =============================================== -->
     <xsl:variable                 name = "docAudience">
      <xsl:choose>
       <xsl:when                   test = "/Summary/
                                           SummaryMetaData/
-                                          SummaryAudience 
+                                          SummaryAudience
                                             = 'Health professionals'
                                           or
-                                          ../Audience 
+                                          ../Audience
                                             = 'Health professional'">
        <xsl:text>Health_professionals</xsl:text>
       </xsl:when>
@@ -213,18 +236,18 @@ BZIssue::5274 - Mobile images in Spanish Summaries
     For the GlossaryTerm we will either have one MediaLink that is
     shared between the English and Spanish version or two distinct
     MediaLink elements, one for the English and one for the Spanish
-    version.  
-    It is an error to have a MediaLink element for the 
+    version.
+    It is an error to have a MediaLink element for the
     English version and a MediaLink element for the Spanish version
     when both are pointing to the same Media document.  The filter
-    should fail to have the problem corrected. 
+    should fail to have the problem corrected.
                                      per LG/MB, 2006-11-15, VE.
     =============================================================== -->
     <xsl:if                       test = "not(MediaID/
                                               Media/
                                               MediaContent/
                                               Captions/
-                                              MediaCaption[@language = 
+                                              MediaCaption[@language =
                                                            $docLanguage])
                                           and
                                           UseCaption = 'Yes'">
@@ -275,7 +298,7 @@ BZIssue::5274 - Mobile images in Spanish Summaries
      <!--
      The language attribute is being added only if the Media document
      specifies a different language then that of the document type
-     i.e. if an image with English labels is being displayed in a 
+     i.e. if an image with English labels is being displayed in a
           Spanish summary
      By default, the MediaLanguage element will not be specified.
 
@@ -288,11 +311,11 @@ BZIssue::5274 - Mobile images in Spanish Summaries
 
      <!--
      For GlossaryTerm documents the audience attribute is being added.
-     This is done only for images (not for audio files) as the captions 
-     may be written for HP or patients (a.k.a. the genetics or the 
+     This is done only for images (not for audio files) as the captions
+     may be written for HP or patients (a.k.a. the genetics or the
      patient dictionary).
-     Note:  
-       This section is called for MediaLinks NOT shared between the 
+     Note:
+       This section is called for MediaLinks NOT shared between the
        English and Spanish version.
      =================================================================== -->
      <xsl:if                      test = "/GlossaryTermName
@@ -303,10 +326,10 @@ BZIssue::5274 - Mobile images in Spanish Summaries
 
      <!--
      If the thumb attribute is set to 'No' display it.
-     Additionally, per request from Cancer.gov the thumb attribute will 
+     Additionally, per request from Cancer.gov the thumb attribute will
      always be set to a default of thumb='Yes' if it has not been specified.
-     Additionally, we were asked to set thumb='No' if the specified size of 
-     the image is equal or greater then the actual size of the image so 
+     Additionally, we were asked to set thumb='No' if the specified size of
+     the image is equal or greater then the actual size of the image so
      that making the image clickable wouldn't result in a larger image size.
      Note:  The above requirement only makes sense for image files.  There
             won't be a thumb attribute for audio files.
@@ -353,7 +376,7 @@ BZIssue::5274 - Mobile images in Spanish Summaries
           </xsl:otherwise>
          </xsl:choose>
         </xsl:variable>
- 
+
         <xsl:choose>
          <xsl:when                test = "MediaID/Media/
                                           PhysicalMedia/
@@ -387,8 +410,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
       </xsl:attribute>
      </xsl:if>
 
-     <!-- 
-     The MinWidth attribute in the Summary document trumps the 
+     <!--
+     The MinWidth attribute in the Summary document trumps the
      MinWidthPixels element in the Media document
      ========================================================= -->
      <xsl:choose>
@@ -414,7 +437,7 @@ BZIssue::5274 - Mobile images in Spanish Summaries
       </xsl:attribute>
      </xsl:if>
 
-     <xsl:for-each              select = "./@ExcludedDevices | 
+     <xsl:for-each              select = "./@ExcludedDevices |
                                           ./@IncludedDevices">
       <xsl:attribute              name = "{name()}">
        <xsl:value-of            select = "."/>
@@ -422,12 +445,12 @@ BZIssue::5274 - Mobile images in Spanish Summaries
      </xsl:for-each>
 
 
-     <!-- 
+     <!--
      The UseCaption attibute turns existing captions on or off
      No UseCaption attribute defaults to UseCaption = 'Yes'
      ========================================================= -->
      <xsl:if                      test = "not(@UseCaption)
-                                          or 
+                                          or
                                           @UseCaption = 'Yes'">
       <xsl:choose>
        <xsl:when                  test = "Caption">
@@ -508,10 +531,10 @@ BZIssue::5274 - Mobile images in Spanish Summaries
   <!--
   Create MediaLink Element and attributes
   ======================================== -->
-  <xsl:if                         test = "$capLanguage = 'en' 
+  <xsl:if                         test = "$capLanguage = 'en'
                                           or
                                           $capLanguage = 'es'
-                                          and 
+                                          and
                                           /GlossaryTermName/
                                            GlossaryTermConcept/
                                            TranslatedTermDefinition">
@@ -551,7 +574,7 @@ BZIssue::5274 - Mobile images in Spanish Summaries
        <xsl:text>)&lt;BR/&gt;</xsl:text>
        <xsl:text>Error </xsl:text>
        <xsl:text>does not exist.&lt;BR/&gt;&lt;/LI&gt;</xsl:text>
-      </xsl:message> 
+      </xsl:message>
      </xsl:if>
      <xsl:attribute               name = "alt">
       <xsl:value-of             select = "../../
@@ -579,8 +602,8 @@ BZIssue::5274 - Mobile images in Spanish Summaries
    <!--
    Per request from Cancer.gov the thumb attribute will always be set to
    a default of thumb=Yes if it has not been specified.
-   Additionally, we were asked to set thumb=No if the specified size of 
-   the image is equal or greater then the actual size of the image so 
+   Additionally, we were asked to set thumb=No if the specified size of
+   the image is equal or greater then the actual size of the image so
    that making the image clickable wouldn't result in a larger image size.
    ======================================================================= -->
    <xsl:choose>
@@ -624,7 +647,7 @@ BZIssue::5274 - Mobile images in Spanish Summaries
        </xsl:otherwise>
       </xsl:choose>
      </xsl:variable>
-     
+
      <xsl:choose>
       <xsl:when                   test = "../../../
                                           PhysicalMedia/
@@ -668,12 +691,12 @@ BZIssue::5274 - Mobile images in Spanish Summaries
    </xsl:if>
 
 
-   <!-- 
+   <!--
    The UseCaption attibute turns existing captions on or off
    No UseCaption attribute defaults to UseCaption = 'Yes'
    ========================================================= -->
    <xsl:if                        test = "not($mediaUseCaption)
-                                          or 
+                                          or
                                           $mediaUseCaption = 'Yes'">
     <xsl:choose>
      <xsl:when                    test = "Caption">
@@ -693,40 +716,40 @@ BZIssue::5274 - Mobile images in Spanish Summaries
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==================================================================
  Cleaning up the xref value of the SummaryURL element
- - replace 'http://www.cancer.gov' with 'http://cancer.gov' 
+ - replace 'http://www.cancer.gov' with 'http://cancer.gov'
  - remove trailing '/' from URL
  Note:  It is expected that a normalized string is being passed.
- ================================================================== -->  
+ ================================================================== -->
  <xsl:template                    name = "getSummaryURL">
   <xsl:param                      name = "url"
                                 select = "''"/>
   <xsl:choose>
-   <xsl:when                      test = "substring($url, 
+   <xsl:when                      test = "substring($url,
                                            string-length($url)) = '/'">
     <xsl:choose>
-     <xsl:when                    test = "contains($url, 
+     <xsl:when                    test = "contains($url,
                                                   'http://www.cancer.gov')">
 
       <xsl:value-of             select = "concat(
                                           'http://cancer.gov',
                                           substring-after(
-                                            substring($url, 1, 
+                                            substring($url, 1,
                                               string-length($url) - 1),
                                               '.gov'))"/>
 
      </xsl:when>
      <xsl:otherwise>
-      <xsl:value-of             select = "substring($url, 1, 
+      <xsl:value-of             select = "substring($url, 1,
                                               string-length($url) - 1)"/>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:when>
    <xsl:otherwise>
     <xsl:choose>
-     <xsl:when                    test = "contains($url, 
+     <xsl:when                    test = "contains($url,
                                                   'http://www.cancer.gov')">
       <xsl:value-of             select = "concat(
                                            'http://cancer.gov',
@@ -742,20 +765,20 @@ BZIssue::5274 - Mobile images in Spanish Summaries
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  For GlossaryTerm documents the audience attribute is being added.
- This is done only for images (not for audio files) as the captions 
- may be written for HP or patients (a.k.a. the genetics or the 
+ This is done only for images (not for audio files) as the captions
+ may be written for HP or patients (a.k.a. the genetics or the
  patient dictionary).
 
- Note: 
-   For some reason the Audience element uses singular rather than 
-   plural values but the DTD specifies plurals for all of it's audience 
+ Note:
+   For some reason the Audience element uses singular rather than
+   plural values but the DTD specifies plurals for all of it's audience
    element and attribute values
    The final values are:  [Patients | Health_professionals]
  ====================================================================== -->
- <xsl:template                    name = "addAudience">  
+ <xsl:template                    name = "addAudience">
   <xsl:attribute                  name = "audience">
    <xsl:choose>
     <!--
@@ -775,21 +798,21 @@ BZIssue::5274 - Mobile images in Spanish Summaries
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  Suppress Comment nodes with or without copy mode.
  ====================================================================== -->
- <xsl:template                   match = "Comment | PdqKey"/>  
-  
+ <xsl:template                   match = "Comment | PdqKey"/>
+
  <xsl:template                   match = "Comment | PdqKey"
                                   mode = "copy"/>
 
 
  <!--
  ====================================================================
- Template to convert the column width of a table specified by 
-       col1=1*, col2=1*, col3=2* 
- into percentages 
+ Template to convert the column width of a table specified by
+       col1=1*, col2=1*, col3=2*
+ into percentages
       col1=25.00%, col2=25.00%, col3=50.00%
  ==================================================================== -->
  <xsl:template                    name = "setColWidth">
@@ -801,10 +824,10 @@ BZIssue::5274 - Mobile images in Spanish Summaries
   If the table contains 3 columns with the widths specified as
    col1=*, col2=2*, col3=3* then the sum of column units is 6.
   In order to convert the column widths to percentages (which
-  are understood by the browser) we're applying the folloing 
+  are understood by the browser) we're applying the folloing
   formula:
-     100 / CU * N = column width 
-  (in percent of the table width). N is the specified column width 
+     100 / CU * N = column width
+  (in percent of the table width). N is the specified column width
   in column units. If the width is specified as '*' instead of 'N*'
   the column width is set to '1'.
   If users are setting a column width of '0*' it's overwritten
@@ -829,16 +852,16 @@ BZIssue::5274 - Mobile images in Spanish Summaries
     <xsl:otherwise>
      <!--
      Our mailer program fails when the sum of all column numbers is
-     greater than 100% but rounding errors might cause this to be a 
+     greater than 100% but rounding errors might cause this to be a
      problem.  To avoid this I'm multiplying the column width percentage
-     by 100 and apply the floor() function to cut-off the non-integer 
+     by 100 and apply the floor() function to cut-off the non-integer
      part.  Dividing the resulting number by 100 and using a display
      format to 1/100th ensures no further rounding and allows the table
-     width to reach in a worst case 99.9% 
+     width to reach in a worst case 99.9%
      ===================================================================== -->
      <xsl:value-of              select = "format-number(
                                             floor(
-                                              substring-before(@ColWidth, '*') 
+                                              substring-before(@ColWidth, '*')
                                                 div $myTotal * 100 * 100)
                                                         div 100,
                                                         '#.00')"/>
@@ -851,9 +874,9 @@ BZIssue::5274 - Mobile images in Spanish Summaries
 
  <!--
  ====================================================================
- Template to take a string of numbers separated by comma (',') and 
+ Template to take a string of numbers separated by comma (',') and
  calculate the sum of those numbers.
- The string is passed in the allCols parameter as '1, 2, 3,'.  
+ The string is passed in the allCols parameter as '1, 2, 3,'.
  Recursively add the first element to the sum and continue to call
  the function with the first element removed until allCols is empty.
  ==================================================================== -->

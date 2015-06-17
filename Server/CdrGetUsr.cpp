@@ -49,16 +49,15 @@ cdr::String cdr::getUsr(cdr::Session& session,
         throw cdr::Exception(L"Missing user name");
 
     // Look up the base information for the user.
-    std::string query = "SELECT id,"
-                        "       name,"
-                        "       password,"
-                        "       fullname,"
-                        "       office,"
-                        "       email,"
-                        "       phone,"
-                        "       comment"
-                        "  FROM usr"
-                        " WHERE name = ?";
+    std::string query =
+        "SELECT id, name, fullname, office, email, phone, comment, authmode = "
+        "  CASE"
+        "      WHEN hashedpw IS NULL THEN 'network'"
+        "      WHEN hashedpw = HASHBYTES('SHA1', '') THEN 'network'"
+        "      ELSE 'local'"
+        "   END"
+        "  FROM usr"
+        " WHERE name = ?";
     cdr::db::PreparedStatement usrQuery = conn.prepareStatement(query);
     usrQuery.setString(1, usrName);
     cdr::db::ResultSet usrRs = usrQuery.executeQuery();
@@ -66,12 +65,12 @@ cdr::String cdr::getUsr(cdr::Session& session,
         throw cdr::Exception(L"User not found", usrName);
     int         uid      = usrRs.getInt(1);
     cdr::String uName    = usrRs.getString(2);
-    cdr::String password = usrRs.getString(3);
-    cdr::String fullname = usrRs.getString(4);
-    cdr::String office   = usrRs.getString(5);
-    cdr::String email    = usrRs.getString(6);
-    cdr::String phone    = usrRs.getString(7);
-    cdr::String comment  = usrRs.getString(8);
+    cdr::String fullname = usrRs.getString(3);
+    cdr::String office   = usrRs.getString(4);
+    cdr::String email    = usrRs.getString(5);
+    cdr::String phone    = usrRs.getString(6);
+    cdr::String comment  = usrRs.getString(7);
+    cdr::String authMode = usrRs.getString(8);
 
     // Make sure our user is authorized to retrieve this information.
     // Any user can access his own info, but special authorization is
@@ -88,9 +87,9 @@ cdr::String cdr::getUsr(cdr::Session& session,
                                        L"   <UserName>")
                                      + cdr::entConvert(uName)
                                      + L"</UserName>\n"
-                                     + L"   <Password>"
-                                     + cdr::entConvert(password)
-                                     + L"</Password>\n";
+                                     + L"   <AuthenticationMode>"
+                                     + authMode
+                                     + L"</AuthenticationMode>\n";
     if (fullname.size() > 0)
         response += L"   <FullName>"
                  +  cdr::entConvert(fullname)

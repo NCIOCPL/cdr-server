@@ -4,15 +4,7 @@
  *
  * Modifies the attributes and group assignments for an existing CDR user.
  *
- * $Log: not supported by cvs2svn $
- * Revision 1.3  2000/05/03 15:25:41  bkline
- * Fixed database statement creation.
- *
- * Revision 1.2  2000/04/23 01:25:07  bkline
- * Added function-level comment header.
- *
- * Revision 1.1  2000/04/22 09:24:57  bkline
- * Initial revision
+ * JIRA::OCECDR-3849 - integrate CDR login with NIH Active Directory
  */
 
 #include "CdrCommand.h"
@@ -35,14 +27,16 @@ cdr::String cdr::modUsr(cdr::Session& session,
 
     // Extract the data elements from the command node.
     cdr::StringList grpList;
-    cdr::String uName, password, fullName(true), office(true), email(true),
-                phone(true), comment(true), newName(true);
+    cdr::String uName, password, fullName(true), office(true), email(true);
+    cdr::String phone(true), comment(true), newName(true), authMode(true);
     cdr::dom::Node child = commandNode.getFirstChild();
     while (child != 0) {
         if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String name = child.getNodeName();
             if (name == L"UserName")
                 uName = cdr::dom::getTextContent(child);
+            else if (name == L"AuthenticationMode")
+                authMode = cdr::dom::getTextContent(child);
             else if (name == L"Password")
                 password = cdr::dom::getTextContent(child);
             else if (name == L"FullName")
@@ -55,6 +49,7 @@ cdr::String cdr::modUsr(cdr::Session& session,
                 phone = cdr::dom::getTextContent(child);
             else if (name == L"Comment")
                 comment = cdr::dom::getTextContent(child);
+
             else if (name == L"GrpName")
                 grpList.push_back(cdr::dom::getTextContent(child));
             else if (name == L"NewName")
@@ -62,10 +57,10 @@ cdr::String cdr::modUsr(cdr::Session& session,
         }
         child = child.getNextSibling();
     }
-    if (uName.size() == 0)
+    if (uName.empty())
         throw cdr::Exception(L"Missing user name");
-    // if (password.isNull())
-    //     throw cdr::Exception(L"Missing password");
+    if (authMode != L"local")
+        authMode = L"network";
 
     // Look up the user.
     std::string query = "SELECT id FROM usr WHERE name = ?";
@@ -76,8 +71,10 @@ cdr::String cdr::modUsr(cdr::Session& session,
         throw cdr::Exception(L"Failure locating user information");
     int usrId = usrRs.getInt(1);
 
-    // Update the row for the user
-    if (newName.size() > 0)
+    // Update the row for the user. The unique index on the name column
+    // will take care of blocking any attempt to change the account's
+    // name to a name that's used by another account.
+    if (!newName.empty())
         uName = newName;
     conn.setAutoCommit(false);
     query = "UPDATE usr"
@@ -98,11 +95,15 @@ cdr::String cdr::modUsr(cdr::Session& session,
     update.setInt   (7, usrId);
     update.executeQuery();
 
-    // If password is null, leave it alone, else replace it and clear failures
-    if (!password.isNull() && password != L"") {
+    // If this is a regular user account, make sure the hashed password
+    // column is empty.
+    if (authMode == L"network")
+        session.setUserPw(conn, uName, L"", false);
+
+    // Otherwise, this is a local account. If the request did not specify
+    // a password, leave it alone. Otherwise, plug in the new password.
+    else if (!password.empty())
         session.setUserPw(conn, uName, password, false);
-        cdr::setLoginFailedCount(conn, uName, 0);
-    }
 
     // Clear out existing group assignments.
     query = "DELETE grp_usr WHERE usr = ?";

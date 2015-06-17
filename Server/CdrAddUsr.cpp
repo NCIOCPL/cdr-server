@@ -3,18 +3,7 @@
  *
  * Adds new user to CDR.
  *
- * $Log: not supported by cvs2svn $
- * Revision 1.4  2000/05/09 21:06:56  bkline
- * Fixed typo in SQL statement (removed superfluous comma).
- *
- * Revision 1.3  2000/05/03 15:25:41  bkline
- * Fixed database statement creation.
- *
- * Revision 1.2  2000/04/23 01:13:47  bkline
- * Added function-level comment.
- *
- * Revision 1.1  2000/04/22 09:26:12  bkline
- * Initial revision
+ * JIRA::OCECDR-3849 - integrate CDR login with NIH Active Directory
  */
 
 #include "CdrCommand.h"
@@ -36,14 +25,16 @@ cdr::String cdr::addUsr(cdr::Session& session,
 
     // Extract the data elements from the command node.
     cdr::StringList grpList;
-    cdr::String uName, password, fullName(true), office(true), email(true),
-                phone(true), comment(true);
+    cdr::String uName, password, fullName(true), office(true), email(true);
+    cdr::String phone(true), comment(true), authMode(true);
     cdr::dom::Node child = commandNode.getFirstChild();
     while (child != 0) {
         if (child.getNodeType() == cdr::dom::Node::ELEMENT_NODE) {
             cdr::String name = child.getNodeName();
             if (name == L"UserName")
                 uName = cdr::dom::getTextContent(child);
+            else if (name == L"AuthenticationMode")
+                authMode = cdr::dom::getTextContent(child);
             else if (name == L"Password")
                 password = cdr::dom::getTextContent(child);
             else if (name == L"FullName")
@@ -61,14 +52,14 @@ cdr::String cdr::addUsr(cdr::Session& session,
         }
         child = child.getNextSibling();
     }
-    if (uName.size() == 0)
+    if (uName.empty())
         throw cdr::Exception(L"Missing user name");
-    if (password.isNull())
+    if (authMode != L"local") {
+        authMode = L"network";
+        password = L"";
+    }
+    else if (password.empty())
         throw cdr::Exception(L"Missing password");
-
-    // Don't create the record if the password fails standards
-    // Throws exception if pw fails
-    testPasswordString(password);
 
     // Make sure the user doesn't already exist.
     std::string select = "SELECT COUNT(*) FROM usr WHERE name = ?";
@@ -91,10 +82,11 @@ cdr::String cdr::addUsr(cdr::Session& session,
         "                created,"
         "                fullname,"
         "                office,"
-        "                email, "
+        "                email,"
         "                phone,"
-        "                comment)"
-        "        VALUES (?, 'tHiS-W1LlBEEreP8sEd', GETDATE(), ?, ?, ?, ?, ?)";
+        "                comment,"
+        "                hashedpw)"
+        "     VALUES (?, '', GETDATE(), ?, ?, ?, ?, ?, HASHBYTES('SHA1', ''))";
     cdr::db::PreparedStatement usrInsert = conn.prepareStatement(insert);
     usrInsert.setString(1, uName);
     usrInsert.setString(2, fullName);
@@ -106,8 +98,9 @@ cdr::String cdr::addUsr(cdr::Session& session,
     int usrId = conn.getLastIdent();
     usrInsert.close();
 
-    // Install the password for new user
-    session.setUserPw(conn, uName, password, true);
+    // Install the password for new user if this is a local account
+    if (authMode == L"local")
+        session.setUserPw(conn, uName, password, true);
 
     // Add groups to which user is assigned, if any.
     if (grpList.size() > 0) {

@@ -4,6 +4,7 @@
 <!--
 BZIssue::4740 - Fixing formatted citation display
 BZIssue::4904 - Adding citation format for Database/Database record
+OCECDR-3753: Citation formatting filter bugs
 -->
 
 <xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -392,13 +393,12 @@ BZIssue::4904 - Adding citation format for Database/Database record
      </xsl:if>
 
      <xsl:for-each          select = "Author[CollectiveName]">
-      <xsl:if                 test = "position() &lt; 4">
+      <xsl:if                 test = "position() &lt; 4 - $nLastName">
 
        <!-- 
        In case a collective name already ends in a period the
        final period has to be suppressed
        ====================================================== -->
-       <xsl:value-of        select = "CollectiveName"/>
        <xsl:choose>
         <xsl:when             test = "substring(
                                        normalize-space(CollectiveName), 
@@ -406,9 +406,14 @@ BZIssue::4904 - Adding citation format for Database/Database record
                                          normalize-space(CollectiveName)), 1) 
                                                                          = '.'">
          <xsl:text></xsl:text>
+         <xsl:value-of        select = "substring(
+                                         normalize-space(CollectiveName),
+                                          1, string-length(
+                                           normalize-space(CollectiveName) - 1)
+                                                                           )"/>
         </xsl:when>
         <xsl:otherwise>
-         <xsl:text>.</xsl:text>
+         <xsl:value-of        select = "normalize-space(CollectiveName)"/>
         </xsl:otherwise>
        </xsl:choose>
 
@@ -421,7 +426,7 @@ BZIssue::4904 - Adding citation format for Database/Database record
                                           and 
                                           position() != $nLastName
                                           and 
-                                          position() != 3">
+                                          position() != 3 - $nLastName">
         <xsl:text>, </xsl:text>
        </xsl:if>
       </xsl:if>

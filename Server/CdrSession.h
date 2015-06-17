@@ -4,6 +4,7 @@
  * Information about the current login.
  *
  * BZIssue::4767
+ * JIRA::OCECDR-3849 - Integrate CDR login with NIH Active Directory
  */
 
 #ifndef CDR_SESSION_
@@ -307,16 +308,6 @@ namespace cdr {
         const String&   comment = false);
 
     /**
-     * Check the format of a password.  Does it match the rules we establish
-     * for a safe password.
-     *
-     *  @param password     String to check.
-     *
-     *  @throws cdr::Exception if password fails any test.
-     */
-    void testPasswordString(const cdr::String& password);
-
-    /**
      * Determine if a passed password matches the password for the
      * passed user name.
      *
@@ -333,37 +324,6 @@ namespace cdr {
         String&         userName,
         String&         password,
         db::Connection& conn);
-
-    /**
-     * Get the current count of consecutive failed logins for a user.
-     *
-     *  @param conn         Open database connection.
-     *  @param userName     Unique short name of the user's usr record
-     *
-     *  @return             Integer count, -1 if user unknown
-     */
-    int getLoginFailedCount(
-        db::Connection&    conn,
-        const cdr::String& userName);
-
-    /**
-     * Clear or increment the current count of consecutive failed logins
-     * for a user.
-     *
-     *  @param conn         Open database connection.
-     *  @param userName     Unique short name of the user's usr record.
-     *  @param counter      0 = set the count to 0, i.e., clear it.
-     *                      1 = add one to the count, i.e., increment it.
-     *
-     *  @return             New value of login_failed count, or -1 if user
-     *                      is not found.
-     *
-     *  @throws cdr::Exception if anything other than 0 or 1 counter passed.
-     */
-    int setLoginFailedCount(
-        db::Connection&    conn,
-        const cdr::String& userName,
-        int                counter);
 }
 
 #endif
