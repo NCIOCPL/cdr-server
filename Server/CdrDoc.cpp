@@ -789,6 +789,7 @@ static cdr::String cdrPutDoc (
          cmdSchemaVal,          // True=Validate schema
          cmdLinkVal,            // True=Validate links
          cmdSetLinks,           // True=Update link tables
+         cmdDelAllBlobs,        // True=Delete all blobs associated with doc
          cmdEcho;               // True=Client want modified doc echoed back
     cdr::String cmdReason;      // Reason to associate with new version
     cdr::String validationTypes;// Schema, Links or both, empty=both
@@ -807,6 +808,7 @@ static cdr::String cdrPutDoc (
     cmdCheckIn        = false;
     cmdEcho           = false;
     cmdSetLinks       = true;
+    cmdDelAllBlobs    = false;
     validationTypes   = L"";
 
     // Default reason is NULL created by cdr::String contructor
@@ -896,6 +898,18 @@ static cdr::String cdrPutDoc (
             else if (name == L"Echo")
                 cmdEcho = cdr::ynCheck (cdr::dom::getTextContent (child),
                                            false, L"Echo");
+
+            else if (name == L"DelAllBlobVersions") {
+                cmdDelAllBlobs = cdr::ynCheck (
+                    cdr::dom::getTextContent(child), false,
+                                             L"DelAllBlobVersions");
+                if (cmdDelAllBlobs) {
+                    if (newrec)
+                        throw cdr::Exception (
+                            L"Received request to delete all blobs for a new "
+                            L"record not yet in the database - can't happen");
+                }
+            }
 
             else if (name == L"Reason")
                 cmdReason = cdr::dom::getTextContent (child);
@@ -1047,7 +1061,6 @@ static cdr::String cdrPutDoc (
         if (cdr::isCheckedOut (doc.getId(), dbConn, &lockUserId, &lockDate)) {
             if (lockUserId != session.getUserId()) {
 
-
                 // It's checked out to someone else
                 // Tell user who it is and give date/time checked out
                 std::string qry = "SELECT name, fullname "
@@ -1179,6 +1192,20 @@ static cdr::String cdrPutDoc (
         auditAddedAction(dbConn, doc.getId(), statusAction);
 
     SHOW_ELAPSED("action audited", incrementalTimer);
+
+    // Delete all associated blobs if requested
+    // As of this writing, should ONLY happen with Media docs representing
+    //   PDQ board meeting recordings.
+    if (cmdDelAllBlobs) {
+        // Don't like to wire in doc type names, but in this case the
+        // goal is not to do something but to prevent doing something bad.
+        if (doc.getTextDocType() != L"Media")
+            throw new cdr::Exception(L"Attempt to remove all blob versions"
+                                     L" from a non-Media doc");
+
+        // Invoke the deletion
+        cdr::delAllBlobVersions(dbConn, doc.getId());
+    }
 
     // Checkin must be performed either to checkin or version the doc.
     // If versioning without long term checkin, then an immediate

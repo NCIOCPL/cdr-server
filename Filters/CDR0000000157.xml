@@ -30,6 +30,10 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
              Information block on Cancer.gov
 OCECDR-3824: Filter changes for new Spanish CAM summaries
 OCEPROJECT-2876: CDR - Vendor Filter Change to Modify Summary Titles
+OCECDR-3920: Fix SummaryRef in 'About This Summary'
+OCECDR-3892: [Misc Docs] Require Publishable Version for Publication
+             of Changes in Misc Docs
+OCECDR-3926: Modify Vendor Filter to Include New NLM Data
 
 ================================================================ -->
 <xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -57,9 +61,10 @@ OCEPROJECT-2876: CDR - Vendor Filter Change to Modify Summary Titles
  <xsl:variable                   name = "cgUrl"
                                select = "'http://www.cancer.gov'"/>
  <xsl:variable                   name = "cgBoardEN"
-                               select = "'/cancertopics/pdq'"/>
+                               select = "'/publications/pdq/editorial-boards'"/>
  <xsl:variable                   name = "cgBoardES"
-                               select = "'/espanol/pdq'"/>
+                               select = "concat('/espanol/publicaciones',
+                                                '/pdq/consejos-editoriales')"/>
  <xsl:variable                   name = "sumTitle"
                                select = "normalize-space(
                                            substring-before(
@@ -785,6 +790,22 @@ OCEPROJECT-2876: CDR - Vendor Filter Change to Modify Summary Titles
  </xsl:template>
 
 
+ <!--
+ ==================================================================
+ Template to extract the Board Name
+ ================================================================== -->
+ <xsl:template                  match = "PDQBoard">
+  <xsl:if                        test = "not(contains(Board, 'Advisory'))">
+   <xsl:element                  name = "SummaryEditorialBoard">
+    <xsl:attribute               name = "ref">
+     <xsl:apply-templates      select = "Board/@cdr:ref"/>
+    </xsl:attribute>
+    <xsl:apply-templates       select = "Board"/>
+   </xsl:element>
+  </xsl:if>
+ </xsl:template>
+
+
  <!-- 
  ==================================================================
  SectMetaData Template
@@ -1048,8 +1069,13 @@ OCEPROJECT-2876: CDR - Vendor Filter Change to Modify Summary Titles
                                  mode = "copy"/>
    <xsl:apply-templates        select = "SummaryURL"/>
    <xsl:apply-templates        select = "MobileURL"/>
+   <xsl:apply-templates        select = "PDQBoard"/>
    <xsl:apply-templates        select = "MainTopics"/>
    <xsl:apply-templates        select = "SecondaryTopics"/>
+   <xsl:apply-templates        select = "SummaryAbstract"
+                                 mode = "copy"/>
+   <xsl:apply-templates        select = "SummaryKeyWords"
+                                 mode = "copy"/>
    <!-- xsl:apply-templates        select = "PermaTargs"/ -->
 
    <!-- Comment out deep linking:  Needed for a later release -->
@@ -1935,39 +1961,33 @@ OCEPROJECT-2876: CDR - Vendor Filter Change to Modify Summary Titles
            <xsl:when              test = "$sumType = 'Treatment'">
             <xsl:choose>
              <xsl:when            test = "$ageGroup = 'Adult'">
-              <xsl:value-of     select = "concat(
-                                            $cgUrl, $cgBoardEN, 
-                                            '/adult-treatment-board')"/>
+              <xsl:value-of     select = "concat($cgUrl, $cgBoardEN, 
+                                            '/adult-treatment')"/>
              </xsl:when>
              <xsl:otherwise>
-              <xsl:value-of     select = "concat(
-                                            $cgUrl, $cgBoardEN, 
-                                            '/pediatric-treatment-board')"/>
+              <xsl:value-of     select = "concat($cgUrl, $cgBoardEN, 
+                                            '/pediatric-treatment')"/>
              </xsl:otherwise>
             </xsl:choose>
            </xsl:when>
            <xsl:when              test = "$sumType = 'Screening'
                                           or
                                           $sumType = 'Prevention'">
-            <xsl:value-of       select = "concat(
-                                            $cgUrl, $cgBoardEN, 
-                                            '/screening-prevention-board')"/>
+            <xsl:value-of       select = "concat($cgUrl, $cgBoardEN, 
+                                            '/screening-prevention')"/>
            </xsl:when>
            <xsl:when              test = "$sumType = concat('Complementary',
                                                 ' and alternative medicine')">
-            <xsl:value-of       select = "concat(
-                                            $cgUrl, $cgBoardEN, 
-                                            '/cancer-cam-board')"/>
+            <xsl:value-of       select = "concat($cgUrl, $cgBoardEN, 
+                                            '/cam')"/>
            </xsl:when>
            <xsl:when              test = "$sumType = 'Supportive care'">
-            <xsl:value-of       select = "concat(
-                                            $cgUrl, $cgBoardEN, 
-                                            '/supportive-care-board')"/>
+            <xsl:value-of       select = "concat($cgUrl, $cgBoardEN, 
+                                            '/supportive-care')"/>
            </xsl:when>
            <xsl:when              test = "$sumType = 'Genetics'">
-            <xsl:value-of       select = "concat(
-                                            $cgUrl, $cgBoardEN, 
-                                            '/cancer-genetics-board')"/>
+            <xsl:value-of       select = "concat($cgUrl, $cgBoardEN, 
+                                            '/genetics')"/>
            </xsl:when>
           </xsl:choose>
          </xsl:when>
@@ -1977,46 +1997,35 @@ OCEPROJECT-2876: CDR - Vendor Filter Change to Modify Summary Titles
            <xsl:when              test = "$sumType = 'Treatment'">
             <xsl:choose>
              <xsl:when            test = "$ageGroup = 'Adult'">
-              <xsl:value-of     select = "concat(
-                                          $cgUrl, $cgBoardES,
-                                          '/consenjo-tratamientos-',
-                                          'adultos')"/>
+              <xsl:value-of     select = "concat($cgUrl, $cgBoardES,
+                                            '/tratamiento-adultos')"/>
              </xsl:when>
              <xsl:otherwise>
-              <xsl:value-of     select = "concat(
-                                          $cgUrl, $cgBoardES,
-                                          '/consejo-tratamientos-',
-                                          'pediatricos')"/>
+              <xsl:value-of     select = "concat($cgUrl, $cgBoardES,
+                                            '/tratamiento-pediatrico')"/>
              </xsl:otherwise>
             </xsl:choose>
            </xsl:when>
            <xsl:when              test = "$sumType = 'Supportive care'">
-            <xsl:value-of       select = "concat(
-                                          $cgUrl, $cgBoardES,
-                                          '/consejo-cuidados-medicos-',
-                                          'de-apoyo')"/>
+            <xsl:value-of       select = "concat($cgUrl, $cgBoardES,
+                                            '/cuidados-medicos-apoyo')"/>
            </xsl:when>
            <xsl:when              test = "$sumType = 'Screening'
                                             or
                                             $sumType = 'Prevention'">
-            <xsl:value-of       select = "concat(
-                                          $cgUrl, $cgBoardES, 
-                                          '/deteccion-prevencion-',
-                                          'consejoeditorial')"/>
+            <xsl:value-of       select = "concat($cgUrl, $cgBoardES, 
+                                            '/deteccion-prevencion')"/>
            </xsl:when>
            <xsl:when              test = "$sumType = concat('Complementary',
                                                   ' and alternative medicine')">
-            <xsl:value-of       select = "concat(
-                                              $cgUrl, $cgBoardES,
-                                              '/medicina-complementaria',
-                                              '-alternativa-consejo',
-                                              '-editorial')"/>
+            <xsl:value-of       select = "concat($cgUrl, $cgBoardES,
+                                            '/medicina-complementaria',
+                                            '-alternativa')"/>
            </xsl:when>
-           <!-- xsl:when          test = "$sumType = 'Genetics'">
-            <xsl:value-of       select = "concat(
-                                              $cgUrl, cgBoardES, 
-                                              '/cancer-genetics-board')"/>
-           </xsl:when -->
+           <xsl:when              test = "$sumType = 'Genetics'">
+            <xsl:value-of       select = "concat($cgUrl, cgBoardES, 
+                                            '/genetics')"/>
+           </xsl:when>
           </xsl:choose>
          </xsl:otherwise>
         </xsl:choose>
@@ -2123,11 +2132,11 @@ OCEPROJECT-2876: CDR - Vendor Filter Change to Modify Summary Titles
     <xsl:when                     test = "SummaryMetaData/
                                           SummaryLanguage = 'English'">
      <xsl:copy-of               select = "document(concat('cdr:CDR0000684055',
-                                                         '/last'))"/>
+                                                         '/lastp'))"/>
     </xsl:when>
     <xsl:otherwise>
      <xsl:copy-of               select = "document(concat('cdr:CDR0000684064',
-                                                         '/last'))"/>
+                                                         '/lastp'))"/>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
@@ -2140,8 +2149,21 @@ OCEPROJECT-2876: CDR - Vendor Filter Change to Modify Summary Titles
                                                  MiscellaneousDocumentText/
                                                  @cdr:id"/>
    </xsl:attribute>
+   <!-- Change the url attribute to be a relative link -->
+   <!--
    <xsl:attribute                 name = "url">
     <xsl:value-of               select = "$sumUrl"/>
+   </xsl:attribute>
+   -->
+   <xsl:attribute                 name = "url">
+    <xsl:choose>
+     <xsl:when                    test = "starts-with($sumUrl, 'http')">
+      <xsl:value-of             select = "substring-after($sumUrl, '.gov')"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "$url"/>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:attribute>
    <xsl:choose>
     <xsl:when                     test = "$language = 'English'">
@@ -2165,20 +2187,26 @@ OCEPROJECT-2876: CDR - Vendor Filter Change to Modify Summary Titles
    <xsl:attribute                 name = "cdr:xref">
     <xsl:choose>
      <xsl:when                    test = "$language = 'English'">
+      <!--
       <xsl:text>http://www.cancer.gov/cancertopics/pdq</xsl:text>
+      -->
+      <xsl:text>http://www.cancer.gov/publications/pdq</xsl:text>
      </xsl:when>
      <xsl:otherwise>
+      <!--
       <xsl:text>http://www.cancer.gov/espanol/recursos/pdq</xsl:text>
+      -->
+      <xsl:text>http://www.cancer.gov/espanol/publicaciones/pdq</xsl:text>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:attribute>
    <xsl:choose>
     <xsl:when                     test = "$language = 'English'">
-     <xsl:text>PDQ NCI's Comprehensive Cancer Database</xsl:text>
+     <xsl:text>PDQ&#174; - NCI's Comprehensive Cancer Database</xsl:text>
     </xsl:when>
     <xsl:otherwise>
      <xsl:text>Banco de datos de informaci&#xF3;n de c&#xE1;ncer </xsl:text>
-     <xsl:text>(PDQ&#174;)</xsl:text>
+     <xsl:text>- PDQ&#174;</xsl:text>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:element>
@@ -3016,11 +3044,11 @@ OCEPROJECT-2876: CDR - Vendor Filter Change to Modify Summary Titles
      <xsl:choose>
       <xsl:when                   test = "$sumAudience='Health professionals'">
        <xsl:copy-of             select = "document(concat('cdr:CDR0000684055',
-                                                         '/last'))"/>
+                                                         '/lastp'))"/>
       </xsl:when>
       <xsl:otherwise>
        <xsl:copy-of             select = "document(concat('cdr:CDR0000751603',
-                                                          '/last'))"/>
+                                                          '/lastp'))"/>
       </xsl:otherwise>
      </xsl:choose>
     </xsl:variable>
@@ -3059,11 +3087,11 @@ OCEPROJECT-2876: CDR - Vendor Filter Change to Modify Summary Titles
      <xsl:choose>
       <xsl:when                   test = "$sumAudience='Health professionals'">
        <xsl:copy-of             select = "document(concat('cdr:CDR0000684064',
-                                                         '/last'))"/>
+                                                         '/lastp'))"/>
       </xsl:when>
       <xsl:otherwise>
        <xsl:copy-of             select = "document(concat('cdr:CDR0000751604',
-                                                          '/last'))"/>
+                                                          '/lastp'))"/>
       </xsl:otherwise>
      </xsl:choose>
     </xsl:variable>
@@ -3259,11 +3287,11 @@ OCEPROJECT-2876: CDR - Vendor Filter Change to Modify Summary Titles
    <xsl:choose>
     <xsl:when                    test = "$language = 'English'">
      <xsl:copy-of              select = "document(concat('cdr:CDR0000733750',
-                                                         '/last'))"/>
+                                                         '/lastp'))"/>
     </xsl:when>
     <xsl:otherwise>
      <xsl:copy-of              select = "document(concat('cdr:CDR0000733749',
-                                                         '/last'))"/>
+                                                         '/lastp'))"/>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
@@ -3607,10 +3635,13 @@ OCEPROJECT-2876: CDR - Vendor Filter Change to Modify Summary Titles
 
   <!--
   Creating the Clinical Trials Search External Link
+  Note: The URL for the clinical trials search is
+        not significant as long as the URL contains
+        ClinicalTrialsLink.aspx
   ================================================= -->
   <xsl:element                  name = "ExternalRef">
    <xsl:attribute               name = "xref">
-    <xsl:text>http://www.cancer.gov/Search</xsl:text>
+    <xsl:text>http://www.cancer.gov/search</xsl:text>
     <xsl:text>/ClinicalTrialsLink.aspx?</xsl:text>
     <xsl:value-of             select = "$docType"/>
     <xsl:text>&amp;</xsl:text>
@@ -3630,164 +3661,6 @@ OCEPROJECT-2876: CDR - Vendor Filter Change to Modify Summary Titles
    <xsl:value-of              select = "$metaDataDoc"/>
   </xsl:element>
 
-   <!--
-   Patient Section (no CAM)
-   ========================================================== -->
-   <!--  Replaced by above External Ref 
-   <xsl:choose>
-   <xsl:when                      test = "$audience = 'Patients'
-                                          and
-                                          not($sumType = 
-                                          'Complementary and alternative medicine')">
-    <xsl:element                  name = "ExternalRef">
-     <xsl:attribute               name = "xref">
-      <xsl:text>http://www.cancer.gov/Search</xsl:text>
-      <xsl:text>/ClinicalTrialsLink.aspx?</xsl:text>
-      <xsl:value-of             select = "$metaDataType"/>
-      <xsl:text>=</xsl:text>
-      <xsl:value-of             select = "number(substring($metaDataDocID,
-                                                                      4))"/>
-      <xsl:text>&amp;tt=1</xsl:text>
-      <xsl:text>&amp;format=1</xsl:text>
-      <xsl:text>&amp;cn=1</xsl:text>
-     </xsl:attribute>
-     <xsl:value-of              select = "$metaDataDoc"/>
-    </xsl:element>
-   </xsl:when>
-   -->
-   <!--
-   CAM Section
-   ========================================================== -->
-   <!--  Replaced by above External Ref 
-   <xsl:when                      test = "$audience = 'Patients'
-                                          and
-                                          $sumType = 
-                                          'Complementary and alternative medicine'">
-    <xsl:element                  name = "ExternalRef">
-     <xsl:attribute               name = "xref">
-      <xsl:text>http://www.cancer.gov/Search</xsl:text>
-      <xsl:text>/ClinicalTrialsLink.aspx?</xsl:text>
-      <xsl:text>id=</xsl:text>
-      <xsl:value-of             select = "number(substring($metaDataDocID,
-                                                                      4))"/>
-      <xsl:text>&amp;idtype=</xsl:text>
-      <xsl:choose>
-       <xsl:when                  test = "$metaDataType = 'Drug'">
-        <xsl:text>1</xsl:text>
-       </xsl:when>
-       <xsl:when                  test = "$metaDataType = 'Intervention'">
-        <xsl:text>5</xsl:text>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:text>0</xsl:text>
-       </xsl:otherwise>
-      </xsl:choose>
-    -->
-      <!-- xsl:value-of             select = "$metaDataType"/>
-      <xsl:text>=</xsl:text>
-      <xsl:value-of             select = "number(substring($metaDataDocID,
-                                                                      4))"/ -->
-   <!--  Replaced by above External Ref 
-      <xsl:text>&amp;tt=0</xsl:text>
-      <xsl:text>&amp;format=1</xsl:text>
-      <xsl:text>&amp;cn=1</xsl:text>
-     </xsl:attribute>
-     <xsl:value-of              select = "$metaDataDoc"/>
-    </xsl:element>
-   </xsl:when>
-   -->
-   <!--
-   HP Section
-   ========================================================== -->
-   <!--  Replaced by above External Ref 
-   <xsl:otherwise>
-    <xsl:call-template            name = "makeSearchString">
-     <xsl:with-param              name = "metaDataType"
-                                select = "$metaDataType"/>
-     <xsl:with-param              name = "metaDataDocID"
-                                select = "$metaDataDocID"/>
-     <xsl:with-param              name = "metaDataDoc"
-                                select = "$metaDataDoc"/>
-    </xsl:call-template>
-   </xsl:otherwise>
-  </xsl:choose>
-   -->
-
  </xsl:template>
 
-
- <!-- 
- ==================================================================
- 
- ================================================================== -->  
-   <!--  Replaced by above External Ref 
- <xsl:template                    name = "makeSearchString">
-  <xsl:param                      name = "metaDataDoc"
-                                select = "''"/>
-  <xsl:param                      name = "metaDataType"
-                                select = "'Diagnosis'"/>
-  <xsl:param                      name = "metaDataDocID"
-                                select = "'CDR0000000000'"/>
-  <xsl:param                      name = "audience"
-                                select = "'patient'"/>
-
-  <xsl:variable                   name = "trialType">
-   <xsl:choose>
-    <xsl:when                     test = "$sumType = 'Supportive care'">
-     <xsl:text>2</xsl:text>
-    </xsl:when>
-    <xsl:when                     test = "$sumType = 
-                                          'Complementary and alternative medicine'">
-     <xsl:text>0</xsl:text>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:text>1</xsl:text>
-    </xsl:otherwise>
-   </xsl:choose>
-  </xsl:variable>
-
-    <xsl:element                  name = "ExternalRef">
-     <xsl:attribute               name = "xref">
-
-      <xsl:choose>
-       <xsl:when                  test = "$metaDataType = 'Diagnosis'">
-        <xsl:text>http://www.cancer.gov/Search</xsl:text>
-        <xsl:text>/ClinicalTrialsLink.aspx?</xsl:text>
-        <xsl:value-of            select = "$metaDataType"/>
-        <xsl:text>=</xsl:text>
-        <xsl:value-of            select = "number(substring($metaDataDocID,
-                                                                       4))"/>
-        <xsl:text>&amp;tt=</xsl:text>
-        <xsl:value-of            select = "$trialType"/>
-        <xsl:text>&amp;format=2</xsl:text>
-        <xsl:text>&amp;cn=1</xsl:text>
-       </xsl:when>
-       <xsl:when                  test = "$metaDataType = 'Intervention'">
-        <xsl:text>http://www.cancer.gov/Search</xsl:text>
-        <xsl:text>/ClinicalTrialsLink.aspx?</xsl:text>
-        <xsl:text>idtype=5&amp;id=</xsl:text>
-        <xsl:value-of            select = "number(substring($metaDataDocID,
-                                                                       4))"/>
-        <xsl:text>&amp;tt=</xsl:text>
-        <xsl:value-of            select = "$trialType"/>
-        <xsl:text>&amp;format=2</xsl:text>
-        <xsl:text>&amp;cn=1</xsl:text>
-       </xsl:when>
-       <xsl:when                  test = "$metaDataType = 'Drug'">
-        <xsl:text>http://www.cancer.gov/Search</xsl:text>
-        <xsl:text>/ClinicalTrialsLink.aspx?</xsl:text>
-        <xsl:text>idtype=1&amp;id=</xsl:text>
-        <xsl:value-of            select = "number(substring($metaDataDocID,
-                                                                       4))"/>
-        <xsl:text>&amp;tt=</xsl:text>
-        <xsl:value-of            select = "$trialType"/>
-        <xsl:text>&amp;format=2</xsl:text>
-        <xsl:text>&amp;cn=1</xsl:text>
-       </xsl:when>
-      </xsl:choose>
-     </xsl:attribute>
-     <xsl:value-of              select = "$metaDataDoc"/>
-    </xsl:element>
- </xsl:template>
-   -->
 </xsl:transform>

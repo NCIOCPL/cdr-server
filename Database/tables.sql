@@ -2400,3 +2400,53 @@ CREATE TABLE ctrp_trial_set
      (set_id INTEGER IDENTITY PRIMARY KEY,
     filename VARCHAR(64) NOT NULL UNIQUE,
    processed DATETIME NOT NULL)
+
+/*
+ * Select information for each new trial found on ClinicalTrials.gov.
+ * Used for report of recent CT.gov trials (OCECDR-3877).
+ *
+ *         nct_id  unique ID for the trial document (primary key)
+ *    trial_title  brief title (if present) otherwise official title
+ *    trial_phase  phase(s) of the trial
+ * first_received  when the trial first appeared in NLM's database
+ */
+  CREATE TABLE ctgov_trial
+       (nct_id VARCHAR(11) NOT NULL PRIMARY KEY,
+   trial_title NVARCHAR(1024) NOT NULL,
+   trial_phase NVARCHAR(20) NULL,
+first_received DATETIME NOT NULL)
+GO
+
+/*
+ * Sponsors/collaborators found in NLM clinical trial documents.
+ * Used for report of recent CT.gov trials (OCECDR-3877).
+ *
+ *    nct_id  unique ID for NLM's trial document (link to ctgov_trial
+ *            table)
+ *  position  keeps the sponsors in the order in which they appear
+ *            in NLM's clinical_trial document
+ *   sponsor  name of the sponsor/collaborator
+ */
+CREATE TABLE ctgov_trial_sponsor
+     (nct_id VARCHAR(11) NOT NULL REFERENCES ctgov_trial,
+    position INTEGER NOT NULL,
+     sponsor VARCHAR(1024) NOT NULL,
+ PRIMARY KEY (nct_id, position))
+GO
+
+/*
+ * ID other than the NCT ID for a clinical trial document in NLM's
+ * database. Used for report of recent CT.gov trials (OCECDR-3877).
+ *
+ *    nct_id  unique ID for NLM's trial document (link to ctgov_trial
+ *            table)
+ *  position  keeps the IDs in the order in which they appear in NLM's
+ *            clinical_trial document
+ *  other_id  the value of the ID
+ */
+CREATE TABLE ctgov_trial_other_id
+     (nct_id VARCHAR(11) NOT NULL REFERENCES ctgov_trial,
+    position INTEGER NOT NULL,
+    other_id VARCHAR(1024) NOT NULL,
+ PRIMARY KEY (nct_id, position))
+GO

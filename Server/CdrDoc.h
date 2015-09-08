@@ -219,7 +219,7 @@ namespace cdr {
              * @return          True  = Title changed and was updated.
              *                  False = Title unchanged, no update needed.
              */
-            bool cdr::CdrDoc::checkTitleChange();
+            bool checkTitleChange();
 
             /**
              * Replaces the rows in the query_term tables for the current

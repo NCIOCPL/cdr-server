@@ -38,7 +38,7 @@ CFLAGS =$(INC) -W3 -EHca -MD -GR -nologo $(COMPAT)
 LFLAGS =/LIBPATH:$(SABLOT)/lib /LIBPATH:$(CDR)/lib
 CDRLIB =cdr.lib
 THRDPTY=$(XERLIB).lib sablot.lib
-LIBS   =$(CDRLIB) $(THRDPTY) wsock32.lib odbc32.lib user32.lib AdvAPI32.lib 
+LIBS   =$(CDRLIB) $(THRDPTY) wsock32.lib odbc32.lib user32.lib AdvAPI32.lib
 SVCFLGS=-DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -D_X86_=1 -D_WINNT \
         -D_WIN32_WINNT=0x0400 -DWINVER=0x0400 -DWIN32  -D_WIN32 -D_MT -MT
 !IF "$(DBG)" == ""
@@ -229,7 +229,7 @@ $(CDRLIB): $(LIBOBJS)
 
 #--------------------------------------------------------------------------
 # For Bison, we're not attempting a generic rule
-# Note that our version of bison requires a modified 
+# Note that our version of bison requires a modified
 #   bison.simple parser to handle C++ syntax
 # See /etc/bison.simple, /etc/bison.simple.readme
 #--------------------------------------------------------------------------

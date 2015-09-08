@@ -14,6 +14,7 @@
 
 #include <iostream> // Debug
 #include <string>
+#include <algorithm>
 #include "CdrBlob.h"
 #include "CdrBlobExtern.h"
 #include "CdrDbConnection.h"
@@ -281,6 +282,73 @@ static void delBlob(
     stmt.executeUpdate();
     stmt.close();
 }
+
+/**
+ * Delete all versions of a blob.
+ */
+void cdr::delAllBlobVersions(cdr::db::Connection& conn, int docId) {
+
+    std::list<int> blobIdList;
+
+    // Find all unique blob versions.  Usually there's only one.
+    cdr::db::PreparedStatement blobVerUsgStmt = conn.prepareStatement(
+        "SELECT DISTINCT blob_id FROM version_blob_usage WHERE doc_id = ?");
+    blobVerUsgStmt.setInt(1, docId);
+    cdr::db::ResultSet rs = blobVerUsgStmt.executeQuery();
+    while (rs.next()) {
+        int blobId = rs.getInt(1);
+        blobIdList.push_back(blobId);
+    }
+    blobVerUsgStmt.close();
+
+    // Delete all references to the blob(s) in the version_blob_usage table
+    if (blobIdList.size() > 0) {
+        cdr::db::PreparedStatement delBlobUsgStmt = conn.prepareStatement(
+            "DELETE FROM version_blob_usage WHERE doc_id = ?");
+        delBlobUsgStmt.setInt(1, docId);
+        delBlobUsgStmt.executeUpdate();
+        delBlobUsgStmt.close();
+    }
+
+    // Get the blob ID for current working document
+    cdr::db::PreparedStatement getBlobStmt = conn.prepareStatement(
+        "SELECT DISTINCT blob_id FROM doc_blob_usage WHERE doc_id = ?");
+    getBlobStmt.setInt(1, docId);
+    cdr::db::ResultSet getBlobRs = getBlobStmt.executeQuery();
+    while (getBlobRs.next()) {
+        // Should always be one
+        int blobId = getBlobRs.getInt(1);
+
+        // Only save this blob_id if we don't already have it from ver_blobs
+        // Since the list probably has only one entry, this is as fast as any
+        //  other way.
+        bool found = false;
+        std::list<int>::const_iterator i;
+        for (i=blobIdList.begin(); i!=blobIdList.end(); i++) {
+            if (*i == blobId) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            blobIdList.push_back(blobId);
+        }
+    }
+    getBlobStmt.close();
+
+    // And delete it
+    delDocBlobUsage(conn, docId);
+
+    // We should now have a list of one or more blobs, delete each of them
+    std::list<int>::const_iterator i;
+    for (i=blobIdList.begin(); i!=blobIdList.end(); i++) {
+
+        // We can do this because there are no longer any
+        //  version_blob_usage rows for this blob_id
+        delBlob(conn, *i, docId);
+    }
+}
+
 
 /* Get a blob from the database.
  * See CdrBlobExtern.h for documentation.

@@ -12,6 +12,7 @@
       BZIssue::5089
       BZIssue::5192 (JIRA::OCECDR-3497)
       JIRA::OCECDR-3644
+      JIRA::OCECDR-3885
 
   -->
 
@@ -36,7 +37,7 @@
    </pattern>
    <pattern>
     <rule            context         = 'SummaryURL'>
-     <assert         test            = 'substring(normalize-space(@cdr:xref), 
+     <assert         test            = 'substring(normalize-space(@cdr:xref),
                                         string-length(
                                          normalize-space(@cdr:xref)), 1) != "/"'
      >The attribute (@cdr:xref) must not end with a slash ('/')</assert>
@@ -61,10 +62,10 @@ SELECT COUNT(q1.doc_id) AS cnt
 
    <pattern>
     <!--
-      Verify Patient Summary language matches linked to HP Summary 
+      Verify Patient Summary language matches linked to HP Summary
     -->
     <rule            context         = 'PatientVersionOf'>
-     <assert test = '/Summary/SummaryMetaData/SummaryLanguage = 
+     <assert test = '/Summary/SummaryMetaData/SummaryLanguage =
        document(concat("cdrutil:/sql-query/
           SELECT value
             FROM query_term
@@ -81,7 +82,7 @@ SELECT COUNT(q1.doc_id) AS cnt
            if that is done, only the first assertion is checked.
    -->
    <pattern>
-    <!-- 
+    <!--
       Verify Spanish Summary TranslationOf links to doc with same audience
     -->
     <rule            context         = '/Summary/TranslationOf'>
@@ -93,7 +94,7 @@ SELECT COUNT(q1.doc_id) AS cnt
              AND doc_id = ?~",
              string(number(substring(@cdr:ref,4)))))/SqlResult/row/col'
      >SummaryAudience of original and translated docs must match</assert>
-    <!-- 
+    <!--
       Verify Spanish Summary TranslationOf elem links to English Summary
     -->
      <assert test = 'document(concat("cdrutil:/sql-query/
@@ -218,6 +219,28 @@ SELECT COUNT(q1.doc_id) AS cnt
       <element       name            = 'PurposeText'
                      type            = 'string'
                      minOccurs       = '0'/>
+      <element       name            = 'SummaryAbstract'
+                     type            = 'SummaryAbstract'
+                     minOccurs       = '0'/>
+      <element       name            = 'SummaryKeyWords'
+                     type            = 'SummaryKeyWords'
+                     minOccurs       = '0'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'SummaryKeyWords'>
+    <sequence>
+      <element       name            = 'SummaryKeyWord'
+                     type            = 'string'
+                     maxOccurs       = 'unbounded'/>
+    </sequence>
+  </complexType>
+
+  <complexType       name            = 'SummaryAbstract'>
+    <sequence>
+      <element       name            = 'Para'
+                     type            = 'PhraseLevel'
+                     maxOccurs       = 'unbounded'/>
     </sequence>
   </complexType>
 

@@ -20,6 +20,10 @@ BZIssue::5114 - [Summaries] Summary Frag Refs to Tables in QC Reports
                                version = "1.0"
                exclude-result-prefixes = "cdr">
 
+ <!-- Set this parameter to get rid of the characters used for aligning
+      data without CSS. -->
+ <xsl:param                       name = "suppress-nbsp"/>
+
  <!--
  ========================================================================
  Template to format the table
@@ -72,7 +76,7 @@ BZIssue::5114 - [Summaries] Summary Frag Refs to Tables in QC Reports
           <b>
            <xsl:apply-templates/>
           </b>
-          <xsl:text>&#160;</xsl:text>
+          <xsl:call-template name="non-breaking-space"/>
          </td>
         </xsl:when>
         <xsl:when                 test = "@VAlign">
@@ -82,7 +86,7 @@ BZIssue::5114 - [Summaries] Summary Frag Refs to Tables in QC Reports
           <b>
            <xsl:apply-templates/>
           </b>
-          <xsl:text>&#160;</xsl:text>
+          <xsl:call-template name="non-breaking-space"/>
          </td>
         </xsl:when>
         <xsl:otherwise>
@@ -90,7 +94,7 @@ BZIssue::5114 - [Summaries] Summary Frag Refs to Tables in QC Reports
           <b>
            <xsl:apply-templates/>
           </b>
-          <xsl:text>&#160;</xsl:text>
+          <xsl:call-template name="non-breaking-space"/>
          </td>
         </xsl:otherwise>
        </xsl:choose>
@@ -111,7 +115,7 @@ BZIssue::5114 - [Summaries] Summary Frag Refs to Tables in QC Reports
 	                            select = "@MoreRows"/>
         <td rowspan='{$rows+1}' class='ltext'>
 	     <xsl:apply-templates   select = "."/>
-	     <xsl:text>&#160;</xsl:text>
+	     <xsl:call-template name="non-breaking-space"/>
 	    </td>
        </xsl:if>
  
@@ -120,7 +124,7 @@ BZIssue::5114 - [Summaries] Summary Frag Refs to Tables in QC Reports
          <xsl:when                test = "not(@Align)">
           <td class='ltext'>
 	       <xsl:apply-templates select = "."/>
-	       <xsl:text>&#160;</xsl:text>
+	       <xsl:call-template name="non-breaking-space"/>
 	      </td>
          </xsl:when>
          <xsl:when                test = "@Align">
@@ -128,7 +132,7 @@ BZIssue::5114 - [Summaries] Summary Frag Refs to Tables in QC Reports
 	                        select = "@Align"/>
           <td align='{$align}'>
 	       <xsl:apply-templates select = "."/>
-	       <xsl:text>&#160;</xsl:text>
+	       <xsl:call-template name="non-breaking-space"/>
 	      </td>
          </xsl:when>
          <xsl:when                test = "@VAlign">
@@ -136,7 +140,7 @@ BZIssue::5114 - [Summaries] Summary Frag Refs to Tables in QC Reports
 	                        select = "@VAlign"/>
           <td valign='{$valign}'>
 	       <xsl:apply-templates select = "."/>
-	       <xsl:text>&#160;</xsl:text>
+	       <xsl:call-template name="non-breaking-space"/>
 	      </td>
          </xsl:when>
         </xsl:choose>
@@ -291,19 +295,19 @@ BZIssue::5114 - [Summaries] Summary Frag Refs to Tables in QC Reports
      <b>
       <xsl:apply-templates      select = "."/>
      </b>
-     <xsl:text>&#160;</xsl:text>
+     <xsl:call-template name="non-breaking-space"/>
     </td>
    </xsl:when> 
    <xsl:when                      test = "$type = 2">            
     <td class='ltext' rowspan='{$rows+1}' colspan='{$colspans}'>
      <xsl:apply-templates select = "."/>
-     <xsl:text>&#160;</xsl:text>
+     <xsl:call-template name="non-breaking-space"/>
     </td>
    </xsl:when> 
    <xsl:when                      test = "$type = 3">            
     <td class='ltext' colspan='{$colspans}'>
      <xsl:apply-templates       select = "."/>
-     <xsl:text>&#160;</xsl:text>
+     <xsl:call-template name="non-breaking-space"/>
     </td> 
    </xsl:when> 
    <xsl:when                      test = "$type = 4">            
@@ -325,4 +329,15 @@ BZIssue::5114 - [Summaries] Summary Frag Refs to Tables in QC Reports
     <xsl:apply-templates/>
   </caption>
  </xsl:template>
+
+<!--
+ ========================================================================
+ Template to optionally add a non-breaking space character.
+ ======================================================================== -->
+ <xsl:template                      name = "non-breaking-space">
+  <xsl:if                           test = "not($suppress-nbsp)">
+   <xsl:text>&#160;</xsl:text>
+  </xsl:if>
+ </xsl:template>
+
 </xsl:transform>

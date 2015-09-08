@@ -86,6 +86,24 @@ namespace cdr {
      *  @return             Void.
      */
     void addVersionBlobUsage(cdr::db::Connection& conn, int docId, int blobId);
+
+    /**
+     * For a given doc ID, PERMANENTLY delete all links between the
+     * CWD and blob and between all versions and other blobs.
+     * Then delete all the blobs themselves.
+     *
+     * Caller should include this in a database transaction so that if
+     * related changes to the document or blobs fail, all can be rolled back.
+     *
+     * As of this writing, this function should ONLY be used for deleting
+     * PDQ Board meeting records that have outlived their useful life.
+     *
+     *  @param conn         Database connection.
+     *  @param docId        Delete blobs linked to this document.
+     *
+     *  @return             Void.
+     */
+    void delAllBlobVersions(cdr::db::Connection& conn, int docId);
 }
 
 #endif // CDR_BLOB_EXTERN_

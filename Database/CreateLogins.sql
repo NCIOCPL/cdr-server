@@ -471,3 +471,7 @@ GRANT SELECT ON glossary_term_audio_request to CdrGuest
 GO
 GRANT SELECT ON ctrp_trial_set TO CdrGuest
 GO
+GRANT SELECT on ctgov_trial to CdrGuest
+GRANT SELECT on ctgov_trial_sponsor to CdrGuest
+GRANT SELECT on ctgov_trial_other_id to CdrGuest
+GO
