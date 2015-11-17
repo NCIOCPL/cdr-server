@@ -2430,7 +2430,7 @@ GO
 CREATE TABLE ctgov_trial_sponsor
      (nct_id VARCHAR(11) NOT NULL REFERENCES ctgov_trial,
     position INTEGER NOT NULL,
-     sponsor VARCHAR(1024) NOT NULL,
+     sponsor NVARCHAR(1024) NOT NULL,
  PRIMARY KEY (nct_id, position))
 GO
 
@@ -2447,6 +2447,6 @@ GO
 CREATE TABLE ctgov_trial_other_id
      (nct_id VARCHAR(11) NOT NULL REFERENCES ctgov_trial,
     position INTEGER NOT NULL,
-    other_id VARCHAR(1024) NOT NULL,
+    other_id NVARCHAR(1024) NOT NULL,
  PRIMARY KEY (nct_id, position))
 GO
