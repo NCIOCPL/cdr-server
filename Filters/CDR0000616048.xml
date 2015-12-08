@@ -11,6 +11,7 @@ BZIssue::4973 - [Glossary] Modification to Publication Filters
 BZIssue::4995 - [Glossary] Non Publishable Also Calls in the dictionary
 OCECDR-3528: Ability to put links to other Dictionary terms in More 
              Information block on Cancer.gov
+OCECDR-3966: Add URL Attribute for Gatekeeper Processing
 
 ==================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -225,6 +226,7 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
 
  <!-- 
  =====================================================================
+ Template to create the RelatedInformation wrapper element
  ===================================================================== -->
  <xsl:template                   match = "RelatedInformation">
   <xsl:copy>
@@ -238,6 +240,7 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
 
  <!-- 
  =====================================================================
+ Template to create the RelatedSummaryRef element
  ===================================================================== -->
  <xsl:template                   match = "RelatedSummaryRef">
    <xsl:element                   name = "{name()}">
@@ -246,10 +249,17 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
       <xsl:value-of             select = "@UseWith"/>
      </xsl:attribute>
     </xsl:if>
+
     <xsl:attribute                name = "href">
      <xsl:value-of              select = "@cdr:ref"/>
     </xsl:attribute>
 
+    <xsl:attribute                name = "url">
+     <xsl:value-of              select = "substring-after(
+                                           Summary/
+                                           SummaryMetaData/
+                                           SummaryURL/@cdr:xref,'cancer.gov')"/>
+    </xsl:attribute>
     <xsl:apply-templates        select = "Summary/SummaryTitle"/>
   </xsl:element>
  </xsl:template>
@@ -257,6 +267,7 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
 
  <!-- 
  =====================================================================
+ Template to create the RelatedDrugSummaryRef element
  ===================================================================== -->
  <xsl:template                   match = "RelatedDrugSummaryLink">
    <xsl:element                   name = "RelatedDrugSummaryRef">
@@ -269,6 +280,13 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
      <xsl:value-of              select = "@cdr:ref"/>
     </xsl:attribute>
 
+    <xsl:attribute                name = "url">
+     <xsl:value-of              select = "substring-after(
+                                           DrugInformationSummary/
+                                           DrugInfoMetaData/
+                                           URL/@cdr:xref, 'cancer.gov')"/>
+    </xsl:attribute>
+
     <xsl:apply-templates        select = "DrugInformationSummary/Title"/>
   </xsl:element>
  </xsl:template>
@@ -276,6 +294,7 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
 
  <!-- 
  =====================================================================
+ Template to create the RelatedExternalRef element
  ===================================================================== -->
  <xsl:template                   match = "RelatedExternalRef">
   <xsl:copy-of                  select = "."/>
@@ -284,6 +303,7 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
 
  <!-- 
  =====================================================================
+ Template to create the RelatedTGlossaryTermRef element
  ===================================================================== -->
  <xsl:template                   match = "RelatedGlossaryTermNameLink">
    <xsl:element                   name = "RelatedGlossaryTermRef">

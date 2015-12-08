@@ -259,6 +259,34 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
 
  <!--
  ====================================================================
+ Template to drop the Changes to this summary section for patient
+ summaries.
+ ==================================================================== -->
+ <xsl:template                   match = "SummarySection
+                                            [SectMetaData/SectionType =
+                                              'Changes to summary']"
+                                  mode = "copy">
+  <xsl:if                         test = "/Summary/
+                                           SummaryMetaData/
+                                           SummaryAudience = 
+                                                      'Health professionals'">
+   <!-- We need to copy the Changes Section back to the output tree without
+        including the namespace declaration. -->
+   <xsl:element                   name = "{name()}">
+    <xsl:for-each               select = "@*">
+     <xsl:attribute              name  = "{name()}">
+      <xsl:value-of             select = "."/>
+     </xsl:attribute>
+    </xsl:for-each>
+
+    <xsl:apply-templates          mode = "copy"/>
+   </xsl:element>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
  Template to modify SummarySection id attributes containing text from
  misc. documents.
  This code will need to be changed if the id attribute values for the

@@ -34,6 +34,8 @@ OCECDR-3920: Fix SummaryRef in 'About This Summary'
 OCECDR-3892: [Misc Docs] Require Publishable Version for Publication
              of Changes in Misc Docs
 OCECDR-3926: Modify Vendor Filter to Include New NLM Data
+OCEPROJECT-2892: Removal of PDQ Section "Get More Information from NCI"
+OCECDR-3938: Remove "Changes to This Summary" from Patient Summaries
 OCECDR-3993: Remove Country as paramenter for clinical trial searches 
              in PDQ summaries
 ================================================================ -->
@@ -349,6 +351,7 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
 
    The 'To Learn More' section needs to be suppressed from the 
    output for the mobile site.
+   (Note:  As of June 2015 the mobile site doesn't exist anymore)
 
    Bug 5154:  The order of sections at the end of each summary
               should now become (for HP only)
@@ -358,118 +361,51 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
               For patient summaries, the Get More section will 
               still need to be displayed before the Changes 
               section but may change to be identical to the HPs.
+              Note: As of Aug 2015 the GetMore section has been
+                    removed from all summaries.
    ============================================================= -->   
    <xsl:choose>
-    <xsl:when                    test = "SummaryMetaData/
-                                         SummaryAudience = 'Patients'">
+    <xsl:when                     test = "SummaryMetaData/
+                                          SummaryAudience = 'Patients'">
      <!--
      "About this Summary" section is applied to all HP summaries
      This section used to be for HP summaries only but is now being 
      added to Patient summaries as well (with a different misc doc).
      ================================================================= -->
-     <xsl:call-template          name = "AboutThisSummary"/>
+     <xsl:call-template           name = "AboutThisSummary"/>
 
      <!--
      The ContactUs template (changed to 'Questions and Comments ...) 
      is only being applied to Supportive Care,
      Screening, and Prevention summaries (Patient and HP version).
      ================================================================ -->
-     <xsl:call-template           name = "ContactUs"/>
-
      <!--
-     ================================================================
-     Don't display the Get More section for the CAM summaries
-     
-     "Get More" has been moved to the end of the Summary for HPs
-     "Get More" has been moved just above the About PDQ section for patients.
-     This IF block add the section to the Patient summaries.
-     ================================================================ -->
-     <xsl:if                      test = "not($sumType =
-                                            concat('Complementary and',
-                                                   ' alternative medicine'))">
-      <xsl:if                     test = "$sumAudience = 'Patients'">
-       <xsl:choose>
-        <xsl:when                 test = "$language = 'English'">
-         <xsl:variable            name = "miscDoc" 
-                                select = "document(concat('cdr:CDR0000000367',
-                                                          '/lastp'))"/>
-         <xsl:apply-templates   select = "$miscDoc/MiscellaneousDocument/
-                                                   MiscellaneousDocumentText">
-          <xsl:with-param         name = "miscDocId"
-                                select = "'_GetMore'"/>
-         </xsl:apply-templates>
-        </xsl:when>
-        <xsl:otherwise>
-         <xsl:variable            name = "miscDoc" 
-                                select = "document(concat('cdr:CDR0000256873',
-                                                           '/lastp'))"/>
-         <xsl:apply-templates   select = "$miscDoc/MiscellaneousDocument/
-                                                   MiscellaneousDocumentText">
-          <xsl:with-param         name = "miscDocId"
-                                select = "'_GetMore'"/>
-         </xsl:apply-templates>
-        </xsl:otherwise>
-       </xsl:choose>
-      </xsl:if>
-     </xsl:if>
-
+     <xsl:call-template           name = "ContactUs"/>
+     -->
 
      <xsl:choose>
-      <xsl:when                  test = "$sumType = concat('Complementary and',
+      <xsl:when                   test = "$sumType = concat('Complementary and',
                                                     ' alternative medicine')">
        <!--
        We add the misc. documents to all CAM patient summaries except for 
        the two Overview summaries (English and Spanish)
        ================================================================== -->
-       <xsl:if                   test = "$sumId != 'CDR0000446574'
-                                         and
-                                         $sumId != 'CDR0000448614'">
-        <xsl:call-template       name = "AboutCAM"/>
+       <xsl:if                    test = "$sumId != 'CDR0000446574'
+                                          and
+                                          $sumId != 'CDR0000448614'">
+        <xsl:call-template        name = "AboutCAM"/>
 
         <!--
         The CAM patient summaries receive two additional misc documents
         =============================================================== -->
-        <xsl:call-template       name = "QandACAM"/>
-        <xsl:call-template       name = "ToLearnMore"/>
+        <xsl:call-template        name = "QandACAM"/>
+        <xsl:call-template        name = "ToLearnMore"/>
        </xsl:if>
-       <!--
-       AboutPDQ has been replaced with 'AboutThisSummary'
-       ==================================================
-       <xsl:call-template      name = "AboutPdqEnglish"/>
-       -->
       </xsl:when>
       <xsl:otherwise>
        <xsl:call-template        name = "ToLearnMore"/>
-
-       <!--
-       AboutPDQ has been replaced with 'AboutThisSummary'
-       ==================================================
-       <xsl:choose>
-        <xsl:when                test = "SummaryMetaData/
-                                         SummaryLanguage = 'English'">
-         <xsl:call-template      name = "AboutPdqEnglish"/>
-        </xsl:when>
-        <xsl:otherwise>
-         <xsl:call-template      name = "AboutPdqSpanish"/>
-        </xsl:otherwise>
-       </xsl:choose>
-       -->
-
       </xsl:otherwise>
      </xsl:choose>
-     <!--
-     "Get More Information to be added as last section
-     but not for the CAM summaries
-     This block adds the GetMore section to the end of the patient
-     summaries.  Commented out since it hasn't been decided if this 
-     should be implemented.    2012-01-18, VE.
-     ================================================================= -->
-     <!-- xsl:if                      test = "not($sumType =
-                                           concat('Complementary and ',
-                                                  'alternative medicine'))">
-      <xsl:call-template          name = "GetMoreInfo"/>
-     </xsl:if -->
-
     </xsl:when>
     <!-- HP Summaries -->
     <xsl:otherwise>
@@ -479,10 +415,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
      Screening, and Prevention summaries (Patient and HP version).
      Note:  ContactUS => 'Questions or Comments about this Summary'
      ================================================================ -->
+     <!--
      <xsl:call-template           name = "ContactUs"/>
-
-     <!-- Need to suppress the "For More Information" section -->
-     <!-- xsl:call-template           name = "MoreInformation"/ -->
+     -->
 
      <!--
      "About this Summary" section is applied to all HP summaries
@@ -490,16 +425,6 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
      added to Patient summaries as well (with a different misc doc).
      ================================================================= -->
      <xsl:call-template          name = "AboutThisSummary"/>
-
-     <!--
-     "Get More Information to be added as last section
-     but not for the CAM summaries
-     ================================================================= -->
-     <xsl:if                      test = "not($sumType =
-                                           concat('Complementary and',
-                                                  ' alternative medicine'))">
-      <xsl:call-template          name = "GetMoreInfo"/>
-     </xsl:if>
 
     </xsl:otherwise>
    </xsl:choose>
@@ -572,6 +497,8 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
     <xsl:when                    test = "not(@IncludedDevices)
                                          and
                                          not(@ExcludedDevices)">
+
+     <!-- Mobile isn't treated differently from screen anymore!
      <xsl:if                     test = "$sumAudience = 'Patients'
                                          and
                                          (
@@ -589,6 +516,8 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
        <xsl:text>mobile</xsl:text>
       </xsl:attribute>
      </xsl:if>
+     -->
+
     </xsl:when>
     <xsl:otherwise>
      <xsl:call-template          name = "listDevicesAttribute"/>
@@ -665,6 +594,8 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
                                          not(@IncludedDevices)
                                          and
                                          not(@ExcludedDevices)">
+
+     <!-- Mobile isn't treated differently from screen anymore!
      <xsl:if                     test = "$sumAudience = 'Patients'
                                          and
                                          (
@@ -682,6 +613,8 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
        <xsl:text>mobile</xsl:text>
       </xsl:attribute>
      </xsl:if>
+     -->
+
     </xsl:when>
     <xsl:otherwise>
      <xsl:call-template          name = "listDevicesAttribute"/>
@@ -728,44 +661,6 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
     <xsl:call-template            name = "addHPDisclaimer"/>
    </xsl:if>
 
-   <!--
-   ================================================================
-   Don't display the Get More section for the CAM summaries
-   
-   "Get More" has been moved to the end of the Summary for HPs
-   It has been moved to be displayed right after the Changes for 
-   Patients.
-   This block is to display the patient's GetMore section before 
-   the Changes section and after the To Learn More section
-   ================================================================ -->
-   <!-- xsl:if                       test = "not($sumType =
-                                           concat('Complementary and ',
-                                                  'alternative medicine'))">
-    <xsl:if                      test = "$sumAudience = 'Patients'">
-     <xsl:choose>
-      <xsl:when                  test = "$language = 'English'">
-       <xsl:variable             name = "miscDoc" 
-                               select = "document(concat('cdr:CDR0000000367',
-                                                         '/lastp'))"/>
-       <xsl:apply-templates    select = "$miscDoc/MiscellaneousDocument/
-                                                  MiscellaneousDocumentText">
-        <xsl:with-param          name = "miscDocId"
-                               select = "'_GetMore'"/>
-       </xsl:apply-templates>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:variable             name = "miscDoc" 
-                               select = "document(concat('cdr:CDR0000256873',
-                                                         '/lastp'))"/>
-       <xsl:apply-templates    select = "$miscDoc/MiscellaneousDocument/
-                                                  MiscellaneousDocumentText">
-        <xsl:with-param          name = "miscDocId"
-                               select = "'_GetMore'"/>
-       </xsl:apply-templates>
-      </xsl:otherwise>
-     </xsl:choose>
-    </xsl:if>
-   </xsl:if -->
   </SummarySection>
 
  </xsl:template>
@@ -805,6 +700,25 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
    </xsl:element>
   </xsl:if>
  </xsl:template>
+
+
+ <!-- 
+ !!! Why is this template here twice??? 
+ ==================================================================
+ Template to extract the Board Name
+ ================================================================== -->  
+ <!--
+ <xsl:template                  match = "PDQBoard">
+  <xsl:if                        test = "not(contains(Board, 'Advisory'))">
+  <xsl:element                   name = "SummaryEditorialBoard">
+    <xsl:attribute               name = "ref">
+     <xsl:apply-templates      select = "Board/@cdr:ref"/>
+    </xsl:attribute>
+    <xsl:apply-templates       select = "Board"/>
+  </xsl:element>
+  </xsl:if>
+ </xsl:template>
+ -->
 
 
  <!-- 
@@ -947,9 +861,6 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
        </xsl:with-param>
       </xsl:call-template>
      </xsl:attribute>
-     <!-- xsl:attribute              name = "href">
-      <xsl:value-of            select = "$hrefId"/>
-     </xsl:attribute -->
      <xsl:attribute              name = "url">
       <xsl:choose>
        <xsl:when                 test = "starts-with($url, 'http')">
@@ -1658,6 +1569,7 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
    </xsl:choose>
 
    <!-- Mark this section to be excluded for mobile -->
+     <!-- Mobile isn't treated differently screen anymore!
    <xsl:choose>
     <xsl:when                    test = "($sumType = 'Treatment'
                                           or
@@ -1682,21 +1594,16 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
                                           $miscDocId = '_QandA'
                                           or
                                           $miscDocId = '_ToLearnMore')">
-                                         <!--
-                                         and
-                                         not(contains($sumAgeGroup, 
-                                                           'Pediatric'))">
-                                         -->
-     <!-- xsl:if                     test = "$sumAudience = 'Patients'
-                                         and
-                                         $sumType = 'Treatment'" -->
+
      <xsl:if                     test = "$sumAudience = 'Patients'">
       <xsl:attribute             name = "ExcludedDevices">
        <xsl:text>mobile</xsl:text>
       </xsl:attribute>
      </xsl:if>
+
     </xsl:when>
    </xsl:choose>
+     -->
 
    <xsl:apply-templates          mode = "MiscText">
     <xsl:with-param              name = "miscDocId" 
@@ -1716,30 +1623,10 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
  <xsl:template                  match = "Section"
                                  mode = "miscFragment">
   <xsl:param                     name = "miscDocId"/>
-  <!-- SummarySection>
-   <xsl:choose>
-    <xsl:when                    test = "$miscDocId">
-     <xsl:if                     test = "./@cdr:id">
-      <xsl:attribute             name = "id">
-       <xsl:value-of           select = "$miscDocId"/>
-       <xsl:value-of           select = "./@cdr:id"/>
-      </xsl:attribute>
-     </xsl:if>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:if                     test = "./@cdr:id">
-      <xsl:attribute             name = "id">
-       <xsl:value-of           select = "./@cdr:id"/>
-      </xsl:attribute>
-     </xsl:if>
-    </xsl:otherwise>
-   </xsl:choose -->
-
    <xsl:apply-templates          mode = "MiscText">
     <xsl:with-param              name = "miscDocId" 
                                select = "$miscDocId"/>
    </xsl:apply-templates>
-  <!-- /SummarySection -->
  </xsl:template>
 
 
@@ -2621,7 +2508,11 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
  =========================================================================
  Template to add the "Contact Us" misc. document to the Supportive Care
  summaries.  This gets added to the patient and HP version.
+
+ This section (now called 'Contact Us') is now being dropped from all
+ supportive care and Screening and Prevention summaries (OCECDR-3982)
  ========================================================================= -->
+ <!--
  <xsl:template                   name = "ContactUs">
   <xsl:if                        test = "SummaryMetaData/
                                          SummaryType = 'Supportive care'
@@ -2645,9 +2536,11 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
                                select = "'_ContactUs'"/>
      </xsl:apply-templates>
     </xsl:when>
+ -->
     <!-- English, Patient, Contact Us Section End-->
         
     <!-- Spanish, Patient, Contact Us Section -->
+ <!--
     <xsl:otherwise>
          
      <xsl:variable               name = "miscDoc" 
@@ -2660,10 +2553,13 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
      </xsl:apply-templates>
 
     </xsl:otherwise>
+ -->
    <!-- Spanish To Learn More Section End-->
+ <!--
    </xsl:choose>
   </xsl:if>
  </xsl:template>
+ -->
 
 
  <!-- 
@@ -2747,21 +2643,6 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
                                  <!-- mode = "MiscText" -->
      </xsl:when>
 
-     <!--  
-     ==================================================================
-           This section has been moved in front of the "Changes to this
-           Summary" section
-     <xsl:otherwise>
-      <xsl:variable              name = "miscDoc" 
-                               select = "document(concat('cdr:CDR0000000367',
-                                                         '/lastp'))"/>
-      <xsl:apply-templates     select = "$miscDoc/MiscellaneousDocument/
-                                                  MiscellaneousDocumentText">
-       <xsl:with-param           name = "miscDocId"
-                               select = "'_GetMore'"/>
-      </xsl:apply-templates>
-     </xsl:otherwise>
-     ================================================================== -->
     </xsl:choose>
    </xsl:when>
   <!-- English To Learn More Section End-->
@@ -2784,21 +2665,6 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
       </xsl:apply-templates>
      </xsl:when>
 
-     <!--  
-     ==================================================================
-           This section has been moved in front of the "Changes to this
-           Summary" section
-     <xsl:otherwise>
-      <xsl:variable              name = "miscDoc" 
-                               select = "document(concat('cdr:CDR0000256873',
-                                                         '/lastp'))"/>
-      <xsl:apply-templates     select = "$miscDoc/MiscellaneousDocument/
-                                                  MiscellaneousDocumentText">
-       <xsl:with-param           name = "miscDocId"
-                               select = "'_GetMore'"/>
-      </xsl:apply-templates>
-     </xsl:otherwise>
-     ================================================================== -->
     </xsl:choose>
    </xsl:otherwise>
   <!-- Spanish To Learn More Section End-->
@@ -3065,11 +2931,13 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
      HP summaries will not be published on mobile.  Adding attribute only
      for patient summaries
      ==================================================================== -->
+     <!-- Mobile isn't treated differently from screen anymore!
      <xsl:if                      test = "$sumAudience = 'Patients'">
       <xsl:attribute              name = "ExcludedDevices">
        <xsl:text>mobile</xsl:text>
       </xsl:attribute>
      </xsl:if>
+     -->
 
      <Title>About This PDQ Summary</Title>
      <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
@@ -3108,11 +2976,13 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
      HP summaries will not be published on mobile.  Adding attribute only
      for patient summaries
      ==================================================================== -->
+     <!-- Mobile isn't treated differently from screen anymore!
      <xsl:if                      test = "$sumAudience = 'Patients'">
       <xsl:attribute              name = "ExcludedDevices">
        <xsl:text>mobile</xsl:text>
       </xsl:attribute>
      </xsl:if>
+     -->
 
 
      <Title>Informaci&#xF3;n sobre este sumario del PDQ</Title>
@@ -3132,6 +3002,8 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
  Template to add the "Get More Information" misc. document to all 
  summaries.
  ========================================================================= -->
+ <!--  Template is not used anymore !!!
+
  <xsl:template                    name = "GetMoreInfo">
   <xsl:choose>
    <xsl:when                      test = "SummaryMetaData/
@@ -3139,45 +3011,26 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
     <xsl:variable                 name = "miscDoc" 
                                 select = "document(concat('cdr:CDR000000367',
                                                          '/lastp'))"/>
-    <!-- SummarySection>
-     <xsl:attribute               name = "id">
-      <xsl:value-of             select = "'_GetMore'"/>
-      <xsl:value-of             select = "$miscDoc/MiscellaneousDocument/
-                                                 MiscellaneousDocumentText/
-                                                 @cdr:id"/>
-     </xsl:attribute>
-
-     <Title>About This PDQ Summary</Title -->
      <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
       <xsl:with-param             name = "miscDocId"
                                 select = "'_GetMore'"/>
      </xsl:apply-templates>
-    <!-- /SummarySection -->
 
    </xsl:when>
    <xsl:otherwise>
     <xsl:variable                 name = "miscDoc" 
                                 select = "document(concat('cdr:CDR0000256873',
                                                          '/lastp'))"/>
-    <!-- SummarySection>
-     <xsl:attribute               name = "id">
-      <xsl:value-of             select = "'_GetMore'"/>
-      <xsl:value-of             select = "$miscDoc/MiscellaneousDocument/
-                                                 MiscellaneousDocumentText/
-                                                 @cdr:id"/>
-     </xsl:attribute>
-
-     <Title>Informaci&#xF3;n sobre este sumario del PDQ</Title -->
      <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
       <xsl:with-param             name = "miscDocId"
                                 select = "'_GetMore'"/>
      </xsl:apply-templates>
-    <!-- /SummarySection -->
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
+ -->
 
 
  <!-- 
