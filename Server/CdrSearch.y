@@ -3,20 +3,6 @@
  * $Id: CdrSearch.y,v 1.5 2002-03-03 14:44:08 bkline Exp $
  *
  * Parser for CDR Search module.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.4  2001/09/19 18:46:44  bkline
- * Allowed '@' in NameChar.
- *
- * Revision 1.3  2001/03/21 02:39:53  bkline
- * Added '/' to NameChar production.
- *
- * Revision 1.2  2000/10/04 18:30:16  bkline
- * Added support for searching for a substring at the front of the element.
- *
- * Revision 1.1  2000/04/21 13:53:59  bkline
- * Initial revision
- *
  */
 
 /*
@@ -33,7 +19,7 @@
      Comparison ::= LValue S ComparisonOp S? RValue
          LValue ::= CtlPath | AttrPath
         CtlPath ::= 'CdrCtl/' CtlElement
-     CtlElement ::= 'DocId' | 'Creator' | 'Created' | 'ValStatus' | 
+     CtlElement ::= 'DocId' | 'Creator' | 'Created' | 'ValStatus' |
                     'ValDate' | 'Approved' | 'DocType' | 'Title' |
                     'Modified' | 'Modifier'
        AttrPath ::= 'CdrAttr/' AttrName
@@ -68,17 +54,13 @@
 #include "CdrSearch.h"
 #include "CdrParserInput.h"
 
-static int yylex(void*, void*);
-static void yyerror(char*);
+union YYSTYPE;
+static int yylex(YYSTYPE*, cdr::QueryParam*);
+static void yyerror(cdr::QueryParam*, char*);
 
 static cdr::QueryNode::OpType comparisonOp;
 
-#define YYPARSE_PARAM parserParam
-#define YYLEX_PARAM reinterpret_cast<cdr::QueryParam*>(parserParam)->parserInput
-
 %}
-
-%pure_parser
 
 %union {
     const wchar_t*              str;
@@ -86,6 +68,8 @@ static cdr::QueryNode::OpType comparisonOp;
     cdr::QueryNode::OpType      op;
     cdr::QueryNode::LValueType  ctl;
 }
+%define api.pure full
+%param {cdr::QueryParam* parserParam}
 
 %token  <keyword>   And
 %token  <keyword>   Or
@@ -121,10 +105,10 @@ static cdr::QueryNode::OpType comparisonOp;
 %left               And
 
 %%
-             
+
           Query : Root DocId {}
-                | Root Filter DocId 
-                { 
+                | Root Filter DocId
+                {
                     cdr::QueryParam* qp;
                     qp = static_cast<cdr::QueryParam*>(parserParam);
                     qp->query->setTree($2);
@@ -133,7 +117,7 @@ static cdr::QueryNode::OpType comparisonOp;
       Assertion : Comparison { $$ = $1; }
                 | Not '(' Assertion ')' { $$ = new cdr::QueryNode($3); }
                 | '(' Assertion ')' { $$ = $2; }
-                | Assertion And Assertion 
+                | Assertion And Assertion
                 {
                     $$ = new cdr::QueryNode($1, cdr::QueryNode::AND, $3);
                 }
@@ -141,11 +125,11 @@ static cdr::QueryNode::OpType comparisonOp;
                 {
                       $$ = new cdr::QueryNode($1, cdr::QueryNode::OR, $3);
                 }
-     Comparison : AttrName ComparisonOp RValue 
+     Comparison : AttrName ComparisonOp RValue
                 {
                     $$ = new cdr::QueryNode($1, $2, $3);
                 }
-                | CtlPath ComparisonOp RValue 
+                | CtlPath ComparisonOp RValue
                 {
                     $$ = new cdr::QueryNode($1, $2, $3);
                 }
@@ -170,19 +154,19 @@ static cdr::QueryNode::OpType comparisonOp;
 
 %%
 
-int yylex(void* parm1, void* parm2)
-{
-    YYSTYPE* yylval = reinterpret_cast<YYSTYPE*>(parm1);
-    cdr::ParserInput& pi = *reinterpret_cast<cdr::ParserInput*>(parm2);
+int yylex(YYSTYPE* yylval, cdr::QueryParam* qp) {
+
+    cdr::ParserInput& pi = *qp->parserInput;
+
     for (;;) {
         wchar_t c = *pi;
         switch (c) {
             case 0:
                 return pi.setLastTok(0);
-            case '[': case ']': case '(': case ')': 
+            case '[': case ']': case '(': case ')':
                 ++pi;
                 return pi.setLastTok(c);
-            case ' ': case '\t': case '\r': case '\n': 
+            case ' ': case '\t': case '\r': case '\n':
                 ++pi;
                 continue;
             case '\'': case '"':
@@ -249,8 +233,7 @@ int yylex(void* parm1, void* parm2)
     return pi.setLastTok(0);
 }
 
-void yyerror(char* s)
-{
+void yyerror(cdr::QueryParam* qp, char* s) {
     std::cerr << "yyerror: " << s << std::endl;
     throw cdr::Exception(L"Parse error", cdr::String(s));
 }
@@ -258,8 +241,7 @@ void yyerror(char* s)
 
 #ifdef TESTMAIN
 
-main()
-{
+main() {
     cdr::String line;
     while (std::getline(std::wcin, line)) {
         try {
@@ -269,13 +251,13 @@ main()
             std::wcerr << L"***************************************\n";
             std::wcerr << line << L"\n";
             std::wcerr << L"***************************************\n";
-            yyparse(static_cast<void*>(&qp));
+            yyparse(&qp);
             std::wcerr << L"---------------------------------------\n";
             std::wcerr << query.getSql() << L"\n";
         }
         catch (cdr::Exception e) {
-            std::wcerr << L"Caught CDR Exception: " 
-                       << e.getString() 
+            std::wcerr << L"Caught CDR Exception: "
+                       << e.getString()
                        << std::endl;
         }
     }
