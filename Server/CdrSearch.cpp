@@ -2,6 +2,39 @@
  * $Id$
  *
  * Queries the CDR to create subset list of documents.
+ *
+ * $Log: not supported by cvs2svn $
+ * Revision 1.10  2002/05/08 20:36:10  pzhang
+ * Updated searchLinks function using getSearchLinksResp.
+ *
+ * Revision 1.9  2002/04/30 14:09:55  bkline
+ * Removed unused exception parameter.
+ *
+ * Revision 1.8  2002/03/06 21:57:46  bkline
+ * Catching reference to cdr::Exception instead of object.
+ *
+ * Revision 1.7  2001/09/19 18:48:55  bkline
+ * Changed search results list order from DocId to DocTitle.
+ *
+ * Revision 1.6  2001/05/21 20:31:41  bkline
+ * Added commands for query term definition support.
+ *
+ * Revision 1.5  2001/03/21 02:40:21  bkline
+ * Changed attr.name to attr.path and attr.id to attr.doc_id.
+ *
+ * Revision 1.4  2001/03/02 13:59:57  bkline
+ * Added DocType element to results.
+ *
+ * Revision 1.3  2000/10/04 18:28:26  bkline
+ * Fixed comment typo; added support for MaxDocs attribute; implemented
+ * command to search for link target candidates.
+ *
+ * Revision 1.2  2000/05/03 15:25:41  bkline
+ * Fixed database statement creation.
+ *
+ * Revision 1.1  2000/04/21 13:52:58  bkline
+ * Initial revision
+ *
  */
 
 #include <iostream>
@@ -54,7 +87,7 @@ cdr::String cdr::search(cdr::Session& session,
     cdr::Query query;
     cdr::QueryParam qp(&query, &input);
     try {
-        CdrSearchparse(&qp);
+        CdrSearchparse(static_cast<void*>(&qp));
     }
     catch (cdr::Exception&) {
         // std::wcout << L"LAST TOKEN: " << input.getLastTok() << std::endl;
