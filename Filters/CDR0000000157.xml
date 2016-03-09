@@ -39,64 +39,64 @@ OCECDR-3938: Remove "Changes to This Summary" from Patient Summaries
 OCECDR-3993: Remove Country as paramenter for clinical trial searches 
              in PDQ summaries
 ================================================================ -->
-<xsl:transform              xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                            xmlns:cdr = "cips.nci.nih.gov/cdr"
-                              version = "1.0">
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0">
 
- <xsl:output                   method = "xml" 
-                 omit-xml-declaration = "no"
-                             encoding = "UTF-8"/>
+ <xsl:output                    method = "xml" 
+                  omit-xml-declaration = "no"
+                              encoding = "UTF-8"/>
 
  <xsl:include href = "cdr:name:Module: Vendor Filter Templates"/>
 
  <!-- 
  Stylesheet level parameter DateFirstPub, passed in from the caller
  ================================================================== -->
- <xsl:param                      name = "DateFirstPub" 
-                               select = "''"/>
- <xsl:variable                   name = "whoAmI"
-                               select = "'Summary'"/>
+ <xsl:param                       name = "DateFirstPub" 
+                                select = "''"/>
+ <xsl:variable                    name = "whoAmI"
+                                select = "'Summary'"/>
 
  <!--
  Variables needed to identify display of certain misc documents based on 
  document type
  ======================================================================= -->
- <xsl:variable                   name = "cgUrl"
-                               select = "'http://www.cancer.gov'"/>
- <xsl:variable                   name = "cgBoardEN"
-                               select = "'/publications/pdq/editorial-boards'"/>
- <xsl:variable                   name = "cgBoardES"
-                               select = "concat('/espanol/publicaciones',
+ <xsl:variable                    name = "cgUrl"
+                                select = "'http://www.cancer.gov'"/>
+ <xsl:variable                    name = "cgBoardEN"
+                                select = "'/publications/pdq/editorial-boards'"/>
+ <xsl:variable                    name = "cgBoardES"
+                                select = "concat('/espanol/publicaciones',
                                                 '/pdq/consejos-editoriales')"/>
- <xsl:variable                   name = "sumTitle"
-                               select = "normalize-space(
+ <xsl:variable                    name = "sumTitle"
+                                select = "normalize-space(
                                            substring-before(
                                            concat(
                                            /Summary
                                            /SummaryTitle, ':'), ':'))"/>
- <xsl:variable                   name = "sumType"
-                               select = "/Summary
+ <xsl:variable                    name = "sumType"
+                                select = "/Summary
                                          /SummaryMetaData
                                          /SummaryType"/>
- <xsl:variable                   name = "sumAudience"
-                               select = "/Summary
+ <xsl:variable                    name = "sumAudience"
+                                select = "/Summary
                                          /SummaryMetaData
                                          /SummaryAudience"/>
- <xsl:variable                   name = "sumAgeGroup"
-                               select = "/Summary
+ <xsl:variable                    name = "sumAgeGroup"
+                                select = "/Summary
                                          /SummaryMetaData
                                          /PDQBoard
                                          /Board"/>
- <xsl:variable                   name = "language"
-                               select = "/Summary
+ <xsl:variable                    name = "language"
+                                select = "/Summary
                                          /SummaryMetaData
                                          /SummaryLanguage"/>
- <xsl:variable                   name = "sumUrlText"
-                               select = "/Summary
+ <xsl:variable                    name = "sumUrlText"
+                                select = "/Summary
                                          /SummaryMetaData
                                          /SummaryURL"/>
- <xsl:variable                   name = "sumUrl"
-                               select = "/Summary
+ <xsl:variable                    name = "sumUrl"
+                                select = "/Summary
                                          /SummaryMetaData
                                          /SummaryURL/@cdr:xref"/>
 
@@ -139,23 +139,23 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
   </xsl:choose>
  </xsl:variable>
 
- <xsl:variable                   name = "displayReviewers"
-                               select = "/Summary
+ <xsl:variable                    name = "displayReviewers"
+                                select = "/Summary
                                          /SummaryMetaData
                                          /PDQBoard[
                                               not(contains(Board, 'Advisory'))]
                                          /ShowReviewerInfo"/>
 
- <xsl:variable                   name = "sumLoe">
+ <xsl:variable                    name = "sumLoe">
   <xsl:choose>
-   <xsl:when                     test = "$language = 'English'">
-    <xsl:value-of              select = "/Summary
+   <xsl:when                      test = "$language = 'English'">
+    <xsl:value-of               select = "/Summary
                                          /SummaryMetaData
                                          /PDQBoard
                                          /LOESummary/@cdr:ref"/>
    </xsl:when>
    <xsl:otherwise>
-    <xsl:value-of              select = "/Summary
+    <xsl:value-of               select = "/Summary
                                          /SummaryMetaData
                                          /PDQBoard
                                          /LOESummaryES/@cdr:ref"/>
@@ -163,9 +163,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
   </xsl:choose>
  </xsl:variable>
 
- <xsl:variable                   name = "sumLoeUrl">
+ <xsl:variable                    name = "sumLoeUrl">
   <xsl:choose>
-   <xsl:when                     test = "$language = 'English'">
+   <xsl:when                      test = "$language = 'English'">
     <!-- 
     We need to do this little trick since some URLs are written as
     http://www.cancer.gov and some as http://cancer.gov
@@ -994,9 +994,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
    <!--
    Move all the PermaTargIds to the SummaryMetaData section
    ======================================================== -->
-   <xsl:if                       test = "//@PermaTargId">
-    <xsl:element                 name = "PermaTargs">
-     <xsl:apply-templates      select = "//@PermaTargId"/>
+   <xsl:if                        test = "//@PermaTargId">
+    <xsl:element                  name = "PermaTargs">
+     <xsl:apply-templates       select = "//@PermaTargId"/>
     </xsl:element>
    </xsl:if>
   </SummaryMetaData>
@@ -1008,22 +1008,34 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
  SummaryTitle Template  (adding registered tragemark (r) sign to 
  all titles).
  ================================================================== -->
- <xsl:template                  match = "SummaryTitle">
+ <xsl:template                   match = "SummaryTitle">
   <SummaryTitle>
-   <xsl:apply-templates          mode = "copy"/>
+   <xsl:apply-templates           mode = "copy"/>
 
    <!-- The following text is for Cancer.gov only and will need to be
         removed in a post-process -->
-  <xsl:if                        test = "$sumAudience = 'Health professionals'">
-   <xsl:choose>
-    <xsl:when                     test = "$language = 'English'">
-     <xsl:text>&#8211;for health professionals</xsl:text>
+  <xsl:choose>
+   <xsl:when                      test = "$sumAudience = 'Health professionals'">
+    <xsl:choose>
+     <xsl:when                    test = "$language = 'English'">
+      <xsl:text>&#8211;Health Professional Version</xsl:text>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>&#8211;Versi&#243;n para profesionales de salud</xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:text>&#8211;para profesionales de salud</xsl:text>
+    <xsl:choose>
+     <xsl:when                    test = "$language = 'English'">
+      <xsl:text>&#8211;Patient Version</xsl:text>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>&#8211;Versi&#243;n para pacientes</xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
     </xsl:otherwise>
    </xsl:choose>
-   </xsl:if>
 
    <xsl:text> (PDQ&#xAE;)</xsl:text>
   </SummaryTitle>
@@ -1034,9 +1046,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
  ============================================================= 
  Template to create MainTopics
  ============================================================= -->
- <xsl:template                  match = "MainTopics">
+ <xsl:template                   match = "MainTopics">
   <MainTopics>
-   <xsl:apply-templates        select = "Term"/>
+   <xsl:apply-templates         select = "Term"/>
   </MainTopics>
  </xsl:template>
     
@@ -1045,9 +1057,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
  ============================================================= 
  Template to create SecondaryTopics
  ============================================================= -->
- <xsl:template                  match = "SecondaryTopics">
+ <xsl:template                   match = "SecondaryTopics">
   <SecondaryTopics>
-   <xsl:apply-templates        select = "Term"/>
+   <xsl:apply-templates         select = "Term"/>
   </SecondaryTopics>
  </xsl:template>
    

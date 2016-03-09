@@ -37,7 +37,7 @@ Filter to create Vendor Person XML documents
 <!-- =================================================================
                         Copy control information 
      ================================================================= -->
- <xsl:template                 match = "/">
+  <xsl:template                  match = "/">
 
   <!--
   NOTE:  DO NOT modify the following section!
@@ -54,41 +54,107 @@ Filter to create Vendor Person XML documents
   ========================================================================= -->
 
 
-  <xsl:apply-templates        select = "*" 
-                                mode = "copy"/>
- </xsl:template>
+   <xsl:apply-templates         select = "*" 
+                                  mode = "copy"/>
+  </xsl:template>
 
 
  <!--
  Remove the '-for HP' text from the SummaryTitle
  The text has been added for Cancer.gov only
  ======================================================= -->
- <xsl:template                 match = "SummaryTitle"
-                                mode = "copy">
+ <xsl:template                   match = "SummaryTitle"
+                                  mode = "copy">
   <xsl:copy>
-   <xsl:variable                name = "beforeEN"
-                              select = "substring-before(., '&#8211;f')"/>
-   <xsl:variable                name = "beforeES"
-                              select = "substring-before(., '&#8211;p')"/>
-   <xsl:variable                name = "afterEN"
-                              select = "substring-after(., 
+   <!-- Old Titles, before -->
+   <xsl:variable                  name = "beforeENold"
+                                select = "substring-before(., '&#8211;f')"/>
+   <xsl:variable                  name = "beforeESold"
+                                select = "substring-before(., '&#8211;p')"/>
+
+   <!-- New Titles, before -->
+   <xsl:variable                  name = "beforeENhp"
+                                select = "substring-before(., '&#8211;H')"/>
+   <xsl:variable                  name = "beforeENpat"
+                                select = "substring-before(., '&#8211;P')"/>
+   <xsl:variable                  name = "beforeES"
+                                select = "substring-before(., '&#8211;V')"/>
+
+   <!-- Old Titles, after -->
+   <xsl:variable                  name = "afterENold"
+                                select = "substring-after(., 
                                         '&#8211;for health professionals')"/>
-   <xsl:variable                name = "afterES"
-                              select = "substring-after(., 
+   <xsl:variable                  name = "afterESold"
+                                select = "substring-after(., 
                                         '&#8211;para profesionales de salud')"/>
-   <!-- Only need to modify title for HP summaries -->
+
+   <!-- New Titles, after -->
+   <xsl:variable                  name = "afterENhp"
+                                select = "substring-after(., 
+                                        '&#8211;Health Professional Version')"/>
+   <xsl:variable                  name = "afterENpat"
+                                select = "substring-after(., 
+                                        '&#8211;Patient Version')"/>
+   <xsl:variable                  name = "afterEShp"
+                                select = "substring-after(., 
+                                        'para profesionales de salud')"/>
+   <xsl:variable                  name = "afterESpat"
+                                select = "substring-after(., 
+                                        'para pacientes')"/>
+   <!-- Patient summaries -->
    <xsl:choose>
-    <xsl:when                   test = "$audience = 'Patients'">
-     <xsl:value-of            select = "."/>
+    <xsl:when                     test = "$audience = 'Patients'">
+     <xsl:choose>
+      <!-- Spanish summaries -->
+      <xsl:when                   test = "$language = 'Spanish'">
+       <xsl:choose>
+        <!-- New - the old format didn't modify patient titles -->
+        <xsl:when                 test = "$beforeES">
+         <xsl:value-of          select = "concat($beforeES, $afterESpat)"/>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:value-of          select = "."/>
+        </xsl:otherwise> 
+       </xsl:choose>
+      </xsl:when>
+      <!-- English summaries -->
+      <xsl:otherwise>
+       <xsl:choose>
+        <!-- New - the old format didn't modify patient titles -->
+        <xsl:when                 test = "$beforeENpat">
+         <xsl:value-of          select = "concat($beforeENpat, $afterENpat)"/>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:value-of          select = "."/>
+        </xsl:otherwise> 
+       </xsl:choose>
+      </xsl:otherwise>
+     </xsl:choose>
     </xsl:when>
-    <!-- Strip out 'for HP' from title based on language value -->
+    <!-- HP summaries -->
     <xsl:otherwise>
      <xsl:choose>
+      <!-- Spanish summaries -->
       <xsl:when                   test = "$language = 'Spanish'">
-       <xsl:value-of            select = "concat($beforeES, $afterES)"/>
+       <xsl:choose>
+        <xsl:when                 test = "$beforeESold">
+         <xsl:value-of          select = "concat($beforeESold, $afterESold)"/>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:value-of          select = "concat($beforeES, $afterEShp)"/>
+        </xsl:otherwise> 
+       </xsl:choose>
       </xsl:when>
+      <!-- English summaries -->
       <xsl:otherwise>
-       <xsl:value-of            select = "concat($beforeEN, $afterEN)"/>
+       <xsl:choose>
+        <xsl:when                 test = "$beforeENold">
+         <xsl:value-of          select = "concat($beforeENold, $afterENold)"/>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:value-of          select = "concat($beforeENhp, $afterENhp)"/>
+        </xsl:otherwise> 
+       </xsl:choose>
       </xsl:otherwise>
      </xsl:choose>
     </xsl:otherwise>
@@ -101,22 +167,22 @@ Filter to create Vendor Person XML documents
  <!--
  Remove various elements from the licensee output
  ======================================================= -->
- <xsl:template                 match = "ArmsOrGroups         |
-                                        MobileURL            |
-                                        OfficialProtocolTitle|
-                                        PermaTargs           |
-                                        RegulatoryInformation|
-                                        CTGovInterventionType|
-                                        UrlInfo"
-                                mode = "copy"/>
+ <xsl:template                   match = "ArmsOrGroups         |
+                                          MobileURL            |
+                                          OfficialProtocolTitle|
+                                          PermaTargs           |
+                                          RegulatoryInformation|
+                                          CTGovInterventionType|
+                                          UrlInfo"
+                                  mode = "copy"/>
 
  <!--
  Remove ProtocolSpecialCategory from CTGovProtocols 
  (but not InScopeProtocols)
  ======================================================= -->
- <xsl:template                 match = "CTGovProtocol/
-                                        ProtocolSpecialCategory"
-                                mode = "copy"/>
+ <xsl:template                   match = "CTGovProtocol/
+                                          ProtocolSpecialCategory"
+                                  mode = "copy"/>
 
  <!--
  Licensees only receive 'screen' output but no content
@@ -125,19 +191,19 @@ Filter to create Vendor Person XML documents
  If the attribute lists anything else (mobile, none) we
  will just drop the attribute.
  ======================================================= -->
- <xsl:template                 match = "SummarySection[@ExcludedDevices]"
-                                mode = "copy">
+ <xsl:template                   match = "SummarySection[@ExcludedDevices]"
+                                  mode = "copy">
   <xsl:choose>
-   <xsl:when                    test = "@ExcludedDevices = 'screen'">
+   <xsl:when                      test = "@ExcludedDevices = 'screen'">
     <!-- Do nothing and drop the section -->
    </xsl:when>
    <xsl:otherwise>
     <xsl:copy>
-     <xsl:apply-templates     select = "* | @* |
-                                        text() |
-                                        processing-instruction() |
-                                        comment()"
-                                mode = "copy"/>
+     <xsl:apply-templates       select = "* | @* |
+                                          text() |
+                                          processing-instruction() |
+                                          comment()"
+                                  mode = "copy"/>
     </xsl:copy>
    </xsl:otherwise>
   </xsl:choose>
@@ -148,19 +214,20 @@ Filter to create Vendor Person XML documents
  Licensees don't receive the URL attribute of the 
  RelatedSummaryRef/RelatedDrugSummaryRef - drop it.
  ======================================================= -->
- <xsl:template                 match = "GlossaryTerm/RelatedInformation/
-                                          RelatedSummaryRef/@url
-                                        |
-                                        GlossaryTerm/RelatedInformation/
-                                          RelatedDrugSummaryRef/@url"
-                                mode = "copy">
+ <xsl:template                   match = "GlossaryTerm/RelatedInformation/
+                                            RelatedSummaryRef/@url
+                                          |
+                                          GlossaryTerm/RelatedInformation/
+                                            RelatedDrugSummaryRef/@url"
+                                  mode = "copy">
  </xsl:template>
 
 
  <!--
  Remove the ExcludedDevices attribute
  ======================================================= -->
- <xsl:template                 match = "@ExcludedDevices" mode = "copy"/>
+ <xsl:template                   match = "@ExcludedDevices" 
+                                  mode = "copy"/>
 
  <!--
  Licensees only receive 'screen' output but no content
@@ -169,17 +236,17 @@ Filter to create Vendor Person XML documents
  If the attribute lists anything else (mobile, none) we
  will just drop the entire section.
  ======================================================= -->
- <xsl:template                 match = "SummarySection[@IncludedDevices] |
-                                        MediaLink[@IncludedDevices]"
-                                mode = "copy">
+ <xsl:template                   match = "SummarySection[@IncludedDevices] |
+                                          MediaLink[@IncludedDevices]"
+                                  mode = "copy">
   <xsl:choose>
-   <xsl:when                    test = "@IncludedDevices = 'screen'">
+   <xsl:when                      test = "@IncludedDevices = 'screen'">
     <xsl:copy>
-     <xsl:apply-templates     select = "* | @* |
-                                        text() |
-                                        processing-instruction() |
-                                        comment()"
-                                mode = "copy"/>
+     <xsl:apply-templates       select = "* | @* |
+                                          text() |
+                                          processing-instruction() |
+                                          comment()"
+                                  mode = "copy"/>
     </xsl:copy>
    </xsl:when>
    <xsl:otherwise>
@@ -191,5 +258,6 @@ Filter to create Vendor Person XML documents
  <!--
  Remove the IncludedDevices attribute
  ======================================================= -->
- <xsl:template                 match = "@IncludedDevices" mode = "copy"/>
+ <xsl:template                   match = "@IncludedDevices" 
+                                  mode = "copy"/>
 </xsl:transform>
