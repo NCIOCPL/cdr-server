@@ -1959,7 +1959,7 @@ GO
  *           id  primary key
  *           dt  date/time of download job
  * total_trials  number of cancer trials that meet query criteria
- *   new_trials  new active and approved-not yet active trials
+ *   new_trials  new "active" and "not yet active" trials
  *  transferred  Count of trials for which ownership tranferred from PDQ
  *      updated  Updates to previously downloaded trials
  *    unchanged  skipped trials since no changes from previous download
