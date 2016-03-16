@@ -7062,12 +7062,8 @@ cdr::String cdr::xsd::Schema::makeDtd(const cdr::String& schemaFilename)
 {
     if (!&getTopElement())
         throw cdr::Exception(L"No top element declared");
-    time_t now = time(0);
-    cdr::String when = asctime(localtime(&now));
     std::wostringstream os;
-    os << L"<!--\n\n     Machine generated " << when
-       << L"     From XML Schema " << schemaFilename
-       << L"\n\n  -->\n\n";
+    os << L"<!-- Generated from " << schemaFilename << L" -->\n\n";
     writeDtdElement(getTopElement(), os, true);
     return os.str();
 }
