@@ -2,10 +2,8 @@
  * $Id$
  *
  * Script to create the view for CDR document versions.  This is invoked
- * by db-refresh-postprocess.cmd after refreshing the CDR database on
- * Franck or Mahler from Bach.
- *
- * $Log: not supported by cvs2svn $
+ * after refreshing the CDR database on the lower tiers from a backup of
+ * the production database.
  */
 
 USE cdr

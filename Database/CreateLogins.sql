@@ -389,6 +389,8 @@ GRANT SELECT ON filter_set_member TO CdrGuest
 GO
 GRANT SELECT ON zipcode TO CdrGuest
 GO
+GRANT SELECT ON zipcode_backup TO CdrGuest
+GO
 GRANT SELECT, UPDATE, INSERT, DELETE ON query TO CdrGuest
 GO
 GRANT SELECT ON ctgov_import TO CdrGuest
@@ -471,7 +473,12 @@ GRANT SELECT ON glossary_term_audio_request to CdrGuest
 GO
 GRANT SELECT ON ctrp_trial_set TO CdrGuest
 GO
-GRANT SELECT on ctgov_trial to CdrGuest
-GRANT SELECT on ctgov_trial_sponsor to CdrGuest
-GRANT SELECT on ctgov_trial_other_id to CdrGuest
+GRANT SELECT ON ctgov_trial TO CdrGuest
+GRANT SELECT ON ctgov_trial_sponsor TO CdrGuest
+GRANT SELECT ON ctgov_trial_other_id TO CdrGuest
+GO
+GRANT SELECT ON data_partner_product TO CdrGuest
+GRANT SELECT ON data_partner_org     TO CdrGuest
+GRANT SELECT ON data_partner_contact TO CdrGuest
+GRANT SELECT ON pdq_contact          TO CdrGuest
 GO

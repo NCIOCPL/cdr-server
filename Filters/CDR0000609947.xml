@@ -66,12 +66,6 @@ Filter to create Vendor Person XML documents
  <xsl:template                   match = "SummaryTitle"
                                   mode = "copy">
   <xsl:copy>
-   <!-- Old Titles, before -->
-   <xsl:variable                  name = "beforeENold"
-                                select = "substring-before(., '&#8211;f')"/>
-   <xsl:variable                  name = "beforeESold"
-                                select = "substring-before(., '&#8211;p')"/>
-
    <!-- New Titles, before -->
    <xsl:variable                  name = "beforeENhp"
                                 select = "substring-before(., '&#8211;H')"/>
@@ -80,54 +74,19 @@ Filter to create Vendor Person XML documents
    <xsl:variable                  name = "beforeES"
                                 select = "substring-before(., '&#8211;V')"/>
 
-   <!-- Old Titles, after -->
-   <xsl:variable                  name = "afterENold"
-                                select = "substring-after(., 
-                                        '&#8211;for health professionals')"/>
-   <xsl:variable                  name = "afterESold"
-                                select = "substring-after(., 
-                                        '&#8211;para profesionales de salud')"/>
-
-   <!-- New Titles, after -->
-   <xsl:variable                  name = "afterENhp"
-                                select = "substring-after(., 
-                                        '&#8211;Health Professional Version')"/>
-   <xsl:variable                  name = "afterENpat"
-                                select = "substring-after(., 
-                                        '&#8211;Patient Version')"/>
-   <xsl:variable                  name = "afterEShp"
-                                select = "substring-after(., 
-                                        'para profesionales de salud')"/>
-   <xsl:variable                  name = "afterESpat"
-                                select = "substring-after(., 
-                                        'para pacientes')"/>
    <!-- Patient summaries -->
    <xsl:choose>
     <xsl:when                     test = "$audience = 'Patients'">
      <xsl:choose>
       <!-- Spanish summaries -->
       <xsl:when                   test = "$language = 'Spanish'">
-       <xsl:choose>
-        <!-- New - the old format didn't modify patient titles -->
-        <xsl:when                 test = "$beforeES">
-         <xsl:value-of          select = "concat($beforeES, $afterESpat)"/>
-        </xsl:when>
-        <xsl:otherwise>
-         <xsl:value-of          select = "."/>
-        </xsl:otherwise> 
-       </xsl:choose>
+       <!-- New - the old format didn't modify patient titles -->
+       <xsl:value-of            select = "$beforeES"/>
       </xsl:when>
       <!-- English summaries -->
       <xsl:otherwise>
-       <xsl:choose>
-        <!-- New - the old format didn't modify patient titles -->
-        <xsl:when                 test = "$beforeENpat">
-         <xsl:value-of          select = "concat($beforeENpat, $afterENpat)"/>
-        </xsl:when>
-        <xsl:otherwise>
-         <xsl:value-of          select = "."/>
-        </xsl:otherwise> 
-       </xsl:choose>
+       <!-- New - the old format didn't modify patient titles -->
+       <xsl:value-of            select = "$beforeENpat"/>
       </xsl:otherwise>
      </xsl:choose>
     </xsl:when>
@@ -136,30 +95,15 @@ Filter to create Vendor Person XML documents
      <xsl:choose>
       <!-- Spanish summaries -->
       <xsl:when                   test = "$language = 'Spanish'">
-       <xsl:choose>
-        <xsl:when                 test = "$beforeESold">
-         <xsl:value-of          select = "concat($beforeESold, $afterESold)"/>
-        </xsl:when>
-        <xsl:otherwise>
-         <xsl:value-of          select = "concat($beforeES, $afterEShp)"/>
-        </xsl:otherwise> 
-       </xsl:choose>
+       <xsl:value-of            select = "$beforeES"/>
       </xsl:when>
       <!-- English summaries -->
       <xsl:otherwise>
-       <xsl:choose>
-        <xsl:when                 test = "$beforeENold">
-         <xsl:value-of          select = "concat($beforeENold, $afterENold)"/>
-        </xsl:when>
-        <xsl:otherwise>
-         <xsl:value-of          select = "concat($beforeENhp, $afterENhp)"/>
-        </xsl:otherwise> 
-       </xsl:choose>
+       <xsl:value-of            select = "$beforeENhp"/>
       </xsl:otherwise>
      </xsl:choose>
     </xsl:otherwise>
    </xsl:choose>
-   <!-- xsl:apply-templates/ -->
   </xsl:copy>
  </xsl:template>
 

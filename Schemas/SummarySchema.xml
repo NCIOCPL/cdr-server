@@ -71,7 +71,7 @@ SELECT COUNT(q1.doc_id) AS cnt
             FROM query_term
            WHERE path = &apos;/Summary/SummaryMetaData/SummaryLanguage&apos;
              AND doc_id = ?~",
-             string(number(substring(@cdr:ref,4)))))/SqlResult/row/col'
+        string(number(concat("0", substring(@cdr:ref,4))))))/SqlResult/row/col'
      >SummaryLanguage in Patient and linked-to HP Summary must match</assert>
     </rule>
    </pattern>
@@ -105,6 +105,59 @@ SELECT COUNT(q1.doc_id) AS cnt
              AND value = &apos;English&apos;~",
              string(number(substring(@cdr:ref,4)))))/SqlResult/row/col'
      >TranslationOf does not link to doc with English SummaryLanguage</assert>
+    </rule>
+   </pattern>
+   <!-- DEBUG
+        TESTING SMALL TEST BUILDING UP TO FULL TEST
+   <pattern>
+    <rule context = 'MediaLink/MediaID'>
+     <assert test = 'number(document(concat("cdrutil:/sql-query/
+        select count(*) 
+          from query_term q1
+         where q1.doc_id = ?~", 
+         string(number(substring(@cdr:ref,4)))))/SqlResult/row/col) &gt; 0'
+     >SIMPLE TEST FAILS</assert>
+    </rule>
+   </pattern>
+    -->
+   <pattern>
+    <!-- Verify that any MediaLink points to a Media document that has at
+         least one MediaCaption with an audience and language that matches
+         those of the Summary linking to it.
+    -->
+    <rule            context         = 'MediaLink/MediaID'>
+     <assert test = 'number(document(concat("cdrutil:/sql-query/
+        SELECT COUNT(*)
+          FROM query_term q1
+          JOIN query_term q2
+            ON q1.doc_id = q2.doc_id
+           AND q1.node_loc = q2.node_loc
+         WHERE q1.path=
+               &apos;/Media/MediaContent/Captions/MediaCaption/@audience&apos;
+           AND q2.path=
+               &apos;/Media/MediaContent/Captions/MediaCaption/@language&apos;
+           AND q1.doc_id = ?
+           AND ? = (
+              SELECT CASE
+                 WHEN q1.value = &apos;Patients&apos;
+                 THEN &apos;Patients&apos;
+                 WHEN q1.value = &apos;Health_professionals&apos;
+                 THEN &apos;Health professionals&apos;
+                 ELSE &apos;Unknown&apos;
+              END
+           )
+           AND ? = (
+              SELECT CASE
+                 WHEN q2.value = &apos;en&apos; THEN &apos;English&apos;
+                 WHEN q2.value = &apos;es&apos; THEN &apos;Spanish&apos;
+                 ELSE &apos;Unknown&apos;
+              END
+           )", "~",
+        string(number(substring(@cdr:ref,4))), "~",
+        /Summary/SummaryMetaData/SummaryAudience, "~",
+        /Summary/SummaryMetaData/SummaryLanguage
+        ))/SqlResult/row/col) &gt; 0'
+     >MediaLink must link to Media doc with matching audience and language MediaCaption</assert>
     </rule>
    </pattern>
   </appInfo>
@@ -225,6 +278,9 @@ SELECT COUNT(q1.doc_id) AS cnt
       <element       name            = 'SummaryKeyWords'
                      type            = 'SummaryKeyWords'
                      minOccurs       = '0'/>
+      <element       name            = 'PMID'
+                     type            = 'string'
+                     minOccurs       = '0'/>
     </sequence>
   </complexType>
 
@@ -306,7 +362,7 @@ SELECT COUNT(q1.doc_id) AS cnt
       <enumeration   value           = 'Screening'/>
       <enumeration   value           = 'Prevention'/>
       <enumeration   value           = 'Genetics'/>
-      <enumeration   value           = 'Complementary and alternative medicine'/>
+      <enumeration   value           = 'Integrative, alternative, and complementary therapies'/>
     </restriction>
   </simpleType>
 

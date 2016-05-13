@@ -2,6 +2,8 @@
 <!-- $Id$ -->
 <!-- Filter title: Copy XML for DrugInfoSummary -->
 <!-- 
+OCECDR-3903: Cancer.gov displaying Patient definitions for terms 
+             in HP Summaries
 ===================================================================
 Filter to create the vendor Terminology XML 
 =================================================================== -->
@@ -91,27 +93,6 @@ Filter to create the vendor Terminology XML
     </USBrandNames>
    </xsl:if>
 
-<!-- =====================================================================
-     Synonyms are not to be displayed anymore
-     (per LG, 2008-08-17)
-     =====================================================================
-   <xsl:if                        test = "OtherName/
-                                          OtherNameType = 'Code name'
-                                          or
-                                          OtherName/
-                                          OtherNameType = 'Foreign brand name'
-                                          or
-                                          OtherName/
-                                          OtherNameType = 'Abbreviation'">
-    <Synonyms>
-     <xsl:apply-templates       select = "OtherName"
-                                  mode = "synonym"/>
-    </Synonyms>
-   </xsl:if>
-     End Synonym
-     =====================================================================
--->
-
    <xsl:copy-of                 select = "*[not(self::OtherName)]"/>
   </xsl:copy>
  </xsl:template>
@@ -148,6 +129,40 @@ Filter to create the vendor Terminology XML
   </xsl:if>
  </xsl:template>
 
+
+ <!-- 
+ ======================================================================== 
+ Create the GlossaryTermRef elements and rename the attribute 
+ (cdr:href ID needs to be renamed to href).
+
+ Note:
+ Please also see the note in CDR157 (duplicate template GlossaryTermRef)
+ ======================================================================== -->
+ <xsl:template                   match = "GlossaryTermRef"
+                                  mode = "copy">
+  <xsl:element                    name = "{name()}">
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "@cdr:href"/>
+   </xsl:attribute>
+   <!-- When the dictionary value does not exist set it to NotSet -->
+   <xsl:attribute                 name = "dictionary">
+    <xsl:choose>
+     <xsl:when                    test = "Dictionary">
+      <xsl:value-of             select = "Dictionary"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:text>NotSet</xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:attribute>
+   <xsl:attribute                 name = "audience">
+    <xsl:value-of               select = "Audience"/>
+   </xsl:attribute>
+
+   <xsl:value-of                select = "GlossaryText"/>
+
+  </xsl:element>
+ </xsl:template>
 
  <!-- 
  =======================================================

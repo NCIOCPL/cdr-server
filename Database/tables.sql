@@ -2450,3 +2450,118 @@ CREATE TABLE ctgov_trial_other_id
     other_id NVARCHAR(1024) NOT NULL,
  PRIMARY KEY (nct_id, position))
 GO
+
+/*
+ * Represents a class of consumers of PDQ data. Over the years there
+ * have been many of these. Currently there is only one (CDR) in
+ * production, and another for testing/development (TEST).
+ *
+ *      prod_id  primary key, automatically generated
+ *    prod_name  short string, generally uppercase, without spaces
+ *    prod_desc  optional string describing the nature of the product
+ *  inactivated  optional date when the product was taken out of commission
+ *     last_mod  date/time the product's row was last modified
+ */
+CREATE TABLE data_partner_product
+    (prod_id INTEGER        NOT NULL IDENTITY PRIMARY KEY,
+   prod_name VARCHAR(64)    NOT NULL UNIQUE,
+   prod_desc NVARCHAR(2048)     NULL,
+ inactivated DATE               NULL,
+    last_mod DATETIME       NOT NULL)
+GO
+
+/*
+ * Represents a PDQ data partner organization. Each PDQ data product
+ * can have many partner organizations (or none), and each partner
+ * organization can have zero or more contact records. Currently,
+ * the organization record must have a unique name across all
+ * products. If requirements change, and that restriction must
+ * be lifted, the database table definition will have to be altered.
+ *
+ *       org_id  primary key, automatically generated
+ *     org_name  partner organization's name; must be present and unique
+ *      prod_id  foreign key into the product table above (required)
+ *   org_status  one of A (Active), T (Test), or S (Special); required
+ *    activated  date the partner record was added (required)
+ *   terminated  date the partner was unsubscribed (optional)
+ *      renawal  optional date for renewal of the partner
+ * ftp_username  optional name for the partner's FTP account
+ *     last_mod  date/time the partner's org row was last modified
+ */
+CREATE TABLE data_partner_org
+     (org_id INTEGER        NOT NULL IDENTITY PRIMARY KEY,
+    org_name NVARCHAR(255)  NOT NULL UNIQUE,
+     prod_id INTEGER        NOT NULL REFERENCES data_partner_product,
+  org_status CHAR(1)        NOT NULL
+                            CONSTRAINT chk_org_status
+                            CHECK (org_status IN ('A','T','S')),
+   activated DATE           NOT NULL,
+  terminated DATE               NULL,
+     renewal DATE               NULL,
+ftp_username VARCHAR(64)        NULL,
+    last_mod DATETIME       NOT NULL)
+GO
+
+/*
+ * Individual to who correspondence about the product's activity is set.
+ * Contacts can be primary, secondary, internal, or deleted. They are
+ * always associated with a data partner organization.
+ *
+ *   contact_id  primary key, automatically generated
+ *       org_id  foreign key into the organization table above (required)
+ *  person_name  required string for the contact's personal name
+ *   email_addr  required (without this, there would be no point)
+ *        phone  ancient method for communicating
+ * contact_type  required; one of the following values:
+ *                 P (primary)
+ *                 S (secondary)
+ *                 I (internal)
+ *                 D (deleted)
+ *  notif_count  required number of times this contact has been notified
+ *   notif_date  last time this contact was notified (optional)
+ *     last_mod  date/time the contact's row was last modified
+ */
+CREATE TABLE data_partner_contact
+ (contact_id INTEGER       NOT NULL IDENTITY PRIMARY KEY,
+      org_id INTEGER       NOT NULL REFERENCES data_partner_org,
+ person_name NVARCHAR(255) NOT NULL,
+  email_addr VARCHAR(64)   NOT NULL,
+       phone VARCHAR(64)       NULL,
+contact_type CHAR(1)       NOT NULL
+                           CONSTRAINT chk_contact_type
+                           CHECK (contact_type IN ('P','S','I','D')),
+ notif_count INTEGER       NOT NULL,
+  notif_date DATETIME          NULL,
+    last_mod DATETIME      NOT NULL)
+GO
+
+/*
+ * Convenience view for older software, which used the data in a denormalized
+ * form. The column names match the names of the columns in the tables from
+ * which the view is build (with the last_mod column being drawn from the
+ * rows for the contacts).
+ */
+CREATE VIEW pdq_contact AS
+SELECT c.contact_id,
+       p.prod_name,
+       c.email_addr,
+       c.person_name,
+       o.org_name,
+       c.phone,
+       o.org_status,
+       c.notif_count,
+       c.contact_type,
+       o.ftp_username,
+       o.activated,
+       o.terminated,
+       o.renewal,
+       CASE WHEN c.notif_date IS NULL THEN 'N' ELSE 'Y' END AS notified,
+       c.notif_date,
+       o.org_id,
+       c.last_mod
+  FROM data_partner_contact c
+  JOIN data_partner_org o
+    ON o.org_id = c.org_id
+  JOIN data_partner_product p
+    ON p.prod_id = o.prod_id
+GO

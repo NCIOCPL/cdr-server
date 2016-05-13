@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!-- $Id$ -->
 <!-- Filter title: Copy XML for Summary Report -->
-<!-- 
+<!--
 
 BZIssue::4751 - Modify BU Reports to display LOERefs
 BZIssue::4919 - [Summary] QC Report Bugs
@@ -9,11 +9,11 @@ BZIssue::4970 - [Summary] Key Point display problems in QC reports
 BZIssue::5075 - [Summary] No definition texts for Spanish B/U QC report
 BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
                 include Module content
-BZIssue::5191 - [Summaries] Summary Fragment Refs not working in 
+BZIssue::5191 - [Summaries] Summary Fragment Refs not working in
                 QC reports
 
 ===============================================================
-Filter to create Vendor Genetics Professionals XML documents 
+Filter to create Vendor Genetics Professionals XML documents
 =============================================================== -->
 <xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
                              xmlns:cdr = 'cips.nci.nih.gov/cdr'
@@ -34,16 +34,16 @@ Filter to create Vendor Genetics Professionals XML documents
                                             SummaryMetaData/
                                             SummaryAudience, 1, 19)"/>
   <xsl:copy>
-   <!--  
+   <!--
    ==============================================================
    copy summary meta data, and title
    ============================================================== -->
    <SummaryMetaData>
-    <xsl:apply-templates        select = "SummaryMetaData/SummaryType"   
+    <xsl:apply-templates        select = "SummaryMetaData/SummaryType"
                                   mode = "copy"/>
-    <xsl:apply-templates        select = "SummaryMetaData/SummaryAudience" 
+    <xsl:apply-templates        select = "SummaryMetaData/SummaryAudience"
                                   mode = "copy"/>
-    <xsl:apply-templates        select = "SummaryMetaData/SummaryLanguage" 
+    <xsl:apply-templates        select = "SummaryMetaData/SummaryLanguage"
                                   mode = "copy"/>
    </SummaryMetaData>
 
@@ -51,20 +51,20 @@ Filter to create Vendor Genetics Professionals XML documents
    ======================================================================
    Copy the Summary title and all the summary sections including Keypoint
    ====================================================================== -->
-   <xsl:apply-templates         select = "SummaryTitle" 
+   <xsl:apply-templates         select = "SummaryTitle"
                                   mode = "copy"/>
    <xsl:apply-templates         select = "/Summary/AltTitle"
                                   mode = "copy"/>
 
-   <xsl:for-each                select = "SummarySection"> 
+   <xsl:for-each                select = "SummarySection">
      <!--
      ======================================================================
-     The top SummarySection title needs to be displayed before the keypoint 
-     section.  It is being renamed here to be able and handle these titles 
+     The top SummarySection title needs to be displayed before the keypoint
+     section.  It is being renamed here to be able and handle these titles
      separately from all other SummarySection titles
      ====================================================================== -->
      <SectionTitle>
-      <xsl:attribute              name = "cdr:id"> 
+      <xsl:attribute              name = "cdr:id">
        <xsl:value-of            select = "@cdr:id"/>
       </xsl:attribute>
       <xsl:apply-templates      select = "Title"
@@ -82,15 +82,15 @@ Filter to create Vendor Genetics Professionals XML documents
          <ListItem>
           <xsl:apply-templates  select = "KeyPoint"
                                   mode = "copy"/>
-       
+
           <xsl:if                 test = "SummarySection/KeyPoint">
            <KeyPointsList        Style = 'dash'>
             <xsl:for-each       select = "SummarySection">
-             <xsl:apply-templates 
+             <xsl:apply-templates
                                 select = "Title"
-                                  mode = "copy"/>    
+                                  mode = "copy"/>
              <ListItem>
-              <xsl:apply-templates 
+              <xsl:apply-templates
                                 select = "KeyPoint"
                                   mode = "copy"/>
              </ListItem>
@@ -103,16 +103,16 @@ Filter to create Vendor Genetics Professionals XML documents
       </KeyPointsList>
      </KeyPoints>
 
-      
+
     <!--
     ============================================================
-    copy summary sections and add references at the end of each 
-    section 
+    copy summary sections and add references at the end of each
+    section
     ============================================================ -->
-    <xsl:apply-templates        select = "." 
-                                  mode = "copy"/> 
-                                            
-    <xsl:apply-templates        select = "PdqKey" 
+    <xsl:apply-templates        select = "."
+                                  mode = "copy"/>
+
+    <xsl:apply-templates        select = "PdqKey"
                                   mode = "copy"/>
    </xsl:for-each>
 
@@ -120,20 +120,21 @@ Filter to create Vendor Genetics Professionals XML documents
      <xsl:for-each              select = "//GlossaryTermRef">
       <GlossaryTerm>
        <GlossaryTermRef>
-        <xsl:apply-templates      mode = "copy"/>
+        <xsl:apply-templates    select = "GlossaryText"
+                                  mode = "copy"/>
        </GlossaryTermRef>
-       
-       <xsl:variable              name = "defID"  
+
+       <xsl:variable              name = "defID"
                                 select = "@cdr:href"/>
-      
-       <xsl:variable              name = "defInfo" 
+
+       <xsl:variable              name = "defInfo"
                                 select = "document(concat('cdrx:', $defID,
                                                           '/last'))"/>
-       <xsl:variable              name = "conceptID"  
+       <xsl:variable              name = "conceptID"
                                 select = "$defInfo/GlossaryTermName/
                                           GlossaryTermConcept/@cdr:ref"/>
-      
-       <xsl:variable              name = "conceptInfo" 
+
+       <xsl:variable              name = "conceptInfo"
                                 select = "document(concat('cdrx:', $conceptID,
                                                           '/last'))"/>
 
@@ -144,7 +145,7 @@ Filter to create Vendor Genetics Professionals XML documents
           <GlossaryTermName>
            <xsl:value-of        select = "$defInfo/GlossaryTermName/
                                           TermName/
-                                          TermNameString"/> 
+                                          TermNameString"/>
           </GlossaryTermName>
           <xsl:copy-of          select = "$defInfo/GlossaryTermName/
                                            ReplacementText"/>
@@ -158,7 +159,7 @@ Filter to create Vendor Genetics Professionals XML documents
              <xsl:copy-of       select = "$conceptInfo/
                                            GlossaryTermConcept/
                                            TermDefinition
-                                             [Audience 
+                                             [Audience
                                                 = 'Health professional']"/>
             </xsl:when>
             <xsl:otherwise>
@@ -176,7 +177,7 @@ Filter to create Vendor Genetics Professionals XML documents
           <GlossaryTermName>
            <xsl:value-of        select = "$defInfo/GlossaryTermName/
                                            TranslatedName/
-                                           TermNameString"/> 
+                                           TermNameString"/>
           </GlossaryTermName>
           <xsl:copy-of          select = "$defInfo/GlossaryTermName/
                                            ReplacementText"/>
@@ -195,20 +196,21 @@ Filter to create Vendor Genetics Professionals XML documents
      <xsl:for-each              select = "//LOERef">
       <LOETerm>
        <LOERef>
-        <xsl:apply-templates      mode = "copy"/>
+        <xsl:apply-templates    select = "GlossaryText"
+                                  mode = "copy"/>
        </LOERef>
-       
-       <xsl:variable              name = "defID"  
+
+       <xsl:variable              name = "defID"
                                 select = "@cdr:href"/>
-      
-       <xsl:variable              name = "defInfo" 
+
+       <xsl:variable              name = "defInfo"
                                 select = "document(concat('cdrx:', $defID,
                                                           '/last'))"/>
-       <xsl:variable              name = "conceptID"  
+       <xsl:variable              name = "conceptID"
                                 select = "$defInfo/GlossaryTermName/
                                           GlossaryTermConcept/@cdr:ref"/>
-      
-       <xsl:variable              name = "conceptInfo" 
+
+       <xsl:variable              name = "conceptInfo"
                                 select = "document(concat('cdrx:', $conceptID,
                                                           '/last'))"/>
 
@@ -219,7 +221,7 @@ Filter to create Vendor Genetics Professionals XML documents
           <GlossaryTermName>
            <xsl:value-of        select = "$defInfo/GlossaryTermName/
                                           TermName/
-                                          TermNameString"/> 
+                                          TermNameString"/>
           </GlossaryTermName>
           <xsl:copy-of          select = "$defInfo/GlossaryTermName/
                                            ReplacementText"/>
@@ -233,7 +235,7 @@ Filter to create Vendor Genetics Professionals XML documents
              <xsl:copy-of       select = "$conceptInfo/
                                            GlossaryTermConcept/
                                            TermDefinition
-                                             [Audience 
+                                             [Audience
                                                 = 'Health professional']"/>
             </xsl:when>
             <xsl:otherwise>
@@ -251,7 +253,7 @@ Filter to create Vendor Genetics Professionals XML documents
           <GlossaryTermName>
            <xsl:value-of        select = "$defInfo/GlossaryTermName/
                                            TranslatedName/
-                                           TermNameString"/> 
+                                           TermNameString"/>
           </GlossaryTermName>
           <xsl:copy-of          select = "$defInfo/GlossaryTermName/
                                            ReplacementText"/>
@@ -266,18 +268,18 @@ Filter to create Vendor Genetics Professionals XML documents
       </LOETerm>
      </xsl:for-each>
     </LOETerms>
-  </xsl:copy>  
+  </xsl:copy>
  </xsl:template>
 
 
- <!-- 
+ <!--
  =================================================================
  ================================================================= -->
  <xsl:template                   match = "SummaryFragmentRef"
                                   mode = "copy">
    <xsl:element                   name = "{name()}">
     <xsl:attribute                name = "cdr:href">
-     <!-- 
+     <!--
      If the cdr:href is identical to the main doc ID this is an
      internal link: keep the link as-is
      ============================================================== -->
@@ -290,7 +292,7 @@ Filter to create Vendor Genetics Professionals XML documents
        <xsl:choose>
         <!--
         If the cdr:href is within a module pointing to the main doc
-        add the main doc's CDR-ID so we can correctly create the 
+        add the main doc's CDR-ID so we can correctly create the
         internal link
         ============================================================== -->
         <xsl:when                 test = "ancestor::SummarySection/@cdr:ref
@@ -311,20 +313,20 @@ Filter to create Vendor Genetics Professionals XML documents
     </xsl:attribute>
    <xsl:apply-templates        mode = "copy"/>
    </xsl:element>
- </xsl:template>  
+ </xsl:template>
 
- 
- <!-- 
+
+ <!--
  =================================================================
  Default Template rule used to do XML to XML transformations which
  copies any attribute node, or node that is child of of something
  ================================================================= -->
- <xsl:template                   match = "@*|node()" 
+ <xsl:template                   match = "@*|node()"
                                   mode = "copy">
   <xsl:copy>
-   <xsl:apply-templates         select = "@*" 
+   <xsl:apply-templates         select = "@*"
                                   mode = "copy"/>
    <xsl:apply-templates           mode = "copy"/>
-  </xsl:copy> 
- </xsl:template>  
+  </xsl:copy>
+ </xsl:template>
 </xsl:transform>

@@ -16,6 +16,7 @@ BZIssue::5157 - [Summaries] HP Treatment summaries not retrieving GTN with
 BZIssue::5159 - [Summaries] Changes to HP & Patient QC Report Interfaces and
                             Display Options
 BZIssue::5134 - [Summaries] Citation Links in QC Reports
+OCECDR-3956: Allow CitationLinks in Image Captions
 
 ========================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -45,8 +46,8 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
                                           (LinkedSummary/LinkedKeyPoints
                                            or
                                            LinkedSummary/LinkedSummaryType = 
-                                           concat('Complementary and ',
-                                                  'alternative medicine'))">
+                                           concat('Integrative, alternative, ',
+                                                  'and complementary therapies'))">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;ReportType=pat',
@@ -146,8 +147,8 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
                                            or
                                            LinkedSummary
                                             /LinkedSummaryType = 
-                                           concat('Complementary and ',
-                                                  'alternative medicine'))">
+                                           concat('Integrative, alternative, ',
+                                                  'and complementary therapies'))">
         <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=',
                                              substring-before(@cdr:href, '#'),
@@ -296,7 +297,7 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
                                           and 
                                           /Summary/SummaryMetaData/
                                           SummaryType != 
-                                       'Complementary and alternative medicine'
+                                       'Integrative, alternative, and complementary therapies'
                                           and
                                           /Summary/SummaryMetaData/
                                           SummaryLanguage = 'English'">
@@ -340,145 +341,168 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
        different style for advisory-board markup for this template.
                                                        VE, 2005-05-10
  ====================================================================== -->
- <xsl:template                   match = "GlossaryTermRef | LOERef"
+ <xsl:template                   match = "GlossaryTermRef"
                                   mode = "PE">
   <xsl:choose>
-   <xsl:when                      test = "Deletion">
+   <xsl:when                      test = "GlossaryText/
+                                          Deletion">
     <a>
      <xsl:attribute               name = "href">
-      <xsl:choose>
-       <xsl:when                  test = "name() = 'LOERef'">
-        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
-                                                 'DocId=', @cdr:href,
-                                                 '&amp;Session=guest')"/>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Filter=set:QC+',
                                                  'GlossaryTermName+',
                                                  'with+Concept+Set')"/>
-       </xsl:otherwise>
-      </xsl:choose>
      </xsl:attribute>
      <xsl:attribute               name = "target">
       <xsl:text>_blank</xsl:text>
      </xsl:attribute>
+     <!--
+     <xsl:attribute               name = "title">
+      <xsl:text>audience=</xsl:text>
+      <xsl:value-of             select = "Audience"/>
+      <xsl:text>, dictionary=</xsl:text>
+      <xsl:value-of             select = "Dictionary"/>
+     </xsl:attribute>
+     -->
      <xsl:choose>
-      <xsl:when                   test = "Deletion[@RevisionLevel='approved']">
+      <xsl:when                   test = "GlossaryText/
+                                           Deletion[@RevisionLevel='approved']">
        <span class="deleteGlossaryTerm">
         <xsl:choose>
-         <xsl:when                test = "Deletion[@Source='advisory-board']">
+         <xsl:when                test = "GlossaryText/
+                                           Deletion[@Source='advisory-board']">
           <span class="deleteapproved_ad">
-           <xsl:value-of        select = "."/>
+           <xsl:value-of        select = "GlossaryText/
+                                          Deletion"/>
           </span>
          </xsl:when>
          <xsl:otherwise>
-          <xsl:value-of         select = "."/>
+          <xsl:value-of         select = "GlossaryText/
+                                          Deletion"/>
          </xsl:otherwise>
         </xsl:choose>
        </span>
       </xsl:when>
-      <xsl:when                   test = "Deletion[@RevisionLevel='proposed']">
+      <xsl:when                   test = "GlossaryText/
+                                           Deletion[@RevisionLevel='proposed']">
        <span class="deleteGlossaryTerm_prop">
         <xsl:choose>
-         <xsl:when                test = "Deletion[@Source='advisory-board']">
+         <xsl:when                test = "GlossaryText/
+                                           Deletion[@Source='advisory-board']">
           <span class="deleteproposed_ad">
-           <xsl:value-of        select = "."/>
+           <xsl:value-of        select = "GlossaryText/
+                                          Deletion"/>
           </span>
          </xsl:when>
          <xsl:otherwise>
-          <xsl:value-of         select = "."/>
+          <xsl:value-of         select = "GlossaryText/
+                                          Deletion"/>
          </xsl:otherwise>
         </xsl:choose>
        </span>
       </xsl:when>
-      <xsl:when                   test = "Deletion[@RevisionLevel='publish']">
+      <xsl:when                   test = "GlossaryText/
+                                           Deletion[@RevisionLevel='publish']">
        <span class="deleteGlossaryTerm_pup">
         <xsl:choose>
-         <xsl:when                test = "Deletion[@Source='advisory-board']">
+         <xsl:when                test = "GlossaryText/
+                                           Deletion[@Source='advisory-board']">
           <span class="deletepublish_ad">
-           <xsl:value-of        select = "."/>
+           <xsl:value-of        select = "GlossaryText/
+                                          Deletion"/>
           </span>
          </xsl:when>
          <xsl:otherwise>
-          <xsl:value-of         select = "."/>
+          <xsl:value-of         select = "GlossaryText/
+                                          Deletion"/>
          </xsl:otherwise>
         </xsl:choose>
        </span>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:value-of            select = "."/>
+       <xsl:value-of            select = "GlossaryText"/>
       </xsl:otherwise>
      </xsl:choose>
     </a>
    </xsl:when>
-   <xsl:when                      test = "Insertion">
+   <xsl:when                      test = "GlossaryText/Insertion">
     <a>
      <xsl:attribute               name = "href">
-      <xsl:choose>
-       <xsl:when                  test = "name() = 'LOERef'">
-        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
-                                                 'DocId=', @cdr:href,
-                                                 '&amp;Session=guest')"/>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Filter=set:QC+',
                                                  'GlossaryTermName+',
                                                  'with+Concept+Set')"/>
-       </xsl:otherwise>
-      </xsl:choose>
      </xsl:attribute>
      <xsl:attribute               name = "target">
       <xsl:text>_blank</xsl:text>
      </xsl:attribute>
+     <!--
+     <xsl:attribute               name = "title">
+      <xsl:text>audience=</xsl:text>
+      <xsl:value-of             select = "Audience"/>
+      <xsl:text>, dictionary=</xsl:text>
+      <xsl:value-of             select = "Dictionary"/>
+     </xsl:attribute>
+     -->
      <xsl:choose>
-      <xsl:when                   test = "Insertion[@RevisionLevel='approved']">
+      <xsl:when                   test = "GlossaryText/
+                                          Insertion[@RevisionLevel='approved']">
        <span class="insertGlossaryTerm">
         <xsl:choose>
-         <xsl:when                test = "Insertion[@Source='advisory-board']">
+         <xsl:when                test = "GlossaryText/
+                                          Insertion[@Source='advisory-board']">
           <span class="insertapproved_ad">
-           <xsl:value-of        select = "."/>
+           <xsl:value-of        select = "GlossaryText/
+                                          Insertion"/>
           </span>
          </xsl:when>
          <xsl:otherwise>
-          <xsl:value-of         select = "."/>
+          <xsl:value-of         select = "GlossaryText/
+                                          Insertion"/>
          </xsl:otherwise>
         </xsl:choose>
        </span>
       </xsl:when>
-      <xsl:when                   test = "Insertion[@RevisionLevel='proposed']">
+      <xsl:when                   test = "GlossaryText/
+                                          Insertion[@RevisionLevel='proposed']">
        <span class="insertGlossaryTerm_prop">
         <xsl:choose>
-         <xsl:when                test = "Insertion[@Source='advisory-board']">
+         <xsl:when                test = "GlossaryText/
+                                          Insertion[@Source='advisory-board']">
           <span class="insertproposed_ad">
-           <xsl:value-of        select = "."/>
+           <xsl:value-of        select = "GlossaryText/
+                                          Insertion"/>
           </span>
          </xsl:when>
          <xsl:otherwise>
-          <xsl:value-of         select = "."/>
+          <xsl:value-of         select = "GlossaryText/
+                                          Insertion"/>
          </xsl:otherwise>
         </xsl:choose>
        </span>
       </xsl:when>
-      <xsl:when                   test = "Insertion[@RevisionLevel='publish']">
+      <xsl:when                   test = "GlossaryText/
+                                          Insertion[@RevisionLevel='publish']">
        <span class="insertGlossaryTerm_pup">
         <xsl:choose>
-         <xsl:when                test = "Insertion[@Source='advisory-board']">
+         <xsl:when                test = "GlossaryText/
+                                          Insertion[@Source='advisory-board']">
           <span class="insertpublish_ad">
-           <xsl:value-of        select = "."/>
+           <xsl:value-of        select = "GlossaryText/
+                                          Insertion"/>
           </span>
          </xsl:when>
          <xsl:otherwise>
-          <xsl:value-of         select = "."/>
+          <xsl:value-of         select = "GlossaryText/
+                                          Insertion"/>
          </xsl:otherwise>
         </xsl:choose>
        </span>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:value-of            select = "."/>
+       <xsl:value-of            select = "GlossaryText"/>
       </xsl:otherwise>
      </xsl:choose>
     </a>
@@ -486,32 +510,201 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
    <xsl:otherwise>
     <a>
      <xsl:attribute               name = "href">
-      <xsl:choose>
-       <xsl:when                  test = "name() = 'LOERef'">
-        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
-                                                 'DocId=', @cdr:href,
-                                                 '&amp;Session=guest')"/>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Filter=set:QC+',
                                                  'GlossaryTermName+',
                                                  'with+Concept+Set')"/>
-       </xsl:otherwise>
-      </xsl:choose>
      </xsl:attribute>
      <xsl:attribute               name = "target">
       <xsl:text>_blank</xsl:text>
      </xsl:attribute>
-     <xsl:value-of              select = "."/>
+     <!--
+     <xsl:attribute               name = "title">
+      <xsl:text>audience=</xsl:text>
+      <xsl:value-of             select = "Audience"/>
+      <xsl:text>, dictionary=</xsl:text>
+      <xsl:value-of             select = "Dictionary"/>
+     </xsl:attribute>
+     -->
+     <xsl:value-of              select = "GlossaryText"/>
     </a>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
 
-   
- <!-- 
+
+ <!--  
+ ======================================================================
+ Link to LOERefs - Patients RS and Protocol
+ Note: Patient Version Summaries are not being reviewed by an
+       Advisory board according to MB.  I'm not implementing a 
+       different style for advisory-board markup for this template.
+                                                       VE, 2005-05-10
+ ====================================================================== -->
+ <xsl:template                   match = "LOERef"
+                                  mode = "PE">
+  <xsl:choose>
+   <xsl:when                      test = "GlossaryText/Deletion">
+    <a>
+     <xsl:attribute               name = "href">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Session=guest')"/>
+     </xsl:attribute>
+     <xsl:attribute               name = "target">
+      <xsl:text>_blank</xsl:text>
+     </xsl:attribute>
+     <xsl:choose>
+      <xsl:when                   test = "GlossaryText/
+                                          Deletion[@RevisionLevel='approved']">
+       <span class="deleteGlossaryTerm">
+        <xsl:choose>
+         <xsl:when                test = "GlossaryText/
+                                          Deletion[@Source='advisory-board']">
+          <span class="deleteapproved_ad">
+           <xsl:value-of        select = "GlossaryText/
+                                          Deletion"/>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:value-of         select = "GlossaryText/
+                                          Deletion"/>
+         </xsl:otherwise>
+        </xsl:choose>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "GlossaryText/
+                                          Deletion[@RevisionLevel='proposed']">
+       <span class="deleteGlossaryTerm_prop">
+        <xsl:choose>
+         <xsl:when                test = "GlossaryText/
+                                          Deletion[@Source='advisory-board']">
+          <span class="deleteproposed_ad">
+           <xsl:value-of        select = "GlossaryText/
+                                          Deletion"/>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:value-of         select = "GlossaryText/
+                                          Deletion"/>
+         </xsl:otherwise>
+        </xsl:choose>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "GlossaryText/
+                                          Deletion[@RevisionLevel='publish']">
+       <span class="deleteGlossaryTerm_pup">
+        <xsl:choose>
+         <xsl:when                test = "GlossaryText/
+                                          Deletion[@Source='advisory-board']">
+          <span class="deletepublish_ad">
+           <xsl:value-of        select = "GlossaryText/
+                                          Deletion"/>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:value-of         select = "GlossaryText/
+                                          Deletion"/>
+         </xsl:otherwise>
+        </xsl:choose>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of            select = "GlossaryText"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </a>
+   </xsl:when>
+   <xsl:when                      test = "GlossaryText/
+                                          Insertion">
+    <a>
+     <xsl:attribute               name = "href">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Session=guest')"/>
+     </xsl:attribute>
+     <xsl:attribute               name = "target">
+      <xsl:text>_blank</xsl:text>
+     </xsl:attribute>
+     <xsl:choose>
+      <xsl:when                   test = "GlossaryText/
+                                          Insertion[@RevisionLevel='approved']">
+       <span class="insertGlossaryTerm">
+        <xsl:choose>
+         <xsl:when                test = "GlossaryText/
+                                          Insertion[@Source='advisory-board']">
+          <span class="insertapproved_ad">
+           <xsl:value-of        select = "GlossaryText/
+                                          Insertion"/>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:value-of         select = "GlossaryText/
+                                          Insertion"/>
+         </xsl:otherwise>
+        </xsl:choose>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "GlossaryText/
+                                          Insertion[@RevisionLevel='proposed']">
+       <span class="insertGlossaryTerm_prop">
+        <xsl:choose>
+         <xsl:when                test = "GlossaryText/
+                                          Insertion[@Source='advisory-board']">
+          <span class="insertproposed_ad">
+           <xsl:value-of        select = "GlossaryText/
+                                          Insertion"/>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:value-of         select = "GlossaryText/
+                                          Insertion"/>
+         </xsl:otherwise>
+        </xsl:choose>
+       </span>
+      </xsl:when>
+      <xsl:when                   test = "GlossaryText/
+                                          Insertion[@RevisionLevel='publish']">
+       <span class="insertGlossaryTerm_pup">
+        <xsl:choose>
+         <xsl:when                test = "GlossaryText/
+                                          Insertion[@Source='advisory-board']">
+          <span class="insertpublish_ad">
+           <xsl:value-of        select = "GlossaryText/
+                                          Insertion"/>
+          </span>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:value-of         select = "GlossaryText/
+                                          Insertion"/>
+         </xsl:otherwise>
+        </xsl:choose>
+       </span>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of            select = "GlossaryText"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </a>
+   </xsl:when>
+   <xsl:otherwise>
+    <a>
+     <xsl:attribute               name = "href">
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Session=guest')"/>
+     </xsl:attribute>
+     <xsl:attribute               name = "target">
+      <xsl:text>_blank</xsl:text>
+     </xsl:attribute>
+     <xsl:value-of              select = "GlossaryText"/>
+    </a>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+<!-- 
  ======================================================================
  Link to glossaryTermRefs - Patients BU
  Note: Patient Version Summaries are not being reviewed by an
@@ -519,79 +712,115 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
        different style for advisory-board markup for this template.
                                                        VE, 2005-05-10
  ====================================================================== -->
- <xsl:template                   match = "GlossaryTermRef | LOERef"
+ <xsl:template                   match = "GlossaryTermRef"
                                   mode = "PEBU">
   <xsl:choose>
-   <xsl:when                      test = "Deletion">
-    <xsl:if                       test = "Deletion/@RevisionLevel = 'proposed'">
+   <xsl:when                      test = "GlossaryText/Deletion">
+    <xsl:if                       test = "GlossaryText/
+                                          Deletion/@RevisionLevel = 'proposed'">
       <a>
        <xsl:attribute             name = "href">
-        <xsl:choose>
-         <xsl:when                test = "name() = 'LOERef'">
-          <xsl:value-of         select = "concat('/cgi-bin/cdr/QcReport.py?',
-                                                 'DocId=', @cdr:href,
-                                                 '&amp;Session=guest')"/>
-         </xsl:when>
-         <xsl:otherwise>
           <xsl:value-of         select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Filter=set:QC+',
                                                  'GlossaryTermName+',
                                                  'with+Concept+Set')"/>
-         </xsl:otherwise>
-        </xsl:choose>
        </xsl:attribute>
        <span class="deleteGlossaryTerm">
-        <xsl:value-of           select = "."/>
+        <xsl:value-of           select = "GlossaryText/
+                                          Deletion"/>
        </span>
       </a>
     </xsl:if>
    </xsl:when>
-   <xsl:when                      test = "Insertion">
+   <xsl:when                      test = "GlossaryText/
+                                          Insertion">
     <a>
      <xsl:attribute               name = "href">
-      <xsl:choose>
-       <xsl:when                  test = "name() = 'LOERef'">
-        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
-                                                 'DocId=', @cdr:href,
-                                                 '&amp;Session=guest')"/>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Filter=set:QC+',
                                                  'GlossaryTermName+',
                                                  'with+Concept+Set')"/>
-       </xsl:otherwise>
-      </xsl:choose>
      </xsl:attribute>
      <xsl:attribute               name = "target">
       <xsl:text>_blank</xsl:text>
      </xsl:attribute>
      <span class="insertGlossaryTerm">
-      <xsl:value-of           select = "."/>
+      <xsl:value-of             select = "GlossaryText/
+                                          Insertion"/>
      </span>
     </a>
    </xsl:when>
    <xsl:otherwise>
     <a>
      <xsl:attribute               name = "href">
-      <xsl:choose>
-       <xsl:when                  test = "name() = 'LOERef'">
-        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
-                                                 'DocId=', @cdr:href,
-                                                 '&amp;Session=guest')"/>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
+      <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Filter=set:QC+',
                                                  'GlossaryTermName+',
                                                  'with+Concept+Set')"/>
-       </xsl:otherwise>
-      </xsl:choose>
      </xsl:attribute>
-     <xsl:value-of              select = "."/>
+     <xsl:value-of              select = "GlossaryText"/>
+    </a>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+  
+ <!-- 
+ ======================================================================
+ Link to LOERefs - Patients BU
+ Note: Patient Version Summaries are not being reviewed by an
+       Advisory board according to MB.  I'm not implementing a 
+       different style for advisory-board markup for this template.
+                                                       VE, 2005-05-10
+ ====================================================================== -->
+ <xsl:template                   match = "LOERef"
+                                  mode = "PEBU">
+  <xsl:choose>
+   <xsl:when                      test = "GlossaryText/
+                                          Deletion">
+    <xsl:if                       test = "GlossaryText/
+                                          Deletion/@RevisionLevel = 'proposed'">
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Session=guest')"/>
+       </xsl:attribute>
+       <span class="deleteGlossaryTerm">
+        <xsl:value-of           select = "GlossaryText/
+                                          Deletion"/>
+       </span>
+      </a>
+    </xsl:if>
+   </xsl:when>
+   <xsl:when                      test = "GlossaryText/
+                                          Insertion">
+    <a>
+     <xsl:attribute               name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Session=guest')"/>
+     </xsl:attribute>
+     <xsl:attribute               name = "target">
+      <xsl:text>_blank</xsl:text>
+     </xsl:attribute>
+     <span class="insertGlossaryTerm">
+      <xsl:value-of             select = "GlossaryText/
+                                          Insertion"/>
+     </span>
+    </a>
+   </xsl:when>
+   <xsl:otherwise>
+    <a>
+     <xsl:attribute               name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Session=guest')"/>
+     </xsl:attribute>
+     <xsl:value-of              select = "GlossaryText"/>
     </a>
    </xsl:otherwise>
   </xsl:choose>
@@ -600,56 +829,42 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
    
  <!-- 
  ======================================================================
- Link to glossaryTermRefs - English Health Professional
+ Link to GlossaryTermRef - English Health Professional
  ====================================================================== -->
- <xsl:template                   match = "GlossaryTermRef | LOERef"
+ <xsl:template                   match = "GlossaryTermRef"
                                   mode = "HPE" >
   <xsl:choose>
-   <xsl:when                      test = "Deletion">
+   <xsl:when                      test = "GlossaryText/
+                                          Deletion">
     <xsl:choose>
-     <xsl:when                    test = "Deletion/@Source = 'advisory-board'">
+     <xsl:when                    test = "GlossaryText/
+                                          Deletion/@Source = 'advisory-board'">
       <a>
        <xsl:attribute             name = "href">
-        <xsl:choose>
-         <xsl:when                test = "name() = 'LOERef'">
-          <xsl:value-of         select = "concat('/cgi-bin/cdr/QcReport.py?',
-                                                 'DocId=', @cdr:href,
-                                                 '&amp;Session=guest')"/>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:value-of         select = "concat('/cgi-bin/cdr/Filter.py?',
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Filter=set:QC+',
                                                  'GlossaryTermName+',
                                                  'with+Concept+Set')"/>
-         </xsl:otherwise>
-        </xsl:choose>
        </xsl:attribute>
        <span class="deleteGlossaryTerm_ad">
-        <xsl:value-of           select = "."/>
+        <xsl:value-of           select = "GlossaryText/
+                                          Deletion"/>
        </span>
       </a>
      </xsl:when>
      <xsl:otherwise>
       <a>
        <xsl:attribute             name = "href">
-        <xsl:choose>
-         <xsl:when                test = "name() = 'LOERef'">
-          <xsl:value-of         select = "concat('/cgi-bin/cdr/QcReport.py?',
-                                                 'DocId=', @cdr:href,
-                                                 '&amp;Session=guest')"/>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:value-of         select = "concat('/cgi-bin/cdr/Filter.py?',
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Filter=set:QC+',
                                                  'GlossaryTermName+',
                                                  'with+Concept+Set')"/>
-         </xsl:otherwise>
-        </xsl:choose>
        </xsl:attribute>
        <span class="deleteGlossaryTerm">
-        <xsl:value-of           select = "."/>
+        <xsl:value-of           select = "GlossaryText/
+                                          Deletion"/>
        </span>
       </a>
      </xsl:otherwise>
@@ -657,48 +872,104 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
    </xsl:when>
    <xsl:otherwise>
     <xsl:choose>
-     <xsl:when                    test = "Insertion/@Source = 'advisory-board'">
+     <xsl:when                    test = "GlossaryText/
+                                          Insertion/@Source = 'advisory-board'">
       <a>
        <xsl:attribute             name = "href">
-        <xsl:choose>
-         <xsl:when                test = "name() = 'LOERef'">
-          <xsl:value-of         select = "concat('/cgi-bin/cdr/QcReport.py?',
-                                                 'DocId=', @cdr:href,
-                                                 '&amp;Session=guest')"/>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:value-of         select = "concat('/cgi-bin/cdr/Filter.py?',
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Filter=set:QC+',
                                                  'GlossaryTermName+',
                                                  'with+Concept+Set')"/>
-         </xsl:otherwise>
-        </xsl:choose>
        </xsl:attribute>
        <span class="insertGlossaryTerm_ad">
-        <xsl:value-of           select = "."/>
+        <xsl:value-of           select = "GlossaryText/
+                                          Insertion"/>
        </span>
       </a>
      </xsl:when>
      <xsl:otherwise>
       <a>
        <xsl:attribute             name = "href">
-        <xsl:choose>
-         <xsl:when                test = "name() = 'LOERef'">
-          <xsl:value-of         select = "concat('/cgi-bin/cdr/QcReport.py?',
-                                                 'DocId=', @cdr:href,
-                                                 '&amp;Session=guest')"/>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:value-of         select = "concat('/cgi-bin/cdr/Filter.py?',
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Filter=set:QC+',
                                                  'GlossaryTermName+',
                                                  'with+Concept+Set')"/>
-         </xsl:otherwise>
-        </xsl:choose>
        </xsl:attribute>
-       <xsl:value-of            select = "."/>
+       <xsl:value-of            select = "GlossaryText"/>
+      </a>
+
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+<!-- 
+ ======================================================================
+ Link to LOERef - English Health Professional
+ ====================================================================== -->
+ <xsl:template                   match = "LOERef"
+                                  mode = "HPE" >
+  <xsl:choose>
+   <xsl:when                      test = "GlossaryText/
+                                          Deletion">
+    <xsl:choose>
+     <xsl:when                    test = "GlossaryText/
+                                          Deletion/@Source = 'advisory-board'">
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Session=guest')"/>
+       </xsl:attribute>
+       <span class="deleteGlossaryTerm_ad">
+        <xsl:value-of           select = "GlossaryText/
+                                          Deletion"/>
+       </span>
+      </a>
+     </xsl:when>
+     <xsl:otherwise>
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Session=guest')"/>
+       </xsl:attribute>
+       <span class="deleteGlossaryTerm">
+        <xsl:value-of           select = "GlossaryText/
+                                          Deletion"/>
+       </span>
+      </a>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>
+     <xsl:when                    test = "GlossaryText/
+                                          Insertion/@Source = 'advisory-board'">
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Session=guest')"/>
+       </xsl:attribute>
+       <span class="insertGlossaryTerm_ad">
+        <xsl:value-of           select = "GlossaryText/
+                                          Insertion"/>
+       </span>
+      </a>
+     </xsl:when>
+     <xsl:otherwise>
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Session=guest')"/>
+       </xsl:attribute>
+       <xsl:value-of            select = "GlossaryText"/>
       </a>
 
      </xsl:otherwise>
@@ -712,22 +983,100 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
  ======================================================================
  Link to glossaryTermRefs - Spanish Health Professional
  ====================================================================== -->
- <xsl:template                   match = "GlossaryTermRef | LOERef"
+ <xsl:template                   match = "GlossaryTermRef"
                                   mode = "HPS" >
   <xsl:choose>
-   <xsl:when                      test = "Deletion">
+   <xsl:when                      test = "GlossaryText/
+                                          Deletion">
     <xsl:choose>
-     <xsl:when                    test = "Deletion/@Source = 'advisory-board'">
+     <xsl:when                    test = "GlossaryText/
+                                          Deletion/@Source = 'advisory-board'">
       <a>
        <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Filter=set:QC+',
+                                                 'GlossaryTermName+',
+                                                 'with+Concept+Set')"/>
+       </xsl:attribute>
+       <span class="deleteGlossaryTerm_ad">
+        <xsl:value-of           select = "GlossaryText/
+                                          Deletion"/>
+       </span>
+      </a>
+     </xsl:when>
+     <xsl:otherwise>
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Filter=set:QC+',
+                                                 'GlossaryTermName+',
+                                                 'with+Concept+Set')"/>
+       </xsl:attribute>
+       <span class="deleteGlossaryTerm">
+        <xsl:value-of           select = "GlossaryText"/>
+       </span>
+      </a>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>
+     <xsl:when                    test = "GlossaryText/
+                                          Insertion/@Source = 'advisory-board'">
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Filter=set:QC+',
+                                                 'GlossaryTermName+',
+                                                 'with+Concept+Set')"/>
+       </xsl:attribute>
+       <span class="insertGlossaryTerm_ad">
+        <xsl:value-of            select = "GlossaryText/
+                                           Insertion"/>
+       </span>
+      </a>
+     </xsl:when>
+     <xsl:otherwise>
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Filter=set:QC+',
+                                                 'GlossaryTermName+',
+                                                 'with+Concept+Set')"/>
+       </xsl:attribute>
+       <xsl:value-of            select = "GlossaryText"/>
+      </a>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
 
-
-      <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+ <!-- 
+ ======================================================================
+ Link to LOERef - Spanish Health Professional
+ ====================================================================== -->
+ <xsl:template                   match = "LOERef"
+                                  mode = "HPS" >
+  <xsl:choose>
+   <xsl:when                      test = "GlossaryText/
+                                          Deletion">
+    <xsl:choose>
+     <xsl:when                    test = "GlossaryText/
+                                          Deletion/@Source = 'advisory-board'">
+      <a>
+       <xsl:attribute             name = "href">
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;Session=guest')"/>
        </xsl:attribute>
        <span class="deleteGlossaryTerm_ad">
-        <xsl:value-of           select = "."/>
+        <xsl:value-of           select = "GlossaryText/
+                                          Deletion"/>
        </span>
       </a>
      </xsl:when>
@@ -739,7 +1088,8 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
                                                  '&amp;Session=guest')"/>
        </xsl:attribute>
        <span class="deleteGlossaryTerm">
-        <xsl:value-of           select = "."/>
+        <xsl:value-of           select = "GlossaryText/
+                                          Deletion"/>
        </span>
       </a>
      </xsl:otherwise>
@@ -747,7 +1097,8 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
    </xsl:when>
    <xsl:otherwise>
     <xsl:choose>
-     <xsl:when                    test = "Insertion/@Source = 'advisory-board'">
+     <xsl:when                    test = "GlossaryText/
+                                          Insertion/@Source = 'advisory-board'">
       <a>
        <xsl:attribute             name = "href">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
@@ -755,7 +1106,8 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
                                                  '&amp;Session=guest')"/>
        </xsl:attribute>
        <span class="insertGlossaryTerm_ad">
-        <xsl:value-of            select = "."/>
+        <xsl:value-of            select = "GlossaryText/
+                                           Insertion"/>
        </span>
       </a>
      </xsl:when>
@@ -766,14 +1118,14 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
                                                  'DocId=', @cdr:href,
                                                  '&amp;Session=guest')"/>
        </xsl:attribute>
-       <xsl:value-of            select = "."/>
+       <xsl:value-of            select = "GlossaryText/
+                                          Insertion"/>
       </a>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
-
 
  <!-- 
  =====================================================================
@@ -1727,7 +2079,7 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
 
   <xsl:if                         test = "SummarySection 
                                           and
-                                          $level &lt; 3
+                                          $level &lt; 10
                                           and
                                           SummarySection/Title">
    <ul class="tocSubSection">
@@ -1785,33 +2137,37 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
 
 
  <!--
- ============================================================
+ =====================================================================
  Display titles for Patient Summaries
- ============================================================= -->
+ ===================================================================== -->
  <xsl:template                   match = "Title"
                                   mode = "PT">
   <xsl:variable                   name = "ancestors"
                                 select = "ancestor::SummarySection"/>
-
   <xsl:choose>
-   <xsl:when                      test = "count($ancestors) = 2">
-    <h3>
-     <xsl:call-template             name = "addIdLinkTarget">
-      <xsl:with-param               name = "id"
-                                  select = "../@cdr:id"/>
+   <xsl:when                      test = "count($ancestors) = 1">
+    <!-- The first level header is already displayed as SectionTitle -->
+    <!-- h2><xsl:apply-templates/></h2 -->
+   </xsl:when>
+   <xsl:when                      test = "count($ancestors) &lt; 5">
+    <!-- Need to enclose the name into {} to make it a valid QName -->
+    <xsl:element                  name = "{concat('h', count($ancestors) + 1)}">
+     <xsl:call-template           name = "addIdLinkTarget">
+      <xsl:with-param             name = "id"
+                                select = "../@cdr:id"/>
      </xsl:call-template>
      <xsl:apply-templates/>
-    </h3>
+    </xsl:element>
    </xsl:when>
-   <xsl:when                      test = "count($ancestors) &gt; 2">
-    <h4>
-     <xsl:call-template             name = "addIdLinkTarget">
-      <xsl:with-param               name = "id"
-                                  select = "../@cdr:id"/>
+   <xsl:otherwise>
+    <xsl:element                  name = "h6">
+     <xsl:call-template           name = "addIdLinkTarget">
+      <xsl:with-param             name = "id"
+                                select = "../@cdr:id"/>
      </xsl:call-template>
      <xsl:apply-templates/>
-    </h4>
-   </xsl:when>
+    </xsl:element>
+   </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
 
@@ -1822,7 +2178,7 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
  SummarySection in its ancestors. We may have to use
  a mode here to avoid unintended usage in documents that
  are not summaries, but with Title.
- Fixed RMK 2003-10-14.
+ Fixed RMK 2003-10-14.  [mode=HT]
  ===================================================================== -->
  <xsl:template                   match = "Title"
                                   mode = "HT">
@@ -1833,21 +2189,24 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
     <!-- The first level header is already displayed as SectionTitle -->
     <!-- h2><xsl:apply-templates/></h2 -->
    </xsl:when>
-   <xsl:when                      test = "count($ancestors) = 2">
-    <h3>
-     <xsl:call-template             name = "addIdLinkTarget">
-      <xsl:with-param               name = "id"
-                                  select = "../@cdr:id"/>
+   <xsl:when                      test = "count($ancestors) &lt; 5">
+    <!-- Need to enclose the name into {} to make it a valid QName -->
+    <xsl:element                  name = "{concat('h', count($ancestors) + 1)}">
+     <xsl:call-template           name = "addIdLinkTarget">
+      <xsl:with-param             name = "id"
+                                select = "../@cdr:id"/>
      </xsl:call-template>
-     <xsl:apply-templates/></h3>
+     <xsl:apply-templates/>
+    </xsl:element>
    </xsl:when>
    <xsl:otherwise>
-    <h4>
-     <xsl:call-template             name = "addIdLinkTarget">
-      <xsl:with-param               name = "id"
-                                  select = "../@cdr:id"/>
+    <h6>
+     <xsl:call-template           name = "addIdLinkTarget">
+      <xsl:with-param             name = "id"
+                                select = "../@cdr:id"/>
      </xsl:call-template>
-     <xsl:apply-templates/></h4>
+     <xsl:apply-templates/>
+    </h6>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
@@ -2239,10 +2598,6 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
       <b>Image: </b>
       <xsl:value-of             select = "Media/
                                           MediaTitle"/>
-      <!-- xsl:if                     test = "following-sibling::Caption">
-       <xsl:apply-templates     select = "../Caption"
-                                  mode = "summary"/>
-      </xsl:if -->
      </div>
     </div>
     <xsl:if                       test = "following-sibling::Caption">
@@ -2260,15 +2615,29 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
  <xsl:template                    name = "addCaption">
   <div class="caption" style="font-style: italic; text-align: center; 
                               margin: 0 5% 0 5%;">
-   <xsl:value-of                select = "following-sibling::Caption"/>
+   <!-- xsl:value-of                select = "following-sibling::Caption"/ -->
+   <xsl:apply-templates         select = "../Caption"
+                                  mode = "createCaption"/>
   </div>
  </xsl:template>
 
 
  <!-- 
  ======================================================================
+ Template to add the caption called as part of the MediaID element
+ (within the addCaption named template)
+ ====================================================================== -->
+ <xsl:template                   match = "Caption"
+                                  mode = "createCaption">
+  <xsl:apply-templates/>
+ </xsl:template>
+
+
+ <!-- 
+ ======================================================================
  Template suppressing the Captions.
- These are already dealt with as part of the MediaID template.
+ Since the captions have already been dealt with as part of the MediaID
+ template the default document-flow processing needs to be turned off.
  ====================================================================== -->
  <xsl:template                   match = "Caption"/>
 
@@ -2284,6 +2653,7 @@ BZIssue::5134 - [Summaries] Citation Links in QC Reports
   <br/>
   <b>Caption: </b>
   <xsl:value-of                 select = "."/>
+  <xsl:apply-templates/>
  </xsl:template>
 
 

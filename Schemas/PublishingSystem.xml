@@ -87,6 +87,9 @@
     specified as part of the request for a specific job, subset
     options are fixed in the publication control document for
     all jobs associated with the subset.
+
+    Added Spring 2016: a subset can have document type-specific
+    thresholds for errors.
     ============================================================ -->
 
  <complexType           name = "SystemSubset">
@@ -110,6 +113,9 @@
    </choice>
    <element             name = "SubsetOptions"
                         type = "SubsetOptions"
+                   minOccurs = "0"/>
+   <element             name = "PerDoctypeErrorThresholds"
+                        type = "PerDoctypeErrorThresholds"
                    minOccurs = "0"/>
   </sequence>
  </complexType>
@@ -474,6 +480,38 @@
    <element             name = "ParmInfoValidValue"
                         type = "string"
                    maxOccurs = "unbounded"/>
+  </sequence>
+ </complexType>
+
+ <!--
+    ============================================================
+    Optional block of per document type error thresholds.
+    ============================================================ -->
+ <complexType           name = "PerDoctypeErrorThresholds">
+  <sequence>
+   <element             name = "PerDoctypeErrorThreshold"
+                        type = "PerDoctypeErrorThreshold"
+                   maxOccurs = "unbounded"/>
+  </sequence>
+ </complexType>
+
+ <!--
+    ============================================================
+    Limit on the number of failures for documents of a specific
+    document type which can be encountered without marking the
+    entire job as having failed. If such a threshold is exceeded,
+    the job will be allowed to run to completion (unless the
+    general error threshold has been reached) so that all of the
+    errors can be reported and corrected at the same time. After
+    the job has completed, the job will then be marked as having
+    failed. (OCECDR-3951)
+    ============================================================ -->
+ <complexType           name = "PerDoctypeErrorThreshold">
+  <sequence>
+   <element             name = "Doctype"
+                        type = "string"/>
+   <element             name = "MaxErrors"
+                        type = "integer"/>
   </sequence>
  </complexType>
 

@@ -1,0 +1,235 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- $Id$ -->
+<!-- Filter title: Denormalization Filter: Summary GlossaryTerm -->
+<!--
+===================================================================
+
+Filter to denormalize Glossary and LOE terms in order to determine
+the dictionary term to be displayed on Cancer.gov.
+                                                      2003-08-12
+
+OCECDR-3903: Cancer.gov displaying Patient definitions for terms 
+             in HP Summaries
+=================================================================== -->
+<xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                             xmlns:cdr = 'cips.nci.nih.gov/cdr'
+                               version = '1.0'>
+
+ <xsl:output                    method = 'xml'
+                              encoding = 'utf-8'/>
+
+ <xsl:variable                    name = "sumLanguage">
+  <xsl:choose>
+   <xsl:when                      test = "/Summary
+                                          /SummaryMetaData
+                                          /SummaryLanguage = 'English'
+                                          or
+                                          /DrugInformationSummary">
+    <xsl:text>EN</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>ES</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:variable>
+
+
+ <xsl:variable                    name = "sumAudience">
+  <xsl:choose>
+   <xsl:when                      test = "/Summary
+                                          /SummaryMetaData
+                                          /SummaryAudience = 'Patients'
+                                          or
+                                          /DrugInformationSummary">
+    <xsl:text>Patient</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>Health professional</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:variable>
+
+ <!--
+ =================================================================
+ Copy control information and generate current date
+ ================================================================= -->
+ <xsl:template                   match = "Summary |
+                                          DrugInformationSummary">
+  <xsl:copy>
+
+   <xsl:apply-templates/>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ =================================================================
+ Template to denormalize the GlossaryTermRef element
+ ================================================================= -->
+ <xsl:template                   match = "GlossaryTermRef | LOERef">
+  <xsl:variable                   name = "GlossaryNameID"
+                                select = "@cdr:href"/>
+  <xsl:variable                   name = "GlossaryNameInfo"
+                                select = "document(concat('cdr:',
+                                                          $GlossaryNameID,
+                                                          '/lastp'))"/>
+  <xsl:variable                   name = "GlossaryConceptID"
+                                select = "$GlossaryNameInfo/
+                                             GlossaryTermName/
+                                             GlossaryTermConcept/@cdr:ref"/>
+  <xsl:variable                   name = "GlossaryConceptInfo"
+                                select = "document(concat('cdr:',
+                                                          $GlossaryConceptID,
+                                                          '/last'))"/>
+  <xsl:variable                  name  = "GlossaryAudience"
+                                select = "$GlossaryConceptInfo/
+                                             GlossaryTermConcept/
+                                             TermDefinition/
+                                             Audience"/>
+
+  <xsl:variable                   name = "numberOfEnglishTerms"
+                                select = "count($GlossaryConceptInfo/
+                                             GlossaryTermConcept/
+                                             TermDefinition)"/>
+  <xsl:variable                   name = "numberOfSpanishTerms"
+                                select = "count($GlossaryConceptInfo/
+                                             GlossaryTermConcept/
+                                             TranslatedTermDefinition)"/>
+
+
+  <xsl:element                    name = "{name()}">
+   <xsl:attribute                 name = "cdr:href">
+    <xsl:value-of               select = "@cdr:href"/>
+   </xsl:attribute>
+
+    <xsl:choose>
+     <!--  Pick up information for English -->
+     <xsl:when                    test = "$sumLanguage = 'EN'">
+      <xsl:choose>
+       <xsl:when                  test = "Deletion">
+        <xsl:element              name = "GlossaryText">
+         <xsl:element             name = "Deletion">
+          <xsl:for-each         select = "Deletion/@*">
+           <xsl:attribute         name = "{name()}">
+            <xsl:value-of       select = "."/>
+           </xsl:attribute>
+          </xsl:for-each>
+          <xsl:value-of         select = "."/>
+         </xsl:element>
+        </xsl:element>
+       </xsl:when>
+       <xsl:when                  test = "Insertion">
+        <xsl:element              name = "GlossaryText">
+         <xsl:element             name = "Insertion">
+          <xsl:for-each         select = "Insertion/@*">
+           <xsl:attribute         name = "{name()}">
+            <xsl:value-of       select = "."/>
+           </xsl:attribute>
+          </xsl:for-each>
+          <xsl:value-of         select = "."/>
+         </xsl:element>
+        </xsl:element>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:element              name = "GlossaryText">
+         <xsl:value-of          select = "."/>
+        </xsl:element>
+       </xsl:otherwise>
+      </xsl:choose>
+
+      <xsl:apply-templates      select = "$GlossaryConceptInfo/
+                                            GlossaryTermConcept/
+                                            TermDefinition">
+       <xsl:with-param            name = "numberOfEnglishTerms"
+                                select = "$numberOfEnglishTerms"/>
+      </xsl:apply-templates>
+     </xsl:when>
+     <!--  Pick up information for Spanish -->
+     <xsl:otherwise>
+      <xsl:choose>
+       <xsl:when                  test = "Deletion">
+        <xsl:element              name = "GlossaryText">
+         <xsl:element             name = "Deletion">
+          <xsl:for-each         select = "Deletion/@*">
+           <xsl:attribute         name = "{name()}">
+            <xsl:value-of       select = "."/>
+           </xsl:attribute>
+          </xsl:for-each>
+          <xsl:value-of         select = "."/>
+         </xsl:element>
+        </xsl:element>
+       </xsl:when>
+       <xsl:when                  test = "Insertion">
+        <xsl:element              name = "GlossaryText">
+         <xsl:element             name = "Insertion">
+          <xsl:for-each         select = "Insertion/@*">
+           <xsl:attribute         name = "{name()}">
+            <xsl:value-of       select = "."/>
+           </xsl:attribute>
+          </xsl:for-each>
+          <xsl:value-of         select = "."/>
+         </xsl:element>
+        </xsl:element>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:element              name = "GlossaryText">
+         <xsl:value-of          select = "."/>
+        </xsl:element>
+       </xsl:otherwise>
+      </xsl:choose>
+
+      <xsl:apply-templates      select = "$GlossaryConceptInfo/
+                                             GlossaryTermConcept/
+                                             TranslatedTermDefinition">
+       <xsl:with-param            name = "numberOfSpanishTerms"
+                                select = "$numberOfSpanishTerms"/>
+     </xsl:apply-templates>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:element>
+ </xsl:template>
+
+ <!--
+ ==================================================================
+ Template to extract the Dictionary and Audience from the
+ TermDefinition block.
+ ================================================================== -->
+ <xsl:template                   match = "TermDefinition |
+                                           TranslatedTermDefinition">
+  <xsl:param                      name = "numberOfEnglishTerms"
+                                select = "'0'"/>
+  <xsl:param                      name = "numberOfSpanishTerms"
+                                select = "'0'"/>
+
+  <!-- 
+  Make sure when a term has only one dictionary and the audience 
+  does not match the summary audience still we render it  -->
+  <xsl:choose>
+   <xsl:when                      test = "Audience = $sumAudience">
+    <xsl:apply-templates        select = "Dictionary | Audience"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>
+     <xsl:when                    test = "$numberOfEnglishTerms = 1
+                                          or
+                                          $numberOfSpanishTerms = 1">
+      <xsl:apply-templates      select = "Dictionary | Audience"/>
+     </xsl:when>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template rule used to do XML to XML transformations which
+ copies any attribute node, or node that is child of of something
+ ================================================================== -->
+ <xsl:template                   match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates         select = "@*|node()"/>
+  </xsl:copy>
+ </xsl:template>
+
+</xsl:transform>

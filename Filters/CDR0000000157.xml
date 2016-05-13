@@ -3,7 +3,6 @@
 <!-- Filter title: Vendor Filter: Summary -->
 <!--
 ================================================================
-$Id$
 
 Filter to create summary vendor output data.
    Written by Volker Englisch, 2003-08-12
@@ -38,6 +37,10 @@ OCEPROJECT-2892: Removal of PDQ Section "Get More Information from NCI"
 OCECDR-3938: Remove "Changes to This Summary" from Patient Summaries
 OCECDR-3993: Remove Country as paramenter for clinical trial searches 
              in PDQ summaries
+OCECDR-3981: Revise Suggested Citation Format to Include Board, PMID
+OCECDR-4045: Change CAM Board Name to IACT
+OCECDR-4043: Move registered trademark in Summary title to appear before 
+             the audience text.
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -99,6 +102,10 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
                                 select = "/Summary
                                          /SummaryMetaData
                                          /SummaryURL/@cdr:xref"/>
+ <xsl:variable                   name = "sumPmid"
+                               select = "/Summary
+                                         /SummaryMetaData
+                                         /PMID"/>
 
  <!--
  Information needed to populate the "About This Summary" sections
@@ -272,10 +279,10 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
     <xsl:when                     test = "$sumType = 'Genetics'">
      <xsl:text>_genetics</xsl:text>
     </xsl:when>
-    <xsl:when                     test = "$sumType = concat('Complementary',
-                                                            ' and alternative',
-                                                            ' medicine')">
-     <xsl:text>_cam</xsl:text>
+    <xsl:when                     test = "$sumType = concat(
+                                            'Integrative, alternative, ',
+                                            'and complementary therapies')">
+     <xsl:text>_iact</xsl:text>
     </xsl:when>
    </xsl:choose>
   </xsl:variable>
@@ -293,10 +300,11 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
  Document element.
  =========================================================== -->
  <xsl:template                  match = "Summary">
-  <xsl:variable                  name = "camBoard" 
-                               select = "concat('PDQ Cancer Complementary ', 
-                                                  'and Alternative Medicine ',
-                                                  'Editorial Board')"/>
+  <xsl:variable                  name = "iactBoard" 
+                               select = "concat(
+                                           'PDQ Integrative, Alternative, ',
+                                           'and Complementary Therapies ',
+                                           'Editorial Board')"/>
   <!-- 
   Creating Document Element and adding Doc ID as attribute
   ======================================================== -->
@@ -305,10 +313,10 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
     <xsl:value-of              select = "DocId"/>
    </xsl:attribute>
    <!-- 
-   LegacyPDQID should not be displayed for CAM summaries 
-   ===================================================== -->
+   LegacyPDQID should not be displayed for IACT summaries 
+   ====================================================== -->
    <xsl:if                       test = "not(SummaryMetaData/PDQBoard/
-                                                        Board = $camBoard)">
+                                                        Board = $iactBoard)">
     <xsl:attribute               name = "LegacyPDQID">
      <xsl:value-of             select = "PdqKey"/>
     </xsl:attribute>
@@ -346,7 +354,7 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
    based on the entries of 
    Language        - English, Spanish
    SummaryAudience - Patient
-   SummaryType     - Treatment, CAM, etc...
+   SummaryType     - Treatment, IACT, etc...
    EditorialBoard  - Pediatric, Adult  
 
    The 'To Learn More' section needs to be suppressed from the 
@@ -384,21 +392,22 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
      -->
 
      <xsl:choose>
-      <xsl:when                   test = "$sumType = concat('Complementary and',
-                                                    ' alternative medicine')">
+      <xsl:when                   test = "$sumType = concat(
+                                            'Integrative, alternative, ',
+                                            'and complementary therapies')">
        <!--
-       We add the misc. documents to all CAM patient summaries except for 
-       the two Overview summaries (English and Spanish)
+       We add the misc. documents to all IACT patient summaries except 
+       for the two Overview summaries (English and Spanish)
        ================================================================== -->
        <xsl:if                    test = "$sumId != 'CDR0000446574'
                                           and
                                           $sumId != 'CDR0000448614'">
-        <xsl:call-template        name = "AboutCAM"/>
+        <xsl:call-template        name = "AboutIACT"/>
 
         <!--
-        The CAM patient summaries receive two additional misc documents
-        =============================================================== -->
-        <xsl:call-template        name = "QandACAM"/>
+        The IACT patient summaries receive two additional misc documents
+        ================================================================ -->
+        <xsl:call-template        name = "QandAIACT"/>
         <xsl:call-template        name = "ToLearnMore"/>
        </xsl:if>
       </xsl:when>
@@ -508,9 +517,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
                                           or
                                           $sumType = 'Prevention'
                                           or
-                                          $sumType = concat('Complementary',
-                                                            ' and alternative',
-                                                            ' medicine')
+                                          $sumType = concat(
+                                            'Integrative, alternative, ',
+                                            'and complementary therapies')
                                          )">
       <xsl:attribute             name = "ExcludedDevices">
        <xsl:text>mobile</xsl:text>
@@ -551,9 +560,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
    ===================================================================== -->
    <xsl:if                        test = "$sumType = 'Treatment'
                                           or
-                                          $sumType = concat('Complementary',
-                                                            ' and alternative',
-                                                            ' medicine')
+                                          $sumType = concat(
+                                            'Integrative, alternative, ',
+                                            'and complementary therapies')
                                           or
                                           ($sumType = 'Supportive care'
                                             and
@@ -605,9 +614,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
                                           or
                                           $sumType = 'Prevention'
                                           or
-                                          $sumType = concat('Complementary',
-                                                            ' and alternative',
-                                                            ' medicine')
+                                          $sumType = concat(
+                                            'Integrative, alternative, ',
+                                            'and complementary therapies')
                                          )">
       <xsl:attribute             name = "ExcludedDevices">
        <xsl:text>mobile</xsl:text>
@@ -632,9 +641,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
 
    <xsl:if                        test = "$sumType = 'Treatment'
                                           or
-                                          $sumType = concat('Complementary',
-                                                            ' and alternative',
-                                                            ' medicine')
+                                          $sumType = concat(
+                                            'Integrative, alternative, ',
+                                            'and complementary therapies')
                                           or
                                           $sumType = 'Supportive care'">
     <xsl:call-template            name = "addTrialSearchSection">
@@ -875,12 +884,10 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
     </SummaryRef>
    </xsl:when>
    <xsl:otherwise>
-    <LOERef>
-     <xsl:attribute              name = "href">
-      <xsl:value-of            select = "@cdr:href"/>
-     </xsl:attribute>
-     <xsl:apply-templates/>
-    </LOERef>
+    <xsl:element                  name = "LOERef">
+     <xsl:call-template           name = "addAttributesGlossary"/>
+     <xsl:value-of              select = "GlossaryText"/>
+    </xsl:element>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
@@ -1012,6 +1019,8 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
   <SummaryTitle>
    <xsl:apply-templates           mode = "copy"/>
 
+   <xsl:text> (PDQ&#xAE;)</xsl:text>
+
    <!-- The following text is for Cancer.gov only and will need to be
         removed in a post-process -->
   <xsl:choose>
@@ -1037,7 +1046,6 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
     </xsl:otherwise>
    </xsl:choose>
 
-   <xsl:text> (PDQ&#xAE;)</xsl:text>
   </SummaryTitle>
  </xsl:template>
 
@@ -1480,17 +1488,38 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
 
 
  <!-- 
+ =================================================================== 
+ Create the GlossaryTermRef elements and rename the attribute 
+ (cdr:href ID needs to be renamed to href).
+ This template is used by the Summary and DrugInfoSummary doc type
+
+ Note:
+ This template is a duplicate of the template for DIS in CDR271370.
+ Because of the way the SummarySections are being build in the DIS
+ (using mode="copy" for Para elements) it was less disruptive to 
+ copy the template rather that sharing the template in CDR306482. 
+ This should be fixed in a later release when time permits.      
+                                                      2016-04-28, VE
+ =================================================================== -->
+ <xsl:template                   match = "GlossaryTermRef">
+  <xsl:element                    name = "{name()}">
+   <xsl:call-template             name = "addAttributesGlossary"/>
+   <xsl:value-of                select = "GlossaryText"/>
+  </xsl:element>
+ </xsl:template>
+
+
+<!-- 
  ============================================================= 
  Create the elements and rename the attribute 
  (cdr:href ID needs to be renamed to href).
  ============================================================= -->
- <xsl:template                  match = "GlossaryTermRef |
-                                         MediaRef">
-  <xsl:element                   name = "{name()}">
-   <xsl:attribute                name = "href">
-    <xsl:value-of              select = "./@cdr:href"/>
+ <xsl:template                   match = "MediaRef">
+  <xsl:element                    name = "{name()}">
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "./@cdr:href"/>
    </xsl:attribute>
-   <xsl:value-of               select = "."/>
+   <xsl:value-of                select = "."/>
   </xsl:element>
  </xsl:template>
 
@@ -1499,11 +1528,11 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
  ==============================================================
  Template for TT tag
  ============================================================== -->
- <xsl:template                  match = "TT">
+ <xsl:template                   match = "TT">
   <TT>
-   <xsl:if                       test = "./@cdr:id">
-    <xsl:attribute               name = "id">
-     <xsl:value-of             select = "./@cdr:id"/>
+   <xsl:if                        test = "./@cdr:id">
+    <xsl:attribute                name = "id">
+     <xsl:value-of              select = "./@cdr:id"/>
     </xsl:attribute>
    </xsl:if>
    <xsl:apply-templates/>
@@ -1531,10 +1560,10 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
  ==================================================================
  Main MiscellaneousDocLink Template
  ================================================================== -->  
- <xsl:template                  match = "MiscellaneousDocLink">
-  <xsl:apply-templates           mode = "miscFragment">
-   <xsl:with-param               name = "miscDocId" 
-                               select = "../@cdr:id"/>
+ <xsl:template                   match = "MiscellaneousDocLink">
+  <xsl:apply-templates            mode = "miscFragment">
+   <xsl:with-param                name = "miscDocId" 
+                                select = "../@cdr:id"/>
   </xsl:apply-templates>
  </xsl:template>
 
@@ -1542,11 +1571,11 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
  ==================================================================
  Main MiscellaneousDocumentText Template
  ================================================================== -->  
- <xsl:template                  match = "MiscellaneousDocumentText">
-  <xsl:param                     name = "miscDocId"/>
+ <xsl:template                   match = "MiscellaneousDocumentText">
+  <xsl:param                      name = "miscDocId"/>
   <xsl:apply-templates>
-   <xsl:with-param               name = "miscDocId" 
-                               select = "$miscDocId"/>
+   <xsl:with-param                name = "miscDocId" 
+                                select = "$miscDocId"/>
   </xsl:apply-templates>
  </xsl:template>
 
@@ -1589,9 +1618,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
                                           or
                                           $sumType = 'Prevention'
                                           or
-                                          $sumType = concat('Complementary',
-                                                            ' and alternative',
-                                                            ' medicine')
+                                          $sumType = concat(
+                                            'Integrative, alternative, ',
+                                            'and complementary therapies')
                                          )
                                          and
                                          (
@@ -1601,7 +1630,7 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
                                           or
                                           $miscDocId = '_ContactUs'
                                           or
-                                          $miscDocId = '_AboutCAM'
+                                          $miscDocId = '_AboutIACT'
                                           or
                                           $miscDocId = '_QandA'
                                           or
@@ -1632,12 +1661,12 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
  attribute properly.  The misc doc can be either the 'To Learn More'
  or the 'About PDQ' section.
  ================================================================== -->  
- <xsl:template                  match = "Section"
-                                 mode = "miscFragment">
-  <xsl:param                     name = "miscDocId"/>
-   <xsl:apply-templates          mode = "MiscText">
-    <xsl:with-param              name = "miscDocId" 
-                               select = "$miscDocId"/>
+ <xsl:template                   match = "Section"
+                                  mode = "miscFragment">
+  <xsl:param                      name = "miscDocId"/>
+   <xsl:apply-templates           mode = "MiscText">
+    <xsl:with-param               name = "miscDocId" 
+                                select = "$miscDocId"/>
    </xsl:apply-templates>
  </xsl:template>
 
@@ -1646,10 +1675,10 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
  ==============================================================
  Template for extracting External Ref Definition
  ============================================================== -->
- <xsl:template                  match = "ExternalRef">
+ <xsl:template                   match = "ExternalRef">
   <ExternalRef>
-   <xsl:attribute                name = "xref">
-    <xsl:value-of              select = "@cdr:xref"/>
+   <xsl:attribute                 name = "xref">
+    <xsl:value-of               select = "@cdr:xref"/>
    </xsl:attribute>
    <xsl:apply-templates/>
   </ExternalRef>
@@ -1660,7 +1689,7 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
  ============================================================= 
  Replace the PlaceHolder link name in the Misc. Document
  ============================================================= -->
- <xsl:template                  match = "PlaceHolder[
+ <xsl:template                   match = "PlaceHolder[
                                           @name = 'ClinicalTrialSearchLink']">
   <xsl:param                      name = "curLocation"/>
 
@@ -1876,8 +1905,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
             <xsl:value-of       select = "concat($cgUrl, $cgBoardEN, 
                                             '/screening-prevention')"/>
            </xsl:when>
-           <xsl:when              test = "$sumType = concat('Complementary',
-                                                ' and alternative medicine')">
+           <xsl:when              test = "$sumType = concat(
+                                            'Integrative, alternative, ',
+                                            'and complementary therapies')">
             <xsl:value-of       select = "concat($cgUrl, $cgBoardEN, 
                                             '/cam')"/>
            </xsl:when>
@@ -1916,8 +1946,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
             <xsl:value-of       select = "concat($cgUrl, $cgBoardES, 
                                             '/deteccion-prevencion')"/>
            </xsl:when>
-           <xsl:when              test = "$sumType = concat('Complementary',
-                                                  ' and alternative medicine')">
+           <xsl:when              test = "$sumType = concat(
+                                            'Integrative, alternative, ',
+                                            'and complementary therapies')">
             <xsl:value-of       select = "concat($cgUrl, $cgBoardES,
                                             '/medicina-complementaria',
                                             '-alternativa')"/>
@@ -1947,18 +1978,23 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
  <!-- 
  ==============================================================
  Replace the PlaceHolder link for the PDQ Citation Sample
+
+ Request to move the registered trademark as part of the first
+ "PDQ" which is part of the board name.
  ============================================================== -->
  <xsl:template                   match = "PlaceHolder[@name = 
                                                        'PdqCitation']">
-  <xsl:text>National Cancer Institute: PDQ&#174; </xsl:text>
+  <xsl:text>PDQ&#174; </xsl:text>
+  <xsl:value-of                 select = "substring-after($boardName, 'PDQ ')"/>
+  <xsl:text>. PDQ </xsl:text>
   <xsl:value-of                 select = "$sumTitle"/>
   <xsl:text>. Bethesda, MD: National Cancer Institute. </xsl:text>
   <xsl:choose>
    <xsl:when                      test = "$language = 'English'">
-    <xsl:text>Date last modified </xsl:text>
+    <xsl:text>Updated </xsl:text>
    </xsl:when>
    <xsl:otherwise>
-    <xsl:text>&#218;ltima actualizaci&#243;n: </xsl:text>
+    <xsl:text>Actualizaci&#243;n: </xsl:text>
    </xsl:otherwise>
   </xsl:choose>
   <xsl:text> &lt;MM/DD/YYYY&gt;. </xsl:text>
@@ -1974,14 +2010,8 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
    <xsl:attribute                 name = "xref">
     <xsl:value-of               select = "$sumUrl"/>
    </xsl:attribute>
-   <!-- xsl:value-of                select = "$sumUrlText"/ -->
    <xsl:value-of                select = "$sumUrl"/>
   </xsl:element>
-  <!-- Emphasis> 
-   <xsl:text> (with a link to </xsl:text>
-   <xsl:value-of               select = "$sumUrl"/>
-   <xsl:text>)</xsl:text>
-  </Emphasis -->
   <xsl:choose>
    <xsl:when                      test = "$language = 'English'">
     <xsl:text>.  Accessed </xsl:text>
@@ -1990,7 +2020,12 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
     <xsl:text>.  Fecha de acceso: </xsl:text>
    </xsl:otherwise>
   </xsl:choose>
-  <xsl:text>&lt;MM/DD/YYYY&gt;.</xsl:text>
+  <xsl:text>&lt;MM/DD/YYYY&gt;. </xsl:text>
+  <xsl:if                         test = "$sumPmid">
+   <xsl:text>[PMID: </xsl:text>
+   <xsl:value-of                select = "$sumPmid"/>
+   <xsl:text>]</xsl:text>
+  </xsl:if>
  </xsl:template>
 
 
@@ -2586,15 +2621,16 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
   <xsl:variable                  name = "miscDoc">
    <xsl:choose>
     <xsl:when                    test = "SummaryMetaData/SummaryType =
-                                           concat('Complementary and',
-                                                  ' alternative medicine')">
+                                           concat(
+                                            'Integrative, alternative, ',
+                                            'and complementary therapies')">
      <xsl:choose>
       <xsl:when                  test = "$language = 'English'">
        <xsl:copy-of            select = "document(concat('cdr:CDR0000256925',
                                                          '/lastp'))"/>
       </xsl:when>
       <xsl:otherwise>
-       <!-- Spanish HP CAM summaries currently don't exist -->
+       <!-- Spanish HP IACT summaries currently don't exist -->
        <xsl:copy-of            select = "document(concat('cdr:CDR0000256925',
                                                          '/lastp'))"/>
       </xsl:otherwise>
@@ -2642,8 +2678,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
     <xsl:choose>
      <xsl:when                   test = "SummaryMetaData/
                                          SummaryType =
-                                           concat('Complementary and',
-                                                  ' alternative medicine')">
+                                           concat(
+                                            'Integrative, alternative, ',
+                                            'and complementary therapies')">
       <xsl:variable              name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000445623',
                                                          '/lastp'))"/>
@@ -2656,7 +2693,7 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
      </xsl:when>
 
     </xsl:choose>
-   </xsl:when>
+   </xsl:when> 
   <!-- English To Learn More Section End-->
         
   <!-- Spanish, Patient, To Learn More Section -->
@@ -2664,8 +2701,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
     <xsl:choose>
      <xsl:when                   test = "SummaryMetaData/
                                          SummaryType =
-                                           concat('Complementary and',
-                                                  ' alternative medicine')">
+                                           concat(
+                                            'Integrative, alternative, ',
+                                            'and complementary therapies')">
       <xsl:variable              name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000446984',
                                                          '/lastp'))"/>
@@ -2761,8 +2799,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
    </xsl:when>
    <xsl:when                     test = "SummaryMetaData/
                                          SummaryType =
-                                           concat('Complementary and',
-                                                  ' alternative medicine')">
+                                           concat(
+                                            'Integrative, alternative, ',
+                                            'and complementary therapies')">
     <xsl:variable                name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000000366',
                                                          '/lastp'))"/>
@@ -2837,8 +2876,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
    </xsl:when>
    <xsl:when                     test = "SummaryMetaData/
                                          SummaryType =
-                                           concat('Complementary and',
-                                                  ' alternative medicine')">
+                                           concat(
+                                            'Integrative, alternative, ',
+                                            'and complementary therapies')">
     <xsl:variable                name = "miscDoc" 
                                select = "document(concat('cdr:CDR0000446985',
                                                          '/lastp'))"/>
@@ -2857,12 +2897,13 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
  Template to add the English "About PDQ" misc. document to the summaries.
  This gets only attached to the patient versions.
  ========================================================================= -->
- <xsl:template                    name = "AboutCAM">
+ <xsl:template                    name = "AboutIACT">
   <xsl:choose>
    <xsl:when                      test = "SummaryMetaData/
                                           SummaryType =
-                                            concat('Complementary and',
-                                                   ' alternative medicine')">
+                                           concat(
+                                            'Integrative, alternative, ',
+                                            'and complementary therapies')">
     <xsl:choose>
      <xsl:when                    test = "$language = 'English'">
       <xsl:variable               name = "miscDoc" 
@@ -2871,7 +2912,7 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
       <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
                                                      MiscellaneousDocumentText">
        <xsl:with-param            name = "miscDocId"
-                                select = "'_AboutCAM'"/>
+                                select = "'_AboutIACT'"/>
       </xsl:apply-templates>
      </xsl:when>
      <xsl:otherwise>
@@ -2895,7 +2936,7 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
       <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
                                                      MiscellaneousDocumentText">
        <xsl:with-param            name = "miscDocId"
-                                select = "'_AboutCAM'"/>
+                                select = "'_AboutIACT'"/>
       </xsl:apply-templates>
      </xsl:otherwise>
     </xsl:choose>
@@ -3047,9 +3088,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
 
  <!-- 
  =========================================================================
- Template to add the Q and A misc. document to CAM Patient Summaries
+ Template to add the Q and A misc. document to IACT Patient Summaries
  ========================================================================= -->
- <xsl:template                   name = "QandACAM">
+ <xsl:template                   name = "QandAIACT">
   <xsl:choose>
    <xsl:when                     test = "SummaryMetaData/
                                          SummaryLanguage = 'English'">
@@ -3479,9 +3520,9 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
     <xsl:when                    test = "$sumType = 'Supportive care'">
      <xsl:text>tt=2</xsl:text>
     </xsl:when>
-    <xsl:when                    test = "$sumType = concat('Complementary',
-                                                           ' and alternative',
-                                                           ' medicine')">
+    <xsl:when                    test = "$sumType = concat(
+                                           'Integrative, alternative, ',
+                                           'and complementary therapies')">
      <xsl:text>tt=0</xsl:text>
     </xsl:when>
     <xsl:otherwise>
@@ -3520,13 +3561,13 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
     <xsl:text>&amp;</xsl:text>
     <xsl:value-of               select = "$format"/>
     <!--
-    Include non-US trials for CAM searches
+    Include non-US trials for IACT searches
     See note above
     ====================================== -->
     <!--
-    <xsl:if                       test = "not($sumType = concat('Complementary',
-                                                           ' and alternative',
-                                                           ' medicine'))">
+    <xsl:if                       test = "not($sumType = concat(
+                                                'Integrative, alternative, ',
+                                                'and complementary therapies')">
      <xsl:text>&amp;</xsl:text>
      <xsl:value-of              select = "$country"/>
     </xsl:if>
@@ -3536,5 +3577,32 @@ OCECDR-3993: Remove Country as paramenter for clinical trial searches
   </xsl:element>
 
  </xsl:template>
+
+
+ <!-- 
+ =========================================================================
+ Template to add the attributes href, audience, dictionary to LOERef and
+ GlossaryTermRef elements
+ ========================================================================= -->
+ <xsl:template                    name = "addAttributesGlossary">
+  <xsl:attribute                  name = "href">
+   <xsl:value-of                select = "@cdr:href"/>
+  </xsl:attribute>
+  <!-- When the dictionary value does not exist set it to NotSet -->
+  <xsl:attribute                  name = "dictionary">
+   <xsl:choose>
+    <xsl:when                     test = "Dictionary">
+     <xsl:value-of              select = "Dictionary"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>NotSet</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:attribute>
+  <xsl:attribute                  name = "audience">
+   <xsl:value-of                select = "Audience"/>
+  </xsl:attribute>
+ </xsl:template>
+
 
 </xsl:transform>

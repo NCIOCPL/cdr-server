@@ -159,15 +159,19 @@ cdr::String cdr::String::toLowerCase() const {
  */
 cdr::String cdr::entConvert(const String& inStr, bool doQuotes)
 {
-    // Ampersand MUST be first element in this table!
+    // Ampersand MUST be second element in this table!
+    // JIRA::OCECDR-3928: workaround for SQL Server bug, which is for some
+    // reason sending back null bytes in the error message, so we're escaping
+    // those as "\\0".
     static struct { wchar_t ch; wchar_t* ent; } eTable[] = {
+        { L'\0', L"\\0"    },
         { L'&',  L"&amp;"  },
         { L'<',  L"&lt;"   },
         { L'>',  L"&gt;"   },
         { L'"',  L"&quot;" },
         { L'\'', L"&apos;" }
     };
-    int numConversions = doQuotes ? 5 : 3;
+    int numConversions = doQuotes ? 6 : 4;
 
     // If we make no changes no memory allocations or copying will happen.
     String outStr = inStr;
