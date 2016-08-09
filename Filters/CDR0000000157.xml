@@ -41,6 +41,7 @@ OCECDR-3981: Revise Suggested Citation Format to Include Board, PMID
 OCECDR-4045: Change CAM Board Name to IACT
 OCECDR-4043: Move registered trademark in Summary title to appear before 
              the audience text.
+OCECDR-4123: Add HP/Patient URL to Summaries
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -682,16 +683,110 @@ OCECDR-4043: Move registered trademark in Summary title to appear before
  ==================================================================
  SummaryURL Template to drop trailing '/' 
  ================================================================== -->  
- <xsl:template                  match = "SummaryURL | MobileURL">
-  <xsl:element                   name = "{name()}">
-    <xsl:attribute               name = "xref">
+ <!--
+ <xsl:template                   match = "SummaryURL | MobileURL">
+ -->
+ <xsl:template                   match = "SummaryURL">
+  <xsl:element                    name = "{name()}">
+    <xsl:attribute                name = "xref">
      <xsl:call-template           name = "getSummaryURL">
       <xsl:with-param             name = "url"
                                 select = "normalize-space(@cdr:xref)"/>
      </xsl:call-template>
     </xsl:attribute>
-    <xsl:apply-templates         mode = "copy"/>
+    <xsl:apply-templates          mode = "copy"/>
   </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ ==================================================================
+ MobileURL Template to drop the element - Cancer.gov is responsive
+ ================================================================== -->  
+ <xsl:template                   match = "MobileURL"/>
+
+
+ <!-- 
+ ==================================================================
+ Creating a new element to allow Cancer.gov to add a link to toggle
+ between the HP and Patient version
+ ================================================================== -->  
+ <xsl:template                    name = "SummaryToggleURL">
+  <xsl:variable                   name = "docNormId"
+                                select = "number(
+                                           substring-after($sumId, 'CDR'))"/>
+  <!--
+  Extracting the content of the SummaryURL attribute to be used for 
+  populating the url attribute of the SummaryRef element.  This 
+  information has to be retrieved via a SQL query from the database
+  ================================================================= -->
+    <xsl:variable                 name = "sqlQuery">
+     <xsl:choose>
+      <!-- Toggle URL for patient version -->
+      <xsl:when                   test = "$sumAudience = 'Patients'">
+      SELECT p.doc_id, p.int_val, t.value 
+        FROM query_term_pub p
+        JOIN query_term_pub t
+          ON t.doc_id = p.int_val
+       WHERE p.path = '/Summary/PatientVersionOf/@cdr:ref'
+         AND t.path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
+         AND p.doc_id = ?
+       </xsl:when>
+       <!-- Toggle URL for HP version -->
+       <xsl:otherwise>
+      SELECT p.doc_id, t.int_val, t.doc_id, u.value
+        FROM query_term_pub p
+        JOIN query_term_pub t
+          ON p.doc_id = t.int_val
+         AND t.path = '/Summary/PatientVersionOf/@cdr:ref'
+        JOIN query_term_pub u
+          ON t.doc_id = u.doc_id
+         AND u.path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
+       WHERE p.doc_id = ?
+         AND p.path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
+  <!-- 
+  Note: Don't perform a normalize-space here since it would convert
+        the resulting node into a string
+  ================================================================== -->
+  <xsl:variable                   name = "queryRows"
+                                select = "document(
+                                           concat('cdrutil:/sql-query/',
+                                                   $sqlQuery,
+                                                   '~',
+                                                   $docNormId))"/>
+  <!--
+  Note:  The url created by function getSummaryURL has no trailing 
+         slash ('/'), specifies the domain as http://cancer.gov and
+         is normalized
+  ================================================================= -->
+  <xsl:variable                   name = "url">
+   <xsl:call-template             name = "getSummaryURL">
+    <xsl:with-param               name = "url"
+                                select = "normalize-space(
+                                            $queryRows
+                                            /SqlResult
+                                            /row
+                                            /col[@name='value'])"/>
+   </xsl:call-template>
+  </xsl:variable>
+  
+  <xsl:if                         test = "not($url = '')">
+  <xsl:element                    name = "SummaryToggleURL">
+    <xsl:attribute                name = "xref">
+     <xsl:call-template           name = "getSummaryURL">
+      <xsl:with-param             name = "url"
+                                select = "$url"/>
+     </xsl:call-template>
+    </xsl:attribute>
+    <xsl:value-of               select = "/Summary/
+                                           SummaryMetaData/
+                                           SummaryURL"/>
+  </xsl:element>
+  </xsl:if>
  </xsl:template>
 
 
@@ -969,32 +1064,33 @@ OCECDR-4043: Move registered trademark in Summary title to appear before
  Template to suppress the auxiliary information for linked
  summaries.
  ================================================================== -->  
- <xsl:template                  match = "LinkedSummary"/>
+ <xsl:template                   match = "LinkedSummary"/>
 
 
  <!-- 
  ==================================================================
  SummaryMetaData Template
  ================================================================== -->  
- <xsl:template                  match = "SummaryMetaData">
+ <xsl:template                   match = "SummaryMetaData">
   <SummaryMetaData>
-   <xsl:apply-templates        select = "SummaryType"
-                                 mode = "copy"/>
-   <xsl:apply-templates        select = "SummaryAudience"
-                                 mode = "copy"/>
-   <xsl:apply-templates        select = "SummaryLanguage"
-                                 mode = "copy"/>
-   <xsl:apply-templates        select = "SummaryDescription"
-                                 mode = "copy"/>
-   <xsl:apply-templates        select = "SummaryURL"/>
-   <xsl:apply-templates        select = "MobileURL"/>
-   <xsl:apply-templates        select = "PDQBoard"/>
-   <xsl:apply-templates        select = "MainTopics"/>
-   <xsl:apply-templates        select = "SecondaryTopics"/>
-   <xsl:apply-templates        select = "SummaryAbstract"
-                                 mode = "copy"/>
-   <xsl:apply-templates        select = "SummaryKeyWords"
-                                 mode = "copy"/>
+   <xsl:apply-templates         select = "SummaryType"
+                                  mode = "copy"/>
+   <xsl:apply-templates         select = "SummaryAudience"
+                                  mode = "copy"/>
+   <xsl:apply-templates         select = "SummaryLanguage"
+                                  mode = "copy"/>
+   <xsl:apply-templates         select = "SummaryDescription"
+                                  mode = "copy"/>
+   <xsl:apply-templates         select = "SummaryURL"/>
+   <xsl:call-template             name = "SummaryToggleURL"/>
+   <xsl:apply-templates         select = "MobileURL"/>
+   <xsl:apply-templates         select = "PDQBoard"/>
+   <xsl:apply-templates         select = "MainTopics"/>
+   <xsl:apply-templates         select = "SecondaryTopics"/>
+   <xsl:apply-templates         select = "SummaryAbstract"
+                                  mode = "copy"/>
+   <xsl:apply-templates         select = "SummaryKeyWords"
+                                  mode = "copy"/>
    <!-- xsl:apply-templates        select = "PermaTargs"/ -->
 
    <!-- Comment out deep linking:  Needed for a later release -->
