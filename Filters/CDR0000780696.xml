@@ -56,7 +56,6 @@ OCECDR-3903: Cancer.gov displaying Patient definitions for terms
  <xsl:template                   match = "Summary |
                                           DrugInformationSummary">
   <xsl:copy>
-
    <xsl:apply-templates/>
   </xsl:copy>
  </xsl:template>
@@ -67,123 +66,196 @@ OCECDR-3903: Cancer.gov displaying Patient definitions for terms
  Template to denormalize the GlossaryTermRef element
  ================================================================= -->
  <xsl:template                   match = "GlossaryTermRef | LOERef">
+  <!--
+  Testing if the GlossaryTermName document already exists
+  ======================================================= -->
+  <xsl:variable                   name = "pubVersion">
+   <xsl:choose>
+    <xsl:when                     test = "@cdr:href">
+     <xsl:value-of              select = "document(concat('cdrutil:', 
+                                                      '/get-pv-num/',
+                                                      @cdr:href))"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>-1</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
+<!--
+  <xsl:text>A </xsl:text>
+  <xsl:copy-of select = "$pubVersion"/>
+  <xsl:text> A</xsl:text>
+-->
+  
   <xsl:variable                   name = "GlossaryNameID"
                                 select = "@cdr:href"/>
-  <xsl:variable                   name = "GlossaryNameInfo"
-                                select = "document(concat('cdr:',
-                                                          $GlossaryNameID,
-                                                          '/lastp'))"/>
-  <xsl:variable                   name = "GlossaryConceptID"
-                                select = "$GlossaryNameInfo/
+
+  <!--
+  Only if the GlossaryNameID exists can we attempt to denormalize.
+  Otherwise the filter will crash.  All following variables in this 
+  Template will only be set if there is an existing CDR-ID for the 
+  Glossary Term -->
+  <xsl:variable                   name = "GlossaryNameInfo">
+   <xsl:if                        test = "$GlossaryNameID">
+    <xsl:copy-of                select = "document(concat
+                                                ('cdr:', $GlossaryNameID))"/>
+   </xsl:if>
+  </xsl:variable>
+
+  <xsl:variable                   name = "GlossaryConceptID">
+   <xsl:if                        test = "$GlossaryNameID">
+    <xsl:value-of               select = "$GlossaryNameInfo/
                                              GlossaryTermName/
                                              GlossaryTermConcept/@cdr:ref"/>
-  <xsl:variable                   name = "GlossaryConceptInfo"
-                                select = "document(concat('cdr:',
-                                                          $GlossaryConceptID,
-                                                          '/last'))"/>
-  <xsl:variable                  name  = "GlossaryAudience"
-                                select = "$GlossaryConceptInfo/
+   </xsl:if>
+  </xsl:variable>
+
+  <xsl:variable                   name = "GlossaryConceptInfo">
+   <!--
+   Why can't I test against $GlossaryConceptID here???? -->
+   <xsl:if                        test = "$GlossaryNameID">
+    <xsl:copy-of                select = "document(concat('cdr:',
+                                                         $GlossaryConceptID))"/>
+   </xsl:if>
+  </xsl:variable>
+
+  <xsl:variable                  name  = "GlossaryAudience">
+   <xsl:if                        test = "$GlossaryNameID">
+    <xsl:copy-of                select = "$GlossaryConceptInfo/
                                              GlossaryTermConcept/
                                              TermDefinition/
                                              Audience"/>
+   </xsl:if>
+  </xsl:variable>
 
-  <xsl:variable                   name = "numberOfEnglishTerms"
-                                select = "count($GlossaryConceptInfo/
+  <xsl:variable                   name = "numberOfEnglishTerms">
+   <xsl:if                        test = "$GlossaryNameID">
+    <xsl:value-of               select = "count($GlossaryConceptInfo/
                                              GlossaryTermConcept/
                                              TermDefinition)"/>
-  <xsl:variable                   name = "numberOfSpanishTerms"
-                                select = "count($GlossaryConceptInfo/
+   </xsl:if>
+  </xsl:variable>
+
+  <xsl:variable                   name = "numberOfSpanishTerms">
+   <xsl:if                        test = "$GlossaryNameID">
+    <xsl:value-of               select = "count($GlossaryConceptInfo/
                                              GlossaryTermConcept/
                                              TranslatedTermDefinition)"/>
-
+   </xsl:if>
+  </xsl:variable>
 
   <xsl:element                    name = "{name()}">
    <xsl:attribute                 name = "cdr:href">
     <xsl:value-of               select = "@cdr:href"/>
    </xsl:attribute>
 
-    <xsl:choose>
-     <!--  Pick up information for English -->
-     <xsl:when                    test = "$sumLanguage = 'EN'">
-      <xsl:choose>
-       <xsl:when                  test = "Deletion">
-        <xsl:element              name = "GlossaryText">
-         <xsl:element             name = "Deletion">
-          <xsl:for-each         select = "Deletion/@*">
-           <xsl:attribute         name = "{name()}">
-            <xsl:value-of       select = "."/>
-           </xsl:attribute>
-          </xsl:for-each>
-          <xsl:value-of         select = "."/>
-         </xsl:element>
-        </xsl:element>
-       </xsl:when>
-       <xsl:when                  test = "Insertion">
-        <xsl:element              name = "GlossaryText">
-         <xsl:element             name = "Insertion">
-          <xsl:for-each         select = "Insertion/@*">
-           <xsl:attribute         name = "{name()}">
-            <xsl:value-of       select = "."/>
-           </xsl:attribute>
-          </xsl:for-each>
-          <xsl:value-of         select = "."/>
-         </xsl:element>
-        </xsl:element>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:element              name = "GlossaryText">
+   <xsl:choose>
+    <!--  Pick up information for English -->
+    <xsl:when                     test = "$sumLanguage = 'EN'">
+     <xsl:choose>
+      <xsl:when                   test = "Deletion">
+       <xsl:element               name = "GlossaryText">
+        <xsl:element              name = "Deletion">
+         <xsl:for-each          select = "Deletion/@*">
+          <xsl:attribute          name = "{name()}">
+           <xsl:value-of        select = "."/>
+          </xsl:attribute>
+         </xsl:for-each>
          <xsl:value-of          select = "."/>
         </xsl:element>
-       </xsl:otherwise>
-      </xsl:choose>
+       </xsl:element>
+      </xsl:when>
+      <xsl:when                   test = "Insertion">
+       <xsl:element               name = "GlossaryText">
+        <xsl:element              name = "Insertion">
+         <xsl:for-each          select = "Insertion/@*">
+          <xsl:attribute          name = "{name()}">
+           <xsl:value-of        select = "."/>
+          </xsl:attribute>
+         </xsl:for-each>
+         <xsl:value-of          select = "."/>
+        </xsl:element>
+       </xsl:element>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:element               name = "GlossaryText">
+        <xsl:value-of           select = "."/>
+       </xsl:element>
+      </xsl:otherwise>
+     </xsl:choose>
 
-      <xsl:apply-templates      select = "$GlossaryConceptInfo/
+     <xsl:choose>
+      <xsl:when                   test = "not(number($pubVersion) = -1)">
+       <xsl:apply-templates     select = "$GlossaryConceptInfo/
                                             GlossaryTermConcept/
                                             TermDefinition">
-       <xsl:with-param            name = "numberOfEnglishTerms"
+        <xsl:with-param           name = "numberOfEnglishTerms"
                                 select = "$numberOfEnglishTerms"/>
-      </xsl:apply-templates>
-     </xsl:when>
-     <!--  Pick up information for Spanish -->
-     <xsl:otherwise>
-      <xsl:choose>
-       <xsl:when                  test = "Deletion">
-        <xsl:element              name = "GlossaryText">
-         <xsl:element             name = "Deletion">
-          <xsl:for-each         select = "Deletion/@*">
-           <xsl:attribute         name = "{name()}">
-            <xsl:value-of       select = "."/>
-           </xsl:attribute>
-          </xsl:for-each>
-          <xsl:value-of         select = "."/>
-         </xsl:element>
-        </xsl:element>
-       </xsl:when>
-       <xsl:when                  test = "Insertion">
-        <xsl:element              name = "GlossaryText">
-         <xsl:element             name = "Insertion">
-          <xsl:for-each         select = "Insertion/@*">
-           <xsl:attribute         name = "{name()}">
-            <xsl:value-of       select = "."/>
-           </xsl:attribute>
-          </xsl:for-each>
-          <xsl:value-of         select = "."/>
-         </xsl:element>
-        </xsl:element>
-       </xsl:when>
-       <xsl:otherwise>
-        <xsl:element              name = "GlossaryText">
+       </xsl:apply-templates>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:element               name = "Dictionary">
+        <xsl:text>Not available</xsl:text>
+       </xsl:element>
+       <xsl:element               name = "Audience">
+        <xsl:text>Not available</xsl:text>
+       </xsl:element>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:when>
+    <!--  Pick up information for Spanish -->
+    <xsl:otherwise>
+     <xsl:choose>
+      <xsl:when                   test = "Deletion">
+       <xsl:element               name = "GlossaryText">
+        <xsl:element              name = "Deletion">
+         <xsl:for-each          select = "Deletion/@*">
+          <xsl:attribute          name = "{name()}">
+           <xsl:value-of        select = "."/>
+          </xsl:attribute>
+         </xsl:for-each>
          <xsl:value-of          select = "."/>
         </xsl:element>
-       </xsl:otherwise>
-      </xsl:choose>
+       </xsl:element>
+      </xsl:when>
+      <xsl:when                   test = "Insertion">
+       <xsl:element               name = "GlossaryText">
+        <xsl:element              name = "Insertion">
+         <xsl:for-each          select = "Insertion/@*">
+          <xsl:attribute          name = "{name()}">
+           <xsl:value-of        select = "."/>
+          </xsl:attribute>
+         </xsl:for-each>
+         <xsl:value-of          select = "."/>
+        </xsl:element>
+       </xsl:element>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:element               name = "GlossaryText">
+        <xsl:value-of           select = "."/>
+       </xsl:element>
+      </xsl:otherwise>
+     </xsl:choose>
 
-      <xsl:apply-templates      select = "$GlossaryConceptInfo/
+     <xsl:choose>
+      <xsl:when                   test = "not(number($pubVersion) = -1)">
+       <xsl:apply-templates     select = "$GlossaryConceptInfo/
                                              GlossaryTermConcept/
                                              TranslatedTermDefinition">
-       <xsl:with-param            name = "numberOfSpanishTerms"
+        <xsl:with-param           name = "numberOfSpanishTerms"
                                 select = "$numberOfSpanishTerms"/>
-     </xsl:apply-templates>
+       </xsl:apply-templates>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:element               name = "Dictionary">
+        <xsl:text>Not available</xsl:text>
+       </xsl:element>
+       <xsl:element               name = "Audience">
+        <xsl:text>Not available</xsl:text>
+       </xsl:element>
+      </xsl:otherwise>
+     </xsl:choose>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:element>
