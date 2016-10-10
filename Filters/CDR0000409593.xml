@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<!-- $Id$ -->
+<!-- CDR0000409593.xml - 2016-08-25, volker    -->
 <!-- Filter title: Copy XML for Summary Report -->
 <!--
 
@@ -11,6 +11,7 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
                 include Module content
 BZIssue::5191 - [Summaries] Summary Fragment Refs not working in
                 QC reports
+OCECDR-4116: Show dictionary and audience of glossary terms
 
 ===============================================================
 Filter to create Vendor Genetics Professionals XML documents
@@ -122,6 +123,10 @@ Filter to create Vendor Genetics Professionals XML documents
        <GlossaryTermRef>
         <xsl:apply-templates    select = "GlossaryText"
                                   mode = "copy"/>
+        <xsl:apply-templates    select = "Dictionary"
+                                  mode = "copy"/>
+        <xsl:apply-templates    select = "Audience"
+                                  mode = "copy"/>
        </GlossaryTermRef>
 
        <xsl:variable              name = "defID"
@@ -153,14 +158,33 @@ Filter to create Vendor Genetics Professionals XML documents
            <!--
            The Genetics Summaries are using the definitions for the HP
            audience instead of Patient (English only)
+           The IACT Summaries are using the HP definitions if they
+           exist. If no HP definition is available the patient definition
+           is being used.
            =========================================================== -->
            <xsl:choose>
             <xsl:when             test = "$sumAudience = 'Health professional'">
-             <xsl:copy-of       select = "$conceptInfo/
+             <xsl:choose>
+              <xsl:when           test = "$conceptInfo/
+                                           GlossaryTermConcept/
+                                           TermDefinition
+                                             [Audience
+                                                = 'Health professional']">
+               <xsl:copy-of     select = "$conceptInfo/
                                            GlossaryTermConcept/
                                            TermDefinition
                                              [Audience
                                                 = 'Health professional']"/>
+              </xsl:when>
+              <xsl:otherwise>
+               <xsl:copy-of     select = "$conceptInfo/
+                                           GlossaryTermConcept/
+                                           TermDefinition
+                                             [Audience = 'Patient'
+                                              and
+                                              Dictionary = 'Cancer.gov']"/>
+              </xsl:otherwise>
+             </xsl:choose>
             </xsl:when>
             <xsl:otherwise>
              <xsl:copy-of       select = "$conceptInfo/
@@ -197,6 +221,10 @@ Filter to create Vendor Genetics Professionals XML documents
       <LOETerm>
        <LOERef>
         <xsl:apply-templates    select = "GlossaryText"
+                                  mode = "copy"/>
+        <xsl:apply-templates    select = "Dictionary"
+                                  mode = "copy"/>
+        <xsl:apply-templates    select = "Audience"
                                   mode = "copy"/>
        </LOERef>
 
