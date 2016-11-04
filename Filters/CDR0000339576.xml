@@ -27,6 +27,33 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  <xsl:param                       name = "thisDocID"
                                 select = "document('cdrutil:/docid')"/>
   
+ <xsl:variable                    name = "mediaAudience">
+  <xsl:choose>
+   <xsl:when                      test = "/Summary/
+                                            SummaryMetaData/
+                                            SummaryAudience = 
+                                              'Health professionals'">
+    <xsl:text>Health_professionals</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>Patients</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:variable>
+
+ <xsl:variable                    name = "mediaLanguage">
+  <xsl:choose>
+   <xsl:when                      test = "/Summary/
+                                            SummaryMetaData/
+                                            SummaryLanguage = 'English'">
+    <xsl:text>en</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>es</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:variable>
+
  <!-- 
  ======================================================================
  Display a Summary Reference or ProtocolRef
@@ -2577,15 +2604,29 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
  <!-- 
  ======================================================================
- Template to replace the MediaID element with a little div box as a 
- place holder for the image
+ Template to display images
+ - If DisplayImage = Y, display the image *and* the caption
+   - if there is no caption in the summary, display the caption of the 
+     Media document
+ - If DisplayImage = N, display a placeholder for the image
+   - if it's a HP summary display the caption
+   - if it's a patient summary, don't display the caption
+     - if there is no caption in the summary, display the caption of
+       the Media document
+ 
+ If the image does notreplace the MediaID element with a little div 
+ box as a place holder for the image
+ Don't show the caption if the "UseCaption = 'No'" attribute has been
+ set.
  ====================================================================== -->
  <xsl:template                   match = "MediaID">
   <xsl:choose>
    <xsl:when                      test = "$DisplayImages = 'Y'">
     <xsl:apply-templates        select = "."
                                   mode = "summary"/>
-    <xsl:call-template            name = "addCaption"/>
+    <xsl:if                       test = "not(../@UseCaption = 'No')">
+     <xsl:call-template           name = "addCaption"/>
+    </xsl:if>
    </xsl:when>
    <xsl:otherwise>
     <div class="imagepadding">
@@ -2599,8 +2640,11 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                           MediaTitle"/>
      </div>
     </div>
-    <xsl:if                       test = "following-sibling::Caption">
-     <xsl:call-template           name = "addCaption"/>
+    <xsl:if                       test = "$mediaAudience = 
+                                                 'Health_professionals'">
+     <xsl:if                      test = "not(../@UseCaption = 'No')">
+      <xsl:call-template          name = "addCaption"/>
+     </xsl:if>
     </xsl:if>
    </xsl:otherwise>
   </xsl:choose>
@@ -2612,12 +2656,33 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  Template handling Captions when images are being displayed as well
  ====================================================================== -->
  <xsl:template                    name = "addCaption">
-  <div class="caption" style="font-style: italic; text-align: center; 
-                              margin: 0 5% 0 5%;">
-   <!-- xsl:value-of                select = "following-sibling::Caption"/ -->
-   <xsl:apply-templates         select = "../Caption"
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>caption</xsl:text>
+     <xsl:text> caption-box</xsl:text>
+    </xsl:attribute>
+   <xsl:choose>
+    <xsl:when                     test = "../Caption">
+     <xsl:apply-templates       select = "../Caption"
                                   mode = "createCaption"/>
-  </div>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:element                 name = "div">
+      <xsl:attribute              name = "class">
+       <xsl:text>media-caption</xsl:text>
+      </xsl:attribute>
+     <xsl:apply-templates       select = "Media/
+                                            MediaContent/
+                                            Captions/
+                                            MediaCaption[@audience = 
+                                                           $mediaAudience
+                                                         and
+                                                         @language = 
+                                                           $mediaLanguage]"/>
+     </xsl:element>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:element>
  </xsl:template>
 
 
