@@ -1,14 +1,13 @@
 <?xml version="1.0"?>
-<!-- $Id$ -->
 <!-- Filter title: Citation QC Report -->
-<!-- 
+<!--
 ==============================================================
 Filter to create a Citation QC Report
 ============================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr">
-  
+
  <xsl:output                    method = "html"/>
 
  <!-- Defining standard HTML Attribute Sets -->
@@ -31,7 +30,7 @@ Filter to create a Citation QC Report
 
  <xsl:variable                    name = "docID"
                                 select = "document('cdrutil:/docid')"/>
- <!-- 
+ <!--
  ==================================================================
  Create HTML Output
    Updated on February 13, 2002  by C. Burg
@@ -41,33 +40,33 @@ Filter to create a Citation QC Report
  <xsl:template                   match = "/">
   <HTML>
    <HEAD>
-    <xsl:variable                 name = "cdrdocs" 
+    <xsl:variable                 name = "cdrdocs"
                                 select = "document('cdrx:/*/CdrCtl')"/>
     <TITLE>
-     <xsl:value-of              select = "concat('CDR', 
+     <xsl:value-of              select = "concat('CDR',
                                            number(
                                            substring-after($docID, 'CDR')))"/>
      <xsl:text>: </xsl:text>
      <xsl:value-of              select = "substring-before(
                                            concat($cdrdocs/CdrDocCtl/
-                                                  DocTitle, ';'), ';')"/> 
+                                                  DocTitle, ';'), ';')"/>
     </TITLE>
    </HEAD>
-   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif'/> 
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif'/>
    <xsl:apply-templates         select = "Citation"/>
   </HTML>
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Template to display Citation Report
  ===================================================================== -->
  <xsl:template                   match = "Citation">
   <BODY>
-   <!-- 
+   <!--
    ==============================================================
-   Display Report heading and subheading 
+   Display Report heading and subheading
    ============================================================== -->
    <b>
     <font size="4">
@@ -87,14 +86,14 @@ Filter to create a Citation QC Report
 
    <b>
     <font size='4'>
-     <xsl:value-of              select = "concat('CDR', 
+     <xsl:value-of              select = "concat('CDR',
                                            number(
                                            substring-after($docID, 'CDR')))"/>
     </font>
    </b>
    <p/>
 
-   <!-- 
+   <!--
    ======================================================================
    Generate CitationType, CitationTitle,Authors, Publication details,
    and CancerLit ID for PDQ citations.
@@ -102,7 +101,7 @@ Filter to create a Citation QC Report
    <xsl:apply-templates         select = "PDQCitation"/>
    <xsl:apply-templates         select = "PubmedArticle"/>
 
-   <!-- 
+   <!--
    ===================================================================
    Display verification details,DatedAction, and Date last modified,
    and PDQ Key
@@ -115,7 +114,7 @@ Filter to create a Citation QC Report
      <td        xsl:use-attribute-sets = "cell2of2">
       <xsl:value-of             select = "VerificationDetails/Verified"/>
      </td>
-    </tr> 
+    </tr>
     <tr>
      <td        xsl:use-attribute-sets = "cell1of2">
       <b>Verified In</b>
@@ -123,10 +122,10 @@ Filter to create a Citation QC Report
      <td        xsl:use-attribute-sets = "cell2of2">
       <xsl:value-of             select = "VerificationDetails/VerifiedIn"/>
      </td>
-    </tr> 
+    </tr>
    </table>
    <p/>
-  
+
    <b>
     <font size="4">
      <xsl:text>Dated Action(s)</xsl:text>
@@ -142,7 +141,7 @@ Filter to create a Citation QC Report
       <td       xsl:use-attribute-sets = "cell2of2">
        <xsl:value-of            select = "DateLastModified"/>
       </td>
-     </tr> 
+     </tr>
     <tr>
      <td        xsl:use-attribute-sets = "cell1of2">
       <b>PdqKey</b>
@@ -150,7 +149,7 @@ Filter to create a Citation QC Report
      <td        xsl:use-attribute-sets = "cell2of2">
       <xsl:value-of             select = "PdqKey"/>
      </td>
-    </tr> 
+    </tr>
    </table>
 
    <xsl:if                        test = "PubmedArticle">
@@ -163,7 +162,7 @@ Filter to create a Citation QC Report
        <xsl:value-of            select = "PubmedArticle/MedlineCitation/
                                           MedlineID"/>
       </td>
-     </tr> 
+     </tr>
     <tr>
      <td        xsl:use-attribute-sets = "cell1of2">
       <b>PMID</b>
@@ -171,8 +170,8 @@ Filter to create a Citation QC Report
      <td        xsl:use-attribute-sets = "cell2of2">
       <xsl:element                name = "a">
        <xsl:attribute             name = "href">
-        <xsl:value-of           select = "concat('http://www.ncbi.nlm.nih.gov/',
-                                                 'entrez/query.fcgi?',
+        <xsl:value-of           select = "concat('https://www.ncbi.nlm.nih.gov',
+                                                 '/entrez/query.fcgi?',
                                                  'cmd=Retrieve',
                                                  '&amp;db=pubmed',
                                                  '&amp;dopt=Abstract',
@@ -188,10 +187,10 @@ Filter to create a Citation QC Report
                                           PMID"/>
       </xsl:element>
      </td>
-    </tr> 
+    </tr>
    </table>
    </xsl:if>
-     
+
    <p/><hr/>
    <b>
     <font size="4">
@@ -199,7 +198,7 @@ Filter to create a Citation QC Report
     </font>
    </b>
    <br/>
-   <xsl:value-of                select = "FormattedReference"/> 
+   <xsl:value-of                select = "FormattedReference"/>
    <br/>
   </BODY>
  </xsl:template>
@@ -224,7 +223,7 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = "CitationType"/>
     </td>
-   </tr>  
+   </tr>
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Title</b>
@@ -255,7 +254,7 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = "AuthorList/@Complete"/>
     </td>
-   </tr>  
+   </tr>
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Editors</b>
@@ -263,16 +262,16 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = "AuthorList/@Editors"/>
     </td>
-   </tr>  
+   </tr>
   </table>
 
   <xsl:apply-templates          select = "AuthorList/Author"/>
   <xsl:apply-templates          select = "PublicationDetails"/>
-  <xsl:apply-templates          select = "CancerLitAbstract"/>  
+  <xsl:apply-templates          select = "CancerLitAbstract"/>
  </xsl:template>
 
- 
- <!-- 
+
+ <!--
  ======================================================================
  Template to display the authors
  ====================================================================== -->
@@ -286,7 +285,7 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = "LastName"/>
     </td>
-   </tr> 
+   </tr>
   </xsl:if>
   <xsl:if                         test = "FirstName | ForeName">
    <tr>
@@ -296,7 +295,7 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = "FirstName | ForeName"/>
     </td>
-   </tr> 
+   </tr>
   </xsl:if>
   <xsl:if                         test = "Initials">
    <tr>
@@ -306,7 +305,7 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = "Initials"/>
     </td>
-   </tr> 
+   </tr>
   </xsl:if>
   <xsl:if                         test = "Suffix">
    <tr>
@@ -316,7 +315,7 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = "Suffix"/>
     </td>
-   </tr> 
+   </tr>
   </xsl:if>
   <xsl:if                         test = "CollectiveName">
    <tr>
@@ -326,7 +325,7 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = "CollectiveName"/>
     </td>
-   </tr> 
+   </tr>
   </xsl:if>
   </table>
   <br/>
@@ -353,7 +352,7 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:if                      test = "PublishedIn">
       <xsl:variable               name = "cdrId"
-                                select = "concat('CDR', 
+                                select = "concat('CDR',
                                            number(
                                             substring-after(
                                              substring-before(
@@ -380,7 +379,7 @@ Filter to create a Citation QC Report
       <xsl:text>)</xsl:text>
      </xsl:if>
     </td>
-   </tr> 
+   </tr>
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Publication Information</b>
@@ -389,7 +388,7 @@ Filter to create a Citation QC Report
      <xsl:value-of              select = "OtherPublicationInformation/
                                           PublicationInformation"/>
     </td>
-   </tr> 
+   </tr>
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Internet Information</b>
@@ -425,7 +424,7 @@ Filter to create a Citation QC Report
                                           ExternalRef/@cdr:xref"/>
      </xsl:element>
     </td>
-   </tr> 
+   </tr>
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Publication Year</b>
@@ -433,7 +432,7 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
       <xsl:value-of             select = "PublicationYear"/>
     </td>
-   </tr> 
+   </tr>
   </table>
   <p/>
  </xsl:template>
@@ -451,12 +450,12 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = "AbstractText"/>
     </td>
-   </tr> 
+   </tr>
   </table>
   <p/>
  </xsl:template>
 
- 
+
  <!--
  ====================================================================
  Template to display the PublicationDetails
@@ -477,7 +476,7 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
       <xsl:value-of             select = "MedlineJournalInfo/MedlineTA"/>
     </td>
-   </tr> 
+   </tr>
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Other Publication Information</b>
@@ -485,7 +484,7 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:apply-templates       select = "Article/Journal/JournalIssue"/>
     </td>
-   </tr> 
+   </tr>
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Publication Year</b>
@@ -498,15 +497,15 @@ Filter to create a Citation QC Report
        <xsl:value-of            select = "Article/Journal/
                                           JournalIssue/PubDate/
                                           MedlineDate"/>
-      </xsl:when> 
+      </xsl:when>
       <xsl:otherwise>
        <xsl:value-of            select = "Article/Journal/
                                           JournalIssue/PubDate/
                                           Year"/>
       </xsl:otherwise>
-     </xsl:choose>    
+     </xsl:choose>
     </td>
-   </tr> 
+   </tr>
   </table>
   <p/>
  </xsl:template>
@@ -524,7 +523,7 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = "ActionDescription"/>
     </td>
-   </tr> 
+   </tr>
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Action Date</b>
@@ -532,7 +531,7 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = "ActionDate"/>
     </td>
-   </tr> 
+   </tr>
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Comment</b>
@@ -540,12 +539,12 @@ Filter to create a Citation QC Report
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:value-of              select = "Comment"/>
     </td>
-   </tr> 
+   </tr>
   </table>
   <p/>
  </xsl:template>
 
- 
+
  <!--
  ======================================================================
  Template for PubmedArticle
@@ -562,7 +561,7 @@ Filter to create a Citation QC Report
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  ====================================================================== -->
  <xsl:template                   match = "MedlineCitation">
@@ -590,7 +589,7 @@ Filter to create a Citation QC Report
  </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
  Template to create JournalIssue
  ==================================================================== -->
@@ -613,7 +612,7 @@ Filter to create a Citation QC Report
      <xsl:otherwise>
       <xsl:value-of             select = "Volume"/>
      </xsl:otherwise>
-    </xsl:choose> 
+    </xsl:choose>
 
     <xsl:text>: </xsl:text>
    </xsl:otherwise>
@@ -624,9 +623,9 @@ Filter to create a Citation QC Report
 
   <xsl:if                         test = "PubDate/MedlineDate">
    <xsl:value-of                select = "PubDate/MedlineDate"/>
-  </xsl:if> 
+  </xsl:if>
   <xsl:if                         test = "PubDate/Year">
    <xsl:value-of                select = "PubDate/Year"/>
   </xsl:if>
- </xsl:template> 
+ </xsl:template>
 </xsl:transform>
