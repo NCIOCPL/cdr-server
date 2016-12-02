@@ -1,13 +1,12 @@
-Instructions for building the CDR server using Visual Studio 2010
+Instructions for building the CDR server using Visual Studio 2013
 =================================================================
 
 What you'll need:
 -----------------
 
- * Visual Studio 2010
- * bison.simple (in the /etc directory, from version control)
- * ./bison.exe (also in version control)
- * Subversion client (available from cygwin)
+ * Visual Studio 2013
+ * bison 3.0.x+ (available from cygwin)
+ * Subversion client
  * A connection to the internet
  * An account on the CBIIT subversion server
 
@@ -21,17 +20,34 @@ Build steps (substitute local drive letter for X: below):
 
  2. Build Sablotron
   - Go to X:\usr
-  - svn export https://ncisvn.nci.nih.gov/svn/oce_cdr/trunk/ExternalPackages/Sablot
+  - set CDRTRUNK=https://ncisvn.nci.nih.gov/svn/oce_cdr/trunk
+  - svn export -q %CDRTRUNK%/ExternalPackages/Sablot
   - cd Sablot
   - nmake -f makefile.msvc > errs
   - examine errs file for problems
 
  3. Install xerces.
-  - go to http://xml.apache.org/xerces-c/download.cgi
-  - download xerces-c-x.x.x-x86-windows-vc-10.0.zip (where x.x.x is the
-    latest release version of the package; e.g. 3.1.1)
+  - go to http://xerces.apache.org/xerces-c/download.cgi
+  - download xerces-c-x.x.x.zip (where x.x.x is the
+    latest release version of the package; e.g. 3.1.4)
   - unpack the zipfile
-  - move the unpacked files to X:\usr\xerces
+  - cd xerces-c-x.x.x\projects\Win32\VC12\xerces-all\all
+  - MSBuild.exe all.vcxproj /p:Configuration=Release /p:Platform=Win32
+  - MSBuild.exe all.vcxproj /p:Configuration=Debug /p:Platform=Win32
+  - cd ..\..\..\..\.. [back to xerces-c-x.x.x]
+  - mkdir X:\usr\xerces
+  - mkdir X:\usr\xerces\include
+  - mkdir X:\usr\xerces\include\xercesc
+  - xcopy /s src\xercesc X:\usr\xerces\include\xercesc
+  - mkdir X:\usr\xerces\bin
+  - mkdir X:\usr\xerces\lib
+  - copy build\Win32\VC12\Release\*.exe X:\usr\xerces\bin
+  - copy build\Win32\VC12\Release\*.dll X:\usr\xerces\bin
+  - copy build\Win32\VC12\Debug\*.dll X:\usr\xerces\bin
+  - copy build\Win32\VC12\Debug\xerces-c*.pdb X:\usr\xerces\bin
+  - copy build\Win32\VC12\Release\*.lib X:\usr\xerces\lib
+  - copy build\Win32\VC12\Debug\*.lib X:\usr\xerces\lib
+  - (if xerces version is not 3.1.x, fix library name in CDR server Makefile)
 
  4. Ensure that there is a path to each of the dlls. Add to the path:
   - X:\usr\expat\Bin
@@ -59,11 +75,6 @@ easiest way to do that if you're running a 64-bit build of Windows
 is to invoke the ODBC connection manager directly:
 
        %windir%\SysWOW64\odbcad32.exe
-
-Note that the version of bison which is invoked by the Makefile must
-be the version in D:\bin on the CDR server (version 1.24). Later versions
-of bison introduce incompatibilities which need to be addressed in a
-separate branch.
 
 Additional requirements for running the CDR Server:
 

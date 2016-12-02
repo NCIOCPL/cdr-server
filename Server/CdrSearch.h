@@ -3,28 +3,6 @@
  *
  * Interface for CDR search implementation.  Used by implementation of search
  * command and by the query parser.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.7  2000/10/04 18:22:42  bkline
- * Added optional maxDocs argument to getSql().
- *
- * Revision 1.6  2000/08/10 15:45:25  bkline
- * Added new OpType BEGINS.
- *
- * Revision 1.5  2000/05/04 12:39:43  bkline
- * More ccdoc comments.
- *
- * Revision 1.4  2000/04/26 01:37:28  bkline
- * Tweaking ccdoc comments.
- *
- * Revision 1.3  2000/04/22 18:57:38  bkline
- * Added ccdoc comment markers for namespaces and @pkg directives.
- *
- * Revision 1.2  2000/04/22 18:01:26  bkline
- * Fleshed out documentation comments.
- *
- * Revision 1.1  2000/04/21 14:00:26  bkline
- * Initial revision
  */
 
 #ifndef CDR_SEARCH_
@@ -40,16 +18,19 @@ namespace cdr {
 
     /** @pkg cdr */
 
+    // Forward stub declaration
+    class ParserInput;
+
     /**
      * The <code>QueryNode</code> class represents a node in a CDR query tree.
      * A node can be a simple assertion (such as a test of a control value --
      * e.g., the date the document was created -- or a named attribute), a
-     * negation of such an assertion or set of assertions, or a boolean 
+     * negation of such an assertion or set of assertions, or a boolean
      * combination of two nodes.
      */
     class QueryNode {
     public:
-        
+
         /**
          * The three types of nodes which can be found in a CDR query tree.
          */
@@ -77,7 +58,7 @@ namespace cdr {
          * The names available for named attributes is under the control of
          * the users.  In contrast, there is a fixed set of "control"
          * value types, derived from information in the document table itself.
-         * The first type of test has an <code>LValueType</code> of 
+         * The first type of test has an <code>LValueType</code> of
          * <code>ATTR</code>.  The other <code>LValueType</code>s in the list
          * below are available for "control" value tests.
          */
@@ -104,12 +85,12 @@ namespace cdr {
          *  @param  t           one of the <code>LValueType</code> tokens
          *                      representing a known control type.
          *  @param  o           token representing the test operator.
-         *  @param  s           reference to object containing string to 
+         *  @param  s           reference to object containing string to
          *                      be compared to the documents' comparable
          *                      values.
          */
         QueryNode(LValueType t, OpType o, const String& s)
-            : lValueType(t), op(o), nodeType(ASSERTION), rValue(s), 
+            : lValueType(t), op(o), nodeType(ASSERTION), rValue(s),
               left(0), right(0) {}
 
         /**
@@ -270,7 +251,7 @@ namespace cdr {
     struct QueryParam {
 
         /**
-         * Creates a wrapper for the pointers to the private information 
+         * Creates a wrapper for the pointers to the private information
          * needed by the parser and lexical analyzer.
          *
          *  @param  q       address of <code>Query</code> object to be
@@ -278,7 +259,7 @@ namespace cdr {
          *  @param  pi      address of <code>ParserInput</code> object
          *                  containing XQL query to be parsed.
          */
-        QueryParam(Query* q, void* pi) : query(q), parserInput(pi) {}
+        QueryParam(Query* q, ParserInput* pi) : query(q), parserInput(pi) {}
 
         /**
          * Address of <code>Query</code> object to be populated by the query
@@ -290,7 +271,7 @@ namespace cdr {
          * Address of <code>ParserInput</code> object containing XQL query to
          * be parsed.
          */
-        void*       parserInput;
+        ParserInput*       parserInput;
     };
 
 }
@@ -302,6 +283,6 @@ namespace cdr {
  * At least we can change the "yy" prefix so the system can have more than one
  * parser type in the same global namespace.
  */
-extern int CdrSearchparse(void*);
+extern int CdrSearchparse(cdr::QueryParam*);
 
 #endif

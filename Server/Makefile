@@ -229,9 +229,6 @@ $(CDRLIB): $(LIBOBJS)
 
 #--------------------------------------------------------------------------
 # For Bison, we're not attempting a generic rule
-# Note that our version of bison requires a modified
-#   bison.simple parser to handle C++ syntax
-# See /etc/bison.simple, /etc/bison.simple.readme
 #--------------------------------------------------------------------------
 CdrSearch_tab.obj: CdrSearch_tab.c $(HDRS)
 	$(CC) $(CFLAGS) -c -TP CdrSearch_tab.c >> errs

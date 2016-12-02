@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Test client (C++ version) for sending commands to CDR server.
  *
  * Usage:
@@ -72,12 +70,8 @@ int main(int ac, char** av)
         }
         requests = readFile(is);
     }
-    else {
+    else
         requests = readFile(std::cin);
-        //requests = "<CdrCommandSet><SessionId>guest</SessionId>";
-        //requests += "<CdrCommand><CdrGetDoc><DocId>CDR0000043753</DocId>";
-        //requests += "</CdrGetDoc></CdrCommand></CdrCommandSet>";
-    }
 
     // Initialize socket I/O.
     if (WSAStartup(0x0101, &wsadata) != 0) {
