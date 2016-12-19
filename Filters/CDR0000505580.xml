@@ -1,16 +1,15 @@
 <?xml version = "1.0" encoding="utf-8"?>
-<!-- $Id$ -->
+<!-- File Name:    CDR0000505580.xml              -->
 <!-- Filter title: Vendor Filter: DrugInfoSummary -->
 <!--
 ====================================================================
-$Id$
-
 Filter to create DrugInfoSummary vendor output documents.
                               Volker Englisch, 2006-08-12
 
 BZIssue::4949 - Vendor Filter Changes for Display of DIS information
 BZIssue::5008 - [DIS] Relocate Link to MedlinePlus Information
 OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
+OCECDR-4122: Changes the order of information in DIS
 
 ==================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -30,7 +29,7 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
  <xsl:variable                    name = "whoAmI"
                                 select = "'DrugInfo'"/>
 
- <!-- *
+ <!--
  ====================================================================
  Root element.
  ==================================================================== -->
@@ -50,9 +49,9 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
 
    <xsl:apply-templates         select = "DrugInfoMetaData"/>
 
-   <DrugInfoTitle>
+   <xsl:element                   name = "DrugInfoTitle">   
     <xsl:value-of               select = "Title"/>
-   </DrugInfoTitle>
+   </xsl:element>
 
    <!--
    The DrugReference elements will have to be displayed in this 
@@ -61,43 +60,49 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
    <!-- 
    Only display the following FDA section if the DrugReference includes
    a DrugReferenceLink with text node "FDA Approval for ..."
+
+   Note: It's not clear to me why we are displaying the FDA information
+         twise, once as part of the DrigInfoMetaData and once here.
    ==================================================================== -->
    <xsl:choose>
     <xsl:when                     test = "DrugReference[@section='FDA']">
-     <xsl:for-each                select = "DrugReference[@section='FDA']">
-      <Section>
-       <xsl:attribute               name = "cdr:id">
+     <xsl:for-each              select = "DrugReference[@section='FDA']">
+      <xsl:element                name = "Section">   
+       <xsl:attribute             name = "cdr:id">
         <xsl:text>_</xsl:text>
-        <xsl:value-of             select = "@section"/>
+        <xsl:value-of           select = "@section"/>
        </xsl:attribute>
 
-       <Para><xsl:apply-templates select = "DrugReferenceLink"/></Para>
-
-      </Section>
+       <xsl:element               name = "Para">   
+        <xsl:apply-templates    select = "DrugReferenceLink"/>
+       </xsl:element>
+      </xsl:element>
      </xsl:for-each>
     </xsl:when>
-    <!-- If no FDA section exists we need to add an empty para element
-         for the non-DrugCombination documents to prevent
-         display problems with vertical spacing on Cancer.gov. -->
+    <!-- 
+    If no FDA section exists we need to add an empty para element for the 
+    non-DrugCombination documents to prevent display problems with vertical 
+    spacing on Cancer.gov. -->
     <xsl:otherwise>
      <xsl:if                      test = "not(/DrugInformationSummary
                                                 /DrugInfoMetaData
                                                 /DrugInfoType/@Combination)">
-      <Section>
-       <Para> </Para>
-      </Section>
+      <xsl:element                name = "Section">   
+       <xsl:element               name = "Para">   
+        <xsl:text> </xsl:text>
+       </xsl:element>
+      </xsl:element>
      </xsl:if>
     </xsl:otherwise>
    </xsl:choose>
 
    <!-- 
-   This will display the main text of the DIS
-   ================================================-->
+   This will display the main text section of the DIS under 
+   "Use in Cancer"
+   ================================================================ -->
    <xsl:apply-templates         select = "SummarySection"/>
 
    <!--
-   Collect all of the NCI DrugReference elements within a single NCI
-   display section.
    Even if no NCI DrugReference exists we still need to create a 
    section for this type.
    ================================================================= -->
@@ -105,61 +110,65 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
                                 select = "'NCI'"/>
 
    <!--
-   Collect all @section=About-drug DrugReference elements to display 
-   in a single section.
+   Collect all the DrugReference elements with Type='NCI' to display
+   under the section "More about XXX" (sorted by PostedDate)
    ================================================================= -->
-     <Section>
-      <xsl:attribute               name = "cdr:id">
-       <xsl:text>_About</xsl:text>
-      </xsl:attribute>
+   <xsl:element                   name = "Section">   
+    <xsl:attribute                name = "cdr:id">
+     <xsl:text>_About</xsl:text>
+    </xsl:attribute>
 
-      <Title>
-       <xsl:text>More About</xsl:text>
-       <xsl:text> </xsl:text>
-       <xsl:value-of             select = "Title"/>
-      </Title>
+    <xsl:element                  name = "Title">   
+     <xsl:text>More About</xsl:text>
+     <xsl:text> </xsl:text>
+     <xsl:value-of              select = "Title"/>
+    </xsl:element>
 
-      <!-- 
-      As the first section within the About-Drug paragraph display the
-      dictionary definition, then display the MedlinePlus section 
-      followed by everything else.
-      ================================================================ -->
-      <xsl:call-template             name = "addDictionaryDefinition">
-       <xsl:with-param               name = "drugRefTypeNCI"
+    <!-- 
+    As the first section within the "More About Drug" paragraph 
+    display the dictionary definition, then display the MedlinePlus 
+    section followed by everything else.
+    ================================================================ -->
+    <xsl:call-template            name = "addDictionaryDefinition">
+     <xsl:with-param              name = "drugRefTypeNCI"
                                 select = "'Dict'"/>
-      </xsl:call-template>
+    </xsl:call-template>
 
-      <xsl:apply-templates       select = "DrugReference
-                                          [@section='About_drug'
-                                          and
-                                          starts-with(DrugReferenceLink, 
-                                                         'MedlinePlus')]"/>
-      <xsl:apply-templates       select = "DrugReference
-                                          [@section='About_drug'
-                                          and
-                                          not(
-                                          starts-with(DrugReferenceLink, 
-                                                         'MedlinePlus'))]"/>
-     </Section>
+    <!--
+    Now add all Drugreferences with Type='NLM'
+    =============================================================== -->
+    <xsl:for-each               select = "DrugReference/
+                                            DrugReferenceType[text()='NLM']">
+     <xsl:apply-templates       select = ".."
+                                  mode = "nlm"/>
+    </xsl:for-each>
+   </xsl:element>
 
    <!--
-   Next collect all @section=Research-results DrugReference elements
-   to display in a single section.
+   Next add all Drugreferences with Type='NCI'
+   collect all @section=Research-results DrugReference elements
    ================================================================= -->
-   <xsl:if                        test = "DrugReference
-                                           [@section='Research_results']">
-    <Section>
+   <xsl:if                        test = "DrugReference/
+                                            DrugReferenceType[text()='NCI']">
+    <xsl:element                  name = "Section">   
      <xsl:attribute               name = "cdr:id">
       <xsl:text>_Research</xsl:text>
      </xsl:attribute>
 
-     <Title>
-      <xsl:text>Research Results</xsl:text>
-     </Title>
-     <xsl:apply-templates       select = "DrugReference
-                                           [@section='Research_results']"/>
-    </Section>
-   </xsl:if>
+     <xsl:element                 name = "Title">   
+      <xsl:text>Research Results and Related Resources</xsl:text>
+     </xsl:element>
+
+     <xsl:for-each              select = "DrugReference/
+                                            DrugReferenceType[text()='NCI']">
+
+      <xsl:sort                 select = "../DrugReferencePostedDate"
+                                 order = "descending"/>
+      <xsl:apply-templates      select = ".."
+                                  mode = "nci"/>
+      </xsl:for-each>
+     </xsl:element>
+    </xsl:if>
                
    <!--
    The Clinical Trials section should only be displayed for the Drug Info
@@ -200,10 +209,10 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
    =================================================================== -->
    <xsl:choose>
     <xsl:when                     test = "CdrDocCtl/FirstPub/Date">
-     <DateFirstPublished>
+     <xsl:element                 name = "DateFirstPublished">
       <xsl:value-of             select = "substring-before(CdrDocCtl/
                                             FirstPub/Date,'T')"/>
-     </DateFirstPublished>
+     </xsl:element>
     </xsl:when>
     <xsl:when                     test = "$DateFirstPub">
      <xsl:call-template           name = "getDateFirstPub">
@@ -212,7 +221,7 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
      </xsl:call-template>    
     </xsl:when>
     <xsl:otherwise>
-     <DateFirstPublished>
+     <xsl:element                 name = "DateFirstPublished">
       <xsl:choose>
        <xsl:when                  test = "DatePubProc">
         <xsl:value-of           select = "DatePubProc"/>
@@ -223,7 +232,7 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
                                                     "%25Y-%25m-%25d"))'/>
        </xsl:otherwise>
       </xsl:choose>
-     </DateFirstPublished>
+     </xsl:element>
     </xsl:otherwise>
    </xsl:choose>
 
@@ -234,34 +243,33 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
 
 
  <!--
- ===================================================================
- Template to display the Definition node but only if the 
- ReviewStatus is "Reviewed".
- =================================================================== -->
+ ====================================================================
+ Template to display the top section mainly coming from the meta data
+ ==================================================================== -->
  <xsl:template                   match = "DrugInfoMetaData">
   <xsl:copy>
    <xsl:apply-templates         select = "DrugInfoType"
                                   mode = "copy"/>
-   <DrugInfoAudience>
+   <xsl:element                   name = "DrugInfoAudience">
     <xsl:value-of               select = "Audience"/>
-   </DrugInfoAudience>
-   <DrugInfoDescription>
+   </xsl:element>
+   <xsl:element                   name = "DrugInfoDescription">
     <xsl:value-of               select = "Description"/>
-   </DrugInfoDescription>
-   <DrugInfoURL>
+   </xsl:element>
+   <xsl:element                   name = "DrugInfoURL">
     <xsl:attribute                name = "xref">
      <xsl:value-of              select = "URL/@cdr:xref"/>
     </xsl:attribute>
     <xsl:value-of               select = "URL"/>
-   </DrugInfoURL>
+   </xsl:element>
 
    <xsl:if                        test = "Manufacturers">
     <xsl:apply-templates        select = "Manufacturers"/>
    </xsl:if>
 
    <!--
-   We only need the FDA Approved section for non-DCS
-   ================================================= -->
+   We only need to include the FDA Approved section for non-DCS
+   ============================================================ -->
    <xsl:if                        test = "not(/DrugInformationSummary
                                                 /DrugInfoMetaData
                                                 /DrugInfoType/@Combination)">
@@ -269,7 +277,7 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
                                   mode = "copy"/>
    </xsl:if>
 
-   <TerminologyLink>
+   <xsl:element                   name = "TerminologyLink">
     <xsl:attribute                name = "ref">
      <xsl:value-of              select = "TerminologyLink/
                                           Term/@cdr:ref"/>
@@ -277,8 +285,8 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
     <xsl:value-of               select = "TerminologyLink/
                                           Term/
                                           PreferredName"/>
-   </TerminologyLink>
-   <GlossaryLink>
+   </xsl:element>
+   <xsl:element                   name = "GlossaryLink">
     <xsl:attribute                name = "ref">
      <xsl:value-of              select = "GlossaryLink/
                                           GlossaryTermName/@cdr:ref"/>
@@ -287,12 +295,12 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
                                           GlossaryTermName/
                                           TermName/
                                           TermNameString"/>
-   </GlossaryLink>
+   </xsl:element>
 
    <xsl:apply-templates         select = "TerminologyLink/
                                           Term/
                                           USBrandNames"/>
-   <PronunciationInfo>
+   <xsl:element                   name = "PronunciationInfo">
     <xsl:apply-templates        select = "GlossaryLink/
                                           GlossaryTermName/
                                           TermName/
@@ -317,18 +325,21 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
      <xsl:with-param              name = "audioLanguage"
                                 select = "'es'"/>
     </xsl:apply-templates>
-   </PronunciationInfo>
+   </xsl:element>
 
+   <!--
+   Create the link to the FDA approval from the DR-section="FDA"
+   ====================================================================== -->
    <xsl:if                        test = "../DrugReference[@section='FDA']/
                                           DrugReferenceLink/@cdr:xref">
-    <FDAExternalRef>
+    <xsl:element                  name = "FDAExternalRef">
      <xsl:attribute               name = "xref">
        <xsl:value-of            select = "../DrugReference[@section='FDA']/
                                           DrugReferenceLink/@cdr:xref"/>
      </xsl:attribute>
      <xsl:value-of              select = "../DrugReference[@section='FDA']/
                                           DrugReferenceLink"/>
-    </FDAExternalRef>
+    </xsl:element>
    </xsl:if>
   </xsl:copy>
  </xsl:template>
@@ -336,19 +347,29 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
 
  <!--
  ===================================================================
- Template to display the Definition node but only if the 
- ReviewStatus is "Reviewed".
+ Template to display all DrugReferences for Type=NLM
  =================================================================== -->
- <xsl:template                   match = "DrugReference">
+ <xsl:template                   match = "DrugReference"
+                                  mode = "nlm">
   <xsl:param                      name = "drugRefType">
-   <xsl:choose>
-    <xsl:when                     test = "@section = 'Research_results'">
-     <xsl:text>Research</xsl:text>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:text>About</xsl:text>
-    </xsl:otherwise>
-   </xsl:choose>
+   <xsl:text>About</xsl:text>
+  </xsl:param>
+
+  <xsl:apply-templates          select = "DrugReferenceDescription">
+   <xsl:with-param                name = "drugRefType"
+                                select = "$drugRefType"/>
+  </xsl:apply-templates>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Template to display all DrugReferences for Type=NCI
+ =================================================================== -->
+ <xsl:template                   match = "DrugReference"
+                                  mode = "nci">
+  <xsl:param                      name = "drugRefType">
+   <xsl:text>Research</xsl:text>
   </xsl:param>
 
   <xsl:param                      name = "miscDocFracId"
@@ -357,15 +378,9 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
                                             MiscellaneousDocument/
                                               @cdr:ref, '#')"/>
 
-   <!--
-   Display all DrugReference sections
-   ================================== -->
-   <xsl:apply-templates         select = "DrugReferenceDescription">
-    <xsl:with-param               name = "drugRefType"
-                                select = "$drugRefType"/>
-    <xsl:with-param               name = "miscDocFracId"
-                                select = "$miscDocFracId"/>
-   </xsl:apply-templates>
+   <xsl:element                   name = 'Para'>
+    <xsl:apply-templates        select = "DrugReferenceLink"/>
+   </xsl:element>
 
  </xsl:template>
 
@@ -378,12 +393,12 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
   <xsl:param                      name = "drugRefType"/>
   <xsl:param                      name = "miscDocFracId"/>
 
-   <ExternalRef>
+   <xsl:element                   name = "ExternalRef">
     <xsl:attribute                name = "xref">
      <xsl:value-of              select = "@cdr:xref"/>
     </xsl:attribute>
     <xsl:value-of               select = "."/>
-   </ExternalRef>
+   </xsl:element>
  </xsl:template>
 
 
@@ -465,8 +480,11 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
  Template to suppress the Title element of the Misc Documents since
  this will be replaced by the Section Title.
  This template does not effect the Disclaimer title
+ It also suppresses the DrugReferenceType to be displayed from the NLM
+ DrugReference when apply-templates is called.
  ===================================================================== -->
- <xsl:template                   match = "Title"/>
+ <xsl:template                   match = "Title |
+                                          DrugReferenceType"/>
 
 
  <!--
@@ -476,7 +494,7 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
  SummarySection but not in the DTD as a Section.
  ===================================================================== -->
  <xsl:template                   match = "SummarySection">
-  <Section>
+  <xsl:element                    name = "Section">
    <xsl:attribute                 name = "cdr:id">
     <xsl:value-of               select = "@cdr:id"/>
    </xsl:attribute>
@@ -484,17 +502,19 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
    <xsl:if                        test = "not(/DrugInformationSummary
                                                 /DrugInfoMetaData
                                                 /DrugInfoType/@Combination)">
-    <Title>Use in Cancer</Title>
+    <xsl:element                  name = "Title">
+     <xsl:text>Use in Cancer</xsl:text>
+    </xsl:element>
    </xsl:if>
 
   <xsl:apply-templates            mode = "copy"/>
-  </Section>
+  </xsl:element>
  </xsl:template>
 
 
  <!--
  =====================================================================
- Template to display the Para elements
+ Template to copy various elements
  ===================================================================== -->
  <xsl:template                   match = "SummarySection" 
                                   mode = "copy">
@@ -512,11 +532,11 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
  Template to convert the SummarySection Title element to a Bolded text
  since Cancer.gov doesn't allow a title in a section.
  ===================================================================== -->
- <xsl:template                  match = "Title"
-                                 mode = "section">
-  <Para>
-   <Strong><xsl:value-of       select = "."/></Strong>
-  </Para>
+ <xsl:template                   match = "Title"
+                                  mode = "section">
+  <xsl:element                    name = "Para">
+   <Strong><xsl:value-of        select = "."/></Strong>
+  </xsl:element>
  </xsl:template>
 
  <!--
@@ -525,9 +545,9 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
  ===================================================================== -->
  <xsl:template                   match = "AltTitle"
                                   mode = "copy">
-  <Para>
+  <xsl:element                    name = "Para">
    <xsl:value-of                select = "."/>
-  </Para>
+  </xsl:element>
  </xsl:template>
 
 
@@ -537,20 +557,20 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
  ===================================================================== -->
  <xsl:template                   match = "KeyPoint"
                                   mode = "copy">
-  <Para>
+  <xsl:element                    name = "Para">
    <xsl:value-of                select = "."/>
-  </Para>
+  </xsl:element>
  </xsl:template>
 
 
  <!--
  =====================================================================
- Template to create US Brand Name
+ Template to create the list of manufacturers if it exists
  ===================================================================== -->
  <xsl:template                   match = "Manufacturers">
   <xsl:copy>
   <xsl:for-each                 select = "Manufacturer">
-   <Manufacturer>
+   <xsl:element                   name = "Manufacturer">
     <xsl:attribute                name = "ref">
      <xsl:value-of              select = "Organization/@cdr:ref"/>
     </xsl:attribute>
@@ -558,7 +578,7 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
                                           OrganizationNameInformation/
                                           OfficialName/
                                           Name"/>
-   </Manufacturer>
+   </xsl:element>
   </xsl:for-each>
   </xsl:copy>
  </xsl:template>
@@ -587,9 +607,9 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
                                                 (following::OtherTermName,
                                              'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
                                              'abcdefghijklmnopqrstuvwxyz')))]">
-   <USBrandName>
+   <xsl:element                   name = "USBrandName">
     <xsl:value-of               select = "normalize-space(OtherTermName)"/>
-   </USBrandName>
+   </xsl:element>
   </xsl:if>
  </xsl:template>
 
@@ -608,7 +628,6 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
   <xsl:apply-templates>
    <xsl:with-param                name = "drugRefType" 
                                 select = "$drugRefType"/>
-
   </xsl:apply-templates>
  </xsl:template>
 
@@ -623,12 +642,12 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
  <xsl:template                   match = "Section">
   <xsl:param                      name = "miscDocId"/>
 
-  <DrugInfoDisclaimer>
+  <xsl:element                    name = "DrugInfoDisclaimer">
    <xsl:apply-templates           mode = "disclaimer">
     <xsl:with-param               name = "miscDocId" 
                                 select = "$miscDocId"/>
    </xsl:apply-templates>
-  </DrugInfoDisclaimer>
+  </xsl:element>
  </xsl:template>
 
 
@@ -662,14 +681,14 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
  <xsl:template                   match = "Para"
                                   mode = "disclaimer">
   <xsl:param                      name = "miscDocId"/>
-  <Para>
+  <xsl:element                    name = "Para">
    <xsl:attribute                 name = "id">
     <xsl:value-of               select = "concat($miscDocId, ./@cdr:id)"/>
    </xsl:attribute>
 
    <xsl:apply-templates           mode = "copy"/>
 
-  </Para>
+  </xsl:element>
  </xsl:template>
 
 
@@ -686,13 +705,19 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
  Template to create US Brand Name
  ===================================================================== -->
  <xsl:template                    name = "trialSection">
-  <Section>
+  <xsl:element                    name = "Section">
    <xsl:attribute                 name = "id">
     <xsl:text>_ClinicalTrial_1</xsl:text>
    </xsl:attribute>
 
-   <Title>Clinical Trials Accepting Patients</Title>
-   <Para id="_ClinicalTrial_2">
+   <xsl:element                   name = "Title">
+    <xsl:text>Clinical Trials Accepting Patients</xsl:text>
+   </xsl:element>
+   <xsl:element                   name = "Para">
+    <xsl:attribute                name = "id">
+     <xsl:text>_ClinicalTrial_2</xsl:text>
+    </xsl:attribute>
+
     <xsl:element                  name = "ExternalRef">
      <xsl:attribute               name = "xref">
       <xsl:text>http://www.cancer.gov/search/ClinicalTrialsLink.aspx</xsl:text>
@@ -720,8 +745,8 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
     </xsl:element>
     <xsl:text> - Check for trials from NCI's list of cancer </xsl:text>
     <xsl:text>clinical trials now accepting patients.</xsl:text>
-   </Para>
-  </Section>
+   </xsl:element>
+  </xsl:element>
  </xsl:template>
 
 
@@ -736,7 +761,7 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
     <!-- 
     Not certain where this section needs to be positioned
     ===================================================== -->
-    <Para>
+    <xsl:element                  name = "Para">
      <xsl:attribute               name = "cdr:id">
       <xsl:text>_</xsl:text>
       <xsl:value-of             select = "$drugRefTypeNCI"/>
@@ -758,7 +783,7 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
      </xsl:element>
      <xsl:text> - Detailed scientific definition and other names </xsl:text>
      <xsl:text>for this drug.</xsl:text>
-    </Para>
+    </xsl:element>
  </xsl:template>
 
 
@@ -767,15 +792,15 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
  Template to create the disclaimer
  ===================================================================== -->
  <xsl:template                    name = "briefDisclaimer">
-      <xsl:variable               name = "miscDoc" 
-                               select = "document(concat('cdr:CDR0000510121',
+  <xsl:variable                   name = "miscDoc" 
+                                select = "document(concat('cdr:CDR0000510121',
                                                          '/lastp'))"/>
 
-     <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
+  <xsl:apply-templates          select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
-      <xsl:with-param            name = "miscDocId"
-                               select = "'_Disclaimer'"/>
-     </xsl:apply-templates>
+   <xsl:with-param                name = "miscDocId"
+                                select = "'_Disclaimer'"/>
+  </xsl:apply-templates>
  </xsl:template>
 
 
@@ -784,14 +809,14 @@ OCECDR-3882: Modify Summary Filter to adjust URLs for NVCG
  Template to create US Brand Name
  ===================================================================== -->
  <xsl:template                    name = "detailedDisclaimer">
-      <xsl:variable               name = "miscDoc" 
-                               select = "document(concat('cdr:CDR0000510122',
+  <xsl:variable                   name = "miscDoc" 
+                                select = "document(concat('cdr:CDR0000510122',
                                                          '/lastp'))"/>
 
-     <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
+  <xsl:apply-templates          select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
-      <xsl:with-param            name = "miscDocId"
-                               select = "'_Disclaimer'"/>
-     </xsl:apply-templates>
+   <xsl:with-param                name = "miscDocId"
+                                select = "'_Disclaimer'"/>
+  </xsl:apply-templates>
  </xsl:template>
 </xsl:transform>
