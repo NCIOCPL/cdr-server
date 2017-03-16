@@ -1,8 +1,5 @@
 /*
- * $Id$
- *
  * Run this script as database superuser to create the cdr user logins.
- *
  * BZIssue::4925
  */
 

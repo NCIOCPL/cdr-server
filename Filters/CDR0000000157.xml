@@ -909,12 +909,32 @@ OCECDR-4123: Add HP/Patient URL to Summaries
                                          (name() = 'SummaryFragmentRef')">
     <xsl:variable                name = "hrefId"
                                select = "@cdr:href"/>
-    <xsl:variable                name = "hrefNormId"
-                               select = "number(
+    <xsl:variable                name = "hrefNormId">
+     <xsl:choose>
+      <xsl:when                  test = "ancestor::SummarySection/@cdr:ref
+                                           = substring-before($hrefId, '#')">
+       <xsl:value-of           select = "number(
+                                           substring-after(/Summary/DocId,
+                                                           'CDR'))"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of           select = "number(
                                            substring-before(
                                            concat(
                                            substring-after(@cdr:href, 'CDR'),
                                                                '#'), '#'))"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:variable>
+
+    <!--
+    <xsl:text>AAA </xsl:text>
+    <xsl:value-of select = "$hrefId"/>
+    <xsl:text> == </xsl:text>
+    <xsl:value-of select = "$hrefNormId"/>
+    <xsl:text> BBB</xsl:text>
+    -->
+
     <!--
     Extracting the content of the SummaryURL attribute to be used for 
     populating the url attribute of the SummaryRef element.  This 
@@ -958,23 +978,29 @@ OCECDR-4123: Add HP/Patient URL to Summaries
     the SummaryURL element displaying the full path without the domain
     ===================================================================== -->
     <SummaryRef>
-     <xsl:attribute              name = "href">
-      <xsl:call-template         name = "setHrefTarget">
-       <xsl:with-param           name = "myHrefId">
-        <xsl:value-of            select = "$hrefId"/>
+     <xsl:attribute               name = "href">
+      <xsl:call-template          name = "setHrefTarget">
+       <xsl:with-param            name = "myHrefId">
+        <xsl:value-of           select = "$hrefId"/>
        </xsl:with-param>
       </xsl:call-template>
      </xsl:attribute>
-     <xsl:attribute              name = "url">
+
+     <!--
+     The URL value has to be the value of the parent summary if the 
+     link exists within a module
+     -->
+     <xsl:attribute               name = "url">
       <xsl:choose>
-       <xsl:when                 test = "starts-with($url, 'http')">
-        <xsl:value-of          select = "substring-after($url, '.gov')"/>
+       <xsl:when                  test = "starts-with($url, 'http')">
+        <xsl:value-of           select = "substring-after($url, '.gov')"/>
        </xsl:when>
        <xsl:otherwise>
-        <xsl:value-of          select = "$url"/>
+        <xsl:value-of           select = "$url"/>
        </xsl:otherwise>
       </xsl:choose>
      </xsl:attribute>
+
      <xsl:apply-templates/>
     </SummaryRef>
    </xsl:when>
@@ -1605,7 +1631,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  </xsl:template>
 
 
-<!-- 
+ <!-- 
  ============================================================= 
  Create the elements and rename the attribute 
  (cdr:href ID needs to be renamed to href).
@@ -1617,6 +1643,82 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    </xsl:attribute>
    <xsl:value-of                select = "."/>
   </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ ==============================================================
+ Template for MediaCaption
+ ============================================================== -->
+ <xsl:template                    name = "mediaCaptionXXXX">
+    <!--
+    Define audience variable to select the alt text
+    =============================================== -->
+    <xsl:variable                 name = "docAudience">
+     <xsl:choose>
+      <xsl:when                   test = "$sumAudience 
+                                             = 'Health professionals'">
+       <xsl:text>Health_professionals</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>Patients</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:variable>
+
+    <!--
+    Create MediaLink element for Summary and GlossaryTerm (the
+    MediaLink element is NOT shared between the English and Spanish
+    version)
+    ===============================================================
+    Define language variable to select the caption and alt text
+    Note:  This only applies for summary document and GlossaryTerm
+           document with a MediaLink child element of the
+           TermDefinition or SpanishTermDefinition
+    =============================================================== -->
+    <xsl:variable                 name = "docLanguage">
+     <xsl:choose>
+      <xsl:when                   test = "$language = 'Spanish'">
+       <xsl:text>es</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>en</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:variable>
+
+
+   <xsl:choose>
+    <xsl:when                     test = "SpecificMediaCaption">
+     <xsl:element                 name = "Caption">
+      <xsl:attribute              name = "language">
+       <xsl:choose>
+        <xsl:when                 test = "$language = 'English'">
+         <xsl:text>en</xsl:text>
+        </xsl:when>
+        <xsl:when                 test = "$language = 'Spanish'">
+         <xsl:text>es</xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:text>NA</xsl:text>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:attribute>
+
+      <xsl:apply-templates       select = "SpecificMediaCaption"/>
+     </xsl:element>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates       select = "MediaID/
+                                            Media/
+                                            MediaContent/
+                                            Captions/
+                                            MediaCaption
+                                              [@language = $docLanguage 
+                                               and 
+                                               @audience=$docAudience]"/>
+    </xsl:otherwise>
+   </xsl:choose>
  </xsl:template>
 
 

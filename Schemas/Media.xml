@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
 
-    $Id$
+    Media.xml
 
     BZIssue::1967
     BZIssue::4645
@@ -12,6 +12,7 @@
     BZIssue::5124
     JIRA::OCECDR-3655
     JIRA::OCECDR-3780
+    JIRA::OCECDR-3588 - add support for embedded video
 
   -->
 <!--===================================================================-->
@@ -85,6 +86,10 @@
                      maxOccurs       = 'unbounded'/>
       <element       name            = 'Glossary'
                      type            = 'GlossaryLink'
+                     minOccurs       = '0'
+                     maxOccurs       = 'unbounded'/>
+      <element       name            = 'ExternalRef'
+                     type            = 'ExternalRef'
                      minOccurs       = '0'
                      maxOccurs       = 'unbounded'/>
     </sequence>
@@ -254,6 +259,15 @@
       <element       name            = 'RunSeconds'
                      type            = 'integer'
                      minOccurs       = '0'/>
+
+      <!-- Next three elements are new for OCECDR-3558 -->
+      <element       name            = 'VideoHosting'
+                     type            = 'VideoHosting'/>
+      <element       name            = 'HostingID'
+                     type            = 'string'/>
+      <element       name            = 'DefaultVideoPresentationTemplate'
+                     type            = 'VideoPresentationTemplate'
+                     minOccurs       = '0'/>
     </sequence>
   </complexType>
 
@@ -320,13 +334,16 @@
 
   <simpleType        name            = 'VideoType'>
     <restriction     base            = 'string'/>
-    <!-- Enumeration to be determined -->
+    <!-- Enumeration to be determined.
+         We many want to start out without the restriction of a
+         valid values list, as we have done for audio media. -->
   </simpleType>
 
   <simpleType        name            = 'VideoEncoding'>
     <restriction     base            = 'string'>
       <enumeration   value           = 'AVI'/>
       <enumeration   value           = 'MPEG2'/>
+      <enumeration   value           = 'MPEG4'/>
       <enumeration   value           = 'MJPG'/>
     </restriction>
   </simpleType>
@@ -443,6 +460,7 @@
     <restriction     base            = 'string'>
       <enumeration   value           = 'abnormal cells or tissues'/>
       <enumeration   value           = 'anatomy'/>
+      <enumeration   value           = 'biological process'/>
       <enumeration   value           = 'medical device'/>
       <enumeration   value           = 'normal cells or tissues'/>
       <enumeration   value           = 'staging'/>
@@ -571,6 +589,15 @@
     <restriction     base            = 'string'>
       <enumeration   value           = 'Internal'/>
       <enumeration   value           = 'External'/>
+    </restriction>
+  </simpleType>
+
+  <!-- new for OCECDR-3558 -->
+  <simpleType        name            = 'VideoHosting'>
+    <restriction     base            = 'string'>
+      <!-- lowercase, following the lead of the URLs, not mixed case
+           like the display on their web pages. -->
+      <enumeration   value           = 'youtube'/>
     </restriction>
   </simpleType>
 

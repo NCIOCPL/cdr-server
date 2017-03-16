@@ -1,6 +1,4 @@
 #---------------------------------------------------------------------
-# $Id$
-#
 # Move XML from the cdr..all_doc_versions table to the
 # cdr_archived_versions..doc_version_xml, copying the document ID
 # and version number to identify the XML.

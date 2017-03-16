@@ -7,7 +7,7 @@
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
                                version = "1.0">
 
-  <xsl:output                   method = "xml" 
+  <xsl:output                   method = "xml"
                   omit-xml-declaration = "no"/>
 
   <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
@@ -16,7 +16,7 @@
   <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
   <xsl:param                      name = "DateFirstPub"
                                 select = "''"/>
-        
+
 <!-- ===================================================================
                   Copy Document ID and set it as an attribute
      ================================================================== -->
@@ -39,7 +39,7 @@
        <xsl:value-of            select = "Status/CurrentStatus"/>
       </xsl:attribute>
      </xsl:if>
- 
+
  <!-- ===================================================================
         Copy Organization Name Information but remove cdr: namespace
       =================================================================== -->
@@ -55,19 +55,19 @@
        <CIPSContactPerson>
         <Person>
          <xsl:apply-templates   select = "OrganizationDetails/
-                                          CIPSContactPerson/ 
+                                          CIPSContactPerson/
                                           Person/PersonNameInformation"
                                   mode = "copy"/>
         </Person>
        </CIPSContactPerson>
       </OrganizationDetails>
      </xsl:if>
-  
+
  <!-- ===================================================================
          Copy Organization Name Information -  Parent Name
       =================================================================== -->
-   
-     <xsl:apply-templates       select = "OrganizationParent" 
+
+     <xsl:apply-templates       select = "OrganizationParent"
                                   mode = "copy"/>
 
   <!-- ==============================================================
@@ -78,7 +78,7 @@
                                          OrganizationAdministrativeInformation">
       <xsl:for-each             select = "OrganizationDetails/
                                          OrganizationAdministrativeInformation">
-       <xsl:variable              name = "Dir"     
+       <xsl:variable              name = "Dir"
                                 select = "@Directory"/>
        <xsl:if                    test = "IncludeInDirectory='Include'">
         <IncludeInDirectory  Directory = "{$Dir}"/>
@@ -88,10 +88,10 @@
 
   <!-- ====================================================================
       Copy Organization Location Info, Street, City, City Suffix, Political
-      SubUnit, Country, Postal Code, PostalCodePosition      
+      SubUnit, Country, Postal Code, PostalCodePosition
      ===================================================================== -->
 
-     <xsl:apply-templates       select = "OrganizationLocations" 
+     <xsl:apply-templates       select = "OrganizationLocations"
                                   mode = "copy"/>
 
 
@@ -123,21 +123,21 @@
 
        <xsl:if                    test = "OrganizationAffiliations/
                                           MemberOfCooperativeGroups">
-  
+
         <xsl:if                   test = "OrganizationAffiliations/
-                                          MemberOfCooperativeGroups/ 
+                                          MemberOfCooperativeGroups/
                                           AffiliateMemberOf/
                                           MainMemberOf">
-                               
+
          <xsl:for-each          select = "OrganizationAffiliations/
                                           MemberOfCooperativeGroups/
                                           AffiliateMemberOf/
                                           MainMemberOf/Organization/
                                           OrganizationNameInformation/
                                           OfficialName/Name">
-                          
-                               
-          <xsl:variable           name = "MID" 
+
+
+          <xsl:variable           name = "MID"
                                 select = "../../../@cdr:ref"/>
           <MemberOfCooperativeGroup ref= "{$MID}">
            <xsl:value-of        select = "."/>
@@ -157,7 +157,7 @@
                                           OrganizationNameInformation/
                                           OfficialName/Name">
 
-          <xsl:variable           name = "CID"  
+          <xsl:variable           name = "CID"
                                 select = "../../../@cdr:ref"/>
           <MemberOfCooperativeGroup ref= "{$CID}">
            <xsl:value-of        select = "."/>
@@ -175,7 +175,7 @@
                                           OrganizationNameInformation/
                                           OfficialName/Name">
 
-          <xsl:variable           name = "MID"  
+          <xsl:variable           name = "MID"
                                 select = "../../../@cdr:ref"/>
           <MemberOfCooperativeGroup ref= "{$MID}">
            <xsl:value-of        select = "."/>
@@ -191,7 +191,7 @@
                                           MemberOfCCOP/CCOP/Organization/
                                           OrganizationNameInformation/
                                           OfficialName/Name">
-         <xsl:variable            name = "COD"    
+         <xsl:variable            name = "COD"
                                 select = "../../../@cdr:ref"/>
          <MemberOfCCOP             ref = "{$COD}">
           <xsl:value-of         select = "."/>
@@ -204,11 +204,11 @@
  <!-- ====================================================================
                    Copy Organization Type
       ==================================================================== -->
-  <xsl:if                         test = "not(OrganizationType/@Public) 
+  <xsl:if                         test = "not(OrganizationType/@Public)
                                           and
-                                          not(OrganizationType = 
+                                          not(OrganizationType =
                                                     'No type assigned')">
-   <xsl:apply-templates         select = "OrganizationType" 
+   <xsl:apply-templates         select = "OrganizationType"
                                   mode = "copy"/>
   </xsl:if>
 
@@ -227,7 +227,7 @@
       <xsl:call-template          name = "getDateFirstPub">
         <xsl:with-param           name = "date"
                                   select = "$DateFirstPub"/>
-      </xsl:call-template>    
+      </xsl:call-template>
     </xsl:otherwise>
   </xsl:choose>
 
@@ -241,8 +241,8 @@
 
 
  <!--
- ==================================================================== 
- Template to display OrganizationNameInformation information 
+ ====================================================================
+ Template to display OrganizationNameInformation information
  ==================================================================== -->
  <xsl:template                  match = "OrganizationNameInformation">
   <xsl:element                   name = "{name()}">
@@ -250,23 +250,23 @@
    <xsl:apply-templates        select = "AlternateName |
                                          FormerName    |
                                          Comment"
-                                 mode = "copy"/>  
+                                 mode = "copy"/>
   </xsl:element>
  </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
  Remove the ClinicalTrialsOfficeContact Information from the vendor
  output.
  ===================================================================== -->
  <xsl:template                   match = "ClinicalTrialsOfficeContact"
-                                  mode = "copy"/> 
+                                  mode = "copy"/>
 
 
  <!--
- ==================================================================== 
- Template to display OfficialName/ShortName information 
+ ====================================================================
+ Template to display OfficialName/ShortName information
  but remove the cdr: namespace.
  ==================================================================== -->
  <xsl:template                  match = "OfficialName | ShortName">
@@ -274,13 +274,13 @@
    <xsl:attribute                name = "id">
     <xsl:value-of              select = "@cdr:id"/>
    </xsl:attribute>
-   <xsl:apply-templates          mode = "copy"/>  
+   <xsl:apply-templates          mode = "copy"/>
   </xsl:element>
  </xsl:template>
 
 
  <!--
- ==================================================================== 
+ ====================================================================
  Template to include the CIPSContact information in the mailer output
  ==================================================================== -->
  <xsl:template                  match = "OrganizationLocation"

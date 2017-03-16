@@ -1,15 +1,13 @@
 <?xml version = "1.0" encoding="utf-8"?>
-<!-- $Id$ -->
 <!-- Filter title: Vendor Filter: GlossaryTermName -->
 <!--
 ====================================================================
-$Id$
 
 Filter to create Vendor XML for Glossary
 
 BZIssue::4973 - [Glossary] Modification to Publication Filters
 BZIssue::4995 - [Glossary] Non Publishable Also Calls in the dictionary
-OCECDR-3528: Ability to put links to other Dictionary terms in More 
+OCECDR-3528: Ability to put links to other Dictionary terms in More
              Information block on Cancer.gov
 OCECDR-3966: Add URL Attribute for Gatekeeper Processing
 
@@ -19,7 +17,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
                exclude-result-prefixes = "cdr"
                              xmlns:cdr = "cips.nci.nih.gov/cdr">
 
- <xsl:output                    method = "xml" 
+ <xsl:output                    method = "xml"
                   omit-xml-declaration = "no"/>
 
  <xsl:include  href = "cdr:name:Module: Vendor Filter Templates"/>
@@ -30,8 +28,8 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
 
  <xsl:variable                    name = "whoAmI"
                                 select = "'GlossaryTerm'"/>
- <!-- 
- =================================================================== 
+ <!--
+ ===================================================================
  Copy DocId, TermName,TermDefinition, Term Pronunciation
  =================================================================== -->
  <xsl:template                   match = "GlossaryTermName">
@@ -61,16 +59,16 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
     <xsl:message             terminate = "no">
      <xsl:text>&lt;LI&gt;&lt;b&gt;Error:&lt;/b&gt; TermName</xsl:text>
      <xsl:text> does not exist.&lt;BR/&gt;</xsl:text>
-    </xsl:message> 
+    </xsl:message>
    </xsl:if>
 
    <xsl:apply-templates         select = "TermName"/>
-   
+
    <xsl:for-each                select = "GlossaryTermConcept/
                                           TermDefinition[DefinitionStatus =
-                                                             'Approved' 
+                                                             'Approved'
                                                          or
-                                                         DefinitionStatus = 
+                                                         DefinitionStatus =
                                                            'Revision pending']">
     <TermDefinition>
      <xsl:apply-templates       select = "DefinitionText">
@@ -82,7 +80,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
      <xsl:apply-templates       select = "Dictionary"
                                   mode = "copy"/>
      <xsl:apply-templates       select = "Audience"
-                                  mode = "copy"/> 
+                                  mode = "copy"/>
     </TermDefinition>
    </xsl:for-each>
 
@@ -102,25 +100,29 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
    </xsl:apply-templates>
 
    <!--
+   Next come the image files.
    Make sure we only have either a shared MediaLink for both, English and
-   Spanish or we have individual once but not both
+   Spanish or we have individual MediaLinks but not both
    ====================================================================== -->
-   <xsl:if                        test = "GlossaryTermConcept/
-                                            MediaLink
-                                          and
-                                          (GlossaryTermConcept/
-                                             TermDefinition/
-                                             MediaLink
-                                           or
-                                           GlossaryTermConcept/
-                                             TranslatedTermDefinition/
-                                             MediaLink)">
-    <xsl:message              terminate = "no">
-     <xsl:text>&lt;LI class="error" &gt;</xsl:text>
-     <xsl:text>&lt;b&gt;Error:&lt;/b&gt; Invalid </xsl:text>
-     <xsl:text>use of MediaLink.&lt;BR/&gt;</xsl:text>
-    </xsl:message>
-   </xsl:if>
+   <xsl:for-each                select = "GlossaryTermConcept">
+    <xsl:variable                 name = "ev1"
+                                select = "MediaLink/
+                                            MediaID/@cdr:ref"/>
+
+    <xsl:for-each               select = "TermDefinition/
+                                            MediaLink/
+                                            MediaID">
+
+     <xsl:if                      test = "$ev1 = @cdr:ref">
+      <xsl:message           terminate = "no">
+       <xsl:text>&lt;LI class="error" &gt;</xsl:text>
+       <xsl:text>&lt;b&gt;Error:&lt;/b&gt; Invalid </xsl:text>
+       <xsl:text>use of MediaLink.&lt;BR/&gt;</xsl:text>
+      </xsl:message>
+     </xsl:if>
+
+    </xsl:for-each>
+   </xsl:for-each>
 
    <xsl:apply-templates         select = "GlossaryTermConcept/
                                             MediaLink            |
@@ -131,10 +133,45 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
                                             TranslatedTermDefinition/
                                             MediaLink"/>
 
+
+
+   <!--
+   Last come the video elements
+   Firstly, ensure a single video is not used in the definition section
+   *and* in the shared section but don't fail the document
+   ====================================================================== -->
+   <xsl:for-each                select = "GlossaryTermConcept">
+    <xsl:variable                 name = "ev1"
+                                select = "EmbeddedVideo/
+                                            MediaID/@cdr:ref"/>
+
+    <xsl:for-each               select = "TermDefinition/
+                                            EmbeddedVideo/
+                                            MediaID">
+
+     <xsl:if                      test = "$ev1 = @cdr:ref">
+      <xsl:message           terminate = "no">
+       <xsl:text>&lt;LI class="error" &gt;</xsl:text>
+       <xsl:text>&lt;b&gt;Error:&lt;/b&gt; Invalid </xsl:text>
+       <xsl:text>use of EmbeddedVideo.&lt;BR/&gt;</xsl:text>
+      </xsl:message>
+     </xsl:if>
+
+    </xsl:for-each>
+   </xsl:for-each>
+
+   <xsl:apply-templates         select = "GlossaryTermConcept/
+                                            EmbeddedVideo        |
+                                          GlossaryTermConcept/
+                                            TermDefinition/
+                                            EmbeddedVideo        |
+                                          GlossaryTermConcept/
+                                            TranslatedTermDefinition/
+                                            EmbeddedVideo"/>
    <!--
    If a translated name exists, process it.  If a translated name does
    not exist, it's because a translation for the word does not exist
-   in the translated language and we're using the English word with 
+   in the translated language and we're using the English word with
    the note "en englais".
    However, we only want to do this if a translated concept definition
    exists for this term.
@@ -165,7 +202,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
       </xsl:if>
      </xsl:otherwise>
     </xsl:choose>
- 
+
     <!--
     Process the translated definition for the language
     ================================================== -->
@@ -181,17 +218,17 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
       <xsl:apply-templates      select = "Dictionary"
                                   mode = "copy"/>
       <xsl:apply-templates      select = "Audience"
-                                  mode = "copy"/> 
+                                  mode = "copy"/>
      </SpanishTermDefinition>
     </xsl:for-each>
    </xsl:if>
 
 
-   <!-- 
+   <!--
    ===================================================================
    Copy Date First Published and Date Last Modified
    =================================================================== -->
-   <xsl:variable                  name = "CtrlBlk" 
+   <xsl:variable                  name = "CtrlBlk"
                                 select = "document('cdr:/*/CdrCtl')"/>
    <xsl:choose>
     <xsl:when                     test = "$CtrlBlk/CdrDocCtl/FirstPub/Date">
@@ -204,16 +241,16 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
      <xsl:call-template           name = "getDateFirstPub">
       <xsl:with-param             name = "date"
                                 select = "$DateFirstPub"/>
-     </xsl:call-template>    
+     </xsl:call-template>
     </xsl:otherwise>
    </xsl:choose>
    <xsl:apply-templates         select = "GlossaryTermConcept/
                                           TermDefinition[Audience = 'Patient']/
-                                          DateLastModified" 
+                                          DateLastModified"
                                   mode = "copy"/>
   <xsl:apply-templates          select = "GlossaryTermConcept/
                                             RelatedInformation"/>
-  
+
   <!-- select = "GlossaryTermConcept/
                                             RelatedExternalRef  |
                                           GlossaryTermConcept/
@@ -224,7 +261,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Template to create the RelatedInformation wrapper element
  ===================================================================== -->
@@ -238,7 +275,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Template to create the RelatedSummaryRef element
  ===================================================================== -->
@@ -265,7 +302,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Template to create the RelatedDrugSummaryRef element
  ===================================================================== -->
@@ -292,7 +329,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Template to create the RelatedExternalRef element
  ===================================================================== -->
@@ -301,7 +338,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Template to create the RelatedTGlossaryTermRef element
  ===================================================================== -->
@@ -316,7 +353,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  The TermNameString is displayed as TermName in the vendor output
  ===================================================================== -->
@@ -329,7 +366,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  The TermNameString is displayed as TermName in the vendor output
  ===================================================================== -->
@@ -357,10 +394,10 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
- The TermPronunciation needs to be displayed with parenthesis around 
- the name. 
+ The TermPronunciation needs to be displayed with parenthesis around
+ the name.
  ===================================================================== -->
  <xsl:template                   match = "TermPronunciation">
   <xsl:element                    name = "{name()}">
@@ -372,9 +409,9 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
 
 
 
- <!-- 
+ <!--
  =====================================================================
- The TermDefinition and SpanishTermDefinition can contain inline 
+ The TermDefinition and SpanishTermDefinition can contain inline
  markup and needs to be handled with a template
  ===================================================================== -->
  <xsl:template                   match = "DefinitionText">
@@ -389,7 +426,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
                                 select = "$audience"/>
    </xsl:apply-templates>
 
-   <!-- 
+   <!--
    Need to add the Also-called elements at the end of the DefinitionText
    ===================================================================== -->
    <xsl:variable                  name = "gtnId"
@@ -407,7 +444,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
              AND doc_id = ?
    </xsl:variable>
 
-   <xsl:variable                  name = "sqlGTCRows" 
+   <xsl:variable                  name = "sqlGTCRows"
                                   select = "document(
                                            concat('cdrutil:/sql-query/',
                                                    $sqlGTCQuery,
@@ -428,7 +465,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
               ON d.id = n.doc_id
             JOIN query_term gts
               ON d.id = gts.doc_id
-             AND gts.path = '/GlossaryTermName/' + ? 
+             AND gts.path = '/GlossaryTermName/' + ?
            WHERE gtc.path = '/GlossaryTermName/GlossaryTermConcept/@cdr:ref'
              AND gtc.int_val = ?
              AND d.active_status = 'A'
@@ -562,7 +599,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
 
  <!--
  =====================================================================
- Replacing the place holders within the definition text with the 
+ Replacing the place holders within the definition text with the
  appropriate text definitions.
  ===================================================================== -->
  <xsl:template                   match = "PlaceHolder"
@@ -604,7 +641,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
   </xsl:variable>
 
   <xsl:choose>
-   <!-- 
+   <!--
    A) The canned name TERMNAME has been specified as a place holder
       We replace the term name with the correct term for this language
    ==================================================================== -->
@@ -613,7 +650,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
    </xsl:when>
    <!--
    B) The canned name CAPPEDTERMNAME has been entered as a place holder
-      We replace the term name and capitalize it unless the 
+      We replace the term name and capitalize it unless the
       PreservCase attribute of the TermNameString has been specified
    ==================================================================== -->
    <xsl:when                      test = "$ph = 'CAPPEDTERMNAME'">
@@ -641,11 +678,11 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
     </xsl:choose>
    </xsl:when>
    <!--
-   C) Replace the PlaceHolder attribute string with the proper 
+   C) Replace the PlaceHolder attribute string with the proper
       ReplacementText element
    ==================================================================== -->
    <xsl:otherwise>
-    <!-- 
+    <!--
     In case the same PlaceHolder string is used in the English as well
     as Spanish section we need to ensure to pick up the right replacement
     text for the correct language.
@@ -694,7 +731,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  </xsl:template>
 
 
- <!-- 
+ <!--
  ===================================================================
  Template for extracting SummaryRef Definition
  =================================================================== -->
@@ -709,18 +746,18 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
                                            substring-after(@cdr:href, 'CDR'),
                                                                '#'), '#'))"/>
     <!--
-    Extracting the content of the SummaryURL attribute to be used for 
-    populating the url attribute of the SummaryRef element.  This 
+    Extracting the content of the SummaryURL attribute to be used for
+    populating the url attribute of the SummaryRef element.  This
     information has to be retrieved via a SQL query from the database
     ================================================================= -->
     <xsl:variable                 name = "sqlQuery">
-     SELECT path, value 
-       FROM query_term_pub 
+     SELECT path, value
+       FROM query_term_pub
       WHERE doc_id = ?
         AND path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
     </xsl:variable>
 
-    <!-- 
+    <!--
     Note: Don't perform a normalize-space here since it would convert
           the resulting node into a string
     ================================================================== -->
@@ -731,7 +768,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
                                                    '~',
                                                    $hrefNormId))"/>
     <!--
-    Note:  The url created by function getSummaryURL has no trailing 
+    Note:  The url created by function getSummaryURL has no trailing
            slash ('/'), specifies the domain as http://cancer.gov and
            is normalized
     ================================================================= -->
@@ -747,7 +784,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
 
      </xsl:call-template>
     </xsl:variable>
-  
+
     <!--
     The SummaryRef url attribute is populated from the xref attribute of
     the SummaryURL element displaying the full path without the domain
@@ -774,7 +811,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==============================================================
  Template for extracting External Ref Definition
  ============================================================== -->

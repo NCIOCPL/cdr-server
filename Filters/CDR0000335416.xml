@@ -1,9 +1,8 @@
 <?xml version="1.0"?>
-<!-- $Id$ -->
 <!-- Filter title: Denormalization Filter: Summary Reference De-Dup -->
 
 <!-- Written by Volker Englisch, 2003-08-12 -->
-<!-- 
+<!--
  =====================================================================
  Filter to format the summary citation data.
  ===================================================================== -->
@@ -11,10 +10,10 @@
                                 version = "1.0"
                               xmlns:cdr = "cips.nci.nih.gov/cdr">
 
- <xsl:output                     method = "xml" 
+ <xsl:output                     method = "xml"
                    omit-xml-declaration = "no"/>
 
- <!-- 
+ <!--
  =================================================================
  Copy control information and generate current date
  ================================================================= -->
@@ -27,7 +26,7 @@
  </xsl:template>
 
 
- <!-- 
+ <!--
  =================================================================
  De-dup ReferenceList
  Note:  References need to be displayed unique.
@@ -40,51 +39,51 @@
    Process all Citation within a Reference Section
    =============================================== -->
    <xsl:for-each                 select = "Citation">
-    <xsl:variable                  name = "thisCitation" 
+    <xsl:variable                  name = "thisCitation"
                                  select = "@cdr:ref"/>
 
-    <!-- 
+    <!--
     Make a decision if this citation is unique or appears more then
     once (regardless of its markup)
     ================================================================== -->
     <xsl:choose>
      <xsl:when                     test = "preceding-sibling::
-                                                    Citation[@cdr:ref = 
+                                                    Citation[@cdr:ref =
                                                              $thisCitation]
                                            or
                                            following-sibling::
-                                                    Citation[@cdr:ref = 
+                                                    Citation[@cdr:ref =
                                                              $thisCitation]">
       <!-- MoreThanOne/ -->
 
-      <!-- 
+      <!--
       We need to ensure that a group of citations is only processed once.
       Testing that this is the very first element of a citation (regardless
       of its markup).
       ===================================================================== -->
       <xsl:if                      test = "not(
                                              boolean(preceding-sibling::
-                                                    Citation[@cdr:ref = 
+                                                    Citation[@cdr:ref =
                                                              $thisCitation]))">
        <!--
-       Now Process the entire group of citations with the same cdr:ref ID 
+       Now Process the entire group of citations with the same cdr:ref ID
        (regardless of the markup).
        ==================================================================== -->
        <xsl:for-each             select = "../
                                             Citation[@cdr:ref = $thisCitation]">
         <xsl:choose>
-         <!-- 
+         <!--
          Checking if this citation within this group of citations is listed
          without markup and that no other citation without markup has been
-         encountered yet.  
-         This essentially picks up the very first citation encountered 
-         without markup and any following citations without markup are 
-         being ignored.  
+         encountered yet.
+         This essentially picks up the very first citation encountered
+         without markup and any following citations without markup are
+         being ignored.
          No matter how many inserted/deleted citations we find for a given
          citation, if one exists without markup that's the one we pick.
          ================================================================= -->
          <xsl:when                 test = "not(@InsertionOrDeletion)
-                                           and 
+                                           and
                                            not(preceding-sibling::Citation
                                               [@cdr:ref = $thisCitation
                                                and
@@ -104,33 +103,33 @@
                             - and no citation with insertion exists.
            ================================================================ -->
            <xsl:when               test = "@InsertionOrDeletion = 'Deletion'
-                                           and 
+                                           and
                                            not(preceding-sibling::Citation
                                              [@cdr:ref = $thisCitation
                                               and
-                                              @InsertionOrDeletion = 
+                                              @InsertionOrDeletion =
                                                  'Deletion'])
                                            and
                                            not(preceding-sibling::Citation
                                              [@cdr:ref = $thisCitation
                                               and
                                               not(@InsertionOrDeletion)])
-                                           and 
+                                           and
                                            not(following-sibling::Citation
                                              [@cdr:ref = $thisCitation
                                               and
                                               not(@InsertionOrDeletion)])
-                                           and 
+                                           and
                                            not(preceding-sibling::Citation
                                              [@cdr:ref = $thisCitation
                                               and
-                                              @InsertionOrDeletion = 
+                                              @InsertionOrDeletion =
                                                  'Insertion'])
                                            and
                                            not(following-sibling::Citation
                                              [@cdr:ref = $thisCitation
                                               and
-                                              @InsertionOrDeletion = 
+                                              @InsertionOrDeletion =
                                                  'Insertion'])">
             <!-- ATrueDeletion/ -->
             <xsl:apply-templates select = "."/>
@@ -141,33 +140,33 @@
                              - and no citation with deletion exists.
            ============================================================== -->
            <xsl:when               test = "@InsertionOrDeletion = 'Insertion'
-                                           and 
+                                           and
                                            not(preceding-sibling::Citation
                                              [@cdr:ref = $thisCitation
                                               and
-                                              @InsertionOrDeletion = 
+                                              @InsertionOrDeletion =
                                                  'Insertion'])
                                            and
                                            not(preceding-sibling::Citation
                                              [@cdr:ref = $thisCitation
                                               and
                                               not(@InsertionOrDeletion)])
-                                           and 
+                                           and
                                            not(following-sibling::Citation
                                              [@cdr:ref = $thisCitation
                                               and
                                               not(@InsertionOrDeletion)])
-                                           and 
+                                           and
                                            not(preceding-sibling::Citation
                                              [@cdr:ref = $thisCitation
                                               and
-                                              @InsertionOrDeletion = 
+                                              @InsertionOrDeletion =
                                                  'Deletion'])
                                            and
                                            not(following-sibling::Citation
                                              [@cdr:ref = $thisCitation
                                               and
-                                              @InsertionOrDeletion = 
+                                              @InsertionOrDeletion =
                                                  'Deletion'])">
             <!-- ATrueInsertion/ -->
             <xsl:apply-templates select = "."/>
@@ -178,40 +177,40 @@
                              - but a citation with insertion follows
                              - and now citation with insertion had been
                                encountered so far.
-           This citation will have to be displayed without markup and is 
+           This citation will have to be displayed without markup and is
            therefore displayed with the additional existing="Y" attribute
            ============================================================== -->
            <xsl:when               test = "@InsertionOrDeletion = 'Deletion'
                                            and
                                            not(preceding-sibling::
                                                 Citation[
-                                                @cdr:ref = $thisCitation 
+                                                @cdr:ref = $thisCitation
                                                 and
-                                                @InsertionOrDeletion = 
+                                                @InsertionOrDeletion =
                                                                   'Deletion'])
                                            and
                                            not(preceding-sibling::Citation
                                              [@cdr:ref = $thisCitation
                                               and
                                               not(@InsertionOrDeletion)])
-                                           and 
+                                           and
                                            not(following-sibling::Citation
                                              [@cdr:ref = $thisCitation
                                               and
                                               not(@InsertionOrDeletion)])
-                                           and 
+                                           and
                                            following-sibling::
                                                 Citation[
-                                                @cdr:ref = $thisCitation 
+                                                @cdr:ref = $thisCitation
                                                 and
-                                                @InsertionOrDeletion = 
+                                                @InsertionOrDeletion =
                                                                   'Insertion']
                                            and
                                            not(preceding-sibling::
                                                 Citation[
-                                                @cdr:ref = $thisCitation 
+                                                @cdr:ref = $thisCitation
                                                 and
-                                                @InsertionOrDeletion = 
+                                                @InsertionOrDeletion =
                                                                  'Insertion'])">
             <!-- DeletionInsertion/ -->
             <xsl:call-template     name = "existingCitation"/>
@@ -222,42 +221,42 @@
                               - but a citation with deletion follows
                               - and now citation with deletion had been
                                 encountered so far.
-           This citation will have to be displayed without markup and is 
+           This citation will have to be displayed without markup and is
            therefore displayed with the additional existing="Y" attribute
-           This citation will have to be displayed without markup and is 
+           This citation will have to be displayed without markup and is
            therefore displayed with the additional existing="Y" attribute
            ============================================================== -->
            <xsl:when               test = "@InsertionOrDeletion = 'Insertion'
                                            and
                                            not(preceding-sibling::
                                                 Citation[
-                                                @cdr:ref = $thisCitation 
+                                                @cdr:ref = $thisCitation
                                                 and
-                                                @InsertionOrDeletion = 
+                                                @InsertionOrDeletion =
                                                                   'Insertion'])
                                            and
                                            not(preceding-sibling::Citation
                                              [@cdr:ref = $thisCitation
                                               and
                                               not(@InsertionOrDeletion)])
-                                           and 
+                                           and
                                            not(following-sibling::Citation
                                              [@cdr:ref = $thisCitation
                                               and
                                               not(@InsertionOrDeletion)])
-                                           and 
+                                           and
                                            following-sibling::
                                                 Citation[
-                                                @cdr:ref = $thisCitation 
+                                                @cdr:ref = $thisCitation
                                                 and
-                                                @InsertionOrDeletion = 
+                                                @InsertionOrDeletion =
                                                                   'Deletion']
                                            and
                                            not(preceding-sibling::
                                                 Citation[
-                                                @cdr:ref = $thisCitation 
+                                                @cdr:ref = $thisCitation
                                                 and
-                                                @InsertionOrDeletion = 
+                                                @InsertionOrDeletion =
                                                                   'Deletion'])">
             <!-- InsertionDeletion/ -->
             <xsl:call-template     name = "existingCitation"/>
@@ -268,8 +267,8 @@
        </xsl:for-each>
       </xsl:if>    <!-- Only apply on first occurrence -->
      </xsl:when>
-     <!-- 
-     The citation has been identified as being unique.  
+     <!--
+     The citation has been identified as being unique.
      Display as is including insertion/deletion markup
      ================================================= -->
      <xsl:otherwise>
@@ -285,9 +284,9 @@
 
  <!-- *
  ==============================================================
- Template to add an attribute to a citation with markup 
+ Template to add an attribute to a citation with markup
  indicating that the markup can be ignored
- (An insertion plus a deletion negate each other in terms of 
+ (An insertion plus a deletion negate each other in terms of
   displaying the citation with markup in the reference section)
  ============================================================== -->
  <xsl:template                     name = "existingCitation">
@@ -324,15 +323,15 @@
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==================================================================
  Template rule used to do XML to XML transformations which
- copies any attribute node, or node that is child of of something 
+ copies any attribute node, or node that is child of of something
  ================================================================== -->
  <xsl:template                    match = "@*|node()">
   <xsl:copy>
    <xsl:apply-templates          select = "@*|node()"/>
-  </xsl:copy> 
+  </xsl:copy>
  </xsl:template>
 
 </xsl:transform>

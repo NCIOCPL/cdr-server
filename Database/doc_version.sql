@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Script to create the view for CDR document versions.  This is invoked
  * after refreshing the CDR database on the lower tiers from a backup of
  * the production database.
@@ -12,9 +10,9 @@ DROP VIEW doc_version
 GO
 CREATE VIEW doc_version
 AS
-         SELECT v.id, v.num, v.dt, v.updated_dt, v.usr, 
+         SELECT v.id, v.num, v.dt, v.updated_dt, v.usr,
                 v.val_status, v.val_date,
-                v.publishable, v.doc_type, v.title, 
+                v.publishable, v.doc_type, v.title,
                 xml = CASE
                           WHEN v.xml IS NOT NULL THEN v.xml
                           ELSE a.xml

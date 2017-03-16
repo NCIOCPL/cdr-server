@@ -1,53 +1,7 @@
 /*
- * $Id$
- *
  * Support routines for CDR document types.
  *
- * $Log: not supported by cvs2svn $
- * Revision 1.13  2005/03/04 02:45:28  ameyer
- * Modified declaration of parser to increase scope of variable so
- * that new DOM parser that holds memory will stay in scope.
- *
- * Revision 1.12  2002/08/27 17:51:00  bkline
- * Fixed bug that was extracting linking elements for non-XML doc types.
- *
- * Revision 1.11  2002/08/27 17:14:16  bkline
- * Fixed bug in code to get list of elements which can contain a certain
- * attribute; used this to fix code to get list of linking elements for
- * a document type.
- *
- * Revision 1.10  2002/05/15 23:40:15  bkline
- * Added attribute to skip generation of the DTD for GetDocType command.
- *
- * Revision 1.9  2001/11/06 21:40:32  bkline
- * Modified query for CdrGetDocTypes command to only return the ones we're
- * really using ("WHERE active = 'Y'") and to order them by name.
- *
- * Revision 1.8  2001/06/28 17:38:17  bkline
- * Added method getCssFiles().
- *
- * Revision 1.7  2001/06/12 11:07:58  bkline
- * Added code to report linking elements to the caller of CdrGetDocType.
- *
- * Revision 1.6  2001/05/21 20:48:29  bkline
- * Eliminated checks for permission to perform read-only doctype actions.
- *
- * Revision 1.5  2001/05/16 15:45:07  bkline
- * Added listSchemaDocs() command; modified commands to reflect shift
- * of schema documents from doc_type table to document table.
- *
- * Revision 1.4  2001/04/13 12:23:14  bkline
- * Fixed authorization check for GET DOCTYPE and MODIFY DOCTYPE, which
- * are document-type specific.
- *
- * Revision 1.3  2001/02/28 02:36:18  bkline
- * Fixed a bug which was preventing comments from being saved.
- *
- * Revision 1.2  2001/01/17 21:50:33  bkline
- * Added CdrAdd/Mod/Del/GetDocType commands.
- *
- * Revision 1.1  2001/01/16 21:11:52  bkline
- * Initial revision
+ * JIRA::OCECDR-4091 - allow CdrModDocType command to alter 'active' column
  */
 
 // Eliminate annoying warnings about truncated debugging information.
@@ -195,7 +149,8 @@ cdr::String cdr::getDocType(Session&          session,
                         "                 t.schema_date,      "
                         "                 d.xml,              "
                         "                 d.title,            "
-                        "                 t.id                "
+                        "                 t.id,               "
+                        "                 t.active            "
                         "            FROM doc_type t          "
                         "            JOIN format f            "
                         "              ON t.format = f.id     "
@@ -215,6 +170,7 @@ cdr::String cdr::getDocType(Session&          session,
     cdr::String schemaStr  = rs.getString(6);
     cdr::String schemaName = rs.getString(7);
     int         id         = rs.getInt(8);
+    cdr::String active     = rs.getString(9);
     ps.close();
 
     // Create a parser and, if necessary, a schema
@@ -243,6 +199,8 @@ cdr::String cdr::getDocType(Session&          session,
          << created
          << L"' SchemaMod='"
          << schemaMod
+         << L"' Active='"
+         << active
          << L"'>";
     if (!omitDtd)
         resp << L"<DocDtd><![CDATA["
@@ -427,6 +385,7 @@ cdr::String cdr::modDocType(Session&          session,
     cdr::String docTypeString    = cmdElement.getAttribute(L"Type");
     cdr::String docFormatString  = cmdElement.getAttribute(L"Format");
     cdr::String versioningString = cmdElement.getAttribute(L"Versioning");
+    cdr::String activeString     = cmdElement.getAttribute(L"Active");
     if (docTypeString.empty())
         throw cdr::Exception(L"Type attribute missing from CdrModDocType "
                              L"command element");
@@ -435,8 +394,13 @@ cdr::String cdr::modDocType(Session&          session,
     if (versioningString.empty())
         versioningString = L"Y";
     if (versioningString != L"Y" && versioningString != L"N")
-        throw cdr::Exception(L"Versioning attribute can only be Y or N; was",
+        throw cdr::Exception(L"Versioning attribute can only be Y or N; was ",
                              versioningString);
+    if (!activeString.empty()) {
+        if (activeString != L"Y" && activeString != L"N")
+            throw cdr::Exception(L"Active attribute can only be Y or N; was ",
+                                 activeString);
+    }
 
     // Make sure the user is authorized to modify an existing document type.
     if (!session.canDo(conn, L"MODIFY DOCTYPE", docTypeString))
@@ -479,7 +443,8 @@ cdr::String cdr::modDocType(Session&          session,
     int docTypeId = rs2.getInt(1);
 
     // Look up the schema document's primary key.
-    std::string q3 = "SELECT d.id                "
+    // OCECDR-4091: also grab the current value of the doc_type.active column.
+    std::string q3 = "SELECT d.id, t.active      "
                      "  FROM document d          "
                      "  JOIN doc_type t          "
                      "    ON t.id    = d.doc_type"
@@ -491,6 +456,9 @@ cdr::String cdr::modDocType(Session&          session,
     if (!rs3.next())
         throw cdr::Exception(L"Schema document not found", schema);
     int schemaId = rs3.getInt(1);
+    cdr::String currentActiveFlag = rs3.getString(2);
+    if (activeString.empty())
+        activeString = currentActiveFlag;
     ps3.close();
 
     // Create the new document type.
@@ -499,14 +467,16 @@ cdr::String cdr::modDocType(Session&          session,
                      "       versioning  = ?,        "
                      "       xml_schema  = ?,        "
                      "       schema_date = GETDATE(),"
-                     "       comment     = ?         "
+                     "       comment     = ?,        "
+                     "       active      = ?         "
                      " WHERE id          = ?         ";
     cdr::db::PreparedStatement ps4 = conn.prepareStatement(q4);
     ps4.setInt   (1, formatId);
     ps4.setString(2, versioningString);
     ps4.setInt   (3, schemaId);
     ps4.setString(4, comment);
-    ps4.setInt   (5, docTypeId);
+    ps4.setString(5, activeString);
+    ps4.setInt   (6, docTypeId);
     if (ps4.executeUpdate() != 1)
         throw cdr::Exception(L"Failure modifying document type",
                              docTypeString);

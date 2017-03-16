@@ -16,14 +16,14 @@ OCECDR-4122: Changes the order of information in DIS
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr">
 
- <xsl:output                    method = "xml" 
+ <xsl:output                    method = "xml"
                   omit-xml-declaration = "no"/>
 
  <xsl:include  href = "cdr:name:Module: Vendor Filter Templates"/>
-   
+
  <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
  <xsl:param                       name = "DateFirstPub"
-                                select = "''"/> 
+                                select = "''"/>
  <xsl:param                       name = "setCase"
                                 select = "'proper'"/>
  <xsl:variable                    name = "whoAmI"
@@ -37,27 +37,27 @@ OCECDR-4122: Changes the order of information in DIS
   <xsl:apply-templates/>
  </xsl:template>
 
- <!-- 
+ <!--
  ======================================================================
  Copy DocId, PreferredName, OtherTermName, OtherNameType
  ====================================================================== -->
  <xsl:template                   match = "DrugInformationSummary">
-  <xsl:element                    name = '{name()}'>   
+  <xsl:element                    name = '{name()}'>
    <xsl:attribute                 name = "id">
     <xsl:value-of               select = "DocId"/>
    </xsl:attribute>
 
    <xsl:apply-templates         select = "DrugInfoMetaData"/>
 
-   <xsl:element                   name = "DrugInfoTitle">   
+   <xsl:element                   name = "DrugInfoTitle">
     <xsl:value-of               select = "Title"/>
    </xsl:element>
 
    <!--
-   The DrugReference elements will have to be displayed in this 
+   The DrugReference elements will have to be displayed in this
    particular sort order:  NCI, NLM.
    ================================================================= -->
-   <!-- 
+   <!--
    Only display the following FDA section if the DrugReference includes
    a DrugReferenceLink with text node "FDA Approval for ..."
 
@@ -67,28 +67,28 @@ OCECDR-4122: Changes the order of information in DIS
    <xsl:choose>
     <xsl:when                     test = "DrugReference[@section='FDA']">
      <xsl:for-each              select = "DrugReference[@section='FDA']">
-      <xsl:element                name = "Section">   
+      <xsl:element                name = "Section">
        <xsl:attribute             name = "cdr:id">
         <xsl:text>_</xsl:text>
         <xsl:value-of           select = "@section"/>
        </xsl:attribute>
 
-       <xsl:element               name = "Para">   
+       <xsl:element               name = "Para">
         <xsl:apply-templates    select = "DrugReferenceLink"/>
        </xsl:element>
       </xsl:element>
      </xsl:for-each>
     </xsl:when>
-    <!-- 
-    If no FDA section exists we need to add an empty para element for the 
-    non-DrugCombination documents to prevent display problems with vertical 
+    <!--
+    If no FDA section exists we need to add an empty para element for the
+    non-DrugCombination documents to prevent display problems with vertical
     spacing on Cancer.gov. -->
     <xsl:otherwise>
      <xsl:if                      test = "not(/DrugInformationSummary
                                                 /DrugInfoMetaData
                                                 /DrugInfoType/@Combination)">
-      <xsl:element                name = "Section">   
-       <xsl:element               name = "Para">   
+      <xsl:element                name = "Section">
+       <xsl:element               name = "Para">
         <xsl:text> </xsl:text>
        </xsl:element>
       </xsl:element>
@@ -96,14 +96,14 @@ OCECDR-4122: Changes the order of information in DIS
     </xsl:otherwise>
    </xsl:choose>
 
-   <!-- 
-   This will display the main text section of the DIS under 
+   <!--
+   This will display the main text section of the DIS under
    "Use in Cancer"
    ================================================================ -->
    <xsl:apply-templates         select = "SummarySection"/>
 
    <!--
-   Even if no NCI DrugReference exists we still need to create a 
+   Even if no NCI DrugReference exists we still need to create a
    section for this type.
    ================================================================= -->
     <xsl:variable                 name = "drugRefTypeNCI"
@@ -113,20 +113,20 @@ OCECDR-4122: Changes the order of information in DIS
    Collect all the DrugReference elements with Type='NCI' to display
    under the section "More about XXX" (sorted by PostedDate)
    ================================================================= -->
-   <xsl:element                   name = "Section">   
+   <xsl:element                   name = "Section">
     <xsl:attribute                name = "cdr:id">
      <xsl:text>_About</xsl:text>
     </xsl:attribute>
 
-    <xsl:element                  name = "Title">   
+    <xsl:element                  name = "Title">
      <xsl:text>More About</xsl:text>
      <xsl:text> </xsl:text>
      <xsl:value-of              select = "Title"/>
     </xsl:element>
 
-    <!-- 
-    As the first section within the "More About Drug" paragraph 
-    display the dictionary definition, then display the MedlinePlus 
+    <!--
+    As the first section within the "More About Drug" paragraph
+    display the dictionary definition, then display the MedlinePlus
     section followed by everything else.
     ================================================================ -->
     <xsl:call-template            name = "addDictionaryDefinition">
@@ -150,12 +150,12 @@ OCECDR-4122: Changes the order of information in DIS
    ================================================================= -->
    <xsl:if                        test = "DrugReference/
                                             DrugReferenceType[text()='NCI']">
-    <xsl:element                  name = "Section">   
+    <xsl:element                  name = "Section">
      <xsl:attribute               name = "cdr:id">
       <xsl:text>_Research</xsl:text>
      </xsl:attribute>
 
-     <xsl:element                 name = "Title">   
+     <xsl:element                 name = "Title">
       <xsl:text>Research Results and Related Resources</xsl:text>
      </xsl:element>
 
@@ -169,7 +169,7 @@ OCECDR-4122: Changes the order of information in DIS
       </xsl:for-each>
      </xsl:element>
     </xsl:if>
-               
+
    <!--
    The Clinical Trials section should only be displayed for the Drug Info
    Summaries that are not Drug Combinations
@@ -194,16 +194,16 @@ OCECDR-4122: Changes the order of information in DIS
    </xsl:choose>
 
 
-   <!-- 
+   <!--
    ===================================================================
    Copy Date First Published and Date Last Modified
    If the FirstPub date is populated in the CDRDocCtl use this.
    If that doesn't exist use the passed DateFirstPub parameter.
-   If that doesn't exist use the element DatePubProc populated by the 
+   If that doesn't exist use the element DatePubProc populated by the
       denormalization filter from the pub_proc processing date.
       This is typically only necessary for brand new docs since they
       don't have the FirstPub date populated yet.
-      If the document is not created via a publishing process the 
+      If the document is not created via a publishing process the
       DateFirstPublished is listing a text message to allow validation.
       (VE, 2006-09-29)
    =================================================================== -->
@@ -218,7 +218,7 @@ OCECDR-4122: Changes the order of information in DIS
      <xsl:call-template           name = "getDateFirstPub">
       <xsl:with-param             name = "date"
                                 select = "$DateFirstPub"/>
-     </xsl:call-template>    
+     </xsl:call-template>
     </xsl:when>
     <xsl:otherwise>
      <xsl:element                 name = "DateFirstPublished">
@@ -307,7 +307,7 @@ OCECDR-4122: Changes the order of information in DIS
                                           TermPronunciation"
                                   mode = "copy"/>
     <!--
-    We only include MediaLinks for audio here, those MediaLinks for 
+    We only include MediaLinks for audio here, those MediaLinks for
     images (coming from GlossaryTermConcept documents) are not planned
     for the forseeable future.
     =================================================================== -->
@@ -430,7 +430,7 @@ OCECDR-4122: Changes the order of information in DIS
  Template to manipulate the cdr:id attribute of the misc. Documents
  since these must be unique within the document.
  ===================================================================== -->
- <xsl:template                   match = "Para         | 
+ <xsl:template                   match = "Para         |
                                           ItemizedList |
                                           OrderedList">
   <xsl:param                      name = "drugRefType"/>
@@ -455,8 +455,8 @@ OCECDR-4122: Changes the order of information in DIS
     <xsl:value-of               select = "@cdr:id"/>
     <xsl:text>.</xsl:text>
     <xsl:number                  level = "any"
-                                 count = "Para | 
-                                          ItemizedList | 
+                                 count = "Para |
+                                          ItemizedList |
                                           OrderedList"/>
    </xsl:attribute>
 
@@ -489,8 +489,8 @@ OCECDR-4122: Changes the order of information in DIS
 
  <!--
  =====================================================================
- Template to rename the SummarySection to a Section and remove the 
- element tags of elements that are allowed in the Schema as a 
+ Template to rename the SummarySection to a Section and remove the
+ element tags of elements that are allowed in the Schema as a
  SummarySection but not in the DTD as a Section.
  ===================================================================== -->
  <xsl:template                   match = "SummarySection">
@@ -516,13 +516,13 @@ OCECDR-4122: Changes the order of information in DIS
  =====================================================================
  Template to copy various elements
  ===================================================================== -->
- <xsl:template                   match = "SummarySection" 
+ <xsl:template                   match = "SummarySection"
                                   mode = "copy">
   <xsl:apply-templates          select = "Title"
                                   mode = "section"/>
-  <xsl:apply-templates          select = "Para         | 
+  <xsl:apply-templates          select = "Para         |
                                           ItemizedList |
-                                          OrderedList" 
+                                          OrderedList"
                                   mode = "copy"/>
  </xsl:template>
 
@@ -602,7 +602,7 @@ OCECDR-4122: Changes the order of information in DIS
   <xsl:if                         test = "OtherTermName
                                            [not(normalize-space(translate(.,
                                              'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-                                             'abcdefghijklmnopqrstuvwxyz')) =  
+                                             'abcdefghijklmnopqrstuvwxyz')) =
                                                 normalize-space(translate
                                                 (following::OtherTermName,
                                              'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
@@ -614,67 +614,67 @@ OCECDR-4122: Changes the order of information in DIS
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==================================================================
  Section Template for Misc Docs
- Need to pass the parameter of the CDR Doc ID to set the ID 
+ Need to pass the parameter of the CDR Doc ID to set the ID
  attribute properly.  The misc doc can be either the 'To Learn More'
  or the 'About PDQ' section.
- ================================================================== -->  
+ ================================================================== -->
  <xsl:template                   match = "Section"
                                   mode = "description">
   <xsl:param                      name = "drugRefType"/>
 
   <xsl:apply-templates>
-   <xsl:with-param                name = "drugRefType" 
+   <xsl:with-param                name = "drugRefType"
                                 select = "$drugRefType"/>
   </xsl:apply-templates>
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==================================================================
  Section Template for Misc Docs
- Need to pass the parameter of the CDR Doc ID to set the ID 
+ Need to pass the parameter of the CDR Doc ID to set the ID
  attribute properly.  The misc doc can be either the 'To Learn More'
  or the 'About PDQ' section.
- ================================================================== -->  
+ ================================================================== -->
  <xsl:template                   match = "Section">
   <xsl:param                      name = "miscDocId"/>
 
   <xsl:element                    name = "DrugInfoDisclaimer">
    <xsl:apply-templates           mode = "disclaimer">
-    <xsl:with-param               name = "miscDocId" 
+    <xsl:with-param               name = "miscDocId"
                                 select = "$miscDocId"/>
    </xsl:apply-templates>
   </xsl:element>
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==================================================================
  Main MiscellaneousDocumentText Template
- ================================================================== -->  
+ ================================================================== -->
  <xsl:template                   match = "MiscellaneousDocumentText">
   <xsl:param                      name = "miscDocId"/>
   <xsl:apply-templates>
-   <xsl:with-param                name = "miscDocId" 
+   <xsl:with-param                name = "miscDocId"
                                 select = "$miscDocId"/>
   </xsl:apply-templates>
  </xsl:template>
 
 
- <!-- 
- ============================================================= 
+ <!--
+ =============================================================
  Create the Title template for the Misc Text section
  ============================================================= -->
  <xsl:template                   match = "Title"
                                   mode = "disclaimer"/>
 
 
- <!-- 
- ============================================================= 
- Create the Para template including the renamed attribute for 
+ <!--
+ =============================================================
+ Create the Para template including the renamed attribute for
  the paragraph IDs.
  Displaying by default the 'To Learn More' misc document.
  ============================================================= -->
@@ -692,8 +692,8 @@ OCECDR-4122: Changes the order of information in DIS
  </xsl:template>
 
 
- <!-- 
- ============================================================= 
+ <!--
+ =============================================================
  Suppress elements illegal according to DTD
  ============================================================= -->
  <xsl:template                   match = "SectMetaData"
@@ -733,7 +733,7 @@ OCECDR-4122: Changes the order of information in DIS
 
      <xsl:text>Find Clinical Trials for </xsl:text>
      <xsl:call-template           name = "convertCase">
-      <xsl:with-param             name = "convString" 
+      <xsl:with-param             name = "convString"
                                 select = "/DrugInformationSummary/
                                           DrugInfoMetaData/
                                           TerminologyLink/
@@ -758,7 +758,7 @@ OCECDR-4122: Changes the order of information in DIS
   <xsl:param                      name = "drugRefTypeNCI"
                                 select = "'dada'"/>
 
-    <!-- 
+    <!--
     Not certain where this section needs to be positioned
     ===================================================== -->
     <xsl:element                  name = "Para">
@@ -792,7 +792,7 @@ OCECDR-4122: Changes the order of information in DIS
  Template to create the disclaimer
  ===================================================================== -->
  <xsl:template                    name = "briefDisclaimer">
-  <xsl:variable                   name = "miscDoc" 
+  <xsl:variable                   name = "miscDoc"
                                 select = "document(concat('cdr:CDR0000510121',
                                                          '/lastp'))"/>
 
@@ -809,7 +809,7 @@ OCECDR-4122: Changes the order of information in DIS
  Template to create US Brand Name
  ===================================================================== -->
  <xsl:template                    name = "detailedDisclaimer">
-  <xsl:variable                   name = "miscDoc" 
+  <xsl:variable                   name = "miscDoc"
                                 select = "document(concat('cdr:CDR0000510122',
                                                          '/lastp'))"/>
 

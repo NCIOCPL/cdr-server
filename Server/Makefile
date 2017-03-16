@@ -1,9 +1,5 @@
 #--------------------------------------------------------------------------
-#
-# $Id$
-#
 # Rules for building CDR server.
-#
 #--------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------
@@ -72,7 +68,6 @@ HDRS   =$(CDRINC)/CdrBlob.h \
         $(CDRINC)/CdrSearch.h \
         $(CDRINC)/CdrSession.h \
         $(CDRINC)/CdrString.h \
-        $(CDRINC)/CdrSysValue.h \
         $(CDRINC)/CdrValidateDoc.h \
         $(CDRINC)/CdrValidationCtl.h \
         $(CDRINC)/CdrVersion.h \
@@ -122,12 +117,10 @@ OBJS   =CdrCommand.obj \
         CdrLinkProcs.obj \
         CdrSearch.obj \
         CdrSearch_tab.obj \
-        CdrSysValue.obj \
         CdrReport.obj \
         CdrDocTypes.obj \
         CdrShutdown.obj \
         CdrGetTree.obj \
-        CdrMergeProt.obj \
         CdrPublish.obj \
         CdrExternalMap.obj \
         CdrGlossaryMap.obj
@@ -249,4 +242,5 @@ CdrSearch_tab.c: CdrSearch.y $(HDRS)
 # Cleanup rules.
 #--------------------------------------------------------------------------
 clean:
-	rm -f *.obj *~ *.bak CdrSearch_tab.c CdrSearch.tab.c cdr.lib
+	rm -f *.obj *~ *.bak CdrSearch_tab.c CdrSearch.tab.c cdr.lib \
+        errs errs.1 errs.2

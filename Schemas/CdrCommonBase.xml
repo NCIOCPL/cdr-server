@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<!-- $Id$
+<!-- CdrCommonBase.xml
 
      BZIssue::860
      BZIssue::1126
@@ -1390,6 +1390,10 @@
     <choice          minOccurs       = '0'
                      maxOccurs       = 'unbounded'>
       <group         ref             = 'PhraseElements'/>
+      <element       name            = 'Comment'
+                     type            = 'Comment'/>
+      <element       name            = 'ResponseToComment'
+                     type            = 'Comment'/>
     </choice>
     <attribute       name            = 'RowSep'
                      type            = 'YesOrNo'
@@ -1460,6 +1464,9 @@
     <attribute       name            = 'size'
                      type            = 'MediaSize'
                      minOccurs       = '0'/>
+    <attribute       name            = 'placement'
+                     type            = 'ImagePlacement'
+                     minOccurs       = '0'/>
     <attribute       name            = 'thumb'
                      type            = 'YesNo'
                      minOccurs       = '0'/>
@@ -1499,6 +1506,19 @@
       <enumeration   value           = 'sixth'/>
       <enumeration   value           = 'as-is'/>
       <enumeration   value           = 'three-quarters'/>
+    </restriction>
+  </simpleType>
+
+
+  <simpleType        name            = 'ImagePlacement'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'image-center'/>
+      <enumeration   value           = 'image-center-full'/>
+      <enumeration   value           = 'image-center-medium'/>
+      <enumeration   value           = 'image-left-medium'/>
+      <enumeration   value           = 'image-right-medium'/>
+      <enumeration   value           = 'image-left-small'/>
+      <enumeration   value           = 'image-right-small'/>
     </restriction>
   </simpleType>
 
@@ -1603,6 +1623,43 @@
                      type            = 'SupplementaryInfoLink'
                      maxOccurs       = 'unbounded'/>
     </sequence>
+  </complexType>
+
+  <!-- Link to a Media document for a video hosted on YouTube,
+       to be embedded in a player UI in the rendered linking
+       document. The title, caption, and presentation template
+       default values can be overridden here for this specific
+       usage. See https://tracker.nci.nih.gov/browse/OCECDR-3558. -->
+  <complexType       name            = 'EmbeddedVideo'>
+    <sequence>
+      <element       name            = 'VideoID'
+                     type            = 'MediaID'/>
+      <element       name            = 'SpecificMediaTitle'
+                     type            = 'string'
+                     minOccurs       = '0'/>
+      <element       name            = 'SpecificMediaCaption'
+                     type            = 'SpecificMediaCaption'
+                     minOccurs       = '0'/>
+      <element       name            = 'SpecificVideoPresentationTemplate'
+                     type            = 'VideoPresentationTemplate'
+                     minOccurs       = '0'/>
+    </sequence>
+    <attribute       name            = 'cdr:id'
+                     type            = 'NotEmptyString'
+                     minOccurs       = '0'/>
+  </complexType>
+
+  <!-- Mirrors the MediaCaption type in Media.xml, but without
+       the audience and language attributes. This is used as
+       part of an EmbeddedVideo block used in a CDR document
+       which links to a Media document for a video. -->
+  <complexType       name            = 'SpecificMediaCaption'
+                     mixed           = 'true'>
+    <choice          minOccurs       = '0'
+                     maxOccurs       = 'unbounded'>
+      <group         ref             = 'PhraseOrParaElements'/>
+      <group         ref             = 'CommonTextElements'/>
+    </choice>
   </complexType>
 
 <!--=================================================================-->
@@ -1837,6 +1894,22 @@
     <restriction     base            = 'string'>
       <enumeration   value           = 'mobile'/>
       <enumeration   value           = 'screen'/>
+    </restriction>
+  </simpleType>
+
+  <!-- Controls three aspects of the embedded video's presentation:
+       positioning, size, and whether the title is displayed.
+       These are the allowed combinations. See the WCMS documentation
+       for further details. -->
+  <simpleType        name            = 'VideoPresentationTemplate'>
+    <restriction     base            = 'string'>
+      <enumeration   value           = 'Video100NoTitle'/>
+      <enumeration   value           = 'Video100Title'/>
+      <enumeration   value           = 'Video50NoTitle'/>
+      <enumeration   value           = 'Video50NoTitleRight'/>
+      <enumeration   value           = 'Video50TitleRight'/>
+      <enumeration   value           = 'Video75NoTitle'/>
+      <enumeration   value           = 'Video75Title'/>
     </restriction>
   </simpleType>
 

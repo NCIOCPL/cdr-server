@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='utf-8'?>
-<!-- $Id$ -->
 <!-- Filter title: Module: Citation Formatting -->
 <!--
 BZIssue::4740 - Fixing formatted citation display
@@ -12,25 +11,25 @@ OCECDR-3753: Citation formatting filter bugs
            exclude-result-prefixes = "cdr"
                            version = "1.0">
 
- <xsl:output                method = "xml" 
+ <xsl:output                method = "xml"
               omit-xml-declaration = "no"
                           encoding = "UTF-8"/>
 
- <!-- 
+ <!--
  ======================================================================
  Filter to create properly formatted Citation elements for publication.
- This filter has been based on Filter CDR46 of the Summary 
- Denomalization filter set but has been adjusted for the 
+ This filter has been based on Filter CDR46 of the Summary
+ Denomalization filter set but has been adjusted for the
  InScopeProtocol citations.
  ====================================================================== -->
  <xsl:template               match = "PublishedResults/Citation">
- 
+
   <xsl:apply-templates      select = "./PDQCitation | ./PubmedArticle"/>
 
- </xsl:template>     
+ </xsl:template>
 
- 
- <!-- 
+
+ <!--
  ================================================================
  A)  CancerLit/PDQ Citation Formatting
  ================================================================ -->
@@ -53,7 +52,7 @@ OCECDR-3753: Citation formatting filter bugs
  </xsl:template>
 
 
- <!-- 
+ <!--
  ===================================================================
  B)  PubMed Record Citation Formatting
  =================================================================== -->
@@ -82,7 +81,7 @@ OCECDR-3753: Citation formatting filter bugs
  </xsl:template>
 
 
- <!-- 
+ <!--
  ===============================================================
  C) Protocol Citation Formatting
  =============================================================== -->
@@ -98,18 +97,18 @@ OCECDR-3753: Citation formatting filter bugs
    <xsl:attribute             name = "InsertionOrDeletion">
     <xsl:value-of           select = "@InsertionOrDeletion"/>
    </xsl:attribute>
-  </xsl:if>   
+  </xsl:if>
 
-  <!-- 
+  <!--
   Display the "Protocol Author List" based on the following rules:
   - find the primary organization
   - display the Protocol chair, if it is listed as public
-  - if no public PC exists display the Protocol co-chair, if it is 
+  - if no public PC exists display the Protocol co-chair, if it is
     listed as public
   - if no public PC or Protocol co-chair exist display the Principle
     investigator, if it is listed as public
   - if no public PC, Protocol co-chair, or Principle investigator exist
-    display the Study coordinator and Research coordinator that are 
+    display the Study coordinator and Research coordinator that are
     listed as public
   - if none of the above exist do not display any name.
   - if more then three persons are listed display the first three and
@@ -155,14 +154,14 @@ OCECDR-3753: Citation formatting filter bugs
        <xsl:when                  test = "ProtocolLeadOrg
                                             [LeadOrgRole = 'Primary']/
                                           LeadOrgPersonnel
-                                            [PersonRole = 
+                                            [PersonRole =
                                                     'Principal investigator'
                                              and
                                              not(@Public)]">
         <xsl:for-each           select = "ProtocolLeadOrg
                                             [LeadOrgRole = 'Primary']/
                                           LeadOrgPersonnel
-                                            [PersonRole = 
+                                            [PersonRole =
                                                     'Principal investigator'
                                              and
                                              not(@Public)]">
@@ -176,16 +175,16 @@ OCECDR-3753: Citation formatting filter bugs
                                           LeadOrgPersonnel
                                             [PersonRole = 'Study coordinator'
                                              or
-                                             PersonRole = 
+                                             PersonRole =
                                                       'Research coordinator']">
           <xsl:for-each         select = "ProtocolLeadOrg
                                             [LeadOrgRole = 'Primary']/
                                           LeadOrgPersonnel
                                             [PersonRole = 'Study coordinator'
-                                             and 
+                                             and
                                              not(@Public)
                                              or
-                                             PersonRole = 
+                                             PersonRole =
                                                       'Research coordinator'
                                              and
                                              not(@Public)]">
@@ -200,7 +199,7 @@ OCECDR-3753: Citation formatting filter bugs
    </xsl:otherwise>
   </xsl:choose>
 
-  <!-- 
+  <!--
   Format the Organization Name
   ======================================================================== -->
   <xsl:for-each                  select = "ProtocolLeadOrg">
@@ -216,7 +215,7 @@ OCECDR-3753: Citation formatting filter bugs
   <xsl:variable                    name = "protTitle"
                                  select = "normalize-space(ProtocolTitle)"/>
   <xsl:choose>
-   <xsl:when                       test = "substring($protTitle, 
+   <xsl:when                       test = "substring($protTitle,
                                                 string-length($protTitle), 1)
                                                                        = ' '">
     <xsl:value-of                select = "substring($protTitle, 1,
@@ -256,11 +255,11 @@ OCECDR-3753: Citation formatting filter bugs
  ==================================================================== -->
  <xsl:template                name = "getPersonName">
   <xsl:if                     test = "position() &lt; 4">
-   <!-- 
+   <!--
    If the first name field contains the middle initial try to extract
    it and display both initials.
    ====================================================================== -->
-   <xsl:variable              name = "Gname" 
+   <xsl:variable              name = "Gname"
                             select = "substring-after(Person/
                                       PersonNameInformation/GivenName,' ')"/>
    <xsl:variable              name = "mInit"
@@ -305,7 +304,7 @@ OCECDR-3753: Citation formatting filter bugs
  </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
  Template to create AuthorList
  If Authors AND CollectiveNames exist always display a total of three
@@ -314,18 +313,18 @@ OCECDR-3753: Citation formatting filter bugs
  Authors are displayed first, if exist.
  ==================================================================== -->
  <xsl:template               match = "AuthorList">
-  <xsl:variable               name = "Authors" 
+  <xsl:variable               name = "Authors"
                             select = "Author"/>
-  <xsl:variable               name = "nAuthor" 
+  <xsl:variable               name = "nAuthor"
                             select = "count(Author)"/>
-  <xsl:variable               name = "nCollective" 
+  <xsl:variable               name = "nCollective"
                             select = "count(Author/CollectiveName)"/>
-  <xsl:variable               name = "nLastName" 
+  <xsl:variable               name = "nLastName"
                             select = "count(Author/LastName)"/>
 
   <xsl:choose>
 <!--
-   Not sure what this test was trying to do.  I'm guessing I wanted 
+   Not sure what this test was trying to do.  I'm guessing I wanted
    to check if an Author element existed but that's wrong. VE.
    Instead, I'm checking if an AuthorList/Author element exists (even
    if it's empty).
@@ -349,7 +348,7 @@ OCECDR-3753: Citation formatting filter bugs
         <xsl:variable         name = "firstName"
                             select = "normalize-space(FirstName)"/>
         <xsl:choose>
-         <xsl:when            test = "substring($firstName, 
+         <xsl:when            test = "substring($firstName,
                                                 string-length($firstName), 1)
                                                                        = ' '">
           <xsl:value-of     select = "substring($firstName, 1,
@@ -368,11 +367,11 @@ OCECDR-3753: Citation formatting filter bugs
        </xsl:if>
       </xsl:if>
 
-      <!-- 
+      <!--
       Separate AuthorNames by comma
       ================================ -->
       <xsl:if                 test = "position() != last()
-                                      and 
+                                      and
                                       position() != $nLastName
                                       and
                                       position() != 3">
@@ -381,7 +380,7 @@ OCECDR-3753: Citation formatting filter bugs
      </xsl:if>
     </xsl:for-each>
 
-    <!-- 
+    <!--
     Separate AuthorName list from CollectiveName list and display
     CollectiveName list if less then three Authors exist.
     ============================================================= -->
@@ -395,15 +394,15 @@ OCECDR-3753: Citation formatting filter bugs
      <xsl:for-each          select = "Author[CollectiveName]">
       <xsl:if                 test = "position() &lt; 4 - $nLastName">
 
-       <!-- 
+       <!--
        In case a collective name already ends in a period the
        final period has to be suppressed
        ====================================================== -->
        <xsl:choose>
         <xsl:when             test = "substring(
-                                       normalize-space(CollectiveName), 
+                                       normalize-space(CollectiveName),
                                        string-length(
-                                         normalize-space(CollectiveName)), 1) 
+                                         normalize-space(CollectiveName)), 1)
                                                                          = '.'">
          <xsl:text></xsl:text>
          <xsl:value-of        select = "substring(
@@ -417,15 +416,15 @@ OCECDR-3753: Citation formatting filter bugs
         </xsl:otherwise>
        </xsl:choose>
 
-       <!-- 
+       <!--
        Separate AuthorNames by comma but do not print comma if three or
        more AuthorNames/CollectiveNames exist since the last comma is
        being provided along with the et.al.
        ================================================================ -->
-       <xsl:if                    test = "position() != last() 
-                                          and 
+       <xsl:if                    test = "position() != last()
+                                          and
                                           position() != $nLastName
-                                          and 
+                                          and
                                           position() != 3 - $nLastName">
         <xsl:text>, </xsl:text>
        </xsl:if>
@@ -433,22 +432,22 @@ OCECDR-3753: Citation formatting filter bugs
      </xsl:for-each>
     </xsl:if>
 
-    <!-- 
-    Indicate that more then three authors exist 
+    <!--
+    Indicate that more then three authors exist
     =========================================== -->
     <xsl:choose>
-     <xsl:when                test = "@Complete = 'No' 
+     <xsl:when                test = "@Complete = 'No'
                                       or
                                       $nAuthor &gt; 3">
       <xsl:text>, et al.</xsl:text>
      </xsl:when>
     </xsl:choose>
 
-    <!-- 
+    <!--
     Add the Eds. at the end if this is a book with editors
     ====================================================== -->
     <xsl:choose>
-     <xsl:when                test = "@Editors = 'Yes' 
+     <xsl:when                test = "@Editors = 'Yes'
                                       and
                                       $nAuthor = 1">
       <xsl:text>, ed.: </xsl:text>
@@ -468,7 +467,7 @@ OCECDR-3753: Citation formatting filter bugs
  </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
  Template to create AuthorList
  If Authors AND CollectiveNames exist always display a total of three
@@ -477,13 +476,13 @@ OCECDR-3753: Citation formatting filter bugs
  Authors are displayed first, if exist.
  ==================================================================== -->
 <xsl:template                match = "XXXAuthorList_Orig">
- <xsl:variable                name = "Authors" 
+ <xsl:variable                name = "Authors"
                             select = "Author"/>
- <xsl:variable                name = "nAuthor" 
+ <xsl:variable                name = "nAuthor"
                             select = "count(Author)"/>
- <xsl:variable                name = "nCollective" 
+ <xsl:variable                name = "nCollective"
                             select = "count(Author/CollectiveName)"/>
- <xsl:variable                name = "nLastName" 
+ <xsl:variable                name = "nLastName"
                             select = "count(Author/LastName)"/>
 
  <xsl:choose>
@@ -507,7 +506,7 @@ OCECDR-3753: Citation formatting filter bugs
       <xsl:value-of           select = "Suffix"/>
      </xsl:if>
 
-     <xsl:if                   test   = "position() != last() and 
+     <xsl:if                   test   = "position() != last() and
                                         position() != 3">
       <xsl:text>, </xsl:text>
      </xsl:if>
@@ -558,7 +557,7 @@ OCECDR-3753: Citation formatting filter bugs
 </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
  Template to create CitationTitle
  There exist citations with just a CitationTitle and nothing else.
@@ -570,19 +569,19 @@ OCECDR-3753: Citation formatting filter bugs
  <xsl:value-of              select = "."/>
  <xsl:choose>
   <xsl:when                   test = "$period = 'Yes'">
-   <!-- 
+   <!--
    In case a title ends in a question mark or exclamation mark the
    final period has to be suppressed
    =============================================================== -->
    <xsl:choose>
     <xsl:when                 test = "substring(
-                                       normalize-space(.), 
-                                       string-length(normalize-space(.)), 1) 
+                                       normalize-space(.),
+                                       string-length(normalize-space(.)), 1)
                                                                          = '?'
                                       or
                                       substring(
-                                       normalize-space(.), 
-                                       string-length(normalize-space(.)), 1) 
+                                       normalize-space(.),
+                                       string-length(normalize-space(.)), 1)
                                                                          = '!'">
      <xsl:text> </xsl:text>
     </xsl:when>
@@ -612,7 +611,7 @@ OCECDR-3753: Citation formatting filter bugs
 </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
  Template to handle different CitationType elements such as
    Abstract, Book, Meeting Paper, Database, etc.
@@ -655,7 +654,7 @@ OCECDR-3753: Citation formatting filter bugs
 </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
  Template to create MedlineTA
  ==================================================================== -->
@@ -665,7 +664,7 @@ OCECDR-3753: Citation formatting filter bugs
  </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
  Template to create JournalIssue
  ==================================================================== -->
@@ -699,7 +698,7 @@ OCECDR-3753: Citation formatting filter bugs
  <xsl:if                      test = "PubDate/MedlineDate">
   <xsl:value-of             select = "PubDate/MedlineDate"/>
   <xsl:text>.</xsl:text>
- </xsl:if> 
+ </xsl:if>
  <xsl:if                      test = "PubDate/Year">
   <xsl:value-of              select = "PubDate/Year"/>
   <xsl:text>.</xsl:text>
@@ -707,14 +706,14 @@ OCECDR-3753: Citation formatting filter bugs
  </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
  Template to create PublishedIn
  ==================================================================== -->
  <xsl:template                match = "PublishedIn">
  <xsl:param                   name = "citType"
                             select = "'Null'"/>
- 
+
  <xsl:choose>
   <xsl:when                   test = "$citType = 'Abstract'">
    <xsl:apply-templates     select = "Citation//CitationTitle">
@@ -769,15 +768,15 @@ OCECDR-3753: Citation formatting filter bugs
                             select = "'No'"/>
    </xsl:apply-templates>
    <xsl:text> </xsl:text>
-  </xsl:otherwise>   
+  </xsl:otherwise>
  </xsl:choose>
 </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
  Template to create OtherPublicationInformation
- If the parameter 'pubIn'='Yes' the information is displayed as 
+ If the parameter 'pubIn'='Yes' the information is displayed as
  part of the PublishedIn element which changes the punctuation.
  ==================================================================== -->
  <xsl:template                   match = "OtherPublicationInformation">
@@ -808,9 +807,9 @@ OCECDR-3753: Citation formatting filter bugs
  </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
- Template to create InternetInformation 
+ Template to create InternetInformation
  This is design so that the "Also available online" text and link is
  not going to be displayed for a citation referencing the current
  citation.

@@ -1,20 +1,19 @@
 <?xml version="1.0"?>
-<!-- $Id$ -->
 <!-- Filter title: Revision Markup Filter for QC Report -->
 <xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                            xmlns:cdr = "cips.nci.nih.gov/cdr"
                              version = "1.0">
 
 <!-- ==================================================================
-     Insertion Revision levels are passed in with a string of specific 
+     Insertion Revision levels are passed in with a string of specific
      format such as rejected|approved|proposed or rejected_approved_proposed.
-     The default for insRevLevels is '' and for the insAppLevels is 
+     The default for insRevLevels is '' and for the insAppLevels is
      publish_.
-     A second input parameter (delRevLevels) has to be passed to 
-     accomodate the fact that not all deletions are always displayed 
-     and/or marked-up.  By default the deletions are marked up and the 
-     default value is 'N' (e.g. for Redline/Strikeout reports) while 
-     the parameter would be set if deletions need to be treated 
+     A second input parameter (delRevLevels) has to be passed to
+     accomodate the fact that not all deletions are always displayed
+     and/or marked-up.  By default the deletions are marked up and the
+     default value is 'N' (e.g. for Redline/Strikeout reports) while
+     the parameter would be set if deletions need to be treated
      differently then insertions (e.g. for Bold/Underline reports).
      ================================================================== -->
     <xsl:param                  name = "insRevLevels"
@@ -52,19 +51,19 @@
       In other words:
       If a revision level is checked by the user, this level is being
       displayed with markup.
-      If a revision level is not checked by the user, it will be 
+      If a revision level is not checked by the user, it will be
       applied and displayed without markup if it is of higher priority
       then the lowest checked level.
       Otherwise it will be treated as rejected.
      ================================================================== -->
     <xsl:template              match = "Insertion">
      <xsl:choose>
-      <xsl:when                 test = "contains($insRevLevels, 
+      <xsl:when                 test = "contains($insRevLevels,
                                                  @RevisionLevel)">
        <xsl:element             name = "{name()}">
         <xsl:apply-templates  select = "@*"/>
         <xsl:apply-templates/>
-       </xsl:element> 
+       </xsl:element>
       </xsl:when>
       <xsl:when                 test = "contains($insAppLevels,
                                                  @RevisionLevel)">
@@ -81,7 +80,7 @@
      ================================================================== -->
     <xsl:template              match = "Deletion">
      <xsl:choose>
-      <xsl:when                 test = "contains($insRevLevels, 
+      <xsl:when                 test = "contains($insRevLevels,
                                                  @RevisionLevel)">
        <xsl:choose>
        <xsl:when                test = "$delRevLevels = 'Y'">
@@ -89,18 +88,18 @@
          <xsl:element             name = "{name()}">
           <xsl:apply-templates  select = "@*"/>
           <xsl:apply-templates/>
-         </xsl:element> 
+         </xsl:element>
         </xsl:if>
        </xsl:when>
        <xsl:otherwise>
          <xsl:element             name = "{name()}">
           <xsl:apply-templates  select = "@*"/>
           <xsl:apply-templates/>
-         </xsl:element> 
+         </xsl:element>
        </xsl:otherwise>
       </xsl:choose>
       </xsl:when>
-      <xsl:when                 test = "not(contains($insAppLevels, 
+      <xsl:when                 test = "not(contains($insAppLevels,
                                                      @RevisionLevel))">
        <xsl:apply-templates/>
       </xsl:when>

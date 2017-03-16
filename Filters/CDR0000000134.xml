@@ -1,29 +1,28 @@
 <?xml version = "1.0" encoding="utf-8"?>
-<!-- $Id$ -->
 <!-- Filter title: Vendor Filter: Term -->
 <!--
 BZIssue::4703 - Suppress Clin. Trials search string
 BZIssue::4778 - Display multiple OtherNameTypes
 OCECDR-3588: Links from Drug Dictionary to NCI Thesaurus
-OCECDR-3906: Vendor Filter change to text in Drug Dictionary definition 
+OCECDR-3906: Vendor Filter change to text in Drug Dictionary definition
              to remove Closed Trials link
 -->
-<!-- 
+<!--
 ===================================================================
-Filter to create the vendor Terminology XML 
+Filter to create the vendor Terminology XML
 =================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
                                version = "1.0">
-    
- <xsl:output                    method = "xml" 
+
+ <xsl:output                    method = "xml"
                   omit-xml-declaration = "no"/>
 
  <xsl:include  href = "cdr:name:Module: Vendor Filter Templates"/>
-   
+
  <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
  <xsl:param                       name = "DateFirstPub"
-                                select = "''"/> 
+                                select = "''"/>
  <xsl:variable                    name = "whoAmI"
                                 select = "'Term'"/>
 
@@ -36,12 +35,12 @@ Filter to create the vendor Terminology XML
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  Copy DocId, PreferredName, OtherTermName, OtherNameType
  ====================================================================== -->
  <xsl:template                   match = "Term">
-  <xsl:element                    name = '{name()}'>   
+  <xsl:element                    name = '{name()}'>
    <xsl:attribute                 name = "id">
     <xsl:value-of               select = "DocId"/>
    </xsl:attribute>
@@ -66,7 +65,7 @@ Filter to create the vendor Terminology XML
     </xsl:attribute>
    </xsl:if>
 
-   <xsl:apply-templates         select = "PreferredName" 
+   <xsl:apply-templates         select = "PreferredName"
                                   mode = "copy"/>
    <xsl:apply-templates         select = "OtherName"/>
    <xsl:apply-templates         select = "Definition"/>
@@ -74,12 +73,12 @@ Filter to create the vendor Terminology XML
    <xsl:apply-templates         select = "SemanticType"/>
    <xsl:copy-of                 select = "CTGovInterventionType"/>
    <xsl:apply-templates         select = "TermRelationship"/>
-   <xsl:if                        test = "TermType/TermTypeName != 
+   <xsl:if                        test = "TermType/TermTypeName !=
                                                  'Obsolete term'">
     <xsl:apply-templates         select = "MenuInformation"/>
    </xsl:if>
-               
-   <!-- 
+
+   <!--
    ===================================================================
    Copy Date First Published and Date Last Modified
    =================================================================== -->
@@ -94,11 +93,11 @@ Filter to create the vendor Terminology XML
      <xsl:call-template           name = "getDateFirstPub">
       <xsl:with-param             name = "date"
                                 select = "$DateFirstPub"/>
-     </xsl:call-template>    
+     </xsl:call-template>
     </xsl:otherwise>
    </xsl:choose>
- 
-   <xsl:apply-templates         select = "DateLastModified" 
+
+   <xsl:apply-templates         select = "DateLastModified"
                                   mode = "copy"/>
   </xsl:element>
  </xsl:template>
@@ -111,9 +110,9 @@ Filter to create the vendor Terminology XML
  Name.
  =================================================================== -->
  <xsl:template                   match = "OtherName">
-  <xsl:if                         test = "translate(OtherTermName, 
+  <xsl:if                         test = "translate(OtherTermName,
                                              'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-                                             'abcdefghijklmnopqrstuvwxyz') != 
+                                             'abcdefghijklmnopqrstuvwxyz') !=
                                           translate(../PreferredName,
                                              'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
                                              'abcdefghijklmnopqrstuvwxyz')">
@@ -133,7 +132,7 @@ Filter to create the vendor Terminology XML
 
  <!--
  ===================================================================
- Template to display the Definition node but only if the 
+ Template to display the Definition node but only if the
  ReviewStatus is "Reviewed".
  =================================================================== -->
  <xsl:template                   match = "Definition">
@@ -150,13 +149,13 @@ Filter to create the vendor Terminology XML
 
  <!--
  ===================================================================
- Template to display the DefinitionText node (without attributes) 
- and add three external Ref attributes.  
+ Template to display the DefinitionText node (without attributes)
+ and add three external Ref attributes.
  Two attributes are contructed to display a clinical trials query
  listing documents either active or closed documents using this drug.
- The third external Ref lists the NCI Thesaurus entry for the given 
+ The third external Ref lists the NCI Thesaurus entry for the given
  concept ID
- These new Ref attributes should not be displayed if the Term 
+ These new Ref attributes should not be displayed if the Term
  is listed with a TermTypeName = 'Drug Combination'.
  =================================================================== -->
  <xsl:template                   match = "DefinitionText">
@@ -168,7 +167,7 @@ Filter to create the vendor Terminology XML
                                            substring-before(
                                            concat(
                                            substring-after(/Term/DocId, 'CDR'),
-                                                               '#'), '#'))"/>  
+                                                               '#'), '#'))"/>
  <xsl:variable                  name = "sqlQuery">
     SELECT distinct t.doc_id
       FROM query_term_pub t
@@ -191,12 +190,12 @@ Filter to create the vendor Terminology XML
 
    <!--
    If the SQL query found a DrugInfo Summary with a term link to this
-   document, we need to suppress the display of the clinical search 
+   document, we need to suppress the display of the clinical search
    string.
    ================================================================== -->
    <xsl:if                        test = "not($queryRows/SqlResult/row)
                                           and
-                                          not(/Term/TermType/TermTypeName 
+                                          not(/Term/TermType/TermTypeName
                                                     = 'Drug Combination')">
    <!--
    Conctruct the URL for NCI active trials using this drug
@@ -240,7 +239,7 @@ Filter to create the vendor Terminology XML
 
 
    <!--
-   Conctruct the URL for NCI concept ID but only if the 
+   Conctruct the URL for NCI concept ID but only if the
    ID is published already
    ======================================================== -->
    <xsl:variable                  name = "conceptId">
@@ -259,7 +258,7 @@ Filter to create the vendor Terminology XML
      <xsl:attribute               name = "xref">
       <xsl:text>http://ncit.nci.nih.gov/</xsl:text>
       <xsl:text>ncitbrowser/ConceptReport.jsp?</xsl:text>
-      <xsl:text>dictionary=NCI%20Thesaurus&#x26;code=</xsl:text> 
+      <xsl:text>dictionary=NCI%20Thesaurus&#x26;code=</xsl:text>
       <xsl:value-of             select = "$conceptId"/>
      </xsl:attribute>
      <xsl:value-of              select = "../DefinitionSource/
@@ -276,13 +275,13 @@ Filter to create the vendor Terminology XML
  Template for TermTypeName
  =================================================================== -->
  <xsl:template                   match = "TermTypeName">
-  <xsl:if                         test = ". = 
+  <xsl:if                         test = ". =
                                              'Protocol selection criteria' or
-                                          . = 
+                                          . =
                                              'Obsolete term'               or
-                                          . = 
+                                          . =
                                              'Header term'                or
-                                          . = 
+                                          . =
                                              'Semantic type'">
 
   <TermTypeName>
@@ -328,8 +327,8 @@ Filter to create the vendor Terminology XML
     </xsl:attribute>
     <xsl:value-of               select = "TermId/Term/PreferredName"/>
    </ParentTermName>
- 
-   <xsl:apply-templates         select = "ParentType" 
+
+   <xsl:apply-templates         select = "ParentType"
                                   mode = "copy"/>
   </ParentTerm>
  </xsl:template>
@@ -347,7 +346,7 @@ Filter to create the vendor Terminology XML
     </xsl:attribute>
     <xsl:value-of               select = "TermId/Term/PreferredName"/>
    </RelatedTermName>
-   <xsl:apply-templates         select = "RelationshipType" 
+   <xsl:apply-templates         select = "RelationshipType"
                                   mode = "copy"/>
   </RelatedTerm>
  </xsl:template>
@@ -359,13 +358,13 @@ Filter to create the vendor Terminology XML
  =================================================================== -->
  <xsl:template                   match = "MenuInformation">
   <!--
-  Testing if a MenuStatus = 'Online' child element exists and if the 
+  Testing if a MenuStatus = 'Online' child element exists and if the
   number of Public menuitems is not zero in order to determine if we will
   need the MenuInformation wrapper element.
   ======================================================================= -->
   <xsl:if                         test = "MenuItem[MenuStatus = 'Online']
                                           and
-                                          count(MenuItem) &gt; 
+                                          count(MenuItem) &gt;
                                            count(MenuItem[@Public])">
   <MenuInformation>
    <xsl:apply-templates         select = "MenuItem[MenuStatus = 'Online']"/>
@@ -387,10 +386,10 @@ Filter to create the vendor Terminology XML
      </xsl:attribute>
     </xsl:if>
 
-    <xsl:apply-templates        select = "MenuType" 
+    <xsl:apply-templates        select = "MenuType"
                                   mode = "copy"/>
     <xsl:apply-templates        select = "MenuParent"/>
-    <xsl:apply-templates        select = "DisplayName" 
+    <xsl:apply-templates        select = "DisplayName"
                                   mode = "copy"/>
    </MenuItem>
   </xsl:if>

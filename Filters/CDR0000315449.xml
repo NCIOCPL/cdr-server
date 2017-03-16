@@ -1,28 +1,27 @@
 <?xml      version = "1.0"?>
-<!-- $Id$ -->
 <!-- Filter title: Module: Vendor Phone Templates -->
- 
+
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
                exclude-result-prefixes = "cdr"
                                version = "1.0">
 
-  <xsl:output                   method = "xml" 
+  <xsl:output                   method = "xml"
                   omit-xml-declaration = "no"
                               encoding = "UTF-8"/>
 
 
- <!-- 
+ <!--
  ====================================================================
- Filter to enforce the business rules for selecting the proper phone 
+ Filter to enforce the business rules for selecting the proper phone
  number(s) (Phone) for the vendor and QC output.
  ==================================================================== -->
  <!--
  ====================================================================
  Template to select the phone/specific phone number.
- If the Public=No attribute exists this phone number will not be 
- displayed via the vendor filter and the organization phone number 
- needs to be displayed instead.  This org phone number is displayed 
+ If the Public=No attribute exists this phone number will not be
+ displayed via the vendor filter and the organization phone number
+ needs to be displayed instead.  This org phone number is displayed
  in the OrgPhone element.
  ==================================================================== -->
  <xsl:template                   match = "Phone |
@@ -31,7 +30,7 @@
                                           AssistantPhone">
   <xsl:element                    name = "Phone">
 
-  <!-- 
+  <!--
   Phone with Public=No attribute is not to be published
   It will be filtered out with very last vendor filter.
   ===================================================== -->
@@ -42,26 +41,26 @@
    </xsl:if>
 
   <!--
-  For a Home or PrivatePracticeLocation we'll have to check if a 
+  For a Home or PrivatePracticeLocation we'll have to check if a
   SpecificPhone exists and use this instead of the phone provided
   with the Home or PrivatePracticeLocation itself.
   =============================================================== -->
   <xsl:choose>
    <xsl:when                      test = "../../../../../SpecificPhone">
      <xsl:value-of              select = "../../../../../SpecificPhone"/>
-   </xsl:when>  
+   </xsl:when>
    <xsl:otherwise>
      <xsl:apply-templates       select = "node()"/>
    </xsl:otherwise>
   </xsl:choose>
 
   </xsl:element>
- </xsl:template>     
+ </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
- Filter to enforce the business rules for selecting the proper phone 
+ Filter to enforce the business rules for selecting the proper phone
  number(s) (Phone, TollFreePhone) for the vendor and QC output.
  ==================================================================== -->
  <xsl:template                   match = "TollFreePhone |
@@ -69,10 +68,10 @@
   <xsl:element                    name = "TollFreePhone">
    <xsl:apply-templates         select = "@*|node()"/>
   </xsl:element>
- </xsl:template>     
+ </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
  The Fax number needs to be displayed on the QC reports.  However, it
  will have to be filtered out again from the vendor output.
@@ -84,20 +83,20 @@
   <xsl:element                    name = "Fax">
    <xsl:apply-templates         select = "@*|node()"/>
   </xsl:element>
- </xsl:template>     
+ </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
- Filter to enforce the business rules for selecting the proper phone 
+ Filter to enforce the business rules for selecting the proper phone
  number(s) (Email) for the vendor and QC output.
- 
+
  ==================================================================== -->
  <xsl:template                   match = "Email |
                                           SpecificEmail |
                                           BoardContactEmail |
                                           AssistantEmail">
-  <!-- 
+  <!--
   Phone with Public=No attribute is not to be published
   ===================================================== -->
   <xsl:choose>
@@ -105,7 +104,7 @@
     <xsl:element                  name = "Email">
      <xsl:apply-templates       select = "node()"/>
     </xsl:element>
-   </xsl:when>  
+   </xsl:when>
    <xsl:otherwise>
     <xsl:element                  name = "Email">
      <xsl:attribute               name = "Public">
@@ -115,12 +114,12 @@
     </xsl:element>
    </xsl:otherwise>
   </xsl:choose>
- </xsl:template>     
+ </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
- Filter to enforce the business rules for selecting the proper phone 
+ Filter to enforce the business rules for selecting the proper phone
  number(s) (WebSite) for the vendor and QC output.
  ==================================================================== -->
  <xsl:template                   match = "WebSite | SpecificWebSite">
@@ -130,14 +129,14 @@
    </xsl:attribute>
    <xsl:apply-templates         select = "node()"/>
   </xsl:element>
- </xsl:template>     
+ </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
  External Ref template.
  ==================================================================== -->
- <xsl:template                   match = "ExternalRef" 
+ <xsl:template                   match = "ExternalRef"
                                   mode = "copy">
   <xsl:element                    name = "ExternalRef">
    <xsl:attribute                 name = "xref">
@@ -146,7 +145,7 @@
    <xsl:apply-templates         select = "node()"
                                   mode = "copy"/>
   </xsl:element>
- </xsl:template>     
+ </xsl:template>
 
 
  <!--
@@ -164,7 +163,7 @@
    <xsl:otherwise>
     <xsl:choose>
      <xsl:when                    test = "SpecificPhone">
-<!--     <xsl:when                   test = "SpecificPhone 
+<!--     <xsl:when                   test = "SpecificPhone
                                        and
                                        not(SpecificPhone/@Public)">
 -->
@@ -196,12 +195,12 @@
     </xsl:choose>
    </xsl:otherwise>
   </xsl:choose>
- </xsl:template>     
+ </xsl:template>
 
 
  <!--
  ====================================================================
- Picking up the SpecificTollFreePhone from Person Record or 
+ Picking up the SpecificTollFreePhone from Person Record or
  TollFreePhone from Organization record.
  ==================================================================== -->
  <xsl:template                    name = "getPersonOrgTollFreePhone">
@@ -230,14 +229,14 @@
     </xsl:element>
    </xsl:when>
   </xsl:choose>
- </xsl:template>     
+ </xsl:template>
 
 
  <!--
  ====================================================================
- Picking up the SpecificEmail from Person Record or 
+ Picking up the SpecificEmail from Person Record or
  Email from Organization record.
- Since Emails are typically only displayed for organizations and 
+ Since Emails are typically only displayed for organizations and
  not for protocols we'll display the Email if it exists
  for a Person as a SpecificEmail or if the SpecificProtocolContact
  contains it but we will not pick it up from the Organization.
@@ -246,7 +245,7 @@
   <xsl:param                      name = "orgAddressFID"/>
 
   <xsl:choose>
-<!--   <xsl:when                   test = "SpecificEmail 
+<!--   <xsl:when                   test = "SpecificEmail
                                        and
                                        not(SpecificEmail/@Public)">
 -->
@@ -274,7 +273,7 @@
     </xsl:element>
    </xsl:when -->
   </xsl:choose>
- </xsl:template>     
+ </xsl:template>
 
 
  <!--
@@ -308,14 +307,14 @@
     </xsl:element>
    </xsl:when>
   </xsl:choose>
- </xsl:template>     
+ </xsl:template>
 
 
  <!--
  ====================================================================
- Picking up the SpecificEmail from Person Record or 
+ Picking up the SpecificEmail from Person Record or
  Email from Organization record.
- Since WebSites are typically only displayed for organizations and 
+ Since WebSites are typically only displayed for organizations and
  not for protocols or persons we'll display the WebSite if it exists
  for a Person as a SpecificWebSite or if the SpecificProtocolContact
  contains it but we will not pick it up from the Organization.
@@ -332,7 +331,7 @@
      <xsl:value-of              select = "SpecificWebSite"/>
     </xsl:element>
    </xsl:when>
-   <!-- 
+   <!--
    The Website needs to be displayed to be included to QC Reports
    ================================================================== -->
    <xsl:when                      test = "OrganizationLocation/
@@ -359,5 +358,5 @@
     </xsl:element>
    </xsl:when>
   </xsl:choose>
- </xsl:template>     
+ </xsl:template>
 </xsl:transform>

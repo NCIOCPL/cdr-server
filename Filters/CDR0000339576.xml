@@ -1,5 +1,4 @@
 <?xml version = "1.0" encoding="utf-8"?>
-<!-- $Id$ -->
 <!-- Filter title: Module: InLine Markup Formatter -->
 <!--
 ==========================================================================
@@ -11,7 +10,7 @@ BZIssue::4934 - [Summary] Change Display for Link Elements in QC Reports
 BZIssue::4970 - [Summary] Key Point display problems in QC reports
 BZIssue::5065 - [Summaries] 2 More Patient Summary QC Report Display Options
 BZIssue::5116 - [Summaries] Personalized Word Macros for Summaries in MS Word
-BZIssue::5157 - [Summaries] HP Treatment summaries not retrieving GTN with 
+BZIssue::5157 - [Summaries] HP Treatment summaries not retrieving GTN with
                             Concept QC Report
 BZIssue::5159 - [Summaries] Changes to HP & Patient QC Report Interfaces and
                             Display Options
@@ -26,12 +25,12 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
  <xsl:param                       name = "thisDocID"
                                 select = "document('cdrutil:/docid')"/>
-  
+
  <xsl:variable                    name = "mediaAudience">
   <xsl:choose>
    <xsl:when                      test = "/Summary/
                                             SummaryMetaData/
-                                            SummaryAudience = 
+                                            SummaryAudience =
                                               'Health professionals'">
     <xsl:text>Health_professionals</xsl:text>
    </xsl:when>
@@ -54,12 +53,12 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   </xsl:choose>
  </xsl:variable>
 
- <!-- 
+ <!--
  ======================================================================
  Display a Summary Reference or ProtocolRef
  These elements should display the QC report of the particular document
  ====================================================================== -->
- <xsl:template                   match = "SummaryRef         | 
+ <xsl:template                   match = "SummaryRef         |
                                           ProtocolRef">
   <a>
    <xsl:attribute                 name = "href">
@@ -72,7 +71,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                           and
                                           (LinkedSummary/LinkedKeyPoints
                                            or
-                                           LinkedSummary/LinkedSummaryType = 
+                                           LinkedSummary/LinkedSummaryType =
                                            concat('Integrative, alternative, ',
                                                   'and complementary therapies'))">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
@@ -106,16 +105,16 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  Display a SummaryFragmentRef or LOEFragmentRef.
- These elements should be created as links to sections within the 
+ These elements should be created as links to sections within the
  document.
  ====================================================================== -->
  <xsl:template                   match = "SummaryFragmentRef |
                                           LOEFragmentRef">
   <a>
-   <!-- 
+   <!--
    Attribute to being able and specify the CSS for this link
    ========================================================= -->
    <xsl:attribute                 name = "class">
@@ -131,7 +130,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
    <!--
    Attribute to specify the link.  If the link is an internal link
-   do not go through the filter process but jump to the anker 
+   do not go through the filter process but jump to the anker
    element directly.
    =============================================================== -->
    <xsl:attribute                 name = "href">
@@ -141,16 +140,16 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     =========================================================== -->
     <xsl:choose>
      <!-- Internal link -->
-     <xsl:when                    test = "$thisDocID = 
+     <xsl:when                    test = "$thisDocID =
                                             substring-before(@cdr:href, '#')">
-      <xsl:value-of             select = "concat('#', 
+      <xsl:value-of             select = "concat('#',
                                             substring-after(@cdr:href, '#'))"/>
      </xsl:when>
      <!--
      If the SummaryFragment CDR-ID is different from the document's
      CDR-ID there are several possible scenarios:
-     a) We're linking to a different document or 
-     b) We're linking from a module to the main document or 
+     a) We're linking to a different document or
+     b) We're linking from a module to the main document or
         vise versa.
      ========================================================== -->
      <xsl:otherwise>
@@ -158,9 +157,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        <!--
        Handle links from a module to the main document
        =========================================================== -->
-       <xsl:when                  test = "//SummarySection[@cdr:ref]/@cdr:ref = 
+       <xsl:when                  test = "//SummarySection[@cdr:ref]/@cdr:ref =
                                            substring-before(@cdr:href, '#')">
-        <xsl:value-of           select = "concat('#_sm_', 
+        <xsl:value-of           select = "concat('#_sm_',
                                             translate(@cdr:href, '#', ''))"/>
        </xsl:when>
        <!--
@@ -173,14 +172,14 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                             /LinkedKeyPoints
                                            or
                                            LinkedSummary
-                                            /LinkedSummaryType = 
+                                            /LinkedSummaryType =
                                            concat('Integrative, alternative, ',
                                                   'and complementary therapies'))">
         <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=',
                                              substring-before(@cdr:href, '#'),
                                                  '&amp;ReportType=pat',
-                                                 '&amp;Session=guest', 
+                                                 '&amp;Session=guest',
                                                  '#',
                                             substring-after(@cdr:href, '#'))"/>
 
@@ -192,7 +191,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=',
                                              substring-before(@cdr:href, '#'),
-                                                 '&amp;Session=guest', 
+                                                 '&amp;Session=guest',
                                                  '#',
                                             substring-after(@cdr:href, '#'))"/>
 
@@ -217,7 +216,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  Display a Documentation Reference as a hyperlink
  ====================================================================== -->
@@ -228,7 +227,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   <a>
    <xsl:attribute                 name = "href">
     <xsl:text>/cgi-bin/cdr/Filter.py?DocId=</xsl:text>
-    <xsl:value-of               select = "$docRef"/>  
+    <xsl:value-of               select = "$docRef"/>
     <xsl:text>&amp;Filter=name:Documentation+Help+Screens+Filter</xsl:text>
    </xsl:attribute>
    <xsl:apply-templates/>
@@ -236,7 +235,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  Display a Documentation Reference as a hyperlink
  ====================================================================== -->
@@ -249,9 +248,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   <a>
    <xsl:attribute                 name = "href">
     <xsl:text>/cgi-bin/cdr/Filter.py?DocId=</xsl:text>
-    <xsl:value-of               select = "$docRef"/> 
+    <xsl:value-of               select = "$docRef"/>
     <xsl:text>#</xsl:text>
-    <xsl:value-of               select = "$docFrag"/> 
+    <xsl:value-of               select = "$docFrag"/>
     <xsl:text>&amp;Filter=name:Documentation+Help+Screens+Filter</xsl:text>
    </xsl:attribute>
    <xsl:apply-templates/>
@@ -259,7 +258,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  Link to DrugInfoSummaries
  ====================================================================== -->
@@ -312,59 +311,59 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ===================================================================
  Decide which version of the GlossaryTermRef/LOERef to display
  =================================================================== -->
  <xsl:template                   match = "GlossaryTermRef | LOERef">
   <xsl:choose>
    <xsl:when                      test = "/Summary/SummaryMetaData/
-                                          SummaryAudience = 
+                                          SummaryAudience =
                                                           'Health professionals'
-                                          and 
+                                          and
                                           /Summary/SummaryMetaData/
-                                          SummaryType != 
+                                          SummaryType !=
                                        'Integrative, alternative, and complementary therapies'
                                           and
                                           /Summary/SummaryMetaData/
                                           SummaryLanguage = 'English'">
-    <xsl:apply-templates        select = "."  
+    <xsl:apply-templates        select = "."
                                   mode = "HPE"/>
    </xsl:when>
    <xsl:when                      test = "/Summary/
                                           SummaryMetaData/SummaryAudience =
-                                          'Health professionals' 
-                                          and 
+                                          'Health professionals'
+                                          and
                                           /Summary/SummaryMetaData/
                                           SummaryLanguage = 'Spanish'">
-    <xsl:apply-templates        select = "."  
+    <xsl:apply-templates        select = "."
                                   mode = "HPS"/>
    </xsl:when>
    <xsl:otherwise>
     <xsl:choose>
      <xsl:when                    test = "$whoAmI = 'ProtHPQc'">
-      <xsl:apply-templates      select = "."  
+      <xsl:apply-templates      select = "."
                                   mode = "HPE"/>
      </xsl:when>
      <xsl:when                    test = "$whoAmI = 'ProtPatQc'">
-      <xsl:apply-templates      select = "."  
+      <xsl:apply-templates      select = "."
                                   mode = "PE"/>
      </xsl:when>
      <xsl:otherwise>
-      <xsl:apply-templates      select = "."  
+      <xsl:apply-templates      select = "."
                                   mode = "PE"/>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:otherwise>
-  </xsl:choose> 
+  </xsl:choose>
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  Link to glossaryTermRefs - Patients RS and Protocol
  Note: Patient Version Summaries are not being reviewed by an
-       Advisory board according to MB.  I'm not implementing a 
+       Advisory board according to MB.  I'm not implementing a
        different style for advisory-board markup for this template.
                                                        VE, 2005-05-10
  ====================================================================== -->
@@ -561,11 +560,11 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!--  
+ <!--
  ======================================================================
  Link to LOERefs - Patients RS and Protocol
  Note: Patient Version Summaries are not being reviewed by an
-       Advisory board according to MB.  I'm not implementing a 
+       Advisory board according to MB.  I'm not implementing a
        different style for advisory-board markup for this template.
                                                        VE, 2005-05-10
  ====================================================================== -->
@@ -731,11 +730,11 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   </xsl:choose>
  </xsl:template>
 
-<!-- 
+<!--
  ======================================================================
  Link to glossaryTermRefs - Patients BU
  Note: Patient Version Summaries are not being reviewed by an
-       Advisory board according to MB.  I'm not implementing a 
+       Advisory board according to MB.  I'm not implementing a
        different style for advisory-board markup for this template.
                                                        VE, 2005-05-10
  ====================================================================== -->
@@ -794,12 +793,12 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   </xsl:choose>
  </xsl:template>
 
-  
- <!-- 
+
+ <!--
  ======================================================================
  Link to LOERefs - Patients BU
  Note: Patient Version Summaries are not being reviewed by an
-       Advisory board according to MB.  I'm not implementing a 
+       Advisory board according to MB.  I'm not implementing a
        different style for advisory-board markup for this template.
                                                        VE, 2005-05-10
  ====================================================================== -->
@@ -853,8 +852,8 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   </xsl:choose>
  </xsl:template>
 
-   
- <!-- 
+
+ <!--
  ======================================================================
  Link to GlossaryTermRef - English Health Professional
  ====================================================================== -->
@@ -934,7 +933,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
-<!-- 
+<!--
  ======================================================================
  Link to LOERef - English Health Professional
  ====================================================================== -->
@@ -1006,7 +1005,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  Link to glossaryTermRefs - Spanish Health Professional
  ====================================================================== -->
@@ -1083,7 +1082,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   </xsl:choose>
  </xsl:template>
 
- <!-- 
+ <!--
  ======================================================================
  Link to LOERef - Spanish Health Professional
  ====================================================================== -->
@@ -1153,7 +1152,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   </xsl:choose>
  </xsl:template>
 
- <!-- 
+ <!--
  =====================================================================
  Display Itemized Lists for KeyPoints
  ===================================================================== -->
@@ -1162,13 +1161,13 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   <ul>
    <xsl:attribute                 name = "class">
     <xsl:choose>
-     <xsl:when                    test = "@Style = 'bullet'">        
-      <xsl:text>disc</xsl:text>   
+     <xsl:when                    test = "@Style = 'bullet'">
+      <xsl:text>disc</xsl:text>
      </xsl:when>
      <xsl:when                    test = "@Style = 'dash'">
-      <xsl:text>square</xsl:text>      
+      <xsl:text>square</xsl:text>
      </xsl:when>
-    </xsl:choose> 
+    </xsl:choose>
    </xsl:attribute>
 
 
@@ -1185,9 +1184,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
- Display a Subscript 
+ Display a Subscript
  ===================================================================== -->
  <xsl:template                   match = "Subscript">
   <sub>
@@ -1196,9 +1195,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
- Display a Superscript 
+ Display a Superscript
 
  ===================================================================== -->
  <xsl:template                   match = "Superscript">
@@ -1208,7 +1207,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Display tables in old format
  ===================================================================== -->
@@ -1217,12 +1216,12 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
- Create a link to another document or website 
+ Create a link to another document or website
  ===================================================================== -->
  <xsl:template                   match = "ExternalRef">
-  <xsl:variable                   name = "nlink" 
+  <xsl:variable                   name = "nlink"
                                 select = "@cdr:xref"/>
   <a href="{$nlink}">
    <xsl:apply-templates/>
@@ -1230,9 +1229,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
- Display Strong 
+ Display Strong
  ===================================================================== -->
  <xsl:template                   match = "Strong">
   <b>
@@ -1241,9 +1240,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
- Display Strong within a list but only if it's listed as the very 
+ Display Strong within a list but only if it's listed as the very
  first element within a listitem (used as a "ListItemTitle")
    *** Compact attribute depricated ***
  ===================================================================== -->
@@ -1252,7 +1251,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                   mode = "compactNo">
   <xsl:choose>
   <xsl:when                       test = "name(..) = 'ListItem'
-                                          and 
+                                          and
                                           preceding-sibling::text() = ''">
     <p class="itemtitle">
      <xsl:apply-templates/>
@@ -1268,13 +1267,13 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  -->
 
 
- <!-- 
+ <!--
  =====================================================================
  Display Emphasis, ScientificName, ForeignWord, GeneName
  ===================================================================== -->
- <xsl:template                   match = "Emphasis       | 
+ <xsl:template                   match = "Emphasis       |
                                           ScientificName |
-                                          ForeignWord    | 
+                                          ForeignWord    |
                                           GeneName">
   <i>
    <xsl:apply-templates/>
@@ -1282,7 +1281,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Display a Note element without markup
  ===================================================================== -->
@@ -1292,7 +1291,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    <xsl:text> [</xsl:text>
 
    <xsl:choose>
-    <xsl:when                     test = "//SummaryLanguage = 'Spanish'"> 
+    <xsl:when                     test = "//SummaryLanguage = 'Spanish'">
      <xsl:text>Nota: </xsl:text>
     </xsl:when>
     <xsl:otherwise>
@@ -1304,23 +1303,23 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
    <xsl:text>] </xsl:text>
   </i>
- </xsl:template> 
+ </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Display a note with mark-up (Redline/Strikeout)
  ===================================================================== -->
- <xsl:template                   match = "Note" 
+ <xsl:template                   match = "Note"
                                   mode = "RS">
   <i>
-   <!-- 
+   <!--
 
    Display the left bracket for the Note
    =================================================================== -->
    <xsl:choose>
     <xsl:when                     test = "Insertion/@Source = 'advisory-board'
-                                          or 
+                                          or
                                           Deletion/@Source = 'advisory-board'">
      <xsl:choose>
       <xsl:when                   test = "Insertion/@RevisionLevel='approved'
@@ -1390,7 +1389,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    Display the Spanish "Nota: " string properly marked up
    ========================================================================= -->
    <xsl:choose>
-    <xsl:when                     test = "//SummaryLanguage ='Spanish'"> 
+    <xsl:when                     test = "//SummaryLanguage ='Spanish'">
      <xsl:choose>
       <xsl:when                   test = "Insertion/@Source = 'advisory-board'
                                           or
@@ -1406,7 +1405,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "'Nota: '"/>
          </xsl:call-template>
         </xsl:when>
-        <xsl:when                 test = "Insertion/@RevisionLevel 
+        <xsl:when                 test = "Insertion/@RevisionLevel
                                                                   = 'proposed'">
          <xsl:call-template       name = "setCSS">
           <xsl:with-param         name = "myCSS"
@@ -1450,7 +1449,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "'Nota: '"/>
          </xsl:call-template>
         </xsl:when>
-        <xsl:when                 test = "Insertion/@RevisionLevel 
+        <xsl:when                 test = "Insertion/@RevisionLevel
                                                                   = 'proposed'">
          <xsl:call-template       name = "setCSS">
           <xsl:with-param         name = "myCSS"
@@ -1504,7 +1503,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "'Note: '"/>
          </xsl:call-template>
         </xsl:when>
-        <xsl:when                 test = "Insertion/@RevisionLevel 
+        <xsl:when                 test = "Insertion/@RevisionLevel
                                                                   = 'proposed'">
          <xsl:call-template       name = "setCSS">
           <xsl:with-param         name = "myCSS"
@@ -1549,7 +1548,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "'Note: '"/>
          </xsl:call-template>
         </xsl:when>
-        <xsl:when                 test = "Insertion/@RevisionLevel 
+        <xsl:when                 test = "Insertion/@RevisionLevel
                                                                   = 'proposed'">
          <xsl:call-template       name = "setCSS">
           <xsl:with-param         name = "myCSS"
@@ -1591,11 +1590,11 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    ====================================================================== -->
    <xsl:apply-templates/>
 
-   <!-- 
+   <!--
    Display the right bracket for the Note
    =================================================================== -->
    <xsl:choose>
-    <xsl:when                     test = "Insertion/@Source = 'advisory-board' 
+    <xsl:when                     test = "Insertion/@Source = 'advisory-board'
                                           or
                                           Deletion/@Source = 'advisory-board'">
      <xsl:choose>
@@ -1661,10 +1660,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     </xsl:otherwise>
    </xsl:choose>
   </i>
- </xsl:template> 
+ </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Template to display the text with appropriate markup.
  ===================================================================== -->
@@ -1677,17 +1676,17 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
 
- Display a note with markup (Bold/Underline)   
+ Display a note with markup (Bold/Underline)
  ===================================================================== -->
- <xsl:template                   match = "Note" 
+ <xsl:template                   match = "Note"
                                   mode = "BU">
   <!-- Don't display empty Note elements -->
   <xsl:if                         test = "not(.='')">
    <i>
-    <!-- 
+    <!--
     Display the left bracket for the Note
     =================================================================== -->
     <xsl:choose>
@@ -1714,10 +1713,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         </span>
        </xsl:when>
        <xsl:otherwise>
-        <xsl:if                   test = "not(Deletion/@RevisionLevel 
+        <xsl:if                   test = "not(Deletion/@RevisionLevel
                                                  = 'approved')
                                           and
-                                          not(Deletion/@RevisionLevel 
+                                          not(Deletion/@RevisionLevel
                                                  = 'publish')">
          <xsl:text> [</xsl:text>
         </xsl:if>
@@ -1744,10 +1743,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         </span>
        </xsl:when>
        <xsl:otherwise>
-        <xsl:if                   test = "not(Deletion/@RevisionLevel 
+        <xsl:if                   test = "not(Deletion/@RevisionLevel
                                                  = 'approved')
                                           and
-                                          not(Deletion/@RevisionLevel 
+                                          not(Deletion/@RevisionLevel
                                                  = 'publish')">
          <xsl:text> [</xsl:text>
         </xsl:if>
@@ -1760,7 +1759,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     Display the Spanish "Nota: " string properly marked up
     ======================================================================== -->
     <xsl:choose>
-     <xsl:when                    test = "//SummaryLanguage ='Spanish'"> 
+     <xsl:when                    test = "//SummaryLanguage ='Spanish'">
       <xsl:choose>
        <xsl:when                  test = "Insertion/@Source = 'advisory-board'
                                           or
@@ -1794,7 +1793,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
           </xsl:call-template>
          </xsl:when>
          <xsl:otherwise>
-          <xsl:if                 test = "not(Deletion/@RevisionLevel 
+          <xsl:if                 test = "not(Deletion/@RevisionLevel
                                                  = 'approved')
                                           and
                                           not(Deletion/@RevisionLevel
@@ -1835,7 +1834,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
           </xsl:call-template>
          </xsl:when>
          <xsl:otherwise>
-          <xsl:if                 test = "not(Deletion/@RevisionLevel 
+          <xsl:if                 test = "not(Deletion/@RevisionLevel
                                                  = 'approved')
                                           and
                                           not(Deletion/@RevisionLevel
@@ -1887,7 +1886,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
           <xsl:if                 test = "not(Deletion/@RevisionLevel
                                                  = 'approved')
                                           and
-                                          not(Deletion/@RevisionLevel 
+                                          not(Deletion/@RevisionLevel
                                                  = 'publish')">
            <xsl:text>Note: </xsl:text>
           </xsl:if>
@@ -1927,7 +1926,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
           <xsl:if                 test = "not(Deletion/@RevisionLevel
                                                  = 'approved')
                                           and
-                                          not(Deletion/@RevisionLevel 
+                                          not(Deletion/@RevisionLevel
                                                  = 'publish')">
            <xsl:text>Note: </xsl:text>
           </xsl:if>
@@ -1968,7 +1967,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      </xsl:otherwise>
     </xsl:choose>
 
-    <!-- 
+    <!--
     Display the right bracket for the Note
     =================================================================== -->
     <xsl:choose>
@@ -1997,8 +1996,8 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         <xsl:if                   test = "not(Deletion/@RevisionLevel
                                                  = 'approved')
                                           and
-                                          not(Deletion/@RevisionLevel 
-                                                 = 'publish')">  
+                                          not(Deletion/@RevisionLevel
+                                                 = 'publish')">
           <xsl:text>] </xsl:text>
         </xsl:if>
        </xsl:otherwise>
@@ -2027,8 +2026,8 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         <xsl:if                   test = "not(Deletion/@RevisionLevel
                                                  = 'approved')
                                           and
-                                          not(Deletion/@RevisionLevel 
-                                                 = 'publish')">  
+                                          not(Deletion/@RevisionLevel
+                                                 = 'publish')">
           <xsl:text>] </xsl:text>
         </xsl:if>
        </xsl:otherwise>
@@ -2038,10 +2037,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
    </i>
   </xsl:if>
- </xsl:template> 
+ </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Display TOC Summary Title with Deletion and Insertion
  ===================================================================== -->
@@ -2054,9 +2053,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   <xsl:apply-templates          select = "../AltTitle"
                                   mode = "TOC"/>
   -->
- </xsl:template> 
+ </xsl:template>
 
- <!-- 
+ <!--
  =====================================================================
  Display summary alt titles in TOC.
  ===================================================================== -->
@@ -2067,26 +2066,26 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Display summary titles in TOC.
  ===================================================================== -->
- <xsl:template                   match = "Title" 
+ <xsl:template                   match = "Title"
                                   mode = "TOC">
   <xsl:apply-templates/>
 
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Display SummarySection in TOC.
  ===================================================================== -->
  <xsl:template                    name = "TocSummarySection">
   <xsl:param                      name = "secID"/>
-  <xsl:param                      name = "level"/> 
+  <xsl:param                      name = "level"/>
 
-  <xsl:if                         test = "Title"> 
+  <xsl:if                         test = "Title">
    <xsl:element                   name = "li">
     <xsl:attribute                name = "class">
      <xsl:text>tocItem</xsl:text>
@@ -2101,9 +2100,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                   mode = "TOC"/>
     </xsl:element>
    </xsl:element>
-  </xsl:if>                   
+  </xsl:if>
 
-  <xsl:if                         test = "SummarySection 
+  <xsl:if                         test = "SummarySection
                                           and
                                           $level &lt; 10
                                           and
@@ -2126,9 +2125,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  ================================================================
  Template to create a target element for SummaryFragmetRef
  elements.  The SummarySection cdr:id attribute is being attached
- to the Title element (H1, H2, ...) in the HTML output. 
+ to the Title element (H1, H2, ...) in the HTML output.
  For SummarySections without a title the SummaryFragmentRef would
- not work.  We need to create a target for the link - using a 
+ not work.  We need to create a target for the link - using a
  <span id=NNN> to make the links work.
  ================================================================ -->
  <xsl:template                   match = "SummarySection">
@@ -2198,9 +2197,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
- Display a summary section title depending on how many 
+ Display a summary section title depending on how many
  SummarySection in its ancestors. We may have to use
  a mode here to avoid unintended usage in documents that
  are not summaries, but with Title.
@@ -2236,11 +2235,11 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
- 
 
- <!-- 
+
+ <!--
  =====================================================================
- Display Paragraphs 
+ Display Paragraphs
  ===================================================================== -->
  <xsl:template                   match = "Para">
   <p>
@@ -2250,7 +2249,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ===============================================================
  Display Paragraphs in a ListItem of a compacted list
    *** Compact attribute depricated ***
@@ -2265,16 +2264,16 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   <p class="nospace">
    <xsl:apply-templates           mode = "compactNo"/>
   </p>
- </xsl:template> 
+ </xsl:template>
  -->
 
 
-  <!-- 
+  <!--
  =====================================================================
  Display an itemized list
  ===================================================================== -->
  <xsl:template                   match = "ItemizedList">
-  <!-- Ensure that Para and List are separated by a blank 
+  <!-- Ensure that Para and List are separated by a blank
        line for Compact=No -->
   <!--
   <xsl:if                         test = "not(preceding-sibling::self = 'Para')
@@ -2290,25 +2289,25 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   <ul>
    <xsl:attribute                 name = "class">
     <xsl:choose>
-     <xsl:when                    test = "@Style = 'bullet'">        
-      <xsl:text>disc</xsl:text>   
+     <xsl:when                    test = "@Style = 'bullet'">
+      <xsl:text>disc</xsl:text>
      </xsl:when>
      <xsl:when                    test = "@Style = 'dash'">
-      <xsl:text>square</xsl:text>      
+      <xsl:text>square</xsl:text>
      </xsl:when>
      <xsl:when                    test = "@Style = 'simple'">
-      <xsl:text>lnone</xsl:text>     
-     </xsl:when> 
-    </xsl:choose> 
+      <xsl:text>lnone</xsl:text>
+     </xsl:when>
+    </xsl:choose>
     <xsl:if                       test = "@iod">
      <xsl:choose>
       <xsl:when                   test = "@iod = 'Deletion'
                                            and
                                            descendant::Deletion[
                                               @RevisionLevel='proposed']">
-       <!-- Proposed text for BU is displayed which means we only want to 
+       <!-- Proposed text for BU is displayed which means we only want to
             add the Deletion class specifier when the RevisionLevel is
-            not proposed because this specifier makes the text 
+            not proposed because this specifier makes the text
             disappear via CSS -->
        <xsl:text></xsl:text>
       </xsl:when>
@@ -2339,11 +2338,11 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    </xsl:choose>
    -->
    <xsl:apply-templates         select = "ListItem"/>
-  </ul>  
- </xsl:template>  
+  </ul>
+ </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Display an itemized list - NEW
    *** Compact attribute depricated ***
@@ -2361,25 +2360,25 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   <ul>
    <xsl:attribute                 name = "class">
     <xsl:choose>
-     <xsl:when                    test = "@Style = 'bullet'">        
-      <xsl:text>disc</xsl:text>   
+     <xsl:when                    test = "@Style = 'bullet'">
+      <xsl:text>disc</xsl:text>
      </xsl:when>
      <xsl:when                    test = "@Style = 'dash'">
-      <xsl:text>square</xsl:text>      
+      <xsl:text>square</xsl:text>
      </xsl:when>
      <xsl:when                    test = "@Style = 'simple'">
-      <xsl:text>lnone</xsl:text>     
+      <xsl:text>lnone</xsl:text>
      </xsl:when>
-    </xsl:choose> 
+    </xsl:choose>
     <xsl:if                       test = "@iod">
      <xsl:choose>
       <xsl:when                   test = "@iod = 'Deletion'
                                            and
                                            descendant::Deletion[
                                               @RevisionLevel='proposed']">
-       <!-- Proposed text for BU is displayed which means we only want to 
+       <!-- Proposed text for BU is displayed which means we only want to
             add the Deletion class specifier when the RevisionLevel is
-            not proposed because this specifier makes the text 
+            not proposed because this specifier makes the text
             disappear via CSS -->
        <xsl:text></xsl:text>
       </xsl:when>
@@ -2405,16 +2404,16 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      <xsl:apply-templates       select = "ListItem"/>
     </xsl:otherwise>
    </xsl:choose>
-  </ul>  
- </xsl:template>  
+  </ul>
+ </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Display an ordered list
  ===================================================================== -->
  <xsl:template                   match = "OrderedList">
-  <!-- Ensure that Para and List are separated by a blank 
+  <!-- Ensure that Para and List are separated by a blank
        line for Compact=No-->
   <!--
   <xsl:if                         test = "not(preceding-sibling::self = 'Para')
@@ -2428,7 +2427,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   <ol>
    <xsl:attribute                 name = "class">
     <xsl:choose>
-     <xsl:when                    test = "@Style = 'UAlpha'">        
+     <xsl:when                    test = "@Style = 'UAlpha'">
       <xsl:text>A</xsl:text>
      </xsl:when>
      <xsl:when                    test = "@Style = 'LAlpha'">
@@ -2468,10 +2467,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    -->
    <xsl:apply-templates         select = "ListItem"/>
   </ol>
- </xsl:template>        
- 
+ </xsl:template>
 
- <!-- 
+
+ <!--
  =====================================================================
  Display an ordered list
    *** Compact attribute depricated ***
@@ -2488,7 +2487,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   <ol>
    <xsl:attribute                 name = "Class">
     <xsl:choose>
-     <xsl:when                    test = "@Style = 'UAlpha'">        
+     <xsl:when                    test = "@Style = 'UAlpha'">
       <xsl:text>A</xsl:text>
      </xsl:when>
      <xsl:when                    test = "@Style = 'LAlpha'">
@@ -2523,10 +2522,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     </xsl:otherwise>
    </xsl:choose>
   </ol>
- </xsl:template>        
- 
+ </xsl:template>
 
- <!-- 
+
+ <!--
  =====================================================================
  Display a list item but suppress items without content.
  ===================================================================== -->
@@ -2555,9 +2554,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
- Display a list item within a compacted list but suppress items 
+ Display a list item within a compacted list but suppress items
  without content.
    *** Compact attribute depricated ***
  ===================================================================== -->
@@ -2582,7 +2581,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  -->
 
 
- <!-- 
+ <!--
  ======================================================================
  Template handling ListTitle
  ====================================================================== -->
@@ -2602,19 +2601,19 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  Template to display images
  - If DisplayImage = Y, display the image *and* the caption
-   - if there is no caption in the summary, display the caption of the 
+   - if there is no caption in the summary, display the caption of the
      Media document
  - If DisplayImage = N, display a placeholder for the image
    - if it's a HP summary display the caption
    - if it's a patient summary, don't display the caption
      - if there is no caption in the summary, display the caption of
        the Media document
- 
- If the image does notreplace the MediaID element with a little div 
+
+ If the image does notreplace the MediaID element with a little div
  box as a place holder for the image
  Don't show the caption if the "UseCaption = 'No'" attribute has been
  set.
@@ -2640,7 +2639,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                           MediaTitle"/>
      </div>
     </div>
-    <xsl:if                       test = "$mediaAudience = 
+    <xsl:if                       test = "$mediaAudience =
                                                  'Health_professionals'">
      <xsl:if                      test = "not(../@UseCaption = 'No')">
       <xsl:call-template          name = "addCaption"/>
@@ -2651,7 +2650,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  Template handling Captions when images are being displayed as well
  ====================================================================== -->
@@ -2674,10 +2673,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      <xsl:apply-templates       select = "Media/
                                             MediaContent/
                                             Captions/
-                                            MediaCaption[@audience = 
+                                            MediaCaption[@audience =
                                                            $mediaAudience
                                                          and
-                                                         @language = 
+                                                         @language =
                                                            $mediaLanguage]"/>
      </xsl:element>
     </xsl:otherwise>
@@ -2686,7 +2685,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  Template to add the caption called as part of the MediaID element
  (within the addCaption named template)
@@ -2697,7 +2696,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  Template suppressing the Captions.
  Since the captions have already been dealt with as part of the MediaID
@@ -2706,10 +2705,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  <xsl:template                   match = "Caption"/>
 
 
- <!-- 
+ <!--
  ======================================================================
  Template handling Captions following the MediaID element in the case
- that the images are being suppressed.  Image title and caption are 
+ that the images are being suppressed.  Image title and caption are
  being printed in one placeholder box.
  ====================================================================== -->
  <xsl:template                   match = "Caption"
@@ -2721,15 +2720,15 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
- Template to replace the MediaID element with a little table as a 
+ Template to replace the MediaID element with a little table as a
  place holder for the image
  ====================================================================== -->
  <xsl:template                   match = "MediaID"
                                   mode = "summary">
   <center>
-   <table width="50%" border="0" 
+   <table width="50%" border="0"
           style="background-color: #CCCCFF" colspacing="3">
     <xsl:call-template            name = "addIdLinkTarget">
      <xsl:with-param              name = "id"
@@ -2769,15 +2768,15 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
- Template to replace the MediaID element with a little table as a 
+ Template to replace the MediaID element with a little table as a
  place holder for the image
  ====================================================================== -->
  <xsl:template                   match = "MediaID"
                                   mode = "gtc">
   <center>
-   <table width="100%" border="0" 
+   <table width="100%" border="0"
           style="background-color: #CCCCFF" colspacing="3">
     <xsl:call-template            name = "addIdLinkTarget">
      <xsl:with-param              name = "id"
@@ -2817,23 +2816,23 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  Display CitationLinks
  ====================================================================== -->
  <xsl:template                   match = "Citation">
-  <xsl:variable                   name = "nextRef" 
+  <xsl:variable                   name = "nextRef"
                                 select = "position()+1"/>
-  <xsl:variable                   name = "firstRef" 
+  <xsl:variable                   name = "firstRef"
                                 select = "position()-1"/>
-  <xsl:variable                   name = "ref" 
+  <xsl:variable                   name = "ref"
                                 select = "."/>
   <xsl:variable                   name = "sectionID">
    <xsl:call-template             name = "getSectionId"/>
   </xsl:variable>
 
   <!--
-  Displaying the Left Bracket of a list of citations with marked up 
+  Displaying the Left Bracket of a list of citations with marked up
   ================================================================= -->
   <xsl:if                         test = "name(../node()[$firstRef])
                                             != 'Citation'">
@@ -2894,7 +2893,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
          </xsl:choose>
         </xsl:otherwise>
        </xsl:choose>
-      </xsl:when>    
+      </xsl:when>
       <xsl:otherwise>
        <xsl:choose>
         <xsl:when                 test = "@existing">
@@ -2923,9 +2922,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     </xsl:otherwise>
    </xsl:choose>
   </xsl:if>
-                    
+
   <!--
-  Displaying the citation ID with marked up 
+  Displaying the citation ID with marked up
   ========================================= -->
   <xsl:choose>
    <xsl:when                      test = "@InsertionOrDeletion
@@ -2972,7 +2971,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       </xsl:choose>
      </xsl:otherwise>
     </xsl:choose>
-   </xsl:when> 
+   </xsl:when>
    <xsl:when                      test = "@InsertionOrDeletion
                                             = 'Insertion'">
     <xsl:choose>
@@ -2995,7 +2994,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         </span>
        </xsl:otherwise>
       </xsl:choose>
-     </xsl:when> 
+     </xsl:when>
      <xsl:otherwise>
       <xsl:choose>
        <xsl:when                  test = "@RevisionLevel = 'proposed'">
@@ -3028,10 +3027,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   </xsl:choose>
 
   <!--
-  Displaying the comma of a list of citations with marked up 
+  Displaying the comma of a list of citations with marked up
   ========================================================== -->
   <xsl:choose>
-   <xsl:when                      test = "name(../node()[$nextRef]) 
+   <xsl:when                      test = "name(../node()[$nextRef])
                                             = 'Citation'">
     <xsl:choose>
      <xsl:when                     test = "@InsertionOrDeletion = 'Insertion'">
@@ -3088,7 +3087,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
           </xsl:choose>
          </xsl:otherwise>
         </xsl:choose>
-       </xsl:when>    
+       </xsl:when>
        <xsl:otherwise>
         <xsl:choose>
          <xsl:when                 test = "@existing">
@@ -3119,9 +3118,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      </xsl:otherwise>
     </xsl:choose>
    </xsl:when>
-          
+
    <!--
-   Displaying the Right Bracket of a list of citations with marked up 
+   Displaying the Right Bracket of a list of citations with marked up
    ================================================================== -->
    <xsl:when                      test = "name(../node()[$nextRef])
                                             != 'Citation'">
@@ -3182,7 +3181,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
           </xsl:choose>
          </xsl:otherwise>
         </xsl:choose>
-       </xsl:when>    
+       </xsl:when>
        <xsl:otherwise>
         <xsl:choose>
          <xsl:when                 test = "@existing">
@@ -3215,7 +3214,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  Display the inline Citation as numbered links to the Reference section
  (e.g. [2, 4, 5])
@@ -3223,18 +3222,18 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  ====================================================================== -->
  <xsl:template                   match = "CitationXXX"
                                   mode = "compactNo">
-  <xsl:variable                   name = "nextRef" 
+  <xsl:variable                   name = "nextRef"
                                 select = "position()+1"/>
-  <xsl:variable                   name = "firstRef" 
+  <xsl:variable                   name = "firstRef"
                                 select = "position()-1"/>
-  <xsl:variable                   name = "ref" 
+  <xsl:variable                   name = "ref"
                                 select = "."/>
   <xsl:variable                   name = "sectionID">
    <xsl:call-template             name = "getSectionId"/>
   </xsl:variable>
 
   <!--
-  Displaying the Left Bracket of a list of citations with markup 
+  Displaying the Left Bracket of a list of citations with markup
   ================================================================= -->
   <xsl:if                         test = "name(../node()[$firstRef])
                                             != 'Citation'">
@@ -3295,7 +3294,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
          </xsl:choose>
         </xsl:otherwise>
        </xsl:choose>
-      </xsl:when>    
+      </xsl:when>
       <xsl:otherwise>
        <xsl:choose>
         <xsl:when                 test = "@existing">
@@ -3324,7 +3323,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     </xsl:otherwise>
    </xsl:choose>
   </xsl:if>
-                    
+
   <!--
   Convert the Citation into a number linking to the Reference Section
   =================================================================== -->
@@ -3373,7 +3372,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       </xsl:choose>
      </xsl:otherwise>
     </xsl:choose>
-   </xsl:when> 
+   </xsl:when>
    <xsl:when                      test = "@InsertionOrDeletion
                                             = 'Insertion'">
     <xsl:choose>
@@ -3396,7 +3395,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         </span>
        </xsl:otherwise>
       </xsl:choose>
-     </xsl:when> 
+     </xsl:when>
      <xsl:otherwise>
       <xsl:choose>
        <xsl:when                  test = "@RevisionLevel = 'proposed'">
@@ -3428,10 +3427,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   </xsl:choose>
 
   <!--
-  Displaying the comma of a list of citations with markup 
+  Displaying the comma of a list of citations with markup
   ========================================================== -->
   <xsl:choose>
-   <xsl:when                      test = "name(../node()[$nextRef]) 
+   <xsl:when                      test = "name(../node()[$nextRef])
                                             = 'Citation'">
     <xsl:choose>
      <xsl:when                     test = "@InsertionOrDeletion = 'Insertion'">
@@ -3490,7 +3489,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
           </xsl:choose>
          </xsl:otherwise>
         </xsl:choose>
-       </xsl:when>    
+       </xsl:when>
        <xsl:otherwise>
 
         <xsl:choose>
@@ -3520,9 +3519,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      </xsl:otherwise>
     </xsl:choose>
    </xsl:when>
-          
+
    <!--
-   Displaying the Right Bracket of a list of citations with markup 
+   Displaying the Right Bracket of a list of citations with markup
    ================================================================== -->
    <xsl:when                      test = "name(../node()[$nextRef])
                                             != 'Citation'">
@@ -3583,7 +3582,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
          </xsl:otherwise>
         </xsl:choose>
 
-       </xsl:when>    
+       </xsl:when>
        <xsl:otherwise>
         <xsl:choose>
          <xsl:when                 test = "@existing">
@@ -3616,10 +3615,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
- Template to add the link anchor to an element that has a cdr:id 
- attribute 
+ Template to add the link anchor to an element that has a cdr:id
+ attribute
  ===================================================================== -->
  <xsl:template                    name = "addIdLinkTarget">
   <xsl:param                      name = "id"
@@ -3633,7 +3632,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
  <!--
  ======================================================================
- Template to add the link anchor to the citations listed within the 
+ Template to add the link anchor to the citations listed within the
  text linking to the citation within the reference section.
  ====================================================================== -->
  <xsl:template                    name = "addCitationLink">
@@ -3650,7 +3649,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
           </xsl:attribute>
           <xsl:attribute           name = "class">
            <xsl:text>citationLink</xsl:text>
-          </xsl:attribute>     
+          </xsl:attribute>
           <xsl:value-of          select = "@refidx"/>
          </a>
  </xsl:template>
@@ -3658,7 +3657,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
  <!--
  ======================================================================
- Template to add the link anchor to the citations listed within the 
+ Template to add the link anchor to the citations listed within the
  text linking to the citation within the reference section.
  ====================================================================== -->
  <xsl:template                    name = "getSectionId">
@@ -3687,11 +3686,11 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!-- 
+ <!--
  ======================================================================
  Default Template
  Any node that is a child of a list or para with mode "compactNo"
- will need to be redirected to he template without a mode.  This task 
+ will need to be redirected to he template without a mode.  This task
  is performed here by calling itself without a mode.
    *** Compact attribute depricated ***
  ====================================================================== -->
@@ -3707,7 +3706,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  <!--
  <xsl:template                   match = "*"
                                   mode = "compactNo">
-  <xsl:apply-templates          select = "."/> 
+  <xsl:apply-templates          select = "."/>
  </xsl:template>
  -->
 </xsl:transform>

@@ -1,29 +1,28 @@
 <?xml version="1.0"?>
-<!-- $Id$ -->
 <!-- Filter title: Vendor Filter: Person -->
 <!-- ===============================================================
-      Filter to create Vendor Person XML documents 
+      Filter to create Vendor Person XML documents
      =============================================================== -->
   <xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
-                             xmlns:cdr = "cips.nci.nih.gov/cdr" 
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
                exclude-result-prefixes = "cdr">
-    
+
   <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
   <xsl:include href = "cdr:name:Module: Vendor Address Templates"/>
   <xsl:include href = "cdr:name:Module: Vendor Phone Templates"/>
-   
-   
-  <xsl:output                   method = "xml" 
+
+
+  <xsl:output                   method = "xml"
                   omit-xml-declaration = "no"/>
 
   <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
   <xsl:param                      name = "DateFirstPub"
                                 select = "''"/>
- 
- 
+
+
 <!-- =================================================================
-                        Copy control information 
+                        Copy control information
      ================================================================= -->
 
    <xsl:template match="Person">
@@ -42,7 +41,7 @@
     <xsl:value-of              select="Status/CurrentStatus"/>
     </xsl:attribute>
 
- 
+
 
 <!-- ====================================================================
                         Copy name information
@@ -96,15 +95,15 @@
                                      PhysicianDetails/
                                      PhysicianSpecialtyInformation"
                                      mode="copy"/ -->
-                                                                                 
-                                    
-                                   
-                               
-    <!-- =========================================================== 
+
+
+
+
+    <!-- ===========================================================
        Copy Physician Membership Information, Member of Cooperative
        Group, Member of Medical Society
      ================================================================= -->
-  <!-- PhysicianMembershipInformation>   
+  <!-- PhysicianMembershipInformation>
       <xsl:for-each           select="ProfessionalInformation/PhysicianDetails
                                       /PhysicianMembershipInformation/
                                       MemberOfCooperativeGroup/
@@ -120,43 +119,43 @@
 <!-- ==================================================================
                   Copy MemberOfMedicalSociety
      ================================================================== -->
-      
+
           <!-- xsl:apply-templates        select="ProfessionalInformation/
                                               PhysicianDetails
                                               /PhysicianMembershipInformation/
-                                              MemberOfMedicalSociety" 
+                                              MemberOfMedicalSociety"
                                               mode="copy"/>
         </PhysicianMembershipInformation>
-        </PhysicianDetails>  
+        </PhysicianDetails>
         </xsl:if>
         </xsl:if>
         </ProfessionalInformation>
         </xsl:if -->
 
-  <!-- 
+  <!--
   =====================================================================
   Copy Contact Information for Private Practice and Home location
-  ===================================================================== --> 
+  ===================================================================== -->
    <PersonLocations>
    <xsl:apply-templates         select = "PersonLocations/PrivatePractice/
                                           PrivatePracticeLocation |
                                           PersonLocations/
                                           Home"/>
-    
+
 <!-- ================================================================
-       Contact Information for Other Practice Locations 
+       Contact Information for Other Practice Locations
      ================================================================ -->
 <xsl:for-each                   select = "PersonLocations/
                                           OtherPracticeLocation">
- <xsl:variable                    name = "ind"     
+ <xsl:variable                    name = "ind"
                                 select = "@cdr:id"/>
- <xsl:variable                    name = "Stat"    
+ <xsl:variable                    name = "Stat"
                                 select = "../../Status/CurrentStatus"/>
- <OtherPracticeLocation             id = "{$ind}" 
+ <OtherPracticeLocation             id = "{$ind}"
                                 Status = "{$Stat}">
 
  <xsl:if                          test = "../../Status/CurrentStatus='Inactive'
-                                          or 
+                                          or
                                           @PreviousLocation">
   <xsl:attribute                  name = "Status">
    <xsl:text>Inactive--Contact Information may not be current</xsl:text>
@@ -168,15 +167,15 @@
   </xsl:attribute>
  </xsl:if>
 
- <xsl:variable                    name = "orgloc" 
+ <xsl:variable                    name = "orgloc"
                                 select = "OrganizationLocation/
                                           Organization/@cdr:ref"/>
- <xsl:variable                    name = "orgnameloc"       
-                                select = "substring-before 
+ <xsl:variable                    name = "orgnameloc"
+                                select = "substring-before
                                            (OrganizationLocation/
                                             Organization/@cdr:ref,'#')"/>
-                                                                               
- <xsl:variable                    name = "orgAddressFID"    
+
+ <xsl:variable                    name = "orgAddressFID"
                                 select = "substring-after
                                            (OrganizationLocation/
                                             Organization/@cdr:ref,'#')"/>
@@ -186,7 +185,7 @@
                                           PersonOrganizationName"/>
  </PersonOrganizationName>
 
- <xsl:apply-templates           select = "PersonTitle" 
+ <xsl:apply-templates           select = "PersonTitle"
                                   mode = "copy"/>
 
  <PersonOrganizationLocation       ref = "{$orgloc}">
@@ -237,8 +236,8 @@
 </PersonOrganizationLocation>
 </OtherPracticeLocation>
 </xsl:for-each>
-</PersonLocations>           
-               
+</PersonLocations>
+
 
 <!-- ===================================================================
             Copy Date First Published and Date Last Modified
@@ -254,18 +253,18 @@
       <xsl:call-template          name = "getDateFirstPub">
         <xsl:with-param           name = "date"
                                   select = "$DateFirstPub"/>
-      </xsl:call-template>    
+      </xsl:call-template>
     </xsl:otherwise>
   </xsl:choose>
 
    <xsl:if                       test="DateLastModified">
    <xsl:apply-templates          select="DateLastModified" mode="copy"/>
    </xsl:if>
-</xsl:element> 
+</xsl:element>
 </xsl:template>
 
 
- <!-- 
+ <!--
  =======================================================================
  Template for ProfessionalInformation
  ======================================================================= -->
@@ -278,7 +277,7 @@
      <xsl:for-each            select = "PDQBoardMembershipDetails/
                                         PDQEditorialBoard/Organization/
                                         OrganizationName[1]">
-      <xsl:variable             name = "Ref"    
+      <xsl:variable             name = "Ref"
                               select = "../@cdr:ref"/>
       <PDQBoardMembership        ref = "{$Ref}">
        <xsl:value-of          select = "."/>
@@ -287,7 +286,7 @@
      <xsl:for-each            select = "PDQBoardMembershipDetails/
                                         PDQAdvisoryBoard/Organization/
                                         OrganizationName[1]">
-      <xsl:variable             name = "Ref"    
+      <xsl:variable             name = "Ref"
                               select = "../@cdr:ref"/>
       <PDQBoardMembership        ref = "{$Ref}">
        <xsl:value-of          select = "."/>
@@ -297,7 +296,7 @@
                                         PDQVoluntaryProtocolReviewBoard/
                                         Organization/
                                         OrganizationName[1]">
-      <xsl:variable             name = "Ref"    
+      <xsl:variable             name = "Ref"
                               select = "../@cdr:ref"/>
       <PDQBoardMembership        ref = "{$Ref}">
        <xsl:value-of          select = "."/>
@@ -311,12 +310,12 @@
       <xsl:apply-templates    select = "PhysicianDetails/
                                         PhysicianSpecialtyInformation"
                                 mode = "copy"/>
-                               
-    <!-- =========================================================== 
+
+    <!-- ===========================================================
        Copy Physician Membership Information, Member of Cooperative
        Group, Member of Medical Society
      ================================================================= -->
-      <PhysicianMembershipInformation>   
+      <PhysicianMembershipInformation>
        <xsl:for-each          select = "PhysicianDetails/
                                         PhysicianMembershipInformation/
                                         MemberOfCooperativeGroup/
@@ -334,10 +333,10 @@
      ================================================================== -->
        <xsl:apply-templates   select = "PhysicianDetails/
                                         PhysicianMembershipInformation/
-                                        MemberOfMedicalSociety" 
+                                        MemberOfMedicalSociety"
                                 mode = "copy"/>
       </PhysicianMembershipInformation>
-     </PhysicianDetails>  
+     </PhysicianDetails>
     </ProfessionalInformation>
    </xsl:if>
   </xsl:if>

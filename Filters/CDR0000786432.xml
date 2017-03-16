@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- Filter title: Module: URL Conversion -->
+<!--
+ ==================================================================
+ Cleaning up the xref value of the SummaryURL element
+ - replace 'http://www.cancer.gov' with 'http://cancer.gov'
+ - remove trailing '/' from URL
+ Note:  It is expected that a normalized string is being passed.
+ ================================================================== -->
+<xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
+                             xmlns:cdr = 'cips.nci.nih.gov/cdr'
+                               version = '1.0'
+               exclude-result-prefixes = 'cdr'>
+
+ <!-- 
+ ================================================================
+ Updating protocol to https and removing trailing blanks
+ ================================================================ -->
+ <xsl:template                    name = "getSummaryURL">
+  <xsl:param                      name = "url"
+                                select = "''"/>
+  <xsl:choose>
+   <xsl:when                      test = "substring($url,
+                                           string-length($url)) = '/'">
+    <xsl:choose>
+     <xsl:when                    test = "contains($url,
+                                                  'http://www.cancer.gov')
+                                          or
+                                          contains($url,
+                                                  'http://cancer.gov')">
+
+      <xsl:value-of             select = "concat(
+                                          'https://www.cancer.gov',
+                                          substring-after(
+                                            substring($url, 1,
+                                              string-length($url) - 1),
+                                              '.gov'))"/>
+
+     </xsl:when>
+     <xsl:when                    test = "contains($url,
+                                                  'https://cancer.gov')">
+
+      <xsl:value-of             select = "concat(
+                                          'https://www.cancer.gov',
+                                          substring-after(
+                                            substring($url, 1,
+                                              string-length($url) - 1),
+                                              '.gov'))"/>
+
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "substring($url, 1,
+                                              string-length($url) - 1)"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>
+     <xsl:when                    test = "contains($url,
+                                                  'http://www.cancer.gov')
+                                          or
+                                          contains($url,
+                                                  'http://cancer.gov')">
+      <xsl:value-of             select = "concat(
+                                           'https://www.cancer.gov',
+                                           substring-after(
+                                             $url, '.gov'))"/>
+     </xsl:when>
+     <xsl:when                    test = "contains($url,
+                                                  'https://cancer.gov')">
+      <xsl:value-of             select = "concat(
+                                           'https://www.cancer.gov',
+                                           substring-after(
+                                             $url, '.gov'))"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "$url"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+</xsl:transform>

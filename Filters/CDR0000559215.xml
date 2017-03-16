@@ -1,13 +1,12 @@
 <?xml version='1.0' encoding='utf-8'?>
-<!-- $Id$ -->
 <!-- Filter title: Vendor Filter: GeneticsProfessional -->
-<!-- 
+<!--
 
 BZIssue::4751 - Modify BU Reports to display LOERefs
 BZIssue::4629 - Vendor filter changes for GenProf
 
 ===============================================================
-Filter to create Vendor Genetics Professionals XML documents 
+Filter to create Vendor Genetics Professionals XML documents
 =============================================================== -->
 <xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
                              xmlns:cdr = 'cips.nci.nih.gov/cdr'
@@ -26,9 +25,9 @@ Filter to create Vendor Genetics Professionals XML documents
  <xsl:param                       name = "DateFirstPub"
                                 select = "''"/>
 
- <!-- 
+ <!--
  =================================================================
- Copy control information 
+ Copy control information
  ================================================================= -->
  <xsl:template                   match = "Person">
   <xsl:element                    name = "GENETICSPROFESSIONAL">
@@ -103,14 +102,14 @@ Filter to create Vendor Genetics Professionals XML documents
     </xsl:element>
    </xsl:if>
 
-  </xsl:element> 
+  </xsl:element>
  </xsl:template>
 
 
- <!-- 
+ <!--
  ====================================================================
  Copy ID information
- For Legacy records this will be the CIAT DB ID, otherwise it will 
+ For Legacy records this will be the CIAT DB ID, otherwise it will
  be identical to the CDR-ID.
  ==================================================================== -->
  <xsl:template                   match = "LegacyID">
@@ -175,12 +174,12 @@ Filter to create Vendor Genetics Professionals XML documents
                                   mode = "copy"/>
   </xsl:element>
 
-  <!-- 
+  <!--
   If the ProfessionalSuffix element is prepared for the vendor output
   it's created from the Standard/Custom-ProfessionalSuffix elements
   (when clause).
   However, if the ProfessionalSuffix element is only to be copied -
-  because it's the second pass of this filter module - the element 
+  because it's the second pass of this filter module - the element
   only needs to be copied as is (otherwise clause).
   ==================================================================== -->
   <xsl:choose>
@@ -209,7 +208,7 @@ Filter to create Vendor Genetics Professionals XML documents
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Copy Contact Information for Private Practice and Home location
  Note:
@@ -219,9 +218,9 @@ Filter to create Vendor Genetics Professionals XML documents
 
  Note:
  In order for the Mailer addresses to be carried over with the Mailer
- filter set we need to iterate over the tokens of the @UsedFor 
+ filter set we need to iterate over the tokens of the @UsedFor
  attribute and create a separate address block for each.
- ===================================================================== --> 
+ ===================================================================== -->
  <!--
  Call the do-each-token template to iterate over the individual tokens
  ===================================================================== -->
@@ -238,7 +237,7 @@ Filter to create Vendor Genetics Professionals XML documents
    </xsl:choose>
 
   </xsl:variable>
-  
+
   <xsl:call-template              name = "do-each-token">
    <xsl:with-param                name = "tokens"
                                 select = "$usedfor"/>
@@ -252,7 +251,7 @@ Filter to create Vendor Genetics Professionals XML documents
  ===================================================================== -->
  <xsl:template                    name = "do-each-token">
   <xsl:param                      name = "tokens"/>
-  
+
   <xsl:if                         test = "$tokens">
    <xsl:choose>
     <xsl:when                     test = "contains($tokens, ' ')">
@@ -288,10 +287,10 @@ Filter to create Vendor Genetics Professionals XML documents
    <xsl:attribute                 name = "UsedFor">
     <xsl:value-of               select = "$token"/>
    </xsl:attribute>
-   <!-- 
+   <!--
    =====================================================================
    Copy Contact Information for Private Practice and Home location
-   ===================================================================== --> 
+   ===================================================================== -->
    <xsl:element                   name = "INSTITUTION">
     <xsl:value-of               select = "OrganizationLocation/
                                           OfficialName/
@@ -300,17 +299,17 @@ Filter to create Vendor Genetics Professionals XML documents
 
    <!--
    ================================================================
-   Contact Information for Other Practice Locations 
+   Contact Information for Other Practice Locations
    ================================================================ -->
    <xsl:variable                  name = "ind"
                                 select = "@cdr:id"/>
    <xsl:variable                  name = "Stat"
                                 select = "../../Status/CurrentStatus"/>
-   <xsl:variable                  name = "orgloc" 
+   <xsl:variable                  name = "orgloc"
                                 select = "OrganizationLocation/
                                           Organization/@cdr:ref"/>
    <xsl:variable                  name = "orgnameloc"
-                                select = "substring-before 
+                                select = "substring-before
                                            (OrganizationLocation/
                                             Organization/@cdr:ref,'#')"/>
 
@@ -333,10 +332,10 @@ Filter to create Vendor Genetics Professionals XML documents
    </xsl:call-template>
 
 
-   <!-- 
-   The Email always comes from the location block that contains the 
+   <!--
+   The Email always comes from the location block that contains the
    GPMailer token of the UsedFor attribute.
-   That's being retrieved by calling another template for 
+   That's being retrieved by calling another template for
    PPLocation and OtherLocation
    ================================================================ -->
    <xsl:variable                  name = "email">
@@ -360,7 +359,7 @@ Filter to create Vendor Genetics Professionals XML documents
     </xsl:call-template>
    </xsl:variable>
 
-   <xsl:if                        test = "contains($email, '@') 
+   <xsl:if                        test = "contains($email, '@')
                                           or
                                           contains($ppemail, '@')">
     <xsl:element                  name = "CEML">
@@ -382,15 +381,15 @@ Filter to create Vendor Genetics Professionals XML documents
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
- Copy PostalAddress information for Home and PrivatePracticeLocation 
+ Copy PostalAddress information for Home and PrivatePracticeLocation
  This template is called by the Home, PrivatePractice template and
  Protocol denormalization filter.
- ==================================================================== --> 
+ ==================================================================== -->
  <xsl:template                    name = "getGenProfPrivatePractice">
    <xsl:if                        test = "../../../Status/
-                                          CurrentStatus = 'Inactive' 
+                                          CurrentStatus = 'Inactive'
                                           or ../PreviousLocaton">
     <xsl:attribute                name = "Status">
      <xsl:text>Inactive--Contact Information may not be current</xsl:text>
@@ -425,7 +424,7 @@ Filter to create Vendor Genetics Professionals XML documents
      <xsl:text>, </xsl:text>
      <xsl:apply-templates       select = "PoliticalSubUnit_State/
                                            PoliticalSubUnitShortName"/>
-     <xsl:text> </xsl:text>    
+     <xsl:text> </xsl:text>
      <xsl:apply-templates       select = "PostalCode_ZIP"/>
     </xsl:element>
     <xsl:if                       test = "City">
@@ -489,13 +488,13 @@ Filter to create Vendor Genetics Professionals XML documents
     <xsl:if                       test = "Phone
                                           or
                                           SpecificPhone
-                                          or 
+                                          or
                                           TollFreePhone
                                           or
                                           SpecificTollFreePhone">
      <xsl:element                 name = "CPHN">
       <xsl:for-each             select = "Phone                       |
-                                          SpecificPhone               | 
+                                          SpecificPhone               |
                                           TollFreePhone               |
                                           SpecificTollFreePhone">
        <xsl:if                    test = "not(position() = 1)">
@@ -514,13 +513,13 @@ Filter to create Vendor Genetics Professionals XML documents
                                           SpecificPhone
                                           and
                                           not(SpecificPhone[@Public='No'])
-                                          or 
+                                          or
                                           TollFreePhone
                                           or
                                           SpecificTollFreePhone">
      <xsl:element                 name = "CPHN">
       <xsl:for-each             select = "Phone[not(@Public)]         |
-                                          SpecificPhone[not(@Public)] | 
+                                          SpecificPhone[not(@Public)] |
                                           TollFreePhone               |
                                           SpecificTollFreePhone">
        <xsl:if                    test = "not(position() = 1)">
@@ -539,7 +538,7 @@ Filter to create Vendor Genetics Professionals XML documents
  ====================================================================
  Get the email address for OtherPracticeLocations
  The email address is only maintained for the GPMailer location
- We need to provide the email address regardless of the Public 
+ We need to provide the email address regardless of the Public
  attribute for the GPMailer address block.
  ==================================================================== -->
  <xsl:template                    name = "getEmail">
@@ -597,7 +596,7 @@ Filter to create Vendor Genetics Professionals XML documents
  ====================================================================
  Get the email address for OtherPracticeLocations
  The email address is only maintained for the GPMailer location
- We need to provide the email address regardless of the Public 
+ We need to provide the email address regardless of the Public
  attribute for the GPMailer address block.
  ==================================================================== -->
  <xsl:template                    name = "getEmailAttribute">
@@ -717,7 +716,7 @@ Filter to create Vendor Genetics Professionals XML documents
  </xsl:template>
 
 
- <!-- 
+ <!--
  =======================================================================
  Template for ProfessionalInformation
  ======================================================================= -->
@@ -730,7 +729,7 @@ Filter to create Vendor Genetics Professionals XML documents
      <xsl:for-each              select = "PDQBoardMembershipDetails/
                                           PDQEditorialBoard/Organization/
                                           OrganizationName[1]">
-      <xsl:variable               name = "Ref"    
+      <xsl:variable               name = "Ref"
                                 select = "../@cdr:ref"/>
       <PDQBoardMembership          ref = "{$Ref}">
        <xsl:value-of            select = "."/>
@@ -739,7 +738,7 @@ Filter to create Vendor Genetics Professionals XML documents
      <xsl:for-each              select = "PDQBoardMembershipDetails/
                                           PDQAdvisoryBoard/Organization/
                                           OrganizationName[1]">
-      <xsl:variable               name = "Ref"    
+      <xsl:variable               name = "Ref"
                                 select = "../@cdr:ref"/>
       <PDQBoardMembership          ref = "{$Ref}">
        <xsl:value-of            select = "."/>
@@ -749,7 +748,7 @@ Filter to create Vendor Genetics Professionals XML documents
                                           PDQVoluntaryProtocolReviewBoard/
                                           Organization/
                                           OrganizationName[1]">
-      <xsl:variable               name = "Ref"    
+      <xsl:variable               name = "Ref"
                                 select = "../@cdr:ref"/>
       <PDQBoardMembership          ref = "{$Ref}">
        <xsl:value-of            select = "."/>
@@ -763,12 +762,12 @@ Filter to create Vendor Genetics Professionals XML documents
       <xsl:apply-templates      select = "PhysicianDetails/
                                           PhysicianSpecialtyInformation"
                                   mode = "copy"/>
-                               
-    <!-- =========================================================== 
+
+    <!-- ===========================================================
        Copy Physician Membership Information, Member of Cooperative
        Group, Member of Medical Society
      ================================================================= -->
-      <PhysicianMembershipInformation>   
+      <PhysicianMembershipInformation>
        <xsl:for-each            select = "PhysicianDetails/
                                           PhysicianMembershipInformation/
                                           MemberOfCooperativeGroup/
@@ -786,20 +785,20 @@ Filter to create Vendor Genetics Professionals XML documents
      ================================================================== -->
        <xsl:apply-templates     select = "PhysicianDetails/
                                          PhysicianMembershipInformation/
-                                         MemberOfMedicalSociety" 
+                                         MemberOfMedicalSociety"
                                   mode = "copy"/>
       </PhysicianMembershipInformation>
-     </PhysicianDetails>  
+     </PhysicianDetails>
     </ProfessionalInformation>
    </xsl:if>
   </xsl:if>
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Copy ProfessionalType to TYPE element
- ==================================================================== --> 
+ ==================================================================== -->
  <xsl:template                   match = "ProfessionalType">
   <xsl:element                    name = "TYPE">
    <xsl:value-of                select = "substring-before(., ' (')"/>
@@ -807,10 +806,10 @@ Filter to create Vendor Genetics Professionals XML documents
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Copy GeneticsSpecialtyInformation to SPECIALTY element
- ==================================================================== --> 
+ ==================================================================== -->
  <xsl:template                   match = "GeneticsSpecialtyInformation">
   <xsl:for-each                 select = "GeneticsBoardCertification">
    <xsl:element                   name = "SPECIALTY">
@@ -820,10 +819,10 @@ Filter to create Vendor Genetics Professionals XML documents
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Copy GeneticsSpecialtyInformation to SPECIALTY element
- ==================================================================== --> 
+ ==================================================================== -->
  <xsl:template                   match = "GeneticsBoardCertification">
   <xsl:element                    name = "SPECIALTYNAME">
    <xsl:apply-templates         select = "GeneticsBoardName"/>
@@ -843,10 +842,10 @@ Filter to create Vendor Genetics Professionals XML documents
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Copy GeneticsSpecialtyInformation to SPECIALTY element
- ==================================================================== --> 
+ ==================================================================== -->
  <xsl:template                   match = "GeneticsTeamServices">
   <xsl:element                    name = "TEAMSERVICES">
    <xsl:value-of                select = "."/>
@@ -854,10 +853,10 @@ Filter to create Vendor Genetics Professionals XML documents
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Create the FAMILYCANCERSYNDROME block
- ==================================================================== --> 
+ ==================================================================== -->
  <xsl:template                   match = "FamilialCancerSyndrome">
   <xsl:element                    name = "FAMILYCANCERSYNDROME">
    <xsl:element                   name = "SYNDROMENAME">
@@ -870,7 +869,7 @@ Filter to create Vendor Genetics Professionals XML documents
   </xsl:element>
  </xsl:template>
 
- <!-- 
+ <!--
  =====================================================================
  Create the CancerType/CancerSite elements
  The data comes from the denorm filter in the format
@@ -878,17 +877,17 @@ Filter to create Vendor Genetics Professionals XML documents
        GPCancerSite
     GPCancerType
        GPCancerSite
- If two or more CancerTypes are identical we're suppressing the 
+ If two or more CancerTypes are identical we're suppressing the
  display of the second one and include the GPCancerSite in the display
  of the second one like this:
     GPCancerType
        GPCancerSite1
        GPCancerSite2
- ==================================================================== --> 
+ ==================================================================== -->
  <xsl:template                   match = "TermMenus">
   <xsl:for-each                 select = "GPCancerType">
    <!-- Display only the first unique CancerType -->
-   <xsl:if                        test = "not(DisplayName = 
+   <xsl:if                        test = "not(DisplayName =
                                           preceding-sibling::GPCancerType/
                                           DisplayName)">
 
@@ -913,10 +912,10 @@ Filter to create Vendor Genetics Professionals XML documents
  </xsl:template>
 
 
- <!-- 
+ <!--
  =====================================================================
  Copy GeneticsSpecialtyInformation to SPECIALTY element
- ==================================================================== --> 
+ ==================================================================== -->
  <xsl:template                   match = "MemberOfGeneticsSociety">
   <xsl:element                    name = "INSTITUTION">
    <xsl:value-of                select = "."/>

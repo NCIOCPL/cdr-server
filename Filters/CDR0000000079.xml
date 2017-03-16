@@ -1,5 +1,4 @@
 <?xml version = "1.0" encoding="utf-8"?>
-<!-- $Id$ -->
 <!-- Filter title: Health Professional Summary Report -->
 <!--
  ================================================================
@@ -7,14 +6,13 @@ Filter to create Health Professional Summary Report
 Written by Volker Englisch, 2004-07-16
 
 BZIssue::4990 - New "Quick & Dirty" QC report
-
  ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
                                version = "1.0"
                exclude-result-prefixes = "cdr">
 
- <xsl:output                    method = "html" 
+ <xsl:output                    method = "html"
                                 indent = "no"
                               encoding = "UTF-8"/>
 
@@ -22,15 +20,15 @@ BZIssue::4990 - New "Quick & Dirty" QC report
  <xsl:include   href = "cdr:name:Module: InLine Markup Formatter"/>
  <xsl:include   href = "cdr:name:Module: Checkbox Formatter"/>
  <xsl:include   href = "cdr:name:Module: Table Formatter"/>
- <xsl:include   href = "cdr:name:Module: STYLE Default"/>  
- <xsl:include   href = "cdr:name:Module: STYLE QC Summary"/>  
- <xsl:include   href = "cdr:name:Module: STYLE RS Insertion Deletion"/>  
+ <xsl:include   href = "cdr:name:Module: STYLE Default"/>
+ <xsl:include   href = "cdr:name:Module: STYLE QC Summary"/>
+ <xsl:include   href = "cdr:name:Module: STYLE RS Insertion Deletion"/>
 
  <xsl:variable                    name = "docID"
                                 select = "document('cdrutil:/docid')"/>
  <xsl:variable                    name = "whoAmI"
                                 select = "'SummaryHPRS'"/>
- <!-- 
+ <!--
  ==================================================================
  Main template to create HTML output
  ================================================================== -->
@@ -43,39 +41,39 @@ BZIssue::4990 - New "Quick & Dirty" QC report
       src='https://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js'>
     </SCRIPT>
 
-    <xsl:variable                 name = "cdrdocs" 
+    <xsl:variable                 name = "cdrdocs"
                                 select = "document('cdrx:/*/CdrCtl')"/>
 
     <TITLE>
-     <xsl:value-of              select = "concat('CDR', 
+     <xsl:value-of              select = "concat('CDR',
                                            number(
                                            substring-after($docID, 'CDR')))"/>
      <xsl:text>: </xsl:text>
      <xsl:value-of              select = "substring-before(
                                            concat($cdrdocs/CdrDocCtl/
-                                                  DocTitle, ';'), ';')"/> 
+                                                  DocTitle, ';'), ';')"/>
     </TITLE>
-     
+
     <STYLE type='text/css'>
-     <xsl:call-template           name = "defaultStyle"/>  
-     <xsl:call-template           name = "qcSummaryStyle"/>  
-     <xsl:call-template           name = "rsInsertionDeletionStyle"/>  
+     <xsl:call-template           name = "defaultStyle"/>
+     <xsl:call-template           name = "qcSummaryStyle"/>
+     <xsl:call-template           name = "rsInsertionDeletionStyle"/>
     </STYLE>
    </HEAD>
 
-   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif'/> 
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif'/>
    <xsl:apply-templates         select = "Summary"/>
   </HTML>
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==================================================================
  Display summary title
  ================================================================== -->
  <xsl:template                   match = "Summary">
-  <!-- 
-  Do not run this report if this is a patient summary.  
+  <!--
+  Do not run this report if this is a patient summary.
   ================================================================= -->
   <xsl:choose>
    <xsl:when                      test = "//SummaryAudience='Patients'">
@@ -86,18 +84,18 @@ BZIssue::4990 - New "Quick & Dirty" QC report
    </xsl:when>
    <xsl:otherwise>
     <BODY>
-     <xsl:apply-templates       select = "SummaryTitle" 
-                                  mode = "TOC"/>  
+     <xsl:apply-templates       select = "SummaryTitle"
+                                  mode = "TOC"/>
 
      <!--
      ==================================================================
-     Display summary type and audience 
+     Display summary type and audience
      ================================================================== -->
      <xsl:call-template           name = "displayMetaData"/>
 
      <!--
      ==================================================================
-     Display summary type and audience 
+     Display summary type and audience
      ================================================================== -->
      <xsl:call-template           name = "displayTOC"/>
 
@@ -109,19 +107,19 @@ BZIssue::4990 - New "Quick & Dirty" QC report
  </xsl:template>
 
 
- <!-- 
+ <!--
  ================================================================
  Display a Note
  ================================================================ -->
  <xsl:template                   match = "Note">
-  <xsl:apply-templates          select = "." 
+  <xsl:apply-templates          select = "."
                                   mode = "RS"/>
- </xsl:template>  
+ </xsl:template>
 
 
  <!--
  ==============================================================
- Display Section Titles 
+ Display Section Titles
  Temporary until all Patient summaries are in new format
  ============================================================  -->
  <xsl:template                   match ="Title">
@@ -130,14 +128,14 @@ BZIssue::4990 - New "Quick & Dirty" QC report
  </xsl:template>
 
 
- <!-- 
+ <!--
  ================================================================
- Display Comments 
+ Display Comments
  ================================================================ -->
  <xsl:template                   match = "Comment |
                                           ResponseToComment">
-  <xsl:apply-templates          select = "." 
+  <xsl:apply-templates          select = "."
                                   mode = "RS"/>
- </xsl:template>  
+ </xsl:template>
 
 </xsl:transform>

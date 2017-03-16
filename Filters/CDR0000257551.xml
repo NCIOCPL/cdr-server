@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
-<!-- $Id$ -->
 <!-- Filter title: Global Change: Org Status -->
-<!-- 
+<!--
  ==================================================================
 
  Global Change: Org Status
@@ -11,7 +10,7 @@
    /InScopeProtocol/ProtocolAdminInfo/ProtocolLeadOrg
    /ProtocolSites/OrgSite/OrgSiteStatus
 
- But only when the OrgSiteStatus contains a particular value, and 
+ But only when the OrgSiteStatus contains a particular value, and
  only when the OrgSiteStatus is found in the same OrgSite as
 
    /InScopeProtocol/ProtocolAdminInfo/ProtocolLeadOrg
@@ -28,18 +27,18 @@
  3. A new value for OrgSiteStatus to replace the existing one when
     a match is found (newStatus).
 
- Additionally, if multiple Lead Organizations exist, it is now possible 
+ Additionally, if multiple Lead Organizations exist, it is now possible
  to specify the Lead Org, under which the org status should be changed.
  It is also possible to specify that the status should only be changed
- under a specified Lead Org for a particular SpecificPerson.  However, 
+ under a specified Lead Org for a particular SpecificPerson.  However,
  this functionallity fails if a SpecificPerson is NOT the only person
  under that specified organization.
- If no leadOrgId is provided but a personId the value of the personId 
+ If no leadOrgId is provided but a personId the value of the personId
  will be ignored.
- 
+
  The two additional optional values are passed in as:
- 
- 4. A lead organization ID matching LeadOrganizationID/@cdr:ref 
+
+ 4. A lead organization ID matching LeadOrganizationID/@cdr:ref
     (leadOrgId)
 
  5. An ID for the person matching Person/@cdr:ref (personId).
@@ -48,7 +47,7 @@
                             xmlns:cdr = "cips.nci.nih.gov/cdr"
                               version = "1.0">
 
- <xsl:output                   method = "xml" 
+ <xsl:output                   method = "xml"
                  omit-xml-declaration = "no"/>
 
  <!--
@@ -111,10 +110,10 @@
   <xsl:variable                  name = "thisLeadOrgId"
                                select = "substring-before(
                                          concat(
-                                         ../../../LeadOrganizationID/@cdr:ref, 
+                                         ../../../LeadOrganizationID/@cdr:ref,
                                                                   '#'),'#')"/>
 
-  <!-- 
+  <!--
   =========================================================
   Change the status for the specified Organization
   if a LeadOrgId is provided and the organization IDs match
@@ -123,7 +122,7 @@
   <xsl:choose>
    <xsl:when                     test = "$leadOrgId">
 
-     <!-- 
+     <!--
      Both optional parameters - leadOrgId and personId are provided.
      If the person is NOT the only SpecificContact for this site
      terminate the update with an error message.
@@ -131,12 +130,12 @@
      <xsl:choose>
       <xsl:when                  test = "$leadOrgId = $thisLeadOrgId">
 
-       <!-- 
+       <!--
        personId is provided and leadOrgId is provided
        a) terminate update if an organization status should be changed
           for which more then one SpecificPerson exists and the orgId
           matches.
-       b) perform update if exactly one SpecificPerson exists and the 
+       b) perform update if exactly one SpecificPerson exists and the
           ordId and specified oldStatus matches.
           Do nothing and display the original data if one doesn't match.
        c) Copy as is if personId and orgId don't match.
@@ -146,29 +145,29 @@
          <xsl:for-each         select = "../OrgSiteContact/
                                          SpecificPerson">
           <xsl:choose>
-           <xsl:when             test = "last() != 1 
+           <xsl:when             test = "last() != 1
                                          and
                                          substring-before(
                                            concat(Person/@cdr:ref,'#'),'#')
-                                           = $personId 
-                                         and 
+                                           = $personId
+                                         and
                                          $thisLeadOrgId = $leadOrgId
                                          and
                                          $thisOrgId = $orgId">
             <xsl:message    terminate = "yes">
-             <xsl:text>Multiple contact persons for this OrgSite: </xsl:text> 
+             <xsl:text>Multiple contact persons for this OrgSite: </xsl:text>
               <xsl:value-of    select = "$orgId"/><xsl:text>.</xsl:text>
              <xsl:text>  Change was not made.</xsl:text>
             </xsl:message>
            </xsl:when>
-           <!-- (b) Print changed status element if variables match 
+           <!-- (b) Print changed status element if variables match
                     and exactly one investigator is listed          -->
-           <xsl:when             test = "last() = 1 
+           <xsl:when             test = "last() = 1
                                          and
                                          substring-before(
                                            concat(Person/@cdr:ref,'#'),'#')
-                                           = $personId 
-                                         and 
+                                           = $personId
+                                         and
                                          $thisLeadOrgId = $leadOrgId
                                          and
                                          $thisOrgId = $orgId">
@@ -183,9 +182,9 @@
              </xsl:choose>
             </OrgSiteStatus>
            </xsl:when>
-           <!-- (c) Print status element as is by default 
+           <!-- (c) Print status element as is by default
                     However, this can only be done after all SpecificPerson
-                    elements have been tested and fell through.  For the 
+                    elements have been tested and fell through.  For the
                     very last person of the bunch we then can print again
                     the original status. Otherwise multiple status records
                     would get printed if multiple SpecificPersons existed
@@ -200,7 +199,7 @@
           </xsl:choose>
          </xsl:for-each>
 
-         <!-- 
+         <!--
          Need to ensure that the status element for an OrgSite
          without a SpecificPerson element is not being dropped
          and is displayed properly.
@@ -215,7 +214,7 @@
 
        <!-- personId is not provided but leadOrgId is provided
             ================================================== -->
-        <xsl:when                test = ". = $oldStatus and 
+        <xsl:when                test = ". = $oldStatus and
                                          $thisOrgId = $orgId">
          <OrgSiteStatus>
           <xsl:value-of        select = "$newStatus"/>
@@ -229,8 +228,8 @@
         </xsl:otherwise>
        </xsl:choose>
       </xsl:when>
-      <!-- 
-      Copy input to output as is - No changes necessary        
+      <!--
+      Copy input to output as is - No changes necessary
       ========================================================= -->
       <xsl:otherwise>  <!-- "$leadOrgId NOT $thisLeadOrgId" -->
        <xsl:copy>
@@ -240,29 +239,29 @@
       </xsl:otherwise>
      </xsl:choose>
    </xsl:when>
-   <!-- 
+   <!--
    ========================================================
    THE DEFAULT - leadOrgId is empty
-   Only the parameters orgId, newStatus, oldStatus are 
-   provided and all orgId occurences for all LeadOrgs are 
+   Only the parameters orgId, newStatus, oldStatus are
+   provided and all orgId occurences for all LeadOrgs are
    updated.
-   Note:  personId is not tested if leadOrgId is empty.  
+   Note:  personId is not tested if leadOrgId is empty.
           The filter behaves as if both leadOrgId and personId
           were empty.
    ======================================================== -->
    <xsl:otherwise>
-    <!-- 
-    organizationIds match:  Change the status 
+    <!--
+    organizationIds match:  Change the status
     =============================================================== -->
     <xsl:choose>
-     <xsl:when                   test = ". = $oldStatus and 
+     <xsl:when                   test = ". = $oldStatus and
                                          $thisOrgId = $orgId">
       <OrgSiteStatus>
        <xsl:value-of           select = "$newStatus"/>
       </OrgSiteStatus>
      </xsl:when>
-     <!-- 
-     organizationIds don't match: No changes necessary, copy as is.        
+     <!--
+     organizationIds don't match: No changes necessary, copy as is.
      ============================================================== -->
      <xsl:otherwise>
       <xsl:copy>

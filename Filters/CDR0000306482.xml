@@ -1,28 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Id$ -->
 <!-- Filter title: Module: Global Filter Templates -->
 <!--
 ================================================================
-$RCSfile: $
-
 Filter modules for general use (string conversion, etc.)
-$Author: volker $
+
 Created: Volker Englisch
-
-$Source:$
-$Revision: 11178 $
-
-History
-=======
-$Log: $
-
 ================================================================ -->
 <xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                          xmlns:cdr = "cips.nci.nih.gov/cdr"
            exclude-result-prefixes = "cdr"
                            version = "1.0">
 
-  <xsl:output               method = "xml" 
+  <xsl:output               method = "xml"
               omit-xml-declaration = "no"
                           encoding = "utf-8"/>
 
@@ -45,12 +34,12 @@ $Log: $
     <xsl:apply-templates    select = "GenerationSuffix"
                               mode = "copy"/>
 
-    <!-- 
+    <!--
     If the ProfessionalSuffix element is prepared for the vendor output
     it's created from the Standard/Custom-ProfessionalSuffix elements
     (when clause).
     However, if the ProfessionalSuffic element is only to be copied -
-    because it's the second pass of this filter module - the element 
+    because it's the second pass of this filter module - the element
     only needs to be copied as is (otherwise clause).
     ==================================================================== -->
     <xsl:choose>
@@ -96,14 +85,14 @@ $Log: $
         Generate DateFirstPublished element only if the passed-in value
         for parameter date is non-empty.
      ===================================================================== -->
-  <xsl:template                   name = "getDateFirstPub">         
-    <xsl:param                    name = "date"/> 
-        
+  <xsl:template                   name = "getDateFirstPub">
+    <xsl:param                    name = "date"/>
+
     <xsl:if                       test = "$date">
       <DateFirstPublished>
         <xsl:value-of           select = "$date"/>
       </DateFirstPublished>
-    </xsl:if>    
+    </xsl:if>
   </xsl:template>
 
 
@@ -111,17 +100,17 @@ $Log: $
      Drop white space node between 2 consecutive CitationLink/ProtocolLink
      elements.
      ===================================================================== -->
-  <xsl:template                   name = "stripSpaceNode"> 
+  <xsl:template                   name = "stripSpaceNode">
     <xsl:variable                 name = "prev"
                                 select = "preceding-sibling::*[position()=1]"/>
     <xsl:variable                 name = "next"
                                 select = "following-sibling::*[position()=1]"/>
-           
-    <xsl:if                       test = "(name($prev) != 'CitationLink' 
-                                           and name($prev) != 'ProtocolLink') 
-                                       or (name($next) != 'CitationLink' 
-                                           and name($next) != 'ProtocolLink')"> 
-      <xsl:value-of    select = "."/>                           
+
+    <xsl:if                       test = "(name($prev) != 'CitationLink'
+                                           and name($prev) != 'ProtocolLink')
+                                       or (name($next) != 'CitationLink'
+                                           and name($next) != 'ProtocolLink')">
+      <xsl:value-of    select = "."/>
     </xsl:if>
   </xsl:template>
 
@@ -129,7 +118,7 @@ $Log: $
  <!--
  =====================================================================
  Template to convert a text string
- In the calling template you need to specify a parameter 
+ In the calling template you need to specify a parameter
    setCase = 'value'
  with valid value entries upper, lower, proper.
  ===================================================================== -->
@@ -178,7 +167,7 @@ $Log: $
                                 select = "substring($convString, 2)"/>
 
    <xsl:call-template             name = "convertCase">
-    <xsl:with-param               name = "convString" 
+    <xsl:with-param               name = "convString"
                                 select = "$firstChar" />
     <xsl:with-param               name = "convertTo"
                                 select = "'upper'"/>
@@ -238,7 +227,7 @@ $Log: $
   </xsl:element>
  </xsl:template>
 
-<!-- 
+<!--
  <xsl:template                 name = 'urlInfo'>
   <xsl:variable                name = 'ctGovIDs'>
    <xsl:for-each             select = '/CTGovProtocol/
@@ -279,7 +268,7 @@ $Log: $
 
   <xsl:value-of              select = '$allIDs'/>
   <xsl:variable                name = 'newIDs'
-                             select = "document(concat('cdrutil:/dedup-ids/', 
+                             select = "document(concat('cdrutil:/dedup-ids/',
                                                          $allIDs))"/>
 
   <UrlInfo>
@@ -333,7 +322,7 @@ $Log: $
 
 <!-- ======================================================================
      Template rule used to do XML to XML transformations which
-     copies any attribute node, or node that is child of of something 
+     copies any attribute node, or node that is child of of something
      ===================================================================== -->
   <xsl:template                  match = "@*"
                                   mode = "copy">
@@ -345,7 +334,7 @@ $Log: $
     <xsl:element                  name = "{name()}">
       <xsl:apply-templates      select = "@*"
                                   mode = "copy"/>
-      <xsl:apply-templates        mode = "copy"/> 
+      <xsl:apply-templates        mode = "copy"/>
     </xsl:element>
   </xsl:template>
 

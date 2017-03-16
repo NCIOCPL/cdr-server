@@ -7,8 +7,6 @@
  *
  * OUCH!  This is a significant duplication of the CdrSysValue.cpp function
  *        implemented (by me!) in 2003 and never used.
- *
- * $Id$
  */
 
 #include "CdrCommand.h"

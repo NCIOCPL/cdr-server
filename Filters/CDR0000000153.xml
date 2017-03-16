@@ -1,33 +1,31 @@
 <?xml version="1.0"?>
-<!-- $Id$ -->
 <!-- Filter title: Health Professional Summary Report-Bold/Underline -->
 <!--
 ================================================================
 Filter to display Bold/Underline Summary QC Reports
 Written by Volker Englisch, 2004-07-16
-
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
                exclude-result-prefixes = "cdr">
 
- <xsl:output                    method = "html" 
+ <xsl:output                    method = "html"
                                 indent = "no"/>
 
  <xsl:include   href = "cdr:name:Module: QC Filter Templates - Summary"/>
  <xsl:include   href = "cdr:name:Module: InLine Markup Formatter"/>
  <xsl:include   href = "cdr:name:Module: Checkbox Formatter"/>
  <xsl:include   href = "cdr:name:Module: Table Formatter"/>
- <xsl:include   href = "cdr:name:Module: STYLE Default"/>  
- <xsl:include   href = "cdr:name:Module: STYLE QC Summary"/>  
- <xsl:include   href = "cdr:name:Module: STYLE BU Insertion Deletion"/>  
+ <xsl:include   href = "cdr:name:Module: STYLE Default"/>
+ <xsl:include   href = "cdr:name:Module: STYLE QC Summary"/>
+ <xsl:include   href = "cdr:name:Module: STYLE BU Insertion Deletion"/>
 
  <xsl:variable                    name = "docID"
                                 select = "document('cdrutil:/docid')"/>
  <xsl:variable                    name = "whoAmI"
                                 select = "'SummaryHPBU'"/>
- <!-- 
+ <!--
  ==================================================================
  Main template to create HTML output
  ================================================================== -->
@@ -40,11 +38,11 @@ Written by Volker Englisch, 2004-07-16
       src='https://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js'>
     </SCRIPT>
 
-    <xsl:variable                 name = "cdrdocs" 
+    <xsl:variable                 name = "cdrdocs"
                                 select = "document('cdrx:/*/CdrCtl')"/>
 
     <TITLE>
-     <xsl:value-of              select = "concat('CDR', 
+     <xsl:value-of              select = "concat('CDR',
                                            number(
                                            substring-after($docID, 'CDR')))"/>
      <xsl:text>: </xsl:text>
@@ -54,23 +52,23 @@ Written by Volker Englisch, 2004-07-16
     </TITLE>
 
     <STYLE type='text/css'>
-     <xsl:call-template           name = "defaultStyle"/>  
-     <xsl:call-template           name = "qcSummaryStyle"/>  
-     <xsl:call-template           name = "buInsertionDeletionStyle"/>  
+     <xsl:call-template           name = "defaultStyle"/>
+     <xsl:call-template           name = "qcSummaryStyle"/>
+     <xsl:call-template           name = "buInsertionDeletionStyle"/>
     </STYLE>
    </HEAD>
 
-   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif'/> 
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif'/>
    <xsl:apply-templates         select = "Summary"/>
   </HTML>
  </xsl:template>
 
- <!-- 
+ <!--
  ==================================================================
  Display summary title
  ================================================================== -->
  <xsl:template                   match = "Summary">
-  <!-- 
+  <!--
   Do not run this report for Patient summaries.
   ============================================================= -->
   <xsl:choose>
@@ -82,18 +80,18 @@ Written by Volker Englisch, 2004-07-16
    </xsl:when>
    <xsl:otherwise>
     <BODY>
-     <xsl:apply-templates       select = "SummaryTitle" 
-                                  mode = "TOC"/>  
+     <xsl:apply-templates       select = "SummaryTitle"
+                                  mode = "TOC"/>
 
      <!--
      ==================================================================
-     Display summary type and audience 
+     Display summary type and audience
      ================================================================== -->
      <xsl:call-template           name = "displayMetaData"/>
 
      <!--
      ==================================================================
-     Display summary type and audience 
+     Display summary type and audience
      ================================================================== -->
      <xsl:call-template           name = "displayTOC"/>
 
@@ -105,27 +103,27 @@ Written by Volker Englisch, 2004-07-16
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==================================================================
  Don't display any Deletion unless it's marked as proposed
  ================================================================== -->
  <xsl:template                   match = "Deletion[@RevisionLevel='approved'] |
                                           Deletion[@RevisionLevel='publish']"/>
 
- 
- <!-- 
+
+ <!--
  ================================================================
  Display a Note
  ================================================================ -->
  <xsl:template                   match = "Note">
-  <xsl:apply-templates          select = "." 
-                                  mode = "BU"/>  
- </xsl:template>  
+  <xsl:apply-templates          select = "."
+                                  mode = "BU"/>
+ </xsl:template>
 
 
  <!--
  ==============================================================
- Display Section Titles 
+ Display Section Titles
  Temporary until all Patient summaries are in new format
  ============================================================  -->
  <xsl:template                   match ="Title">

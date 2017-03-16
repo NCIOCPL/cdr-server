@@ -5,53 +5,6 @@
  * If that can't be done, takes an alternative action to write to file.
  *
  *                                          Alan Meyer  June, 2000
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.13  2008/10/15 02:36:19  ameyer
- * Changed handling of default logging directory and file.
- *
- * Revision 1.12  2006/10/04 03:45:20  ameyer
- * Revised mutex security attribute management.
- *
- * Revision 1.11  2006/01/25 01:47:47  ameyer
- * Fixed bug introduced in last version.  I was checking whether we were
- * inside the logger in one place too many - guaranteeing that we were.
- * Now fixed.
- *
- * Revision 1.10  2005/07/28 21:11:03  ameyer
- * Removed erroneous CVS comment on previous version.
- * Real change was to protect logging from inadvertent recursion - attempt
- * to log an exception fails, calling the logging function to try again.
- *
- * Revision 1.9  2005/07/28 20:39:46  ameyer
- *
- *
- * Revision 1.8  2002/03/28 22:19:53  ameyer
- * Removed unreferenced variable declaration.
- *
- * Revision 1.7  2002/03/06 21:57:16  bkline
- * Catching reference to cdr::Exception instead of object.
- *
- * Revision 1.6  2002/03/04 21:22:57  bkline
- * Added missing call to localtime().
- *
- * Revision 1.5  2002/03/04 20:51:18  bkline
- * Added workaround for memory leak caused by bug in MS CRT.
- *
- * Revision 1.4  2002/02/28 01:02:53  bkline
- * Added code to close mutex handle.
- *
- * Revision 1.3  2001/10/29 15:44:12  bkline
- * Replaced fopen/fwprintf/fclose with wofstream I/O.
- *
- * Revision 1.2  2000/10/05 17:23:21  ameyer
- * Replaced AlternateWrite with WriteFile, an externally callable
- * method that allows the caller to write to an OS file instead of
- * to the database.
- *
- * Revision 1.1  2000/06/15 22:32:24  ameyer
- * Initial revision
- *
  */
 
 #include <Windows.h> // For security descriptors for mutex
@@ -511,5 +464,69 @@ cdr::String cdr::logClientEvent(Session&         session,
     std::wostringstream os;
     os << L"<CdrLogClientEventResp><EventId>" << eventId
        << L"</EventId></CdrLogClientEventResp>";
+    return os.str();
+}
+
+/**
+ * Saves a client DLL trace log.
+ *
+ *  @param      session     contains information about the current user.
+ *  @param      node        contains the XML for the command.
+ *  @param      conn        reference to the connection object for the
+ *                          CDR database.
+ *  @return                 String object containing the XML for the
+ *                          command response.
+ *  @exception  cdr::Exception if a database or processing error occurs.
+ */
+cdr::String cdr::saveClientTraceLog(Session&         session,
+                                    const dom::Node& node,
+                                    db::Connection&  conn)
+{
+    String logData(true);
+    String userName(true);
+    String sessionId(true);
+
+    // Extract the parameters.
+    dom::Node child = node.getFirstChild();
+    while (child != 0) {
+        String name = child.getNodeName();
+        if (name == L"LogData")
+            logData = dom::getTextContent(child);
+        child = child.getNextSibling();
+    }
+    if (logData.isNull())
+        throw Exception(L"Missing required log data");
+
+    // Extract the user name and session from the login line.
+    size_t start = logData.find(L"logon(");
+    if (start != String::npos) {
+        start += 6;
+        size_t comma = logData.find(L',', start);
+        if (comma != String::npos) {
+            userName = logData.substr(start, comma - start);
+            start = comma + 2;
+            size_t paren = logData.find(L')', start);
+            if (paren != String::npos)
+                sessionId = logData.substr(start, paren - start);
+        }
+    }
+
+    // Save the log.
+    db::PreparedStatement s = conn.prepareStatement(
+            "INSERT INTO dll_trace_log "
+            "(log_saved, cdr_user, session_id, log_data)"
+            "VALUES (GETDATE(), ?, ?, ?)");
+    s.setString(1, userName);
+    s.setString(2, sessionId);
+    s.setString(3, logData);
+    s.executeUpdate();
+    s.close();
+    conn.commit();
+    int logId = conn.getLastIdent();
+
+    // Report success.
+    std::wostringstream os;
+    os << L"<CdrSaveClientTraceLogResp><LogId>" << logId
+       << L"</LogId></CdrSaveClientTraceLogResp>";
     return os.str();
 }

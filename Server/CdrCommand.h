@@ -1,120 +1,5 @@
 /*
- * $Id$
- *
  * Interface for CDR command handlers.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.36  2009/01/22 20:49:57  bkline
- * Added support for a Spanish glossifier.
- *
- * Revision 1.35  2008/12/19 17:03:46  bkline
- * Added CdrLogClientEvent command.
- *
- * Revision 1.34  2004/08/20 19:58:55  bkline
- * Added new CdrSetDocStatus command.
- *
- * Revision 1.33  2004/08/11 17:48:15  bkline
- * Adding new command CdrAddExternalMapping.
- *
- * Revision 1.32  2004/07/08 00:32:38  bkline
- * Added CdrGetGlossaryMap command; added cdr.lib to 'make clean' target.
- *
- * Revision 1.31  2004/05/14 02:06:16  ameyer
- * Added cacheInit command.
- *
- * Revision 1.30  2003/02/10 14:04:20  bkline
- * Added new command CdrMailerCleanup.
- *
- * Revision 1.29  2003/01/28 23:45:53  ameyer
- * Added sysValue command.
- *
- * Revision 1.28  2002/11/14 13:23:58  bkline
- * Changed CdrFilter command to use filter sets.  Added CdrDelFilterSet
- * command.
- *
- * Revision 1.27  2002/11/12 11:44:37  bkline
- * Added filter set support.
- *
- * Revision 1.26  2002/06/26 02:21:52  ameyer
- * Added lastVersions(), plus a bit of extra documentation on listVersions().
- *
- * Revision 1.25  2002/06/18 20:33:52  ameyer
- * Added CdrCanDo command.
- *
- * Revision 1.24  2002/05/03 20:35:45  bkline
- * New CdrListVersions command added.
- *
- * Revision 1.23  2002/04/04 01:05:21  bkline
- * Added cdr::publish().
- *
- * Revision 1.22  2001/10/17 13:51:59  bkline
- * Added mergeProt() function.
- *
- * Revision 1.21  2001/09/19 18:41:54  bkline
- * Added CdrPasteLink command.
- *
- * Revision 1.20  2001/06/28 17:39:32  bkline
- * Added getCssFiles().  Added optional contents_only argument to function
- * DOMtoString().
- *
- * Revision 1.19  2001/05/21 20:29:31  bkline
- * Added commands for query term definition support.
- *
- * Revision 1.18  2001/05/17 17:39:09  ameyer
- * Add link administration transaction handlers.
- *
- * Revision 1.17  2001/04/13 12:19:16  bkline
- * Added listActions(), getAction(), addAction(), repAction(), and
- * delAction().
- *
- * Revision 1.16  2001/04/08 22:48:24  bkline
- * Added getTree() function.
- *
- * Revision 1.15  2001/04/05 19:50:56  ameyer
- * Added reIndexDoc.
- *
- * Revision 1.14  2001/01/17 21:51:28  bkline
- * Replaced getSchema with get/add/mod/delDocType.
- *
- * Revision 1.13  2000/12/28 13:30:36  bkline
- * Added getSchema function.
- *
- * Revision 1.12  2000/10/23 14:54:45  mruben
- * added commands for version control
- *
- * Revision 1.11  2000/10/04 18:21:06  bkline
- * Added searchLinks and listDocTypes.
- *
- * Revision 1.10  2000/05/21 00:53:13  bkline
- * Added shutdown command.
- *
- * Revision 1.9  2000/05/10 20:29:50  mruben
- * added declaration for DOMtoString
- *
- * Revision 1.8  2000/05/09 21:09:40  bkline
- * More ccdoc comments.
- *
- * Revision 1.7  2000/05/03 18:49:14  bkline
- * Added parameter names (for ccdoc).
- *
- * Revision 1.6  2000/05/03 18:15:55  bkline
- * More ccdoc comments.
- *
- * Revision 1.5  2000/04/22 18:57:38  bkline
- * Added ccdoc comment markers for namespaces and @pkg directives.
- *
- * Revision 1.4  2000/04/22 15:34:56  bkline
- * Filled out documentation comments.
- *
- * Revision 1.3  2000/04/16 19:11:36  bkline
- * Added const qualifier to Node argument in Command signature.
- *
- * Revision 1.2  2000/04/15 12:05:34  bkline
- * Changed DbConnection* to DbConnection&.  Removed redundant namespace
- * qualifiers.
- *
- * Revision 1.1  2000/04/14 15:58:04  bkline
- * Initial revision
  */
 
 #ifndef CDR_COMMAND_
@@ -437,24 +322,6 @@ namespace cdr {
      *  @exception  cdr::Exception if a database or processing error occurs.
      */
     extern String delAction(Session&          session,
-                            const dom::Node&  node,
-                            db::Connection&   conn);
-
-    /**
-     * Performs maintenance or retrievals on the sys_value table.
-     * This one function handles add, replace, delete, and get, based
-     * on the name of the element passed as the top level node for the
-     * command.
-     *
-     *  @param      session     contains information about the current user.
-     *  @param      node        contains the XML for the command.
-     *  @param      conn        reference to the connection object for the
-     *                          CDR database.
-     *  @return                 String object containing the XML for the
-     *                          command response.
-     *  @exception  cdr::Exception if a database or processing error occurs.
-     */
-    extern String sysValue (Session&          session,
                             const dom::Node&  node,
                             db::Connection&   conn);
 
@@ -1189,22 +1056,6 @@ namespace cdr {
                               db::Connection&   conn);
 
     /**
-     * Merges a ScientificProtocoInfo document into an InScopeProtocol
-     * document, then deletes the ScientificProtocolInfo document.
-     *
-     *  @param      session     contains information about the current user.
-     *  @param      node        contains the XML for the command.
-     *  @param      conn        reference to the connection object for the
-     *                          CDR database.
-     *  @return                 String object containing the XML for the
-     *                          command response.
-     *  @exception  cdr::Exception if a database or processing error occurs.
-     */
-    extern String mergeProt  (Session&          session,
-                              const dom::Node&  node,
-                              db::Connection&   conn);
-
-    /**
      * Creates a new CDR publishing job.
      *
      *  @param      session     contains information about the current user.
@@ -1357,6 +1208,21 @@ namespace cdr {
     extern String logClientEvent(Session&         session,
                                  const dom::Node& node,
                                  db::Connection&  conn);
+
+    /**
+     * Save a client DLL trace log file.
+     *
+     *  @param      session     contains information about the current user.
+     *  @param      node        contains the XML for the command.
+     *  @param      conn        reference to the connection object for the
+     *                          CDR database.
+     *  @return                 String object containing the XML for the
+     *                          command response.
+     *  @exception  cdr::Exception if a database or processing error occurs.
+     */
+    extern String saveClientTraceLog(Session&         session,
+                                     const dom::Node& node,
+                                     db::Connection&  conn);
 
     /**
      * Shuts down the CDR Server.

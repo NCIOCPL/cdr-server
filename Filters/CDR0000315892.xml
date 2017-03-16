@@ -1,9 +1,7 @@
 <?xml version = "1.0" encoding="utf-8"?>
-<!-- $Id$ -->
 <!-- Filter title: Clean up Insertion and Deletion -->
 <!--
 ================================================================
-$Id$
 
 Filter to clean up Insertion/Deletion clean-up that had been
 duplicated in the previous filter of the filter set.
@@ -16,24 +14,24 @@ BZIssue::4919 - [Summary] QC Report Bugs
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
                exclude-result-prefixes = "cdr">
 
- <xsl:output                    method = "xml" 
+ <xsl:output                    method = "xml"
                               encoding = "utf-8"/>
 
- <!-- 
+ <!--
  =================================================================
  Drive the copy processing logic.
    If the parameter iod (insertion_or_deletion) has been passed
    the element we've just visited was either an Insertion or a
    Deletion element.  We want to mark the child now so that we
-   can later suppress the display of these elements, i.e. a 
+   can later suppress the display of these elements, i.e. a
    ListItem element
- ================================================================== -->  
+ ================================================================== -->
  <!-- xsl:template                   match = "@* | node()">
   <xsl:param                      name = "iod"/>
 
   <xsl:copy>
    <xsl:apply-templates         select = "@* | node()"/>
-  </xsl:copy> 
+  </xsl:copy>
  </xsl:template -->
 
  <xsl:template                   match = "*">
@@ -55,25 +53,25 @@ BZIssue::4919 - [Summary] QC Report Bugs
  </xsl:template>
 
 
- <!-- 
+ <!--
  =================================================================
- For QC reports, we keep Deletion/Insertion tags of any given 
+ For QC reports, we keep Deletion/Insertion tags of any given
  RevisonLevel only around text node.
- ================================================================== --> 
+ ================================================================== -->
  <xsl:template                   match = "Insertion | Deletion">
 
-  <!-- Does this node have any element descendant other than 
-       Insertion/Deletion? In other words, are we hitting a 
+  <!-- Does this node have any element descendant other than
+       Insertion/Deletion? In other words, are we hitting a
        wrapper of any text node? -->
   <!--xsl:variable                   name = "hasOtherDescendants"
                                 select = "descendant::*[
                                             name() != 'Insertion' and
-                                            name() != 'Deletion' 
+                                            name() != 'Deletion'
                                                      ]"/ -->
   <!-- There are two ways to look at this to do the clean-up
        a) Are there any decendants to the Insertion/Deletion
-          nodes that are Insertion or Deletion?  
-          - Yes: We're hitting an outside Insertion/Deletion and 
+          nodes that are Insertion or Deletion?
+          - Yes: We're hitting an outside Insertion/Deletion and
                  not the new text-wrapper  ==> remove this one
           - No:  We're hitting the inside Insertion/Deletion and
                  we need to keep this one.
@@ -81,7 +79,7 @@ BZIssue::4919 - [Summary] QC Report Bugs
           other then Insertion or Deletion decendents?
           The result is the same as under (a)
        ========================================================== -->
-                 
+
   <xsl:variable                   name = "hasOtherDescendants"
                                 select = "descendant::*[
                                             self::Insertion or
@@ -90,9 +88,9 @@ BZIssue::4919 - [Summary] QC Report Bugs
                                 select = "descendant::*[
                                             not(self::Insertion and
                                                 self::Deletion)]"/>
-  
-  <xsl:choose>               
-   <xsl:when                      test = "$hasOtherDescendants"> 
+
+  <xsl:choose>
+   <xsl:when                      test = "$hasOtherDescendants">
     <xsl:apply-templates>
      <xsl:with-param              name = "iod"
                                 select = "name()"/>
@@ -102,7 +100,7 @@ BZIssue::4919 - [Summary] QC Report Bugs
     <xsl:element                  name = "{name()}">
      <xsl:copy-of               select = "@*"/>
      <xsl:apply-templates/>
-    </xsl:element>      
+    </xsl:element>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>

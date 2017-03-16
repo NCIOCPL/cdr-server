@@ -1,9 +1,5 @@
 #----------------------------------------------------------------------
-#
-# $Id$
-#
 # Utility for comparing two copies of the cdr_archived_versions table.
-#
 #----------------------------------------------------------------------
 import cdrdb, sys
 

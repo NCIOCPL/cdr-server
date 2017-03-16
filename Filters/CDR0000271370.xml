@@ -1,9 +1,7 @@
 <?xml version = "1.0" encoding="utf-8"?>
-<!-- $Id$ -->
 <!-- Filter title: Module: Vendor Filter Templates -->
 <!--
 ====================================================================
-$Id$
 
 Filter including misc Vendor filter templates.
 
@@ -24,6 +22,7 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
                               encoding = "UTF-8"/>
 
  <xsl:include href = "cdr:name:Module: Global Filter Templates"/>
+ <xsl:include href = "cdr:name:Module: URL Conversion"/>
 
 
  <!--
@@ -137,24 +136,19 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
                                 select = "MediaID/@cdr:ref"/>
     <xsl:variable                 name = "mediaLinkAlt"
                                 select = "@AlternativeText"/>
-    <xsl:variable                 name = "mediaLinkInline"
-                                select = "@Inline"/>
-    <xsl:variable                 name = "mediaLinkMinWidth"
-                                select = "@MinWidth"/>
     <xsl:variable                 name = "mediaLinkUseCaption"
                                 select = "@UseCaption"/>
     <xsl:variable                 name = "mediaLinkId"
                                 select = "@cdr:id"/>
-    <xsl:variable                 name = "mediaLinkSize"
-                                select = "@size"/>
-    <xsl:variable                 name = "mediaLinkThumb"
-                                select = "@thumb"/>
+    <xsl:variable                 name = "mediaLinkPlacement"
+                                select = "@placement"/>
 
     <xsl:for-each               select = "MediaID/
                                           Media/
                                           MediaContent/
                                           Captions/
                                           MediaCaption">
+
      <xsl:call-template           name = "createMediaLink">
       <xsl:with-param             name = "mediaRef"
                                 select = "$mediaCdrRef"/>
@@ -162,23 +156,14 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
                                 select = "$mediaLinkType"/>
       <xsl:with-param             name = "mediaAlt"
                                 select = "$mediaLinkAlt"/>
-      <xsl:with-param             name = "mediaInline"
-                                select = "$mediaLinkInline"/>
-      <xsl:with-param             name = "mediaMinWidth"
-                                select = "$mediaLinkMinWidth"/>
       <xsl:with-param             name = "mediaUseCaption"
                                 select = "$mediaLinkUseCaption"/>
       <xsl:with-param             name = "mediaId"
                                 select = "$mediaLinkId"/>
-      <xsl:with-param             name = "mediaSize"
-                                select = "$mediaLinkSize"/>
-      <xsl:with-param             name = "mediaThumb"
-                                select = "$mediaLinkThumb"/>
      </xsl:call-template>
+
     </xsl:for-each>
    </xsl:when>
-   <!-- xsl:when                      test = "$whoAmI = 'DrugInfo'">
-   </xsl:when -->
    <xsl:otherwise>
     <!--
     Create MediaLink element for Summary and GlossaryTerm (the
@@ -252,23 +237,23 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
                                           and
                                           UseCaption = 'Yes'">
 
-     <xsl:message           terminate = "yes">
-      <xsl:value-of            select = "name()"/>
+     <xsl:message            terminate = "yes">
+      <xsl:value-of             select = "name()"/>
       <xsl:text> (</xsl:text>
-      <xsl:value-of            select = "MediaID/@cdr:ref"/>
+      <xsl:value-of             select = "MediaID/@cdr:ref"/>
       <xsl:text>) </xsl:text>
       <xsl:text>Caption for specified language missing: </xsl:text>
-      <xsl:value-of            select = "$docLanguage"/>
+      <xsl:value-of             select = "$docLanguage"/>
      </xsl:message>
     </xsl:if>
 
-    <xsl:element                    name = "MediaLink">
-     <xsl:attribute                 name = "ref">
-      <xsl:value-of               select = "MediaID/@cdr:ref |
-                                            MediaID/Media/@cdr:ref"/>
+    <xsl:element                  name = "MediaLink">
+     <xsl:attribute               name = "ref">
+      <xsl:value-of             select = "MediaID/@cdr:ref |
+                                          MediaID/Media/@cdr:ref"/>
      </xsl:attribute>
-     <xsl:attribute                 name = "type">
-      <xsl:value-of            select = "$mediaLinkType"/>
+     <xsl:attribute               name = "type">
+      <xsl:value-of             select = "$mediaLinkType"/>
      </xsl:attribute>
 
      <!--
@@ -333,66 +318,26 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
      that making the image clickable wouldn't result in a larger image size.
      Note:  The above requirement only makes sense for image files.  There
             won't be a thumb attribute for audio files.
+     Note:  The "thumb" and "size" attributes are ignored by the GK code.
+            Keeping it in for licensees only.  The GK specific attribute
+            "placement" will be stripped out from licensee output.
      ======================================================================= -->
      <xsl:if                      test = "not($mediaLinkType = 'audio/mpeg')">
+
+      <!--
+      If the placement (size + position) attribute is set, use it or
+      set the default.
+      ================================================================ -->
       <xsl:choose>
-       <xsl:when                  test = "@thumb = 'No'">
-        <xsl:attribute            name = "thumb">
-         <xsl:value-of          select = "@thumb"/>
+       <xsl:when                  test = "@placement">
+        <xsl:attribute            name = "placement">
+         <xsl:value-of          select = "@placement"/>
         </xsl:attribute>
        </xsl:when>
        <xsl:otherwise>
-        <xsl:variable             name = "displaySize">
-         <xsl:choose>
-          <xsl:when               test = "@size = 'full'">
-           <xsl:text>571</xsl:text>
-          </xsl:when>
-          <xsl:when               test = "@size = 'half'">
-           <xsl:text>274</xsl:text>
-          </xsl:when>
-          <xsl:when               test = "@size = 'third'">
-           <xsl:text>179</xsl:text>
-          </xsl:when>
-          <xsl:when               test = "@size = 'quarter'">
-           <xsl:text>131</xsl:text>
-          </xsl:when>
-          <xsl:when               test = "@size = 'fifth'">
-           <xsl:text>103</xsl:text>
-          </xsl:when>
-          <xsl:when               test = "@size = 'sixth'">
-           <xsl:text>84</xsl:text>
-          </xsl:when>
-          <xsl:when               test = "@size = 'as-is'">
-           <xsl:text>99999</xsl:text>
-          </xsl:when>
-          <xsl:otherwise>
-          <!--
-          If no size attribute has been specified the default size is
-             - summaries is half=274
-          ============================================================ -->
-           <xsl:if                test = "/Summary">
-            <xsl:text>274</xsl:text>
-           </xsl:if>
-          </xsl:otherwise>
-         </xsl:choose>
-        </xsl:variable>
-
-        <xsl:choose>
-         <xsl:when                test = "MediaID/Media/
-                                          PhysicalMedia/
-                                          ImageData/
-                                          ImageDimensions/
-                                          WidthPixels &lt; $displaySize">
-          <xsl:attribute          name = "thumb">
-           <xsl:value-of        select = "'No'"/>
-          </xsl:attribute>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:attribute          name = "thumb">
-           <xsl:value-of        select = "'Yes'"/>
-          </xsl:attribute>
-         </xsl:otherwise>
-        </xsl:choose>
+        <xsl:attribute            name = "placement">
+         <xsl:text>image-center</xsl:text>
+        </xsl:attribute>
        </xsl:otherwise>
       </xsl:choose>
      </xsl:if>
@@ -401,39 +346,6 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
      <xsl:if                      test = "@cdr:id">
       <xsl:attribute              name = "id">
        <xsl:value-of            select = "@cdr:id"/>
-      </xsl:attribute>
-     </xsl:if>
-
-     <xsl:if                      test = "@Inline">
-      <xsl:attribute              name = "inline">
-       <xsl:value-of            select = "@Inline"/>
-      </xsl:attribute>
-     </xsl:if>
-
-     <!--
-     The MinWidth attribute in the Summary document trumps the
-     MinWidthPixels element in the Media document
-     ========================================================= -->
-     <xsl:choose>
-      <xsl:when                   test = "@MinWidth">
-       <xsl:attribute             name = "MinWidth">
-        <xsl:value-of           select = "@MinWidth"/>
-       </xsl:attribute>
-      </xsl:when>
-      <xsl:when                   test = "PhysicalMedia/
-                                           ImageData/
-                                           ImageDimensions/MinWidthPixels">
-       <xsl:attribute             name = "MinWidth">
-        <xsl:value-of           select = "PhysicalMedia/
-                                           ImageData/
-                                           ImageDimensions/MinWidthPixels"/>
-       </xsl:attribute>
-      </xsl:when>
-     </xsl:choose>
-
-     <xsl:if                      test = "@size">
-      <xsl:attribute              name = "size">
-       <xsl:value-of            select = "@size"/>
       </xsl:attribute>
      </xsl:if>
 
@@ -461,12 +373,12 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
        </xsl:when>
        <xsl:otherwise>
         <xsl:apply-templates    select = "MediaID/Media/
-                                          MediaContent/
-                                          Captions/
-                                          MediaCaption
-                                            [@audience = $docAudience
-                                             and
-                                             @language = $docLanguage]"/>
+                                            MediaContent/
+                                            Captions/
+                                            MediaCaption
+                                              [@audience = $docAudience
+                                               and
+                                               @language = $docLanguage]"/>
        </xsl:otherwise>
       </xsl:choose>
      </xsl:if>
@@ -498,9 +410,491 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
     </xsl:otherwise>
    </xsl:choose>
 
-   <xsl:apply-templates/>
+   <!-- 
+   If we're coming in from the MediaCaption for-each loop we have to go
+   back up the tree to find out if a specific title has been specified -->
+   <xsl:choose>
+    <xsl:when                     test = "ancestor::EmbeddedVideo/
+                                             SpecificMediaCaption">
+     <xsl:apply-templates       select = "ancestor::EmbeddedVideo/
+                                             SpecificMediaCaption"/>
+     <!--
+     <xsl:apply-templates       select = "../../../../../SpecificMediaCaption"/>
+     -->
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates/>
+    </xsl:otherwise>
+   </xsl:choose>
 
   </xsl:element>
+ </xsl:template>
+
+
+ <!-- 
+ ============================================================= 
+ Template to process the EmbeddedVideo element
+ ============================================================= -->
+ <xsl:template                   match = "EmbeddedVideo">
+  <!--
+  This block is for a GlossaryTerm document with a EmbeddedVideo element
+  shared between the English and Spanish version.  This means we'll have
+  to create an EmbeddedVideo element for each language
+
+  The otherwise-block is used for Summaries
+  ======================================================================= -->
+  <xsl:choose>
+   <xsl:when                      test = "$whoAmI = 'GlossaryTerm'
+                                          and
+                                          name(..) = 'GlossaryTermConcept'">
+    <xsl:variable                 name = "videoCdrRef"
+                                select = "MediaID/@cdr:ref"/>
+    
+    <xsl:variable                 name = "videoLinkId"
+                                select = "@cdr:id"/>
+
+    <xsl:variable                 name = "videoYtId"
+                                select = "MediaID/
+                                            Media/
+                                            PhysicalMedia/
+                                            VideoData/
+                                            HostingID"/>
+    <xsl:variable                 name = "videoHosting"
+                                select = "MediaID/
+                                            Media/
+                                            PhysicalMedia/
+                                            VideoData/
+                                            VideoHosting"/>
+
+    <xsl:variable                 name = "videoTemplate">
+     <xsl:choose>
+      <xsl:when                   test = "SpecificVideoPresentationTemplate">
+       <xsl:value-of            select = "SpecificVideoPresentationTemplate"/>
+      </xsl:when>
+      <xsl:when                   test = "MediaID/
+                                            Media/
+                                            PhysicalMedia/
+                                            VideoData/
+                                            DefaultVideoPresentationTemplate">
+       <xsl:value-of            select = "MediaID/
+                                            Media/
+                                            PhysicalMedia/
+                                            VideoData/
+                                            DefaultVideoPresentationTemplate"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>Video75NoTitle</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:variable>
+
+    <xsl:for-each               select = "MediaID/
+                                             Media/
+                                             MediaContent/
+                                             Captions/
+                                             MediaCaption">
+
+     <xsl:call-template           name = "createVideoLink">
+      <xsl:with-param             name = "videoRef"
+                                select = "$videoCdrRef"/>
+      <xsl:with-param             name = "videoId"
+                                select = "$videoLinkId"/>
+      <xsl:with-param             name = "uniqueId"
+                                select = "$videoYtId"/>
+      <xsl:with-param             name = "hosting"
+                                select = "$videoHosting"/>
+      <xsl:with-param             name = "displayTemplate"
+                                select = "$videoTemplate"/>
+     </xsl:call-template>
+
+    </xsl:for-each>
+   </xsl:when>
+   <xsl:otherwise>
+    <!--
+    Create EmbeddedVideo element for Summary and GlossaryTerm (the
+    EmbeddedVideo element is NOT shared between the English and 
+    Spanish version)
+    ===============================================================
+    Define language variable to select the caption
+    Note:  This only applies for summary document and GlossaryTerm
+           document with a EmbeddedVideo child element of the
+           TermDefinition or SpanishTermDefinition
+    =============================================================== -->
+    <xsl:variable                 name = "docLanguage">
+     <xsl:choose>
+      <xsl:when                   test = "/Summary/
+                                          SummaryMetaData/
+                                          SummaryLanguage
+                                            = 'Spanish'
+                                          or
+                                          name(..)
+                                            = 'TranslatedTermDefinition'">
+       <xsl:text>es</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>en</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:variable>
+
+    <!--
+    Define audience variable to select the alt text
+    =============================================== -->
+    <xsl:variable                 name = "docAudience">
+     <xsl:choose>
+      <xsl:when                   test = "/Summary/
+                                          SummaryMetaData/
+                                          SummaryAudience
+                                            = 'Health professionals'
+                                          or
+                                          ../Audience
+                                            = 'Health professional'">
+       <xsl:text>Health_professionals</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>Patients</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:variable>
+
+
+
+    <xsl:element                  name = "{name()}">
+     <!--
+     <xsl:attribute              name  = "volker">
+      <xsl:value-of            select  = "'SumSection'"/>
+     </xsl:attribute>
+     -->
+
+     <xsl:attribute              name  = "id">
+      <xsl:value-of            select  = "./@cdr:id"/>
+     </xsl:attribute>
+
+     <xsl:attribute               name = "ref">
+      <xsl:value-of             select = "MediaID/@cdr:ref"/>
+     </xsl:attribute>
+
+     <xsl:attribute               name = "hosting">
+      <xsl:value-of             select = "MediaID/
+                                            Media/
+                                            PhysicalMedia/
+                                            VideoData/
+                                            VideoHosting"/>
+     </xsl:attribute>
+
+     <xsl:attribute               name = "unique_id">
+      <xsl:value-of             select = "MediaID/
+                                            Media/
+                                            PhysicalMedia/
+                                            VideoData/
+                                            HostingID"/>
+     </xsl:attribute>
+
+     <xsl:attribute               name = "language">
+      <xsl:value-of             select = "$docLanguage"/>
+     </xsl:attribute>
+
+     <xsl:attribute               name = "audience">
+      <!--
+      <xsl:text>1111 </xsl:text>
+      <xsl:value-of select = "$docAudience"/>
+      <xsl:value-of select = "name()"/>
+      -->
+      <xsl:value-of             select = "$docAudience"/>
+      <!--
+      <xsl:value-of             select = "MediaID/
+                                            Media/
+                                            MediaContent/
+                                            Captions/
+                                            MediaCaption/
+                                            @audience"/>
+      -->
+     </xsl:attribute>
+
+     <xsl:attribute               name = "template">
+      <xsl:choose>
+       <xsl:when                  test = "SpecificVideoPresentationTemplate">
+        <xsl:value-of           select = "SpecificVideoPresentationTemplate"/>
+       </xsl:when>
+       <xsl:when                  test = "MediaID/
+                                            Media/
+                                            PhysicalMedia/
+                                            VideoData/
+                                            DefaultVideoPresentationTemplate">
+        <xsl:value-of           select = "MediaID/
+                                            Media/
+                                            PhysicalMedia/
+                                            VideoData/
+                                            DefaultVideoPresentationTemplate"/>
+
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:text>Video75NoTitle</xsl:text> 
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:attribute>
+
+     <xsl:call-template           name = "mediaTitle"/>
+
+     <xsl:choose>
+      <xsl:when                   test = "$whoAmI = 'GlossaryTerm'">
+       <xsl:call-template         name = "gtVideoCaption">
+        <xsl:with-param           name = "language"
+                                select = "$docLanguage"/>
+        <xsl:with-param           name = "audience"
+                                select = "$docAudience"/>
+       </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:call-template         name = "mediaCaption"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:element>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ==============================================================
+ Template to create the VideoTitle element
+ This template gets called either as part of the EmbeddedVideo
+ template or the MediaCaption template (as part of a shared
+ EmbeddedVideo element).  The path to the title text differs
+ depending on which template is calling.
+ ============================================================== -->
+ <xsl:template                    name = "mediaTitle">
+  <xsl:element                    name = "VideoTitle">
+   <xsl:choose>
+    <xsl:when                     test = "SpecificMediaTitle
+                                          or
+                                          ancestor::EmbeddedVideo/
+                                             SpecificMediaTitle">
+     <xsl:apply-templates       select = "ancestor::EmbeddedVideo/
+                                             SpecificMediaTitle      |
+                                          SpecificMediaTitle"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates       select = "ancestor::Media/MediaTitle |
+                                          MediaID/
+                                            Media/
+                                            MediaTitle"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:element>
+ </xsl:template>
+
+
+
+ <!-- 
+ ==============================================================
+ Named template to create the video captions for GlossaryTerm 
+ documents.
+ This template is used when a video is shared between the 
+ English and Spanish definition.  In this case we're creating 
+ one EmbeddedVideo item for each language and the default 
+ audience is 'Patients'.
+ ============================================================== -->
+ <xsl:template                    name = "createVideoLink">
+  <xsl:param                      name = "videoId"/>
+  <xsl:param                      name = "videoRef"/>
+  <xsl:param                      name = "uniqueId"/>
+  <xsl:param                      name = "hosting"/>
+  <xsl:param                      name = "displayTemplate"/>
+
+  <xsl:variable                   name = "capLanguage"
+                                select = "@language"/>
+
+  <xsl:variable                   name = "capAudience"
+                                select = "@audience"/>
+
+  <!--
+  Create EmbeddedVideo Element and attributes but prevent the element
+  from being created if the GlossaryTerm has no Spanish definition
+  ================================================================ -->
+  <xsl:if                         test = "$capLanguage = 'en'
+                                          or
+                                          $capLanguage = 'es'
+                                          and
+                                          /GlossaryTermName/
+                                           GlossaryTermConcept/
+                                           TranslatedTermDefinition">
+
+   <xsl:element                    name = "EmbeddedVideo">
+     <!--
+     <xsl:attribute              name  = "volker">
+      <xsl:value-of            select  = "'GTNSection'"/>
+     </xsl:attribute>
+     -->
+
+    <xsl:attribute                 name = "id">
+     <xsl:value-of               select = "$videoId"/>
+     <xsl:text>.</xsl:text>
+     <xsl:number                 level = "any"
+                                 count = "MediaCaption"/>
+    </xsl:attribute>
+    <xsl:attribute                 name = "ref">
+     <xsl:value-of               select = "$videoRef"/>
+    </xsl:attribute>
+    <xsl:attribute                 name = "hosting">
+     <xsl:value-of               select = "$hosting"/>
+    </xsl:attribute>
+    <xsl:attribute                 name = "unique_id">
+     <xsl:value-of               select = "$uniqueId"/>
+    </xsl:attribute>
+    <xsl:attribute                 name = "language">
+     <xsl:value-of               select = "$capLanguage"/>
+    </xsl:attribute>
+    <xsl:attribute                 name = "audience">
+      <!--
+      <xsl:text>2222</xsl:text>
+      <xsl:value-of select = "name()"/>
+      -->
+     <xsl:value-of               select = "$capAudience"/>
+    </xsl:attribute>
+    <xsl:attribute                 name = "template">
+     <xsl:value-of               select = "$displayTemplate"/>
+    </xsl:attribute>
+    <xsl:attribute                 name = "ref">
+     <xsl:value-of               select = "$videoRef"/>
+    </xsl:attribute>
+
+    <xsl:call-template            name = "mediaTitle"/>
+
+    <xsl:choose>
+     <xsl:when                     test = "SpecificMediaCaption">
+      <xsl:apply-templates       select = "SpecificMediaCaption"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:apply-templates       select = "."/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:element>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!-- 
+ ==============================================================
+ Template for Video Caption
+ ============================================================== -->
+ <xsl:template                    name = "gtVideoCaption">
+  <xsl:param                      name = "language"
+                                select = "'NotSet'"/>
+  <xsl:param                      name = "audience"
+                                select = "'NotSet'"/>
+  <xsl:choose>
+   <xsl:when                      test = "SpecificMediaCaption">
+    <xsl:element                  name = "Caption">
+     <xsl:attribute               name = "language">
+      <xsl:value-of             select = "$language"/>
+      <!--
+      <xsl:choose>
+       <xsl:when                  test = "$language = 'English'">
+        <xsl:text>en</xsl:text>
+       </xsl:when>
+       <xsl:when                  test = "$language = 'Spanish'">
+        <xsl:text>es</xsl:text>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:text>NA</xsl:text>
+       </xsl:otherwise>
+      </xsl:choose>
+      -->
+     </xsl:attribute>
+
+     <xsl:apply-templates       select = "SpecificMediaCaption"/>
+    </xsl:element>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:apply-templates        select = "MediaID/
+                                            Media/
+                                            MediaContent/
+                                            Captions/
+                                            MediaCaption
+                                               [@language = $language
+                                                and
+                                                @audience = $audience]"/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+
+
+
+<!-- 
+ ==============================================================
+ Template for MediaCaption
+ ============================================================== -->
+ <xsl:template                    name = "mediaCaption">
+    <!--
+    Define audience variable to select the alt text
+    =============================================== -->
+    <xsl:variable                 name = "docAudience">
+     <xsl:choose>
+      <xsl:when                   test = "$sumAudience 
+                                             = 'Health professionals'">
+       <xsl:text>Health_professionals</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>Patients</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:variable>
+
+    <!--
+    Create MediaLink element for Summary and GlossaryTerm (the
+    MediaLink element is NOT shared between the English and Spanish
+    version)
+    ===============================================================
+    Define language variable to select the caption and alt text
+    Note:  This only applies for summary document and GlossaryTerm
+           document with a MediaLink child element of the
+           TermDefinition or SpanishTermDefinition
+    =============================================================== -->
+    <xsl:variable                 name = "docLanguage">
+     <xsl:choose>
+      <xsl:when                   test = "$language = 'Spanish'">
+       <xsl:text>es</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:text>en</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:variable>
+
+   <xsl:choose>
+    <xsl:when                     test = "SpecificMediaCaption">
+     <xsl:element                 name = "Caption">
+      <xsl:attribute              name = "language">
+       <xsl:choose>
+        <xsl:when                 test = "$language = 'English'">
+         <xsl:text>en</xsl:text>
+        </xsl:when>
+        <xsl:when                 test = "$language = 'Spanish'">
+         <xsl:text>es</xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+         <xsl:text>NA</xsl:text>
+        </xsl:otherwise>
+       </xsl:choose>
+      </xsl:attribute>
+
+      <xsl:apply-templates       select = "SpecificMediaCaption"/>
+     </xsl:element>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates       select = "MediaID/
+                                            Media/
+                                            MediaContent/
+                                            Captions/
+                                            MediaCaption
+                                              [@language = $docLanguage 
+                                               and 
+                                               @audience=$docAudience]"/>
+    </xsl:otherwise>
+   </xsl:choose>
  </xsl:template>
 
 
@@ -515,12 +909,8 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
   <xsl:param                      name = "mediaRef"/>
   <xsl:param                      name = "mediaType"/>
   <xsl:param                      name = "mediaAlt"/>
-  <xsl:param                      name = "mediaInline"/>
-  <xsl:param                      name = "mediaMinWidth"/>
   <xsl:param                      name = "mediaUseCaption"/>
   <xsl:param                      name = "mediaId"/>
-  <xsl:param                      name = "mediaSize"/>
-  <xsl:param                      name = "mediaThumb"/>
 
   <xsl:variable                   name = "capLanguage"
                                 select = "@language"/>
@@ -606,90 +996,16 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
    the image is equal or greater then the actual size of the image so
    that making the image clickable wouldn't result in a larger image size.
    ======================================================================= -->
-   <xsl:choose>
-    <xsl:when                     test = "$mediaThumb = 'No'">
-     <xsl:attribute               name = "thumb">
-      <xsl:value-of             select = "$mediaThumb"/>
-     </xsl:attribute>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:variable                name = "displaySize">
-      <xsl:choose>
-       <xsl:when                  test = "$mediaSize = 'full'">
-        <xsl:text>571</xsl:text>
-       </xsl:when>
-       <xsl:when                  test = "$mediaSize = 'half'">
-        <xsl:text>274</xsl:text>
-       </xsl:when>
-       <xsl:when                  test = "$mediaSize = 'third'">
-        <xsl:text>179</xsl:text>
-       </xsl:when>
-       <xsl:when                  test = "$mediaSize = 'quarter'">
-        <xsl:text>131</xsl:text>
-       </xsl:when>
-       <xsl:when                  test = "$mediaSize = 'fifth'">
-        <xsl:text>103</xsl:text>
-       </xsl:when>
-       <xsl:when                  test = "$mediaSize = 'sixth'">
-        <xsl:text>84</xsl:text>
-       </xsl:when>
-       <xsl:when                  test = "$mediaSize = 'as-is'">
-        <xsl:text>99999</xsl:text>
-       </xsl:when>
-       <xsl:otherwise>
-       <!--
-       If no size attribute has been specified the default size is
-          - summaries is half=274
-       ============================================================ -->
-        <xsl:if                   test = "/Summary">
-         <xsl:text>274</xsl:text>
-        </xsl:if>
-       </xsl:otherwise>
-      </xsl:choose>
-     </xsl:variable>
-
-     <xsl:choose>
-      <xsl:when                   test = "../../../
-                                          PhysicalMedia/
-                                          ImageData/
-                                          ImageDimensions/
-                                          WidthPixels &lt; $displaySize">
-       <xsl:attribute             name = "thumb">
-        <xsl:value-of           select = "'No'"/>
-       </xsl:attribute>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:attribute             name = "thumb">
-        <xsl:value-of           select = "'Yes'"/>
-       </xsl:attribute>
-      </xsl:otherwise>
-     </xsl:choose>
-    </xsl:otherwise>
-   </xsl:choose>
 
    <!-- Optional Attributes -->
    <xsl:if                        test = "$mediaId">
     <xsl:attribute                name = "id">
      <xsl:value-of              select = "$mediaId"/>
-    <xsl:text>.</xsl:text>
-    <xsl:number                  level = "any"
+     <xsl:text>.</xsl:text>
+     <xsl:number                 level = "any"
                                  count = "MediaCaption"/>
     </xsl:attribute>
-
    </xsl:if>
-
-   <xsl:if                        test = "$mediaInline">
-    <xsl:attribute                name = "inline">
-     <xsl:value-of              select = "$mediaInline"/>
-    </xsl:attribute>
-   </xsl:if>
-
-   <xsl:if                        test = "$mediaSize">
-    <xsl:attribute                name = "size">
-     <xsl:value-of              select = "$mediaSize"/>
-    </xsl:attribute>
-   </xsl:if>
-
 
    <!--
    The UseCaption attibute turns existing captions on or off
@@ -717,55 +1033,6 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
 
 
  <!--
- ==================================================================
- Cleaning up the xref value of the SummaryURL element
- - replace 'http://www.cancer.gov' with 'http://cancer.gov'
- - remove trailing '/' from URL
- Note:  It is expected that a normalized string is being passed.
- ================================================================== -->
- <xsl:template                    name = "getSummaryURL">
-  <xsl:param                      name = "url"
-                                select = "''"/>
-  <xsl:choose>
-   <xsl:when                      test = "substring($url,
-                                           string-length($url)) = '/'">
-    <xsl:choose>
-     <xsl:when                    test = "contains($url,
-                                                  'http://www.cancer.gov')">
-
-      <xsl:value-of             select = "concat(
-                                          'http://cancer.gov',
-                                          substring-after(
-                                            substring($url, 1,
-                                              string-length($url) - 1),
-                                              '.gov'))"/>
-
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:value-of             select = "substring($url, 1,
-                                              string-length($url) - 1)"/>
-     </xsl:otherwise>
-    </xsl:choose>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:choose>
-     <xsl:when                    test = "contains($url,
-                                                  'http://www.cancer.gov')">
-      <xsl:value-of             select = "concat(
-                                           'http://cancer.gov',
-                                           substring-after(
-                                             $url, '.gov'))"/>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:value-of             select = "$url"/>
-     </xsl:otherwise>
-    </xsl:choose>
-   </xsl:otherwise>
-  </xsl:choose>
- </xsl:template>
-
-
- <!--
  ======================================================================
  For GlossaryTerm documents the audience attribute is being added.
  This is done only for images (not for audio files) as the captions
@@ -780,6 +1047,10 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
  ====================================================================== -->
  <xsl:template                    name = "addAudience">
   <xsl:attribute                  name = "audience">
+      <!--
+      <xsl:text>3333</xsl:text>
+      <xsl:value-of select = "name()"/>
+      -->
    <xsl:choose>
     <!--
     This section is for MediaLinks within each language/dictionary section -->

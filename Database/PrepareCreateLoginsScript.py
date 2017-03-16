@@ -1,9 +1,5 @@
 #----------------------------------------------------------------------
-#
-# $Id$
-#
 # Preprocess login creation/configuration script for this tier.
-#
 #----------------------------------------------------------------------
 import cdrutil, cdrpw, time
 

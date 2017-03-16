@@ -2,7 +2,6 @@
 <!-- Filter title: Module: PersonLocations Denormalization -->
 <!--
 ================================================================
-$Id$
 
 Module: PersonLocations Denormalization
 Written by Volker Englisch, 2002-04-01
@@ -12,19 +11,19 @@ Written by Volker Englisch, 2002-04-01
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
                                version = "1.0">
 
- <xsl:output                    method = "xml" 
+ <xsl:output                    method = "xml"
                   omit-xml-declaration = "no"
                               encoding = "UTF-8"/>
 
  <!--
  ===================================================================
  Denormalize the Person information.
- Note:  Can not extract the call for the call-template out of the 
+ Note:  Can not extract the call for the call-template out of the
         when-otherwise clauses since the contactID variable would be
         out-of-scope.
  =================================================================== -->
  <xsl:template                     match = "Person           |
-                                            SpecificPerson   |  
+                                            SpecificPerson   |
                                             CIPSContactPerson|
                                             BoardMemberName  |
                                             ExternalSitePIID">
@@ -40,7 +39,7 @@ Written by Volker Englisch, 2002-04-01
       <xsl:variable                 name = "contactID"
                                   select = "Person/@cdr:ref"/>
       <xsl:variable                 name = "contactPerson"
-                                  select = "document(concat('cdr:', $contactID, 
+                                  select = "document(concat('cdr:', $contactID,
                                                           '/last'))"/>
       <xsl:call-template            name = "getPerson">
        <xsl:with-param              name = "contactPerson"
@@ -56,7 +55,7 @@ Written by Volker Englisch, 2002-04-01
       <xsl:variable                 name = "contactID"
                                   select = "@cdr:ref"/>
       <xsl:variable                 name = "contactPerson"
-                                  select = "document(concat('cdr:', $contactID, 
+                                  select = "document(concat('cdr:', $contactID,
                                                           '/last'))"/>
       <xsl:call-template            name = "getPerson">
        <xsl:with-param              name = "contactPerson"
@@ -72,7 +71,7 @@ Written by Volker Englisch, 2002-04-01
  </xsl:template>
 
 
- <!-- 
+ <!--
  ===================================================================
  Denormalize the Organization Information (Parent, CCOP, etc.)
  We need to handle the RSS ExternalSiteOrgID separately because it
@@ -92,8 +91,8 @@ Written by Volker Englisch, 2002-04-01
     <xsl:variable                 name = "orgorpersonID"
                                 select = "@cdr:ref"/>
     <xsl:variable                 name = "nodeOrgOrPerson"
-                                select = "document(concat('cdr:', 
-                                                           $orgorpersonID, 
+                                select = "document(concat('cdr:',
+                                                           $orgorpersonID,
                                                           '/last'))"/>
     <xsl:choose>
      <!-- The denormalized document is an organization doc. -->
@@ -112,7 +111,7 @@ Written by Volker Englisch, 2002-04-01
         <xsl:variable             name = "contactID"
                                 select = "@cdr:ref"/>
         <xsl:variable             name = "contactPerson"
-                                select = "document(concat('cdr:', $contactID, 
+                                select = "document(concat('cdr:', $contactID,
                                                           '/last'))"/>
         <xsl:call-template        name = "getPerson">
          <xsl:with-param          name = "contactPerson"
@@ -139,7 +138,7 @@ Written by Volker Englisch, 2002-04-01
                                 select = "@cdr:ref"/>
 
   <xsl:variable                   name = "state"
-                                select = "document(concat('cdr:', $stateId, 
+                                select = "document(concat('cdr:', $stateId,
                                                           '/lastp'))"/>
   <xsl:element                    name = "PoliticalSubUnit_State">
    <xsl:attribute                 name = "cdr:ref">
@@ -176,7 +175,7 @@ Written by Volker Englisch, 2002-04-01
    <xsl:variable                  name = "countryId"
                                 select = "@cdr:ref"/>
    <xsl:variable                  name = "country"
-                                select = "document(concat('cdr:', $countryId, 
+                                select = "document(concat('cdr:', $countryId,
                                                           '/lastp'))"/>
    <xsl:attribute                 name = "cdr:ref">
     <xsl:value-of               select = "$countryId"/>
@@ -188,11 +187,11 @@ Written by Volker Englisch, 2002-04-01
  </xsl:template>
 
 
- <!-- 
+ <!--
  ===================================================================
  Named Templates
- =================================================================== --> 
- <!-- 
+ =================================================================== -->
+ <!--
  ===================================================================
  Template to detect circular reference in Parent/Child relationship
  =================================================================== -->
@@ -202,10 +201,10 @@ Written by Volker Englisch, 2002-04-01
   <xsl:param                      name = "parentIds"/>
 
   <xsl:variable                   name = "orgParent"
-                                select = "document(concat('cdrx:', $orgPID, 
+                                select = "document(concat('cdrx:', $orgPID,
                                                           '/last'))"/>
-  <!-- 
-  Do nothing or display the parent IDs and terminate if more then 
+  <!--
+  Do nothing or display the parent IDs and terminate if more then
   10 ancestors were detected
   =================================================================== -->
   <xsl:choose>
@@ -218,7 +217,7 @@ Written by Volker Englisch, 2002-04-01
       <xsl:with-param             name = "orgPID"
                                 select = "@cdr:ref"/>
       <xsl:with-param             name = "parentIds"
-                                select = "concat($parentIds, ' ', 'CDR', 
+                                select = "concat($parentIds, ' ', 'CDR',
                                           number(substring(@cdr:ref, 4)))"/>
       <xsl:with-param             name = "level"
                                 select = "$level + 1"/>
@@ -240,7 +239,7 @@ Written by Volker Englisch, 2002-04-01
  </xsl:template>
 
 
- <!-- 
+ <!--
  ===================================================================
  Extract the information for one lead organization.
  =================================================================== -->
@@ -255,7 +254,7 @@ Written by Volker Englisch, 2002-04-01
    <xsl:variable                  name = "orgID"
                                 select = "@cdr:ref"/>
    <xsl:variable                  name = "org"
-                                select = "document(concat('cdr:', $orgID, 
+                                select = "document(concat('cdr:', $orgID,
                                                           '/last'))"/>
    <xsl:variable                  name = "contactFrag"
                                 select = "$org/Organization/
@@ -272,7 +271,7 @@ Written by Volker Englisch, 2002-04-01
     <xsl:copy-of                select = "$org/Organization/
                                           OrganizationNameInformation"/>
 
-    <!-- 
+    <!--
     Check to ensure we're not creating an infinite loop here
     ============================================================= -->
     <xsl:for-each               select = "$org/Organization/
@@ -284,12 +283,12 @@ Written by Volker Englisch, 2002-04-01
       <xsl:with-param             name = "level"
                                 select = "'1'"/>
       <xsl:with-param             name = "parentIds"
-                                select = "concat('CDR', 
+                                select = "concat('CDR',
                                           number(substring(@cdr:ref, 4)))"/>
      </xsl:call-template>
     </xsl:for-each>
 
-    <!-- 
+    <!--
     If we are still in business no infinite loop has been detected.
     Continue to display the parent/child tree
     =============================================================== -->
@@ -297,10 +296,10 @@ Written by Volker Englisch, 2002-04-01
                                           OrganizationParent/
                                           ParentOrganization"/>
 
-    <!--  
-    All we need for the ParentOrganization, CCOP, etc. is the parent 
-    name and the information if there exists a grandparent.  
-    However, the template is called via OrganizationLocation we need 
+    <!--
+    All we need for the ParentOrganization, CCOP, etc. is the parent
+    name and the information if there exists a grandparent.
+    However, the template is called via OrganizationLocation we need
     (almost) all available information.
     ===================================================================  -->
     <xsl:if                       test = "name() = 'OrganizationLocation'
@@ -321,17 +320,17 @@ Written by Volker Englisch, 2002-04-01
      <xsl:copy-of               select = "$org/Organization/
                                           OrganizationType"/>
 
-     <!-- 
+     <!--
      These 2 elements are listed in the Schema but there doesn't exist
      any data.  Keeping these commented out for the time being.
-     ==================================================================   
+     ==================================================================
      <xsl:copy-of               select = "$org/Organization/
                                           ProtocolIDAcronym"/>
      <xsl:copy-of               select = "$org/Organization/
                                           PreferredProtocolOrganization"/> -->
     </xsl:if>
 
-    <!--  
+    <!--
     The RSS information allows the link of the ExternalSiteOrgID to be
     an org or a person link.  We handle this situation as a special case
     ==================================================================== -->
@@ -339,22 +338,22 @@ Written by Volker Englisch, 2002-04-01
      <xsl:apply-templates       select = "$org/Organization/
                                           OrganizationLocations"/>
 
-     <!-- 
+     <!--
      These 2 elements are listed in the Schema but there doesn't exist
      any data.  Keeping these commented out for the time being.
-     ==================================================================   
+     ==================================================================
      <xsl:copy-of               select = "$org/Organization/
                                           ProtocolIDAcronym"/>
      <xsl:copy-of               select = "$org/Organization/
                                           PreferredProtocolOrganization"/> -->
     </xsl:if>
 
-    <!--  
+    <!--
     CTGov Address Band-Aid:
     For CTGov sites located in the US we want to pick up the Org
-    address ZIP code (using CIPSContact fragment ID) if the 
-    PostalCode_Zip element is missing.  This is only possible if a 
-    cdr:ref exists for this organization (which is already garanteed 
+    address ZIP code (using CIPSContact fragment ID) if the
+    PostalCode_Zip element is missing.  This is only possible if a
+    cdr:ref exists for this organization (which is already garanteed
     once we are in this template).
     The missing org ZIP code will then be inserted frin the CDR ZIP code.
                                              2006-08-25, VE (Bug 2414)
@@ -406,12 +405,12 @@ Written by Volker Englisch, 2002-04-01
  </xsl:template>
 
 
- <!-- 
+ <!--
  ===================================================================
  Extract the information for one PrivatePractice Person.
  =================================================================== -->
  <xsl:template                    name = "getPrivatePracticeSite">
-  <!-- Carry over the SuppressContactInformation attribute from the 
+  <!-- Carry over the SuppressContactInformation attribute from the
        PrivatePracticeSite element -->
   <xsl:element                    name = "{name()}">
    <xsl:for-each                select = "../@*">
@@ -423,11 +422,11 @@ Written by Volker Englisch, 2002-04-01
    <xsl:variable                  name = "privorgID"
                                 select = "@cdr:ref"/>
    <xsl:variable                  name = "privorg"
-                                select = "document(concat('cdr:', $privorgID, 
+                                select = "document(concat('cdr:', $privorgID,
                                                           '/last'))"/>
-   <!-- 
-   Adding an additional wrapper element to allow the PrivatePracticePerson 
-   in the vendor filter to be formatted with the Person template 
+   <!--
+   Adding an additional wrapper element to allow the PrivatePracticePerson
+   in the vendor filter to be formatted with the Person template
    ======================================================================= -->
    <PrivatePracticePerson>
     <Person>
@@ -440,7 +439,7 @@ Written by Volker Englisch, 2002-04-01
      <xsl:variable                name = "contactID"
                                 select = "@cdr:ref"/>
      <xsl:variable                name = "contactPerson"
-                                select = "document(concat('cdr:', $contactID, 
+                                select = "document(concat('cdr:', $contactID,
                                                           '/last'))"/>
      <xsl:call-template           name = "getPerson">
       <xsl:with-param             name = "contactPerson"
@@ -467,9 +466,9 @@ Written by Volker Englisch, 2002-04-01
                                           PersonNameInformation"/>
   <xsl:copy-of                  select = "$contactPerson/Person/
                                           ProfessionalInformation"/>
-  <!-- 
+  <!--
   Only limited information is needed for the CIPSContactPerson.
-  The denormalization doesn't need to pick up these elements.   
+  The denormalization doesn't need to pick up these elements.
   ============================================================ -->
   <xsl:if                         test = "name() != 'CIPSContactPerson'">
    <xsl:apply-templates         select = "$contactPerson/Person/

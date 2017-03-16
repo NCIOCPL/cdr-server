@@ -2,12 +2,11 @@
 <!-- Filter title: Glossary Term QC Report - Redline/Strikeout -->
 <!--
 ================================================================
-$Id$
 
 Filter to display Patient Summary QC Reports
-Written by C.Burg 9/25/2001 
-Made Tabular            06/20/2003 - Nanci 
-Glossary Schema changes 08/25/2003 - Nanci 
+Written by C.Burg 9/25/2001
+Made Tabular            06/20/2003 - Nanci
+Glossary Schema changes 08/25/2003 - Nanci
 
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -18,52 +17,52 @@ Glossary Schema changes 08/25/2003 - Nanci
 
  <xsl:include   href = "cdr:name:Module: Attribute Sets"/>
  <xsl:include   href = "cdr:name:Module: InLine Markup Formatter"/>
- <xsl:include   href = "cdr:name:Module: STYLE Default"/> 
- <xsl:include   href = "cdr:name:Module: STYLE RS Insertion Deletion"/>  
+ <xsl:include   href = "cdr:name:Module: STYLE Default"/>
+ <xsl:include   href = "cdr:name:Module: STYLE RS Insertion Deletion"/>
 
  <xsl:variable                    name = "docID"
                                 select = "document('cdrutil:/docid')"/>
  <xsl:variable                    name = "whoAmI"
                                 select = "'GlossaryHPRS'"/>
- <!-- 
+ <!--
  ======================================================
  This program is a filter to create a Glossary term
- Content QC Report 
+ Content QC Report
  ====================================================== -->
  <xsl:template                   match = "/">
   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
   <HTML>
    <HEAD>
-    <xsl:variable                 name = "cdrdocs" 
+    <xsl:variable                 name = "cdrdocs"
                                 select = "document('cdrx:/*/CdrCtl')"/>
     <TITLE>
-     <xsl:value-of              select = "concat('CDR', 
+     <xsl:value-of              select = "concat('CDR',
                                            number(
                                            substring-after($docID, 'CDR')))"/>
      <xsl:text>: </xsl:text>
      <xsl:value-of              select = "substring-before(
                                            concat($cdrdocs/CdrDocCtl/
-                                                  DocTitle, ';'), ';')"/> 
+                                                  DocTitle, ';'), ';')"/>
     </TITLE>
     <STYLE type='text/css'>
-     <xsl:call-template           name = "defaultStyle"/>  
-     <xsl:call-template           name = "rsInsertionDeletionStyle"/>  
+     <xsl:call-template           name = "defaultStyle"/>
+     <xsl:call-template           name = "rsInsertionDeletionStyle"/>
     </STYLE>
    </HEAD>
-   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' /> 
+   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
    <xsl:apply-templates         select = "GlossaryTerm"/>
   </HTML>
  </xsl:template>
 
- <!-- 
- ===================================================  
+ <!--
+ ===================================================
  Generate the HTML for the glossary term QC Report
  =================================================== -->
  <xsl:template                   match = "GlossaryTerm">
   <BODY>
-  <!-- 
+  <!--
   ==================================================
-  Display Report heading and subheading 
+  Display Report heading and subheading
   ================================================== -->
   <b>
    <font size='4'>
@@ -86,13 +85,13 @@ Glossary Schema changes 08/25/2003 - Nanci
   </b>
   <p/>
 
-  <!-- 
+  <!--
   ====================================================================
   Display CDR ID
   ==================================================================== -->
   <b>
    <font size='4'>
-    <xsl:value-of               select = "concat('CDR', 
+    <xsl:value-of               select = "concat('CDR',
                                           number(
                                           substring-after($docID, 'CDR')))"/>
    </font>
@@ -139,7 +138,7 @@ Glossary Schema changes 08/25/2003 - Nanci
      </td>
     </tr>
    </xsl:if>
-  </table>           
+  </table>
 
   <hr/>
   <xsl:apply-templates          select = "TermDefinition"/>
@@ -227,7 +226,7 @@ Glossary Schema changes 08/25/2003 - Nanci
   </table>
 
   <p/>
-  </BODY>  
+  </BODY>
  </xsl:template>
 
 
@@ -356,7 +355,7 @@ Glossary Schema changes 08/25/2003 - Nanci
      </b>
     </td>
    </tr>
-   <tr>  
+   <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>Spanish Definition</b>
     </td>
@@ -427,7 +426,7 @@ Glossary Schema changes 08/25/2003 - Nanci
      </td>
     </tr>
    </xsl:if>
-  </table> 
+  </table>
 
   <!--
   Separate multiple Term definitions with a small horizontal line
@@ -445,12 +444,12 @@ Glossary Schema changes 08/25/2003 - Nanci
  </xsl:template>
 
 
- <!-- 
+ <!--
  ===================================================================
- Note: The insertion templates for the Redline/Strikeout, 
+ Note: The insertion templates for the Redline/Strikeout,
        Bold/Underline and the patient summary reports are identical.
-       However, the deletion templates for the Bold/Underline 
-       report are slightly different since deletions are not 
+       However, the deletion templates for the Bold/Underline
+       report are slightly different since deletions are not
        displayed in the BU report unless they are marked proposed.
  ===================================================================
  Display text with Insertion (Citation text is handled separately)
@@ -464,7 +463,7 @@ Glossary Schema changes 08/25/2003 - Nanci
        <xsl:apply-templates/>
       </span>
      </xsl:when>
-     <xsl:otherwise> 
+     <xsl:otherwise>
       <span class="insertproposed">
        <xsl:apply-templates/>
       </span>
@@ -478,7 +477,7 @@ Glossary Schema changes 08/25/2003 - Nanci
        <xsl:apply-templates/>
       </span>
      </xsl:when>
-     <xsl:otherwise> 
+     <xsl:otherwise>
       <span class="insertapproved">
        <xsl:apply-templates/>
       </span>
@@ -489,8 +488,8 @@ Glossary Schema changes 08/25/2003 - Nanci
  </xsl:template>
 
 
- <!-- 
- ================================================================== 
+ <!--
+ ==================================================================
  Display text with Insertion (Citation text is handled separately)
  =================================================================== -->
  <xsl:template                   match = "Insertion"
@@ -528,38 +527,38 @@ Glossary Schema changes 08/25/2003 - Nanci
  </xsl:template>
 
 
- <!-- 
- Note: The insertion templates for the Redline/Strikeout, 
+ <!--
+ Note: The insertion templates for the Redline/Strikeout,
        Bold/Underline and the patient summary reports are identical.
-       However, the deletion templates for the Bold/Underline 
-       report are slightly different since deletions are not 
+       However, the deletion templates for the Bold/Underline
+       report are slightly different since deletions are not
        displayed in the BU report unless they are marked proposed.
  ==================================================================
- Display text proposed for Deletion (Citation text is handled 
+ Display text proposed for Deletion (Citation text is handled
  separately).
  ================================================================== -->
- <xsl:template                   match = "Deletion"> 
+ <xsl:template                   match = "Deletion">
   <xsl:choose>
    <xsl:when                      test = "@RevisionLevel = 'proposed'">
     <xsl:choose>
      <xsl:when                    test = "@Source = 'advisory-board'">
       <span class="deleteproposed_ad">
        <xsl:apply-templates/>
-      </span>  
+      </span>
      </xsl:when>
      <xsl:otherwise>
       <span class="deleteproposed">
        <xsl:apply-templates/>
-      </span>  
+      </span>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:when>
    <xsl:otherwise>
     <!--
-    Approved deletions are being applied and not shown at all 
+    Approved deletions are being applied and not shown at all
     in the Bold/Underline reports.
     ========================================================= -->
-    <xsl:if                       test = "not(contains($whoAmI, 'BU'))"> 
+    <xsl:if                       test = "not(contains($whoAmI, 'BU'))">
      <xsl:choose>
       <xsl:when                   test = "@Source = 'advisory-board'">
        <span class="deleteapproved_ad">
@@ -575,12 +574,12 @@ Glossary Schema changes 08/25/2003 - Nanci
     </xsl:if>
    </xsl:otherwise>
   </xsl:choose>
- </xsl:template>      
+ </xsl:template>
 
 
- <!-- 
+ <!--
  ==================================================================
- Display text proposed for Deletion (Citation text is handled 
+ Display text proposed for Deletion (Citation text is handled
  separately).
  =================================================================== -->
  <xsl:template                   match = "Deletion"
@@ -602,10 +601,10 @@ Glossary Schema changes 08/25/2003 - Nanci
    </xsl:when>
    <xsl:otherwise>
     <!--
-    Approved deletions are being applied and not shown at all 
+    Approved deletions are being applied and not shown at all
     in the Bold/Underline reports.
     ========================================================= -->
-    <xsl:if                       test = "not(contains($whoAmI, 'BU'))"> 
+    <xsl:if                       test = "not(contains($whoAmI, 'BU'))">
      <xsl:choose>
       <xsl:when                   test = "@Source = 'advisory-board'">
        <span class="deleteapproved_ad">

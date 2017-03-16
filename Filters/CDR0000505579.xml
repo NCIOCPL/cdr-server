@@ -1,24 +1,25 @@
 <?xml      version = "1.0"?>
-<!-- $Id$ -->
+<!-- CDR0000505579.xml -->
 <!-- Filter title: Copy XML for DrugInfoSummary -->
-<!-- 
-OCECDR-3903: Cancer.gov displaying Patient definitions for terms 
+<!--
+OCECDR-3903: Cancer.gov displaying Patient definitions for terms
              in HP Summaries
 ===================================================================
-Filter to create the vendor Terminology XML 
+Filter to create the vendor Terminology XML
 =================================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
                                version = "1.0">
-    
- <xsl:include  href = "cdr:name:Module: Global Filter Templates"/>
 
- <xsl:output                    method = "xml" 
+ <xsl:include  href = "cdr:name:Module: Global Filter Templates"/>
+ <xsl:include  href = "cdr:name:Module: URL Conversion"/>
+
+ <xsl:output                    method = "xml"
                   omit-xml-declaration = "no"/>
 
  <!-- Stylesheet level parameter DateFirstPub, passed in from the caller -->
  <xsl:param                       name = "DateFirstPub"
-                                select = "''"/> 
+                                select = "''"/>
 
  <!-- *
  ====================================================================
@@ -52,16 +53,16 @@ Filter to create the vendor Terminology XML
 
  <!--
  =====================================================================
- Template to drop the Manufacturer elements since these will be 
+ Template to drop the Manufacturer elements since these will be
  repeated within the Manufacturers wrapper.
  ===================================================================== -->
- <xsl:template                   match = "Manufacturer" 
+ <xsl:template                   match = "Manufacturer"
                                   mode = "copy"/>
 
 
  <!--
  =====================================================================
- Template to drop the Manufacturer elements since these will be 
+ Template to drop the Manufacturer elements since these will be
  repeated within the Manufacturers wrapper.
  ===================================================================== -->
  <xsl:template                   match = "URL"
@@ -130,9 +131,67 @@ Filter to create the vendor Terminology XML
  </xsl:template>
 
 
- <!-- 
- ======================================================================== 
- Create the GlossaryTermRef elements and rename the attribute 
+ <!--
+ =====================================================================
+ Template to rename the DrugSummaryRef element to DrugRef and 
+ populate the URL attribute value with the linked-to DIS URL
+ ===================================================================== -->
+ <xsl:template                   match = "DrugSummaryRef"
+                                  mode = "copy">
+  <xsl:variable                   name = "docNormId"
+                                select = "number(
+                                           substring-after(@cdr:href, 'CDR'))"/>
+
+  <!--
+  Extracting the content of the URL element for the linked-to DIS
+  ==================================================================== -->
+  <xsl:variable                   name = "sqlQuery">
+   SELECT doc_id, value
+     FROM query_term_pub
+    WHERE doc_id = ?
+      AND path = '/DrugInformationSummary/DrugInfoMetaData/URL/@cdr:xref'
+  </xsl:variable>
+  
+  <xsl:variable                   name = "queryRows"
+                                select = "document(
+                                          concat('cdrutil:/sql-query/',
+                                                  $sqlQuery,
+                                                  '~',
+                                                  $docNormId))"/>
+
+  <xsl:variable                  name = "disUrl">
+   <xsl:call-template            name = "getSummaryURL">
+    <xsl:with-param              name = "url"
+                               select = "normalize-space(
+                                           $queryRows
+                                           /SqlResult
+                                           /row
+                                           /col[@name='value'])"/>
+   </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:element                    name = "DrugRef">
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "@cdr:href"/>
+   </xsl:attribute>
+   <xsl:attribute                 name = "url">
+    <xsl:choose>
+     <xsl:when                    test = "starts-with($disUrl, 'http')">
+      <xsl:value-of             select = "substring-after($disUrl, '.gov')"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "$disUrl"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:attribute>
+   <xsl:apply-templates/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ========================================================================
+ Create the GlossaryTermRef elements and rename the attribute
  (cdr:href ID needs to be renamed to href).
 
  Note:
@@ -164,14 +223,15 @@ Filter to create the vendor Terminology XML
   </xsl:element>
  </xsl:template>
 
- <!-- 
+
+ <!--
  =======================================================
  Default template to copy all elements and attributes
  ======================================================= -->
- <xsl:template               match = "@* | node()" 
+ <xsl:template               match = "@* | node()"
                               mode = "copy">
   <xsl:copy>
-   <xsl:apply-templates     select = "@* | node()" 
+   <xsl:apply-templates     select = "@* | node()"
                               mode = "copy"/>
   </xsl:copy>
  </xsl:template>

@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='utf-8'?>
-<!-- $Id$ -->
 <!-- Filter title: Denormalization Filter (1/1): InScope Protocol -->
 <!--
 ================================================================
@@ -7,7 +6,6 @@ Denormalization Filter: InScopeProtocol
 Written by Volker Englisch, 2002-04-01
 
 BZIssue::4809 - Invalid warning messages in Status and Error Report
-
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -17,24 +15,24 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
             extension-element-prefixes = "exslt"
                                version = "1.0">
 
- <xsl:output                    method = "xml" 
+ <xsl:output                    method = "xml"
                   omit-xml-declaration = "no"
-                              encoding = "UTF-8"/> 
+                              encoding = "UTF-8"/>
 
  <xsl:include href = "cdr:name:Module: PersonLocations Denormalization"/>
  <xsl:include href = "cdr:name:Module: Denormalize and Upcode Protocol Terminology"/>
 
- <xsl:variable                    name = "pa_hp" 
+ <xsl:variable                    name = "pa_hp"
                                 select = "/InScopeProtocol
                                           /ProtocolAbstract/Professional |
                                           /ScientificProtocolInfo
                                           /ProtocolAbstract/Professional"/>
- <xsl:variable                    name = "pa_p" 
+ <xsl:variable                    name = "pa_p"
                                 select = "/InScopeProtocol
                                           /ProtocolAbstract/Patient |
                                           /ScientificProtocolInfo
                                           /ProtocolAbstract/Patient"/>
- <xsl:variable                    name = "org_loc" 
+ <xsl:variable                    name = "org_loc"
                                 select = "/Organization/OrganizationLocations
                                           /OrganizationLocation/Location"/>
  <xsl:variable                    name = "hpDisc"
@@ -90,11 +88,11 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
 
    <xsl:variable                  name = "calcVerifDate"
                                 select = "document($url)"/>
-   <!-- 
+   <!--
    We need to populate a new element that is a calculated value for
    the verification date.  If this value comes back as NULL because
    the published document is a brand new publishing event for this
-   document we need to populate the date with the date of the 
+   document we need to populate the date with the date of the
    publishing event from the pub_proc table.  This value is passed
    to the filter as a parameter.
    ================================================================ -->
@@ -123,15 +121,15 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
     <xsl:copy-of                select = "."/>
    </xsl:for-each>
 
-   <!-- 
-   Adding the Professional Disclaimer from the Misc Documents 
+   <!--
+   Adding the Professional Disclaimer from the Misc Documents
    ========================================================== -->
    <ProfessionalDisclaimer>
     <xsl:choose>
      <xsl:when                    test = "/InScopeProtocol/
                                            ProtocolDetail/
                                            StudyType = 'Research study'">
-      <xsl:variable               name = "miscDoc1" 
+      <xsl:variable               name = "miscDoc1"
                                 select = "document(concat('cdr:name:',
                                                           $hpResearchDisc,
                                                           '/lastp'))"/>
@@ -142,7 +140,7 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
       </xsl:apply-templates>
      </xsl:when>
      <xsl:otherwise>
-      <xsl:variable               name = "miscDoc1" 
+      <xsl:variable               name = "miscDoc1"
                                 select = "document(concat('cdr:name:',
                                                           $hpDisc,
                                                           '/lastp'))"/>
@@ -166,7 +164,7 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
   <xsl:param                      name = "miscDocId"/>
   <xsl:apply-templates          select = "Section/Para|Para"
                                   mode = "miscDoc">
-   <xsl:with-param                name = "miscDocId" 
+   <xsl:with-param                name = "miscDocId"
                                 select = "$miscDocId"/>
   </xsl:apply-templates>
  </xsl:template>
@@ -175,20 +173,20 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
  <!--
  ==============================================================
  Template Patient sections
- Copy all nodes, perform denormalization and add the 
+ Copy all nodes, perform denormalization and add the
  PatientDisclaimer
 
- Note:  The only links in the Patient section are Glossary 
+ Note:  The only links in the Patient section are Glossary
         Links.  These are denormalized on the fly for the QC
         reports and the vendors are to normalize these on their
-        own.  Therefore there is no need to denormalize these 
+        own.  Therefore there is no need to denormalize these
         links and all children can be copied as is.
  ============================================================== -->
  <xsl:template                   match = "Patient">
   <xsl:element                    name = "{name()}">
    <xsl:for-each                select = "child::node()">
 
-    <!-- 
+    <!--
     ==========================================================
     Adding the misc document for EligibilityText, copying all
     other elements as is.
@@ -202,7 +200,7 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
        <!--
        Include the Patient Abstract Eligibility Misc Document
        ====================================================== -->
-       <xsl:variable              name = "miscEligiDoc" 
+       <xsl:variable              name = "miscEligiDoc"
                                 select = "document(concat('cdr:CDR0000372868',
                                                           '/lastp'))"/>
 
@@ -219,15 +217,15 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
     </xsl:choose>
    </xsl:for-each>
 
-   <!-- 
-   Adding the Patient Disclaimer from the Misc Documents 
+   <!--
+   Adding the Patient Disclaimer from the Misc Documents
    ========================================================== -->
    <PatientDisclaimer>
     <xsl:choose>
      <xsl:when                    test = "/InScopeProtocol/
                                            ProtocolDetail/
                                            StudyType = 'Research study'">
-      <xsl:variable               name = "miscDoc2" 
+      <xsl:variable               name = "miscDoc2"
                                 select = "document(concat('cdr:name:',
                                                           $patResearchDisc,
                                                           '/lastp'))"/>
@@ -238,7 +236,7 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
       </xsl:apply-templates>
      </xsl:when>
      <xsl:otherwise>
-      <xsl:variable               name = "miscDoc2" 
+      <xsl:variable               name = "miscDoc2"
                                 select = "document(concat('cdr:name:',
                                                           $patDisc,
                                                           '/lastp'))"/>
@@ -258,8 +256,8 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
  ==================================================================
  Template for displaying RelatedProtocols section.
  If no publishable version of the protocol exists, a pseudo-protocol
- fragment is being created to allow the users to preview the 
- entered information.  The vendor filter will have to filter out 
+ fragment is being created to allow the users to preview the
+ entered information.  The vendor filter will have to filter out
  this protocol to prevent it from going out to the vendor.
  An attribute Publishable="No" has been introduced to identify these
  invalid protocols.
@@ -275,9 +273,9 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
       <xsl:variable              name = "protocolDoc"
                                select = "document($prot_uri)"/>
 
-      <!--  
+      <!--
       Do not display the RelatedProtocols element if that protocol
-      is not marked as publishable                                
+      is not marked as publishable
       ============================================================ -->
       <xsl:choose>
       <xsl:when                  test = "$protocolDoc/InScopeProtocol">
@@ -300,7 +298,7 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
           <xsl:text>)&lt;BR/&gt;</xsl:text>
           <xsl:text>Publishable Version of InScopeProtocol </xsl:text>
           <xsl:text>does not exist.&lt;BR/&gt;&lt;/LI&gt;</xsl:text>
-         </xsl:message> 
+         </xsl:message>
         </xsl:if>
         <InScopeProtocol>
          <xsl:for-each         select = "@*">
@@ -337,7 +335,7 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
           <xsl:text>)&lt;BR/&gt;</xsl:text>
           <xsl:text>Publishable Version of CTGovProtocol </xsl:text>
           <xsl:text>does not exist.&lt;BR/&gt;&lt;/LI&gt;</xsl:text>
-         </xsl:message> 
+         </xsl:message>
         </xsl:if>
         <CTGovProtocol>
          <xsl:for-each         select = "@*">
@@ -394,17 +392,17 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
      </xsl:choose>
 
 
-      <!-- 
+      <!--
       Do display the RelatedProtocolsForQC element even if that protocol
       is not marked as publishable but indicate this as a warning
-      message                                                      
+      message
       ================================================================== -->
 
-       <!-- 
-       Don't stop processing if the link cannot be resolved. 
-       Note:  The message is never displayed with the terminate=No 
-              attribute but it is caught as part of the validation 
-              (The handling of the message = No is implementation 
+       <!--
+       Don't stop processing if the link cannot be resolved.
+       Note:  The message is never displayed with the terminate=No
+              attribute but it is caught as part of the validation
+              (The handling of the message = No is implementation
                dependend)
        =========================================================== -->
        <xsl:if                    test = "not($protocolDoc/InScopeProtocol)
@@ -419,7 +417,7 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
      <xsl:text>)&lt;BR/&gt;</xsl:text>
      <xsl:text>Publishable Version of linked Document </xsl:text>
      <xsl:text>does not exist.&lt;BR/&gt;&lt;/LI&gt;</xsl:text>
-        </xsl:message> 
+        </xsl:message>
        </xsl:if>
      </xsl:when>
      <xsl:otherwise>
@@ -443,7 +441,7 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
    </xsl:attribute>
    <xsl:variable                 name = "citRef"
                                select = "@cdr:ref"/>
-   <xsl:variable                 name = "citInfo" 
+   <xsl:variable                 name = "citInfo"
                                select = "document(concat('cdr:', $citRef,
                                                             '/lastp'))"/>
    <!--
@@ -459,12 +457,12 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
                                          $citInfo/Citation/PubmedArticle/
                                            MedlineCitation/Article/
                                            AuthorList/Author">
-     <xsl:value-of              select = "LastName | CollectiveName"/>    
+     <xsl:value-of              select = "LastName | CollectiveName"/>
      <xsl:value-of              select = "Initials | FirstName"/>
     </xsl:for-each>
    </xsl:variable>
 
-   <!-- 
+   <!--
    This new attribute is introduced in order to sort by publication
    year across different citation types
    ================================================================ -->
@@ -479,7 +477,7 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
     <xsl:value-of              select = "translate($alist, ' ', '')"/>
    </xsl:attribute>
 
-   <xsl:apply-templates        select = "$citInfo/Citation/PDQCitation | 
+   <xsl:apply-templates        select = "$citInfo/Citation/PDQCitation |
                                          $citInfo/Citation/PubmedArticle"/>
 
   </Citation>
@@ -502,7 +500,7 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
 
    <xsl:variable                 name = "citRef"
                                select = "@cdr:ref"/>
-   <xsl:variable                 name = "citInfo" 
+   <xsl:variable                 name = "citInfo"
                                select = "document(concat('cdr:', $citRef,
                                                             '/lastp'))"/>
    <xsl:copy-of                select = "$citInfo/Citation"/>
@@ -522,7 +520,7 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
 
  <!--
  ===================================================================
- Extract the information for one lead organization or private 
+ Extract the information for one lead organization or private
  practice site.
  =================================================================== -->
  <xsl:template                   match = "ProtocolSites">
@@ -568,7 +566,7 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
    <xsl:variable                  name = "orgID"
                                 select = "@cdr:ref"/>
    <xsl:variable                  name = "org"
-                                select = "document(concat('cdr:', $orgID, 
+                                select = "document(concat('cdr:', $orgID,
                                                           '/last'))"/>
    <Organization>
     <xsl:for-each               select = "@*">
@@ -585,8 +583,8 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
 
 
  <!--
- ============================================================= 
- Create the Para template including the renamed attribute for 
+ =============================================================
+ Create the Para template including the renamed attribute for
  the paragraph IDs.
  ============================================================= -->
  <xsl:template                   match = "Para"
@@ -601,7 +599,7 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
    ==========================================================
    Need to pass the miscDocId allowing to modify the cdr:xref
    element of the misc document added to the EligibilityText
-   section 
+   section
    ========================================================== -->
    <xsl:apply-templates>
     <xsl:with-param               name = "miscDocId"
@@ -612,22 +610,22 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
 
 
  <!--
- ============================================================= 
- Create the Para template including the renamed attribute for 
+ =============================================================
+ Create the Para template including the renamed attribute for
  the paragraph IDs.
- Need to add a mode to the paragraph displaying the misc 
- document text for the EligibilityText element in order to 
+ Need to add a mode to the paragraph displaying the misc
+ document text for the EligibilityText element in order to
  being able and modify the cdr:xref attribute.
  ============================================================= -->
  <xsl:template                   match = "ExternalRef">
   <xsl:param                      name = "miscDocId"/>
   <xsl:element                    name = "{name()}">
    <xsl:choose>
-    <xsl:when                     test = "$miscDocId = 
+    <xsl:when                     test = "$miscDocId =
                                                     '_ProtPatientDisclaimer'
                                           and
                                           . = 'Health Professional version'">
-     <xsl:apply-templates       select = "node() | @*" 
+     <xsl:apply-templates       select = "node() | @*"
                                   mode = "eText"/>
     </xsl:when>
     <xsl:otherwise>
@@ -643,7 +641,7 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
  Create the Cancer.gov link that displayes the HP version of the
  current document by modifying the cdr:xref attribute.
  =============================================================== -->
- <xsl:template                   match = "@cdr:xref" 
+ <xsl:template                   match = "@cdr:xref"
                                   mode = "eText">
   <xsl:attribute                  name = "{name()}">
    <xsl:value-of                select = "concat(., 'clinicaltrials/',
@@ -655,14 +653,14 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
  <!--
  ===================================================================
  Called Templates
- =================================================================== --> 
+ =================================================================== -->
 
  <!--
  ===================================================================
  Upcoding the Parent Names for the address block.
  =================================================================== -->
- <xsl:template                    name = "upcode-parentname">  
-  <xsl:param                      name = "ParentDoc"/> 
+ <xsl:template                    name = "upcode-parentname">
+  <xsl:param                      name = "ParentDoc"/>
   <OrganizationName>
    <xsl:value-of                select = "$ParentDoc/Organization/
                                           OrganizationNameInformation/
@@ -672,16 +670,16 @@ BZIssue::4809 - Invalid warning messages in Status and Error Report
   <xsl:if                         test = "$ParentDoc/Organization/
                                            OrganizationParent/
                                            ParentOrganization/@cdr:ref">
-   <xsl:variable                  name = "nextParentID" 
+   <xsl:variable                  name = "nextParentID"
                                 select = "$ParentDoc/Organization/
                                            OrganizationParent/
                                            ParentOrganization/@cdr:ref"/>
-   <xsl:variable                  name = "nextParentDoc" 
+   <xsl:variable                  name = "nextParentDoc"
                                 select = "document(concat('cdr:',
                                                           $nextParentID,
                                                           '/last'))"/>
 
-   <xsl:call-template             name = "upcode-parentname">    
+   <xsl:call-template             name = "upcode-parentname">
     <xsl:with-param               name = "ParentDoc"
                                 select = "$nextParentDoc"/>
    </xsl:call-template>

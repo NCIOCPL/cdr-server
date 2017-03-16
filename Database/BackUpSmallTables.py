@@ -1,9 +1,5 @@
 #----------------------------------------------------------------------
-#
-# $Id: BackUpSmallTables.py,v 1.2 2001-12-19 19:59:20 bkline Exp $
-#
 # Creates a safety backup of the most important CDR support tables.
-#
 #----------------------------------------------------------------------
 import os, sys, time
 
