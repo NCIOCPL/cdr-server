@@ -341,15 +341,161 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  <!--
  =====================================================================
  Template to create the RelatedTGlossaryTermRef element
+ The users are entering a single term name.  The filter will then 
+ translate this based on the language and audience available. The 
+ element is being duplicated displaying one entry for each 
+ GlossaryConcept definition but only if the related term exists for
+ the specified dictionary and language as well.
+ Example:
+    Glossary Term pedigree exists with definition
+      - HP dictionary
+      - Patient dictionary
+      - Spanish patient dictionary
+    Related Glossary Term "gene" (not real data)
+      This term contains 3 definitions resulting 
+      in 3 RelatedGlossaryTermRefs
+    Related Glossary Term "breastbone) (not real data)
+      This term contains 2 definitions resulting 
+      in 2 RelatedGlossaryTermRefs
  ===================================================================== -->
  <xsl:template                   match = "RelatedGlossaryTermNameLink">
-   <xsl:element                   name = "RelatedGlossaryTermRef">
-    <xsl:attribute                name = "href">
-     <xsl:value-of              select = "@cdr:ref"/>
-    </xsl:attribute>
+  <xsl:variable                   name = "relRef"
+                                select = "@cdr:ref"/>
 
-    <xsl:apply-templates/>
-  </xsl:element>
+   <!--
+   Scan through all existing definitions of the glossary.  Each 
+   definition will potentially create one related glossary link
+   ============================================================= -->
+   <xsl:for-each                select = "/GlossaryTermName/
+                                            GlossaryTermConcept/
+                                            TermDefinition[Audience] |
+                                          /GlossaryTermName/
+                                            GlossaryTermConcept/
+                                            TranslatedTermDefinition[Audience]">
+
+    <!-- 
+    Scan through each concept of the related glossary term and only
+    display a related glossary link element if both, the language
+    and the audience match
+    Note:  'thisLanguage' is *not* the en/es value but 
+           TermDefinition/TranslatedTermDefinition
+    =============================================================== -->
+    <xsl:variable                 name = "thisAudience"
+                                select = "Audience"/>
+    <xsl:variable                 name = "thisLanguage"
+                                select = "name()"/>
+    <xsl:for-each               select = "/GlossaryTermName/
+                                            GlossaryTermConcept/
+                                            RelatedInformation/
+                                            RelatedGlossaryTermNameLink
+                                              [@cdr:ref = $relRef]/
+                                            GlossaryTermName">
+     <xsl:for-each              select = "GlossaryTermConcept/
+                                            TermDefinition |
+                                          GlossaryTermConcept/
+                                            TranslatedTermDefinition">
+      <!--
+      Throw out non-matching glossary links
+      ============================================================== -->
+      <xsl:if                     test = "Audience = $thisAudience
+                                          and
+                                          name() = $thisLanguage">
+
+       <xsl:element               name = "RelatedGlossaryTermRef">
+        <xsl:attribute            name = "href">
+         <xsl:value-of          select = "$relRef"/>
+        </xsl:attribute>
+
+        <!--
+        If no language has been specified the language default 'en' is used
+        =================================================================== -->
+        <xsl:attribute            name = "UseWith">
+         <xsl:choose>
+          <xsl:when               test = "@language">
+           <xsl:value-of        select = "@language"/>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:text>en</xsl:text>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:attribute>
+
+        <!--
+        Rename the attributes to match the values in the DTD
+        ==================================================== -->
+        <xsl:attribute            name = "audience">
+         <xsl:choose>
+          <xsl:when               test = "Audience = 'Patient'">
+           <xsl:text>Patients</xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:text>Health_professionals</xsl:text>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:attribute>
+
+        <xsl:call-template        name = "getRelatedGlossaryName">
+         <xsl:with-param          name = "relRef"
+                                select = "$relRef"/>
+         <xsl:with-param          name = "thisLanguage"
+                                select = "$thisLanguage"/>
+        </xsl:call-template>
+       </xsl:element>
+      </xsl:if>
+     </xsl:for-each>
+    </xsl:for-each>
+   </xsl:for-each>
+
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to pick up the glossary term name for the related terms
+ ===================================================================== -->
+ <xsl:template                    name = "getRelatedGlossaryName">
+  <xsl:param                      name = "relRef"
+                                select = "'0'"/>
+  <xsl:param                      name = "thisLanguage"
+                                select = "''"/>
+  <!-- 
+  The parameter 'thisLanguage' is not the en/es value but indicates
+  the language by the element name (TermDefinition/TranslatedTermDefinition)
+  Converting it here to make it less confusing.
+  ========================================================================== -->
+  <xsl:variable                   name = "language">
+   <xsl:choose>
+    <xsl:when                     test = "$thisLanguage = 'TermDefinition'">
+     <xsl:text>en</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>es</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
+  <xsl:choose>
+   <xsl:when                      test = "$language = 'en'">
+    <xsl:apply-templates        select = "/GlossaryTermName/
+                                            GlossaryTermConcept/
+                                            RelatedInformation/
+                                            RelatedGlossaryTermNameLink
+                                              [@cdr:ref = $relRef]/
+                                            GlossaryTermName/
+                                            TermName/
+                                            TermNameString"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:apply-templates        select = "/GlossaryTermName/
+                                            GlossaryTermConcept/
+                                            RelatedInformation/
+                                            RelatedGlossaryTermNameLink
+                                              [@cdr:ref = $relRef]/
+                                            GlossaryTermName/
+                                            TranslatedName/
+                                            TermNameString"/>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 

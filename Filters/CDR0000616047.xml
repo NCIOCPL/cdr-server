@@ -144,6 +144,64 @@ CDECDR-3735: [Media] Audio files ready to be uploaded
 
  <!--
  =================================================================
+ Template to create the RelatedGlossaryTermNameLink element
+ ================================================================= -->
+ <xsl:template                   match = "RelatedGlossaryTermNameLink">
+  <xsl:variable                   name = "relatedGTNId"
+                                select = "@cdr:ref"/>
+
+  <xsl:variable                   name = "relatedGTN"
+                                select = "document(concat('cdr:', $relatedGTNId,
+                                                          '/lastp'))"/>
+  <xsl:element                    name = "{name()}">
+   <xsl:for-each                select = "@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+   <xsl:element                   name = "GlossaryTermName">
+    <xsl:apply-templates        select = "$relatedGTN/GlossaryTermName/
+                                            TermName"/>
+    <xsl:apply-templates        select = "$relatedGTN/GlossaryTermName/
+                                            TranslatedName"/>
+
+    <xsl:element                  name = "GlossaryTermConcept">
+    <xsl:variable                 name = "relatedGTCId"
+                                select = "$relatedGTN/GlossaryTermName/
+                                            GlossaryTermConcept/
+                                            @cdr:ref"/>
+
+    <xsl:variable                 name = "relatedGTC"
+                                select = "document(concat('cdr:', $relatedGTCId,
+                                                          '/last'))"/>
+    <xsl:apply-templates        select = "$relatedGTC/GlossaryTermConcept/
+                                            TermDefinition |
+                                          $relatedGTC/GlossaryTermConcept/
+                                            TranslatedTermDefinition"/>
+    </xsl:element>
+   </xsl:element>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ =================================================================
+ Template to suppress the MediaLink element
+ ================================================================= -->
+ <!--
+ <xsl:template                   match = "RelatedGlossaryTermNameLink//
+                                           MediaLink"/>
+-->
+
+ <!--
+                                          RelatedInformationi/MediaLink |
+                                          TranslatedNamex/MediaLink |
+                                          TranslatedTermDefinition/MediaLink"/>
+-->
+
+
+ <!--
+ =================================================================
  Template to remove MediaLink elements if they are pointing to
  blocked documents.
  ================================================================= -->
