@@ -1242,33 +1242,6 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
  <!--
  =====================================================================
- Display Strong within a list but only if it's listed as the very
- first element within a listitem (used as a "ListItemTitle")
-   *** Compact attribute depricated ***
- ===================================================================== -->
- <!--
- <xsl:template                   match = "Strong"
-                                  mode = "compactNo">
-  <xsl:choose>
-  <xsl:when                       test = "name(..) = 'ListItem'
-                                          and
-                                          preceding-sibling::text() = ''">
-    <p class="itemtitle">
-     <xsl:apply-templates/>
-    </p>
-   </xsl:when>
-   <xsl:otherwise>
-    <b>
-     <xsl:apply-templates/>
-    </b>
-   </xsl:otherwise>
-  </xsl:choose>
- </xsl:template>
- -->
-
-
- <!--
- =====================================================================
  Display Emphasis, ScientificName, ForeignWord, GeneName
  ===================================================================== -->
  <xsl:template                   match = "Emphasis       |
@@ -2249,44 +2222,14 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
- <!--
- ===============================================================
- Display Paragraphs in a ListItem of a compacted list
-   *** Compact attribute depricated ***
- =============================================================== -->
- <!--
- <xsl:template                   match = "Para"
-                                  mode = "compactNo">
-  <xsl:if                         test = "preceding-sibling::self = 'Para'">
-   [FIX ME]
-  </xsl:if>
-
-  <p class="nospace">
-   <xsl:apply-templates           mode = "compactNo"/>
-  </p>
- </xsl:template>
- -->
-
-
   <!--
  =====================================================================
  Display an itemized list
  ===================================================================== -->
  <xsl:template                   match = "ItemizedList">
-  <!-- Ensure that Para and List are separated by a blank
-       line for Compact=No -->
-  <!--
-  <xsl:if                         test = "not(preceding-sibling::self = 'Para')
-                                          and
-                                          ../../@Compact
-                                          or
-                                          preceding-sibling::self = ''">
-   <p/>
-  </xsl:if>
-  -->
   <xsl:apply-templates          select = "ListTitle"/>
   <!-- Handle ListItem now. -->
-  <ul>
+  <xsl:element                    name = "ul">
    <xsl:attribute                 name = "class">
     <xsl:choose>
      <xsl:when                    test = "@Style = 'bullet'">
@@ -2325,20 +2268,8 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    </xsl:call-template>
 
 
-   <!--
-   *** Compact attribute depricated ***
-   <xsl:choose>
-    <xsl:when                     test = "@Compact">
-     <xsl:apply-templates       select = "ListItem"
-                                  mode = "compactNo"/>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:apply-templates       select = "ListItem"/>
-    </xsl:otherwise>
-   </xsl:choose>
-   -->
    <xsl:apply-templates         select = "ListItem"/>
-  </ul>
+  </xsl:element>
  </xsl:template>
 
 
@@ -2347,7 +2278,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  Display an itemized list - NEW
    *** Compact attribute depricated ***
  ===================================================================== -->
- <xsl:template                   match = "ItemizedList"
+ <xsl:template                   match = "ItemizedListXXX"
                                   mode = "compactNo">
   <!-- Ensure that Para and List are separated by a blank line for Compact=No-->
   <xsl:if                         test = "not(preceding-sibling::self = 'Para')
@@ -2413,15 +2344,6 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  Display an ordered list
  ===================================================================== -->
  <xsl:template                   match = "OrderedList">
-  <!-- Ensure that Para and List are separated by a blank
-       line for Compact=No-->
-  <!--
-  <xsl:if                         test = "not(preceding-sibling::self = 'Para')
-                                          and
-                                          ../../@Compact">
-   <p/>
-  </xsl:if>
-  -->
   <xsl:apply-templates          select = "ListTitle"/>
   <!-- Handle ListItem now. -->
   <ol>
@@ -2453,18 +2375,6 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "@cdr:id"/>
    </xsl:call-template>
 
-   <!--
-   *** Compact attribute depricated ***
-   <xsl:choose>
-    <xsl:when                     test = "@Compact">
-     <xsl:apply-templates       select = "ListItem"
-                                  mode = "compactNo"/>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:apply-templates       select = "ListItem"/>
-    </xsl:otherwise>
-   </xsl:choose>
-   -->
    <xsl:apply-templates         select = "ListItem"/>
   </ol>
  </xsl:template>
@@ -2475,7 +2385,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  Display an ordered list
    *** Compact attribute depricated ***
  ===================================================================== -->
- <xsl:template                   match = "OrderedList"
+ <xsl:template                   match = "OrderedListXXX"
                                   mode = "compactNo">
   <!-- Ensure that Para and List are separated by a blank line for Compact=No-->
   <xsl:if                         test = "not(preceding-sibling::self = 'Para')
@@ -2537,48 +2447,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        <xsl:value-of            select = "."/>
       </xsl:attribute>
      </xsl:for-each>
-   <!--
-   *** Compact attribute depricated ***
-    <xsl:choose>
-     <xsl:when                    test = "../@Compact">
-      <xsl:apply-templates/>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:apply-templates        mode = "compactNo"/>
-     </xsl:otherwise>
-    </xsl:choose>
-    -->
     <xsl:apply-templates/>
    </li>
   </xsl:if>
  </xsl:template>
-
-
- <!--
- =====================================================================
- Display a list item within a compacted list but suppress items
- without content.
-   *** Compact attribute depricated ***
- ===================================================================== -->
- <!--
- <xsl:template                   match = "ListItem"
-                                  mode = "compactNo">
-  <xsl:if                         test = "not(. = '')">
-   <xsl:choose>
-    <xsl:when                     test = "position() = last()">
-     <li>
-      <xsl:apply-templates/>
-     </li>
-    </xsl:when>
-    <xsl:otherwise>
-     <li>
-      <xsl:apply-templates/>
-     </li>
-    </xsl:otherwise>
-   </xsl:choose>
-  </xsl:if>
- </xsl:template>
- -->
 
 
  <!--
@@ -2627,18 +2499,101 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      <xsl:call-template           name = "addCaption"/>
     </xsl:if>
    </xsl:when>
+   <!-- Image Placeholders -->
    <xsl:otherwise>
-    <div class="imagepadding">
-     <div class="gogreenimage">
-      <xsl:call-template          name = "addIdLinkTarget">
-       <xsl:with-param            name = "id"
+    <xsl:element                  name = "div">
+     <xsl:attribute               name = "class">
+      <xsl:text>imagepadding</xsl:text>
+     </xsl:attribute>
+     <xsl:element                 name = "div">
+      <xsl:attribute              name = "class">
+       <xsl:text>gogreenimage</xsl:text>
+      </xsl:attribute>
+
+      <!-- 
+      The users want to have the image placeholders marked up
+      if the entire image is being inserted/deleted          -->
+      <xsl:choose>
+       <xsl:when                  test = "parent::MediaLink
+                                            /@iod = 'Deletion'">
+        <xsl:choose>
+         <xsl:when                test = "preceding-sibling::Deletion
+                                            /@RevisionLevel = 'proposed'">
+          <xsl:element            name = "span">
+           <xsl:attribute         name = "class">
+            <xsl:text>deleteproposed</xsl:text>
+           </xsl:attribute>
+           <xsl:call-template     name = "addIdLinkTarget">
+            <xsl:with-param       name = "id"
                                 select = "../@cdr:id"/>
-      </xsl:call-template>
-      <b>Image: </b>
-      <xsl:value-of             select = "Media/
+           </xsl:call-template>
+           <b>Image: </b>
+           <xsl:value-of        select = "Media/
                                           MediaTitle"/>
-     </div>
-    </div>
+          </xsl:element>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:element            name = "span">
+           <xsl:attribute         name = "class">
+            <xsl:text>deleteapproved</xsl:text>
+           </xsl:attribute>
+           <xsl:call-template     name = "addIdLinkTarget">
+            <xsl:with-param       name = "id"
+                                select = "../@cdr:id"/>
+           </xsl:call-template>
+           <b>Image: </b>
+           <xsl:value-of        select = "Media/
+                                          MediaTitle"/>
+          </xsl:element>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:when>
+       <xsl:when                  test = "parent::MediaLink
+                                            /@iod = 'Insertion'">
+        <xsl:choose>
+         <xsl:when                test = "preceding-sibling::Insertion
+                                            /@RevisionLevel = 'proposed'">
+          <xsl:element            name = "span">
+           <xsl:attribute         name = "class">
+            <xsl:text>insertproposed</xsl:text>
+           </xsl:attribute>
+           <xsl:call-template     name = "addIdLinkTarget">
+            <xsl:with-param       name = "id"
+                                select = "../@cdr:id"/>
+           </xsl:call-template>
+           <b>Image: </b>
+           <xsl:value-of        select = "Media/
+                                          MediaTitle"/>
+          </xsl:element>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:element            name = "span">
+           <xsl:attribute         name = "class">
+            <xsl:text>insertapproved</xsl:text>
+           </xsl:attribute>
+           <xsl:call-template     name = "addIdLinkTarget">
+            <xsl:with-param       name = "id"
+                                select = "../@cdr:id"/>
+           </xsl:call-template>
+           <b>Image: </b>
+           <xsl:value-of        select = "Media/
+                                          MediaTitle"/>
+          </xsl:element>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:when>
+       <xsl:otherwise>
+         <xsl:call-template       name = "addIdLinkTarget">
+          <xsl:with-param         name = "id"
+                                select = "../@cdr:id"/>
+         </xsl:call-template>
+         <b>Image: </b>
+         <xsl:value-of          select = "Media/
+                                          MediaTitle"/>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:element>
+    </xsl:element>
     <xsl:if                       test = "$mediaAudience =
                                                  'Health_professionals'">
      <xsl:if                      test = "not(../@UseCaption = 'No')">
@@ -2692,7 +2647,13 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  ====================================================================== -->
  <xsl:template                   match = "Caption"
                                   mode = "createCaption">
-  <xsl:apply-templates/>
+  <xsl:element                    name = "div">
+   <xsl:attribute                 name = "class">
+    <xsl:text>image-caption</xsl:text>
+   </xsl:attribute>
+
+   <xsl:apply-templates/>
+  </xsl:element>
  </xsl:template>
 
 
@@ -2722,49 +2683,139 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
  <!--
  ======================================================================
- Template to replace the MediaID element with a little table as a
- place holder for the image
+ Template to display the image of the MediaID element 
+
+ Note: For both, the insertion as well as the deletion we're only
+       marking-up the 'approved' revision level but not the 'publish'
+       or 'proposed' revision level.  To do so would require to add 
+       a RevisionLevel attribute to the MediaLink ID.  After the 
+       MediaLink denormalization the information of the revision level
+       is lost unless a caption is included and we have now way of 
+       identifying the revision level of the element currently.  It was
+       decided to keep this as is for the time being.
+                                                       2017-04-03, VE
  ====================================================================== -->
  <xsl:template                   match = "MediaID"
                                   mode = "summary">
-  <center>
-   <table width="50%" border="0"
-          style="background-color: #CCCCFF" colspacing="3">
-    <xsl:call-template            name = "addIdLinkTarget">
-     <xsl:with-param              name = "id"
-                                select = "../@cdr:id"/>
-    </xsl:call-template>
-    <tr>
-     <td align="right" valign="top">
-      <br/>
-      <b>
-       <xsl:choose>
-        <xsl:when                 test = "Media/MediaTitle">
-         <xsl:value-of            select = "Media/MediaTitle"/>
-        </xsl:when>
-        <xsl:otherwise>
-         <xsl:value-of            select = "."/>
-        </xsl:otherwise>
-       </xsl:choose>
-      </b>
-     </td>
-     <td align="left">
-      <br/>
-      <xsl:element                name = "img">
-       <xsl:attribute             name = "src">
-        <xsl:text>/cgi-bin/cdr/</xsl:text>
-        <xsl:text>GetCdrImage.py?</xsl:text>
-        <xsl:text>id=</xsl:text>
 
-        <xsl:value-of           select = "@cdr:ref"/>
-        <xsl:text>-400.jpg</xsl:text>
+  <xsl:choose>
+   <!-- Deletion section -->
+   <xsl:when                      test = "parent::MediaLink
+                                            /@iod = 'Deletion'">
+    <xsl:choose>
+     <xsl:when                    test = "parent::MediaLink
+                                            /@RevisionLevel = 'proposed'">
+      <xsl:element                  name = "span">
+       <xsl:attribute               name = "class">
+        <xsl:text>deleteproposed</xsl:text>
        </xsl:attribute>
+
+       <xsl:call-template         name = "addImageAndTitle"/>
+
       </xsl:element>
-      <br/><br/>
-     </td>
-    </tr>
-   </table>
-  </center>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:element                name = "span">
+       <xsl:attribute             name = "class">
+        <xsl:text>deleteapproved</xsl:text>
+       </xsl:attribute>
+
+       <xsl:call-template         name = "addImageAndTitle"/>
+
+      </xsl:element>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <!-- Insertion section -->
+   <xsl:when                      test = "parent::MediaLink
+                                             /@iod = 'Insertion'">
+    <xsl:choose>
+     <xsl:when                    test = "parent::MediaLink
+                                            /@RevisionLevel = 'proposed'">
+      <xsl:element                name = "span">
+       <xsl:attribute             name = "class">
+        <xsl:text>insertproposed</xsl:text>
+       </xsl:attribute>
+
+       <xsl:call-template         name = "addImageAndTitle"/>
+
+      </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:element                name = "span">
+       <xsl:attribute             name = "class">
+        <xsl:text>insertapproved</xsl:text>
+       </xsl:attribute>
+
+       <xsl:call-template         name = "addImageAndTitle"/>
+
+      </xsl:element>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <!-- No mark-up section -->
+   <xsl:otherwise>
+    <xsl:call-template            name = "addImageAndTitle"/>
+
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Template to create the DIV elements for Title and Images
+ This is used multiple times for different markup situations.
+ ===================================================================== -->
+ <xsl:template                    name = "addImageAndTitle">
+  <xsl:element                    name = "div">
+   <xsl:attribute                 name = "class">
+    <xsl:text>qc-image</xsl:text>
+   </xsl:attribute>
+
+   <xsl:call-template             name = "addIdLinkTarget">
+    <xsl:with-param               name = "id"
+                                select = "../@cdr:id"/>
+   </xsl:call-template>
+
+   <!--
+   DIV to display the image
+   ============================================= -->
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>image-right</xsl:text>
+    </xsl:attribute>
+
+    <xsl:element                  name = "img">
+     <xsl:attribute               name = "src">
+      <xsl:text>/cgi-bin/cdr/</xsl:text>
+      <xsl:text>GetCdrImage.py?</xsl:text>
+      <xsl:text>id=</xsl:text>
+
+      <xsl:value-of             select = "@cdr:ref"/>
+      <xsl:text>-400.jpg</xsl:text>
+     </xsl:attribute>
+    </xsl:element>
+   </xsl:element>
+
+   <!--
+   Floating DIV to display the title
+   ============================================= -->
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>image-title</xsl:text>
+    </xsl:attribute>
+
+    <xsl:choose>
+     <xsl:when                    test = "Media/MediaTitle">
+      <xsl:value-of             select = "Media/MediaTitle"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "."/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:element>
+  </xsl:element>
  </xsl:template>
 
 
@@ -3625,6 +3676,11 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "./@cdr:id"/>
 
   <xsl:attribute                  name = "id">
+   <!--
+   If the node is coming from another document we need to adjust the id -->
+   <xsl:if                        test = "ancestor::MiscellaneousDocLink">
+    <xsl:text>_md</xsl:text>
+   </xsl:if>
    <xsl:value-of                select = "$id"/>
   </xsl:attribute>
  </xsl:template>
@@ -3685,28 +3741,4 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   </xsl:attribute>
  </xsl:template>
 
-
- <!--
- ======================================================================
- Default Template
- Any node that is a child of a list or para with mode "compactNo"
- will need to be redirected to he template without a mode.  This task
- is performed here by calling itself without a mode.
-   *** Compact attribute depricated ***
- ====================================================================== -->
- <!--
- <xsl:template                   match = "@*"
-                                  mode = "compactNo">
-  <xsl:attribute                  name = "{name()}">
-   <xsl:value-of                select = "."/>
-  </xsl:attribute>
- </xsl:template>
- -->
-
- <!--
- <xsl:template                   match = "*"
-                                  mode = "compactNo">
-  <xsl:apply-templates          select = "."/>
- </xsl:template>
- -->
 </xsl:transform>
