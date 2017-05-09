@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Program for submitting command to shut down the CDR server.
  *
  * Usage:
@@ -83,9 +81,9 @@ int main(int ac, char **av) {
 
     // Tell the server to shut down.
     std::string cmd = "<CdrCommandSet><CdrCommand><CdrLogon><UserName>";
-    cmd += uid 
-        +  "</UserName><Password>" 
-        +  pwd 
+    cmd += uid
+        +  "</UserName><Password>"
+        +  pwd
         +  "</Password></CdrLogon></CdrCommand>"
            "<CdrCommand><CdrShutdown/></CdrCommand>"
            "<CdrCommand><CdrLogoff/></CdrCommand></CdrCommandSet>";
@@ -131,7 +129,7 @@ int main(int ac, char **av) {
     }
     std::cout << "Server response:\n" << response << '\n';
     closesocket(sock);
-    
+
     // Make sure we succeeded.
     if (!strstr(response, "Status='success'"))
         return EXIT_FAILURE;

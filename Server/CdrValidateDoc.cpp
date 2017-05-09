@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Examines a CDR document to determine whether it complies with the
  * requirements for its document type.
  *

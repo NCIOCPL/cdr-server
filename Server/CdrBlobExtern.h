@@ -1,14 +1,10 @@
 /*
- * $Id$
- *
  * Declarations for external blob management routines.
  *
  * Can't put these in CdrBlob.h because that would create a
  * circular reference with CdrDbConnection.h - which must
  * reference blobs, and these routines must reference
  * connections.
- *
- * $Log: not supported by cvs2svn $
  */
 
 #ifndef CDR_BLOB_EXTERN_

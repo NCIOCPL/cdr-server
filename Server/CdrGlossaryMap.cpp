@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Returns a document identifying which glossary terms should be used
  * for marking up phrases found in a CDR document.
  *
@@ -21,13 +19,13 @@
 static cdr::String PATH_EN = L"/GlossaryTermName/TermName/TermNameString";
 static cdr::String PATH_ES = L"/GlossaryTermName/TranslatedName/TermNameString";
 
-static void mapPreferredTerms(cdr::StringSet& phrases, 
+static void mapPreferredTerms(cdr::StringSet& phrases,
                               std::map<int, cdr::StringList>& mappings,
                               std::map<int, cdr::String>& preferredNames,
                               std::set<int>& nonRejectedTerms,
                               cdr::db::Connection& conn,
                               const cdr::String& path);
-static void mapExternalPhrases(cdr::StringSet& phrases, 
+static void mapExternalPhrases(cdr::StringSet& phrases,
                                std::map<int, cdr::StringList>& mappings,
                                const std::set<int>& nonRejectedTerms,
                                cdr::db::Connection& conn,
@@ -159,20 +157,20 @@ cdr::String cdr::getSpanishGlossaryMap(cdr::Session&,
 /*
  * Get the preferred names for the glossary terms using the new doc type.
  */
-void mapPreferredTerms(cdr::StringSet& phrases, 
+void mapPreferredTerms(cdr::StringSet& phrases,
                        std::map<int, cdr::StringList>& mappings,
                        std::map<int, cdr::String>& preferredNames,
                        std::set<int>& nonRejectedTerms,
                        cdr::db::Connection& conn,
                        const cdr::String& path)
 {
-    std::string query = 
+    std::string query =
         "         SELECT n.doc_id, n.value                           "
         "           FROM query_term n                                "
         "           JOIN query_term s                                "
         "             ON s.doc_id = n.doc_id                         ";
     if (path == PATH_EN)
-        query += 
+        query +=
         "LEFT OUTER JOIN query_term e                                "
         "             ON e.doc_id = n.doc_id                         "
         "            AND e.path = '/GlossaryTermName/TermName'       "
@@ -205,13 +203,13 @@ void mapPreferredTerms(cdr::StringSet& phrases,
 /*
  * Get the alternate phrases from the external_map table.
  */
-void mapExternalPhrases(cdr::StringSet& phrases, 
+void mapExternalPhrases(cdr::StringSet& phrases,
                         std::map<int, cdr::StringList>& mappings,
                         const std::set<int>& nonRejectedTerms,
                         cdr::db::Connection& conn,
                         const cdr::String& usage)
 {
-    std::string query = 
+    std::string query =
         "SELECT m.doc_id, m.value    "
         "  FROM external_map m       "
         "  JOIN external_map_usage u "
@@ -240,7 +238,7 @@ void addPhrase(cdr::StringSet& phrases,
 {
     // Check to see if we have already seen this phrase.
     cdr::String normalizedPhrase = normalizePhrase(phrase);
-    if (phrases.find(normalizedPhrase) != phrases.end()) 
+    if (phrases.find(normalizedPhrase) != phrases.end())
         return;
 
     // Plug the phrase into the mapping table.

@@ -1,54 +1,5 @@
 /*
- * $Id$
- *
  * Internal support functions for CDR document retrieval.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.14  2006/05/04 22:54:40  ameyer
- * Added optional maxDate limit parameter to one of the getDocString() funcs.
- * Added prototype for previously static function now made external
- * getDocTypeName().  It's now used in more than one module.
- *
- * Revision 1.13  2005/10/27 12:37:58  bkline
- * Support for new function to calculate an artificial "verification
- * date" added.
- *
- * Revision 1.12  2004/11/05 05:56:08  ameyer
- * Added parameters for getting xml, blob, or both.
- *
- * Revision 1.11  2002/07/03 12:55:59  bkline
- * Added code to get first publication info.
- *
- * Revision 1.10  2002/06/28 20:40:44  ameyer
- * Made docVer parameter constant on call to getDocString()
- *
- * Revision 1.9  2002/01/23 18:24:12  mruben
- * added new optional components for CdrDocCtl
- *
- * Revision 1.8  2002/01/08 18:18:19  mruben
- * added support for denormalization and getting control information
- *
- * Revision 1.7  2001/04/05 23:58:50  ameyer
- * Added default value to last arg on overloaded getDocString().
- *
- * Revision 1.6  2001/03/13 22:05:54  mruben
- * modified to support filtering on CdrDoc
- *
- * Revision 1.5  2000/10/27 02:34:12  ameyer
- * Added version retrieval and control.
- *
- * Revision 1.4  2000/10/17 21:22:10  ameyer
- * Added overloaded getDocString for versioned doc.
- *
- * Revision 1.3  2000/09/25 14:04:09  mruben
- * added getDocCtlString to get information from document table
- *
- * Revision 1.2  2000/05/04 01:06:06  bkline
- * Added ccdoc comments.
- *
- * Revision 1.1  2000/05/03 15:41:09  bkline
- * Initial revision
- *
  */
 
 #ifndef CDR_GET_DOC_

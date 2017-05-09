@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Adds new user to CDR.
  *
  * JIRA::OCECDR-3849 - integrate CDR login with NIH Active Directory

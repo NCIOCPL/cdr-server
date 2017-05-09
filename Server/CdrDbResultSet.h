@@ -1,33 +1,5 @@
 /*
- * $Id$
- *
  * Wrapper for ODBC result fetching.  Modeled after JDBC interface.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.8  2002/03/28 18:27:00  bkline
- * Added some support for ResultSetMetaData.
- *
- * Revision 1.7  2000/12/28 13:31:10  bkline
- * Removed refCount member, as counter is now dynamically allocated.
- *
- * Revision 1.6  2000/05/03 23:39:22  bkline
- * More ccdoc comments.
- *
- * Revision 1.5  2000/05/03 15:39:34  bkline
- * Added copy constructor which bypasses copying of the column vector.
- * Blocked use of assignment operator.  Added getBytes() method.
- *
- * Revision 1.4  2000/04/22 18:57:38  bkline
- * Added ccdoc comment markers for namespaces and @pkg directives.
- *
- * Revision 1.3  2000/04/22 15:36:02  bkline
- * Filled out documentation comments.
- *
- * Revision 1.2  2000/04/17 21:27:40  bkline
- * Added nulability for ints and strings.
- *
- * Revision 1.1  2000/04/15 12:16:59  bkline
- * Initial revision
  */
 
 #ifndef CDR_DB_RESULT_SET_
@@ -67,7 +39,7 @@ namespace cdr {
              * Returns the number of columns in this ResultSet object.
              */
             int getColumnCount() const { return columnVector.size(); }
-            
+
             /**
              * Get the designated column's name.
              *
@@ -166,10 +138,10 @@ namespace cdr {
             ResultSet(const ResultSet& rs);
 
             /**
-             * Moves the <code>ResultSet</code> to the next row.  The first 
-             * call makes the first row the current row.  
+             * Moves the <code>ResultSet</code> to the next row.  The first
+             * call makes the first row the current row.
              *
-             *  @return             <code>true</code> as long as there is 
+             *  @return             <code>true</code> as long as there is
              *                      a next row to move to; if there are no
              *                      further rows to process,
              *                      <code>false</code>.
@@ -244,7 +216,7 @@ namespace cdr {
              * results.
              */
             Statement&        st;
-            
+
             /**
              * Keeps track of information about columns in the result set.
              */

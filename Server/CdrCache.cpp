@@ -1,37 +1,5 @@
-/* * $Id$
- *
+/*
  * Specialized cacheing for performance optimization, where useful.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.7  2005/03/04 02:41:06  ameyer
- * Minor modification for new Xerces DOM parser.
- *
- * Revision 1.6  2004/07/02 03:21:21  ameyer
- * Changed set to map to insure that ordering is always the same, by term ID.
- * Before that I was just storing pointers to Term objects - which causes
- * the parents of a term to come out in different orders each time - which
- * would be a mess for publishing since docs would always appear to change.
- *
- * Revision 1.5  2004/07/02 02:13:46  ameyer
- * Fixed bug on cache start underflow.
- *
- * Revision 1.4  2004/07/02 01:26:36  ameyer
- * New concepts for starting and stopping cacheing using request counter.
- * New concept for timing out stale cache.
- * Bug fixes.
- *
- * Revision 1.3  2004/05/26 01:14:49  ameyer
- * New handling of PdqKey and cdr:ref attributes.
- *
- * Revision 1.2  2004/05/25 22:39:18  ameyer
- * This version gets PdqKey and cdr:ref for a parent from the terminology
- * link in the child record.  That works, and mirrors what used to be done,
- * but doesn't get the PdqKey and cdr:ref for the main term itself.
- * I'm going to change the way this is done in the next version.
- *
- * Revision 1.1  2004/05/14 02:04:34  ameyer
- * CdrCache serverside cacheing to speed publishing.
- *
  */
 
 #include <iostream> // Debug

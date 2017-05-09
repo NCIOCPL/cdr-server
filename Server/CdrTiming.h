@@ -1,15 +1,5 @@
 /*
- * $Id$
- *
  * Simple tool for timing processing.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.2  2002/07/25 10:05:17  bkline
- * Added ccdoc comment markers for cdr namespace.
- *
- * Revision 1.1  2002/07/24 14:16:22  bkline
- * Simple tool for timing instrumentation.
- *
  */
 #ifndef CDR_TIMING_H
 #define CDR_TIMING_H

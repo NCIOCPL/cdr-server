@@ -1,12 +1,5 @@
 /*
- * $Id$
- *
  * Commands for viewing, editing, creating CDR actions.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1  2001/11/28 19:28:20  bkline
- * Initial revision
- *
  */
 
 #include "CdrCommand.h"

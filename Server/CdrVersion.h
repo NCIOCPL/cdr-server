@@ -1,40 +1,5 @@
 /*
- * $Id$
- *
  * Internal support functions for CDR verison control
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.10  2006/09/01 02:09:51  ameyer
- * Added isCWDLastPub.
- *
- * Revision 1.9  2006/05/17 03:35:14  ameyer
- * Support for date limited version retrieval.
- *
- * Revision 1.8  2004/11/05 05:59:01  ameyer
- * Added some blob related information.
- *
- * Revision 1.7  2002/06/07 13:52:41  bkline
- * Added support for last publishable linked document retrieval.
- *
- * Revision 1.6  2001/06/05 20:48:25  mruben
- * changed to maintain publishable flag on version
- *
- * Revision 1.5  2001/05/23 01:27:50  ameyer
- * Added actStatus parameter to checkIn prototype.
- *
- * Revision 1.4  2001/05/22 21:29:25  mruben
- * added status information to CdrVerDoc
- *
- * Revision 1.3  2000/12/07 16:02:08  ameyer
- * Made allowVersion() a public function, needed by delDoc().
- *
- * Revision 1.2  2000/10/31 15:48:15  mruben
- * changed interface to include session
- *
- * Revision 1.1  2000/10/26 15:31:41  mruben
- * Initial revision
- *
- *
  */
 
 #ifndef CDR_VERSION_

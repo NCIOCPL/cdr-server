@@ -1,22 +1,5 @@
-
 /*
- * $Id$
- *
  * Retrieves information about requested group.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.4  2002/02/01 20:49:19  bkline
- * Modified query to use expired column.
- *
- * Revision 1.3  2001/04/13 12:25:13  bkline
- * Retrieve grp.name so case of group name is preserved.
- *
- * Revision 1.2  2000/05/03 15:25:41  bkline
- * Fixed database statement creation.
- *
- * Revision 1.1  2000/04/22 09:31:58  bkline
- * Initial revision
- *
  */
 
 #include "CdrCommand.h"

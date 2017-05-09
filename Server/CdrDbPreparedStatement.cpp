@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Implementation of class for prepared CDR SQL queries.
  */
 

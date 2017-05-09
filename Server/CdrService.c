@@ -11,7 +11,7 @@
  *
  *  COMMENTS: The functions implemented in CdrService.c are
  *            prototyped in service.h
- *              
+ *
  *
  *  AUTHOR:   Bob Kline - RK Systems
  */
@@ -197,16 +197,16 @@ VOID ServiceStart (DWORD dwArgc, LPTSTR *lpszArgv)
 //    stop code, and return.  Otherwise, the
 //    ServiceControlManager will believe that
 //    the service has stopped responding.
-//    
+//
 VOID ServiceStop()
 {
     DBGLOG("TOP OF SERVICESTOP", service_log);
 
     DBGLOG("SERVER PROCESS CREATION FAILURE", service_log);
-    _spawnl(_P_NOWAIT, SHUTDOWN, SHUTDOWN, service_account, 
+    _spawnl(_P_NOWAIT, SHUTDOWN, SHUTDOWN, service_account,
             service_password, 0);
-    if (!ReportStatusToSCMgr(SERVICE_STOP_PENDING, 
-                             NO_ERROR, 
+    if (!ReportStatusToSCMgr(SERVICE_STOP_PENDING,
+                             NO_ERROR,
                              CLEANUP_SECONDS * 1000)) {
         DBGLOG("FAILURE REPORTING STATUS TO SERVICE MONITOR", service_log);
         return;
@@ -221,7 +221,7 @@ VOID ServiceStop()
 }
 
 //----------------------------------------------------------------------
-// @func Local function to extract all CdrServer settings from the Windows 
+// @func Local function to extract all CdrServer settings from the Windows
 // NT Registry
 //----------------------------------------------------------------------
 static void GetCdrServerRegVariables(void)
@@ -242,7 +242,7 @@ static void GetCdrServerRegVariables(void)
 }
 
 //----------------------------------------------------------------------
-// @func Local function to extract CdrServer settings from the Windows 
+// @func Local function to extract CdrServer settings from the Windows
 // NT Registry
 //----------------------------------------------------------------------
 static const char *GetCdrServerRegString(
@@ -258,6 +258,6 @@ static const char *GetCdrServerRegString(
     if (rc == ERROR_SUCCESS)
         rc = RegQueryValueEx(hKey, name, 0, &type,
 			     (unsigned char *)buf, &len);
-    
+
     return (rc == ERROR_SUCCESS) ? buf : NULL;
 }

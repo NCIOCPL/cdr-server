@@ -1,6 +1,4 @@
 /*
- * $Id: ParseSchema.cpp,v 1.8 2002-01-22 22:44:56 bkline Exp $
- *
  * Prototype for CDR schema parser.  See ../Validation/Makefile.
  */
 
@@ -53,7 +51,7 @@ int main(int ac, char** av)
         return EXIT_FAILURE;
     }
     catch (cdr::dom::DOMException* de) {
-        std::wcerr << L"DOM Exception: " << de->code << cdr::String(L": ") 
+        std::wcerr << L"DOM Exception: " << de->code << cdr::String(L": ")
                    << cdr::String(de->msg)
                    << std::endl;
         delete de;

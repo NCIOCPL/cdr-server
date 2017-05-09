@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Specialized Statement class for handling parameterized queries.
  */
 

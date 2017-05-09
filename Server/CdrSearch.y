@@ -1,7 +1,5 @@
 %{
 /*
- * $Id: CdrSearch.y,v 1.5 2002-03-03 14:44:08 bkline Exp $
- *
  * Parser for CDR Search module.
  */
 

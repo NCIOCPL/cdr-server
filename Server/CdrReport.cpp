@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Reporting functions
  *
  * BZIssue::595

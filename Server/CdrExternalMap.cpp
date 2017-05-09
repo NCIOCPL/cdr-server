@@ -1,12 +1,5 @@
 /*
- * $Id$
- *
  * Commands for manipulating mappings of external values to CDR documents.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1  2004/08/11 17:48:15  bkline
- * Adding new command CdrAddExternalMapping.
- *
  */
 
 #include "CdrCommand.h"

@@ -1,6 +1,5 @@
 /*
- * $Id$
- *
+ * Reports supported natively by the CDR Server
  */
 
 #ifndef CDR_REPORT_
@@ -53,7 +52,7 @@ namespace cdr {
                              db::Connection& dbConnection,
                              ReportParameters parm) = 0;
       virtual ReportParameters defaultParameters();
-      
+
       const String reportName;
       static std::map<String, Report*> reportMap;
   };

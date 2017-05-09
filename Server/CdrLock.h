@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Class for mutex acquisition to take advantage of automatic release
  * when stack frame exits.
  *
@@ -14,10 +12,6 @@
  *             ++activeConnections;
  *         }
  *     }
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1  2001/11/28 20:04:31  bkline
- * Initial revision
  */
 
 #ifndef _CDR_LOCK_H_
@@ -52,7 +46,7 @@ namespace cdr {
                 break;
             }
         }
-            
+
         ~Lock() { if (m) ReleaseMutex(m); }
     };
 }

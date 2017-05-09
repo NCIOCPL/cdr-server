@@ -1,17 +1,5 @@
 /*
- * $Id$
- *
  * Maintains state information for input for CDR string parser.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.3  2000/04/22 18:57:38  bkline
- * Added ccdoc comment markers for namespaces and @pkg directives.
- *
- * Revision 1.2  2000/04/22 16:33:24  bkline
- * Fleshed out documentation.
- *
- * Revision 1.1  2000/04/21 14:00:52  bkline
- * Initial revision
  */
 
 #ifndef CDR_PARSER_INPUT_
@@ -40,7 +28,7 @@ namespace cdr {
          *
          *  @param  s       reference to string to be parsed.
          */
-        ParserInput(const String& s) 
+        ParserInput(const String& s)
             : str(s), pos(0), buf(str.c_str()), len(str.size()), lastTok(-1) {}
 
         /**
@@ -49,7 +37,7 @@ namespace cdr {
          * which can be used in the expression "*parserInput++."
          * <P>
          * <EMPH>WARNING!  Do not use the return value from this operator
-         * beyond the lifetime of the original object, because the 
+         * beyond the lifetime of the original object, because the
          * object's destructor will have destroyed the state information
          * which makes the object useful.  I'm fairly confident that
          * by blocking the assignment operator and copy constructor
@@ -85,7 +73,7 @@ namespace cdr {
         /**
          * Accessor method for individual characters in the buffer.
          *
-         * @return                  16-bit character for the current 
+         * @return                  16-bit character for the current
          *                          input position.
          */
         wchar_t operator *() const { return buf[pos]; }
@@ -98,10 +86,10 @@ namespace cdr {
          *  @exception cdr::Exception if an attempt is made to move past
          *                          the end of the input.
          */
-        ParserInput& operator+=(size_t n) { 
+        ParserInput& operator+=(size_t n) {
             if (pos + n > len)
                 throw cdr::Exception(L"ParserInput: past EOF");
-            pos += n; 
+            pos += n;
             return *this;
         }
 
@@ -115,7 +103,7 @@ namespace cdr {
          * is moved forward past the terminating delimiter.
          *
          *  @param  delim           delimiter marking end of string.
-         *  @return                 address of newly allocated buffer 
+         *  @return                 address of newly allocated buffer
          *                          containing null-terminated copy of
          *                          extracted string.
          *  @exception  cdr::Exception if matching delimiter is not found
@@ -125,13 +113,13 @@ namespace cdr {
 
         /**
          * Returns a null-terminated buffer containing <code>count</code>
-         * characters beginning at the current input position.  The 
+         * characters beginning at the current input position.  The
          * buffer is owned by the <code>ParserInput</code> object, which is
          * responsible for disposing of the allocated memory.  The current
          * position is moved forward past the terminating delimiter.
          *
          *  @param  count           number of characters to extract.
-         *  @return                 address of newly allocated buffer 
+         *  @return                 address of newly allocated buffer
          *                          containing null-terminated copy of
          *                          extracted string.
          *  @throw  cdr::Exception if more characters are requested than
@@ -190,7 +178,7 @@ namespace cdr {
          * Reports the number of characters remaining in the input.  Might be
          * useful for error reporting.
          *
-         *  @return                 number of characters remaining in the 
+         *  @return                 number of characters remaining in the
          *                          input buffer.
          */
         size_t getRemainingLen() const { return len - pos; }

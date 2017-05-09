@@ -1,9 +1,5 @@
 /*
- * $Id$
- *
  * Shuts down the CDR system.
- *
- * $Log: not supported by cvs2svn $
  */
 
 #include "CdrCommand.h"

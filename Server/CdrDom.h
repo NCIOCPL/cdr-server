@@ -1,48 +1,5 @@
 /*
- * $Id$
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.14  2005/03/29 15:27:43  ameyer
- * Added a comment only.
- *
- * Revision 1.13  2005/03/04 02:52:00  ameyer
- * Converted from xml4c to Xerces DOM parser.  Significant changes.
- *
- * Revision 1.12  2004/03/23 16:26:47  bkline
- * Upgraded to version 5.4.0 of xml4c (but still using deprecated APIs).
- *
- * Revision 1.11  2002/05/01 01:05:23  bkline
- * Added pragma to shut off silly Microsoft warnings.
- *
- * Revision 1.10  2001/10/17 13:52:19  bkline
- * Added output insertion operator for DOM node.
- *
- * Revision 1.9  2000/10/05 21:22:29  bkline
- * Added parseFile(const char*) method.
- *
- * Revision 1.8  2000/10/04 18:21:58  bkline
- * Expanded the exception types.
- *
- * Revision 1.7  2000/05/09 21:10:39  bkline
- * Added error handler.
- *
- * Revision 1.6  2000/05/04 01:14:08  bkline
- * More ccdoc comments.
- *
- * Revision 1.5  2000/04/26 01:35:58  bkline
- * Added overloaded second parse(const cdr::String&) method.
- *
- * Revision 1.4  2000/04/22 18:57:38  bkline
- * Added ccdoc comment markers for namespaces and @pkg directives.
- *
- * Revision 1.3  2000/04/22 15:38:53  bkline
- * Added more documentation comments.
- *
- * Revision 1.2  2000/04/16 19:10:30  bkline
- * Added new function getTextContent().
- *
- * Revision 1.1  2000/04/11 14:17:50  bkline
- * Initial revision
+ * Wrapper for XML document object model interface.
  */
 
 #ifndef CDR_DOM_H_
@@ -501,7 +458,7 @@ namespace cdr {
                 return this->pNode != other.pNode;
             }
             */
-            
+
         private:
             // Helper inline method simplifies code above.
             const XERCES_CPP_NAMESPACE::DOMElement* castToElement() const {

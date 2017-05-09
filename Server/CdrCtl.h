@@ -5,8 +5,6 @@
  * in the cdr database.
  *
  *                                          Alan Meyer  August, 2013
- *
- * $Id$
  */
 
 #ifndef CDR_CTL_

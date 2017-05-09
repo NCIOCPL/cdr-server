@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Interface for CDR wrapper for an ODBC database connection.
  */
 

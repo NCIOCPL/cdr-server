@@ -1,13 +1,5 @@
-
 /*
- * $Id$
- *
  * Adds group definition to CDR.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1  2000/04/22 09:32:18  bkline
- * Initial revision
- *
  */
 
 #include <list>
@@ -18,9 +10,9 @@
 struct Auth { cdr::String action, docType; };
 typedef std::list<Auth> AuthList;
 
-cdr::String cdr::addGrp(cdr::Session& session, 
+cdr::String cdr::addGrp(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
-                        cdr::db::Connection& conn) 
+                        cdr::db::Connection& conn)
 {
     // Make sure our user is authorized to add groups.
     if (!session.canDo(conn, L"ADD GROUP", L""))
@@ -97,7 +89,7 @@ cdr::String cdr::addGrp(cdr::Session& session,
             std::string select = "SELECT id FROM usr WHERE name = ?";
             cdr::db::PreparedStatement usrQuery = conn.prepareStatement(select);
             usrQuery.setString(1, uName);
-            cdr::db::ResultSet rs = 
+            cdr::db::ResultSet rs =
                 usrQuery.executeQuery();
             if (!rs.next())
                 throw cdr::Exception(L"Unknown user", uName);
@@ -135,7 +127,7 @@ cdr::String cdr::addGrp(cdr::Session& session,
             if (!rs2.next())
                 throw cdr::Exception(L"Unknown doc type", auth.docType);
             docTypeId = rs2.getInt(1);
-            std::string query = 
+            std::string query =
                 "INSERT INTO grp_action(grp, action, doc_type)"
                 "VALUES (?, ?, ?)";
             cdr::db::PreparedStatement insert =

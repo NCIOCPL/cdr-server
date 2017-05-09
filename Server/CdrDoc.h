@@ -5,8 +5,6 @@
  *
  *                                          Alan Meyer  May, 2000
  *
- * $Id$
- *
  * BZIssue:: 4767
  */
 

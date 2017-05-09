@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Server for ICIC Central Database Repository (CDR).
  *
  * BZIssue::4767

@@ -1,44 +1,5 @@
 /*
- * $Id$
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.11  2005/03/29 15:29:31  ameyer
- * Removed logging statements needed only for debugging.
- * Will now throw cdr::Exceptions for fatal errors instead
- * of attempting to log and recover.  These should never
- * occur.
- *
- * Revision 1.10  2005/03/04 02:51:12  ameyer
- * Converted from xml4c to Xerces DOM parser.  Significant changes.
- *
- * Revision 1.9  2004/03/23 16:26:47  bkline
- * Upgraded to version 5.4.0 of xml4c (but still using deprecated APIs).
- *
- * Revision 1.8  2002/11/21 21:01:13  bkline
- * Fixed serializing code in insertion operator (replacing special
- * characters with entities).
- *
- * Revision 1.7  2001/10/17 13:51:28  bkline
- * Added output insertion operator.
- *
- * Revision 1.6  2000/10/05 21:25:09  bkline
- * Added parseFile(const char*) method.
- *
- * Revision 1.5  2000/10/04 18:26:40  bkline
- * Modified access to exception error message strings.
- *
- * Revision 1.4  2000/05/09 21:07:48  bkline
- * Added error handler.
- *
- * Revision 1.3  2000/04/26 01:30:38  bkline
- * Added second parse() method, for taking a cdr::String directly.
- *
- * Revision 1.2  2000/04/15 14:06:39  bkline
- * Added getTextContent function.
- *
- * Revision 1.1  2000/04/11 14:16:41  bkline
- * Initial revision
- *
+ * Wrapper for XML document object model interface.
  */
 
 #include <iostream> // XXX Substitute logging when in place.

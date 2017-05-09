@@ -1,14 +1,5 @@
 /*
- * $Id$
- *
  * Retrieves tree context information for terminology term.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.2  2001/04/08 22:44:31  bkline
- * Optimized to use stored procedure; much faster.
- *
- * Revision 1.1  2001/04/07 21:17:46  bkline
- * Initial revision
  */
 
 #include "CdrCommand.h"

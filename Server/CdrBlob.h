@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * CDR wrapper for a string of bytes.
  *
  * BZIssue::4767

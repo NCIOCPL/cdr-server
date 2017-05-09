@@ -1,15 +1,6 @@
 /*
- * $Id$
- *
  * Manage the occurrence of blobs and references to blobs in the
  * CDR database.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1  2004/10/22 03:20:42  ameyer
- * New document blob management subroutines.
- * First version not yet tested but installed in CVS in case someone
- * wants to see how it is intended to work.
- *
  */
 
 #include <iostream> // Debug

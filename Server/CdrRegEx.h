@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * CDR wrapper for regular expression processing.
  */
 
@@ -47,8 +45,8 @@ namespace cdr {
          * of differences in case.  Use one of the <code>set()</code> methods
          * to plug in a regular expression to be used for matching.
          *
-         *  @param  ignoreCase      <code>true</code> if comparisons should 
-         *                          disregard differences in case for letters; 
+         *  @param  ignoreCase      <code>true</code> if comparisons should
+         *                          disregard differences in case for letters;
          *                          default is <code>false</code>.
          */
         RegEx(bool ignoreCase = false) : caseFlag(ignoreCase) {}
@@ -59,8 +57,8 @@ namespace cdr {
          *
          *  @param  pattern         address of string containing regular
          *                          expression, encoded as UTF-16.
-         *  @param  ignoreCase      <code>true</code> if comparisons should 
-         *                          disregard differences in case for letters; 
+         *  @param  ignoreCase      <code>true</code> if comparisons should
+         *                          disregard differences in case for letters;
          *                          default is <code>false</code>.
          */
         RegEx(const wchar_t* pattern, bool ignoreCase = false);
@@ -69,10 +67,10 @@ namespace cdr {
          * Creates a new regular expression object based on a null-terminated
          * wide-character string.
          *
-         *  @param  pattern         reference to string object containing 
+         *  @param  pattern         reference to string object containing
          *                          regular expression, encoded as UTF-16.
-         *  @param  ignoreCase      <code>true</code> if comparisons should 
-         *                          disregard differences in case for letters; 
+         *  @param  ignoreCase      <code>true</code> if comparisons should
+         *                          disregard differences in case for letters;
          *                          default is <code>false</code>.
          */
         RegEx(const String& pattern, bool ignoreCase = false);
@@ -85,8 +83,8 @@ namespace cdr {
          *
          *  @param  pattern         address of string containing regular
          *                          expression, encoded as UTF-8.
-         *  @param  ignoreCase      <code>true</code> if comparisons should 
-         *                          disregard differences in case for letters; 
+         *  @param  ignoreCase      <code>true</code> if comparisons should
+         *                          disregard differences in case for letters;
          *                          default is <code>false</code>.
          */
         RegEx(const char* pattern, bool ignoreCase = false);
@@ -96,11 +94,11 @@ namespace cdr {
          * narrow-character string object.  String is expected to be encoded
          * as UTF-8, and is converted internally to UTF-16 encoding.
          *
-         *  @param  pattern         reference to standard <code>string</code> 
+         *  @param  pattern         reference to standard <code>string</code>
          *                          object containing regular expression
          *                          encoded as UTF-8.
-         *  @param  ignoreCase      <code>true</code> if comparisons should 
-         *                          disregard differences in case for letters; 
+         *  @param  ignoreCase      <code>true</code> if comparisons should
+         *                          disregard differences in case for letters;
          *                          default is <code>false</code>.
          */
         RegEx(const std::string& pattern, bool ignoreCase = false);

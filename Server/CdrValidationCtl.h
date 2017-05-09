@@ -7,23 +7,6 @@
  *
  * The code standing behind these classes is all defined in
  * CdrValidateDoc.cpp.
- *
- * $Id$
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.4  2008/05/23 04:34:58  ameyer
- * Added some needed accessors.
- * Made a couple more functions const.
- *
- * Revision 1.3  2008/05/23 03:01:23  ameyer
- * Added controls for marking the type and severity level of errors.
- *
- * Revision 1.2  2008/04/10 20:09:41  ameyer
- * Renamed cdr:eid to cdr-eid to workaround XMetal namespace bug.
- *
- * Revision 1.1  2008/03/25 23:41:15  ameyer
- * Header for validation controls.
- *
  */
 
 #ifndef CDR_VALIDATION_CTL_

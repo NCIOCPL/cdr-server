@@ -1,40 +1,5 @@
 /*
- * $Id$
- *
  * Wrapper for ODBC HSTMT.  Modeled after JDBC interface.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.10  2000/12/28 13:31:58  bkline
- * Removed refCount member, as counter is now dynamically allocated.
- *
- * Revision 1.9  2000/05/21 00:54:11  bkline
- * Added executeUpdate() method.
- *
- * Revision 1.8  2000/05/04 00:04:08  bkline
- * Removed see also reference for field member (ccdoc can't find references
- * to these).
- *
- * Revision 1.7  2000/05/03 23:50:42  bkline
- * More ccdoc comments.
- *
- * Revision 1.6  2000/05/03 15:40:45  bkline
- * Fixed creation of db Statements.
- *
- * Revision 1.5  2000/04/22 18:57:38  bkline
- * Added ccdoc comment markers for namespaces and @pkg directives.
- *
- * Revision 1.4  2000/04/22 15:36:15  bkline
- * Filled out documentation comments.  Made all ODBC-specific members
- * private.
- *
- * Revision 1.3  2000/04/22 09:36:24  bkline
- * Added close() method.
- *
- * Revision 1.2  2000/04/17 21:27:02  bkline
- * Added nullability for ints and strings.
- *
- * Revision 1.1  2000/04/15 12:16:29  bkline
- * Initial revision
  */
 
 #ifndef CDR_DB_STATEMENT_
@@ -89,15 +54,15 @@ namespace cdr {
              *
              *  @param  q       address of null-terminated string containing
              *                  the SQL query to be executed.
-             *  @return         object from which query results can be 
+             *  @return         object from which query results can be
              *                  retrieved.
              */
             ResultSet       executeQuery(const char* q);
 
             /**
              * Submits a SQL request to the CDR database and returns the
-             * number of rows affected for an UPDATE, INSERT, or DELETE 
-             * statement.  Other SQL statements (including DDL) can be 
+             * number of rows affected for an UPDATE, INSERT, or DELETE
+             * statement.  Other SQL statements (including DDL) can be
              * submitted using this method, but if the query is not an
              * UPDATE, INSERT, or DELETE statement the return value is
              * undefined.
@@ -144,7 +109,7 @@ namespace cdr {
              * <code>Connection</code> class or by the derived
              * <code>PreparedStatement</code> class.
              *
-             *  @param  c           reference to the open CDR database 
+             *  @param  c           reference to the open CDR database
              *                      connection object.
              */
             Statement(Connection& c);

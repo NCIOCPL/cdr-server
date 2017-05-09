@@ -1,52 +1,5 @@
 /*
- * $Id$
- *
  * Implementation for ODBC result fetching wrapper (modeled after JDBC).
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.14  2002/11/13 15:03:06  bkline
- * Added code to handle SQL_NO_DATA_FOUND in getString().
- *
- * Revision 1.13  2002/03/28 18:26:59  bkline
- * Added some support for ResultSetMetaData.
- *
- * Revision 1.12  2001/12/19 12:26:29  bkline
- * Fixed bug in blob retrieval which resulted in loss of first byte.
- *
- * Revision 1.11  2001/12/14 15:20:08  bkline
- * Added space for a single byte for large values; even though the ODBC
- * docs say nothing will be stored for a call with insufficient space,
- * BoundsChecker says otherwise.
- *
- * Revision 1.10  2001/06/12 22:37:04  bkline
- * Fixed bug in handling of large blobs (buffer too small).
- *
- * Revision 1.9  2001/04/16 17:59:16  bkline
- * Removed unreferenced local variable nRows.
- *
- * Revision 1.8  2001/04/08 22:46:22  bkline
- * Added code in constructor to skip to the first result set.
- *
- * Revision 1.7  2000/12/28 13:24:55  bkline
- * Made ref count for ResultSet dynamic.  Added debugging statements.
- *
- * Revision 1.6  2000/05/04 12:48:13  bkline
- * Implemented reference counting.
- *
- * Revision 1.5  2000/05/03 15:25:41  bkline
- * Fixed database statement creation.
- *
- * Revision 1.4  2000/04/26 01:24:05  bkline
- * Fixed BLOB retrieval.
- *
- * Revision 1.3  2000/04/22 22:15:04  bkline
- * Added more comments.
- *
- * Revision 1.2  2000/04/17 21:26:06  bkline
- * Added nullability for ints and strings.
- *
- * Revision 1.1  2000/04/15 12:21:38  bkline
- * Initial revision
  */
 
 #include "CdrDbResultSet.h"

@@ -1,22 +1,14 @@
-
 /*
- * $Id$
- *
  * Deletes a group (and its associated users and actions) from CDR.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1  2000/04/22 09:27:50  bkline
- * Initial revision
- *
  */
 
 #include "CdrCommand.h"
 #include "CdrDbResultSet.h"
 #include "CdrDbPreparedStatement.h"
 
-cdr::String cdr::delGrp(cdr::Session& session, 
+cdr::String cdr::delGrp(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
-                        cdr::db::Connection& conn) 
+                        cdr::db::Connection& conn)
 {
     // Make sure our user is authorized to delete CDR groups.
     if (!session.canDo(conn, L"DELETE GROUP", L""))

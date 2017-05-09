@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Test driver for cdr::RegEx class.
  *
  * Added an extra test 2013-05-29 to verify that if we use non-capturing

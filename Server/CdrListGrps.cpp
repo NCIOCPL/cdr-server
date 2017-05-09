@@ -1,22 +1,14 @@
-
 /*
- * $Id$
- *
  * Retrieves list of the existing CDR group names.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1  2000/04/22 09:30:52  bkline
- * Initial revision
- *
  */
 
 #include "CdrCommand.h"
 #include "CdrDbStatement.h"
 #include "CdrDbResultSet.h"
 
-cdr::String cdr::listGrps(cdr::Session& session, 
+cdr::String cdr::listGrps(cdr::Session& session,
                           const cdr::dom::Node& commandNode,
-                          cdr::db::Connection& conn) 
+                          cdr::db::Connection& conn)
 {
     // Make sure our user is authorized to list groups.
     if (!session.canDo(conn, L"LIST GROUPS", L""))
@@ -26,7 +18,7 @@ cdr::String cdr::listGrps(cdr::Session& session,
     // Submit the query to the database
     cdr::db::Statement s = conn.createStatement();
     cdr::db::ResultSet r = s.executeQuery("SELECT name FROM grp");
-    
+
     // Pull in the names from the result set.
     cdr::String response;
     while (r.next()) {

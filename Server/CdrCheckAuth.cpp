@@ -1,17 +1,5 @@
 /*
- * $Id$
- *
  * Reports which actions are allowed for the current session.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.3  2000/05/03 15:25:41  bkline
- * Fixed database statement creation.
- *
- * Revision 1.2  2000/04/20 17:12:53  bkline
- * Fixed <CdrCheckAuthResp> tags.
- *
- * Revision 1.1  2000/04/17 21:23:43  bkline
- * Initial revision
  */
 
 // Eliminate annoying warnings about truncated debugging information.
@@ -26,7 +14,7 @@
 typedef std::map<cdr::String, cdr::StringSet> Actions;
 
 // Local function to lookup a single <Auth> element in command.
-static void lookupAuth(const cdr::dom::Node&, 
+static void lookupAuth(const cdr::dom::Node&,
                        Actions&,
                        cdr::db::Connection&,
                        int);
@@ -41,8 +29,8 @@ static void lookupAuth(const cdr::dom::Node&,
  * the user can perform a single specific action, or (the most common
  * request): tell me everything this user can do.
  */
-cdr::String cdr::checkAuth(cdr::Session& session, 
-                           const cdr::dom::Node& node, 
+cdr::String cdr::checkAuth(cdr::Session& session,
+                           const cdr::dom::Node& node,
                            cdr::db::Connection& conn)
 {
     Actions actions;
@@ -84,7 +72,7 @@ cdr::String cdr::checkAuth(cdr::Session& session,
     return response;
 }
 
-void lookupAuth(const cdr::dom::Node& authNode, 
+void lookupAuth(const cdr::dom::Node& authNode,
                 Actions& actions,
                 cdr::db::Connection& conn,
                 int uid)

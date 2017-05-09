@@ -1,32 +1,5 @@
 /*
- * $Id$
- *
  * Support routines for CDR document validation.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.7  2004/04/27 15:41:21  ameyer
- * Removed redundant comments in the prolog for execValidateDoc().
- *
- * Revision 1.6  2001/12/19 15:47:48  ameyer
- * Added enumeration value for validation controls to allow update
- * of link tables without returning validation information.
- *
- * Revision 1.5  2001/06/20 00:56:10  ameyer
- * Changed comments on execValidateDoc() to reflect changes.
- *
- * Revision 1.4  2001/04/05 15:27:52  ameyer
- * Fixed out of date comments in execValidateDoc().
- *
- * Revision 1.3  2000/10/05 21:23:27  bkline
- * Fixed a couple of minor comment bugs.
- *
- * Revision 1.2  2000/10/05 15:19:57  ameyer
- * Changes to validation flags.
- * New prototypes to handle validation of CdrDoc object.
- *
- * Revision 1.1  2000/05/03 15:42:00  bkline
- * Initial revision
- *
  */
 
 #ifndef CDR_VALIDATE_DOC_

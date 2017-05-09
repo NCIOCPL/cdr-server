@@ -1,19 +1,5 @@
 /*
- * $Id$
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.4  2000/05/15 19:12:19  mruben
- * added constructor using cdr::String
- *
- * Revision 1.3  2000/05/04 01:14:32  bkline
- * Added ccdoc comments.  Changed getString() to what() (modeled after
- * standard exception class).
- *
- * Revision 1.2  2000/04/22 18:57:38  bkline
- * Added ccdoc comment markers for namespaces and @pkg directives.
- *
- * Revision 1.1  2000/04/11 14:18:07  bkline
- * Initial revision
+ * Custom exception class.
  */
 
 #ifndef CDR_EXCEPTION_

@@ -5,35 +5,6 @@
  *
  *                                      @author Alan Meyer
  *                                      @date February 2001
- *
- * $Id$
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.7  2006/05/17 01:53:26  ameyer
- * Added definitions for "+=" and "-=" picklist relators.
- * Modified documentation to explain what this does.
- *
- * Revision 1.6  2004/02/10 22:13:02  ameyer
- * Removed definitions of obsolete functions - makeWhere() and
- * getLinkTargetRestrictions().  Neither was ever in production.
- *
- * Revision 1.5  2004/02/06 03:13:54  ameyer
- * Added info to linkChkNode to say whether a link target check is looking
- * for a specific value, or for just the existence or non-existence of the
- * element.
- *
- * Revision 1.4  2002/05/08 20:33:34  pzhang
- * Added makeSubQueries.
- *
- * Revision 1.3  2001/09/28 01:22:01  ameyer
- * Added getLinkTargetRestrictions().
- *
- * Revision 1.2  2001/09/25 15:06:34  ameyer
- * Added makeWhere, proper namespaces.
- *
- * Revision 1.1  2001/04/06 00:08:29  ameyer
- * Initial revision
- *
  */
 
 // #ifndef CDR_LINK_PROCS_

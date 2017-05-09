@@ -1,27 +1,5 @@
 /*
- * $Id$
- *
  * Internal support functions for CDR filter
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.5  2004/04/30 01:34:21  ameyer
- * Prototype declaration for cdr::buildFilterString2IdMap().
- *
- * Revision 1.4  2004/02/19 22:10:46  ameyer
- * Added filterDocumentByScriptSetName().  Filled out some more comments.
- *
- * Revision 1.3  2002/01/08 18:19:12  mruben
- * Modified for reentrance.
- * Added support for nonstandard scheme cdrutil:
- *
- * Revision 1.2  2001/09/21 03:46:40  ameyer
- * Added filterDocumentByScriptId and fitlerDocumentByScriptTitle
- *
- * Revision 1.1  2001/09/20 21:44:55  ameyer
- * Initial revision
- *
- *
- *
  */
 
 #ifndef CDR_FILTER_

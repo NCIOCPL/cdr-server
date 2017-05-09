@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Implementation of CDR wrapper for regular expression handling.
  */
 

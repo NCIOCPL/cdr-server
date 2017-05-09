@@ -1,36 +1,5 @@
 /*
- * $Id$
- *
  * Implementation for ODBC connection wrapper.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.9  2002/03/04 20:52:03  bkline
- * Workaround for bug in Microsoft runtime.
- *
- * Revision 1.8  2002/02/28 01:02:53  bkline
- * Added code to close mutex handle.
- *
- * Revision 1.7  2001/12/14 15:19:10  bkline
- * Added optional hooks for tracking number of active connections during
- * heap debugging.
- *
- * Revision 1.6  2000/06/01 18:48:58  bkline
- * Removed some debugging output.
- *
- * Revision 1.5  2000/05/21 00:48:59  bkline
- * Replaced public constructor with ServerDriver::getConnection().
- *
- * Revision 1.4  2000/05/03 15:25:41  bkline
- * Fixed database statement creation.
- *
- * Revision 1.3  2000/04/22 22:15:04  bkline
- * Added more comments.
- *
- * Revision 1.2  2000/04/22 09:33:17  bkline
- * Added transaction support and getLastIdent() method.
- *
- * Revision 1.1  2000/04/15 12:22:32  bkline
- * Initial revision
  */
 
 #include <iostream>

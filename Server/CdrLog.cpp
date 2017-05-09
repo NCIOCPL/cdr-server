@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Implementation of writing info to the log table in the database.
  * If that can't be done, takes an alternative action to write to file.
  *

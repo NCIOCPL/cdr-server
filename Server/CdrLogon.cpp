@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Opens a new CDR session.
  *
  * Example of CdrLogon command:

@@ -1,7 +1,4 @@
-
 /*
- * $Id$
- *
  * Modifies the attributes and group assignments for an existing CDR user.
  *
  * JIRA::OCECDR-3849 - integrate CDR login with NIH Active Directory

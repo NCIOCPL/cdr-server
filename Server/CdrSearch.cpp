@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Queries the CDR to create subset list of documents.
  */
 

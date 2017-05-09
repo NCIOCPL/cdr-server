@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * Wrapper for wide-character strings.
  *
  * BZIssue::4767
  */
@@ -638,4 +638,3 @@ unsigned long cdr::hashBytes(const unsigned char *bytes, size_t len)
 
     return hash;
 }
-

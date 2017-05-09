@@ -1,39 +1,6 @@
 /*
- * $Id$
- *
  * Commands to create a new publishing job and retrieve status for an
  * existing publishing job.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.8  2005/03/04 02:55:49  ameyer
- * Minor change to ensure new DOM parser does not release DOM tree
- * memory prematurely.
- *
- * Revision 1.7  2002/10/29 21:03:39  pzhang
- * Added allowInActive to cdr::publish() to handle Hotfix-Remove.
- *
- * Revision 1.6  2002/10/01 21:32:39  ameyer
- * Now accepting AllowNonPublish element in CdrPublish command.  Enables a
- * caller to force publication of versions not marked as publishable.  This
- * is needed for mailers - which must be printed for outside review before
- * they are otherwise regularly published.
- *
- * Revision 1.5  2002/09/03 21:27:01  bkline
- * Fixed typo in SQL query.
- *
- * Revision 1.4  2002/08/27 02:38:23  bkline
- * Added check to ensure selection of publishable versions.
- *
- * Revision 1.3  2002/04/17 19:19:44  bkline
- * Fixed query to get latest eligible version of control document.  Added
- * check for duplicate control document title.
- *
- * Revision 1.2  2002/04/04 20:00:22  bkline
- * Added code to block queueing two jobs of the same type.
- *
- * Revision 1.1  2002/04/04 01:04:41  bkline
- * Commands for CDR publishing system (CdrPublish and CdrPubStatus).
- *
  */
 
 // Eliminate annoying warnings about truncated debugging information.

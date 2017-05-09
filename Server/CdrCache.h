@@ -1,18 +1,5 @@
 /*
- * $Id$
- *
  * Header for cacheing used to speed operations.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.3  2004/07/02 01:27:23  ameyer
- * New internal routine and constants.  New comments.
- *
- * Revision 1.2  2004/05/26 01:14:30  ameyer
- * New handling of PdqKey and cdr:ref attributes.
- *
- * Revision 1.1  2004/05/14 02:04:04  ameyer
- * Header for CdrCache serverside cacheing to speed publishing.
- *
  */
 
 #ifndef CDR_CACHE_

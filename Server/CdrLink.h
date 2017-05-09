@@ -1,45 +1,6 @@
 /*
- * $Id$
- *
  * Header for Link Module software - to maintain the link_net
  * table describing the link relationships among CDR documents.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.11  2006/11/28 22:42:19  ameyer
- * Defines for link_chk types.
- *
- * Revision 1.10  2006/10/06 02:41:27  ameyer
- * Minor modifications to support link target version type distinctions.
- *
- * Revision 1.9  2002/08/29 21:53:07  ameyer
- * Added constants for some initial values that can be set or read in different
- * places for CdrLink members.
- *
- * Revision 1.8  2002/08/14 01:36:51  ameyer
- * Added constants for max sizes in link references.
- *
- * Revision 1.7  2002/05/08 20:30:26  pzhang
- * Added getSearchLinksResp and getSearchLinksRespWithProp.
- *
- * Revision 1.6  2002/01/31 16:28:21  ameyer
- * Added trgFound to indicate target of link found in database.
- *
- * Revision 1.5  2001/05/17 17:39:50  ameyer
- * Minor changes to comments.
- *
- * Revision 1.4  2001/04/17 23:14:03  ameyer
- * Added customLinkCheck()
- * Small changes in validation.
- *
- * Revision 1.3  2000/09/27 20:25:39  bkline
- * Fixed last argument to findTargetDocTypes().
- *
- * Revision 1.2  2000/09/27 11:29:23  bkline
- * Added CdrDelLinks() and findTargetDocTypes().
- *
- * Revision 1.1  2000/09/26 19:05:00  ameyer
- * Initial revision
- *
  */
 
 #ifndef CDR_LINK_

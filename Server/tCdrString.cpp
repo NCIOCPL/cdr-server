@@ -1,9 +1,5 @@
 /*
- * $Id$
- *
  * Test driver for CdrString class.
- *
- * $Log: not supported by cvs2svn $
  */
 
 #include <cstring>

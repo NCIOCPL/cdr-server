@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Information about the current login.
  *
  * BZIssue::4767

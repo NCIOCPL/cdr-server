@@ -1,16 +1,5 @@
-
 /*
- * $Id$
- *
  * Modifies authorizations, comment, and possibly name of existing group.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.2  2000/05/03 15:25:41  bkline
- * Fixed database statement creation.
- *
- * Revision 1.1  2000/04/22 09:31:32  bkline
- * Initial revision
- *
  */
 
 #include <list>
@@ -21,13 +10,13 @@
 struct Auth { cdr::String action, docType; };
 typedef std::list<Auth> AuthList;
 
-cdr::String cdr::modGrp(cdr::Session& session, 
+cdr::String cdr::modGrp(cdr::Session& session,
                         const cdr::dom::Node& commandNode,
-                        cdr::db::Connection& conn) 
+                        cdr::db::Connection& conn)
 {
     // Make sure our user is authorized to MODIFY groups.
     if (!session.canDo(conn, L"MODIFY GROUP", L""))
-        throw 
+        throw
             cdr::Exception(L"MODIFY GROUP action not authorized for this user");
 
     // Extract the data elements from the command node.
@@ -106,7 +95,7 @@ cdr::String cdr::modGrp(cdr::Session& session,
             std::string select = "SELECT id FROM usr WHERE name = ?";
             cdr::db::PreparedStatement usrQuery = conn.prepareStatement(select);
             usrQuery.setString(1, uName);
-            cdr::db::ResultSet rs = 
+            cdr::db::ResultSet rs =
                 usrQuery.executeQuery();
             if (!rs.next())
                 throw cdr::Exception(L"Unknown user", uName);
@@ -138,7 +127,7 @@ cdr::String cdr::modGrp(cdr::Session& session,
             cdr::db::PreparedStatement actionQuery =
                 conn.prepareStatement(query);
             actionQuery.setString(1, auth.action);
-            cdr::db::ResultSet rs1 = 
+            cdr::db::ResultSet rs1 =
                 actionQuery.executeQuery();
             if (!rs1.next())
                 throw cdr::Exception(L"Unknown action", auth.action);

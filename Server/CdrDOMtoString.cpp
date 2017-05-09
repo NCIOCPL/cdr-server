@@ -1,12 +1,7 @@
 /*
- * $Id$
- *
  * Generate CdrString containing representation of a DOM node
  *
  * Based on code distributed with the XML4C DOM parser
- *
- * $Log: not supported by cvs2svn $
- *
  */
 
 #include "CdrDom.h"
@@ -16,7 +11,7 @@
 namespace
 {
   using namespace cdr;
-  
+
   /***************************************************************************/
   /* produce cdr::String representation of a DOM node                        */
   /***************************************************************************/
@@ -24,10 +19,10 @@ namespace
   {
     String result;
     result.reserve(node.length());
-    
+
     int length = node.length();
     const XMLCh* chars = node.c_str();
-          
+
     int index;
     for (index = 0; index < length; index++)
     {
@@ -36,26 +31,26 @@ namespace
         case chAmpersand :
           result += L"&amp;";
           break;
-                  
+
         case chOpenAngle :
           result += L"&lt;";
           break;
-                  
+
         case chCloseAngle:
           result += L"&gt;";
           break;
-                  
+
         case chDoubleQuote :
           result += L"&quot;";
           break;
-                  
+
         default:
           // If it is none of the special characters, print it as such
           result += node.substr(index, 1);
           break;
       }
     }
-  
+
     return result;
   }
 }
@@ -65,11 +60,11 @@ namespace cdr
   String DOMtoString(const dom::Node& node)
   {
     String result;
-    
+
     // Get the name and value out for convenience
     String nodeName(node.getNodeName());
     String nodeValue(node.getNodeValue());
-    
+
     switch (node.getNodeType())
     {
       case dom::Node::TEXT_NODE:
@@ -77,7 +72,7 @@ namespace cdr
         result += outputContent(nodeValue);
         break;
       }
-  
+
       case dom::Node::PROCESSING_INSTRUCTION_NODE :
       {
         result = "<?"
@@ -87,7 +82,7 @@ namespace cdr
                + "?>";
         break;
       }
-  
+
       case dom::Node::DOCUMENT_NODE :
       {
         result = "<?xml version='1.0' encoding='ISO-8859-1' ?>\n";
@@ -99,26 +94,26 @@ namespace cdr
         }
         break;
       }
-  
+
       case dom::Node::ELEMENT_NODE :
       {
         // Output the element start tag.
         result = L'<' + nodeName;
-  
+
         // Output any attributes on this element
         dom::NamedNodeMap attributes = node.getAttributes();
         int attrCount = attributes.getLength();
         for (int i = 0; i < attrCount; i++)
         {
           dom::Node attribute = attributes.item(i);
-  
+
           result += L' ' + attribute.getNodeName()
                   + " = \"";
           //  Note that "<" must be escaped in attribute values.
           result += outputContent(attribute.getNodeValue());
           result += '"';
         }
-  
+
         //
         //  Test for the presence of children, which includes both
         //  text content and nested elements.
@@ -133,7 +128,7 @@ namespace cdr
             result += DOMtoString(child);
             child = child.getNextSibling();
           }
-  
+
           // Done with children.  Output the end tag.
           result += "</" + nodeName + L'>';
         }
@@ -147,7 +142,7 @@ namespace cdr
         }
         break;
       }
-  
+
       case dom::Node::ENTITY_REFERENCE_NODE:
       {
         dom::Node child;
@@ -157,19 +152,19 @@ namespace cdr
           result += DOMtoString(child);
         break;
       }
-  
+
       case dom::Node::CDATA_SECTION_NODE:
       {
         result = "<![CDATA[" + nodeValue + "]]>";
         break;
       }
-  
+
       case dom::Node::COMMENT_NODE:
       {
         result = "<!--" + nodeValue + "-->";
         break;
       }
-  
+
       default:
         throw Exception(L"Invalid DOM in CdrDOMtoString");
     }

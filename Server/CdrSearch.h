@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Interface for CDR search implementation.  Used by implementation of search
  * command and by the query parser.
  */

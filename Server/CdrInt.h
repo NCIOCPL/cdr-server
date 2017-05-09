@@ -1,15 +1,5 @@
 /*
- * $Id$
- *
  * Nullable integer type.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.2  2000/04/22 18:57:38  bkline
- * Added ccdoc comment markers for namespaces and @pkg directives.
- *
- * Revision 1.1  2000/04/17 21:27:23  bkline
- * Initial revision
- *
  */
 
 #ifndef CDR_INT_

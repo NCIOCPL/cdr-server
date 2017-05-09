@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Session control information.
  *
  * JIRA::OCECDR-3849 - Integrate CDR login with NIH Active Directory

@@ -1,9 +1,5 @@
 /*
- * $Id$
- *
  * Implementation of wrapper for input to CDR string parsers.
- *
- * $Log: not supported by cvs2svn $
  */
 
 #include "CdrParserInput.h"

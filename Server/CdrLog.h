@@ -1,23 +1,7 @@
 /*
- * $Id$
- *
  * Write log strings to log database or file.
  *
  *                                          Alan Meyer  June, 2000
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.4  2002/08/10 19:27:24  bkline
- * Added GetId() access method.
- *
- * Revision 1.3  2002/07/11 18:55:27  ameyer
- * Added directory prefix for default logfile name.
- *
- * Revision 1.2  2000/10/05 15:21:40  ameyer
- * Added WriteFile for logging to OS file instead of database.
- *
- * Revision 1.1  2000/06/15 22:32:49  ameyer
- * Initial revision
- *
  */
 
 #ifndef CDR_LOG_

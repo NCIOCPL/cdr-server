@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Applies XSLT scripts to a document
  */
 

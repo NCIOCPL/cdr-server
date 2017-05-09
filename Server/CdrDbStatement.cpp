@@ -1,34 +1,5 @@
 /*
- * $Id$
- *
  * Implementation for ODBC HSTMT wrapper (modeled after JDBC).
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.8  2000/12/28 13:26:28  bkline
- * Made ref count for Statement dynamic.
- *
- * Revision 1.7  2000/05/21 00:48:59  bkline
- * Added executeUpdate() method.
- *
- * Revision 1.6  2000/05/03 15:25:41  bkline
- * Fixed database statement creation.
- *
- * Revision 1.5  2000/04/22 22:15:04  bkline
- * Added more comments.
- *
- * Revision 1.4  2000/04/22 09:28:45  bkline
- * Added close() method.  Added error checking for destructor.  Added
- * some tests for SQL_NO_DATA_FOUND.  Set p->len to 1 for NULL values
- * (needed by ODBC for some reason).
- *
- * Revision 1.3  2000/04/21 13:55:03  bkline
- * Fixed bug in setString buffer initializations.
- *
- * Revision 1.2  2000/04/17 21:24:48  bkline
- * Added nullability for ints and strings.  Fixed length byte for setString().
- *
- * Revision 1.1  2000/04/15 12:21:14  bkline
- * Initial revision
  */
 
 #include <iostream>
@@ -39,7 +10,7 @@
 /**
  * Allocates a statement handle for the current database connection.
  */
-cdr::db::Statement::Statement(Connection& c) 
+cdr::db::Statement::Statement(Connection& c)
     : conn(c), pRefCount(new int(1))
 {
     hstmt = SQL_NULL_HSTMT;
@@ -53,7 +24,7 @@ cdr::db::Statement::Statement(Connection& c)
 /**
  * Copy constructor.
  */
-cdr::db::Statement::Statement(const Statement& s) 
+cdr::db::Statement::Statement(const Statement& s)
     : conn(s.conn), hstmt(s.hstmt), pRefCount(s.pRefCount)
 {
     //std::cerr << "COPY CONSTRUCTOR FOR Statement; "
@@ -67,7 +38,7 @@ cdr::db::Statement::Statement(const Statement& s)
  */
 cdr::db::Statement::~Statement()
 {
-    //std::cerr << "Statement destructor; *pRefCount BEFORE DECREMENT=" 
+    //std::cerr << "Statement destructor; *pRefCount BEFORE DECREMENT="
     //    << *pRefCount << '\n';
     if (--*pRefCount > 0)
         return;

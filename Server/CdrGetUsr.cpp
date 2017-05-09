@@ -1,24 +1,5 @@
-
 /*
- * $Id$
- *
  * Retrieves information about requested user.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.5  2001/04/13 12:25:57  bkline
- * Fixed typo in tag (UsrName -> UserName).
- *
- * Revision 1.4  2000/12/28 13:27:17  bkline
- * Fixed typo in closing tag for CdrGetUsrResp.
- *
- * Revision 1.3  2000/05/03 15:25:41  bkline
- * Fixed database statement creation.
- *
- * Revision 1.2  2000/04/23 01:19:58  bkline
- * Added function-level comment header.
- *
- * Revision 1.1  2000/04/22 09:25:50  bkline
- * Initial revision
  */
 
 #include "CdrCommand.h"
