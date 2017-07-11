@@ -478,4 +478,5 @@ GRANT SELECT ON data_partner_product TO CdrGuest
 GRANT SELECT ON data_partner_org     TO CdrGuest
 GRANT SELECT ON data_partner_contact TO CdrGuest
 GRANT SELECT ON pdq_contact          TO CdrGuest
+GRANT SELECT ON glossifier           TO CdrGuest
 GO

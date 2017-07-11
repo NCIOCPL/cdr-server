@@ -2673,3 +2673,18 @@ CREATE TABLE dll_trace_log
   session_id VARCHAR(64),
     log_data TEXT NOT NULL)
 GO
+
+/*
+ * One-row table holding serialized data for the glossifier service.
+ * Seeded with INSERT INTO glossifier VALUES(1, GETDATE(), ''). Refreshed
+ * by nightly job running under CDR scheduler.
+ *
+ *        pk  primary key, set manually to 1
+ * refreshed  when the data was last refreshed
+ *     terms  serialized glossary term data
+ */
+CREATE TABLE glossifier
+         (pk INTEGER PRIMARY KEY,
+   refreshed DATETIME NOT NULL,
+       terms TEXT NOT NULL)
+GO
