@@ -728,6 +728,10 @@ OCECDR-4123: Add HP/Patient URL to Summaries
         FROM query_term_pub p
         JOIN query_term_pub t
           ON t.doc_id = p.int_val
+      -- Only when looking at active documents will we ensure to have a
+      -- one-to-one relationship between HP and Patient version
+        JOIN active_doc a
+          ON a.id = t.doc_id
        WHERE p.path = '/Summary/PatientVersionOf/@cdr:ref'
          AND t.path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
          AND p.doc_id = ?
@@ -742,6 +746,10 @@ OCECDR-4123: Add HP/Patient URL to Summaries
         JOIN query_term_pub u
           ON t.doc_id = u.doc_id
          AND u.path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
+      -- Only when looking at active documents will we ensure to have a
+      -- one-to-one relationship between HP and Patient version
+        JOIN active_doc a
+          ON a.id = t.doc_id
        WHERE p.doc_id = ?
          AND p.path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
     </xsl:otherwise>
