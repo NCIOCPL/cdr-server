@@ -77,6 +77,7 @@ Additional requirements for running the CDR Server:
 
  * writeable X:/cdr/log
  * readable X:/etc/cdrdbpw
+ * readable X:/etc/cdrpw
  * readable X:/etc/cdrapphosts.rc
  * readable X:/etc/cdrtier.rc (containing, e.g., "QA" or "DEV")
  * readable X:/etc/cdrenv.rc (containing "CBIIT")

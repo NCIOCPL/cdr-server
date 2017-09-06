@@ -4,7 +4,7 @@
  * Example of CdrLogon command:
  *  <CdrLogon>
  *   <UserName>mmr</UserName>
- *   <Password>***REDACTED***</Password>
+ *   <Password>**REDACTED**</Password>
  *  </CdrLogon>
  *
  * Example response:

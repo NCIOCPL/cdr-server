@@ -19,6 +19,7 @@
 
 #include <windows.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <process.h>
 #include <tchar.h>
@@ -41,7 +42,7 @@ HANDLE  hServerStopEvent = NULL;
 static char server_pathname[MAX_REGSTR] = "d:\\cdr\\bin\\CdrServer.exe";
 static char service_log[MAX_REGSTR] = "d:\\cdr\\log\\CdrService.log";
 static char service_account[MAX_REGSTR] = "CdrService";
-static char service_password[MAX_REGSTR] = "***REMOVED***";
+static char service_password[MAX_REGSTR];
 
 static int nServers = N_SERVERS;
 static HANDLE hProcesses[MAX_SERVERS];
@@ -200,9 +201,31 @@ VOID ServiceStart (DWORD dwArgc, LPTSTR *lpszArgv)
 //
 VOID ServiceStop()
 {
+    char* key = "cdrservice:";
+    size_t keylen = strlen(key);
+    char line[MAX_REGSTR];
+    FILE* fp = fopen("d:\\etc\\cdrpw", "r");
     DBGLOG("TOP OF SERVICESTOP", service_log);
-
-    DBGLOG("SERVER PROCESS CREATION FAILURE", service_log);
+    if (!fp) {
+        DBGLOG("SERVICE STOP FAILURE", service_log);
+        return;
+    }
+    service_password[0] = '\0';
+    while (fgets(line, MAX_REGSTR, fp)) {
+        if (!memcmp(line, "cdrservice:", keylen)) {
+            size_t j = 0;
+            size_t i = keylen;
+            while (i < MAX_REGSTR && line[i] && line[i] != '\n')
+                service_password[j++] = line[i++];
+            service_password[j] = '\0';
+            break;
+        }
+    }
+    fclose(fp);
+    if (!service_password[0]) {
+        DBGLOG("SERVICE ACCOUNT NOT FOUND", service_log);
+        return;
+    }
     _spawnl(_P_NOWAIT, SHUTDOWN, SHUTDOWN, service_account,
             service_password, 0);
     if (!ReportStatusToSCMgr(SERVICE_STOP_PENDING,
