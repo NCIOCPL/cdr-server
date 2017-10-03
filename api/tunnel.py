@@ -9,7 +9,7 @@ import os
 import sys
 
 try:
-    from cdr_command_set import CommandSet
+    from cdr_commands import CommandSet
     responses = CommandSet().get_responses()
     sys.stdout.buffer.write(b"Content-type: application/xml\r\n\r\n")
     sys.stdout.buffer.write(responses)
