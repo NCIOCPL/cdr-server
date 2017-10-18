@@ -108,9 +108,10 @@ AS
     BEGIN
             INSERT INTO #parents(child, parent)
         SELECT DISTINCT tk.child, tk.parent
-                   FROM term_kids tk, #parents p
-                  WHERE tk.child = p.parent
-                    AND p.parent NOT IN (SELECT child
+                   FROM term_kids tk
+                   JOIN #parents p
+                     ON tk.child = p.parent
+                  WHERE p.parent NOT IN (SELECT child
                                            FROM #parents)
         SELECT @nrows = @@ROWCOUNT
     END
@@ -133,9 +134,10 @@ AS
     BEGIN
             INSERT INTO #children(child, parent)
         SELECT DISTINCT tk.child, tk.parent
-                   FROM term_kids tk, #children c
-                  WHERE tk.parent = c.child
-                    AND c.child NOT IN (SELECT parent
+                   FROM term_kids tk
+                   JOIN #children c
+                     ON tk.parent = c.child
+                  WHERE c.child NOT IN (SELECT parent
                                           FROM #children)
         SELECT @nrows = @@ROWCOUNT
         SELECT @nlevels = @nlevels + 1
@@ -145,10 +147,10 @@ AS
      * Generate the first result set, containing all the child-parent
      * relationships we have found.
      */
-    SELECT DISTINCT * 
+    SELECT DISTINCT *
                FROM #parents
               UNION
-             SELECT * 
+             SELECT *
                FROM #children
 
     /*
@@ -308,9 +310,10 @@ AS
     BEGIN
             INSERT INTO #parents(child, parent)
         SELECT DISTINCT tp.child, tp.parent
-                   FROM term_parents tp, #parents p
-                  WHERE tp.child = p.parent
-                    AND p.parent NOT IN (SELECT child
+                   FROM term_parents tp
+                   JOIN #parents p
+                     ON tp.child = p.parent
+                  WHERE p.parent NOT IN (SELECT child
                                            FROM #parents)
         SELECT @nrows = @@ROWCOUNT
     END
@@ -323,9 +326,10 @@ AS
     BEGIN
             INSERT INTO #children(child, parent)
         SELECT DISTINCT tp.child, tp.parent
-                   FROM term_parents tp, #children c
-                  WHERE tp.parent = c.child
-                    AND c.child NOT IN (SELECT parent
+                   FROM term_parents tp
+                   JOIN #children c
+                     ON tp.parent = c.child
+                  WHERE c.child NOT IN (SELECT parent
                                           FROM #children)
         SELECT @nrows = @@ROWCOUNT
     END
@@ -335,80 +339,6 @@ AS
     DROP TABLE #parents
     DROP TABLE #children
 
-GO
-
-CREATE TRIGGER dev_task_trigger ON dev_task
-FOR UPDATE, INSERT
-AS
-    IF UPDATE(status)
-    BEGIN
-        UPDATE dev_task
-          SET dev_task.status_date = GETDATE()
-         FROM inserted, dev_task
-        WHERE dev_task.id = inserted.id
-    END
-
-GO
-
-/*
- * Another procedure required because of a bug in ADO, which complains
- * in the second query that the temporary table doesn't exist.  It's not
- * that ADO can't deal with temporary tables at all, but it gets very 
- * confused when placeholders and nested queries are combined.
- */
-CREATE PROCEDURE cdr_newly_pub_trials
-    @job_id INT
-AS
-    SELECT ppd1.doc_id,
-           pp1.pub_subset
-      INTO #prev_event
-      FROM pub_proc_doc ppd1
-      JOIN pub_proc pp1
-        ON pp1.id = ppd1.pub_proc
-      JOIN pub_proc_doc ppd2
-        ON ppd2.doc_id = ppd1.doc_id
-     WHERE ppd2.pub_proc = @job_id
-       AND pp1.id = (SELECT MAX(pp3.id) as foobar
-                       FROM pub_proc pp3
-                       JOIN pub_proc_doc ppd3
-                         ON ppd3.pub_proc = pp3.id
-                        AND ppd3.doc_id = ppd1.doc_id
-                       JOIN query_term ps
-                         ON ps.doc_id = pp3.pub_system
-                      WHERE pp3.id < ppd2.pub_proc
-                        AND ps.path = '/PublishingSystem/SystemName'
-                        AND ps.value = 'Primary'
-                        AND pp3.pub_subset IN ('Export', 'Remove'))
-
- SELECT DISTINCT ppd.doc_id,
-                 cat.value,
-                 stat.value,
-                 id.value
-            FROM pub_proc_doc ppd
-            JOIN query_term cat
-              ON cat.doc_id = ppd.doc_id
-            JOIN query_term cat_type
-              ON cat_type.doc_id = cat.doc_id
-             AND LEFT(cat_type.node_loc, 8) = LEFT(cat.node_loc, 8)
-            JOIN query_term stat
-              ON stat.doc_id = ppd.doc_id
-             AND stat.path = '/InScopeProtocol/ProtocolAdminInfo'
-                           + '/CurrentProtocolStatus'
-            JOIN query_term id
-              ON id.doc_id = ppd.doc_id
-             AND id.path = '/InScopeProtocol/ProtocolIDs/PrimaryID/IDString'
-           WHERE ppd.pub_proc = @job_id
-             AND cat.path = '/InScopeProtocol/ProtocolDetail/StudyCategory'
-                          + '/StudyCategoryName'
-             AND cat_type.path = '/InScopeProtocol/ProtocolDetail'
-                               + '/StudyCategory/StudyCategoryType'
-             AND cat_type.value = 'Primary'
-             AND ppd.doc_id NOT IN (SELECT doc_id
-                                      FROM #prev_event
-                                     WHERE pub_subset = 'Export')
-        ORDER BY cat.value,
-                 id.value,
-                 stat.value
 GO
 
 /*
