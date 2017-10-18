@@ -76,6 +76,10 @@ CREATE PROCEDURE cdr_get_term_tree
     @doc_id INT,
     @depth  INT
 AS
+
+    -- Do this or fail!
+    SET NOCOUNT ON;
+
     -- Used for loop control.
     DECLARE @nrows   INT
     DECLARE @nlevels INT
@@ -180,6 +184,9 @@ CREATE PROCEDURE get_participating_orgs
     @lead_org INTEGER
 AS
 
+    -- Do this or fail!
+    SET NOCOUNT ON;
+
     SELECT DISTINCT doc_id AS id, path
                INTO #po
                FROM query_term
@@ -220,7 +227,7 @@ AS
                 AND LEFT(lo.node_loc, 8) = LEFT(po.node_loc, 8)
                JOIN query_term role
                  ON role.doc_id = po.doc_id
-                AND LEFT(role.node_loc, 12) = 
+                AND LEFT(role.node_loc, 12) =
                     LEFT(lo.node_loc, 12)
                JOIN query_term frag
                  ON frag.doc_id = po.doc_id
@@ -239,7 +246,7 @@ AS
                                  '/OtherPracticeLocation' +
                                  '/ComplexAffiliation' +
                                  '/RoleAtAffiliatedOrganization'
-                AND frag.path  = '/Person/PersonLocations' + 
+                AND frag.path  = '/Person/PersonLocations' +
                                  '/OtherPracticeLocation/@cdr:id'
                 AND role.value = 'Principal Investigator'
                 AND lo.int_val = @lead_org
@@ -294,6 +301,9 @@ GO
 CREATE PROCEDURE cdr_get_tree_context
     @doc_id INT
 AS
+    -- Do this or fail!
+    SET NOCOUNT ON;
+
     DECLARE @nrows INT
     CREATE TABLE #parents(child INT, parent INT)
     CREATE INDEX idx_pc ON #parents(child)
@@ -362,13 +372,17 @@ AS
     /*
      * Get the main member organizations.
      */
+
+    -- Do this or fail!
+    SET NOCOUNT ON;
+
     SELECT DISTINCT mm_d.id,
                     mm_d.title
                INTO #mm
                FROM document mm_d
                JOIN query_term mm
                  ON mm.doc_id = mm_d.id
-              WHERE mm.path = '/Organization/OrganizationAffiliations' 
+              WHERE mm.path = '/Organization/OrganizationAffiliations'
                             + '/MemberOfCooperativeGroups'
                             + '/MainMemberOf/CooperativeGroup/@cdr:ref'
                 AND mm.int_val = @docId
@@ -469,12 +483,15 @@ AS
 GO
 
 /*
- * Pull out count of protocol and summary documents linking to a 
+ * Pull out count of protocol and summary documents linking to a
  * specified Person document (used by the Person QC report).
  */
 CREATE PROCEDURE cdr_get_count_of_links_to_persons
     @docId INTEGER
 AS
+
+    -- Speeds things up.
+    SET NOCOUNT ON;
 
     SELECT COUNT(person.doc_id), status.value
       FROM query_term person
@@ -520,6 +537,9 @@ GO
 CREATE PROC find_linked_docs
     @doc_id INTEGER
 AS
+    -- Do this or fail!
+    SET NOCOUNT ON;
+
     -- Local variables.
     DECLARE @nrows INTEGER
 
@@ -535,7 +555,7 @@ AS
              ON t.id = d.doc_type
           WHERE d.id = @doc_id
 
-    -- Keep inserting until we exhaust the links.  
+    -- Keep inserting until we exhaust the links.
     -- Don't get citations.
     SELECT @nrows = @@ROWCOUNT
     WHILE @nrows > 0
@@ -573,6 +593,9 @@ AS
 CREATE PROC get_prot_person_connections
     @doc_id INTEGER
 AS
+    -- Do this or fail!
+    SET NOCOUNT ON;
+
     -- Local variables.
     DECLARE @active_trials INTEGER
     DECLARE @closed_trials INTEGER
@@ -710,6 +733,9 @@ GO
 CREATE PROC select_changed_non_active_protocols
 
 AS
+    -- Do this or fail!
+    SET NOCOUNT ON;
+
     -- Create temporary table containing docId + version num of
     --   all currently published docs sent to cancer.gov
     SELECT doc_id AS id, MAX(doc_version) AS num
@@ -728,7 +754,7 @@ AS
         ON v.id = d.id
       JOIN query_term_pub q
         ON q.doc_id = d.id
-     WHERE q.path = 
+     WHERE q.path =
            '/InScopeProtocol/ProtocolAdminInfo/CurrentProtocolStatus'
        AND q.value IN ('Closed', 'Completed', 'Temporarily Closed')
        AND d.active_status = 'A'
