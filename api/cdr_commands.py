@@ -39,6 +39,7 @@ class CommandSet:
         CdrDelDoc="del_doc",
         CdrGetDoc="get_doc",
         CdrFilter="filter_doc",
+        CdrValidateDoc="validate_doc",
     )
     def __init__(self):
         self.tier = Tier()
@@ -367,8 +368,8 @@ class CommandSet:
         name = "CdrAddDocResp" if new else "CdrRepDocResp"
         response = etree.Element(name)
         etree.SubElement(response, "DocId").text = doc.cdr_id
-        if doc.validation_errors:
-            response.append(doc.validation_errors)
+        if doc.errors_node:
+            response.append(doc.errors_node)
             if doc.is_content_type() and opts["locators"]:
                 response.append(doc.legacy_doc(get_xml=True, brief=True))
         return response
@@ -420,6 +421,36 @@ class CommandSet:
             for message in result.messages:
                 etree.SubElement(messages, "message").text = message
         return response
+
+    def validate_doc(self, node):
+        doctype = node.get("DocType")
+        opts = {
+            "store": "never",
+            "types": node.get("ValidationTypes"),
+            "locators": node.get("ErrorLocators") in ("Y", "y")
+        }
+        xml = doctype = doc_id = None
+        for child in node:
+            if child.tag == "CdrDoc":
+                xml = self.get_node_text(child.find("CdrDocXml"))
+            elif child.tag == "DocId":
+                doc_id = self.get_node_text(child)
+                if not child.get("ValidateOnly") != "Y":
+                    opts["store"] = "always"
+        if not doctype:
+            raise Exception("Missing required DocType element")
+        if not xml and not doc_id:
+            raise Exception("Must specify DocId or CdrDoc element")
+        if xml:
+            doc = Doc(xml=xml, doctype=doctype)
+        elif doc_id:
+            doc = Doc(id=doc_id)
+            if doc.doctype != doctype:
+                raise Exception("DocType mismatch")
+        else:
+            raise Exception("Both DocId and CdrDoc specified")
+        doc.validate(**opts)
+        return doc.legacy_validation_response(opts["locators"])
 
     @staticmethod
     def get_node_text(node, default=None):
