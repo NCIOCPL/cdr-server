@@ -414,7 +414,7 @@ class CommandSet:
         result = doc.filter(*filters, **opts)
         response = etree.Element("CdrFilterResp")
         if output:
-            doc = unicode(result.doc)
+            doc = unicode(result.result_tree)
             etree.SubElement(response, "Document").text = etree.CDATA(doc)
         if result.messages:
             messages = etree.SubElement(response, "Messages")
@@ -445,7 +445,7 @@ class CommandSet:
             doc = Doc(xml=xml, doctype=doctype)
         elif doc_id:
             doc = Doc(id=doc_id)
-            if doc.doctype != doctype:
+            if doc.doctype.name != doctype:
                 raise Exception("DocType mismatch")
         else:
             raise Exception("Both DocId and CdrDoc specified")
