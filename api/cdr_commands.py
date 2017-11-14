@@ -11,7 +11,7 @@ import sys
 from lxml import etree
 from cdrapi.users import Session
 from cdrapi.settings import Tier
-from cdrapi.docs import Doc
+from cdrapi.docs import Doc, Doctype
 
 
 try:
@@ -20,25 +20,27 @@ except:
     basestring = unicode = str
 
 class CommandSet:
+    PARSER = etree.XMLParser(strip_cdata=False)
     COMMANDS = dict(
-        CdrLogoff="logoff",
-        CdrDupSession="dup_session",
-        CdrCanDo="can_do",
-        CdrAddGrp="add_group",
-        CdrModGrp="mod_group",
-        CdrGetGrp="get_group",
-        CdrDelGrp="del_group",
-        CdrListGrps="list_groups",
         CdrAddAction="add_action",
-        CdrRepAction="mod_action",
-        CdrGetAction="get_action",
-        CdrDelAction="del_action",
-        CdrListActions="list_actions",
         CdrAddDoc="add_doc",
-        CdrRepDoc="rep_doc",
+        CdrAddGrp="add_group",
+        CdrCanDo="can_do",
+        CdrDelAction="del_action",
         CdrDelDoc="del_doc",
-        CdrGetDoc="get_doc",
+        CdrDelGrp="del_group",
+        CdrDupSession="dup_session",
         CdrFilter="filter_doc",
+        CdrGetAction="get_action",
+        CdrGetDoc="get_doc",
+        CdrGetGrp="get_group",
+        CdrListDocTypes="list_doctypes",
+        CdrListGrps="list_groups",
+        CdrLogoff="logoff",
+        CdrListActions="list_actions",
+        CdrModGrp="mod_group",
+        CdrRepAction="mod_action",
+        CdrRepDoc="rep_doc",
         CdrValidateDoc="validate_doc",
     )
     def __init__(self):
@@ -56,7 +58,7 @@ class CommandSet:
         else:
             request = sys.stdin.buffer.read()
         self.logger.info("%s bytes from %s", len(request), self.client)
-        root = etree.fromstring(request)
+        root = etree.fromstring(request, parser=self.PARSER)
         if root.tag != "CdrCommandSet":
             raise Exception("not a CDR command set")
         return root
@@ -71,9 +73,12 @@ class CommandSet:
                     self.logger.warning(str(e))
                     return self.wrap_responses(self.wrap_error(e))
             elif node.tag == "CdrCommand":
-                responses.append(self.process_command(node))
+                try:
+                    responses.append(self.process_command(node))
+                except:
+                    self.logger.exception("{} failure".format(node.tag))
             else:
-                self.logger.warning("unexpected element {!r}", node.tag)
+                self.logger.warning("unexpected element %r", node.tag)
         return self.wrap_responses(*responses)
     def process_command(self, node):
         start = datetime.datetime.now()
@@ -94,7 +99,7 @@ class CommandSet:
             response.set("Status", "success")
             self.logger.info(child.tag)
         except Exception as e:
-            self.logger.error(str(e))
+            self.logger.exception("{} failure".format(node.tag))
             response.append(self.wrap_error(e))
             response.set("Status", "failure")
         elapsed = (datetime.datetime.now() - start).total_seconds()
@@ -156,6 +161,12 @@ class CommandSet:
         group = Session.Group(**opts)
         group.add(self.session)
         return etree.Element("CdrAddGrpResp")
+
+    def list_doctypes(self, node):
+        response = etree.Element("CdrListDocTypesResp")
+        for name in Doctype.list_doc_types(self.session):
+            etree.SubElement(response, "DocType").text = name
+        return response
 
     def mod_group(self, node):
         name = new_name = comment = None
@@ -288,7 +299,7 @@ class CommandSet:
         lock = self.get_node_text(node.find("Lock")) == "Y"
         doc = Doc(self.session, id=doc_id, version=version)
         if lock:
-            doc.lock()
+            doc.check_out()
         opts = {
             "get_xml": node.get("includeXml", "Y") == "Y",
             "get_blob": node.get("includeBlob", "Y") == "Y",
@@ -303,8 +314,9 @@ class CommandSet:
     def rep_doc(self, node):
         return self.__put_doc(node, new=False)
     def __put_doc(self, node, new=False):
-        opts = {"validate": []}
+        opts = dict()
         doc_node = None
+        echo = locators = False
         for child in node.findall("*"):
             if child.tag == "CheckIn":
                 if self.get_node_text(child, "").upper() == "Y":
@@ -317,17 +329,18 @@ class CommandSet:
             elif child.tag == "Validate":
                 if self.get_node_text(child, "").upper() == "Y":
                     val_types = child.get("ValidationTypes", "").lower()
-                    for val_type in ("schema", "links"):
-                        if val_type in val_types:
-                            opts["validate"].append(val_type)
+                    if val_types:
+                        opts["val_types"] = val_types.split()
+                    else:
+                        opts["val_types"] = "schema", "links"
                     if child.get("ErrorLocators", "").upper() == "Y":
-                        opts["locators"] = True
+                        locators = opts["locators"] = True
             elif child.tag == "SetLinks":
                 if self.get_node_text(child, "").upper() == "Y":
                     opts["set_links"] = True
             elif child.tag == "Echo":
                 if self.get_node_text(child, "").upper() == "Y":
-                    opts["echo"] = True
+                    echo = True
             elif child.tag == "DelAllBlobVersions":
                 if self.get_node_text(child, "").upper() == "Y":
                     opts["del_blobs"] = True
@@ -337,7 +350,7 @@ class CommandSet:
                 doc_node = child
         if doc_node is None:
             raise Exception("put_doc() missing CdrDoc element")
-        opts["doctype"] = node.get("Type")
+        doctype = node.get("Type")
         opts["filter_level"] = node.get("RevisionFilterLevel")
         doc_id = node.get("Id")
         for child in doc_node.findall("*"):
@@ -370,7 +383,7 @@ class CommandSet:
         etree.SubElement(response, "DocId").text = doc.cdr_id
         if doc.errors_node:
             response.append(doc.errors_node)
-            if doc.is_content_type() and opts["locators"]:
+            if doc.is_content_type and opts["locators"]:
                 response.append(doc.legacy_doc(get_xml=True, brief=True))
         return response
     def filter_doc(self, node):
@@ -424,12 +437,13 @@ class CommandSet:
 
     def validate_doc(self, node):
         doctype = node.get("DocType")
+        types = node.get("ValidationTypes", "").lower().split()
         opts = {
             "store": "never",
-            "types": node.get("ValidationTypes"),
+            "types": types or ("schema", "links"),
             "locators": node.get("ErrorLocators") in ("Y", "y")
         }
-        xml = doctype = doc_id = None
+        xml = doc_id = None
         for child in node:
             if child.tag == "CdrDoc":
                 xml = self.get_node_text(child.find("CdrDocXml"))
@@ -442,9 +456,9 @@ class CommandSet:
         if not xml and not doc_id:
             raise Exception("Must specify DocId or CdrDoc element")
         if xml:
-            doc = Doc(xml=xml, doctype=doctype)
+            doc = Doc(self.session, xml=xml, doctype=doctype)
         elif doc_id:
-            doc = Doc(id=doc_id)
+            doc = Doc(self.session, id=doc_id)
             if doc.doctype.name != doctype:
                 raise Exception("DocType mismatch")
         else:
