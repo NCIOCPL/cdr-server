@@ -11,13 +11,18 @@ import sys
 from lxml import etree
 from cdrapi.users import Session
 from cdrapi.settings import Tier
-from cdrapi.docs import Doc, Doctype
+from cdrapi.docs import Doc, Doctype, FilterSet
 
 
 try:
     basestring
+    base64encode = base64.encodestring
+    base64decode = base64.decodestring
 except:
-    basestring = unicode = str
+    base64encode = base64.encodebytes
+    base64decode = base64.decodebytes
+    basestring = str, bytes
+    unicode = str
 
 
 class CommandSet:
@@ -26,11 +31,14 @@ class CommandSet:
         CdrAddAction="_add_action",
         CdrAddDoc="_add_doc",
         CdrAddDocType="_add_doctype",
+        CdrAddExternalMapping="_add_external_mapping",
+        CdrAddFilterSet="_add_filter_set",
         CdrAddGrp="_add_group",
         CdrCanDo="_can_do",
         CdrDelAction="_del_action",
         CdrDelDoc="_del_doc",
         CdrDelDocType="_del_doctype",
+        CdrDelFilterSet="_del_filter_set",
         CdrDelGrp="_del_group",
         CdrDupSession="_dup_session",
         CdrFilter="_filter_doc",
@@ -38,6 +46,9 @@ class CommandSet:
         CdrGetCssFiles="_get_css_files",
         CdrGetDoc="_get_doc",
         CdrGetDocType="_get_doctype",
+        CdrGetFilters="_get_filters",
+        CdrGetFilterSet="_get_filter_set",
+        CdrGetFilterSets="_get_filter_sets",
         CdrGetGrp="_get_group",
         CdrListDocTypes="_list_doctypes",
         CdrListSchemaDocs="_list_schema_docs",
@@ -48,6 +59,7 @@ class CommandSet:
         CdrModGrp="_mod_group",
         CdrRepAction="_mod_action",
         CdrRepDoc="_rep_doc",
+        CdrRepFilterSet="_rep_filter_set",
         CdrValidateDoc="_validate_doc",
     )
 
@@ -106,6 +118,27 @@ class CommandSet:
 
     def _add_doctype(self, node):
         return self.__put_doctype(node, new=True)
+
+    def _add_external_mapping(self, node):
+        usage = cdr_id = value = None
+        opts = dict(bogus="N", mappable="Y")
+        for child in node.findall("*"):
+            if child.tag == "Usage":
+                usage = self.get_node_text(child)
+            elif child.tag == "CdrId":
+                cdr_id = self.get_node_text(child)
+            elif child.tag == "Value":
+                value = self.get_node_text(child)
+            elif child.tag == "Bogus":
+                opts["bogus"] = self.get_node_text(child)
+            elif child.tag == "Mappable":
+                opts["mappable"] = self.get_node_text(child)
+        doc = Doc(self.session, id=cdr_id)
+        mapping_id = str(doc.add_external_mapping(usage, value, **opts))
+        return etree.Element("CdrAddExternalMappingResp", MappingId=mapping_id)
+
+    def _add_filter_set(self, node):
+        return self.__put_filter_set(node, new=True)
 
     def _add_group(self, node):
         opts = dict(name=None, comment=None, users=[], actions={})
@@ -173,6 +206,12 @@ class CommandSet:
             raise Exception("Missing doctype name")
         Doctype(self.session, name=name).delete()
         return etree.Element("CdrDelDocTypeResp")
+
+    def _del_filter_set(self, node):
+        name = self.get_node_text(node.find("FilterSetName"))
+        filter_set = FilterSet(self.session, name=name)
+        filter_set.delete()
+        return etree.Element("CdrDelFilterSetResp")
 
     def _del_group(self, node):
         name = self.get_node_text(node.find("GrpName"), "").strip()
@@ -253,11 +292,12 @@ class CommandSet:
 
     def _get_css_files(self, node):
         files = Doctype.get_css_files(self.session)
-        response = etree.Element("CdrGetCssFiles")
+        response = etree.Element("CdrGetCssFilesResp")
         for name in sorted(files):
+            data = base64encode(files[name]).decode("ascii")
             wrapper = etree.SubElement(response, "File")
             etree.SubElement(wrapper, "Name").text = name
-            etree.SubElement(wrapper, "Data").text = files[name]
+            etree.SubElement(wrapper, "Data").text = data
         return response
 
     def _get_doc(self, node):
@@ -307,6 +347,40 @@ class CommandSet:
                 etree.SubElement(wrapper, "LinkingElement").text = name
         if doctype.comment is not None:
             etree.SubElement(response, "Comment").text = doctype.comment
+        return response
+
+    def _get_filters(self, node):
+        response = etree.Element("CdrGetFiltersResp")
+        for doc in FilterSet.get_filters(self.session):
+            node = etree.SubElement(response, "Filter", DocId=doc.cdr_id)
+            node.text = doc.title
+        return response
+
+    def _get_filter_set(self, node):
+        name = self.get_node_text(node.find("FilterSetName"))
+        filter_set = FilterSet(self.session, name=name)
+        response = etree.Element("CdrGetFilterSetResp")
+        etree.SubElement(response, "FilterSetName").text = filter_set.name
+        if filter_set.description is not None:
+            child = etree.SubElement(response, "FilterSetDescription")
+            child.text = filter_set.description
+        if filter_set.notes is not None:
+            child = etree.SubElement(response, "FilterSetNotes")
+            child.text = filter_set.notes
+        for m in filter_set.members:
+            if isinstance(m, Doc):
+                child = etree.SubElement(response, "Filter", DocId=m.cdr_id)
+                child.text = m.title
+            else:
+                set_id = str(m.id)
+                child = etree.SubElement(response, "FilterSet", SetId=set_id)
+                child.text = m.name
+        return response
+
+    def _get_filter_sets(self, node):
+        response = etree.Element("CdrGetFilterSetsResp")
+        for id, name in FilterSet.get_filter_sets(self.session):
+            etree.SubElement(response, "FilterSet", SetId=str(id)).text = name
         return response
 
     def _get_group(self, node):
@@ -414,6 +488,9 @@ class CommandSet:
     def _rep_doc(self, node):
         return self.__put_doc(node, new=False)
 
+    def _rep_filter_set(self, node):
+        return self.__put_filter_set(node, new=False)
+
     def _validate_doc(self, node):
         doctype = node.get("DocType")
         types = node.get("ValidationTypes", "").lower().split()
@@ -509,7 +586,7 @@ class CommandSet:
             elif child.tag == "CdrDocXml":
                 doc_opts["xml"] = self.get_node_text(child)
             elif child.tag == "CdrDocBlob":
-                blob = base64.decodestring(self.get_node_text(child))
+                blob = base64decode(self.get_node_text(child).encode("ascii"))
                 doc_opts["blob"] = blob
         if new and doc_opts.get("id"):
             raise Exception("can't add a document which already has an ID")
@@ -567,12 +644,12 @@ class CommandSet:
             child = node.find("*")
             if child is None:
                 raise Exception("Missing specific command element")
+            self.logger.info(child.tag)
             handler = self.COMMANDS.get(child.tag)
             if handler is None:
                 raise Exception("Unknown command: {}".format(child.tag))
             response.append(getattr(self, handler)(child))
             response.set("Status", "success")
-            self.logger.info(child.tag)
         except Exception as e:
             self.logger.exception("{} failure".format(node.tag))
             response.append(self.__wrap_error(e))
@@ -580,6 +657,32 @@ class CommandSet:
         elapsed = (datetime.datetime.now() - start).total_seconds()
         response.set("Elapsed", "{:f}".format(elapsed))
         return response
+
+    def __put_filter_set(self, node, new):
+        opts = dict(name=None, description=None, notes=None, members=[])
+        for child in node:
+            if child.tag == "FilterSetName":
+                opts["name"] = self.get_node_text(child)
+            elif child.tag == "FilterSetDescription":
+                opts["description"] = self.get_node_text(child)
+            elif child.tag == "FilterSetNotes":
+                opts["notes"] = self.get_node_text(child)
+            elif child.tag == "Filter":
+                member = Doc(self.session, id=child.get("DocId"))
+                opts["members"].append(member)
+            elif child.tag == "FilterSet":
+                member = FilterSet(self.session, id=child.get("SetId"))
+                opts["members"].append(member)
+        filter_set = FilterSet(self.session, **opts)
+        if new and filter_set.id:
+            message = "Filter set {!r} already exists".format(filter_set.name)
+            raise Exception(message)
+        if not new and not filter_set.id:
+            message = "Filter set {!r} not found".format(filter_set.name)
+            raise Exception(message)
+        member_count = filter_set.save()
+        name = "CdrAddFilterSetResp" if new else "CdrRepFilterSetResp"
+        return etree.Element(name, TotalFilters=str(member_count))
 
     def __wrap_error(self, error):
         errors = etree.Element("Errors")
