@@ -11,9 +11,10 @@ import sys
 from lxml import etree
 from cdrapi.users import Session
 from cdrapi.settings import Tier
-from cdrapi.docs import Doc, Doctype, FilterSet
+from cdrapi.docs import Doc, Doctype, FilterSet, LinkType
+from cdrapi.searches import QueryTermDef
 
-
+from six import itervalues
 try:
     basestring
     base64encode = base64.encodestring
@@ -34,12 +35,19 @@ class CommandSet:
         CdrAddExternalMapping="_add_external_mapping",
         CdrAddFilterSet="_add_filter_set",
         CdrAddGrp="_add_group",
+        CdrAddLinkType="_put_link_type",
+        CdrAddQueryTermDef="_add_query_term_def",
+        CdrAddUsr="_put_user",
         CdrCanDo="_can_do",
+        CdrCheckAuth="_check_auth",
         CdrDelAction="_del_action",
         CdrDelDoc="_del_doc",
         CdrDelDocType="_del_doctype",
         CdrDelFilterSet="_del_filter_set",
         CdrDelGrp="_del_group",
+        CdrDelLinkType="_del_linktype",
+        CdrDelQueryTermDef="_del_query_term_def",
+        CdrDelUsr="_del_user",
         CdrDupSession="_dup_session",
         CdrFilter="_filter_doc",
         CdrGetAction="_get_action",
@@ -50,13 +58,22 @@ class CommandSet:
         CdrGetFilterSet="_get_filter_set",
         CdrGetFilterSets="_get_filter_sets",
         CdrGetGrp="_get_group",
+        CdrGetLinkType="_get_link_type",
+        CdrGetUsr="_get_user",
         CdrListDocTypes="_list_doctypes",
-        CdrListSchemaDocs="_list_schema_docs",
         CdrListGrps="_list_groups",
+        CdrListLinkProps="_list_linkprops",
+        CdrListLinkTypes="_list_linktypes",
+        CdrListQueryTermDefs="_list_query_term_defs",
+        CdrListQueryTermRules="_list_query_term_rules",
+        CdrListSchemaDocs="_list_schema_docs",
+        CdrListUsrs="_list_users",
         CdrLogoff="_logoff",
         CdrListActions="_list_actions",
         CdrModDocType="_mod_doctype",
         CdrModGrp="_mod_group",
+        CdrModLinkType="_put_link_type",
+        CdrModUsr="_put_user",
         CdrRepAction="_mod_action",
         CdrRepDoc="_rep_doc",
         CdrRepFilterSet="_rep_filter_set",
@@ -161,6 +178,12 @@ class CommandSet:
         group.add(self.session)
         return etree.Element("CdrAddGrpResp")
 
+    def _add_query_term_def(self, node):
+        path = self.get_node_text(node.find("Path"))
+        rule = self.get_node_text(node.find("Rule")) or None
+        QueryTermDef(self.session, path, rule).add()
+        return etree.Element("CdrAddQueryTermDefResp")
+
     def _can_do(self, node):
         action = doc_type = None
         for child in node.findall("*"):
@@ -172,6 +195,27 @@ class CommandSet:
             raise Exception("No action specified to check")
         response = etree.Element("CdrCanDoResp")
         response.text = "Y" if self.session.can_do(action, doc_type) else "N"
+        return response
+
+    def _check_auth(self, node):
+        pairs = []
+        for wrapper in node.findall("Auth"):
+            action = self.get_node_text(wrapper.find("Action"))
+            doctype = self.get_node_text(wrapper.find("DocType"))
+            pairs.append((action, doctype))
+        response = etree.Element("CdrCheckAuthResp")
+        permissions = self.session.check_permissions(pairs)
+        for action in sorted(permissions):
+            added = False
+            for doctype in sorted(permissions[action]):
+                if doctype and doctype.strip():
+                    wrapper = etree.SubElement(response, "Auth")
+                    etree.SubElement(wrapper, "Action").text = action
+                    etree.SubElement(wrapper, "DocType").text = doctype
+                    added = True
+            if not added:
+                wrapper = etree.SubElement(response, "Auth")
+                etree.SubElement(wrapper, "Action").text = action
         return response
 
     def _del_action(self, node):
@@ -219,6 +263,22 @@ class CommandSet:
             raise Exception("Missing group name")
         self.session.get_group(name).delete(self.session)
         return etree.Element("CdrDelGrpResp")
+
+    def _del_linktype(self, node):
+        name = self.get_node_text(node.find("Name"))
+        LinkType(self.session, name=name).delete()
+        return etree.Element("CdrDelLinkTypeResp")
+
+    def _del_query_term_def(self, node):
+        path = self.get_node_text(node.find("Path"))
+        rule = self.get_node_text(node.find("Rule")) or None
+        QueryTermDef(self.session, path, rule).delete()
+        return etree.Element("CdrDelQueryTermDefResp")
+
+    def _del_user(self, node):
+        name = self.get_node_text(node.find("UserName"))
+        Session.User(self.session, name=name).delete()
+        return etree.Element("CdrDelUsrResp")
 
     def _dup_session(self, node):
         session = self.session.duplicate()
@@ -406,6 +466,53 @@ class CommandSet:
             etree.SubElement(response, "Comment").text = group.comment
         return response
 
+    def _get_link_type(self, node):
+        name = self.get_node_text(node.find("Name"), "").strip()
+        if not name:
+            raise Exception("Missing link type name")
+        linktype = LinkType(self.session, name=name)
+        response = etree.Element("CdrGetLinkTypeResp")
+        etree.SubElement(response, "Name").text = linktype.name
+        etree.SubElement(response, "LinkChkType").text = linktype.chk_type
+        if linktype.comment is not None:
+            comment = linktype.comment
+            etree.SubElement(response, "LinkTypeComment").text = comment
+        sources = linktype.sources or []
+        targets = linktype.targets or []
+        properties = linktype.properties or []
+        for source in sources:
+            wrapper = etree.SubElement(response, "LinkSource")
+            etree.SubElement(wrapper, "SrcDocType").text = source.doctype.name
+            etree.SubElement(wrapper, "SrcField").text = source.element
+            for target in itervalues(linktype.targets):
+                etree.SubElement(response, "TargetDocType").text = target.name
+        for prop in properties:
+            wrapper = etree.SubElement(response, "LinkProperties")
+            etree.SubElement(wrapper, "LinkProperty").text = prop.name
+            etree.SubElement(wrapper, "PropertyValue").text = prop.value
+            etree.SubElement(wrapper, "PropertyComment").text = prop.comment
+        return response
+
+    def _get_user(self, node):
+        name = self.get_node_text(node.find("UserName"))
+        user = Session.User(self.session, name=name)
+        response = etree.Element("CdrGetUsrResp")
+        etree.SubElement(response, "UserName").text = user.name
+        etree.SubElement(response, "AuthenticationMode").text = user.authmode
+        if user.fullname is not None:
+            etree.SubElement(response, "FullName").text = user.fullname
+        if user.office is not None:
+            etree.SubElement(response, "Office").text = user.office
+        if user.email is not None:
+            etree.SubElement(response, "Email").text = user.email
+        if user.phone is not None:
+            etree.SubElement(response, "Phone").text = user.phone
+        if user.comment is not None:
+            etree.SubElement(response, "Comment").text = user.comment
+        for group in (user.groups or []):
+            etree.SubElement(response, "GrpName").text = group
+        return response
+
     def _list_actions(self, node):
         response = etree.Element("CdrListActionsResp")
         for action in self.session.list_actions():
@@ -427,10 +534,46 @@ class CommandSet:
             etree.SubElement(response, "GrpName").text = name
         return response
 
+    def _list_linkprops(self, node):
+        response = etree.Element("CdrListLinkPropsResp")
+        for prop_type in LinkType.get_property_types(self.session):
+            wrapper = etree.SubElement(response, "LinkProperty")
+            etree.SubElement(wrapper, "Name").text = prop_type.name
+            if prop_type.comment is not None:
+                etree.SubElement(wrapper, "Comment").text = prop_type.comment
+        return response
+
+    def _list_linktypes(self, node):
+        response = etree.Element("CdrListLinkTypesResp")
+        for name in LinkType.get_linktype_names(self.session):
+            etree.SubElement(response, "Name").text = name
+        return response
+
+    def _list_query_term_defs(self, node):
+        response = etree.Element("CdrListQueryTermDefsResp")
+        for definition in QueryTermDef.get_definitions(self.session):
+            wrapper = etree.SubElement(response, "Definition")
+            etree.SubElement(wrapper, "Path").text = definition.path
+            if definition.rule is not None:
+                etree.SubElement(wrapper, "Rule").text = definition.rule
+        return response
+
+    def _list_query_term_rules(self, node):
+        response = etree.Element("CdrListQueryTermRulesResp")
+        for rule in QueryTermDef.get_rules(self.session):
+            etree.SubElement(response, "Rule").text = rule
+        return response
+
     def _list_schema_docs(self, node):
         response = etree.Element("CdrListSchemaDocsResp")
         for title in Doctype.list_schema_docs(self.session):
             etree.SubElement(response, "DocTitle").text = title
+        return response
+
+    def _list_users(self, node):
+        response = etree.Element("CdrListUsrsResp")
+        for name in self.session.list_users():
+            etree.SubElement(response, "UserName").text = name
         return response
 
     def _logoff(self, node):
@@ -484,6 +627,72 @@ class CommandSet:
         group.actions = actions
         group.modify(self.session)
         return etree.Element("CdrModGrpResp")
+
+    def _put_link_type(self, node):
+        opts = dict(
+            sources=[],
+            targets={},
+            properties=[],
+            chk_type=self.get_node_text(node.find("LinkChkType")),
+            comment=self.get_node_text(node.find("Comment"))
+        )
+        name = self.get_node_text(node.find("Name"))
+        if node.tag == "CdrModLinkType":
+            linktype_id = LinkType(self.session, name=name).id
+            if linktype_id is None:
+                raise Exception("Can't find link type {}".format(name))
+            opts["id"] = linktype_id
+            new_name = self.get_node_text(node.find("NewName"))
+            opts["name"] = new_name if new_name else name
+        else:
+            opts["name"] = name
+        for wrapper in node.findall("LinkSource"):
+            doctype_name = self.get_node_text(wrapper.find("SrcDocType"))
+            element = self.get_node_text(wrapper.find("SrcField"))
+            doctype = Doctype(self.session, name=doctype_name)
+            opts["sources"].append(LinkType.LinkSource(doctype, element))
+        for child in node.findall("TargetDocType"):
+            doctype_name = self.get_node_text(child)
+            doctype = Doctype(self.session, name=doctype_name)
+            opts["targets"][doctype.id] = doctype
+        message = "Property type {!r} not supported"
+        for wrapper in node.findall("LinkProperties"):
+            name = self.get_node_text(wrapper.find("LinkProperty"))
+            value = self.get_node_text(wrapper.find("PropertyValue"))
+            comment = self.get_node_text(wrapper.find("Comment"))
+            try:
+                cls = getattr(LinkType, name)
+                property = cls(self.session, name, value, comment)
+                if not isinstance(property, LinkType.Property):
+                    raise Exception(message.format(name))
+                opts["properties"].append(property)
+            except:
+                raise Exception(message.format(name))
+        linktype = LinkType(self.session, **opts)
+        linktype.save()
+        return etree.Element(node.tag + "Resp")
+
+    def _put_user(self, node):
+        opts = dict(
+            name = self.get_node_text(node.find("UserName")),
+            fullname=self.get_node_text(node.find("FullName")),
+            office=self.get_node_text(node.find("Office")),
+            email=self.get_node_text(node.find("Email")),
+            phone=self.get_node_text(node.find("Phone")),
+            comment=self.get_node_text(node.find("Comment")),
+            authmode=self.get_node_text(node.find("AuthenticationMode")),
+            groups=[]
+        )
+        if node.tag == "CdrModUsr":
+            opts["id"] = Session.User(self.session, name=opts["name"]).id
+            new_name = self.get_node_text(node.find("NewName"))
+            if new_name:
+                opts["name"] = new_name
+        for group in node.findall("GrpName"):
+            opts["groups"].append(self.get_node_text(group))
+        password = self.get_node_text(node.find("Password"))
+        Session.User(self.session, **opts).save(password)
+        return etree.Element(node.tag + "Resp")
 
     def _rep_doc(self, node):
         return self.__put_doc(node, new=False)
