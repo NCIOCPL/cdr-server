@@ -1,83 +1,46 @@
-/*
- * Stored procedures for CDR.
- */
+#!/usr/bin/env python
 
-/*
- * Switch to the right database.
- */
-use cdr
-GO
+import cdrdb2 as cdrdb
 
-/*
- * Drop old versions.
- */
-IF EXISTS (SELECT *
-             FROM sysobjects
-            WHERE name = 'cdr_get_term_tree'
-              AND type = 'P')
-    DROP PROCEDURE cdr_get_term_tree
-GO
-IF EXISTS (SELECT *
-             FROM sysobjects
-            WHERE name = 'get_participating_orgs'
-              AND type = 'P')
-    DROP PROCEDURE get_participating_orgs
-GO
-IF EXISTS (SELECT *
-             FROM sysobjects
-            WHERE name = 'prot_init_mailer_docs'
-              AND type = 'P')
-    DROP PROCEDURE prot_init_mailer_docs
-GO
-IF EXISTS (SELECT *
-             FROM sysobjects
-            WHERE name = 'cdr_get_tree_context'
-              AND type = 'P')
-    DROP PROCEDURE cdr_get_tree_context
-GO
-IF EXISTS (SELECT *
-             FROM sysobjects
-            WHERE name = 'cdr_newly_published_trials'
-              AND type = 'P')
-    DROP PROCEDURE cdr_newly_published_trials
-GO
-IF EXISTS (SELECT *
-             FROM sysobjects
-            WHERE name = 'cdr_coop_group_report'
-              AND type = 'P')
-    DROP PROCEDURE cdr_coop_group_report
-GO
-IF EXISTS (SELECT *
-             FROM sysobjects
-            WHERE name = 'cdr_get_count_of_links_to_persons'
-              AND type = 'P')
-    DROP PROCEDURE cdr_get_count_of_links_to_persons
-GO
-IF EXISTS (SELECT *
-             FROM sysobjects
-            WHERE name = 'get_prot_person_connections'
-              AND type = 'P')
-    DROP PROCEDURE get_prot_person_connections
-GO
-
-
-/**
- * Finds all the parents and children of a Term document in the CDR.  Two
- * result sets are created.  The first contains document id pairs for
- * child-parent relationships.  The second result set contains the document id
- * and title for each id (child or parent) in the first result set.
- *
- *  @param  doc_id      primary key for Term document whose children and
- *                      parents are requested.
- *  @param  depth       number of levels (usually 1) to descend for child
- *                      terms.
- */
+conn = cdrdb.connect()
+cursor = conn.cursor()
+try:
+    cursor.execute("DROP VIEW term_children")
+except:
+    pass
+cursor.execute("""\
+CREATE VIEW term_children
+         AS SELECT DISTINCT q1.int_val AS parent,
+                            q1.doc_id  AS child,
+                            COUNT(DISTINCT q2.doc_id) as num_grandchildren,
+                            d.title
+                       FROM document d
+                       JOIN query_term q1
+                         ON q1.doc_id = d.id
+            LEFT OUTER JOIN query_term q2
+                         ON q1.doc_id = q2.int_val
+                      WHERE q1.path = '/Term/TermParent/@cdr:ref'
+                        AND q2.path = '/Term/TermParent/@cdr:ref'
+                   GROUP BY q1.int_val, q1.doc_id, d.title
+""")
+cursor.execute("GRANT SELECT ON term_children TO CdrGuest")
+cursor.execute("GRANT SELECT ON term_children TO CdrPublishing")
+try:
+    cursor.execute("DROP TRIGGER dev_task_trigger")
+except:
+    pass
+try:
+    cursor.execute("DROP PROCEDURE cdr_get_term_tree")
+except:
+    pass
+cursor.execute("""\
 CREATE PROCEDURE cdr_get_term_tree
     @doc_id INT,
     @depth  INT
 AS
 
-    -- Do this or fail!
+    -- We don't know why but proc fails without this
+    -- when invoked from a scripting language.
     SET NOCOUNT ON;
 
     -- Used for loop control.
@@ -174,12 +137,14 @@ AS
     -- Clean up after ourselves.
     DROP TABLE #parents
     DROP TABLE #children
-GO
+""")
+cursor.execute("GRANT EXECUTE ON cdr_get_term_tree TO CdrGuest")
 
-/*
- * Finds participating organizations and their principal investigators
- * for a protocol, given the ID of the lead organization.
- */
+try:
+    cursor.execute("DROP PROCEDURE get_participating_orgs")
+except:
+    pass
+cursor.execute("""\
 CREATE PROCEDURE get_participating_orgs
     @lead_org INTEGER
 AS
@@ -262,42 +227,14 @@ AS
                     #po.path,
                     pi.title,
                     pi.id
-GO
+""")
+cursor.execute("GRANT EXECUTE ON get_participating_orgs TO CdrGuest")
 
-/*
- * Needed because of a bug in Microsoft's ADO, which chokes on the
- * use of a query parameter placeholder following a nested query.
- */
-CREATE PROCEDURE prot_init_mailer_docs
-    @start_date VARCHAR(50)
-AS
-    SELECT DISTINCT d.doc_id, MAX(v.num) AS version
-               FROM doc_version v
-               JOIN ready_for_review d
-                 ON d.doc_id = v.id
-               JOIN query_term s
-                 ON s.doc_id = d.doc_id
-              WHERE s.value IN ('Active', 'Approved-Not Yet Active')
-                AND s.path = '/InScopeProtocol/ProtocolAdminInfo' +
-                             '/CurrentProtocolStatus'
-                AND NOT EXISTS (SELECT *
-                                  FROM query_term src
-                                 WHERE src.value = 'NCI Liaison ' +
-                                                   'Office-Brussels'
-                                   AND src.path  = '/InScopeProtocol' +
-                                                   '/ProtocolSources' +
-                                                   '/ProtocolSource' +
-                                                   '/SourceName'
-                                   AND src.doc_id = d.doc_id)
-                AND EXISTS (SELECT *
-                              FROM pub_proc_doc p
-                             WHERE p.doc_id = d.doc_id)
-                AND (SELECT MIN(dt)
-                       FROM audit_trail a
-                      WHERE a.document = d.doc_id) > @start_date
-           GROUP BY d.doc_id
-GO
-
+try:
+    cursor.execute("DROP PROCEDURE cdr_get_tree_context")
+except:
+    pass
+cursor.execute("""\
 CREATE PROCEDURE cdr_get_tree_context
     @doc_id INT
 AS
@@ -348,24 +285,104 @@ AS
     SELECT * FROM #children
     DROP TABLE #parents
     DROP TABLE #children
+""")
+cursor.execute("GRANT EXECUTE ON cdr_get_tree_context TO CdrGuest")
 
-GO
+try:
+    cursor.execute("DROP VIEW doc_header")
+except:
+    pass
+cursor.execute("""\
+CREATE VIEW doc_header
+AS
+  SELECT d.id AS DocId,
+         t.name AS DocType,
+         d.title AS DocTitle
+    FROM document d
+    JOIN doc_type t
+      ON d.doc_type = t.id
+""")
+cursor.execute("GRANT SELECT ON doc_header TO CdrGuest")
+cursor.execute("GRANT SELECT ON doc_header TO CdrPublishing")
+try:
+    cursor.execute("DROP VIEW orphan_terms")
+except:
+    pass
+cursor.execute("""\
+CREATE VIEW orphan_terms
+AS
+    SELECT DISTINCT d.title
+               FROM document d
+               JOIN query_term q
+                 ON d.id = q.doc_id
+              WHERE q.path = '/Term/TermPrimaryType'
+                AND q.value <> 'glossary term'
+                AND NOT EXISTS (SELECT *
+                                  FROM query_term q2
+                                 WHERE q2.doc_id = d.id
+                                   AND q2.path = '/Term/TermParent/@cdr:ref')
+""")
+cursor.execute("GRANT SELECT ON orphan_terms TO CdrGuest")
+cursor.execute("GRANT SELECT ON orphan_terms TO CdrPublishing")
+try:
+    cursor.execute("DROP VIEW published_doc")
+except:
+    pass
+cursor.execute("""\
+CREATE VIEW published_doc
+         AS SELECT pub_proc_doc.*
+              FROM pub_proc_doc
+              JOIN pub_event
+                ON pub_event.id = pub_proc_doc.pub_proc
+             WHERE pub_event.status = 'Success'
+               AND (pub_proc_doc.failure IS NULL
+                OR pub_proc_doc.failure <> 'Y')
+""")
+cursor.execute("GRANT SELECT ON published_doc TO CdrGuest")
+cursor.execute("GRANT SELECT ON published_doc TO CdrPublishing")
+try:
+    cursor.execute("DROP VIEW TermsWithParents")
+except:
+    pass
+cursor.execute("""\
+CREATE VIEW TermsWithParents
+AS
+    SELECT d.id, d.xml
+      FROM document d
+      JOIN doc_type t
+        ON d.doc_type = t.id
+     WHERE t.name = 'Term'
+       AND d.xml LIKE '%<TermParent%'
+""")
+cursor.execute("GRANT SELECT ON TermsWithParents TO CdrGuest")
+cursor.execute("GRANT SELECT ON TermsWithParents TO CdrPublishing")
+try:
+    cursor.execute("DROP VIEW term_kids")
+except:
+    pass
+cursor.execute("""\
+CREATE VIEW term_kids
+         AS SELECT DISTINCT q.int_val AS parent,
+                            q.doc_id  AS child,
+                            d.title
+                       FROM query_term q
+                       JOIN document d
+                         ON d.id = q.doc_id
+                      WHERE q.path =
+                            '/Term/TermRelationship/ParentTerm/TermId/@cdr:ref'
+""")
+cursor.execute("GRANT SELECT ON term_kids TO CdrGuest")
+cursor.execute("GRANT SELECT ON term_kids TO CdrPublishing")
+try:
+    cursor.execute("DROP PROCEDURE cdr_newly_pub_trials")
+except:
+    pass
 
-/*
- * Get the member organizations and their principal investigators for
- * a specified cooperative group.  Used by the Coop Group Member Orgs
- * & Investigators report.
- *
- * ADODB won't let us get to the temporary tables created for a single
- * connection, so we have to wrap up the queries for this report
- * in a stored procedure.
- *
- * [2002-06-09]: To be more precise, ADODB fails to create the temporary
- * table if a placeholder is used for one of the values in a WHERE clause,
- * as in the first query below.  It would have worked (but probably less
- * efficiently) if we had created the query strings on the fly with the
- * document ID for the cooperative group embedded in the query string.  BK
- */
+try:
+    cursor.execute("DROP PROCEDURE cdr_coop_group_report")
+except:
+    pass
+cursor.execute("""\
 CREATE PROCEDURE cdr_coop_group_report
     @docId INTEGER
 AS
@@ -480,12 +497,14 @@ AS
      */
     DROP TABLE #am
     DROP TABLE #mm
-GO
+""")
+cursor.execute("GRANT EXECUTE ON cdr_coop_group_report TO CdrGuest")
 
-/*
- * Pull out count of protocol and summary documents linking to a
- * specified Person document (used by the Person QC report).
- */
+try:
+    cursor.execute("DROP PROCEDURE cdr_get_count_of_links_to_persons")
+except:
+    pass
+cursor.execute("""\
 CREATE PROCEDURE cdr_get_count_of_links_to_persons
     @docId INTEGER
 AS
@@ -523,17 +542,14 @@ AS
        AND audience.path   = '/Summary/SummaryMetaData/SummaryAudience'
        AND person.int_val  = @docId
   GROUP BY audience.value
-GO
+""")
+cursor.execute("GRANT EXECUTE ON cdr_get_count_of_links_to_persons TO CdrGuest")
 
-/*
- * Find all documents (except Citations) linked to the document
- * specified by the caller.  Returns a result set which includes
- * the specified document.  The result set contains two columns:
- * the id of the document (INTEGER) and the name of the document's
- * type.
- *
- *  @param doc_id       primary key of the document to be reported on.
- */
+try:
+    cursor.execute("DROP PROCEDURE find_linked_docs")
+except:
+    pass
+cursor.execute("""\
 CREATE PROC find_linked_docs
     @doc_id INTEGER
 AS
@@ -582,14 +598,14 @@ AS
 
     -- Clean up after ourselves.
     DROP TABLE #linked_docs
+""")
+cursor.execute("GRANT EXECUTE ON find_linked_docs TO CdrGuest")
 
-/*
- * Determine the counts of active and closed protocols to which a
- * person is connected, either through a lead organization on the
- * protocol, or one of the participating sites.
- *
- *  @param doc_id       CDR ID of the person for the report
- */
+try:
+    cursor.execute("DROP PROCEDURE get_prot_person_connections")
+except:
+    pass
+cursor.execute("""\
 CREATE PROC get_prot_person_connections
     @doc_id INTEGER
 AS
@@ -715,21 +731,14 @@ SELECT DISTINCT lead_org_stat.doc_id prot_id
     DROP TABLE #lead_org_person
     DROP TABLE #private_practice_person
     DROP TABLE #org_site_person
-GO
+""")
+cursor.execute("GRANT EXECUTE ON get_prot_person_connections TO CdrGuest")
 
-/*
- * Select publishable versions of non-active protocols that were
- * created (the versions that is) after the last publishing job.
- *
- * Referenced in the publishing control document, 178.xml, for
- * nightly "Interim-Export" publishing.
- *
- * Returns:
- *   Result set of doc IDs + version numbers for publishable non-active
- *   protocol versions that need to be published.
- *
- * Temporary tables are cleaned up automatically.
- */
+try:
+    cursor.execute("DROP PROCEDURE select_changed_non_active_protocols")
+except:
+    pass
+cursor.execute("""\
 CREATE PROC select_changed_non_active_protocols
 
 AS
@@ -770,65 +779,10 @@ AS
         ON #latestver_prot.vid = #pubver_prot.id
      WHERE #pubver_prot.id IS NULL
         OR #latestver_prot.vnum > #pubver_prot.num
-GO
+""")
+cursor.execute("""\
+GRANT EXECUTE
+           ON select_changed_non_active_protocols
+           TO CdrGuest""")
 
-/*
- * We found out the hard way that this is the only way to keep programmers
- * from manipulating the SQL tables for CDR documents directly.
- */
-CREATE TRIGGER NoDelVersion ON all_doc_versions
-FOR DELETE
-AS
-    RAISERROR ('CDR Versions are permanent.', 16, 1)
-    ROLLBACK TRANSACTION
-GO
-
-/*
- * Same principle as for the all_doc_versions table.
- */
-CREATE TRIGGER CdrDelDoc ON all_docs
-FOR DELETE
-AS
-    RAISERROR ('Use CdrDelDoc from the CDR client/server API instead.', 16, 1)
-    ROLLBACK TRANSACTION
-GO
-
-/*
- * Make sure a CDR document is not marked as 'D'eleted if there's a row
- * in the external_map table which maps to it.
- */
-CREATE TRIGGER cdr_mod_doc ON all_docs
-FOR UPDATE
-AS
-    IF UPDATE(active_status)
-    BEGIN
-        IF EXISTS (SELECT i.id
-                     FROM cdr..external_map m
-                     JOIN inserted i
-                       ON m.doc_id = i.id
-                    WHERE i.active_status = 'D')
-        BEGIN
-            RAISERROR('Attempt to delete document in external_map table', 16, 1)
-            ROLLBACK TRANSACTION
-        END
-    END
-GO
-
-/*
- * Prevent the guest session from being logged out.
- */
-CREATE TRIGGER guest_protection ON session
-FOR UPDATE
-AS
-    IF UPDATE(ended)
-    BEGIN
-        IF EXISTS (SELECT *
-                     FROM inserted
-                    WHERE name = 'guest'
-                      AND ended IS NOT NULL)
-        BEGIN
-            RAISERROR ('Attempt to log out guest account', 11, 1)
-            ROLLBACK TRANSACTION
-        END
-    END
-GO
+conn.commit()

@@ -1173,10 +1173,10 @@ CREATE VIEW term_kids
          AS SELECT DISTINCT q.int_val AS parent,
                             q.doc_id  AS child,
                             d.title
-                       FROM query_term q,
-                            document d
-                      WHERE d.id = q.doc_id
-                        AND q.path = /* '/Term/TermParent/@cdr:ref' */
+                       FROM query_term q
+                       JOIN document d
+                         ON d.id = q.doc_id
+                      WHERE q.path =
                             '/Term/TermRelationship/ParentTerm/TermId/@cdr:ref'
 GO
 
@@ -1188,13 +1188,13 @@ CREATE VIEW term_children
                             q1.doc_id  AS child,
                             COUNT(DISTINCT q2.doc_id) AS num_grandchildren,
                             d.title
-                       FROM query_term q1,
-                            query_term q2,
-                            document d
-                      WHERE d.id = q1.doc_id
-                        AND q1.path = '/Term/TermParent/@cdr:ref'
+                       FROM document d
+                       JOIN query_term q1
+                         ON q1.doc_id = d.id
+            LEFT OUTER JOIN query_term q2
+                         ON q1.doc_id = q2.int_val
+                      WHERE q1.path = '/Term/TermParent/@cdr:ref'
                         AND q2.path = '/Term/TermParent/@cdr:ref'
-                        AND q2.int_val =* q1.doc_id
                    GROUP BY q1.int_val, q1.doc_id, d.title
 GO
 
@@ -1438,9 +1438,10 @@ GO
  */
 CREATE VIEW published_doc
          AS SELECT pub_proc_doc.*
-              FROM pub_proc_doc, pub_event
+              FROM pub_proc_doc
+              JOIN pub_event
+                ON pub_event.id = pub_proc_doc.pub_proc
              WHERE pub_event.status = 'Success'
-               AND pub_event.id = pub_proc_doc.pub_proc
                AND (pub_proc_doc.failure IS NULL
                 OR pub_proc_doc.failure <> 'Y')
 GO
@@ -1531,9 +1532,9 @@ AS
   SELECT d.id AS DocId,
          t.name AS DocType,
          d.title AS DocTitle
-   FROM  document d,
-         doc_type t
-  WHERE  d.doc_type = t.id
+    FROM document d
+    JOIN doc_type t
+      ON d.doc_type = t.id
 GO
 
 /*
@@ -1555,10 +1556,10 @@ GO
 CREATE VIEW orphan_terms
 AS
     SELECT DISTINCT d.title
-               FROM document d,
-                    query_term q
-              WHERE d.id = q.doc_id
-                AND q.path = '/Term/TermPrimaryType'
+               FROM document d
+               JOIN query_term q
+                 ON d.id = q.doc_id
+              WHERE q.path = '/Term/TermPrimaryType'
                 AND q.value <> 'glossary term'
                 AND NOT EXISTS (SELECT *
                                   FROM query_term q2
@@ -1572,10 +1573,10 @@ GO
 CREATE VIEW TermsWithParents
 AS
     SELECT d.id, d.xml
-      FROM document d,
-           doc_type t
-     WHERE d.doc_type = t.id
-       AND t.name     = 'Term'
+      FROM document d
+      JOIN doc_type t
+        ON d.doc_type = t.id
+     WHERE t.name = 'Term'
        AND d.xml LIKE '%<TermParent%'
 GO
 
