@@ -190,13 +190,13 @@ Filter to create the vendor Terminology XML
 
    <xsl:variable                  name = "conceptId">
     <xsl:value-of               select = "normalize-space(
-                                            ../../OtherName/
-                                            SourceInformation/
-                                            VocabularySource/
-                                            SourceTermId)"/>
+                                            ../../NCIThesaurusConcept)"/>
    </xsl:variable>
 
 
+   <!--
+   Conctruct the URL for NCI "active clinical trials" link
+   ======================================================== -->
    <!--
    If the SQL query found a DrugInfo Summary with a term link to this
    document, we need to suppress the display of the clinical search
@@ -206,29 +206,26 @@ Filter to create the vendor Terminology XML
                                           and
                                           not(/Term/TermType/TermTypeName
                                                     = 'Drug Combination')">
-   <!--
-   Conctruct the URL for NCI active trials using this drug
-   ======================================================== -->
-   <xsl:text> Check for </xsl:text>
+    <!--
+    We also need to suppress the link if the ConceptId isn't published yet
+    ====================================================================== -->
+    <xsl:if                       test = "not($conceptId = '')
+                                          and
+                                          not(/Term/
+                                               NCIThesaurusConcept[@Public = 'No'])">
+     <xsl:text> Check for </xsl:text>
 
-   <xsl:element                   name = "ExternalRef">
-    <xsl:attribute                name = "xref">
-     <xsl:text>https://www.cancer.gov/about-cancer/treatment</xsl:text>
-     <xsl:text>/clinical-trials/intervention/</xsl:text>
-      <xsl:value-of             select = "$conceptId"/>
-     <!-- 
-     <xsl:text>http://www.cancer.gov/Search/</xsl:text>
-     <xsl:text>ClinicalTrialsLink.aspx?id=</xsl:text>
-     <xsl:value-of              select = "number(
-                                            substring-after
-                                              (/Term/DocId, 'CDR'))"/>
-     <xsl:text>&#x26;idtype=1</xsl:text>
-     -->
-    </xsl:attribute>
-    <xsl:text>active clinical trials</xsl:text>
-   </xsl:element>
+     <xsl:element                 name = "ExternalRef">
+      <xsl:attribute              name = "xref">
+       <xsl:text>https://www.cancer.gov/about-cancer/treatment</xsl:text>
+       <xsl:text>/clinical-trials/intervention/</xsl:text>
+       <xsl:value-of            select = "$conceptId"/>
+      </xsl:attribute>
+      <xsl:text>active clinical trials</xsl:text>
+     </xsl:element>
 
-   <xsl:text> using this agent.</xsl:text>
+     <xsl:text> using this agent.</xsl:text>
+    </xsl:if>
    </xsl:if>
 
 
@@ -236,10 +233,12 @@ Filter to create the vendor Terminology XML
    <!--
    Conctruct the URL for NCI concept ID but only if the
    ID is published already
+   Same condition as with the clinical trials link
    ======================================================== -->
-   <xsl:if                        test = "/Term/
-                                           NCIThesaurusConcept[@Public = 'Yes']
-                                           = $conceptId">
+   <xsl:if                        test = "not($conceptId = '')
+                                          and
+                                          not(/Term/
+                                               NCIThesaurusConcept[@Public = 'No'])">
     <xsl:text> (</xsl:text>
     <xsl:element                  name = "ExternalRef">
      <xsl:attribute               name = "xref">
