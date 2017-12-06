@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 HTTPS interface for handling CDR client-server requests
-Trap all exceptions.
+
+Trap all exceptions except those for imports from the standard library.
 """
 
 import datetime

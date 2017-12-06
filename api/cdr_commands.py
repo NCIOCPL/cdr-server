@@ -16,6 +16,10 @@ from cdrapi.reports import Report
 from cdrapi.searches import QueryTermDef, Search
 from cdrapi.publishing import Job
 
+# ----------------------------------------------------------------------
+# The web server will be running this using Python 3.x, but we still
+# want the code to be backwards compatible with Python 2.7.
+# ----------------------------------------------------------------------
 from six import itervalues
 try:
     basestring
@@ -29,13 +33,20 @@ except:
 
 
 class CommandSet:
+    """
+    XML wrappers for the CDR client commands
+
+    For documentation of each command, consult the comments in the modules
+    in the cdrapi package.
+    """
+
     PARSER = etree.XMLParser(strip_cdata=False)
     COMMANDS = dict(
         CdrAddAction="_add_action",
-        CdrAddDoc="_add_doc",
-        CdrAddDocType="_add_doctype",
+        CdrAddDoc="_put_doc",
+        CdrAddDocType="_put_doctype",
         CdrAddExternalMapping="_add_external_mapping",
-        CdrAddFilterSet="_add_filter_set",
+        CdrAddFilterSet="_put_filter_set",
         CdrAddGrp="_add_group",
         CdrAddLinkType="_put_link_type",
         CdrAddQueryTermDef="_add_query_term_def",
@@ -85,7 +96,7 @@ class CommandSet:
         CdrLogClientEvent="_log_client_event",
         CdrLogoff="_logoff",
         CdrMailerCleanup="_mailer_cleanup",
-        CdrModDocType="_mod_doctype",
+        CdrModDocType="_put_doctype",
         CdrModGrp="_mod_group",
         CdrModLinkType="_put_link_type",
         CdrModUsr="_put_user",
@@ -93,8 +104,8 @@ class CommandSet:
         CdrPublish="_publish",
         CdrReindexDoc="_reindex_doc",
         CdrRepAction="_mod_action",
-        CdrRepDoc="_rep_doc",
-        CdrRepFilterSet="_rep_filter_set",
+        CdrRepDoc="_put_doc",
+        CdrRepFilterSet="_put_filter_set",
         CdrReport="_report",
         CdrSaveClientTraceLog="_save_client_trace_log",
         CdrSearch="_search",
@@ -107,6 +118,14 @@ class CommandSet:
     )
 
     def __init__(self):
+        """
+        Capture the environment and catch the incoming command set
+
+        The XML wrapper API is set up to handler multiple commands
+        within a single HTTPS request. In actual practice, each
+        command is (almost?) always sent separately.
+        """
+
         self.tier = Tier()
         self.level = os.environ.get("HTTP_X_LOGGING_LEVEL", "INFO")
         self.logger = self.tier.get_logger("https_api", level=self.level)
@@ -116,6 +135,13 @@ class CommandSet:
         self.root = self.__load_commands()
 
     def get_responses(self):
+        """
+        Process the commands in the set and assemble the responses
+
+        Return:
+          `CdrResponseSet` block `etree._Element` object
+        """
+
         responses = []
         for node in self.root.findall("*"):
             if node.tag == "SessionId":
@@ -136,6 +162,127 @@ class CommandSet:
 
 
     #------------------------------------------------------------------
+    # HELPER METHODS START HERE.
+    #------------------------------------------------------------------
+
+    def __load_commands(self):
+        """
+        Read the request from the web server
+
+        Return:
+          parsed `CdrCommandSet` element block
+        """
+
+        content_length = os.environ.get("CONTENT_LENGTH")
+        if content_length:
+            request = sys.stdin.buffer.read(int(content_length))
+        else:
+            request = sys.stdin.buffer.read()
+        self.logger.info("%s bytes from %s", len(request), self.client)
+        root = etree.fromstring(request, parser=self.PARSER)
+        if root.tag != "CdrCommandSet":
+            raise Exception("not a CDR command set")
+        return root
+
+    def __process_command(self, node):
+        """
+        Pass off the work for a CDR command to its handler
+
+        Exceptions are caught here and return in an `Errors` element.
+        Attributes for Status, Elapsed, and (optionally) CmdId are addded
+        to the returned element.
+
+        Pass:
+          node - parsed `CdrCommand` element
+
+        Return:
+          `CdrResponse` element as `etree._Element` object
+        """
+
+        start = datetime.datetime.now()
+        response = etree.Element("CdrResponse")
+        command_id = node.get("CmdId")
+        if command_id:
+            response.set("CmdId", command_id)
+        try:
+            if not self.session:
+                raise Exception("Missing session ID")
+            child = node.find("*")
+            if child is None:
+                raise Exception("Missing specific command element")
+            self.logger.info(child.tag)
+            handler = self.COMMANDS.get(child.tag)
+            if handler is None:
+                raise Exception("Unknown command: {}".format(child.tag))
+            response.append(getattr(self, handler)(child))
+            response.set("Status", "success")
+        except Exception as e:
+            self.logger.exception("{} failure".format(node.tag))
+            response.append(self.__wrap_error(e))
+            response.set("Status", "failure")
+        elapsed = (datetime.datetime.now() - start).total_seconds()
+        response.set("Elapsed", "{:f}".format(elapsed))
+        return response
+
+    def __wrap_error(self, error):
+        """
+        Enclose an error string in a structure expected by the client
+
+        Pass:
+          string describing a failure condition
+
+        Return:
+          `Errors` element as `etree._Element` object
+        """
+
+        errors = etree.Element("Errors")
+        etree.SubElement(errors, "Err").text = str(error)
+        return errors
+
+    def __wrap_responses(self, *responses):
+        """
+        Enclose the individual response elements in a single element
+
+        Adds a time stamp attribute to the wrapper element.
+
+        Pass:
+          sequence of `etree._Element` nodes for he command responses
+
+        Return:
+          `CdrResponseSet` block `etree._Element` object
+        """
+
+        response_set = etree.Element("CdrResponseSet")
+        response_set.set("Time", self.start.strftime("%Y-%m-%dT%H:%M:%S.%f"))
+        for response in responses:
+            response_set.append(response)
+        return etree.tostring(response_set, encoding="utf-8")
+
+    @staticmethod
+    def get_node_text(node, default=None):
+        """
+        Assemble the concatenated text nodes for an element of the document.
+
+        Note that the call to node.itertext() must include the wildcard
+        string argument to specify that we want to avoid recursing into
+        nodes which are not elements. Otherwise we will get the content
+        of processing instructions, and how ugly would that be?!?
+
+        Pass:
+            node - element node from an XML document parsed by the lxml package
+            default - what to return if the node is None
+
+        Return:
+            default if node is None; otherwise concatenated string node
+            descendants
+        """
+
+        if node is None:
+            return default
+        return "".join(node.itertext("*"))
+
+
+    #------------------------------------------------------------------
     # MAPPED COMMAND METHODS START HERE.
     #------------------------------------------------------------------
 
@@ -151,16 +298,6 @@ class CommandSet:
         action = Session.Action(name, flag, comment)
         action.add(self.session)
         return etree.Element(node.tag + "Resp")
-
-    def _add_doc(self, node):
-        try:
-            return self.__put_doc(node, new=True)
-        except:
-            self.logger.exception("_add_doc()")
-            raise
-
-    def _add_doctype(self, node):
-        return self.__put_doctype(node, new=True)
 
     def _add_external_mapping(self, node):
         usage = cdr_id = value = None
@@ -179,9 +316,6 @@ class CommandSet:
         doc = Doc(self.session, id=cdr_id)
         mapping_id = str(doc.add_external_mapping(usage, value, **opts))
         return etree.Element(node.tag + "Resp", MappingId=mapping_id)
-
-    def _add_filter_set(self, node):
-        return self.__put_filter_set(node, new=True)
 
     def _add_group(self, node):
         opts = dict(name=None, comment=None, users=[], actions={})
@@ -752,9 +886,6 @@ class CommandSet:
         action.modify(self.session)
         return etree.Element(node.tag + "Resp")
 
-    def _mod_doctype(self, node):
-        return self.__put_doctype(node, new=False)
-
     def _mod_group(self, node):
         name = new_name = comment = None
         users = []
@@ -831,6 +962,125 @@ class CommandSet:
         etree.SubElement(response, "JobId").text = str(job_id)
         return response
 
+    def _put_doc(self, node):
+        new = node.tag == "CdrAddDoc"
+        opts = dict()
+        doc_opts = dict()
+        doc_node = None
+        echo = locators = False
+        for child in node.findall("*"):
+            if child.tag == "CheckIn":
+                if self.get_node_text(child, "").upper() == "Y":
+                    opts["unlock"] = True
+            elif child.tag == "Version":
+                if self.get_node_text(child, "").upper() == "Y":
+                    opts["version"] = True
+                    if child.get("Publishable", "").upper() == "Y":
+                        opts["publishable"] = True
+            elif child.tag == "Validate":
+                if self.get_node_text(child, "").upper() == "Y":
+                    val_types = child.get("ValidationTypes", "").lower()
+                    if val_types:
+                        opts["val_types"] = val_types.split()
+                    else:
+                        opts["val_types"] = "schema", "links"
+                    if child.get("ErrorLocators", "").upper() == "Y":
+                        locators = opts["locators"] = True
+            elif child.tag == "SetLinks":
+                if self.get_node_text(child, "").upper() == "Y":
+                    opts["set_links"] = True
+            elif child.tag == "Echo":
+                if self.get_node_text(child, "").upper() == "Y":
+                    echo = True
+            elif child.tag == "DelAllBlobVersions":
+                if self.get_node_text(child, "").upper() == "Y":
+                    opts["del_blobs"] = True
+            elif child.tag == "Reason":
+                opts["reason"] = self.get_node_text(child)
+            elif child.tag == "CdrDoc":
+                doc_node = child
+        if doc_node is None:
+            raise Exception("put_doc() missing CdrDoc element")
+        doc_opts = dict(doctype=doc_node.get("Type"))
+        if doc_node.get("Id"):
+            doc_opts["id"] = doc_node.get("Id")
+        for child in doc_node.findall("*"):
+            if child.tag == "CdrDocCtl":
+                for ctl_node in child.findall("*"):
+                    if ctl_node.tag == "DocId" and not doc_opts.get("id"):
+                        doc_opts["id"] = self.get_node_text(ctl_node)
+                    elif ctl_node.tag == "DocTitle":
+                        opts["title"] = self.get_node_text(ctl_node)
+                    elif ctl_node.tag == "DocComment":
+                        opts["comment"] = self.get_node_text(ctl_node)
+                    elif ctl_node.tag == "DocActiveStatus":
+                        opts["active_status"] = self.get_node_text(ctl_node)
+                    elif ctl_node.tag == "DocNeedsReview":
+                        needs_review = self.get_node_text(ctl_node, "N")
+                        if needs_review.upper() == "Y":
+                            opts["needs_review"] = True
+            elif child.tag == "CdrDocXml":
+                doc_opts["xml"] = self.get_node_text(child)
+            elif child.tag == "CdrDocBlob":
+                blob = base64decode(self.get_node_text(child).encode("ascii"))
+                doc_opts["blob"] = blob
+        if new and doc_opts.get("id"):
+            raise Exception("can't add a document which already has an ID")
+        if not new and not doc_opts.get("id"):
+            raise Exception("CdrRepDoc missing document ID")
+        doc = Doc(self.session, **doc_opts)
+        doc.save(**opts)
+        response = etree.Element(node.tag + "Resp")
+        etree.SubElement(response, "DocId").text = doc.cdr_id
+        if doc.errors_node:
+            response.append(doc.errors_node)
+            if doc.is_content_type and opts.get("locators"):
+                response.append(doc.legacy_doc(get_xml=True, brief=True))
+        return response
+
+    def _put_doctype(self, node):
+        opts = {
+            "name": node.get("Type"),
+            "format": node.get("Format") or "xml",
+            "versioning": node.get("Versioning") or "Y",
+            "active": node.get("Active") or "Y"
+        }
+        for child in node.findall("*"):
+            if child.tag == "DocSchema":
+                opts["schema"] = self.get_node_text(child)
+            elif child.tag == "Comment":
+                opts["comment"] = self.get_node_text(child)
+        doctype = Doctype(self.session, **opts)
+        doctype.save()
+        return etree.Element(node.tag + "Resp")
+
+    def _put_filter_set(self, node):
+        new = node.tag == "CdrAddFilterSet"
+        opts = dict(name=None, description=None, notes=None, members=[])
+        for child in node:
+            if child.tag == "FilterSetName":
+                opts["name"] = self.get_node_text(child)
+            elif child.tag == "FilterSetDescription":
+                opts["description"] = self.get_node_text(child)
+            elif child.tag == "FilterSetNotes":
+                opts["notes"] = self.get_node_text(child)
+            elif child.tag == "Filter":
+                member = Doc(self.session, id=child.get("DocId"))
+                opts["members"].append(member)
+            elif child.tag == "FilterSet":
+                member = FilterSet(self.session, id=child.get("SetId"))
+                opts["members"].append(member)
+        filter_set = FilterSet(self.session, **opts)
+        if new and filter_set.id:
+            message = "Filter set {!r} already exists".format(filter_set.name)
+            raise Exception(message)
+        if not new and not filter_set.id:
+            message = "Filter set {!r} not found".format(filter_set.name)
+            raise Exception(message)
+        member_count = filter_set.save()
+        name = node.tag + "Resp"
+        return etree.Element(name, TotalFilters=str(member_count))
+
     def _put_link_type(self, node):
         opts = dict(
             sources=[],
@@ -901,12 +1151,6 @@ class CommandSet:
         doc_id = self.get_node_text(node.find("DocId"))
         Doc(self.session, id=doc_id).reindex()
         return etree.Element(node.tag + "Resp")
-
-    def _rep_doc(self, node):
-        return self.__put_doc(node, new=False)
-
-    def _rep_filter_set(self, node):
-        return self.__put_filter_set(node, new=False)
 
     def _report(self, node):
         name = self.get_node_text(node.find("ReportName"))
@@ -1029,181 +1273,3 @@ class CommandSet:
             raise Exception("Both DocId and CdrDoc specified")
         doc.validate(**opts)
         return doc.legacy_validation_response(opts["locators"])
-
-
-    #------------------------------------------------------------------
-    # HELPER METHODS START HERE.
-    #------------------------------------------------------------------
-
-    def __put_doc(self, node, new=False):
-        opts = dict()
-        doc_opts = dict()
-        doc_node = None
-        echo = locators = False
-        for child in node.findall("*"):
-            if child.tag == "CheckIn":
-                if self.get_node_text(child, "").upper() == "Y":
-                    opts["unlock"] = True
-            elif child.tag == "Version":
-                if self.get_node_text(child, "").upper() == "Y":
-                    opts["version"] = True
-                    if child.get("Publishable", "").upper() == "Y":
-                        opts["publishable"] = True
-            elif child.tag == "Validate":
-                if self.get_node_text(child, "").upper() == "Y":
-                    val_types = child.get("ValidationTypes", "").lower()
-                    if val_types:
-                        opts["val_types"] = val_types.split()
-                    else:
-                        opts["val_types"] = "schema", "links"
-                    if child.get("ErrorLocators", "").upper() == "Y":
-                        locators = opts["locators"] = True
-            elif child.tag == "SetLinks":
-                if self.get_node_text(child, "").upper() == "Y":
-                    opts["set_links"] = True
-            elif child.tag == "Echo":
-                if self.get_node_text(child, "").upper() == "Y":
-                    echo = True
-            elif child.tag == "DelAllBlobVersions":
-                if self.get_node_text(child, "").upper() == "Y":
-                    opts["del_blobs"] = True
-            elif child.tag == "Reason":
-                opts["reason"] = self.get_node_text(child)
-            elif child.tag == "CdrDoc":
-                doc_node = child
-        if doc_node is None:
-            raise Exception("put_doc() missing CdrDoc element")
-        doc_opts = dict(doctype=doc_node.get("Type"))
-        if doc_node.get("Id"):
-            doc_opts["id"] = doc_node.get("Id")
-        for child in doc_node.findall("*"):
-            if child.tag == "CdrDocCtl":
-                for ctl_node in child.findall("*"):
-                    if ctl_node.tag == "DocId" and not doc_opts.get("id"):
-                        doc_opts["id"] = self.get_node_text(ctl_node)
-                    elif ctl_node.tag == "DocTitle":
-                        opts["title"] = self.get_node_text(ctl_node)
-                    elif ctl_node.tag == "DocComment":
-                        opts["comment"] = self.get_node_text(ctl_node)
-                    elif ctl_node.tag == "DocActiveStatus":
-                        opts["active_status"] = self.get_node_text(ctl_node)
-                    elif ctl_node.tag == "DocNeedsReview":
-                        needs_review = self.get_node_text(ctl_node, "N")
-                        if needs_review.upper() == "Y":
-                            opts["needs_review"] = True
-            elif child.tag == "CdrDocXml":
-                doc_opts["xml"] = self.get_node_text(child)
-            elif child.tag == "CdrDocBlob":
-                blob = base64decode(self.get_node_text(child).encode("ascii"))
-                doc_opts["blob"] = blob
-        if new and doc_opts.get("id"):
-            raise Exception("can't add a document which already has an ID")
-        if not new and not doc_opts.get("id"):
-            raise Exception("CdrRepDoc missing document ID")
-        doc = Doc(self.session, **doc_opts)
-        doc.save(**opts)
-        response = etree.Element(node.tag + "Resp")
-        etree.SubElement(response, "DocId").text = doc.cdr_id
-        if doc.errors_node:
-            response.append(doc.errors_node)
-            if doc.is_content_type and opts.get("locators"):
-                response.append(doc.legacy_doc(get_xml=True, brief=True))
-        return response
-
-    def __put_doctype(self, node, new=False):
-        opts = {
-            "name": node.get("Type"),
-            "format": node.get("Format") or "xml",
-            "versioning": node.get("Versioning") or "Y",
-            "active": node.get("Active") or "Y"
-        }
-        for child in node.findall("*"):
-            if child.tag == "DocSchema":
-                opts["schema"] = self.get_node_text(child)
-            elif child.tag == "Comment":
-                opts["comment"] = self.get_node_text(child)
-        doctype = Doctype(self.session, **opts)
-        doctype.save()
-        return etree.Element(node.tag + "Resp")
-
-    def __load_commands(self):
-        content_length = os.environ.get("CONTENT_LENGTH")
-        if content_length:
-            request = sys.stdin.buffer.read(int(content_length))
-        else:
-            request = sys.stdin.buffer.read()
-        self.logger.info("%s bytes from %s", len(request), self.client)
-        root = etree.fromstring(request, parser=self.PARSER)
-        if root.tag != "CdrCommandSet":
-            raise Exception("not a CDR command set")
-        return root
-
-    def __process_command(self, node):
-        start = datetime.datetime.now()
-        response = etree.Element("CdrResponse")
-        command_id = node.get("CmdId")
-        if command_id:
-            response.set("CmdId", command_id)
-        try:
-            if not self.session:
-                raise Exception("Missing session ID")
-            child = node.find("*")
-            if child is None:
-                raise Exception("Missing specific command element")
-            self.logger.info(child.tag)
-            handler = self.COMMANDS.get(child.tag)
-            if handler is None:
-                raise Exception("Unknown command: {}".format(child.tag))
-            response.append(getattr(self, handler)(child))
-            response.set("Status", "success")
-        except Exception as e:
-            self.logger.exception("{} failure".format(node.tag))
-            response.append(self.__wrap_error(e))
-            response.set("Status", "failure")
-        elapsed = (datetime.datetime.now() - start).total_seconds()
-        response.set("Elapsed", "{:f}".format(elapsed))
-        return response
-
-    def __put_filter_set(self, node, new):
-        opts = dict(name=None, description=None, notes=None, members=[])
-        for child in node:
-            if child.tag == "FilterSetName":
-                opts["name"] = self.get_node_text(child)
-            elif child.tag == "FilterSetDescription":
-                opts["description"] = self.get_node_text(child)
-            elif child.tag == "FilterSetNotes":
-                opts["notes"] = self.get_node_text(child)
-            elif child.tag == "Filter":
-                member = Doc(self.session, id=child.get("DocId"))
-                opts["members"].append(member)
-            elif child.tag == "FilterSet":
-                member = FilterSet(self.session, id=child.get("SetId"))
-                opts["members"].append(member)
-        filter_set = FilterSet(self.session, **opts)
-        if new and filter_set.id:
-            message = "Filter set {!r} already exists".format(filter_set.name)
-            raise Exception(message)
-        if not new and not filter_set.id:
-            message = "Filter set {!r} not found".format(filter_set.name)
-            raise Exception(message)
-        member_count = filter_set.save()
-        name = node.tag + "Resp"
-        return etree.Element(name, TotalFilters=str(member_count))
-
-    def __wrap_error(self, error):
-        errors = etree.Element("Errors")
-        etree.SubElement(errors, "Err").text = str(error)
-        return errors
-
-    def __wrap_responses(self, *responses):
-        response_set = etree.Element("CdrResponseSet")
-        response_set.set("Time", self.start.strftime("%Y-%m-%dT%H:%M:%S.%f"))
-        for response in responses:
-            response_set.append(response)
-        return etree.tostring(response_set, encoding="utf-8")
-
-    @staticmethod
-    def get_node_text(node, default=None):
-        if node is None:
-            return default
-        return "".join(node.itertext("*"))
