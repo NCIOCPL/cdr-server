@@ -228,33 +228,33 @@ OCECDR-4123: Add HP/Patient URL to Summaries
   Loading all Clinical Trials Search Text Misc documents
   ====================================================== -->
   <xsl:variable                   name = "slText_en_hp" 
-                                select = "document(
+                                select = "document(cdr:escape-uri(
                                             concat('cdr:name:Clinical Trial ',
                                                    'Search Link Text - ',
                                                    'English-HP;',
                                                    'Standard wording',
-                                                                 '/lastp'))"/>
+                                                                 '/lastp')))"/>
   <xsl:variable                   name = "slText_es_hp" 
-                                select = "document(
+                                select = "document(cdr:escape-uri(
                                             concat('cdr:name:Clinical Trial ',
                                                    'Search Link Text - ',
                                                    'Spanish-HP;',
                                                    'Standard wording;Spanish',
-                                                                 '/lastp'))"/>
+                                                                 '/lastp')))"/>
   <xsl:variable                   name = "slText_en_pat" 
-                                select = "document(
+                                select = "document(cdr:escape-uri(
                                             concat('cdr:name:Clinical Trial ',
                                                    'Search Link Text - ',
                                                    'English-Patient;',
                                                    'Standard wording',
-                                                                 '/lastp'))"/>
+                                                                 '/lastp')))"/>
   <xsl:variable                   name = "slText_es_pat" 
-                                select = "document(
+                                select = "document(cdr:escape-uri(
                                             concat('cdr:name:Clinical Trial ',
                                                    'Search Link Text - ',
                                                    'Spanish-Patient;',
                                                    'Standard wording;Spanish',
-                                                                 '/lastp'))"/>
+                                                                 '/lastp')))"/>
 
   <!-- 
   <xsl:variable                   name = "miscSection">
@@ -768,11 +768,11 @@ OCECDR-4123: Add HP/Patient URL to Summaries
         the resulting node into a string
   ================================================================== -->
   <xsl:variable                   name = "queryRows"
-                                select = "document(
+                                select = "document(cdr:escape-uri(
                                            concat('cdrutil:/sql-query/',
                                                    $sqlQuery,
                                                    '~',
-                                                   $docNormId))"/>
+                                                   $docNormId)))"/>
   <!--
   Note:  The url created by function getSummaryURL has no trailing 
          slash ('/'), specifies the domain as http://cancer.gov and
@@ -967,11 +967,11 @@ OCECDR-4123: Add HP/Patient URL to Summaries
           the resulting node into a string
     ================================================================== -->
     <xsl:variable                 name = "queryRows"
-                                select = "document(
+                                select = "document(cdr:escape-uri(
                                            concat('cdrutil:/sql-query/',
                                                    $sqlQuery,
                                                    '~',
-                                                   $hrefNormId))"/>
+                                                   $hrefNormId)))"/>
     <!--
     Note:  The url created by function getSummaryURL has no trailing 
            slash ('/'), specifies the domain as http://cancer.gov and
@@ -1290,9 +1290,8 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  <xsl:template                  match = "Para"
                                  mode = "MiscText">
   <xsl:param                     name = "miscDocId"/>
-  <xsl:param                     name = "curLocation">
-   <SectMetaData/>
-  </xsl:param>
+  <xsl:param                     name = "curLocation"
+                               select = "/.."/>
 
    <!--
    The disclaimer section is different for treatment vs other
@@ -2274,19 +2273,19 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  ============================================================== -->
  <xsl:template                   match = "PlaceHolder[@name = 
                                                        'AboutThisSummary']">
-  <xsl:variable                   name = "aboutThisDoc">
+  <xsl:variable                   name = "aboutUri">
    <xsl:choose>
     <xsl:when                     test = "SummaryMetaData/
                                           SummaryLanguage = 'English'">
-     <xsl:copy-of               select = "document(concat('cdr:CDR0000684055',
-                                                         '/lastp'))"/>
+     <xsl:text>cdr:CDR0000684055/lastp</xsl:text>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:copy-of               select = "document(concat('cdr:CDR0000684064',
-                                                         '/lastp'))"/>
+     <xsl:text>cdr:CDR0000684064/lastp</xsl:text>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
+  <xsl:variable                   name = "aboutThisDoc"
+                                select = "document($aboutUri)"/>
 
   <xsl:element                    name = "SummaryRef">
    <xsl:attribute                 name = "href">
@@ -2830,23 +2829,14 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  ========================================================================= -->
  <xsl:template                   name = "MoreInformation">
 
-  <xsl:variable                  name = "miscDoc">
+  <xsl:variable                  name = "miscUri">
    <xsl:choose>
     <xsl:when                    test = "SummaryMetaData/SummaryType =
                                            concat(
                                             'Integrative, alternative, ',
                                             'and complementary therapies')">
-     <xsl:choose>
-      <xsl:when                  test = "$language = 'English'">
-       <xsl:copy-of            select = "document(concat('cdr:CDR0000256925',
-                                                         '/lastp'))"/>
-      </xsl:when>
-      <xsl:otherwise>
-       <!-- Spanish HP IACT summaries currently don't exist -->
-       <xsl:copy-of            select = "document(concat('cdr:CDR0000256925',
-                                                         '/lastp'))"/>
-      </xsl:otherwise>
-     </xsl:choose>
+     <!-- Spanish HP IACT summaries currently don't exist -->
+     <xsl:text>cdr:CDR0000256925/lastp</xsl:text>
     </xsl:when>
     <xsl:otherwise>
      <xsl:choose>
@@ -2854,21 +2844,21 @@ OCECDR-4123: Add HP/Patient URL to Summaries
        <!-- Misc Document Title
        'More Information;For more information - Health professional summary'
        ==================================================================== -->
-       <xsl:copy-of            select = "document(concat('cdr:CDR0000334953',
-                                                         '/lastp'))"/>
+       <xsl:text>cdr:CDR0000334953/lastp</xsl:text>
       </xsl:when>
       <xsl:otherwise>
        <!-- Misc Document Title
        'Informaci&#xF3;n adicional;For more information - Health  
         professional summary;Spanish'
        ==================================================================== -->       
-       <xsl:copy-of            select = "document(concat('cdr:CDR0000334954',
-                                                         '/lastp'))"/>
+       <xsl:text>cdr:CDR0000334954/lastp</xsl:text>
       </xsl:otherwise>
      </xsl:choose>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
+  <xsl:variable                  name = "miscDoc"
+                               select = "document($miscUri)"/>
 
   <xsl:apply-templates         select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText">
@@ -3172,18 +3162,18 @@ OCECDR-4123: Add HP/Patient URL to Summaries
     <!--
     Setting misc document value for EN/HP/Pat
     ============================================ -->
-    <xsl:variable                 name = "miscDoc"> 
+    <xsl:variable                 name = "miscUri">
      <xsl:choose>
       <xsl:when                   test = "$sumAudience='Health professionals'">
-       <xsl:copy-of             select = "document(concat('cdr:CDR0000684055',
-                                                         '/lastp'))"/>
+       <xsl:text>cdr:CDR0000684055/lastp</xsl:text>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:copy-of             select = "document(concat('cdr:CDR0000751603',
-                                                          '/lastp'))"/>
+       <xsl:text>cdr:CDR0000751603/lastp</xsl:text>
       </xsl:otherwise>
      </xsl:choose>
     </xsl:variable>
+    <xsl:variable                name = "miscDoc"
+                               select = "document($miscUri)"/>
 
     <SummarySection>
      <xsl:attribute               name = "id">
@@ -3217,18 +3207,18 @@ OCECDR-4123: Add HP/Patient URL to Summaries
     <!--
     Setting misc document value for ES/HP/Pat
     ============================================ -->
-    <xsl:variable                 name = "miscDoc"> 
+    <xsl:variable                 name = "miscUri">
      <xsl:choose>
       <xsl:when                   test = "$sumAudience='Health professionals'">
-       <xsl:copy-of             select = "document(concat('cdr:CDR0000684064',
-                                                         '/lastp'))"/>
+       <xsl:text>cdr:CDR0000684064/lastp</xsl:text>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:copy-of             select = "document(concat('cdr:CDR0000751604',
-                                                          '/lastp'))"/>
+       <xsl:text>cdr:CDR0000751604/lastp</xsl:text>
       </xsl:otherwise>
      </xsl:choose>
     </xsl:variable>
+    <xsl:variable                 name = "miscDoc"
+                                select = "document($miscUri)"/>
 
     <SummarySection>
      <xsl:attribute               name = "id">
@@ -3402,18 +3392,18 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  Template to add the HP disclaimer to the Changes section.
  ========================================================================= -->
  <xsl:template                   name = "addHPDisclaimer">
-  <xsl:variable                  name = "miscDoc">
+  <xsl:variable                  name = "miscUri">
    <xsl:choose>
     <xsl:when                    test = "$language = 'English'">
-     <xsl:copy-of              select = "document(concat('cdr:CDR0000733750',
-                                                         '/lastp'))"/>
+     <xsl:text>cdr:CDR0000733750/lastp</xsl:text>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:copy-of              select = "document(concat('cdr:CDR0000733749',
-                                                         '/lastp'))"/>
+     <xsl:text>cdr:CDR0000733749/lastp</xsl:text>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
+  <xsl:variable                  name = "miscDoc"
+                               select = "document($miscUri)"/>
 
   <xsl:apply-templates         select = "$miscDoc/MiscellaneousDocument/
                                                   MiscellaneousDocumentText/
