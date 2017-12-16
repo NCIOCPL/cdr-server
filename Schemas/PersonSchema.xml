@@ -11,805 +11,813 @@
      BZIssue::5248 (new GeneticsBoardName value)
   -->
 
-<schema              xmlns           = 'http://www.w3.org/2001/XMLSchema'>
+<xsd:schema              xmlns:xsd       = 'http://www.w3.org/2001/XMLSchema'>
 
 <!--=================================================================-->
 <!--                        CUSTOM RULE                              -->
 <!--=================================================================-->
- <annotation>
-  <appInfo>
+ <xsd:annotation>
+  <xsd:appinfo>
    <pattern>
-    <rule            context         = '/Person/PersonLocations'>
-     <assert         test            = 'not(.//PersonRole
+    <rule context = '/Person/PersonLocations'>
+     <assert>
+      <test><![CDATA[
+not(.//PersonRole
                                         [. = "Protocol update person"])
-                                        or UpdateMode'
-     >UpdateMode attribute required when PUP role is present</assert>
+                                        or UpdateMode
+]]>
+      </test>
+      <message><![CDATA[
+UpdateMode attribute required when PUP role is present
+]]>
+      </message>
+     </assert>
     </rule>
-    <rule            context         = '/Person/PersonLocations'>
-     <assert         test            = 'not(CIPSContact)
-                or CIPSContact=Home/@cdr:id
-                or CIPSContact=PrivatePractice/PrivatePracticeLocation/@cdr:id
-                or CIPSContact=OtherPracticeLocation/@cdr:id'
-     >CIPSContact not found among PersonLocation subelements</assert>
+    <rule context = '/Person/PersonLocations'>
+     <assert>
+      <test><![CDATA[
+not(CIPSContact)
+                or CIPSContact=Home/@cdr-id
+                or CIPSContact=PrivatePractice/PrivatePracticeLocation/@cdr-id
+                or CIPSContact=OtherPracticeLocation/@cdr-id
+]]>
+      </test>
+      <message><![CDATA[
+CIPSContact not found among PersonLocation subelements
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
-  </appInfo>
- </annotation>
+  </xsd:appinfo>
+ </xsd:annotation>
 
 <!--=================================================================-->
 <!--                COMMON CDR SCHEMA COMPONENTS                     -->
 <!--=================================================================-->
-  <include           schemaLocation  = 'CdrCommonSchema.xml'/>
+  <xsd:include           schemaLocation  = 'CdrCommonSchema.xml'/>
 
 <!--=================================================================-->
 <!--                 TOP-LEVEL DOCUMENT ELEMENT                      -->
 <!--=================================================================-->
-  <element           name            = 'Person'
-                     type            = 'Person'/>
+  <xsd:element           name            = 'Person'
+                         type            = 'Person'/>
 
 <!--=================================================================-->
 <!--                       DOCUMENT TYPE                             -->
 <!--=================================================================-->
-  <complexType       name            = 'Person'>
-    <sequence>
-      <element       name            = 'PersonNameInformation'
-                     type            = 'PersonNameInformation'/>
-      <element       name            = 'ProfessionalInformation'
-                     type            = 'ProfessionalInformation'
-                     minOccurs       = '0'/>
-      <element       name            = 'PersonLocations'
-                     type            = 'PersonLocations'/>
-      <element       name            = 'ProfessionalType'
-                     type            = 'ProfessionalType'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'Status'
-                     type            = 'Status'/>
-      <element       name            = 'DatedAction'
-                     type            = 'DatedAction'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'DateLastModified'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-      <element       name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    </sequence>
-    <attribute       name            = 'xmlns:cdr'
-                     type            = 'anyURI'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'Person'>
+    <xsd:sequence>
+      <xsd:element       name            = 'PersonNameInformation'
+                         type            = 'PersonNameInformation'/>
+      <xsd:element       name            = 'ProfessionalInformation'
+                         type            = 'ProfessionalInformation'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'PersonLocations'
+                         type            = 'PersonLocations'/>
+      <xsd:element       name            = 'ProfessionalType'
+                         type            = 'ProfessionalType'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'Status'
+                         type            = 'Status'/>
+      <xsd:element       name            = 'DatedAction'
+                         type            = 'DatedAction'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'DateLastModified'
+                         type            = 'xsd:date'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'PdqKey'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
 <!--=================================================================-->
 <!--                     OTHER COMPLEX TYPES                         -->
 <!--=================================================================-->
-  <complexType       name            = 'PersonNameInformation'>
-    <sequence>
-      <element       name            = 'GivenName'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      <element       name            = 'MiddleInitial'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      <element       name            = 'SurName'
-                     type            = 'NotEmptyString'/>
-      <element       name            = 'Prefix'
-                     type            = 'Prefix'
-                     minOccurs       = '0'/>
-      <element       name            = 'GenerationSuffix'
-                     type            = 'GenerationSuffix'
-                     minOccurs       = '0'/>
-      <element       name            = 'ProfessionalSuffix'
-                     type            = 'ProfessionalSuffix'
-                     minOccurs       = '0'/>
-      <element       name            = 'NameFormat'
-                     type            = 'NameFormat'
-                     minOccurs       = '0'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'PersonNameInformation'>
+    <xsd:sequence>
+      <xsd:element       name            = 'GivenName'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'MiddleInitial'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'SurName'
+                         type            = 'NotEmptyString'/>
+      <xsd:element       name            = 'Prefix'
+                         type            = 'Prefix'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'GenerationSuffix'
+                         type            = 'GenerationSuffix'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'ProfessionalSuffix'
+                         type            = 'ProfessionalSuffix'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'NameFormat'
+                         type            = 'NameFormat'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProfessionalSuffix'>
-      <choice        maxOccurs       = 'unbounded'>
-      <element       name            = 'StandardProfessionalSuffix'
-                     type            = 'StandardProfessionalSuffix'
-                     minOccurs       = '0'/>
-      <element       name            = 'CustomProfessionalSuffix'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    </choice>
-  </complexType>
+  <xsd:complexType       name            = 'ProfessionalSuffix'>
+      <xsd:choice        maxOccurs       = 'unbounded'>
+      <xsd:element       name            = 'StandardProfessionalSuffix'
+                         type            = 'StandardProfessionalSuffix'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'CustomProfessionalSuffix'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+    </xsd:choice>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProfessionalInformation'>
-    <sequence>
-      <element       name            = 'PDQBoardMembershipDetails'
-                     type            = 'PDQBoardMembershipDetails'
-                     minOccurs       = '0'/>
-      <element       name            = 'PhysicianDetails'
-                     type            = 'PhysicianDetails'
-                     minOccurs       = '0'/>
-      <element       name            = 'GeneticsProfessionalDetails'
-                     type            = 'GeneticsProfessionalDetails'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'ProfessionalInformation'>
+    <xsd:sequence>
+      <xsd:element       name            = 'PDQBoardMembershipDetails'
+                         type            = 'PDQBoardMembershipDetails'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'PhysicianDetails'
+                         type            = 'PhysicianDetails'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'GeneticsProfessionalDetails'
+                         type            = 'GeneticsProfessionalDetails'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
   <!-- This information is no longer maintained.  Don't use it. -->
-  <complexType       name            = 'PDQBoardMembershipDetails'>
-    <sequence>
-      <element       name            = 'PDQEditorialBoard'
-                     type            = 'OrganizationLink'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'PDQAdvisoryBoard'
-                     type            = 'OrganizationLink'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'PDQVoluntaryProtocolReviewBoard'
-                     type            = 'OrganizationLink'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'PDQBoardMembershipDetails'>
+    <xsd:sequence>
+      <xsd:element       name            = 'PDQEditorialBoard'
+                         type            = 'OrganizationLink'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'PDQAdvisoryBoard'
+                         type            = 'OrganizationLink'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'PDQVoluntaryProtocolReviewBoard'
+                         type            = 'OrganizationLink'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'GeneticsProfessionalDetails'>
-    <sequence>
-      <element       name            = 'AdministrativeInformation'
-                     type            = 'AdministrativeInformation'/>
-      <element       name            = 'GeneticsSpecialtyInformation'
-                     type            = 'GeneticsSpecialtyInformation'/>
-      <element       name            = 'InterdisciplinaryTeamMember'
-                     type            = 'YesNo'/>
-      <element       name            = 'GeneticsTeamServices'
-                     type            = 'GeneticsTeamServices'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'ProvidesServices'
-                     type            = 'YesNo'/>
-      <element       name            = 'AcceptsCalls'
-                     type            = 'YesNo'/>
-      <element       name            = 'ServiceLimitations'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      <element       name            = 'FamilialCancerSyndrome'
-                     type            = 'TerminologyLink'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'MemberOfGeneticsSociety'
-                     type            = 'MemberOfGeneticsSociety'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'LegacyGeneticsData'
-                     type            = 'LegacyGeneticsData'
-                     minOccurs       = '0'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'GeneticsProfessionalDetails'>
+    <xsd:sequence>
+      <xsd:element       name            = 'AdministrativeInformation'
+                         type            = 'AdministrativeInformation'/>
+      <xsd:element       name            = 'GeneticsSpecialtyInformation'
+                         type            = 'GeneticsSpecialtyInformation'/>
+      <xsd:element       name            = 'InterdisciplinaryTeamMember'
+                         type            = 'YesNo'/>
+      <xsd:element       name            = 'GeneticsTeamServices'
+                         type            = 'GeneticsTeamServices'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'ProvidesServices'
+                         type            = 'YesNo'/>
+      <xsd:element       name            = 'AcceptsCalls'
+                         type            = 'YesNo'/>
+      <xsd:element       name            = 'ServiceLimitations'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'FamilialCancerSyndrome'
+                         type            = 'TerminologyLink'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'MemberOfGeneticsSociety'
+                         type            = 'MemberOfGeneticsSociety'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'LegacyGeneticsData'
+                         type            = 'LegacyGeneticsData'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
   <!--
-       If the person is marked "Include" for the Genetics Directory the
-       person should have at least 1 GeneticsBoardCertification element,
-       for each CertificationStatus=Eligible the person should have
-       EligibilityYear. These rules should be forced outside the schema.
-       The appropriate error messages should pop-up in case any of these
-       validations fail.
+           If the person is marked "Include" for the Genetics Directory the
+           person should have at least 1 GeneticsBoardCertification element,
+           for each CertificationStatus=Eligible the person should have
+           EligibilityYear. These rules should be forced outside the schema.
+           The appropriate error messages should pop-up in case any of these
+           validations fail.
     -->
-  <complexType       name            = 'GeneticsSpecialtyInformation'>
-    <sequence>
+  <xsd:complexType       name            = 'GeneticsSpecialtyInformation'>
+    <xsd:sequence>
  <!--
-      <element       name            = 'GeneticsSpecialtyName'
-                     type            = 'GeneticsSpecialtyName'/>
+      <xsd:element       name            = 'GeneticsSpecialtyName'
+                         type            = 'GeneticsSpecialtyName'/>
    -->
-      <element       name            = 'GeneticsBoardCertification'
-                     type            = 'GeneticsBoardCertification'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+      <xsd:element       name            = 'GeneticsBoardCertification'
+                         type            = 'GeneticsBoardCertification'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'LegacyGeneticsData'>
-    <sequence>
-      <element       name            = 'LegacyID'
-                     type            = 'integer'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'OracleID'
-                     type            = 'integer'
-                     minOccurs       = '0'/>
-      <element       name            = 'OriginalCreationDate'
-                     type            = 'date'/>
-      <element       name            = 'OriginalCreationUser'
-                     type            = 'string'/>
-      <element       name            = 'LastUpdateBeforeConversion'
-                     type            = 'date'/>
-      <element       name            = 'LastUpdateUserBeforeConversion'
-                     type            = 'string'/>
-      <element       name            = 'LegacyUserName'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      <element       name            = 'LegacyPassword'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      <element       name            = 'StateCertification'
-                     type            = 'StateCertification'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'LegacyGeneticsData'>
+    <xsd:sequence>
+      <xsd:element       name            = 'LegacyID'
+                         type            = 'xsd:integer'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'OracleID'
+                         type            = 'xsd:integer'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'OriginalCreationDate'
+                         type            = 'xsd:date'/>
+      <xsd:element       name            = 'OriginalCreationUser'
+                         type            = 'xsd:string'/>
+      <xsd:element       name            = 'LastUpdateBeforeConversion'
+                         type            = 'xsd:date'/>
+      <xsd:element       name            = 'LastUpdateUserBeforeConversion'
+                         type            = 'xsd:string'/>
+      <xsd:element       name            = 'LegacyUserName'
+                         type            = 'xsd:string'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'LegacyPassword'
+                         type            = 'xsd:string'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'StateCertification'
+                         type            = 'StateCertification'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'GeneticsBoardCertification'>
-    <sequence>
-      <element       name            = 'GeneticsBoardName'
-                     type            = 'GeneticsBoardName'/>
-      <element       name            = 'CertificationVerification'
-                     type            = 'Yes'
-                     minOccurs       = '0'/>
-      <element       name            = 'CertificationStatus'
-                     type            = 'CertificationStatus'/>
-      <element       name            = 'EligibilityYear'
-                     type            = 'integer'
-                     minOccurs       = '0'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'GeneticsBoardCertification'>
+    <xsd:sequence>
+      <xsd:element       name            = 'GeneticsBoardName'
+                         type            = 'GeneticsBoardName'/>
+      <xsd:element       name            = 'CertificationVerification'
+                         type            = 'Yes'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'CertificationStatus'
+                         type            = 'CertificationStatus'/>
+      <xsd:element       name            = 'EligibilityYear'
+                         type            = 'xsd:integer'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'StateCertification'>
-    <sequence>
-      <element       name            = 'StateCertificationState'
-                     type            = 'string'/>
-      <element       name            = 'StateCertificationNumber'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'StateCertification'>
+    <xsd:sequence>
+      <xsd:element       name            = 'StateCertificationState'
+                         type            = 'xsd:string'/>
+      <xsd:element       name            = 'StateCertificationNumber'
+                         type            = 'xsd:string'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'PhysicianDetails'>
-    <sequence>
-      <element       name            = 'AdministrativeInformation'
-                     type            = 'AdministrativeInformation'/>
-      <element       name            = 'PhysicianSpecialtyInformation'
-                     type            = 'PhysicianSpecialtyInformation'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <!--
-      <element       name            = "PhysicianServices"/>
-        -->
-      <element       name            = 'PhysicianMembershipInformation'
-                     type            = 'PhysicianMembershipInformation'
-                     minOccurs       = '0'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'PhysicianDetails'>
+    <xsd:sequence>
+      <xsd:element       name            = 'AdministrativeInformation'
+                         type            = 'AdministrativeInformation'/>
+      <xsd:element       name            = 'PhysicianSpecialtyInformation'
+                         type            = 'PhysicianSpecialtyInformation'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+          <!--
+      <xsd:element       name            = "PhysicianServices"/>
+            -->
+      <xsd:element       name            = 'PhysicianMembershipInformation'
+                         type            = 'PhysicianMembershipInformation'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'PhysicianSpecialtyInformation'>
-    <choice          maxOccurs       = 'unbounded'>
-      <element       name            = 'BoardCertifiedSpecialty'
-                     type            = 'BoardCertifiedSpecialty'/>
-      <element       name            = 'OtherSpecialty'
-                     type            = 'OtherSpecialty'/>
-    </choice>
-  </complexType>
+  <xsd:complexType       name            = 'PhysicianSpecialtyInformation'>
+    <xsd:choice          maxOccurs       = 'unbounded'>
+      <xsd:element       name            = 'BoardCertifiedSpecialty'
+                         type            = 'BoardCertifiedSpecialty'/>
+      <xsd:element       name            = 'OtherSpecialty'
+                         type            = 'OtherSpecialty'/>
+    </xsd:choice>
+  </xsd:complexType>
 
-  <complexType       name            = 'BoardCertifiedSpecialty'>
+  <xsd:complexType       name            = 'BoardCertifiedSpecialty'>
   <!--Boards that PDQ verify-->
-    <sequence>
-      <element       name            = 'BoardCertifiedSpecialtyName'
-                     type            = 'BoardCertifiedSpecialtyName'/>
-      <element       name            = 'Certified'
-                     type            = 'YesNo'/>
-      <element       name            = 'Verified'
-                     type            = 'Yes'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+    <xsd:sequence>
+      <xsd:element       name            = 'BoardCertifiedSpecialtyName'
+                         type            = 'BoardCertifiedSpecialtyName'/>
+      <xsd:element       name            = 'Certified'
+                         type            = 'YesNo'/>
+      <xsd:element       name            = 'Verified'
+                         type            = 'Yes'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'PhysicianMembershipInformation'>
-    <choice          minOccurs       = '0'
-                     maxOccurs       = 'unbounded'>
-      <element       name            = 'MemberOfCooperativeGroup'
-                     type            = 'MemberOfCooperativeGroup'/>
-      <element       name            = 'MemberOfMedicalSociety'
-                     type            = 'MemberOfMedicalSociety'/>
-    </choice>
-  </complexType>
+  <xsd:complexType       name            = 'PhysicianMembershipInformation'>
+    <xsd:choice          minOccurs       = '0'
+                         maxOccurs       = 'unbounded'>
+      <xsd:element       name            = 'MemberOfCooperativeGroup'
+                         type            = 'MemberOfCooperativeGroup'/>
+      <xsd:element       name            = 'MemberOfMedicalSociety'
+                         type            = 'MemberOfMedicalSociety'/>
+    </xsd:choice>
+  </xsd:complexType>
 
-  <complexType       name            = 'MemberOfCooperativeGroup'>
-    <sequence>
-      <element       name            = 'CooperativeGroup'
-                     type            = 'OrganizationLink'/>
-    </sequence>
-    <attribute       name            = 'GroupChair'
-                     type            = 'Yes'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'MemberOfCooperativeGroup'>
+    <xsd:sequence>
+      <xsd:element       name            = 'CooperativeGroup'
+                         type            = 'OrganizationLink'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'GroupChair'
+                         type            = 'Yes'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'AdministrativeInformation'>
-    <sequence>
-      <element       name            = 'Directory'
-                     type            = 'Directory'/>
-      <element       name            = 'PreferredContactMode'
-                     type            = 'PreferredContactMode'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'AdministrativeInformation'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Directory'
+                         type            = 'Directory'/>
+      <xsd:element       name            = 'PreferredContactMode'
+                         type            = 'PreferredContactMode'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'Directory'>
-    <sequence>
-      <element       name            = 'Include'
-                     type            = 'Include'/>
-      <element       name            = 'EnteredBy'
-                     type            = 'NotEmptyString'/>
-      <element       name            = 'Date'
-                     type            = 'date'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'Directory'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Include'
+                         type            = 'Include'/>
+      <xsd:element       name            = 'EnteredBy'
+                         type            = 'NotEmptyString'/>
+      <xsd:element       name            = 'Date'
+                         type            = 'xsd:date'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'Status'>
-    <sequence>
-      <element       name            = 'CurrentStatus'
-                     type            = 'CurrentStatus'/>
-      <element       name            = 'EnteredBy'
-                     type            = 'NotEmptyString'/>
-      <element       name            = 'EntryDate'
-                     type            = 'date'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'Status'>
+    <xsd:sequence>
+      <xsd:element       name            = 'CurrentStatus'
+                         type            = 'CurrentStatus'/>
+      <xsd:element       name            = 'EnteredBy'
+                         type            = 'NotEmptyString'/>
+      <xsd:element       name            = 'EntryDate'
+                         type            = 'xsd:date'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'PersonLocations'>
-    <sequence>
-      <element       name            = 'Home'
-                     type            = 'ContactDetail'
-                     minOccurs       = '0'/>
-      <element       name            = 'PrivatePractice'
-                     type            = 'PrivatePractice'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'OtherPracticeLocation'
-                     type            = 'OtherPracticeLocation'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
+  <xsd:complexType       name            = 'PersonLocations'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Home'
+                         type            = 'ContactDetail'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'PrivatePractice'
+                         type            = 'PrivatePractice'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'OtherPracticeLocation'
+                         type            = 'OtherPracticeLocation'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
 
-      <!--
-           Links to one of the person's locations in the same
-           document to mark it as the CIPS contact.
-        -->
-      <element       name            = 'CIPSContact'
-                     type            = 'IDREF'/>
+          <!--
+               Links to one of the person's locations in the same
+               document to mark it as the CIPS contact.
+            -->
+      <xsd:element       name            = 'CIPSContact'
+                         type            = 'xsd:IDREF'/>
 
-      <element       name            = 'UpdateMode'
-                     type            = 'UpdateMode'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+      <xsd:element       name            = 'UpdateMode'
+                         type            = 'UpdateMode'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'PrivatePractice'>
-    <sequence>
-      <element       name            = 'PrivatePracticeLocation'
-                     type            = 'ContactDetail'/>
-    </sequence>
-    <attribute       name            = 'PreviousLocation'
-                     type            = 'Yes'
-                     minOccurs       = '0'/>
+  <xsd:complexType       name            = 'PrivatePractice'>
+    <xsd:sequence>
+      <xsd:element       name            = 'PrivatePracticeLocation'
+                         type            = 'ContactDetail'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'PreviousLocation'
+                         type            = 'Yes'/>
     <!-- Identifies specific activity ('GP' for genetics professional
-         activity) associated with this contact information. -->
-    <attribute       name            = 'UsedFor'
-                     type            = 'GPUsage'
-                     minOccurs       = '0'/>
-  </complexType>
+             activity) associated with this contact information. -->
+    <xsd:attribute       name            = 'UsedFor'
+                         type            = 'GPUsage'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'OtherPracticeLocation'>
-    <sequence>
-      <element       name            = 'OrganizationLocation'
-                     type            = 'OrganizationLinkWithOptionalFragment'/>
-      <element       name            = 'PersonTitle'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      <element       name            = 'PersonRole'
-                     type            = 'PersonRole'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <!--<element       name            = 'SpecificContact'
-                     type            = 'ContactDetail'
-                     minOccurs       = '0'/>-->
-      <!--
-            If the above element Organization links to the whole
-            Organization documet, than CIPS contact location for
-            that Organization is used, otherwise the information
-            of the location to which the above Organization element
-            links to is used. The interface should provide the
-            author with the pick list of the organizations and the
-            locations for each one. After the author picks the
-            location the full contact information should be presented
-            on the screen giving he author ability to make changes
-            to it. The "Save" button should be provided. After it is
-            pressed the program should check if any changes were made.
-            If none - no specific contact information should be stored.
-            In this case the contact information to which the person
-            is linked to is used. If any changes are detected - the
-            whole set of contact information should be stored in the
-            person's record, even the elements duplicating the contact
-            information for the organization location.
+  <xsd:complexType       name            = 'OtherPracticeLocation'>
+    <xsd:sequence>
+      <xsd:element       name            = 'OrganizationLocation'
+                         type            = 'OrganizationLinkWithOptionalFragment'/>
+      <xsd:element       name            = 'PersonTitle'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'PersonRole'
+                         type            = 'PersonRole'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+          <!--<element       name            = 'SpecificContact'
+                         type            = 'ContactDetail'
+                         minOccurs       = '0'/>-->
+          <!--
+                If the above element Organization links to the whole
+                Organization documet, than CIPS contact location for
+                that Organization is used, otherwise the information
+                of the location to which the above Organization element
+                links to is used. The interface should provide the
+                author with the pick list of the organizations and the
+                locations for each one. After the author picks the
+                location the full contact information should be presented
+                on the screen giving he author ability to make changes
+                to it. The "Save" button should be provided. After it is
+                pressed the program should check if any changes were made.
+                If none - no specific contact information should be stored.
+                In this case the contact information to which the person
+                is linked to is used. If any changes are detected - the
+                whole set of contact information should be stored in the
+                person's record, even the elements duplicating the contact
+                information for the organization location.
 
-            Each time the Organization location information is changed
-            the report should be generated, listing all the person
-            documents linked to that Organization that have some
-            specific contact information stored in the person's document.
-            The author will manually check each link/document and make
-            appropriate changes.
+                Each time the Organization location information is changed
+                the report should be generated, listing all the person
+                documents linked to that Organization that have some
+                specific contact information stored in the person's document.
+                The author will manually check each link/document and make
+                appropriate changes.
 
-            [2009-10-22; the comment above has been partly superceded
-            by the notes immediately below:]
+                [2009-10-22; the comment above has been partly superceded
+                by the notes immediately below:]
 
-            The OrganizationLocation element's name is now somewhat
-            misleading, as the fragment portion which identifies
-            a specific location within the Organization document
-            to which the cdr:ref attribute links is no longer
-            required.  It was decided that living with the misnomer
-            was a lower price to pay than the updates that would
-            have been required for the data and software to
-            accomodate a name change for the element at this
-            stage (or to have a parallel alternate element which
-            just links to the organization).  The shift in the
-            role of the element has been largely dictated by the
-            fact that PDQ is no longer actively maintaining all of
-            the location and contact information for Organization
-            documents, which (with the exception of those used for
-            PDQ board information) are now largely used for name
-            authority, with just enough other information carried
-            in the documents to be able to distinguish documents
-            for multiple organizations with the same name.
+                The OrganizationLocation element's name is now somewhat
+                misleading, as the fragment portion which identifies
+                a specific location within the Organization document
+                to which the cdr-ref attribute links is no longer
+                required.  It was decided that living with the misnomer
+                was a lower price to pay than the updates that would
+                have been required for the data and software to
+                accomodate a name change for the element at this
+                stage (or to have a parallel alternate element which
+                just links to the organization).  The shift in the
+                role of the element has been largely dictated by the
+                fact that PDQ is no longer actively maintaining all of
+                the location and contact information for Organization
+                documents, which (with the exception of those used for
+                PDQ board information) are now largely used for name
+                authority, with just enough other information carried
+                in the documents to be able to distinguish documents
+                for multiple organizations with the same name.
 
-            A custom validation rule will need to be created to
-            verify that when the OrganizationLocation links to an
-            Organization document without a fragment portion in the
-            link for identifying a specific location block within
-            the linked document there is at least a SpecificPostalAddress
-            block present.
-        -->
-      <element       name            = 'SpecificPostalAddress'
-                     type            = 'PostalAddress'
-                     minOccurs       = '0'/>
-      <element       name            = 'SpecificPhone'
-                     type            = 'Phone'
-                     minOccurs       = '0'/>
-      <element       name            = 'SpecificTollFreePhone'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      <element       name            = 'SpecificFax'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      <element       name            = 'SpecificEmail'
-                     type            = 'Email'
-                     minOccurs       = '0'/>
-      <element       name            = 'SpecificWebSite'
-                     type            = 'ExternalRef'
-                     minOccurs       = '0'/>
-      <element       name            = 'ComplexAffiliation'
-                     type            = 'ComplexAffiliation'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-    <attribute       name            = 'cdr:id'
-                     type            = 'NotEmptyString'/>
-    <attribute       name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'PreviousLocation'
-                     type            = 'Yes'
-                     minOccurs       = '0'/>
+                A custom validation rule will need to be created to
+                verify that when the OrganizationLocation links to an
+                Organization document without a fragment portion in the
+                link for identifying a specific location block within
+                the linked document there is at least a SpecificPostalAddress
+                block present.
+            -->
+      <xsd:element       name            = 'SpecificPostalAddress'
+                         type            = 'PostalAddress'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'SpecificPhone'
+                         type            = 'Phone'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'SpecificTollFreePhone'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'SpecificFax'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'SpecificEmail'
+                         type            = 'Email'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'SpecificWebSite'
+                         type            = 'ExternalRef'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'ComplexAffiliation'
+                         type            = 'ComplexAffiliation'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'cdr-id'
+                         type            = 'NotEmptyString'
+                         use             = 'required'/>
+    <xsd:attribute       name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'PreviousLocation'
+                         type            = 'Yes'/>
     <!-- Identifies specific activity ('GP' for genetics professional
-         activity) associated with this contact information. -->
-    <attribute       name            = 'UsedFor'
-                     type            = 'GPUsage'
-                     minOccurs       = '0'/>
-  </complexType>
+             activity) associated with this contact information. -->
+    <xsd:attribute       name            = 'UsedFor'
+                         type            = 'GPUsage'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'ComplexAffiliation'>
-    <sequence>
-      <element       name            = 'Organization'
-                     type            = 'OrganizationLink'/>
-      <!-- only allowed for Membership parents of PracticeLocation
-        -->
-      <element       name            = 'RoleAtAffiliatedOrganization'
-                     type            = 'RoleAtAffiliatedOrganization'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'ComplexAffiliation'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Organization'
+                         type            = 'OrganizationLink'/>
+          <!-- only allowed for Membership parents of PracticeLocation
+            -->
+      <xsd:element       name            = 'RoleAtAffiliatedOrganization'
+                         type            = 'RoleAtAffiliatedOrganization'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
 <!--=================================================================-->
 <!--                       SIMPLE TYPES                              -->
 <!--=================================================================-->
-  <simpleType        name            = 'Prefix'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'CDR'/>
-      <enumeration   value           = 'COL'/>
-      <enumeration   value           = 'CPT'/>
-      <enumeration   value           = 'LTC'/>
-      <enumeration   value           = 'MAJ'/>
-      <enumeration   value           = 'Prof'/>
-      <enumeration   value           = 'Sir'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'Prefix'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'CDR'/>
+      <xsd:enumeration   value           = 'COL'/>
+      <xsd:enumeration   value           = 'CPT'/>
+      <xsd:enumeration   value           = 'LTC'/>
+      <xsd:enumeration   value           = 'MAJ'/>
+      <xsd:enumeration   value           = 'Prof'/>
+      <xsd:enumeration   value           = 'Sir'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'GenerationSuffix'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Jr'/>
-      <enumeration   value           = 'Sr'/>
-      <enumeration   value           = 'II'/>
-      <enumeration   value           = 'III'/>
-      <enumeration   value           = 'IV'/>
-      <enumeration   value           = 'V'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'GenerationSuffix'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Jr'/>
+      <xsd:enumeration   value           = 'Sr'/>
+      <xsd:enumeration   value           = 'II'/>
+      <xsd:enumeration   value           = 'III'/>
+      <xsd:enumeration   value           = 'IV'/>
+      <xsd:enumeration   value           = 'V'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'StandardProfessionalSuffix'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'ANP'/>
-      <enumeration   value           = 'AOCN'/>
-      <enumeration   value           = 'BM'/>
-      <enumeration   value           = 'BS'/>
-      <enumeration   value           = 'BSc'/>
-      <enumeration   value           = 'BSN'/>
-      <enumeration   value           = 'CGS'/>
-      <enumeration   value           = 'DCh'/>
-      <enumeration   value           = 'DDS'/>
-      <enumeration   value           = 'DMD'/>
-      <enumeration   value           = 'DO'/>
-      <enumeration   value           = 'FACMG'/>
-      <enumeration   value           = 'FACP'/>
-      <enumeration   value           = 'FRACP'/>
-      <enumeration   value           = 'FRCGP'/>
-      <enumeration   value           = 'FRCOG'/>
-      <enumeration   value           = 'FRCP'/>
-      <enumeration   value           = 'FRCPath'/>
-      <enumeration   value           = 'FRCPC'/>
-      <enumeration   value           = 'FRCPE'/>
-      <enumeration   value           = 'FRCP(Glasg)'/>
-      <enumeration   value           = 'FRCPI'/>
-      <enumeration   value           = 'FRCR'/>
-      <enumeration   value           = 'FRCS'/>
-      <enumeration   value           = 'FRCSC'/>
-      <enumeration   value           = 'FRCSE'/>
-      <enumeration   value           = 'FRCS(Glasg)'/>
-      <enumeration   value           = 'FRCSI'/>
-      <enumeration   value           = 'JD'/>
-      <enumeration   value           = 'LPN'/>
-      <enumeration   value           = 'MA'/>
-      <enumeration   value           = 'MBBS'/>
-      <enumeration   value           = 'MD'/>
-      <enumeration   value           = 'MN'/>
-      <enumeration   value           = 'MPharm'/>
-      <enumeration   value           = 'MPH'/>
-      <enumeration   value           = 'MRCP'/>
-      <enumeration   value           = 'MS'/>
-      <enumeration   value           = 'MSC'/>
-      <enumeration   value           = 'MSN'/>
-      <enumeration   value           = 'MSPH'/>
-      <enumeration   value           = 'MSW'/>
-      <enumeration   value           = 'OCN'/>
-      <enumeration   value           = 'PharmD'/>
-      <enumeration   value           = 'PhD'/>
-      <enumeration   value           = 'RN'/>
-      <enumeration   value           = 'ScD'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'StandardProfessionalSuffix'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'ANP'/>
+      <xsd:enumeration   value           = 'AOCN'/>
+      <xsd:enumeration   value           = 'BM'/>
+      <xsd:enumeration   value           = 'BS'/>
+      <xsd:enumeration   value           = 'BSc'/>
+      <xsd:enumeration   value           = 'BSN'/>
+      <xsd:enumeration   value           = 'CGS'/>
+      <xsd:enumeration   value           = 'DCh'/>
+      <xsd:enumeration   value           = 'DDS'/>
+      <xsd:enumeration   value           = 'DMD'/>
+      <xsd:enumeration   value           = 'DO'/>
+      <xsd:enumeration   value           = 'FACMG'/>
+      <xsd:enumeration   value           = 'FACP'/>
+      <xsd:enumeration   value           = 'FRACP'/>
+      <xsd:enumeration   value           = 'FRCGP'/>
+      <xsd:enumeration   value           = 'FRCOG'/>
+      <xsd:enumeration   value           = 'FRCP'/>
+      <xsd:enumeration   value           = 'FRCPath'/>
+      <xsd:enumeration   value           = 'FRCPC'/>
+      <xsd:enumeration   value           = 'FRCPE'/>
+      <xsd:enumeration   value           = 'FRCP(Glasg)'/>
+      <xsd:enumeration   value           = 'FRCPI'/>
+      <xsd:enumeration   value           = 'FRCR'/>
+      <xsd:enumeration   value           = 'FRCS'/>
+      <xsd:enumeration   value           = 'FRCSC'/>
+      <xsd:enumeration   value           = 'FRCSE'/>
+      <xsd:enumeration   value           = 'FRCS(Glasg)'/>
+      <xsd:enumeration   value           = 'FRCSI'/>
+      <xsd:enumeration   value           = 'JD'/>
+      <xsd:enumeration   value           = 'LPN'/>
+      <xsd:enumeration   value           = 'MA'/>
+      <xsd:enumeration   value           = 'MBBS'/>
+      <xsd:enumeration   value           = 'MD'/>
+      <xsd:enumeration   value           = 'MN'/>
+      <xsd:enumeration   value           = 'MPharm'/>
+      <xsd:enumeration   value           = 'MPH'/>
+      <xsd:enumeration   value           = 'MRCP'/>
+      <xsd:enumeration   value           = 'MS'/>
+      <xsd:enumeration   value           = 'MSC'/>
+      <xsd:enumeration   value           = 'MSN'/>
+      <xsd:enumeration   value           = 'MSPH'/>
+      <xsd:enumeration   value           = 'MSW'/>
+      <xsd:enumeration   value           = 'OCN'/>
+      <xsd:enumeration   value           = 'PharmD'/>
+      <xsd:enumeration   value           = 'PhD'/>
+      <xsd:enumeration   value           = 'RN'/>
+      <xsd:enumeration   value           = 'ScD'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'BoardCertifiedSpecialtyName'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Medical oncology'/>
-      <enumeration   value           = 'Gynecologic oncology'/>
-      <enumeration   value           = 'Hematology'/>
-      <enumeration   value           = 'Pediatric hematology/oncology'/>
-      <enumeration   value           = 'Radiation oncology'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'BoardCertifiedSpecialtyName'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Medical oncology'/>
+      <xsd:enumeration   value           = 'Gynecologic oncology'/>
+      <xsd:enumeration   value           = 'Hematology'/>
+      <xsd:enumeration   value           = 'Pediatric hematology/oncology'/>
+      <xsd:enumeration   value           = 'Radiation oncology'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'OtherSpecialty'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Bone marrow transplantation'/>
-      <enumeration   value           = 'Colon and rectal surgery'/>
-      <enumeration   value           = 'Dermatology'/>
-      <enumeration   value           = 'Dermatologic oncology'/>
-      <enumeration   value           = 'Endocrinology'/>
-      <enumeration   value           = 'Gastroenterology'/>
-      <enumeration   value           = 'Head and neck surgery'/>
-      <enumeration   value           = 'Immunology'/>
-      <enumeration   value           = 'Infectious diseases'/>
-      <enumeration   value           = 'Neurologic oncology'/>
-      <enumeration   value           = 'Neurology'/>
-      <enumeration   value           = 'Ophthalmology'/>
-      <enumeration   value           = 'Orthopedic surgery'/>
-      <enumeration   value           = 'Otolaryngology'/>
-      <enumeration   value           = 'Pediatric surgery'/>
-      <enumeration   value           = 'Plastic surgery'/>
-      <enumeration   value           = 'Pulmonary disease'/>
-      <enumeration   value           = 'Psychiatry'/>
-      <enumeration   value           = 'Surgery'/>
-      <enumeration   value           = 'Surgical oncology'/>
-      <enumeration   value           = 'Thoracic surgery'/>
-      <enumeration   value           = 'Urology'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'OtherSpecialty'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Bone marrow transplantation'/>
+      <xsd:enumeration   value           = 'Colon and rectal surgery'/>
+      <xsd:enumeration   value           = 'Dermatology'/>
+      <xsd:enumeration   value           = 'Dermatologic oncology'/>
+      <xsd:enumeration   value           = 'Endocrinology'/>
+      <xsd:enumeration   value           = 'Gastroenterology'/>
+      <xsd:enumeration   value           = 'Head and neck surgery'/>
+      <xsd:enumeration   value           = 'Immunology'/>
+      <xsd:enumeration   value           = 'Infectious diseases'/>
+      <xsd:enumeration   value           = 'Neurologic oncology'/>
+      <xsd:enumeration   value           = 'Neurology'/>
+      <xsd:enumeration   value           = 'Ophthalmology'/>
+      <xsd:enumeration   value           = 'Orthopedic surgery'/>
+      <xsd:enumeration   value           = 'Otolaryngology'/>
+      <xsd:enumeration   value           = 'Pediatric surgery'/>
+      <xsd:enumeration   value           = 'Plastic surgery'/>
+      <xsd:enumeration   value           = 'Pulmonary disease'/>
+      <xsd:enumeration   value           = 'Psychiatry'/>
+      <xsd:enumeration   value           = 'Surgery'/>
+      <xsd:enumeration   value           = 'Surgical oncology'/>
+      <xsd:enumeration   value           = 'Thoracic surgery'/>
+      <xsd:enumeration   value           = 'Urology'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'GeneticsSpecialtyName'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Hematology'/>
-      <enumeration   value           = 'Medical oncology'/>
-      <enumeration   value           = 'Gynecologic oncology'/>
-      <enumeration   value           = 'Radiation oncology'/>
-      <enumeration   value           = 'Pediatric hematology/oncology'/>
-      <enumeration   value           = 'Medical genetics'/>
-      <enumeration   value           = 'Genetic counseling'/>
-      <enumeration   value           = 'Clinical genetics'/>
-      <enumeration   value           = 'Clinical biochemical genetics'/>
-      <enumeration   value           = 'Clinical molecular genetics'/>
-      <enumeration   value           = 'Clinical cytogenetics'/>
-      <enumeration   value           = 'Oncology nursing'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'GeneticsSpecialtyName'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Hematology'/>
+      <xsd:enumeration   value           = 'Medical oncology'/>
+      <xsd:enumeration   value           = 'Gynecologic oncology'/>
+      <xsd:enumeration   value           = 'Radiation oncology'/>
+      <xsd:enumeration   value           = 'Pediatric hematology/oncology'/>
+      <xsd:enumeration   value           = 'Medical genetics'/>
+      <xsd:enumeration   value           = 'Genetic counseling'/>
+      <xsd:enumeration   value           = 'Clinical genetics'/>
+      <xsd:enumeration   value           = 'Clinical biochemical genetics'/>
+      <xsd:enumeration   value           = 'Clinical molecular genetics'/>
+      <xsd:enumeration   value           = 'Clinical cytogenetics'/>
+      <xsd:enumeration   value           = 'Oncology nursing'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'GeneticsBoardName'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Hematology'/>
-      <enumeration   value           = 'Medical Oncology'/>
-      <enumeration   value           = 'Gynecologic Oncology'/>
-      <enumeration   value           = 'Radiation Oncology'/>
-      <enumeration   value           = 'Pediatric Hematology-Oncology'/>
-      <enumeration   value           = 'Medical Genetics'/>
-      <enumeration   value           = 'Genetic Counseling'/>
-      <enumeration   value           = 'Clinical Genetics'/>
-      <enumeration   value           = 'Clinical Biochemical Genetics'/>
-      <enumeration   value           = 'Clinical Molecular Genetics'/>
-      <enumeration   value           = 'Clinical Cytogenetics'/>
-      <enumeration   value           = 'Oncology Nursing'/>
-      <enumeration   value           = 'Molecular Genetic Pathology'/>
-      <enumeration   value           = 'Medical Biochemical Genetics'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'GeneticsBoardName'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Hematology'/>
+      <xsd:enumeration   value           = 'Medical Oncology'/>
+      <xsd:enumeration   value           = 'Gynecologic Oncology'/>
+      <xsd:enumeration   value           = 'Radiation Oncology'/>
+      <xsd:enumeration   value           = 'Pediatric Hematology-Oncology'/>
+      <xsd:enumeration   value           = 'Medical Genetics'/>
+      <xsd:enumeration   value           = 'Genetic Counseling'/>
+      <xsd:enumeration   value           = 'Clinical Genetics'/>
+      <xsd:enumeration   value           = 'Clinical Biochemical Genetics'/>
+      <xsd:enumeration   value           = 'Clinical Molecular Genetics'/>
+      <xsd:enumeration   value           = 'Clinical Cytogenetics'/>
+      <xsd:enumeration   value           = 'Oncology Nursing'/>
+      <xsd:enumeration   value           = 'Molecular Genetic Pathology'/>
+      <xsd:enumeration   value           = 'Medical Biochemical Genetics'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'MemberOfMedicalSociety'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'American Society of Pediatric Hematology/Oncology'/>
-      <enumeration   value           = 'American Society of Clinical Oncology'/>
-      <enumeration   value           = 'American Society of Hematology'/>
-      <enumeration   value           = 'American Radium Society'/>
-      <enumeration   value           = 'Society of Pelvic Surgeons'/>
-      <enumeration   value           = 'American College of Radiation Oncology'/>
-      <enumeration   value           = 'American Society for Therapeutic Radiology and Oncology'/>
-      <enumeration   value           = 'Society of Surgical Oncology'/>
-      <enumeration   value           = 'Society of Gynecologic Oncologists'/>
-      <enumeration   value           = 'American College of Surgeons (Fellows)'/>
-      <enumeration   value           = 'American Society of Colon and Rectal Surgeons'/>
-      <enumeration   value           = 'Society of Urologic Oncology'/>
-      <enumeration   value           = 'American College of Mohs Micrographic Surgery and Cutaneous Oncology'/>
-      <enumeration   value           = 'American Urological Association'/>
-      <enumeration   value           = 'American Academy of Dermatology'/>
-      <enumeration   value           = 'American Head and Neck Society'/>
-      <enumeration   value           = 'American College of Radiology'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'MemberOfMedicalSociety'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'American Society of Pediatric Hematology/Oncology'/>
+      <xsd:enumeration   value           = 'American Society of Clinical Oncology'/>
+      <xsd:enumeration   value           = 'American Society of Hematology'/>
+      <xsd:enumeration   value           = 'American Radium Society'/>
+      <xsd:enumeration   value           = 'Society of Pelvic Surgeons'/>
+      <xsd:enumeration   value           = 'American College of Radiation Oncology'/>
+      <xsd:enumeration   value           = 'American Society for Therapeutic Radiology and Oncology'/>
+      <xsd:enumeration   value           = 'Society of Surgical Oncology'/>
+      <xsd:enumeration   value           = 'Society of Gynecologic Oncologists'/>
+      <xsd:enumeration   value           = 'American College of Surgeons (Fellows)'/>
+      <xsd:enumeration   value           = 'American Society of Colon and Rectal Surgeons'/>
+      <xsd:enumeration   value           = 'Society of Urologic Oncology'/>
+      <xsd:enumeration   value           = 'American College of Mohs Micrographic Surgery and Cutaneous Oncology'/>
+      <xsd:enumeration   value           = 'American Urological Association'/>
+      <xsd:enumeration   value           = 'American Academy of Dermatology'/>
+      <xsd:enumeration   value           = 'American Head and Neck Society'/>
+      <xsd:enumeration   value           = 'American College of Radiology'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'MemberOfGeneticsSociety'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'American College of Medical Genetics (ACMG)'/>
-      <enumeration   value           = 'American Psychological Association (APA)'/>
-      <enumeration   value           = 'American Society of Clinical Oncology (ASCO)'/>
-      <enumeration   value           = 'American Society of Human Genetics (ASHG)'/>
-      <enumeration   value           = 'International Society of Nurses in Genetics (ISONG)'/>
-      <enumeration   value           = 'National Society of Genetic Counselors (NSGC)'/>
-      <enumeration   value           = 'NSGC Special Interest Group in Cancer'/>
-      <enumeration   value           = 'Oncology Nursing Society (ONS)'/>
-      <enumeration   value           = 'ONS Cancer Genetics Special Interest Group'/>
-      <enumeration   value           = 'Collaborative Group of the Americas on Inherited Colorectal Cancer (CGA-ICC)'/>
-      <enumeration   value           = 'International Society for Gastrointestinal Hereditary Tumors (InSiGHT)'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'MemberOfGeneticsSociety'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'American College of Medical Genetics (ACMG)'/>
+      <xsd:enumeration   value           = 'American Psychological Association (APA)'/>
+      <xsd:enumeration   value           = 'American Society of Clinical Oncology (ASCO)'/>
+      <xsd:enumeration   value           = 'American Society of Human Genetics (ASHG)'/>
+      <xsd:enumeration   value           = 'International Society of Nurses in Genetics (ISONG)'/>
+      <xsd:enumeration   value           = 'National Society of Genetic Counselors (NSGC)'/>
+      <xsd:enumeration   value           = 'NSGC Special Interest Group in Cancer'/>
+      <xsd:enumeration   value           = 'Oncology Nursing Society (ONS)'/>
+      <xsd:enumeration   value           = 'ONS Cancer Genetics Special Interest Group'/>
+      <xsd:enumeration   value           = 'Collaborative Group of the Americas on Inherited Colorectal Cancer (CGA-ICC)'/>
+      <xsd:enumeration   value           = 'International Society for Gastrointestinal Hereditary Tumors (InSiGHT)'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'GeneticsTeamServices'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Appropriate pre- and post-test counseling and informed consent'/>
-      <enumeration   value           = 'Follow-up plan of care'/>
-      <enumeration   value           = 'Genetic susceptibility testing'/>
-      <enumeration   value           = 'Patient cancer risk assessment'/>
-      <enumeration   value           = 'Patient genetics education'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'GeneticsTeamServices'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Appropriate pre- and post-test counseling and informed consent'/>
+      <xsd:enumeration   value           = 'Follow-up plan of care'/>
+      <xsd:enumeration   value           = 'Genetic susceptibility testing'/>
+      <xsd:enumeration   value           = 'Patient cancer risk assessment'/>
+      <xsd:enumeration   value           = 'Patient genetics education'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'ProfessionalType'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Clinical Psychologist (Ph.D., Psy.D.)'/>
-      <enumeration   value           = 'Clinical Social Worker (M.S.W., D.S.W.)'/>
-      <enumeration   value           = 'Genetic Counselor (M.S., M.Sc., M.A., C.G.C.)'/>
-      <enumeration   value           = 'Geneticist (Ph.D.)'/>
-      <enumeration   value           = 'Nurse (R.N., B.S.N., M.S.N., M.S., M.A., Ph.D.)'/>
-      <enumeration   value           = 'Physician (M.D., D.O., or foreign equivalent)'/>
-      <enumeration   value           = 'Other'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'ProfessionalType'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Clinical Psychologist (Ph.D., Psy.D.)'/>
+      <xsd:enumeration   value           = 'Clinical Social Worker (M.S.W., D.S.W.)'/>
+      <xsd:enumeration   value           = 'Genetic Counselor (M.S., M.Sc., M.A., C.G.C.)'/>
+      <xsd:enumeration   value           = 'Geneticist (Ph.D.)'/>
+      <xsd:enumeration   value           = 'Nurse (R.N., B.S.N., M.S.N., M.S., M.A., Ph.D.)'/>
+      <xsd:enumeration   value           = 'Physician (M.D., D.O., or foreign equivalent)'/>
+      <xsd:enumeration   value           = 'Other'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'CurrentStatus'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Active'/>
-      <enumeration   value           = 'Inactive'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'CurrentStatus'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Active'/>
+      <xsd:enumeration   value           = 'Inactive'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'CertificationStatus'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Certified'/>
-      <enumeration   value           = 'Eligible'/>
-      <enumeration   value           = 'Not certified or eligible'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'CertificationStatus'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Certified'/>
+      <xsd:enumeration   value           = 'Eligible'/>
+      <xsd:enumeration   value           = 'Not certified or eligible'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'PreferredContactMode'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Electronic'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'PreferredContactMode'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Electronic'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'RoleAtAffiliatedOrganization'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Principal investigator'/>
-      <enumeration   value           = 'Co-investigator'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'RoleAtAffiliatedOrganization'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Principal investigator'/>
+      <xsd:enumeration   value           = 'Co-investigator'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'PersonRole'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Protocol update person'/>
-      <enumeration   value           = 'CIPS contact person'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'PersonRole'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Protocol update person'/>
+      <xsd:enumeration   value           = 'CIPS contact person'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'NameFormat'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'GivenSurnameMiddle'/>
-      <enumeration   value           = 'MiddleSurnameGiven'/>
-      <enumeration   value           = 'MiddleGivenSurname'/>
-      <enumeration   value           = 'SurnameGivenMiddle'/>
-      <enumeration   value           = 'SurnameMiddleGiven'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'NameFormat'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'GivenSurnameMiddle'/>
+      <xsd:enumeration   value           = 'MiddleSurnameGiven'/>
+      <xsd:enumeration   value           = 'MiddleGivenSurname'/>
+      <xsd:enumeration   value           = 'SurnameGivenMiddle'/>
+      <xsd:enumeration   value           = 'SurnameMiddleGiven'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'Include'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Include'/>
-      <enumeration   value           = 'Do not include'/>
-      <enumeration   value           = 'Pending'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'Include'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Include'/>
+      <xsd:enumeration   value           = 'Do not include'/>
+      <xsd:enumeration   value           = 'Pending'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'GPUsage'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'GP'/>
-      <enumeration   value           = 'GPMailer'/>
-      <enumeration   value           = 'GPMailer GP'/>
-      <enumeration   value           = 'GP GPMailer'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'GPUsage'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'GP'/>
+      <xsd:enumeration   value           = 'GPMailer'/>
+      <xsd:enumeration   value           = 'GPMailer GP'/>
+      <xsd:enumeration   value           = 'GP GPMailer'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-</schema>
+</xsd:schema>
 <!--SCHEMA FROZEN-->

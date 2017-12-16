@@ -11,19 +11,27 @@
     JIRA::OCECDR-3657
   -->
 
-<schema              xmlns           = 'http://www.w3.org/2001/XMLSchema'>
+<xsd:schema              xmlns:xsd       = 'http://www.w3.org/2001/XMLSchema'>
 
 <!--=================================================================-->
 <!--                         CUSTOM RULES                            -->
 <!--=================================================================-->
- <annotation>
-  <appInfo>
+ <xsd:annotation>
+  <xsd:appinfo>
    <pattern>
-    <rule            context         = 'Audience'>
-     <assert         test            = 'not(preceding-sibling::*
+    <rule context = 'Audience'>
+     <assert>
+      <test><![CDATA[
+not(preceding-sibling::*
                                         [name() = "Audience" and
-                                         text() = current()/text()])'
-     >duplicate audience values not allowed</assert>
+                                         text() = current()/text()])
+]]>
+      </test>
+      <message><![CDATA[
+duplicate audience values not allowed
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
 
@@ -32,367 +40,385 @@
     each one must have a UseWith attribute, otherwise Publish Preview objects.
    <!--=================================================================-->
    <pattern>
-    <rule            context         = '/GlossaryTermConcept/RelatedInformation'>
-     <assert         test            =
-                            "(count(/GlossaryTermConcept/RelatedInformation
-                                    /RelatedExternalRef) &lt; 2) or (
+    <rule context = '/GlossaryTermConcept/RelatedInformation'>
+     <assert>
+      <test><![CDATA[
+(count(/GlossaryTermConcept/RelatedInformation
+                                    /RelatedExternalRef) < 2) or (
                              count(/GlossaryTermConcept/RelatedInformation
                                     /RelatedExternalRef) =
                              count(/GlossaryTermConcept/RelatedInformation
-                                    /RelatedExternalRef/@UseWith))"
-     >If more than one RelatedExternalRef, each must have UseWith attr</assert>
+                                    /RelatedExternalRef/@UseWith))
+]]>
+      </test>
+      <message><![CDATA[
+If more than one RelatedExternalRef, each must have UseWith attr
+]]>
+      </message>
+     </assert>
 
-     <assert         test            =
-                            "(count(/GlossaryTermConcept/RelatedInformation
-                                    /RelatedSummaryRef) &lt; 2) or (
+     <assert>
+      <test><![CDATA[
+(count(/GlossaryTermConcept/RelatedInformation
+                                    /RelatedSummaryRef) < 2) or (
                              count(/GlossaryTermConcept/RelatedInformation
                                     /RelatedSummaryRef) =
                              count(/GlossaryTermConcept/RelatedInformation
-                                    /RelatedSummaryRef/@UseWith))"
-     >If more than one RelatedSummaryRef, each must have UseWith attr</assert>
+                                    /RelatedSummaryRef/@UseWith))
+]]>
+      </test>
+      <message><![CDATA[
+If more than one RelatedSummaryRef, each must have UseWith attr
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
 <!--
    <pattern>
-    <rule            context         = 'TermDefinition'>
-     <assert         test            = 'not(Dictionary = "Cancer.gov") or
+    <rule context = 'TermDefinition'>
+     <assert>
+      <test><![CDATA[
+not(Dictionary = "Cancer.gov") or
                                         ../TranslatedTermDefinition
-                                        [@language = "es"]'
-     >Terms for Cancer.gov dictionary must have Spanish definition</assert>
+                                        [@language = "es"]
+]]>
+      </test>
+      <message><![CDATA[
+Terms for Cancer.gov dictionary must have Spanish definition
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
 -->
-  </appInfo>
- </annotation>
+  </xsd:appinfo>
+ </xsd:annotation>
 
 <!--=================================================================-->
 <!--                COMMON CDR SCHEMA COMPONENTS                     -->
 <!--=================================================================-->
-  <include           schemaLocation  = 'CdrCommonSchema.xml'/>
+  <xsd:include           schemaLocation  = 'CdrCommonSchema.xml'/>
 
 <!--=================================================================-->
 <!--                 TOP-LEVEL DOCUMENT ELEMENT                      -->
 <!--=================================================================-->
-  <element           name            = 'GlossaryTermConcept'
-                     type            = 'GlossaryTermConcept'/>
+  <xsd:element           name            = 'GlossaryTermConcept'
+                         type            = 'GlossaryTermConcept'/>
 
 <!--=================================================================-->
 <!--                      DOCUMENT TYPE                              -->
 <!--=================================================================-->
-  <complexType       name            = 'GlossaryTermConcept'>
-    <sequence>
-      <element       name            = 'TermDefinition'
-                     type            = 'GlossaryDefinition'
-                     maxOccurs       = 'unbounded'/>
+  <xsd:complexType       name            = 'GlossaryTermConcept'>
+    <xsd:sequence>
+      <xsd:element       name            = 'TermDefinition'
+                         type            = 'GlossaryDefinition'
+                         maxOccurs       = 'unbounded'/>
 
-      <!-- CREATE NEW TYPE OR ADD LANG ATTR TO EXISTING MediaLink? -->
-      <element       name            = 'MediaLink'
-                     type            = 'MediaLink'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
+          <!-- CREATE NEW TYPE OR ADD LANG ATTR TO EXISTING MediaLink? -->
+      <xsd:element       name            = 'MediaLink'
+                         type            = 'MediaLink'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
 
-      <element       name            = 'EmbeddedVideo'
-                     type            = 'EmbeddedVideo'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'EmbeddedVideo'
+                         type            = 'EmbeddedVideo'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
 
-      <element       name            = 'TranslatedTermDefinition'
-                     type            = 'TranslatedTermDefinition'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'ProcessingStatuses'
-                     type            = 'ProcessingStatuses'
-                     minOccurs       = '0'/>
-      <element       name            = 'TermType'
-                     type            = 'TermType'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'RelatedInformation'
-                     type            = 'GlossaryConceptRelatedInformation'
-                     minOccurs       = '0'/>
-      <element       name            = 'PDQTerm'
-                     type            = 'TerminologyLink'
-                     minOccurs       = '0'/>
-      <element       name            = 'NCIThesaurusID'
-                     type            = 'NCIThesaurusID'
-                     minOccurs       = '0'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-    <attribute       name            = 'xmlns:cdr'
-                     type            = 'anyURI'
-                     minOccurs       = '0'/>
-  </complexType>
+      <xsd:element       name            = 'TranslatedTermDefinition'
+                         type            = 'TranslatedTermDefinition'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'ProcessingStatuses'
+                         type            = 'ProcessingStatuses'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'TermType'
+                         type            = 'TermType'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'RelatedInformation'
+                         type            = 'GlossaryConceptRelatedInformation'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'PDQTerm'
+                         type            = 'TerminologyLink'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'NCIThesaurusID'
+                         type            = 'NCIThesaurusID'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'GlossaryDefinition'>
-    <sequence>
-      <element       name            = 'DefinitionText'
-                     type            = 'PhraseLevel'/>
-      <element       name            = 'ReplacementText'
-                     type            = 'ReplacementText'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'DefinitionResource'
-                     type            = 'string'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'MediaLink'
-                     type            = 'MediaLink'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'EmbeddedVideo'
-                     type            = 'EmbeddedVideo'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'Dictionary'
-                     type            = 'GlossaryDictionary'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'Audience'
-                     type            = 'GlossaryAudience'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'DefinitionStatus'
-                     type            = 'GlossaryDefinitionStatus'
-                     minOccurs       = '0'/>
-      <element       name            = 'StatusDate'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'DateLastModified'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-      <element       name            = 'DateLastReviewed'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'GlossaryDefinition'>
+    <xsd:sequence>
+      <xsd:element       name            = 'DefinitionText'
+                         type            = 'PhraseLevel'/>
+      <xsd:element       name            = 'ReplacementText'
+                         type            = 'ReplacementText'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'DefinitionResource'
+                         type            = 'xsd:string'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'MediaLink'
+                         type            = 'MediaLink'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'EmbeddedVideo'
+                         type            = 'EmbeddedVideo'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'Dictionary'
+                         type            = 'GlossaryDictionary'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'Audience'
+                         type            = 'GlossaryAudience'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'DefinitionStatus'
+                         type            = 'GlossaryDefinitionStatus'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'StatusDate'
+                         type            = 'xsd:date'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'DateLastModified'
+                         type            = 'xsd:date'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'DateLastReviewed'
+                         type            = 'xsd:date'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'TranslatedTermDefinition'>
-    <sequence>
-      <element       name            = 'DefinitionText'
-                     type            = 'PhraseLevel'/>
-      <element       name            = 'ReplacementText'
-                     type            = 'ReplacementText'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'TranslationResource'
-                     type            = 'string'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'MediaLink'
-                     type            = 'MediaLink'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'EmbeddedVideo'
-                     type            = 'EmbeddedVideo'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'Dictionary'
-                     type            = 'GlossaryDictionary'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'Audience'
-                     type            = 'GlossaryAudience'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'TranslatedStatus'
-                     type            = 'GlossaryDefinitionStatus'
-                     minOccurs       = '0'/>
-      <element       name            = 'TranslatedStatusDate'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'DateLastModified'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-      <element       name            = 'DateLastReviewed'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-    </sequence>
-    <attribute       name            = 'language'
-                     type            = 'GlossaryLanguage'/>
-  </complexType>
+  <xsd:complexType       name            = 'TranslatedTermDefinition'>
+    <xsd:sequence>
+      <xsd:element       name            = 'DefinitionText'
+                         type            = 'PhraseLevel'/>
+      <xsd:element       name            = 'ReplacementText'
+                         type            = 'ReplacementText'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'TranslationResource'
+                         type            = 'xsd:string'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'MediaLink'
+                         type            = 'MediaLink'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'EmbeddedVideo'
+                         type            = 'EmbeddedVideo'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'Dictionary'
+                         type            = 'GlossaryDictionary'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'Audience'
+                         type            = 'GlossaryAudience'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'TranslatedStatus'
+                         type            = 'GlossaryDefinitionStatus'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'TranslatedStatusDate'
+                         type            = 'xsd:date'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'DateLastModified'
+                         type            = 'xsd:date'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'DateLastReviewed'
+                         type            = 'xsd:date'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'language'
+                         type            = 'GlossaryLanguage'
+                         use             = 'required'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProcessingStatuses'>
-    <sequence>
-      <element       name            = 'ProcessingStatus'
-                     type            = 'ProcessingStatus'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'ProcessingStatuses'>
+    <xsd:sequence>
+      <xsd:element       name            = 'ProcessingStatus'
+                         type            = 'ProcessingStatus'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProcessingStatus'>
-    <sequence>
-      <element       name            = 'ProcessingStatusValue'
-                     type            = 'ProcessingStatusValue'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'ProcessingStatus'>
+    <xsd:sequence>
+      <xsd:element       name            = 'ProcessingStatusValue'
+                         type            = 'ProcessingStatusValue'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <simpleType        name            = 'ProcessingStatusValidValue'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Ready for English peer review'/>
-      <enumeration   value           = 'Ready for English scientific review'/>
-      <enumeration   value           = 'Ready for English OCCM review'/>
-      <enumeration   value           = 'Ready for Spanish peer review'/>
-      <enumeration   value           = 'Ready for Spanish OCCM review'/>
-      <enumeration   value           = 'Ready for publishing'/>
-      <enumeration   value           = 'Ready for translation'/>
-      <enumeration   value           = 'Processing complete'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'ProcessingStatusValidValue'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Ready for English peer review'/>
+      <xsd:enumeration   value           = 'Ready for English scientific review'/>
+      <xsd:enumeration   value           = 'Ready for English OCCM review'/>
+      <xsd:enumeration   value           = 'Ready for Spanish peer review'/>
+      <xsd:enumeration   value           = 'Ready for Spanish OCCM review'/>
+      <xsd:enumeration   value           = 'Ready for publishing'/>
+      <xsd:enumeration   value           = 'Ready for translation'/>
+      <xsd:enumeration   value           = 'Processing complete'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <complexType       name            = 'ProcessingStatusValue'>
-    <simpleContent>
-      <extension     base            = 'ProcessingStatusValidValue'>
-        <attribute   name            = 'date'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'user'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'ProcessingStatusValue'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'ProcessingStatusValidValue'>
+        <xsd:attribute   name            = 'date'
+                         type            = 'xsd:date'/>
+        <xsd:attribute   name            = 'user'
+                         type            = 'xsd:string'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'GlossaryConceptRelatedInformation'>
-    <choice          maxOccurs       = 'unbounded'>
-      <element       name            = 'RelatedExternalRef'
-                     type            = 'RelatedExternalRef'/>
-      <element       name            = 'RelatedSummaryRef'
-                     type            = 'RelatedSummaryRef'/>
-      <element       name            = 'RelatedDrugSummaryLink'
-                     type            = 'DrugSummaryLink'/>
-      <element       name            = 'RelatedGlossaryTermNameLink'
-                     type            = 'GlossaryNameLink'/>
-    </choice>
-  </complexType>
+  <xsd:complexType       name            = 'GlossaryConceptRelatedInformation'>
+    <xsd:choice          maxOccurs       = 'unbounded'>
+      <xsd:element       name            = 'RelatedExternalRef'
+                         type            = 'RelatedExternalRef'/>
+      <xsd:element       name            = 'RelatedSummaryRef'
+                         type            = 'RelatedSummaryRef'/>
+      <xsd:element       name            = 'RelatedDrugSummaryLink'
+                         type            = 'DrugSummaryLink'/>
+      <xsd:element       name            = 'RelatedGlossaryTermNameLink'
+                         type            = 'GlossaryNameLink'/>
+    </xsd:choice>
+  </xsd:complexType>
 
-  <complexType       name            = 'RelatedExternalRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:xref'
-                     type            = 'anyURI'/>
-        <attribute   name            = 'SourceTitle'
-                     type            = 'string'
-                     minOccurs       = '0'/>
+  <xsd:complexType       name            = 'RelatedExternalRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-xref'
+                         type            = 'xsd:anyURI'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'SourceTitle'
+                         type            = 'xsd:string'/>
 
-        <!-- Language(s) of linking document; e.g.: UseWith='en' or 'es' -->
-        <attribute   name            = 'UseWith'
-                     type            = 'UseWithLanguage'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+            <!-- Language(s) of linking document; e.g.: UseWith='en' or 'es' -->
+        <xsd:attribute   name            = 'UseWith'
+                         type            = 'UseWithLanguage'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'RelatedSummaryRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
+  <xsd:complexType       name            = 'RelatedSummaryRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
 
-        <!-- Language(s) of linking document; e.g.: UseWith='en' or 'es' -->
-        <attribute   name            = 'UseWith'
-                     type            = 'UseWithLanguage'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+            <!-- Language(s) of linking document; e.g.: UseWith='en' or 'es' -->
+        <xsd:attribute   name            = 'UseWith'
+                         type            = 'UseWithLanguage'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'ReplacementText'
-                     mixed           = 'true'>
-    <choice          minOccurs       = '0'
-                     maxOccurs       = 'unbounded'>
-      <element       name            = 'ScientificName'
-                     type            = 'PhraseLevelWithoutId'/>
-      <element       name            = 'ForeignWord'
-                     type            = 'PhraseLevelWithoutId'/>
-    </choice>
-    <attribute       name            = 'name'
-                     type            = 'string'/>
-  </complexType>
+  <xsd:complexType       name            = 'ReplacementText'
+                         mixed           = 'true'>
+    <xsd:choice          minOccurs       = '0'
+                         maxOccurs       = 'unbounded'>
+      <xsd:element       name            = 'ScientificName'
+                         type            = 'PhraseLevelWithoutId'/>
+      <xsd:element       name            = 'ForeignWord'
+                         type            = 'PhraseLevelWithoutId'/>
+    </xsd:choice>
+    <xsd:attribute       name            = 'name'
+                         type            = 'xsd:string'
+                         use             = 'required'/>
+  </xsd:complexType>
 
 <!--=================================================================-->
 <!--                         SIMPLE TYPES                            -->
 <!--=================================================================-->
-  <simpleType        name            = 'TermType'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Administrative'/>
-      <enumeration   value           = 'Anatomy/physiology'/>
-      <enumeration   value           = 'Description'/>
-      <enumeration   value           = 'Diagnosis'/>
-      <enumeration   value           = 'Diagnosis - Hematologic'/>
-      <enumeration   value           = 'Diagnostic test'/>
-      <enumeration   value           = 'Drug'/>
-      <enumeration   value           = 'Drug family'/>
-      <enumeration   value           = 'Level of evidence'/>
-      <enumeration   value           = 'Genetics'/>
-      <enumeration   value           = 'Modality'/>
-      <enumeration   value           = 'Supportive care'/>
-      <enumeration   value           = 'Other'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'TermType'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Administrative'/>
+      <xsd:enumeration   value           = 'Anatomy/physiology'/>
+      <xsd:enumeration   value           = 'Description'/>
+      <xsd:enumeration   value           = 'Diagnosis'/>
+      <xsd:enumeration   value           = 'Diagnosis - Hematologic'/>
+      <xsd:enumeration   value           = 'Diagnostic test'/>
+      <xsd:enumeration   value           = 'Drug'/>
+      <xsd:enumeration   value           = 'Drug family'/>
+      <xsd:enumeration   value           = 'Level of evidence'/>
+      <xsd:enumeration   value           = 'Genetics'/>
+      <xsd:enumeration   value           = 'Modality'/>
+      <xsd:enumeration   value           = 'Supportive care'/>
+      <xsd:enumeration   value           = 'Other'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'GlossaryDefinitionStatus'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Approved'/>
-      <enumeration   value           = 'New pending'/>
-      <enumeration   value           = 'Revision pending'/>
-      <enumeration   value           = 'Rejected'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'GlossaryDefinitionStatus'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Approved'/>
+      <xsd:enumeration   value           = 'New pending'/>
+      <xsd:enumeration   value           = 'Revision pending'/>
+      <xsd:enumeration   value           = 'Rejected'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'GlossaryDictionary'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Cancer.gov'/>
-      <enumeration   value           = 'Genetics'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'GlossaryDictionary'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Cancer.gov'/>
+      <xsd:enumeration   value           = 'Genetics'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'GlossaryAudience'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Health professional'/>
-      <enumeration   value           = 'Patient'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'GlossaryAudience'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Health professional'/>
+      <xsd:enumeration   value           = 'Patient'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'TranslationResource'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Dictionary'/>
-      <enumeration   value           = 'Glossary'/>
-      <enumeration   value           = 'Translation magazine'/>
-      <enumeration   value           = 'Web site'/>
-      <enumeration   value           = 'Other'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'TranslationResource'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Dictionary'/>
+      <xsd:enumeration   value           = 'Glossary'/>
+      <xsd:enumeration   value           = 'Translation magazine'/>
+      <xsd:enumeration   value           = 'Web site'/>
+      <xsd:enumeration   value           = 'Other'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'NCIThesaurusID'>
-    <restriction     base            = 'string'>
-      <pattern       value           = 'C\d+'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'NCIThesaurusID'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:pattern       value           = 'C\d+'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
   <!-- Spanish is all we handle right now. -->
-  <simpleType        name            = 'GlossaryLanguage'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'es'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'GlossaryLanguage'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'es'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'UseWithLanguage'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'en'/>
-      <enumeration   value           = 'es'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'UseWithLanguage'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'en'/>
+      <xsd:enumeration   value           = 'es'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-</schema>
+</xsd:schema>

@@ -1,62 +1,94 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!--
-      SummarySchema.xml
+          SummarySchema.xml
 
-      BZIssue::636
-      BZIssue::3521
-      BZIssue::4211
-      BZIssue::4343
-      BZIssue::4854
-      BZIssue::5025
-      BZIssue::5089
-      BZIssue::5192 (JIRA::OCECDR-3497)
-      JIRA::OCECDR-3644
-      JIRA::OCECDR-3885
+          BZIssue::636
+          BZIssue::3521
+          BZIssue::4211
+          BZIssue::4343
+          BZIssue::4854
+          BZIssue::5025
+          BZIssue::5089
+          BZIssue::5192 (JIRA::OCECDR-3497)
+          JIRA::OCECDR-3644
+          JIRA::OCECDR-3885
 
   -->
 
-<schema              xmlns           = 'http://www.w3.org/2001/XMLSchema'>
+<xsd:schema              xmlns:xsd       = 'http://www.w3.org/2001/XMLSchema'>
 
- <annotation>
-  <documentation>This schema is for Summaries.</documentation>
-  <appInfo>
+ <xsd:annotation>
+  <xsd:documentation>This schema is for Summaries.</xsd:documentation>
+  <xsd:appinfo>
    <pattern>
-    <rule            context         = 'BoardMember|Title|Para|ListItem|
+    <rule context = 'BoardMember|Title|Para|ListItem|
                                         GeneName|ScientificName|KeyPoint|
                                         Insertion|Deletion'>
-     <assert         test            = 'not(. = "")'
-     >This element must have text content.</assert>
+     <assert>
+      <test><![CDATA[
+not(. = "")
+]]>
+      </test>
+      <message><![CDATA[
+This element must have text content.
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
    <pattern>
-    <rule            context         = 'Summary'>
-     <assert         test            = 'count(AltTitle[@TitleType="Short"]) = 1'
-     >Summary must have exactly one AltTitle with TitleType of 'Short'.</assert>
+    <rule context = 'Summary'>
+     <assert>
+      <test><![CDATA[
+count(AltTitle[@TitleType="Short"]) = 1
+]]>
+      </test>
+      <message><![CDATA[
+Summary must have exactly one AltTitle with TitleType of 'Short'.
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
    <pattern>
-    <rule            context         = 'SummaryURL'>
-     <assert         test            = 'substring(normalize-space(@cdr:xref),
+    <rule context = 'SummaryURL'>
+     <assert>
+      <test><![CDATA[
+substring(normalize-space(@cdr-xref),
                                         string-length(
-                                         normalize-space(@cdr:xref)), 1) != "/"'
-     >The attribute (@cdr:xref) must not end with a slash ('/')</assert>
-    <assert test = 'number(document(concat(&quot;cdrutil:/sql-query/
+                                         normalize-space(@cdr-xref)), 1) != "/"
+]]>
+      </test>
+      <message><![CDATA[
+The attribute (@cdr-xref) must not end with a slash ('/')
+]]>
+      </message>
+     </assert>
+     <assert>
+      <test><![CDATA[
+number(document(concat("cdrutil:/sql-query/
 SELECT COUNT(q1.doc_id) AS cnt
   FROM query_term q1
   JOIN document d
     ON q1.doc_id = d.id
- WHERE q1.path = &apos;/Summary/SummaryMetaData/SummaryURL/@cdr:xref&apos;
+ WHERE q1.path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
    AND q1.value = ?
-   AND d.active_status = &apos;A&apos;
+   AND d.active_status = 'A'
    AND NOT EXISTS (
       SELECT q2.doc_id
         FROM query_term q2
-       WHERE q2.path = &apos;/Summary/WillReplace&apos;
+       WHERE q2.path = '/Summary/WillReplace'
          AND q2.doc_id = q1.doc_id
    )
-~&quot;, @cdr:xref))/SqlResult/row/col) &lt; 2'
-     >More than one Summary has the same SummaryURL with no WillReplace element</assert>
+~", @cdr-xref))/SqlResult/row/col) < 2
+]]>
+      </test>
+      <message><![CDATA[
+More than one Summary has the same SummaryURL with no WillReplace element
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
 
@@ -64,15 +96,23 @@ SELECT COUNT(q1.doc_id) AS cnt
     <!--
       Verify Patient Summary language matches linked to HP Summary
     -->
-    <rule            context         = 'PatientVersionOf'>
-     <assert test = '/Summary/SummaryMetaData/SummaryLanguage =
+    <rule context = 'PatientVersionOf'>
+     <assert>
+      <test><![CDATA[
+/Summary/SummaryMetaData/SummaryLanguage =
        document(concat("cdrutil:/sql-query/
           SELECT value
             FROM query_term
-           WHERE path = &apos;/Summary/SummaryMetaData/SummaryLanguage&apos;
+           WHERE path = '/Summary/SummaryMetaData/SummaryLanguage'
              AND doc_id = ?~",
-        string(number(concat("0", substring(@cdr:ref,4))))))/SqlResult/row/col'
-     >SummaryLanguage in Patient and linked-to HP Summary must match</assert>
+        string(number(concat("0", substring(@cdr-ref,4))))))/SqlResult/row/col
+]]>
+      </test>
+      <message><![CDATA[
+SummaryLanguage in Patient and linked-to HP Summary must match
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
 
@@ -85,38 +125,62 @@ SELECT COUNT(q1.doc_id) AS cnt
     <!--
       Verify Spanish Summary TranslationOf links to doc with same audience
     -->
-    <rule            context         = '/Summary/TranslationOf'>
-     <assert test = '/Summary/SummaryMetaData/SummaryAudience =
+    <rule context = '/Summary/TranslationOf'>
+     <assert>
+      <test><![CDATA[
+/Summary/SummaryMetaData/SummaryAudience =
        document(concat("cdrutil:/sql-query/
           SELECT value
             FROM query_term
-           WHERE path = &apos;/Summary/SummaryMetaData/SummaryAudience&apos;
+           WHERE path = '/Summary/SummaryMetaData/SummaryAudience'
              AND doc_id = ?~",
-             string(number(substring(@cdr:ref,4)))))/SqlResult/row/col'
-     >SummaryAudience of original and translated docs must match</assert>
+             string(number(substring(@cdr-ref,4)))))/SqlResult/row/col
+]]>
+      </test>
+      <message><![CDATA[
+SummaryAudience of original and translated docs must match
+]]>
+      </message>
+     </assert>
     <!--
       Verify Spanish Summary TranslationOf elem links to English Summary
     -->
-     <assert test = 'document(concat("cdrutil:/sql-query/
+     <assert>
+      <test><![CDATA[
+document(concat("cdrutil:/sql-query/
           SELECT value
             FROM query_term
-           WHERE path = &apos;/Summary/SummaryMetaData/SummaryLanguage&apos;
+           WHERE path = '/Summary/SummaryMetaData/SummaryLanguage'
              AND doc_id = ?
-             AND value = &apos;English&apos;~",
-             string(number(substring(@cdr:ref,4)))))/SqlResult/row/col'
-     >TranslationOf does not link to doc with English SummaryLanguage</assert>
+             AND value = 'English'~",
+             string(number(substring(@cdr-ref,4)))))/SqlResult/row/col
+]]>
+      </test>
+      <message><![CDATA[
+TranslationOf does not link to doc with English SummaryLanguage
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
    <!-- DEBUG
         TESTING SMALL TEST BUILDING UP TO FULL TEST
    <pattern>
     <rule context = 'MediaLink/MediaID'>
-     <assert test = 'number(document(concat("cdrutil:/sql-query/
+     <assert>
+      <test><![CDATA[
+number(document(concat("cdrutil:/sql-query/
         select count(*)
           from query_term q1
          where q1.doc_id = ?~",
-         string(number(substring(@cdr:ref,4)))))/SqlResult/row/col) &gt; 0'
-     >SIMPLE TEST FAILS</assert>
+         string(number(substring(@cdr-ref,4)))))/SqlResult/row/col) > 0
+]]>
+      </test>
+      <message><![CDATA[
+SIMPLE TEST FAILS
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
     -->
@@ -125,275 +189,279 @@ SELECT COUNT(q1.doc_id) AS cnt
          least one MediaCaption with an audience and language that matches
          those of the Summary linking to it.
     -->
-    <rule            context         = 'MediaLink/MediaID'>
-     <assert test = 'number(document(concat("cdrutil:/sql-query/
+    <rule context = 'MediaLink/MediaID'>
+     <assert>
+      <test><![CDATA[
+number(document(concat("cdrutil:/sql-query/
         SELECT COUNT(*)
           FROM query_term q1
           JOIN query_term q2
             ON q1.doc_id = q2.doc_id
            AND q1.node_loc = q2.node_loc
          WHERE q1.path=
-               &apos;/Media/MediaContent/Captions/MediaCaption/@audience&apos;
+               '/Media/MediaContent/Captions/MediaCaption/@audience'
            AND q2.path=
-               &apos;/Media/MediaContent/Captions/MediaCaption/@language&apos;
+               '/Media/MediaContent/Captions/MediaCaption/@language'
            AND q1.doc_id = ?
            AND ? = (
               SELECT CASE
-                 WHEN q1.value = &apos;Patients&apos;
-                 THEN &apos;Patients&apos;
-                 WHEN q1.value = &apos;Health_professionals&apos;
-                 THEN &apos;Health professionals&apos;
-                 ELSE &apos;Unknown&apos;
+                 WHEN q1.value = 'Patients'
+                 THEN 'Patients'
+                 WHEN q1.value = 'Health_professionals'
+                 THEN 'Health professionals'
+                 ELSE 'Unknown'
               END
            )
            AND ? = (
               SELECT CASE
-                 WHEN q2.value = &apos;en&apos; THEN &apos;English&apos;
-                 WHEN q2.value = &apos;es&apos; THEN &apos;Spanish&apos;
-                 ELSE &apos;Unknown&apos;
+                 WHEN q2.value = 'en' THEN 'English'
+                 WHEN q2.value = 'es' THEN 'Spanish'
+                 ELSE 'Unknown'
               END
            )", "~",
-        string(number(substring(@cdr:ref,4))), "~",
+        string(number(substring(@cdr-ref,4))), "~",
         /Summary/SummaryMetaData/SummaryAudience, "~",
         /Summary/SummaryMetaData/SummaryLanguage
-        ))/SqlResult/row/col) &gt; 0'
-     >MediaLink must link to Media doc with matching audience and language MediaCaption</assert>
+        ))/SqlResult/row/col) > 0
+]]>
+      </test>
+      <message><![CDATA[
+MediaLink must link to Media doc with matching audience and language MediaCaption
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
-  </appInfo>
- </annotation>
+  </xsd:appinfo>
+ </xsd:annotation>
 
 
 <!--=================================================================-->
 <!--                  COMMON CDR SCHEMA COMPONENTS                   -->
 <!--=================================================================-->
-  <include           schemaLocation  = 'CdrCommonSchema.xml'/>
-  <include           schemaLocation  = 'SummaryCommon.xml'/>
+  <xsd:include           schemaLocation  = 'CdrCommonSchema.xml'/>
+  <xsd:include           schemaLocation  = 'SummaryCommon.xml'/>
 
 <!--=================================================================-->
 <!--                  TOP-LEVEL DOCUMENT ELEMENT                     -->
 <!--=================================================================-->
-  <element           name            = 'Summary'
-                     type            = 'Summary'/>
+  <xsd:element           name            = 'Summary'
+                         type            = 'Summary'/>
 
 <!--=================================================================-->
 <!--                        DOCUMENT TYPE                            -->
 <!--=================================================================-->
-  <complexType       name            = 'Summary'>
-    <sequence>
-      <element       name            = 'SummaryMetaData'
-                     type            = 'SummaryMetaData'/>
-      <element       name            = 'SummaryTitle'
-                     type            = 'Title'/>
-      <element       name            = 'AltTitle'
-                     type            = 'AltTitle'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <choice        maxOccurs       = 'unbounded'>
-        <element     name            = 'SummarySection'
-                     type            = 'SummarySection'/>
-        <element     name            = 'SummaryModuleLink'
-                     type            = 'SummaryLink'/>
-      </choice>
-      <element       name            = 'TranslationOf'
-                     type            = 'SummaryLink'
-                     minOccurs       = '0'/>
-      <element       name            = 'PatientVersionOf'
-                     type            = 'SummaryLink'
-                     minOccurs       = '0'/>
-      <element       name            = 'ReplacementFor'
-                     type            = 'SummaryLink'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'WillReplace'
-                     type            = 'SummaryLink'
-                     minOccurs       = '0'/>
-      <element       name            = 'DateLastModified'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-      <element       name            = 'RelatedDocuments'
-                     type            = 'RelatedDocumentsLinks'
-                     minOccurs       = '0'/>
-      <element       name            = 'ComprehensiveReview'
-                     type            = 'ComprehensiveReview'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'TypeOfSummaryChange'
-                     type            = 'TypeOfSummaryChange'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'DatedAction'
-                     type            = 'DatedAction'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    </sequence>
-    <attribute       name            = 'AvailableAsModule'
-                     type            = 'Yes'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ModuleOnly'
-                     type            = 'Yes'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'xmlns:cdr'
-                     type            = 'anyURI'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'Summary'>
+    <xsd:sequence>
+      <xsd:element       name            = 'SummaryMetaData'
+                         type            = 'SummaryMetaData'/>
+      <xsd:element       name            = 'SummaryTitle'
+                         type            = 'Title'/>
+      <xsd:element       name            = 'AltTitle'
+                         type            = 'AltTitle'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:choice        maxOccurs       = 'unbounded'>
+        <xsd:element     name            = 'SummarySection'
+                         type            = 'SummarySection'/>
+        <xsd:element     name            = 'SummaryModuleLink'
+                         type            = 'SummaryLink'/>
+      </xsd:choice>
+      <xsd:element       name            = 'TranslationOf'
+                         type            = 'SummaryLink'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'PatientVersionOf'
+                         type            = 'SummaryLink'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'ReplacementFor'
+                         type            = 'SummaryLink'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'WillReplace'
+                         type            = 'SummaryLink'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'DateLastModified'
+                         type            = 'xsd:date'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'RelatedDocuments'
+                         type            = 'RelatedDocumentsLinks'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'ComprehensiveReview'
+                         type            = 'ComprehensiveReview'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'TypeOfSummaryChange'
+                         type            = 'TypeOfSummaryChange'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'DatedAction'
+                         type            = 'DatedAction'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'PdqKey'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'AvailableAsModule'
+                         type            = 'Yes'/>
+    <xsd:attribute       name            = 'ModuleOnly'
+                         type            = 'Yes'/>
+  </xsd:complexType>
 
 <!--=================================================================-->
 <!--                     OTHER COMPLEX TYPES                         -->
 <!--=================================================================-->
-  <complexType       name            = 'SummaryMetaData'>
-    <sequence>
-      <element       name            = 'SummaryType'
-                     type            = 'SummaryType'/>
-      <element       name            = 'SummaryAudience'
-                     type            = 'SummaryAudience'/>
-      <element       name            = 'SummaryLanguage'
-                     type            = 'SummaryLanguage'/>
-      <element       name            = 'SummaryDescription'
-                     type            = 'NonEmptyString'/>
-      <element       name            = 'SummaryURL'
-                     type            = 'ExternalRef'/>
-      <element       name            = 'MobileURL'
-                     type            = 'ExternalRef'
-                     minOccurs       = '0'/>
-      <element       name            = 'PDQBoard'
-                     type            = 'PDQBoard'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'MainTopics'
-                     type            = 'Topic'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'SecondaryTopics'
-                     type            = 'Topic'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'PurposeText'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      <element       name            = 'SummaryAbstract'
-                     type            = 'SummaryAbstract'
-                     minOccurs       = '0'/>
-      <element       name            = 'SummaryKeyWords'
-                     type            = 'SummaryKeyWords'
-                     minOccurs       = '0'/>
-      <element       name            = 'PMID'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'SummaryMetaData'>
+    <xsd:sequence>
+      <xsd:element       name            = 'SummaryType'
+                         type            = 'SummaryType'/>
+      <xsd:element       name            = 'SummaryAudience'
+                         type            = 'SummaryAudience'/>
+      <xsd:element       name            = 'SummaryLanguage'
+                         type            = 'SummaryLanguage'/>
+      <xsd:element       name            = 'SummaryDescription'
+                         type            = 'NonEmptyString'/>
+      <xsd:element       name            = 'SummaryURL'
+                         type            = 'ExternalRef'/>
+      <xsd:element       name            = 'MobileURL'
+                         type            = 'ExternalRef'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'PDQBoard'
+                         type            = 'PDQBoard'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'MainTopics'
+                         type            = 'Topic'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'SecondaryTopics'
+                         type            = 'Topic'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'PurposeText'
+                         type            = 'xsd:string'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'SummaryAbstract'
+                         type            = 'SummaryAbstract'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'SummaryKeyWords'
+                         type            = 'SummaryKeyWords'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'PMID'
+                         type            = 'xsd:string'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'SummaryKeyWords'>
-    <sequence>
-      <element       name            = 'SummaryKeyWord'
-                     type            = 'string'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'SummaryKeyWords'>
+    <xsd:sequence>
+      <xsd:element       name            = 'SummaryKeyWord'
+                         type            = 'xsd:string'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'SummaryAbstract'>
-    <sequence>
-      <element       name            = 'Para'
-                     type            = 'PhraseLevel'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'SummaryAbstract'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Para'
+                         type            = 'PhraseLevel'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'PDQBoard'>
-    <sequence>
-      <element       name            = 'Board'
-                     type            = 'OrganizationLink'/>
-      <element       name            = 'BoardMember'
-                     type            = 'PersonLink'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'PDQBoard'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Board'
+                         type            = 'OrganizationLink'/>
+      <xsd:element       name            = 'BoardMember'
+                         type            = 'PersonLink'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'Topic'>
-    <sequence>
-      <element       name            = 'Term'
-                     type            = 'TerminologyLink'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'Topic'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Term'
+                         type            = 'TerminologyLink'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'ComprehensiveReview'>
-    <sequence>
-      <element       name            = 'ComprehensiveReviewDate'
-                     type            = 'ComprehensiveReviewDate'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'ComprehensiveReview'>
+    <xsd:sequence>
+      <xsd:element       name            = 'ComprehensiveReviewDate'
+                         type            = 'ComprehensiveReviewDate'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'ComprehensiveReviewDate'>
-    <simpleContent>
-      <extension     base            = 'date'>
-        <attribute   name            = 'DateType'
-                     type            = 'ReviewDateType'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'ComprehensiveReviewDate'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'xsd:date'>
+        <xsd:attribute   name            = 'DateType'
+                         type            = 'ReviewDateType'
+                         use             = 'required'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'TypeOfSummaryChange'>
-    <sequence>
-      <element       name            = 'TypeOfSummaryChangeValue'
-                     type            = 'SummaryChangeType'/>
-      <element       name            = 'User'
-                     type            = 'string'/>
-      <element       name            = 'Date'
-                     type            = 'date'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'TypeOfSummaryChange'>
+    <xsd:sequence>
+      <xsd:element       name            = 'TypeOfSummaryChangeValue'
+                         type            = 'SummaryChangeType'/>
+      <xsd:element       name            = 'User'
+                         type            = 'xsd:string'/>
+      <xsd:element       name            = 'Date'
+                         type            = 'xsd:date'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
 <!--=================================================================-->
 <!--                         SIMPLE TYPES                            -->
 <!--=================================================================-->
-  <simpleType        name            = 'SummaryType'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Treatment'/>
-      <enumeration   value           = 'Supportive care'/>
-      <enumeration   value           = 'Screening'/>
-      <enumeration   value           = 'Prevention'/>
-      <enumeration   value           = 'Genetics'/>
-      <enumeration   value           = 'Integrative, alternative, and complementary therapies'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'SummaryType'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Treatment'/>
+      <xsd:enumeration   value           = 'Supportive care'/>
+      <xsd:enumeration   value           = 'Screening'/>
+      <xsd:enumeration   value           = 'Prevention'/>
+      <xsd:enumeration   value           = 'Genetics'/>
+      <xsd:enumeration   value           = 'Integrative, alternative, and complementary therapies'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'SummaryAudience'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Patients'/>
-      <enumeration   value           = 'Health professionals'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'SummaryAudience'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Patients'/>
+      <xsd:enumeration   value           = 'Health professionals'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'SummaryLanguage'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'English'/>
-      <enumeration   value           = 'Spanish'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'SummaryLanguage'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'English'/>
+      <xsd:enumeration   value           = 'Spanish'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'ReviewDateType'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Planned'/>
-      <enumeration   value           = 'Actual'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'ReviewDateType'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Planned'/>
+      <xsd:enumeration   value           = 'Actual'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'SummaryChangeType'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Comprehensive revision'/>
-      <enumeration   value           = 'Major change'/>
-      <enumeration   value           = 'New summary'/>
-      <enumeration   value           = 'Reformat'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'SummaryChangeType'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Comprehensive revision'/>
+      <xsd:enumeration   value           = 'Major change'/>
+      <xsd:enumeration   value           = 'New summary'/>
+      <xsd:enumeration   value           = 'Reformat'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-</schema>
+</xsd:schema>
