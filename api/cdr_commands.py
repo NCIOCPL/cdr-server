@@ -1032,10 +1032,16 @@ class CommandSet:
         doc.save(**opts)
         response = etree.Element(node.tag + "Resp")
         etree.SubElement(response, "DocId").text = doc.cdr_id
+        doc_included = False
+        legacy_opts = dict(get_xml=True, brief=True, denormalize=True)
         if doc.errors_node:
             response.append(doc.errors_node)
             if doc.is_content_type and opts.get("locators"):
-                response.append(doc.legacy_doc(get_xml=True, brief=True))
+                legacy_opts["locators"] = True
+                response.append(doc.legacy_doc(**legacy_opts))
+                doc_included = True
+        if echo and not doc_included:
+            response.append(doc.legacy_doc(**legacy_opts))
         return response
 
     def _put_doctype(self, node):
