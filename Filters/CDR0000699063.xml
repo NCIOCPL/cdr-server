@@ -81,7 +81,6 @@ BZIssue::4990 - New "Quick & Dirty" QC report
   <xsl:copy>
    <xsl:apply-templates          select = "document('cdrutil:/docid')"/>
    <xsl:apply-templates          select = "document('cdrx:/*/CdrCtl')"/>
-
    <xsl:apply-templates/>
   </xsl:copy>
  </xsl:template>
@@ -490,61 +489,42 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
  Template to denormalize the Term elements
  ================================================================= -->
  <xsl:template                    match = "Diagnosis | Intervention | Drug">
-  <xsl:variable                    name = "TermID"
+  <xsl:choose>
+   <xsl:when                       test = "@cdr:ref">
+    <xsl:variable                  name = "tid"
                                  select = "@cdr:ref"/>
+    <xsl:variable                  name = "pubVersion"
+                                 select = "document(concat('cdrutil:',
+                                                           '/get-pv-num/',
+                                                           $tid))"/>
+    <xsl:variable                  name = "uri">
+     <xsl:choose>
+      <xsl:when                    test = "$pubVersion > 0">
+       <xsl:value-of             select = "concat('cdrx:', $tid, '/lastp')"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of             select = "concat('cdrx:', $tid, '/last')"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:variable>
+    <xsl:variable                  name = "TermInfo"
+                                 select = "document($uri)"/>
+    <xsl:element                   name = "{name()}">
+     <xsl:attribute                name = "cdr:ref">
+      <xsl:value-of              select = "@cdr:ref"/>
+     </xsl:attribute>
 
-  <xsl:variable                    name = "pubVersion">
-   <xsl:choose>
-    <xsl:when                      test = "@cdr:ref">
-     <xsl:value-of               select = "document(concat('cdrutil:',
-                                                       '/get-pv-num/',
-                                                       @cdr:ref))"/>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:text>-1</xsl:text>
-    </xsl:otherwise>
-   </xsl:choose>
-  </xsl:variable>
-
-  <xsl:variable                   name = "TermInfo">
-   <xsl:choose>
-    <xsl:when                     test = "$pubVersion = 0">
-     <xsl:copy-of              select = "document(concat('cdr:',
-                                                           $SummaryRefID,
-                                                           '/last'))"/>
-    </xsl:when>
-    <xsl:when                     test = "$pubVersion = '0'
-                                          or
-                                          $pubVersion = '-1'">
-     <xsl:text>*** Denormalization Error: </xsl:text>
-     <xsl:value-of              select = "name()"/>
-     <xsl:text> ***</xsl:text>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:copy-of              select = "document(concat('cdr:', $TermID,
-                                                           '/lastp'))"/>
-    </xsl:otherwise>
-   </xsl:choose>
-  </xsl:variable>
-
-  <xsl:element                     name = "{name()}">
-   <xsl:attribute                  name = "cdr:ref">
-    <xsl:value-of                select = "@cdr:ref"/>
-   </xsl:attribute>
-
-   <xsl:value-of                 select = "$TermInfo/Term/
-                                            PreferredName"/>
-  </xsl:element>
-
-   <!--
-   Report an error if we couldn't find a publishable version or the
-   cdr:ref ID is empty
-   ================================================================ -->
-   <xsl:if                         test = "$pubVersion = '-1'">
+     <xsl:value-of               select = "$TermInfo/Term/PreferredName"/>
+    </xsl:element>
+   </xsl:when>
+   <xsl:otherwise>
     <LinkError>
-     <xsl:value-of               select = "$TermInfo"/>
+     <xsl:text>*** Denormalization Error: </xsl:text>
+     <xsl:value-of               select = "name()"/>
+     <xsl:text> ***</xsl:text>
     </LinkError>
-   </xsl:if>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
@@ -555,96 +535,86 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
  We need this denormalization in order to correctly create the
  link in the QC report to the listed summaries.
  ================================================================= -->
- <xsl:template                   match = "SummaryRef |
-                                          SummaryFragmentRef">
-  <xsl:variable                   name = "SummaryRefID"
-                                select = "substring-before(
-                                            concat(@cdr:href, '#'), '#')"/>
-
-  <xsl:variable                   name = "thisSummaryId"
-                                select = "document('cdrutil:/docid')"/>
-  <xsl:variable                   name = "pubVersion">
+ <xsl:template                    match = "SummaryRef | SummaryFragmentRef">
+  <xsl:variable                    name = "href">
    <xsl:choose>
-    <xsl:when                     test = "@cdr:href
-                                          or
-                                          @href">
-     <xsl:value-of              select = "document(concat('cdrutil:',
-                                                      '/get-pv-num/',
-                                                      @cdr:href | @href))"/>
+    <xsl:when                      test = "@cdr:href">
+     <xsl:value-of               select = "@cdr:href"/>
+    </xsl:when>
+    <xsl:when                      test = "@href">
+     <xsl:value-of               select = "@href"/>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:text>-1</xsl:text>
+     <xsl:value-of               select = "''"/>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
-
-  <!--
-  If a SummaryRef or SummaryFragmentRef is pointing to itself and the summary
-  is new we can't expect a publishable version of the summary to exist.
-  In this case we need to allow to denormalize with the last version.
-  ====================================================================== -->
-  <xsl:variable                   name = "SummaryRefInfo">
-   <xsl:choose>
-    <xsl:when                     test = "$pubVersion = 0
-                                           and
-                                           $SummaryRefID = $thisSummaryId">
-     <xsl:copy-of              select = "document(concat('cdr:',
-                                                           $SummaryRefID,
-                                                           '/last'))"/>
-    </xsl:when>
-    <xsl:when                     test = "$pubVersion = '-1'">
-     <xsl:text>*** Denormalization Error: </xsl:text>
-     <xsl:value-of              select = "name()"/>
-     <xsl:text> ***</xsl:text>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:copy-of              select = "document(concat('cdr:',
-                                                           $SummaryRefID,
-                                                           '/lastp'))"/>
-    </xsl:otherwise>
-   </xsl:choose>
-  </xsl:variable>
-
-  <xsl:element                     name = "{name()}">
-   <xsl:attribute                  name = "cdr:href">
-    <xsl:value-of                select = "@cdr:href"/>
-   </xsl:attribute>
-
-   <SummaryRefText>
-    <xsl:value-of                select = "."/>
-   </SummaryRefText>
-
-   <LinkedSummary>
-    <LinkedSummaryType>
-     <xsl:value-of               select = "$SummaryRefInfo/Summary
-                                             /SummaryMetaData
-                                             /SummaryType"/>
-    </LinkedSummaryType>
-    <LinkedSummaryAudience>
-     <xsl:value-of               select = "$SummaryRefInfo/Summary
-                                             /SummaryMetaData
-                                             /SummaryAudience"/>
-    </LinkedSummaryAudience>
-
-    <xsl:if                        test = "$SummaryRefInfo/Summary
-                                             //KeyPoint">
-     <LinkedKeyPoints>
-      <xsl:value-of              select = "count($SummaryRefInfo/Summary
-                                             //KeyPoint)"/>
-     </LinkedKeyPoints>
-    </xsl:if>
-   </LinkedSummary>
-  </xsl:element>
-
-   <!--
-   Report an error if we couldn't find a publishable version or the
-   cdr:ref ID is empty
-   ================================================================ -->
-   <xsl:if                         test = "$pubVersion = '-1'">
+  <xsl:variable                    name = "rid"
+                                 select = "substring-before(
+                                           concat(@cdr:href, '#'), '#')"/>
+  <xsl:choose>
+   <xsl:when                       test = "$rid">
+    <xsl:variable                  name = "thisSummaryId"
+                                 select = "document('cdrutil:/docid')"/>
+    <xsl:variable                  name = "pv"
+                                 select = "document(concat('cdrutil:',
+                                                         '/get-pv-num/',
+                                                         $rid))"/>
+    <xsl:variable                  name = "uri">
+     <xsl:choose>
+      <xsl:when                    test = "$pv > 0">
+       <xsl:value-of             select = "concat('cdrx:', $rid, '/lastp')"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of             select = "concat('cdrx:', $rid, '/last')"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:variable>
+    <xsl:variable                  name = "rinfo"
+                                 select = "document($uri)"/>
+    <xsl:choose>
+     <xsl:when                     test = "$rinfo/Summary/SummaryMetaData">
+      <xsl:element                 name = "{name()}">
+       <xsl:attribute              name = "cdr:href">
+        <xsl:value-of            select = "@cdr:href"/>
+       </xsl:attribute>
+       <SummaryRefText>
+        <xsl:value-of            select = "."/>
+       </SummaryRefText>
+       <LinkedSummary>
+        <LinkedSummaryType>
+         <xsl:value-of           select = "$rinfo/Summary/SummaryMetaData
+                                                         /SummaryType"/>
+        </LinkedSummaryType>
+        <LinkedSummaryAudience>
+         <xsl:value-of           select = "$rinfo/Summary/SummaryMetaData
+                                                         /SummaryAudience"/>
+        </LinkedSummaryAudience>
+        <xsl:if                    test = "$rinfo/Summary//KeyPoint">
+         <LinkedKeyPoints>
+          <xsl:value-of          select = "count($rnfo/Summary//KeyPoint)"/>
+         </LinkedKeyPoints>
+        </xsl:if>
+       </LinkedSummary>
+      </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <LinkError>
+       <xsl:text>*** Denormalization Error: </xsl:text>
+       <xsl:value-of             select = "name()"/>
+       <xsl:text> ***</xsl:text>
+      </LinkError>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
     <LinkError>
-     <xsl:value-of               select = "$SummaryRefInfo"/>
+     <xsl:text>*** Denormalization Error: </xsl:text>
+     <xsl:value-of               select = "name()"/>
+     <xsl:text> ***</xsl:text>
     </LinkError>
-   </xsl:if>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
