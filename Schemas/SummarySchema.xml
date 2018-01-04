@@ -56,8 +56,7 @@ Summary must have exactly one AltTitle with TitleType of 'Short'.
      <assert>
       <test><![CDATA[
 substring(normalize-space(@cdr-xref),
-                                        string-length(
-                                         normalize-space(@cdr-xref)), 1) != "/"
+          string-length(normalize-space(@cdr-xref)), 1) != "/"
 ]]>
       </test>
       <message><![CDATA[
@@ -67,7 +66,7 @@ The attribute (@cdr-xref) must not end with a slash ('/')
      </assert>
      <assert>
       <test><![CDATA[
-number(document(concat("cdrutil:/sql-query/
+number(document(cdr:escape-uri(concat("cdrutil:/sql-query/
 SELECT COUNT(q1.doc_id) AS cnt
   FROM query_term q1
   JOIN document d
@@ -81,7 +80,7 @@ SELECT COUNT(q1.doc_id) AS cnt
        WHERE q2.path = '/Summary/WillReplace'
          AND q2.doc_id = q1.doc_id
    )
-~", @cdr-xref))/SqlResult/row/col) < 2
+~", @cdr-xref)))/SqlResult/row/col) < 2
 ]]>
       </test>
       <message><![CDATA[
@@ -100,12 +99,12 @@ More than one Summary has the same SummaryURL with no WillReplace element
      <assert>
       <test><![CDATA[
 /Summary/SummaryMetaData/SummaryLanguage =
-       document(concat("cdrutil:/sql-query/
+       document(cdr:escape-uri(concat("cdrutil:/sql-query/
           SELECT value
             FROM query_term
            WHERE path = '/Summary/SummaryMetaData/SummaryLanguage'
              AND doc_id = ?~",
-        string(number(concat("0", substring(@cdr-ref,4))))))/SqlResult/row/col
+        string(number(concat("0", substring(@cdr-ref,4)))))))/SqlResult/row/col
 ]]>
       </test>
       <message><![CDATA[
@@ -129,12 +128,12 @@ SummaryLanguage in Patient and linked-to HP Summary must match
      <assert>
       <test><![CDATA[
 /Summary/SummaryMetaData/SummaryAudience =
-       document(concat("cdrutil:/sql-query/
+       document(cdr:escape-uri(concat("cdrutil:/sql-query/
           SELECT value
             FROM query_term
            WHERE path = '/Summary/SummaryMetaData/SummaryAudience'
              AND doc_id = ?~",
-             string(number(substring(@cdr-ref,4)))))/SqlResult/row/col
+             string(number(substring(@cdr-ref,4))))))/SqlResult/row/col
 ]]>
       </test>
       <message><![CDATA[
@@ -147,13 +146,13 @@ SummaryAudience of original and translated docs must match
     -->
      <assert>
       <test><![CDATA[
-document(concat("cdrutil:/sql-query/
+document(cdr:escape-uri(concat("cdrutil:/sql-query/
           SELECT value
             FROM query_term
            WHERE path = '/Summary/SummaryMetaData/SummaryLanguage'
              AND doc_id = ?
              AND value = 'English'~",
-             string(number(substring(@cdr-ref,4)))))/SqlResult/row/col
+             string(number(substring(@cdr-ref,4))))))/SqlResult/row/col
 ]]>
       </test>
       <message><![CDATA[
@@ -169,11 +168,11 @@ TranslationOf does not link to doc with English SummaryLanguage
     <rule context = 'MediaLink/MediaID'>
      <assert>
       <test><![CDATA[
-number(document(concat("cdrutil:/sql-query/
+number(document(cdr:escape-uri(concat("cdrutil:/sql-query/
         select count(*)
           from query_term q1
          where q1.doc_id = ?~",
-         string(number(substring(@cdr-ref,4)))))/SqlResult/row/col) > 0
+         string(number(substring(@cdr-ref,4))))))/SqlResult/row/col) > 0
 ]]>
       </test>
       <message><![CDATA[
@@ -192,7 +191,7 @@ SIMPLE TEST FAILS
     <rule context = 'MediaLink/MediaID'>
      <assert>
       <test><![CDATA[
-number(document(concat("cdrutil:/sql-query/
+number(document(cdr:escape-uri(concat("cdrutil:/sql-query/
         SELECT COUNT(*)
           FROM query_term q1
           JOIN query_term q2
@@ -222,7 +221,7 @@ number(document(concat("cdrutil:/sql-query/
         string(number(substring(@cdr-ref,4))), "~",
         /Summary/SummaryMetaData/SummaryAudience, "~",
         /Summary/SummaryMetaData/SummaryLanguage
-        ))/SqlResult/row/col) > 0
+        )))/SqlResult/row/col) > 0
 ]]>
       </test>
       <message><![CDATA[
