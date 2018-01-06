@@ -39,47 +39,47 @@ cdr:ref attributes with title of linked document.
 
   <!--
   =======================================================================
-  If an element has a cdr:href attribute, replace its content with the
-  linked documents title (from the document table).  If the document
+  If an element has a cdr:ref attribute, replace its content with the
+  linked document's title (from the document table).  If the document
   does not exist or its title is empty, just copy the node and its
   contents.
   ======================================================================= -->
-  <xsl:template                  match = "*[@cdr:ref]">
+  <xsl:template                  match = "*[@cdr:ref != '']">
     <xsl:variable                 name = "link"
                                 select = "@cdr:ref"/>
-    <xsl:variable                 name = "fragId"
-                                select = "substring-after($link, '#')"/>
+    <xsl:variable                 name = "fragId">
+      <xsl:if                     test = "contains($link, '#')">
+        <xsl:value-of           select = "substring-after($link, '#')"/>
+      </xsl:if>
+    </xsl:variable>
     <xsl:variable                 name = "uri"
                                 select = "concat('cdrx:', $link, '/DocTitle')"/>
-    <xsl:variable                 name = "cdrtmpvalue">
+    <xsl:variable                 name = "tmp">
       <xsl:value-of             select = "document($uri)/CdrDocTitle"/>
     </xsl:variable>
-    <xsl:variable                 name = "cdrvalue">
-     <xsl:choose>
-      <xsl:when                   test = "contains($cdrtmpvalue, ';')">
-       <xsl:value-of            select = "substring-before($cdrtmpvalue, ';')"/>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:value-of            select = "$cdrtmpvalue"/>
-      </xsl:otherwise>
-     </xsl:choose>
+    <xsl:variable                 name = "title">
+      <xsl:choose>
+        <xsl:when                 test = "contains($tmp, ';')">
+          <xsl:value-of         select = "substring-before($tmp, ';')"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of         select = "$tmp"/>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:variable>
     <xsl:element                  name = "{name()}">
       <xsl:apply-templates      select = "@*"/>
       <xsl:choose>
-        <xsl:when                 test = "$cdrvalue=''">
+        <xsl:when                 test = "$title=''">
           <xsl:apply-templates/>
         </xsl:when>
         <xsl:otherwise>
           <xsl:choose>
             <xsl:when             test = "$fragId=''">
-              <xsl:value-of     select = "$cdrvalue"/>
+              <xsl:value-of     select = "$title"/>
             </xsl:when>
             <xsl:otherwise>
-              <xsl:value-of     select = "concat($cdrvalue,
-                                                 ' [',
-                                                 $fragId,
-                                                 ']')"/>
+              <xsl:value-of     select = "concat($title, ' [', $fragId, ']')"/>
             </xsl:otherwise>
           </xsl:choose>
         </xsl:otherwise>
