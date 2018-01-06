@@ -520,12 +520,15 @@ class CommandSet:
                     raise Exception("filter without ID or name")
             elif child.tag == "FilterSet":
                 filters.append("set:{}".format(child.get("Name")))
-            elif child.tag == "Parm":
-                name = self.get_node_text(child.find("Name"), "")
-                value = self.get_node_text(child.find("Value"), "")
-                parms[name] = value
+            elif child.tag == "Parms":
+                for parm in child.findall("Parm"):
+                    name = self.get_node_text(parm.find("Name"), "")
+                    value = self.get_node_text(parm.find("Value"), "")
+                    parms[name] = value
         if not doc:
             raise Exception("nothing to filter")
+        if parms:
+            opts["parms"] = parms
         result = doc.filter(*filters, **opts)
         response = etree.Element(node.tag + "Resp")
         if output:
@@ -1261,14 +1264,15 @@ class CommandSet:
         for child in node:
             if child.tag == "CdrDoc":
                 xml = self.get_node_text(child.find("CdrDocXml"))
+                level = child.get("RevisionFilterLevel")
+                if level and level.isdigit():
+                    opts["level"] = int(level)
             elif child.tag == "DocId":
                 doc_id = self.get_node_text(child)
                 if not child.get("ValidateOnly") != "Y":
                     opts["store"] = "always"
         if not doctype:
             raise Exception("Missing required DocType element")
-        if not xml and not doc_id:
-            raise Exception("Must specify DocId or CdrDoc element")
         if xml:
             doc = Doc(self.session, xml=xml, doctype=doctype)
         elif doc_id:
@@ -1276,6 +1280,6 @@ class CommandSet:
             if doc.doctype.name != doctype:
                 raise Exception("DocType mismatch")
         else:
-            raise Exception("Both DocId and CdrDoc specified")
+            raise Exception("Must specify DocId or CdrDoc element")
         doc.validate(**opts)
         return doc.legacy_validation_response(opts["locators"])
