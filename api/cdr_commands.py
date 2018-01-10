@@ -42,7 +42,7 @@ class CommandSet:
     in the cdrapi package.
     """
 
-    PARSER = etree.XMLParser(strip_cdata=False)
+    PARSER = etree.XMLParser(strip_cdata=False, huge_tree=True)
     COMMANDS = dict(
         CdrAddAction="_add_action",
         CdrAddDoc="_put_doc",
