@@ -8,7 +8,9 @@ import base64
 import datetime
 import os
 import sys
+import threading
 from lxml import etree
+from cdrapi import db
 from cdrapi.users import Session
 from cdrapi.settings import Tier
 from cdrapi.docs import Doc, Doctype, FilterSet, LinkType, GlossaryTermName
@@ -179,6 +181,16 @@ class CommandSet:
         else:
             request = sys.stdin.buffer.read()
         self.logger.info("%s bytes from %s", len(request), self.client)
+        values = os.getpid(), threading.get_ident(), request.decode("utf-8")
+        args = "process_id, thread_id, received, request", "?, ?, GETDATE(), ?"
+        cmd = "INSERT INTO api_request ({}) VALUES ({})".format(*args)
+        try:
+            conn = db.connect()
+            cursor = conn.cursor()
+            cursor.execute(cmd, values)
+            conn.commit()
+        except:
+            self.logger.exception("Failure recording command set")
         root = etree.fromstring(request, parser=self.PARSER)
         if root.tag != "CdrCommandSet":
             raise Exception("not a CDR command set")
