@@ -10,10 +10,18 @@ import os
 import sys
 
 try:
+    WRITER = sys.stdout.buffer
+except:
+    import msvcrt
+    WRITER = sys.stdout
+    msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+    msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
+
+try:
     from cdr_commands import CommandSet
     responses = CommandSet().get_responses()
-    sys.stdout.buffer.write(b"Content-type: application/xml\r\n\r\n")
-    sys.stdout.buffer.write(responses)
+    WRITER.write(b"Content-type: application/xml\r\n\r\n")
+    WRITER.write(responses)
 except Exception as e:
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
     try:
@@ -25,4 +33,4 @@ except Exception as e:
                 break
     except:
         pass
-    sys.stdout.buffer.write(b"Status: 500 CDR unavailable\r\n\r\n")
+    WRITER.write(b"Status: 500 CDR unavailable\r\n\r\n")

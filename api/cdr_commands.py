@@ -27,12 +27,13 @@ try:
     basestring
     base64encode = base64.encodestring
     base64decode = base64.decodestring
+    READER = sys.stdin
 except:
     base64encode = base64.encodebytes
     base64decode = base64.decodebytes
     basestring = str, bytes
     unicode = str
-
+    READER = sys.stdin.buffer
 
 class CommandSet:
     """
@@ -177,11 +178,12 @@ class CommandSet:
 
         content_length = os.environ.get("CONTENT_LENGTH")
         if content_length:
-            request = sys.stdin.buffer.read(int(content_length))
+            request = READER.read(int(content_length))
         else:
-            request = sys.stdin.buffer.read()
+            request = READER.read()
         self.logger.info("%s bytes from %s", len(request), self.client)
-        values = os.getpid(), threading.get_ident(), request.decode("utf-8")
+        thread_id = threading.current_thread().ident
+        values = os.getpid(), thread_id, request.decode("utf-8")
         args = "process_id, thread_id, received, request", "?, ?, GETDATE(), ?"
         cmd = "INSERT INTO api_request ({}) VALUES ({})".format(*args)
         try:
@@ -268,7 +270,9 @@ class CommandSet:
         response_set.set("Time", self.start.strftime("%Y-%m-%dT%H:%M:%S.%f"))
         for response in responses:
             response_set.append(response)
-        return etree.tostring(response_set, encoding="utf-8")
+        serialized_response = etree.tostring(response_set, encoding="utf-8")
+        self.logger.info("returning %d bytes", len(serialized_response))
+        return serialized_response
 
     @staticmethod
     def get_node_text(node, default=None):
