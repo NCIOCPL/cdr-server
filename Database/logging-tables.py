@@ -26,5 +26,6 @@ CREATE TABLE api_request
     received DATETIME,
      request NTEXT)""")
 cursor.execute("CREATE INDEX api_request_received ON api_request(received)")
-cursor.execute("GRANT SELECT ON session_log TO CdrGuest")
+cursor.execute("GRANT SELECT ON api_request TO CdrGuest")
 conn.commit()
+print("logging tables created ...")
