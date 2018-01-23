@@ -1279,6 +1279,7 @@ class CommandSet:
         xml = doc_id = None
         for child in node:
             if child.tag == "CdrDoc":
+                doc_id = self.get_node_text(child.find("CdrDocCtl/DocId"))
                 xml = self.get_node_text(child.find("CdrDocXml"))
                 level = child.get("RevisionFilterLevel")
                 if level and level.isdigit():
@@ -1290,7 +1291,7 @@ class CommandSet:
         if not doctype:
             raise Exception("Missing required DocType element")
         if xml:
-            doc = Doc(self.session, xml=xml, doctype=doctype)
+            doc = Doc(self.session, xml=xml, doctype=doctype, id=doc_id)
         elif doc_id:
             doc = Doc(self.session, id=doc_id)
             if doc.doctype.name != doctype:
