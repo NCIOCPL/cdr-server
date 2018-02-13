@@ -48,7 +48,7 @@ now = time.strftime("%Y%m%d%H%M%S")
 fp = open("filter-diffs.%s" % now, "w")
 for title in sorted(local):
     if title not in repository:
-        print "Only in SVN: %s" % repr(local[title].title)
+        print "Only in Git: %s" % repr(local[title].title)
     else:
         localXml = local[title].doc
         repoXml = repository[title].doc.encode("utf-8").replace("\r", "")
@@ -58,7 +58,7 @@ for title in sorted(local):
             print "diff %s %s" % (local[title].filename,
                                   repr(local[title].title))
             #print (" %s " % local[title].title).center(78, "*")
-            print "< SVN DOCUMENT %s" % local[title].filename
+            print "< GIT DOCUMENT %s" % local[title].filename
             print "> CDR DOCUMENT CDR%010d" % repository[title].doc_id
             if full_diffs:
                 print compare(localXml, repoXml, full_diffs)
@@ -67,4 +67,5 @@ for title in sorted(local):
 fp.close()
 for title in sorted(repository):
     if title not in local:
-        print "Only in the CDR: %s" % repr(repository[title].title)
+        args = repository[title].doc_id, repository[title].title
+        print "Only in the CDR: [CDR%010d] %s" % args
