@@ -1053,7 +1053,7 @@ class CommandSet:
         etree.SubElement(response, "DocId").text = doc.cdr_id
         doc_included = False
         legacy_opts = dict(get_xml=True, brief=True, denormalize=True)
-        if doc.errors_node:
+        if doc.errors_node is not None:
             response.append(doc.errors_node)
             if doc.is_content_type and opts.get("locators"):
                 legacy_opts["locators"] = True
