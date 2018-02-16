@@ -230,11 +230,22 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
    =================================================================== -->
    <xsl:variable                  name = "CtrlBlk"
                                 select = "document('cdr:/*/CdrCtl')"/>
+   <xsl:variable                  name = "dateTime"
+                                select = "$CtrlBlk/CdrDocCtl/FirstPub/Date"/>
+   <xsl:variable                  name = "date">
+    <xsl:choose>
+     <xsl:when                    test = "contains($dateTime, 'T')">
+      <xsl:value-of             select = "substring-before($dateTime, 'T')"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "$dateTime"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:variable>
    <xsl:choose>
-    <xsl:when                     test = "$CtrlBlk/CdrDocCtl/FirstPub/Date">
+    <xsl:when                     test = "not($date)">
      <DateFirstPublished>
-      <xsl:value-of             select = "substring-before ($CtrlBlk/
-                                            CdrDocCtl/FirstPub/Date,'T')"/>
+      <xsl:value-of             select = "$date"/>
      </DateFirstPublished>
     </xsl:when>
     <xsl:otherwise>
@@ -591,11 +602,11 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
    </xsl:variable>
 
    <xsl:variable                  name = "sqlGTCRows"
-                                  select = "document(
+                                  select = "document(cdr:escape-uri(
                                            concat('cdrutil:/sql-query/',
                                                    $sqlGTCQuery,
                                                    '~',
-                                                   $gtnNormId))"/>
+                                                   $gtnNormId)))"/>
 
    <xsl:variable                  name = "sqlGTCId">
     <xsl:value-of               select = "$sqlGTCRows/SqlResult/row/col"/>
@@ -623,30 +634,36 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
    <!--
    We need two different queries depending on the language attribute
    ================================================================= -->
-   <xsl:variable                  name = "queryRows">
+   <xsl:variable                  name = "namePath">
     <xsl:choose>
      <xsl:when                    test = "$language = 'en'">
-      <xsl:copy-of              select = "document(
-                                           concat('cdrutil:/sql-query/',
-                                                   $sqlGTNQuery,
-                                                   '~TermName~',
-                                                   'TermNameStatus~',
-                                                   $sqlGTCId,
-                                                   '~',
-                                                   $gtnNormId))"/>
+      <xsl:text>TermName</xsl:text>
      </xsl:when>
      <xsl:when                    test = "$language = 'es'">
-      <xsl:copy-of              select = "document(
-                                           concat('cdrutil:/sql-query/',
-                                                   $sqlGTNQuery,
-                                                   '~TranslatedName~',
-                                         'TranslatedName/TranslatedNameStatus~',
-                                                   $sqlGTCId,
-                                                   '~',
-                                                   $gtnNormId))"/>
+      <xsl:text>TranslatedName</xsl:text>
      </xsl:when>
     </xsl:choose>
    </xsl:variable>
+
+   <xsl:variable                  name = "statusPath">
+    <xsl:choose>
+     <xsl:when                    test = "$language = 'en'">
+      <xsl:text>TermNameStatus</xsl:text>
+     </xsl:when>
+     <xsl:when                    test = "$language = 'es'">
+      <xsl:text>TranslatedName/TranslatedNameStatus</xsl:text>
+     </xsl:when>
+    </xsl:choose>
+   </xsl:variable>
+
+   <xsl:variable                  name = "queryRows"
+                                select = "document(cdr:escape-uri(
+                                            concat('cdrutil:/sql-query/',
+                                                   $sqlGTNQuery,
+                                                   '~', $namePath,
+                                                   '~', $statusPath,
+                                                   '~', $sqlGTCId,
+                                                   '~', $gtnNormId)))"/>
 
    <!--
    Also-called is only added if the SQL query returns with a record
@@ -908,11 +925,11 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
           the resulting node into a string
     ================================================================== -->
     <xsl:variable                 name = "queryRows"
-                                select = "document(
+                                select = "document(cdr:escape-uri(
                                            concat('cdrutil:/sql-query/',
                                                    $sqlQuery,
                                                    '~',
-                                                   $hrefNormId))"/>
+                                                   $hrefNormId)))"/>
     <!--
     Note:  The url created by function getSummaryURL has no trailing
            slash ('/'), specifies the domain as http://cancer.gov and

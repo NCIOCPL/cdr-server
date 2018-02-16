@@ -89,7 +89,7 @@ Written by Volker Englisch, 2002-04-01
   <xsl:choose>
    <xsl:when                      test = "name() = 'ExternalSiteOrgID'">
     <xsl:variable                 name = "orgorpersonID"
-                                select = "@cdr:ref"/>
+                                select = "substring-before(@cdr:ref, '#')"/>
     <xsl:variable                 name = "nodeOrgOrPerson"
                                 select = "document(concat('cdr:',
                                                            $orgorpersonID,
@@ -245,17 +245,18 @@ Written by Volker Englisch, 2002-04-01
  =================================================================== -->
  <xsl:template                    name = "getOrganization">
   <xsl:element                    name = "{name()}">
-   <xsl:for-each              select = "../@*">
-    <xsl:attribute              name = "{name()}">
-     <xsl:value-of            select = "."/>
+   <xsl:for-each                select = "../@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
     </xsl:attribute>
    </xsl:for-each>
 
    <xsl:variable                  name = "orgID"
                                 select = "@cdr:ref"/>
+   <xsl:variable                  name = "uri"
+                                select = "concat('cdr', $orgID, '/last')"/>
    <xsl:variable                  name = "org"
-                                select = "document(concat('cdr:', $orgID,
-                                                          '/last'))"/>
+                                select = "document(cdr:escape-uri($uri))"/>
    <xsl:variable                  name = "contactFrag"
                                 select = "$org/Organization/
                                           OrganizationLocations/

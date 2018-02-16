@@ -82,11 +82,22 @@ Filter to create the vendor Terminology XML
    ===================================================================
    Copy Date First Published and Date Last Modified
    =================================================================== -->
-   <xsl:choose>
-    <xsl:when                     test = "CdrDocCtl/FirstPub/Date">
-     <DateFirstPublished>
+   <xsl:variable                  name = "ctlFirstPub">
+    <xsl:choose>
+     <xsl:when                    test = "contains(CdrDocCtl/FirstPub/Date,
+                                                   'T')">
       <xsl:value-of             select = "substring-before(CdrDocCtl/
                                             FirstPub/Date,'T')"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "CdrDocCtl/FirstPub/Date"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:variable>
+   <xsl:choose>
+    <xsl:when                     test = "not($ctlFirstPub='')">
+     <DateFirstPublished>
+      <xsl:value-of             select = "$ctlFirstPub"/>
      </DateFirstPublished>
     </xsl:when>
     <xsl:otherwise>
@@ -183,10 +194,10 @@ Filter to create the vendor Terminology XML
    </xsl:variable>
 
    <xsl:variable                  name = "queryRows"
-                                select = "document(
+                                select = "document(cdr:escape-uri(
                                              concat('cdrutil:/sql-query/',
                                                     $sqlQuery,
-                                                    '~', $docNormId))"/>
+                                                    '~', $docNormId)))"/>
 
    <xsl:variable                  name = "conceptId">
     <xsl:value-of               select = "normalize-space(

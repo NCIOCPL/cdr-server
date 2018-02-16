@@ -80,69 +80,37 @@ OCECDR-3903: Cancer.gov displaying Patient definitions for terms
    </xsl:choose>
   </xsl:variable>
 
-<!--
-  <xsl:text>A </xsl:text>
-  <xsl:copy-of select = "$pubVersion"/>
-  <xsl:text> A</xsl:text>
--->
-
   <xsl:variable                   name = "GlossaryNameID"
                                 select = "@cdr:href"/>
 
-  <!--
-  Only if the GlossaryNameID exists can we attempt to denormalize.
-  Otherwise the filter will crash.  All following variables in this
-  Template will only be set if there is an existing CDR-ID for the
-  Glossary Term -->
-  <xsl:variable                   name = "GlossaryNameInfo">
-   <xsl:if                        test = "$GlossaryNameID">
-    <xsl:copy-of                select = "document(concat
+  <xsl:variable                   name = "GlossaryNameInfo"
+                                select = "document(concat
                                                 ('cdr:', $GlossaryNameID))"/>
-   </xsl:if>
-  </xsl:variable>
 
-  <xsl:variable                   name = "GlossaryConceptID">
-   <xsl:if                        test = "$GlossaryNameID">
-    <xsl:value-of               select = "$GlossaryNameInfo/
+  <xsl:variable                   name = "GlossaryConceptID"
+                                select = "$GlossaryNameInfo/
                                              GlossaryTermName/
                                              GlossaryTermConcept/@cdr:ref"/>
-   </xsl:if>
-  </xsl:variable>
 
-  <xsl:variable                   name = "GlossaryConceptInfo">
-   <!--
-   Why can't I test against $GlossaryConceptID here???? -->
-   <xsl:if                        test = "$GlossaryNameID">
-    <xsl:copy-of                select = "document(concat('cdr:',
+  <xsl:variable                   name = "GlossaryConceptInfo"
+                                select = "document(concat('cdr:',
                                                          $GlossaryConceptID))"/>
-   </xsl:if>
-  </xsl:variable>
 
-  <xsl:variable                  name  = "GlossaryAudience">
-   <xsl:if                        test = "$GlossaryNameID">
-    <xsl:copy-of                select = "$GlossaryConceptInfo/
+  <xsl:variable                  name  = "GlossaryAudience"
+                                select = "$GlossaryConceptInfo/
                                              GlossaryTermConcept/
                                              TermDefinition/
                                              Audience"/>
-   </xsl:if>
-  </xsl:variable>
 
-  <xsl:variable                   name = "numberOfEnglishTerms">
-   <xsl:if                        test = "$GlossaryNameID">
-    <xsl:value-of               select = "count($GlossaryConceptInfo/
+  <xsl:variable                   name = "numberOfEnglishTerms"
+                                select = "count($GlossaryConceptInfo/
                                              GlossaryTermConcept/
                                              TermDefinition)"/>
-   </xsl:if>
-  </xsl:variable>
 
-  <xsl:variable                   name = "numberOfSpanishTerms">
-   <xsl:if                        test = "$GlossaryNameID">
-    <xsl:value-of               select = "count($GlossaryConceptInfo/
+  <xsl:variable                   name = "numberOfSpanishTerms"
+                                select = "count($GlossaryConceptInfo/
                                              GlossaryTermConcept/
                                              TranslatedTermDefinition)"/>
-   </xsl:if>
-  </xsl:variable>
-
   <xsl:element                    name = "{name()}">
    <xsl:attribute                 name = "cdr:href">
     <xsl:value-of               select = "@cdr:href"/>

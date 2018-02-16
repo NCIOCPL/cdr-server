@@ -1,788 +1,850 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <!--
-      CommonProtocolInfo.xml
+          CommonProtocolInfo.xml
 
-      BZIssue::4697
-      BZIssue::5092
+          BZIssue::4697
+          BZIssue::5092
   -->
 
-<schema              xmlns           = 'http://www.w3.org/2001/XMLSchema'>
+<xsd:schema              xmlns:xsd       = 'http://www.w3.org/2001/XMLSchema'>
 
- <annotation>
-  <appInfo>
+ <xsd:annotation>
+  <xsd:appinfo>
    <pattern>
-    <rule            context         = 'InScopeProtocol'>
-     <assert         test            = 'count(ProtocolTitle
-                                          [@Type = "Professional"]) &lt; 2'
-     >Only one professional protocol title is allowed.</assert>
-     <assert         test            = 'count(ProtocolTitle
-                                          [@Type = "Patient"]) &lt; 2'
-     >Only one patient protocol title is allowed.</assert>
-     <assert         test            = 'count(ProtocolTitle
-                                          [@Type = "Original"]) &lt; 2'
-     >Only one original protocol title is allowed.</assert>
+    <rule context = 'InScopeProtocol'>
+     <assert>
+      <test><![CDATA[
+count(ProtocolTitle
+                                          [@Type = "Professional"]) < 2
+]]>
+      </test>
+      <message><![CDATA[
+Only one professional protocol title is allowed.
+]]>
+      </message>
+     </assert>
+     <assert>
+      <test><![CDATA[
+count(ProtocolTitle
+                                          [@Type = "Patient"]) < 2
+]]>
+      </test>
+      <message><![CDATA[
+Only one patient protocol title is allowed.
+]]>
+      </message>
+     </assert>
+     <assert>
+      <test><![CDATA[
+count(ProtocolTitle
+                                          [@Type = "Original"]) < 2
+]]>
+      </test>
+      <message><![CDATA[
+Only one original protocol title is allowed.
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
    <pattern>
-    <rule            context         = 'ArmOrGroup'>
-     <assert         test            = 'not(ArmOrGroupLabel =
+    <rule context = 'ArmOrGroup'>
+     <assert>
+      <test><![CDATA[
+not(ArmOrGroupLabel =
                                         preceding-sibling::ArmOrGroup
-                                        /ArmOrGroupLabel)'
-     >ArmOrGroupLabel must be unique.</assert>
+                                        /ArmOrGroupLabel)
+]]>
+      </test>
+      <message><![CDATA[
+ArmOrGroupLabel must be unique.
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
    <pattern>
-    <rule            context         = 'ArmsOrGroups'>
-     <assert         test            = 'not(@SingleArmOrGroupStudy="Yes" and
-                                         count(ArmOrGroup) &gt; 0)'
-     >Single arm study cannot have any ArmOrGroup elements</assert>
-     <assert         test            = '@SingleArmOrGroupStudy="Yes" or
-                                        count(ArmOrGroup) &gt; 1'
-     >Need more than one ArmOrGroup or SingleArmOrGroupStudy attribute</assert>
+    <rule context = 'ArmsOrGroups'>
+     <assert>
+      <test><![CDATA[
+not(@SingleArmOrGroupStudy="Yes" and
+                                         count(ArmOrGroup) > 0)
+]]>
+      </test>
+      <message><![CDATA[
+Single arm study cannot have any ArmOrGroup elements
+]]>
+      </message>
+     </assert>
+     <assert>
+      <test><![CDATA[
+@SingleArmOrGroupStudy="Yes" or
+                                        count(ArmOrGroup) > 1
+]]>
+      </test>
+      <message><![CDATA[
+Need more than one ArmOrGroup or SingleArmOrGroupStudy attribute
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
    <pattern>
-    <rule            context         = 'ArmOrGroupLabel'>
-     <assert         test            = 'not(not(. = //ArmOrGroupLink))'
-     >ArmOrGroupLabel does not have matching ArmOrGroupLink.</assert>
+    <rule context = 'ArmOrGroupLabel'>
+     <assert>
+      <test><![CDATA[
+not(not(. = //ArmOrGroupLink))
+]]>
+      </test>
+      <message><![CDATA[
+ArmOrGroupLabel does not have matching ArmOrGroupLink.
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
    <pattern>
-    <rule            context         = 'ArmOrGroupLink'>
-     <assert         test            = 'not(not(. = //ArmOrGroupLabel))'
-     >ArmOrGroupLink does not have matching ArmOrGroupLabel.</assert>
+    <rule context = 'ArmOrGroupLink'>
+     <assert>
+      <test><![CDATA[
+not(not(. = //ArmOrGroupLabel))
+]]>
+      </test>
+      <message><![CDATA[
+ArmOrGroupLink does not have matching ArmOrGroupLabel.
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
-  </appInfo>
- </annotation>
+  </xsd:appinfo>
+ </xsd:annotation>
 
 <!--=====================================================================-->
 <!--                    COMMON PROTOCOL COMPLEX TYPES                    -->
 <!--=====================================================================-->
-  <complexType       name            = 'ProtocolIDs'>
-    <sequence>
-      <element       name            = 'PrimaryID'
-                     type            = 'PrimaryID'/>
-      <element       name            = 'OtherID'
-                     type            = 'OtherID'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'ProtocolIDs'>
+    <xsd:sequence>
+      <xsd:element       name            = 'PrimaryID'
+                         type            = 'PrimaryID'/>
+      <xsd:element       name            = 'OtherID'
+                         type            = 'OtherID'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'PrimaryID'>
-    <sequence>
-      <element       name            = 'IDString'
-                     type            = 'NotEmptyString'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'PrimaryID'>
+    <xsd:sequence>
+      <xsd:element       name            = 'IDString'
+                         type            = 'NotEmptyString'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'OtherID'>
-    <sequence>
-      <element       name            = 'IDType'
-                     type            = 'IDType'/>
-      <element       name            = 'IDString'
-                     type            = 'NotEmptyString'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
-    </sequence>
-    <attribute       name            = 'Institution'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'OtherID'>
+    <xsd:sequence>
+      <xsd:element       name            = 'IDType'
+                         type            = 'IDType'/>
+      <xsd:element       name            = 'IDString'
+                         type            = 'NotEmptyString'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'Institution'
+                         type            = 'xsd:string'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProtocolAmendmentInformation'>
-    <sequence>
-      <element       name            = 'ProtocolAmendment'
-                     type            = 'ProtocolAmendment'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <!--ProtocolAmendment is optional in order to allow the situation when
-          DatedAction for future amendment has been entered but no amendment happend yet-->
-      <element       name            = 'DatedAction'
-                     type            = 'DatedAction'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'ProtocolAmendmentInformation'>
+    <xsd:sequence>
+      <xsd:element       name            = 'ProtocolAmendment'
+                         type            = 'ProtocolAmendment'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+          <!--ProtocolAmendment is optional in order to allow the situation when
+              DatedAction for future amendment has been entered but no amendment happend yet-->
+      <xsd:element       name            = 'DatedAction'
+                         type            = 'DatedAction'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProtocolAmendment'>
-    <sequence>
-      <element       name            = 'AmendmentID'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      <element       name            = 'AmendmentDate'
-                     type            = 'date'/>
-      <element       name            = 'AmendmentSource'
-                     type            = 'AmendmentSource'/>
-      <element       name            = 'DateReceived'
-                     type            = 'date'/>
-      <element       name            = 'AmendmentStatus'
-                     type            = 'AmendmentStatus'
-                     minOccurs       = '0'/>
-      <element       name            = 'DateCompleted'
-                     type            = 'date'/>
-      <element       name            = 'ChangeType'
-                     type            = 'ChangeType'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'ProtocolAmendment'>
+    <xsd:sequence>
+      <xsd:element       name            = 'AmendmentID'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'AmendmentDate'
+                         type            = 'xsd:date'/>
+      <xsd:element       name            = 'AmendmentSource'
+                         type            = 'AmendmentSource'/>
+      <xsd:element       name            = 'DateReceived'
+                         type            = 'xsd:date'/>
+      <xsd:element       name            = 'AmendmentStatus'
+                         type            = 'AmendmentStatus'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'DateCompleted'
+                         type            = 'xsd:date'/>
+      <xsd:element       name            = 'ChangeType'
+                         type            = 'ChangeType'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProtocolTitle'
-                     mixed           = 'true'>
-    <choice          minOccurs       = '0'
-                     maxOccurs       = 'unbounded'>
-      <group         ref             = 'TitleMarkupElements'/>
-    </choice>
-    <attribute       name            = 'Type'
-                     type            = 'TitleType'/>
-  </complexType>
+  <xsd:complexType       name            = 'ProtocolTitle'
+                         mixed           = 'true'>
+    <xsd:choice          minOccurs       = '0'
+                         maxOccurs       = 'unbounded'>
+      <xsd:group         ref             = 'TitleMarkupElements'/>
+    </xsd:choice>
+    <xsd:attribute       name            = 'Type'
+                         type            = 'TitleType'
+                         use             = 'required'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProtocolAbstract'>
-    <sequence>
-      <element       name            = 'Professional'
-                     type            = 'Professional'/>
-      <element       name            = 'Patient'
-                     type            = 'Patient'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'ProtocolAbstract'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Professional'
+                         type            = 'Professional'/>
+      <xsd:element       name            = 'Patient'
+                         type            = 'Patient'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'Professional'>
-    <sequence>
-      <element       name            = 'Objectives'
-                     type            = 'ParaLevel'/>
-      <element       name            = 'Outcome'
-                     type            = 'Outcome'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'Outline'
-                     type            = 'ParaLevel'/>
-      <element       name            = 'ArmsOrGroups'
-                     type            = 'ArmsOrGroups'
-                     minOccurs       = '0'/>
-      <element       name            = 'EntryCriteria'
-                     type            = 'EntryCriteria'/>
-      <element       name            = 'ProjectedAccrual'
-                     type            = 'ParaLevel'
-                     minOccurs       = '0'/>
-      <element       name            = 'EndPoints'
-                     type            = 'ParaLevel'
-                     minOccurs       = '0'/>
-      <element       name            = 'Stratification'
-                     type            = 'ParaLevel'
-                     minOccurs       = '0'/>
-      <element       name            = 'SpecialStudyParameters'
-                     type            = 'ParaLevel'
-                     minOccurs       = '0'/>
-      <element       name            = 'DoseSchedule'
-                     type            = 'ParaLevel'
-                     minOccurs       = '0'/>
-      <element       name            = 'DosageForm'
-                     type            = 'ParaLevel'
-                     minOccurs       = '0'/>
-      <element       name            = 'EnteredBy'
-                     type            = 'NotEmptyString'/>
-      <element       name            = 'EntryDate'
-                     type            = 'date'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'Professional'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Objectives'
+                         type            = 'ParaLevel'/>
+      <xsd:element       name            = 'Outcome'
+                         type            = 'Outcome'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'Outline'
+                         type            = 'ParaLevel'/>
+      <xsd:element       name            = 'ArmsOrGroups'
+                         type            = 'ArmsOrGroups'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'EntryCriteria'
+                         type            = 'EntryCriteria'/>
+      <xsd:element       name            = 'ProjectedAccrual'
+                         type            = 'ParaLevel'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'EndPoints'
+                         type            = 'ParaLevel'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Stratification'
+                         type            = 'ParaLevel'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'SpecialStudyParameters'
+                         type            = 'ParaLevel'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'DoseSchedule'
+                         type            = 'ParaLevel'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'DosageForm'
+                         type            = 'ParaLevel'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'EnteredBy'
+                         type            = 'NotEmptyString'/>
+      <xsd:element       name            = 'EntryDate'
+                         type            = 'xsd:date'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'EntryCriteria'>
-    <sequence>
-      <element       name            = 'DiseaseCharacteristics'
-                     type            = 'ParaLevel'/>
+  <xsd:complexType       name            = 'EntryCriteria'>
+    <xsd:sequence>
+      <xsd:element       name            = 'DiseaseCharacteristics'
+                         type            = 'ParaLevel'/>
 
-      <element       name            = 'PatientCharacteristics'
-                     type            = 'ParaLevel'/>
-      <element       name            = 'PriorConcurrentTherapy'
-                     type            = 'ParaLevel'
-                     minOccurs       = '0'/>
-      <element       name            = 'GeneralEligibilityCriteria'
-                     type            = 'ParaLevel'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+      <xsd:element       name            = 'PatientCharacteristics'
+                         type            = 'ParaLevel'/>
+      <xsd:element       name            = 'PriorConcurrentTherapy'
+                         type            = 'ParaLevel'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'GeneralEligibilityCriteria'
+                         type            = 'ParaLevel'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'ArmsOrGroups'>
-    <sequence>
-      <element       name            = 'ArmOrGroup'
-                     type            = 'ArmOrGroup'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-    <attribute       name            = 'SingleArmOrGroupStudy'
-                     type            = 'Yes'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'ArmsOrGroups'>
+    <xsd:sequence>
+      <xsd:element       name            = 'ArmOrGroup'
+                         type            = 'ArmOrGroup'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'SingleArmOrGroupStudy'
+                         type            = 'Yes'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'ArmOrGroup'>
-    <sequence>
-      <element       name            = 'ArmOrGroupLabel'
-                     type            = 'ArmOrGroupLabel'/>
-      <element       name            = 'ArmOrGroupType'
-                     type            = 'ArmOrGroupType'/>
-      <element       name            = 'ArmOrGroupDescription'
-                     type            = 'CTGovDescription'/>
-    </sequence>
-    <attribute       name            = 'cdr:id'
-                     type            = 'NonEmptyString'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'ArmOrGroup'>
+    <xsd:sequence>
+      <xsd:element       name            = 'ArmOrGroupLabel'
+                         type            = 'ArmOrGroupLabel'/>
+      <xsd:element       name            = 'ArmOrGroupType'
+                         type            = 'ArmOrGroupType'/>
+      <xsd:element       name            = 'ArmOrGroupDescription'
+                         type            = 'CTGovDescription'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'cdr-id'
+                         type            = 'NonEmptyString'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'Patient'>
-    <sequence>
-      <element       name            = 'Rationale'
-                     type            = 'ParaLevel'/>
-      <element       name            = 'Purpose'
-                     type            = 'ParaLevel'/>
-      <element       name            = 'EligibilityText'
-                     type            = 'ParaLevel'/>
-      <element       name            = 'TreatmentIntervention'
-                     type            = 'ParaLevel'/>
-      <element       name            = 'EnteredBy'
-                     type            = 'NotEmptyString'/>
-      <element       name            = 'EntryDate'
-                     type            = 'date'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'Patient'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Rationale'
+                         type            = 'ParaLevel'/>
+      <xsd:element       name            = 'Purpose'
+                         type            = 'ParaLevel'/>
+      <xsd:element       name            = 'EligibilityText'
+                         type            = 'ParaLevel'/>
+      <xsd:element       name            = 'TreatmentIntervention'
+                         type            = 'ParaLevel'/>
+      <xsd:element       name            = 'EnteredBy'
+                         type            = 'NotEmptyString'/>
+      <xsd:element       name            = 'EntryDate'
+                         type            = 'xsd:date'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProtocolDetail'>
-    <sequence>
-      <element       name            = 'StudyType'
-                     type            = 'StudyType'/>
-      <element       name            = 'StudyCategory'
-                     type            = 'StudyCategory'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'Condition'
-                     type            = 'TerminologyLink'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'Gene'
-                     type            = 'TerminologyLink'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'EnteredBy'
-                     type            = 'NotEmptyString'/>
-      <element       name            = 'EntryDate'
-                     type            = 'date'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'ProtocolDetail'>
+    <xsd:sequence>
+      <xsd:element       name            = 'StudyType'
+                         type            = 'StudyType'/>
+      <xsd:element       name            = 'StudyCategory'
+                         type            = 'StudyCategory'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'Condition'
+                         type            = 'TerminologyLink'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'Gene'
+                         type            = 'TerminologyLink'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'EnteredBy'
+                         type            = 'NotEmptyString'/>
+      <xsd:element       name            = 'EntryDate'
+                         type            = 'xsd:date'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'StudyCategory'>
-    <sequence>
-      <element       name            = 'StudyCategoryType'
-                     type            = 'PrimarySecondary'/>
-      <element       name            = 'StudyCategoryName'
-                     type            = 'StudyCategoryName'/>
-      <element       name            = 'StudyFocus'
-                     type            = 'StudyFocus'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'Intervention'
-                     type            = 'Intervention'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'StudyCategory'>
+    <xsd:sequence>
+      <xsd:element       name            = 'StudyCategoryType'
+                         type            = 'PrimarySecondary'/>
+      <xsd:element       name            = 'StudyCategoryName'
+                         type            = 'StudyCategoryName'/>
+      <xsd:element       name            = 'StudyFocus'
+                         type            = 'StudyFocus'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'Intervention'
+                         type            = 'Intervention'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'Intervention'>
-    <sequence>
-      <element       name            = 'InterventionType'
-                     type            = 'TerminologyLink'/>
-      <element       name            = 'InterventionNameLink'
-                     type            = 'TerminologyLink'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'ArmOrGroupLink'
-                     type            = 'NonEmptyString'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'InterventionDescription'
-                     type            = 'CTGovDescription'
-                     minOccurs       = '0'/>
-      <!--Do not rename-->
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'Intervention'>
+    <xsd:sequence>
+      <xsd:element       name            = 'InterventionType'
+                         type            = 'TerminologyLink'/>
+      <xsd:element       name            = 'InterventionNameLink'
+                         type            = 'TerminologyLink'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'ArmOrGroupLink'
+                         type            = 'NonEmptyString'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'InterventionDescription'
+                         type            = 'CTGovDescription'
+                         minOccurs       = '0'/>
+          <!--Do not rename-->
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'Eligibility'>
-    <sequence>
-      <element       name            = 'HealthyVolunteers'
-                     type            = 'YesNo'
-                     minOccurs       = '0'/>
-      <element       name            = 'LowAge'
-                     type            = 'integer'/>
-      <element       name            = 'HighAge'
-                     type            = 'HighAge'/>
-      <element       name            = 'AgeText'
-                     type            = 'AgeText'/>
-      <element       name            = 'Gender'
-                     type            = 'Gender'
-                     minOccurs       = '0'/>
-      <element       name            = 'Diagnosis'
-                     type            = 'TerminologyLink'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'ExclusionCriteria'
-                     type            = 'TerminologyLink'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'Eligibility'>
+    <xsd:sequence>
+      <xsd:element       name            = 'HealthyVolunteers'
+                         type            = 'YesNo'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'LowAge'
+                         type            = 'xsd:integer'/>
+      <xsd:element       name            = 'HighAge'
+                         type            = 'HighAge'/>
+      <xsd:element       name            = 'AgeText'
+                         type            = 'AgeText'/>
+      <xsd:element       name            = 'Gender'
+                         type            = 'Gender'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Diagnosis'
+                         type            = 'TerminologyLink'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'ExclusionCriteria'
+                         type            = 'TerminologyLink'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProtocolRelatedLinks'>
-    <sequence>
-      <choice        maxOccurs       = 'unbounded'>
-        <element     name            = 'RelatedProtocols'
-                     type            = 'ProtocolLink'/>
-        <element     name            = 'RelatedWebsites'
-                     type            = 'ExternalRef'/>
-      </choice>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'ProtocolRelatedLinks'>
+    <xsd:sequence>
+      <xsd:choice        maxOccurs       = 'unbounded'>
+        <xsd:element     name            = 'RelatedProtocols'
+                         type            = 'ProtocolLink'/>
+        <xsd:element     name            = 'RelatedWebsites'
+                         type            = 'ExternalRef'/>
+      </xsd:choice>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
   <!-- If you change this type, do the same in the CTGovProtocol schema -->
-  <complexType       name            = 'PublishedResults'>
-    <sequence>
-      <element       name            = 'Citation'
-                     type            = 'CitationLink'/>
-      <element       name            = 'CitationSource'
-                     type            = 'CitationSource'
-                     minOccurs       = '0'/>
-      <element       name            = 'SourceWebsite'
-                     type            = 'ExternalRef'
-                     minOccurs       = '0'/>
-      <element       name            = 'EnteredBy'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      <element       name            = 'EntryDate'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'PublishedResults'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Citation'
+                         type            = 'CitationLink'/>
+      <xsd:element       name            = 'CitationSource'
+                         type            = 'CitationSource'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'SourceWebsite'
+                         type            = 'ExternalRef'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'EnteredBy'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'EntryDate'
+                         type            = 'xsd:date'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
   <!-- If you change this type, do the same in the CTGovProtocol schema -->
-  <complexType       name            = 'RelatedPublications'>
-    <sequence>
-      <element       name            = 'RelatedCitation'
-                     type            = 'CitationLink'/>
-      <element       name            = 'CitationSource'
-                     type            = 'CitationSource'
-                     minOccurs       = '0'/>
-      <element       name            = 'SourceWebsite'
-                     type            = 'ExternalRef'
-                     minOccurs       = '0'/>
-      <element       name            = 'EnteredBy'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      <element       name            = 'EntryDate'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'RelatedPublications'>
+    <xsd:sequence>
+      <xsd:element       name            = 'RelatedCitation'
+                         type            = 'CitationLink'/>
+      <xsd:element       name            = 'CitationSource'
+                         type            = 'CitationSource'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'SourceWebsite'
+                         type            = 'ExternalRef'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'EnteredBy'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'EntryDate'
+                         type            = 'xsd:date'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'Outcome'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'OutcomeType'
-                     type            = 'PrimarySecondary'/>
-        <attribute   name            = 'Safety'
-                     type            = 'YesNo'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'Outcome'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'OutcomeType'
+                         type            = 'PrimarySecondary'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'Safety'
+                         type            = 'YesNo'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProtocolProcessingDetails'>
-    <sequence>
+  <xsd:complexType       name            = 'ProtocolProcessingDetails'>
+    <xsd:sequence>
 
-      <!-- Deprecated; to be removed after old docs are flushed. -->
-      <!-- 2007-09-06: now that this structure is being applied
-           to InScopeProtocol documents we may need a global
-           change before we can tighten up the schema, because
-           the InScopeProtocol documents don't get deleted the
-           way the ScientificProtocolInfo documents do -->
-      <element       name            = 'ProcessingStatus'
-                     type            = 'ProcessingStatus'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'EnteredBy'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      <element       name            = 'ProcessingDate'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
+          <!-- Deprecated; to be removed after old docs are flushed. -->
+          <!-- 2007-09-06: now that this structure is being applied
+               to InScopeProtocol documents we may need a global
+               change before we can tighten up the schema, because
+               the InScopeProtocol documents don't get deleted the
+               way the ScientificProtocolInfo documents do -->
+      <xsd:element       name            = 'ProcessingStatus'
+                         type            = 'ProcessingStatus'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'EnteredBy'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'ProcessingDate'
+                         type            = 'xsd:date'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
 
-      <!-- Use these instead for new documents. -->
-      <element       name            = 'ProcessingStatuses'
-                     type            = 'ProcessingStatuses'
-                     minOccurs       = '0'/>
-      <element       name            = 'MissingRequiredInformation'
-                     type            = 'MissingRequiredInformation'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+          <!-- Use these instead for new documents. -->
+      <xsd:element       name            = 'ProcessingStatuses'
+                         type            = 'ProcessingStatuses'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'MissingRequiredInformation'
+                         type            = 'MissingRequiredInformation'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProcessingStatuses'>
-    <sequence>
-      <element       name            = 'ProcessingStatusInfo'
-                     type            = 'ProcessingStatusInfo'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'ProcessingStatuses'>
+    <xsd:sequence>
+      <xsd:element       name            = 'ProcessingStatusInfo'
+                         type            = 'ProcessingStatusInfo'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProcessingStatusInfo'>
-    <sequence>
-      <element       name            = 'ProcessingStatus'
-                     type            = 'ProcessingStatus'/>
-      <element       name            = 'ProcessingPriority'
-                     type            = 'ProcessingPriority'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'StartDateTime'
-                     type            = 'dateTime'
-                     minOccurs       = '0'/>
-      <element       name            = 'EndDateTime'
-                     type            = 'dateTime'
-                     minOccurs       = '0'/>
-      <element       name            = 'User'
-                     type            = 'CdrUser'
-                     minOccurs       = '0'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'ProcessingStatusInfo'>
+    <xsd:sequence>
+      <xsd:element       name            = 'ProcessingStatus'
+                         type            = 'ProcessingStatus'/>
+      <xsd:element       name            = 'ProcessingPriority'
+                         type            = 'ProcessingPriority'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'StartDateTime'
+                         type            = 'xsd:dateTime'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'EndDateTime'
+                         type            = 'xsd:dateTime'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'User'
+                         type            = 'CdrUser'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'MissingRequiredInformation'>
-    <sequence>
-      <element       name            = 'MissingInformation'
-                     type            = 'MissingInformation'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'MissingRequiredInformation'>
+    <xsd:sequence>
+      <xsd:element       name            = 'MissingInformation'
+                         type            = 'MissingInformation'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
 <!--=====================================================================-->
 <!--                  COMMON PROTOCOL SIMPLE TYPES                       -->
 <!--=====================================================================-->
-  <simpleType        name            = 'IDType'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Secondary'/>
-      <enumeration   value           = 'Alternate'/>
-      <enumeration   value           = 'NCI alternate'/>
-      <enumeration   value           = 'CTEP ID'/>
-      <enumeration   value           = 'ClinicalTrials.gov ID'/>
-      <enumeration   value           = 'DCP ID'/>
-      <enumeration   value           = 'Institutional/Original'/>
-      <enumeration   value           = 'Acronym'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'IDType'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Secondary'/>
+      <xsd:enumeration   value           = 'Alternate'/>
+      <xsd:enumeration   value           = 'NCI alternate'/>
+      <xsd:enumeration   value           = 'CTEP ID'/>
+      <xsd:enumeration   value           = 'ClinicalTrials.gov ID'/>
+      <xsd:enumeration   value           = 'DCP ID'/>
+      <xsd:enumeration   value           = 'Institutional/Original'/>
+      <xsd:enumeration   value           = 'Acronym'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'ChangeType'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'ID'/>
-      <enumeration   value           = 'Abstract'/>
-      <enumeration   value           = 'Status'/>
-      <enumeration   value           = 'Citation'/>
-      <enumeration   value           = 'Participant'/>
-      <enumeration   value           = 'Terminology'/>
-      <enumeration   value           = 'Other administrative information'/>
-      <enumeration   value           = 'No change'/>
-      <enumeration   value           = 'Data fix'/>
-      <enumeration   value           = 'Health professional'/>
-      <enumeration   value           = 'Patient'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'ChangeType'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'ID'/>
+      <xsd:enumeration   value           = 'Abstract'/>
+      <xsd:enumeration   value           = 'Status'/>
+      <xsd:enumeration   value           = 'Citation'/>
+      <xsd:enumeration   value           = 'Participant'/>
+      <xsd:enumeration   value           = 'Terminology'/>
+      <xsd:enumeration   value           = 'Other administrative information'/>
+      <xsd:enumeration   value           = 'No change'/>
+      <xsd:enumeration   value           = 'Data fix'/>
+      <xsd:enumeration   value           = 'Health professional'/>
+      <xsd:enumeration   value           = 'Patient'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'TitleType'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Professional'/>
-      <enumeration   value           = 'Patient'/>
-      <enumeration   value           = 'Original'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'TitleType'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Professional'/>
+      <xsd:enumeration   value           = 'Patient'/>
+      <xsd:enumeration   value           = 'Original'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'StudyType'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Clinical trial'/>
-      <enumeration   value           = 'Research study'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'StudyType'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Clinical trial'/>
+      <xsd:enumeration   value           = 'Research study'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'StudyCategoryName'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Treatment'/>
-      <enumeration   value           = 'Supportive care'/>
-      <enumeration   value           = 'Screening'/>
-      <enumeration   value           = 'Prevention'/>
-      <enumeration   value           = 'Diagnostic'/>
-      <enumeration   value           = 'Genetics'/>
-      <enumeration   value           = 'Tissue collection/Repository'/>
-      <enumeration   value           = 'Biomarker/Laboratory analysis'/>
-      <enumeration   value           = 'Natural history/Epidemiology'/>
-      <enumeration   value           = 'Behavioral study'/>
-      <enumeration   value           = 'Educational/Counseling/Training'/>
-      <enumeration   value           = 'Health services research'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'StudyCategoryName'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Treatment'/>
+      <xsd:enumeration   value           = 'Supportive care'/>
+      <xsd:enumeration   value           = 'Screening'/>
+      <xsd:enumeration   value           = 'Prevention'/>
+      <xsd:enumeration   value           = 'Diagnostic'/>
+      <xsd:enumeration   value           = 'Genetics'/>
+      <xsd:enumeration   value           = 'Tissue collection/Repository'/>
+      <xsd:enumeration   value           = 'Biomarker/Laboratory analysis'/>
+      <xsd:enumeration   value           = 'Natural history/Epidemiology'/>
+      <xsd:enumeration   value           = 'Behavioral study'/>
+      <xsd:enumeration   value           = 'Educational/Counseling/Training'/>
+      <xsd:enumeration   value           = 'Health services research'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'StudyFocus'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Primary therapy'/>
-      <enumeration   value           = 'Adjuvant therapy'/>
-      <enumeration   value           = 'Neoadjuvant therapy'/>
-      <enumeration   value           = 'General population prevention'/>
-      <enumeration   value           = 'High-risk population prevention'/>
-      <enumeration   value           = 'Prevention of recurrence'/>
-      <enumeration   value           = 'Genetic mapping'/>
-      <enumeration   value           = 'Family history'/>
-      <enumeration   value           = 'Cytogenetic analysis'/>
-      <enumeration   value           = 'Genetic effects of cancer therapy'/>
-      <enumeration   value           = 'Pre-therapy diagnostic'/>
-      <enumeration   value           = 'Post-therapy diagnostic'/>
-      <enumeration   value           = 'On-therapy diagnostic'/>
-      <enumeration   value           = 'Pre-therapy supportive care'/>
-      <enumeration   value           = 'Post-therapy supportive care'/>
-      <enumeration   value           = 'On-therapy supportive care'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'StudyFocus'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Primary therapy'/>
+      <xsd:enumeration   value           = 'Adjuvant therapy'/>
+      <xsd:enumeration   value           = 'Neoadjuvant therapy'/>
+      <xsd:enumeration   value           = 'General population prevention'/>
+      <xsd:enumeration   value           = 'High-risk population prevention'/>
+      <xsd:enumeration   value           = 'Prevention of recurrence'/>
+      <xsd:enumeration   value           = 'Genetic mapping'/>
+      <xsd:enumeration   value           = 'Family history'/>
+      <xsd:enumeration   value           = 'Cytogenetic analysis'/>
+      <xsd:enumeration   value           = 'Genetic effects of cancer therapy'/>
+      <xsd:enumeration   value           = 'Pre-therapy diagnostic'/>
+      <xsd:enumeration   value           = 'Post-therapy diagnostic'/>
+      <xsd:enumeration   value           = 'On-therapy diagnostic'/>
+      <xsd:enumeration   value           = 'Pre-therapy supportive care'/>
+      <xsd:enumeration   value           = 'Post-therapy supportive care'/>
+      <xsd:enumeration   value           = 'On-therapy supportive care'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'HighAge'>
-    <restriction     base            = 'integer'>
-      <maxInclusive  value           = '120'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'HighAge'>
+    <xsd:restriction     base            = 'xsd:integer'>
+      <xsd:maxInclusive  value           = '120'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'AgeText'>
-    <restriction     base            = 'string'>
-      <maxLength     value           = '50'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'AgeText'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:maxLength     value           = '50'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'ProtocolPhase'>
-    <restriction     base            = 'NotEmptyString'>
-      <enumeration   value           = 'Phase I'/>
-      <enumeration   value           = 'Phase II'/>
-      <enumeration   value           = 'Phase III'/>
-      <enumeration   value           = 'Phase IV'/>
-      <enumeration   value           = 'No phase specified'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'ProtocolPhase'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Phase I'/>
+      <xsd:enumeration   value           = 'Phase II'/>
+      <xsd:enumeration   value           = 'Phase III'/>
+      <xsd:enumeration   value           = 'Phase IV'/>
+      <xsd:enumeration   value           = 'No phase specified'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'ProtocolDesign'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Placebo-controlled'/>
-      <enumeration   value           = 'Dose escalation'/>
-      <enumeration   value           = 'Open label'/>
-      <enumeration   value           = 'Randomized'/>
-      <enumeration   value           = 'Non-randomized'/>
-      <enumeration   value           = 'Controlled'/>
-      <enumeration   value           = 'Uncontrolled'/>
-      <enumeration   value           = 'Single blind'/>
-      <enumeration   value           = 'Double blind'/>
-      <enumeration   value           = 'Case series'/>
-      <enumeration   value           = 'Cohort'/>
-      <enumeration   value           = 'Parallel group'/>
-      <enumeration   value           = 'Crossover'/>
-      <enumeration   value           = 'Pilot'/>
-      <enumeration   value           = 'Longitudinal'/>
-      <enumeration   value           = 'Historical control'/>
-      <enumeration   value           = 'Factorial assignment'/>
-      <enumeration   value           = 'Prospective'/>
-      <enumeration   value           = 'Retrospective'/>
-      <enumeration   value           = 'Cross-sectional'/>
-      <enumeration   value           = 'Convenience sample'/>
-      <enumeration   value           = 'Defined population'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'ProtocolDesign'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Placebo-controlled'/>
+      <xsd:enumeration   value           = 'Dose escalation'/>
+      <xsd:enumeration   value           = 'Open label'/>
+      <xsd:enumeration   value           = 'Randomized'/>
+      <xsd:enumeration   value           = 'Non-randomized'/>
+      <xsd:enumeration   value           = 'Controlled'/>
+      <xsd:enumeration   value           = 'Uncontrolled'/>
+      <xsd:enumeration   value           = 'Single blind'/>
+      <xsd:enumeration   value           = 'Double blind'/>
+      <xsd:enumeration   value           = 'Case series'/>
+      <xsd:enumeration   value           = 'Cohort'/>
+      <xsd:enumeration   value           = 'Parallel group'/>
+      <xsd:enumeration   value           = 'Crossover'/>
+      <xsd:enumeration   value           = 'Pilot'/>
+      <xsd:enumeration   value           = 'Longitudinal'/>
+      <xsd:enumeration   value           = 'Historical control'/>
+      <xsd:enumeration   value           = 'Factorial assignment'/>
+      <xsd:enumeration   value           = 'Prospective'/>
+      <xsd:enumeration   value           = 'Retrospective'/>
+      <xsd:enumeration   value           = 'Cross-sectional'/>
+      <xsd:enumeration   value           = 'Convenience sample'/>
+      <xsd:enumeration   value           = 'Defined population'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'AmendmentSource'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Update mailer'/>
-      <enumeration   value           = 'Chair/contact'/>
-      <enumeration   value           = 'Direction from CIPS'/>
-      <enumeration   value           = 'Official amendment'/>
-      <enumeration   value           = 'Internal/CIAT update'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'AmendmentSource'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Update mailer'/>
+      <xsd:enumeration   value           = 'Chair/contact'/>
+      <xsd:enumeration   value           = 'Direction from CIPS'/>
+      <xsd:enumeration   value           = 'Official amendment'/>
+      <xsd:enumeration   value           = 'Internal/CIAT update'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
   <!-- If you add anything here, do the same in the CTGovProtocol schema -->
-  <simpleType        name            = 'CitationSource'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'PUBMED literature sureveillance'/>
-      <enumeration   value           =
-                  'Professional society proceedings literature surveillance'/>
-      <enumeration   value           =
-                  'Sponsor web site literature surveillance'/>
-      <enumeration   value           =
-                  'Cooperative group web site literature surveillance'/>
-      <enumeration   value           =
-                  'ClinicalTrials.gov web site literature surveillance'/>
-      <enumeration   value           =
-                  'Other website literature surveillance'/>
-      <enumeration   value           = 'Cochrane collaboration'/>
-      <enumeration   value           = 'Amendment sheet'/>
-      <enumeration   value           = 'Investigator correspondence'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'CitationSource'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'PUBMED literature sureveillance'/>
+      <xsd:enumeration   value           =
+                      'Professional society proceedings literature surveillance'/>
+      <xsd:enumeration   value           =
+                      'Sponsor web site literature surveillance'/>
+      <xsd:enumeration   value           =
+                      'Cooperative group web site literature surveillance'/>
+      <xsd:enumeration   value           =
+                      'ClinicalTrials.gov web site literature surveillance'/>
+      <xsd:enumeration   value           =
+                      'Other website literature surveillance'/>
+      <xsd:enumeration   value           = 'Cochrane collaboration'/>
+      <xsd:enumeration   value           = 'Amendment sheet'/>
+      <xsd:enumeration   value           = 'Investigator correspondence'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'AmendmentStatus'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'New'/>
-      <enumeration   value           = 'Reviewed'/>
-      <enumeration   value           = 'Edited'/>
-      <enumeration   value           = 'Completed'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'AmendmentStatus'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'New'/>
+      <xsd:enumeration   value           = 'Reviewed'/>
+      <xsd:enumeration   value           = 'Edited'/>
+      <xsd:enumeration   value           = 'Completed'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'Gender'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Male'/>
-      <enumeration   value           = 'Female'/>
-      <enumeration   value           = 'Both'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'Gender'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Male'/>
+      <xsd:enumeration   value           = 'Female'/>
+      <xsd:enumeration   value           = 'Both'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'ProcessingPriority'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Cancer center priority'/>
-      <enumeration   value           = 'Industry'/>
-      <enumeration   value           = 'OCCM request'/>
-      <enumeration   value           = 'Other'/>
-      <enumeration   value           = 'Phase'/>
-      <enumeration   value           = 'PI request'/>
-      <enumeration   value           = 'Special project'/>
-      <enumeration   value           = 'High priority'/>
-      <enumeration   value           = 'Low priority'/>
-      <enumeration   value           = 'A1'/>
-      <enumeration   value           = 'A2'/>
-      <enumeration   value           = 'A3'/>
-      <enumeration   value           = 'A4'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'ProcessingPriority'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Cancer center priority'/>
+      <xsd:enumeration   value           = 'Industry'/>
+      <xsd:enumeration   value           = 'OCCM request'/>
+      <xsd:enumeration   value           = 'Other'/>
+      <xsd:enumeration   value           = 'Phase'/>
+      <xsd:enumeration   value           = 'PI request'/>
+      <xsd:enumeration   value           = 'Special project'/>
+      <xsd:enumeration   value           = 'High priority'/>
+      <xsd:enumeration   value           = 'Low priority'/>
+      <xsd:enumeration   value           = 'A1'/>
+      <xsd:enumeration   value           = 'A2'/>
+      <xsd:enumeration   value           = 'A3'/>
+      <xsd:enumeration   value           = 'A4'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'MissingInformation'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Actual or Projected start date'/>
-      <enumeration   value           = 'Applicable NIH Grants'/>
-      <enumeration   value           = 'Complete copy or summary of trial'/>
-      <enumeration   value           =
-                                'Current protocol status and date effective'/>
-      <enumeration   value           = 'Expected total enrollment'/>
-      <enumeration   value           = 'FDA IND number'/>
-      <enumeration   value           = 'Institution ID'/>
-      <enumeration   value           = 'IRB approval'/>
-      <enumeration   value           = 'Participant age range'/>
-      <enumeration   value           = 'Participating site list'/>
-      <enumeration   value           = 'Phase of trial'/>
-      <enumeration   value           = 'PRMS approval'/>
-      <enumeration   value           = 'Completion date'/>
-      <enumeration   value           = 'Responsible party'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'MissingInformation'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Actual or Projected start date'/>
+      <xsd:enumeration   value           = 'Applicable NIH Grants'/>
+      <xsd:enumeration   value           = 'Complete copy or summary of trial'/>
+      <xsd:enumeration   value           =
+                                    'Current protocol status and date effective'/>
+      <xsd:enumeration   value           = 'Expected total enrollment'/>
+      <xsd:enumeration   value           = 'FDA IND number'/>
+      <xsd:enumeration   value           = 'Institution ID'/>
+      <xsd:enumeration   value           = 'IRB approval'/>
+      <xsd:enumeration   value           = 'Participant age range'/>
+      <xsd:enumeration   value           = 'Participating site list'/>
+      <xsd:enumeration   value           = 'Phase of trial'/>
+      <xsd:enumeration   value           = 'PRMS approval'/>
+      <xsd:enumeration   value           = 'Completion date'/>
+      <xsd:enumeration   value           = 'Responsible party'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'ProcessingStatus'>
-    <restriction     base            = 'string'>
+  <xsd:simpleType        name            = 'ProcessingStatus'>
+    <xsd:restriction     base            = 'xsd:string'>
 
-      <!-- Deprecated; to be removed after old docs are flushed. -->
-      <enumeration   value           = 'Edit HP Abstract'/>
-      <enumeration   value           = 'Edit PT Abstract'/>
-      <enumeration   value           = 'Write HP Abstract'/>
-      <enumeration   value           = 'Write PT Abstract'/>
-      <enumeration   value           = 'Ready to merge'/>
+          <!-- Deprecated; to be removed after old docs are flushed. -->
+      <xsd:enumeration   value           = 'Edit HP Abstract'/>
+      <xsd:enumeration   value           = 'Edit PT Abstract'/>
+      <xsd:enumeration   value           = 'Write HP Abstract'/>
+      <xsd:enumeration   value           = 'Write PT Abstract'/>
+      <xsd:enumeration   value           = 'Ready to merge'/>
 
-      <!-- These values are from the InScopeProtocol schema. -->
-      <enumeration   value           = 'Disapproved by PDQ Editorial Board'/>
-      <enumeration   value           = 'Approved by PDQ Editorial Board'/>
-      <enumeration   value           = 'Under PDQ Editorial Board review'/>
-      <enumeration   value           = 'Processing complete'/>
-      <enumeration   value           = 'Pending'/>
-      <enumeration   value           = 'Duplicate'/>
-      <enumeration   value           = 'Withdrawn'/>
-      <enumeration   value           = 'Hold'/>
-      <enumeration   value           = 'Abstract in review'/>
-      <enumeration   value           = 'Merged'/>
-      <enumeration   value           = 'Needs administrative information'/>
-      <enumeration   value           = 'Research study'/>
-      <enumeration   value           = 'Legacy - Do not publish'/>
-      <enumeration   value           = 'Needs OCCM review'/>
-      <enumeration   value           = 'Needs PI/PC comment'/>
-      <enumeration   value           = 'Needs scientist comment'/>
-      <enumeration   value           = 'Needs scientific information'/>
+          <!-- These values are from the InScopeProtocol schema. -->
+      <xsd:enumeration   value           = 'Disapproved by PDQ Editorial Board'/>
+      <xsd:enumeration   value           = 'Approved by PDQ Editorial Board'/>
+      <xsd:enumeration   value           = 'Under PDQ Editorial Board review'/>
+      <xsd:enumeration   value           = 'Processing complete'/>
+      <xsd:enumeration   value           = 'Pending'/>
+      <xsd:enumeration   value           = 'Duplicate'/>
+      <xsd:enumeration   value           = 'Withdrawn'/>
+      <xsd:enumeration   value           = 'Hold'/>
+      <xsd:enumeration   value           = 'Abstract in review'/>
+      <xsd:enumeration   value           = 'Merged'/>
+      <xsd:enumeration   value           = 'Needs administrative information'/>
+      <xsd:enumeration   value           = 'Research study'/>
+      <xsd:enumeration   value           = 'Legacy - Do not publish'/>
+      <xsd:enumeration   value           = 'Needs OCCM review'/>
+      <xsd:enumeration   value           = 'Needs PI/PC comment'/>
+      <xsd:enumeration   value           = 'Needs scientist comment'/>
+      <xsd:enumeration   value           = 'Needs scientific information'/>
 
-      <!-- Use these instead for new documents. -->
-      <enumeration   value           = 'Final QC/Publishing'/>
-      <enumeration   value           = 'First edit'/>
-      <enumeration   value           = 'Patient Abstract'/>
-      <enumeration   value           = 'Patient QC'/>
-      <enumeration   value           = 'Requires second edit'/>
-      <enumeration   value           = 'Second edit'/>
-      <enumeration   value           = 'Write HP draft'/>
-      <enumeration   value           = 'Requires PT Abstract'/>
-      <enumeration   value           = 'Requires patient QC'/>
-      <enumeration   value           = 'Requires first edit'/>
-    </restriction>
-  </simpleType>
+          <!-- Use these instead for new documents. -->
+      <xsd:enumeration   value           = 'Final QC/Publishing'/>
+      <xsd:enumeration   value           = 'First edit'/>
+      <xsd:enumeration   value           = 'Patient Abstract'/>
+      <xsd:enumeration   value           = 'Patient QC'/>
+      <xsd:enumeration   value           = 'Requires second edit'/>
+      <xsd:enumeration   value           = 'Second edit'/>
+      <xsd:enumeration   value           = 'Write HP draft'/>
+      <xsd:enumeration   value           = 'Requires PT Abstract'/>
+      <xsd:enumeration   value           = 'Requires patient QC'/>
+      <xsd:enumeration   value           = 'Requires first edit'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'CdrUser'>
-    <restriction     base            = 'string'>
-      <pattern       value           = '\S+'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'CdrUser'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:pattern       value           = '\S+'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'ArmOrGroupType'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Active comparator'/>
-      <enumeration   value           = 'Experimental'/>
-      <enumeration   value           = 'No intervention'/>
-      <enumeration   value           = 'Other'/>
-      <enumeration   value           = 'Placebo comparator'/>
-      <enumeration   value           = 'Sham comparator'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'ArmOrGroupType'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Active comparator'/>
+      <xsd:enumeration   value           = 'Experimental'/>
+      <xsd:enumeration   value           = 'No intervention'/>
+      <xsd:enumeration   value           = 'Other'/>
+      <xsd:enumeration   value           = 'Placebo comparator'/>
+      <xsd:enumeration   value           = 'Sham comparator'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'CTGovDescription'>
-    <restriction     base            = 'string'>
-      <maxLength     value           = '1000'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'CTGovDescription'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:maxLength     value           = '1000'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'ArmOrGroupLabel'>
-    <restriction     base            = 'string'>
-      <minLength     value           = '1'/>
-      <maxLength     value           = '62'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'ArmOrGroupLabel'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:minLength     value           = '1'/>
+      <xsd:maxLength     value           = '62'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-</schema>
+</xsd:schema>

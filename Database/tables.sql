@@ -733,6 +733,18 @@ GO
 CREATE INDEX debug_log_recorded_idx ON debug_log(recorded)
 GO
 
+/**
+ * Replacement for debug_log (when CDR Service was eliminated
+ */
+CREATE TABLE session_log
+   (entry_id INTEGER IDENTITY PRIMARY KEY,
+   thread_id INTEGER NOT NULL,
+    recorded DATETIME NOT NULL,
+     message NTEXT NOT NULL)
+CREATE INDEX session_log_recorded ON session_log(recorded, entry_id)
+GRANT SELECT ON session_log TO CdrGuest
+GO
+
 /*
  * Version control.  This is now implemented with a base table whose xml
  * column can be set to NULL, in which case the document for the version cat
@@ -1786,6 +1798,18 @@ CREATE TABLE command_log
      command TEXT NOT NULL,
   CONSTRAINT command_log_pk PRIMARY KEY(thread, received))
 CREATE INDEX command_log_time ON command_log(received)
+GO
+
+/**
+ * Replacement for command_log table (when CDR service was eliminated)
+ */
+CREATE TABLE api_request
+ (request_id INTEGER IDENTITY PRIMARY KEY,
+  process_id INTEGER,
+   thread_id INTEGER,
+    received DATETIME,
+     request NTEXT)
+CREATE INDEX api_request_received ON api_request(received)
 GO
 
 /*
