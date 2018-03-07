@@ -47,13 +47,19 @@ cdr:ref attributes with title of linked document.
   <xsl:template                  match = "*[@cdr:ref != '']">
     <xsl:variable                 name = "link"
                                 select = "@cdr:ref"/>
+    <xsl:variable                 name = "docId">
+      <xsl:if                     test = "contains($link, '#')">
+        <xsl:value-of           select = "substring-before(
+                                           concat($link, '#'), '#')"/>
+      </xsl:if>
+    </xsl:variable>
     <xsl:variable                 name = "fragId">
       <xsl:if                     test = "contains($link, '#')">
         <xsl:value-of           select = "substring-after($link, '#')"/>
       </xsl:if>
     </xsl:variable>
     <xsl:variable                 name = "uri"
-                                select = "concat('cdrx:', $link, '/DocTitle')"/>
+                                select = "concat('cdrx:',$docId,'/DocTitle')"/>
     <xsl:variable                 name = "tmp">
       <xsl:value-of             select = "document($uri)/CdrDocTitle"/>
     </xsl:variable>
