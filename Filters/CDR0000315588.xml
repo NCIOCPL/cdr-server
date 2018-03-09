@@ -285,6 +285,33 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
 
  <!--
  ====================================================================
+ Template to drop the Unusual Cancers Special Consideration section
+ if this section is part of an imported modul summary
+ ==================================================================== -->
+ <xsl:template                   match = "SummarySection
+                                            [SectMetaData/SectionType =
+                                    'Unusual Cancers Special Considerations']"
+                                  mode = "copy">
+  <xsl:if                         test = "not(starts-with(@id, '_sm'))">
+   <!-- We need to copy the Special Considerations Section back to the
+        output tree without including the namespace declaration if the
+        section did not come from a module (identified by the id
+        attribute. -->
+   <xsl:element                   name = "{name()}">
+    <xsl:for-each               select = "@*">
+     <xsl:attribute              name  = "{name()}">
+      <xsl:value-of             select = "."/>
+     </xsl:attribute>
+    </xsl:for-each>
+
+    <xsl:apply-templates          mode = "copy"/>
+   </xsl:element>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!--
+ ====================================================================
  Template to modify SummarySection id attributes containing text from
  misc. documents.
  This code will need to be changed if the id attribute values for the
