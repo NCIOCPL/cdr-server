@@ -201,7 +201,13 @@ number(document(cdr:escape-uri(concat("cdrutil:/sql-query/
                '/Media/MediaContent/Captions/MediaCaption/@audience'
            AND q2.path=
                '/Media/MediaContent/Captions/MediaCaption/@language'
-           AND q1.doc_id = ?
+           AND q1.doc_id = (
+              SELECT CASE
+                 WHEN ISNUMERIC('",string(number(substring(@cdr-ref,4))),"') = 1
+                 THEN ?
+                 ELSE 0
+              END
+           )
            AND ? = (
               SELECT CASE
                  WHEN q1.value = 'Patients'
