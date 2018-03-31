@@ -2590,6 +2590,20 @@ SELECT c.contact_id,
 GO
 
 /*
+ * When we notify a PDQ data partner that new PDQ data is available, we
+ * record that notification here. With this information, if the notification
+ * job fails part-way through, we can answer the questions "which contacts
+ * have we already notified for this job?".
+ *
+ *   email_addr  where we sent the notification
+ *   notif_date  when we sent it
+ */
+CREATE TABLE data_partner_notification
+ (email_addr VARCHAR(64) NOT NULL,
+  notif_date DATETIME NOT NULL)
+GO
+
+/*
  * Valid values table for types of changes to summary documents.
  * Used by the translation queue management software. Valid value
  * lookup tables constructed with this structure (same column names
