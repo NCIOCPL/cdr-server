@@ -1,6 +1,7 @@
 from cdrapi import db
 
 conn = db.connect()
+cursor = conn.cursor()
 try:
     cursor.execute("DROP PROCEDURE cdr_set_next_job_ID")
     conn.commit()
