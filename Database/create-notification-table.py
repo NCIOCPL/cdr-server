@@ -31,6 +31,7 @@ cursor.execute("""\
 CREATE TABLE data_partner_notification
  (email_addr VARCHAR(64) NOT NULL,
   notif_date DATETIME NOT NULL)""")
+cursor.execute("GRANT SELECT ON data_partner_notification TO CdrGuest")
 print("New table data_partner_notification created ...")
 
 # Populate the new table with the data collected above
