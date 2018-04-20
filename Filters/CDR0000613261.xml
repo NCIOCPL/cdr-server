@@ -35,8 +35,9 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
  ==================================================================== -->
  <xsl:template                   match = "/">
   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
-  <HTML>
-   <HEAD>
+  <xsl:text disable-output-escaping='yes'>&lt;!DOCTYPE html&gt;</xsl:text>
+  <html>
+   <head>
     <xsl:variable                 name = "cdrdocs"
                                 select = "document('cdrx:/*/CdrCtl')"/>
     <TITLE>
@@ -49,14 +50,17 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
                                            concat($cdrdocs/CdrDocCtl/
                                                  DocTitle, ';'), ';'), ': ')"/>
     </TITLE>
-    <STYLE type='text/css'>
+    <style type='text/css'>
      <xsl:call-template           name = "defaultStyle"/>
      <xsl:call-template           name = "rsInsertionDeletionStyle"/>
+
+     body        { font-family: Arial, Helvetica, sans-serif; }
      .attribute  { font-weight: normal;
                    font-style: italic;
                    background-color: #FFFFFF; }
      .big        { font-size: 14pt;
                    font-weight: bold; }
+     .center     { text-align: center; }
      .name       { color: blue;
                    font-weight: bold;
                    background-color: #EEEEEE; }
@@ -65,11 +69,10 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
      .rpt        { color: teal;
                    text-align: right;
                    padding-right: 10px; }
-    </STYLE>
-   </HEAD>
-   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
+    </style>
+   </head>
    <xsl:apply-templates         select = "GlossaryTermConcept"/>
-  </HTML>
+  </html>
  </xsl:template>
 
  <!--
@@ -82,13 +85,13 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
   =============================================================
   Display Report heading and subheading
   ============================================================= -->
-  <span class="big">
-   <center>
+  <div class="center">
+   <span class="big">
     <xsl:text>Glossary Term Concept</xsl:text>
     <br/>
     <xsl:text>QC Report</xsl:text>
-   </center>
-  </span>
+   </span>
+  </div>
   <b>
    <center>
     <xsl:value-of               select = 'document(concat("cdrutil:/date/",
@@ -139,7 +142,25 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
    <p />
    <hr/>
    <br />
+  </xsl:if>
 
+  <xsl:if                         test = "EmbeddedVideo">
+   <table       xsl:use-attribute-sets = "table">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Video Link</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "EmbeddedVideo/
+                                          VideoID"
+                                  mode = "gtc"/>
+     </td>
+    </tr>
+   </table>
+
+   <p />
+   <hr/>
+   <br />
   </xsl:if>
 
   <xsl:apply-templates          select = "TranslatedTermDefinition"/>
@@ -218,7 +239,7 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
   <table        xsl:use-attribute-sets = "table">
    <tr class="name">
     <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Name [en]</b>
+     <b>Definition [en]</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:apply-templates       select = "DefinitionText"/>
@@ -262,6 +283,18 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
      </td>
     </tr>
    </xsl:if>
+   <xsl:if                        test = "EmbeddedVideo">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Video Link</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "EmbeddedVideo/
+                                          VideoID"
+                                  mode = "gtc"/>
+     </td>
+    </tr>
+   </xsl:if>
    <xsl:if                        test = "Dictionary">
     <tr>
      <td        xsl:use-attribute-sets = "cell1of2">
@@ -272,30 +305,6 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
      </td>
     </tr>
    </xsl:if>
-   <!-- xsl:if                        test = "TermPronunciation">
-    <tr>
-     <td        xsl:use-attribute-sets = "cell1of2">
-      <b>Pronunciation</b>
-     </td>
-     <td        xsl:use-attribute-sets = "cell2of2">
-      <xsl:apply-templates      select = "TermPronunciation"/>
-     </td>
-    </tr>
-   </xsl:if>
-   <xsl:if                        test = "PronunciationResource">
-    <tr>
-     <td        xsl:use-attribute-sets = "cell1of2">
-      <b>Pronunciation Resource</b>
-     </td>
-     <td        xsl:use-attribute-sets = "cell2of2">
-      <xsl:for-each             select = "PronunciationResource">
-       <li>
-        <xsl:value-of            select = "."/>
-       </li>
-      </xsl:for-each>
-     </td>
-    </tr>
-   </xsl:if -->
   </table>
 
   <table        xsl:use-attribute-sets = "table">
@@ -393,7 +402,7 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
    <tr class="name">
     <td         xsl:use-attribute-sets = "cell1of2">
      <b>
-      <xsl:text>Name [</xsl:text>
+      <xsl:text>Definition [</xsl:text>
       <xsl:value-of             select = "@language"/>
       <xsl:text>]</xsl:text>
      </b>
@@ -435,6 +444,18 @@ OCECDR-3528: Ability to put links to other Dictionary terms in More
      <td        xsl:use-attribute-sets = "cell2of2">
       <xsl:apply-templates      select = "MediaLink/
                                           MediaID"
+                                  mode = "gtc"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "EmbeddedVideo">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Video Link</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "EmbeddedVideo/
+                                          VideoID"
                                   mode = "gtc"/>
      </td>
     </tr>

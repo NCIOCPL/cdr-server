@@ -32,6 +32,8 @@ Volker Englisch         2008-11-13
        FROM document
       WHERE id = ?
  </xsl:variable>
+ <xsl:variable                    name = "dateTime"
+                                select = "document('cdrutil:/date')"/>
 
  <!--
  Note: Don't perform a normalize-space here since it would convert
@@ -56,8 +58,9 @@ Volker Englisch         2008-11-13
  ==================================================================== -->
  <xsl:template                   match = "/">
   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
-  <HTML>
-   <HEAD>
+  <xsl:text disable-output-escaping='yes'>&lt;!DOCTYPE html&gt;</xsl:text>
+  <html>
+   <head>
     <xsl:variable                 name = "cdrdocs"
                                 select = "document('cdrx:/*/CdrCtl')"/>
     <TITLE>
@@ -74,25 +77,32 @@ Volker Englisch         2008-11-13
      <xsl:call-template           name = "defaultStyle"/>
      <xsl:call-template           name = "rsInsertionDeletionStyle"/>
 
-     .attribute  { font-weight: normal;
-                   font-style: italic;
-                   background-color: #FFFFFF; }
-     .big        { font-size: 14pt;
-                   font-weight: bold; }
-     .name       { color: blue;
-                   font-weight: bold;
-                   background-color: #EEEEEE; }
-     .blocked    { color: red; }
-     table       { empty-cells: show; }
-     td.cellDef     { border: 1px solid grey; padding: 2px; }
-     .term-name  { background-color: yellow; }
+     body          { font-family: Arial, Helvetica, sans-serif; }
+     .attribute    { font-weight: normal;
+                     font-style: italic;
+                     background-color: #FFFFFF; }
+     .big          { font-size: 14pt;
+                     font-weight: bold; }
+     .center       { text-align: center; }
+     .date-header  { text-align: center;
+                     font-weight: bold;
+                     margin-bottom: 14px; }
+     .name         { color: blue;
+                     font-weight: bold;
+                     background-color: #EEEEEE; }
+     .blocked      { color: red; }
+     table         { empty-cells: show; }
+     td.cellDef    { border: 1px solid grey; padding: 2px; }
+     .term-name    { background-color: yellow; }
+     .blank-row td { padding: 12px; 
+                     border: 0; }
     </STYLE>
-   </HEAD>
-   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
+    <BASEFONT                     FACE = 'Arial, Helvetica, sans-serif' />
+   </head>
 
    <xsl:apply-templates         select = "GlossaryTermName"/>
 
-  </HTML>
+  </html>
  </xsl:template>
 
 
@@ -106,21 +116,19 @@ Volker Englisch         2008-11-13
   =============================================================
   Display Report heading and subheading
   ============================================================= -->
-  <span class="big">
-   <center>
+  <div class="center">
+   <span class="big">
     <xsl:text>Glossary Term Name with Concept</xsl:text>
     <br/>
     <xsl:text>QC Report</xsl:text>
-   </center>
-  </span>
-  <b>
-   <center>
-    <xsl:value-of               select = 'document(concat("cdrutil:/date/",
-                                                          "%25B %25#d, %25Y ",
-                                                          "%25#I:%25M%25p"))'/>
-   </center>
-  </b>
-  <p/>
+   </span>
+  </div>
+  <div class="date-header">
+   <xsl:call-template             name = "dateTimeHeader">
+    <xsl:with-param               name = "dateTime"
+                                select = "$dateTime"/>
+   </xsl:call-template>
+  </div>
 
   <!--
   ====================================================================
@@ -216,6 +224,20 @@ Volker Englisch         2008-11-13
      <td        xsl:use-attribute-sets = "cell2of2">
       <xsl:apply-templates      select = "GlossaryTermConcept/
                                          MediaLink/
+                                         MediaID"
+                                  mode = "gtc"/>
+     </td>
+    </tr>
+   </xsl:if>
+   <xsl:if                        test = "GlossaryTermConcept/
+                                          EmbeddedVideo">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Video Link</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "GlossaryTermConcept/
+                                         EmbeddedVideo/
                                          MediaID"
                                   mode = "gtc"/>
      </td>
@@ -361,27 +383,59 @@ Volker Englisch         2008-11-13
      </xsl:choose>
     </td>
    </tr>
-   <tr class="defTab">
-    <td><br/></td><td><br/></td>
+   <tr class="blank-row">
+    <td colspan="2"></td>
    </tr>
 
-  <xsl:if                         test = "TermDefinition/
+  <xsl:if                         test = "TermDefinition
+                                            [Audience = $termAudience]/
                                           MediaLink">
    <tr>
-    <td        xsl:use-attribute-sets = "cell1of2">
+    <td         xsl:use-attribute-sets = "cell1of2">
      <b>Media Link</b>
     </td>
-    <td        xsl:use-attribute-sets = "cell2of2">
+    <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:choose>
       <xsl:when                   test = "$lang = 'en'">
-     <xsl:apply-templates      select = "TermDefinition/
+       <xsl:apply-templates     select = "TermDefinition
+                                                 [Audience = $termAudience]/
                                           MediaLink/
                                           MediaID"
                                   mode = "gtc"/>
       </xsl:when>
       <xsl:otherwise>
-     <xsl:apply-templates       select = "TranslatedTermDefinition/
+       <xsl:apply-templates     select = "TranslatedTermDefinition
+                                                 [Audience = $termAudience]/
                                           MediaLink/
+                                          MediaID"
+                                  mode = "gtc"/>
+      </xsl:otherwise>
+     </xsl:choose>
+
+    </td>
+   </tr>
+  </xsl:if>
+
+  <xsl:if                         test = "TermDefinition
+                                            [Audience = $termAudience]/
+                                          EmbeddedVideo">
+   <tr>
+    <td         xsl:use-attribute-sets = "cell1of2">
+     <b>Video Link</b>
+    </td>
+    <td         xsl:use-attribute-sets = "cell2of2">
+     <xsl:choose>
+      <xsl:when                   test = "$lang = 'en'">
+       <xsl:apply-templates     select = "TermDefinition
+                                                 [Audience = $termAudience]/
+                                          EmbeddedVideo/
+                                          MediaID"
+                                  mode = "gtc"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:apply-templates     select = "TranslatedTermDefinition
+                                                 [Audience = $termAudience]/
+                                          EmbeddedVideo/
                                           MediaID"
                                   mode = "gtc"/>
       </xsl:otherwise>
@@ -410,55 +464,9 @@ Volker Englisch         2008-11-13
 
  <!--
  ======================================================================
- Template to pick the right PlaceHolder text to insert in the
- DefinitionText
-
- ====================================================================== -->
-<!--
- <xsl:template                   match = "PlaceHolder">
-  <xsl:variable                   name = "replace"
-                                select = "@name"/>
-
-  <xsl:choose>
-  <xsl:when                       test = "@name = 'TERMNAME'">
-   <xsl:value-of                select = "../../../../
-                                          TermName/
-                                          TermNameString"/>
-  </xsl:when>
-  <xsl:when                       test = "@name = 'CAPPEDTERMNAME'">
-   <xsl:call-template             name = "convertCase">
-    <xsl:with-param               name = "convString"
-                                select = "substring(
-                                           normalize-space(../../../../
-                                          TermName/
-                                          TermNameString), 1, 1)"/>
-    <xsl:with-param               name = "convertTo"
-                                select = "'proper'"/>
-   </xsl:call-template>
-   <xsl:value-of                select = "substring(
-                                           normalize-space(../../../../
-                                          TermName/
-                                          TermNameString), 2)"/>
-  </xsl:when>
-  <xsl:when                       test = "../../
-                                          ReplacementText[@name = $replace]">
-   <xsl:value-of                select = "../../
-                                          ReplacementText[@name = $replace]"/>
-  </xsl:when>
-  <xsl:otherwise>
-   <xsl:value-of                select = "../../../../
-                                          ReplacementText[@name = $replace]"/>
-  </xsl:otherwise>
- </xsl:choose>
- </xsl:template>
--->
-
-
- <!--
- ======================================================================
  We want to mark the term with some CSS within the DefinitionText
  ====================================================================== -->
- <xsl:template                  match = "AddCss">
+ <xsl:template                   match = "AddCss">
   <span class="term-name">
    <xsl:apply-templates/>
   </span>
@@ -497,5 +505,26 @@ Volker Englisch         2008-11-13
    <xsl:apply-templates/>
   </span>
 
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ We need to display the Glossary Term Name/Concept report with
+ insertion/deletion markup.
+ =================================================================== -->
+ <xsl:template                    name = "dateTimeHeader">
+  <xsl:param                      name = "dateTime"/>
+  <xsl:variable                   name = "date"
+                                select = "substring-before($dateTime, 'T')"/>
+  <xsl:variable                   name = "time"
+                                select = "substring-before(
+                                            substring-after($dateTime, 'T'), 
+                                                                       '.')"/>
+
+  <xsl:value-of                 select = "$date"/>
+  <xsl:text> </xsl:text>
+  <xsl:value-of                 select = "$time"/>
+  <xsl:text> h</xsl:text>
  </xsl:template>
 </xsl:transform>
