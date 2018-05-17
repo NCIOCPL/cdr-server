@@ -25,6 +25,8 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
  <xsl:param                       name = "thisDocID"
                                 select = "document('cdrutil:/docid')"/>
+ <xsl:param                       name = "DisplayModuleMarkup"
+                                select = "'N'"/>
 
  <xsl:variable                    name = "mediaAudience">
   <xsl:choose>
@@ -2088,6 +2090,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                               /SectionType =
                                               concat('Unusual Cancers Special',
                                                        ' Considerations'))">
+
       <xsl:call-template          name = "TocSummarySection">
        <xsl:with-param            name = "secID"
                                 select = "@cdr:id"/>
@@ -2115,38 +2118,60 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "child::Title"/>
 
   <xsl:choose>
-  <xsl:when                       test = "$ShowLearnMoreSection = 'N'
+   <xsl:when                       test = "$ShowLearnMoreSection = 'N'
                                           and
                                           starts-with($title,
                                                           'To Learn More')">
-   <!-- Do nothing - suppress this section -->
-  </xsl:when>
-  <!--
-   Only display this section if it's not part of a module, i.e. displayed
-   within a parent document -->
-  <xsl:when                       test = "@thissection = 'module'
+    <!-- Do nothing - suppress this section -->
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:choose>
+     <xsl:when                    test = "count($title) = 0">
+      <!-- Need to be able to markup a module section if requested 
+           Wrapping a div around SummarySection identified as module -->
+      <xsl:element                name = "div">
+       <xsl:if                    test = "@thissection = 'module'
+                                             and
+                                             $DisplayModuleMarkup = 'Y'">
+        <xsl:attribute            name = "class">
+         <xsl:text>is-module</xsl:text>
+        </xsl:attribute>
+       </xsl:if>
+       <span class="kpSection">
+        <xsl:call-template        name = "addIdLinkTarget">
+         <xsl:with-param          name = "id"
+                                select = "@cdr:id"/>
+        </xsl:call-template>
+        <xsl:apply-templates/>
+       </span>
+      </xsl:element>
+     </xsl:when>
+     <!--
+      Only display this section if it's not part of a module, i.e. displayed
+      within a parent document -->
+     <xsl:when                    test = "@thissection = 'module'
                                           and
                                           SectMetaData/SectionType =
                                             concat('Unusual Cancers Special',
                                                    ' Considerations')">
-   <!-- Do nothing - suppress this section -->
-  </xsl:when>
-  <xsl:otherwise>
-  <xsl:choose>
-   <xsl:when                      test = "count($title) = 0">
-    <span class="kpSection">
-     <xsl:call-template           name = "addIdLinkTarget">
-      <xsl:with-param             name = "id"
-                                select = "@cdr:id"/>
-     </xsl:call-template>
-     <xsl:apply-templates/>
-    </span>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:apply-templates/>
+      <!-- Do nothing - suppress this section -->
+     </xsl:when>
+     <xsl:otherwise>
+      <!-- Need to be able to markup a module section if requested -->
+      <xsl:element                name = "div">
+       <xsl:if                    test = "@thissection = 'module'
+                                             and
+                                             $DisplayModuleMarkup = 'Y'">
+        <xsl:attribute            name = "class">
+         <xsl:text>is-module</xsl:text>
+        </xsl:attribute>
+       </xsl:if>
+
+       <xsl:apply-templates/>
+      </xsl:element>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:otherwise>
-  </xsl:choose>
-  </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
 
