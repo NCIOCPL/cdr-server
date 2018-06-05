@@ -38,12 +38,27 @@
     </xsd:restriction>
   </xsd:simpleType>
 
-  <xsd:simpleType        name            = 'ContactType'>
+  <xsd:simpleType        name            = 'ContactRole'>
     <xsd:restriction     base            = 'NotEmptyString'>
       <xsd:enumeration   value           = 'Business'/>
       <xsd:enumeration   value           = 'BusinessBackup'/>
       <xsd:enumeration   value           = 'Technical'/>
       <xsd:enumeration   value           = 'TechnicalBackup'/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!--
+      P = Primary
+      S = Secondary
+      I = Internal
+      D = Deactivated (don't send notifications)
+  -->
+  <xsd:simpleType        name            = 'ContactType'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'P'/>
+      <xsd:enumeration   value           = 'S'/>
+      <xsd:enumeration   value           = 'I'/>
+      <xsd:enumeration   value           = 'D'/>
     </xsd:restriction>
   </xsd:simpleType>
 
@@ -99,9 +114,6 @@
                          type            = 'LicenseeInformation'/>
       <xsd:element       name            = 'ContactPersons'
                          type            = 'ContactPersons'/>
-      <xsd:element       name            = 'ApplicationInformation'
-                         type            = 'ApplicationInformation'
-                         minOccurs       = '0'/>
       <xsd:element       name            = 'FtpInformation'
                          type            = 'FtpInformation'/>
       <xsd:element       name            = 'DateLastModified'
@@ -202,12 +214,14 @@
     <xsd:sequence>
       <xsd:element       name            = "ContactName"
                          type            = "NotEmptyString"/>
-      <xsd:element       name            = "ContactType"
-                         type            = "ContactType"
+      <xsd:element       name            = "ContactRole"
+                         type            = "ContactRole"
                          maxOccurs       = "2"/>
       <xsd:element       name            = "ContactDetail"
                          type            = "ContactDetail"/>
     </xsd:sequence>
+    <xsd:attribute       name            = 'Type'
+                         type            = 'ContactType'/>
   </xsd:complexType>
 
   <xsd:complexType       name            = 'OrganizationName'>
@@ -219,42 +233,10 @@
                          type            = 'NotEmptyString'/>
   </xsd:complexType>
 
-  <xsd:complexType       name            = 'ApplicationInformation'>
-    <xsd:sequence>
-      <xsd:element       name            = 'DistributionMethods'
-                         type            = 'DistributionMethods'/>
-      <xsd:element       name            = 'Audiences'
-                         type            = 'Audiences'/>
-      <xsd:element       name            = 'SupplementaryInfoLink'
-                         type            = 'SupplementaryInfoLink'
-                         minOccurs       = '0'
-                         maxOccurs       = 'unbounded'/>
-    </xsd:sequence>
-  </xsd:complexType>
-
-  <xsd:complexType       name            = 'DistributionMethods'>
-    <xsd:sequence>
-      <xsd:element       name            = 'DistributionMethod'
-                         type            = 'DistributionMethod'
-                         maxOccurs       = 'unbounded'/>
-    </xsd:sequence>
-  </xsd:complexType>
-
-  <xsd:complexType       name            = 'Audiences'>
-    <xsd:sequence>
-      <xsd:element       name            = 'Audience'
-                         type            = 'Audience'
-                         maxOccurs       = 'unbounded'/>
-    </xsd:sequence>
-  </xsd:complexType>
-
   <xsd:complexType       name            = 'FtpInformation'>
     <xsd:sequence>
       <xsd:element       name            = 'UserName'
                          type            = 'NotEmptyString'/>
-      <xsd:element       name            = 'Password'
-                         type            = 'NotEmptyString'
-                         minOccurs       = '0'/>
       <xsd:element       name            = 'AccountBlocked'
                          type            = 'YesNo'/>
     </xsd:sequence>

@@ -1,119 +1,139 @@
 <?xml version="1.0"?>
 <!-- Filter title: Revision Markup Filter for QC Report -->
-<xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                           xmlns:cdr = "cips.nci.nih.gov/cdr"
-                             version = "1.0">
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0">
 
-<!-- ==================================================================
-     Insertion Revision levels are passed in with a string of specific
-     format such as rejected|approved|proposed or rejected_approved_proposed.
-     The default for insRevLevels is '' and for the insAppLevels is
-     publish_.
-     A second input parameter (delRevLevels) has to be passed to
-     accomodate the fact that not all deletions are always displayed
-     and/or marked-up.  By default the deletions are marked up and the
-     default value is 'N' (e.g. for Redline/Strikeout reports) while
-     the parameter would be set if deletions need to be treated
-     differently then insertions (e.g. for Bold/Underline reports).
-     ================================================================== -->
-    <xsl:param                  name = "insRevLevels"
-                              select = "''"/>
-    <xsl:param                  name = "delRevLevels"
-                              select = "'N'"/>
+ <!-- 
+ ==================================================================
+ Insertion Revision levels are passed in with a string of specific
+ format such as rejected|approved|proposed or rejected_approved_proposed.
+ The default for insRevLevels is '' and for the insAppLevels is
+ publish_.
+ A second input parameter (delRevLevels) has to be passed to
+ accomodate the fact that not all deletions are always displayed
+ and/or marked-up.  By default the deletions are marked up and the
+ default value is 'N' (e.g. for Redline/Strikeout reports) while
+ the parameter would be set if deletions need to be treated
+ differently then insertions (e.g. for Bold/Underline reports).
+ ================================================================== -->
+ <xsl:param                       name = "insRevLevels"
+                                select = "''"/>
+ <xsl:param                       name = "delRevLevels"
+                                select = "'N'"/>
 
-<!-- ==================================================================
-     Calculate appLevels based on insRevLevels.
-     This will ensure that higher level markup elements will always be
-     applied but not marked-up if they aren't checked.
-     E.g., if the proposed mark-up is checked the proposed changes will
-     be displayed WITH mark-up while the published and approved changes
-     will be displayed WITHOUT mark-up.
-     ================================================================== -->
-    <xsl:variable               name = "insAppLevels">
-     <xsl:choose>
-      <xsl:when                 test = "contains($insRevLevels, 'proposed')">
-       <xsl:text>publish|approved|proposed</xsl:text>
-      </xsl:when>
-      <xsl:when                 test = "contains($insRevLevels, 'approved')">
-       <xsl:text>publish|approved</xsl:text>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:text>publish</xsl:text>
-      </xsl:otherwise>
-     </xsl:choose>
-    </xsl:variable>
+ <!-- 
+ ==================================================================
+ Calculate appLevels based on insRevLevels.
+ This will ensure that higher level markup elements will always be
+ applied but not marked-up if they aren't checked.
+ E.g., if the proposed mark-up is checked the proposed changes will
+ be displayed WITH mark-up while the published and approved changes
+ will be displayed WITHOUT mark-up.
+ ================================================================== -->
+ <xsl:variable                    name = "insAppLevels">
+  <xsl:choose>
+   <xsl:when                      test = "contains($insRevLevels, 'proposed')">
+    <xsl:text>publish|approved|proposed</xsl:text>
+   </xsl:when>
+   <xsl:when                      test = "contains($insRevLevels, 'approved')">
+    <xsl:text>publish|approved</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>publish</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:variable>
 
-<!-- ==================================================================
-      For Insertion markup, keep the content if the RevisionLevel
-      attribute is at or above appLevels, and keep the element and
-      its attributes if the RevisionLevel is among those specified
-      by incoming insRevLevels; otherwise, discard the element.
-      In other words:
-      If a revision level is checked by the user, this level is being
-      displayed with markup.
-      If a revision level is not checked by the user, it will be
-      applied and displayed without markup if it is of higher priority
-      then the lowest checked level.
-      Otherwise it will be treated as rejected.
-     ================================================================== -->
-    <xsl:template              match = "Insertion">
-     <xsl:choose>
-      <xsl:when                 test = "contains($insRevLevels,
+ <!-- 
+ ==================================================================
+ For Insertion markup, keep the content if the RevisionLevel
+ attribute is at or above appLevels, and keep the element and
+ its attributes if the RevisionLevel is among those specified
+ by incoming insRevLevels; otherwise, discard the element.
+ In other words:
+ If a revision level is checked by the user, this level is being
+ displayed with markup.
+ If a revision level is not checked by the user, it will be
+ applied and displayed without markup if it is of higher priority
+ then the lowest checked level.
+ Otherwise it will be treated as rejected.
+ ================================================================== -->
+ <xsl:template                   match = "Insertion">
+  <xsl:choose>
+   <xsl:when                      test = "contains($insRevLevels,
                                                  @RevisionLevel)">
-       <xsl:element             name = "{name()}">
-        <xsl:apply-templates  select = "@*"/>
+    <xsl:element                  name = "{name()}">
+     <xsl:apply-templates       select = "@*"/>
+     <xsl:apply-templates/>
+    </xsl:element>
+   </xsl:when>
+   <xsl:when                      test = "contains($insAppLevels,
+                                                 @RevisionLevel)">
+    <xsl:apply-templates/>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:template>
+
+ <!-- 
+ ==================================================================
+ For Deletion markup, keep the content if the RevisionLevel
+ attribute is NOT at or above appLevels, and keep the element and
+ its attributes if the RevisionLevel is among those specified
+ by incoming revLevels; otherwise, discard the element.
+ ================================================================== -->
+ <xsl:template                   match = "Deletion">
+  <xsl:choose>
+   <xsl:when                      test = "contains($insRevLevels,
+                                                 @RevisionLevel)">
+    <xsl:choose>
+     <xsl:when                    test = "$delRevLevels = 'Y'">
+      <xsl:if                     test = "@RevisionLevel = 'proposed'">
+       <xsl:element               name = "{name()}">
+        <xsl:apply-templates    select = "@*"/>
         <xsl:apply-templates/>
        </xsl:element>
-      </xsl:when>
-      <xsl:when                 test = "contains($insAppLevels,
-                                                 @RevisionLevel)">
+      </xsl:if>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:element                name = "{name()}">
+       <xsl:apply-templates     select = "@*"/>
        <xsl:apply-templates/>
-      </xsl:when>
-     </xsl:choose>
-    </xsl:template>
-
-<!-- ==================================================================
-      For Deletion markup, keep the content if the RevisionLevel
-      attribute is NOT at or above appLevels, and keep the element and
-      its attributes if the RevisionLevel is among those specified
-      by incoming revLevels; otherwise, discard the element.
-     ================================================================== -->
-    <xsl:template              match = "Deletion">
-     <xsl:choose>
-      <xsl:when                 test = "contains($insRevLevels,
-                                                 @RevisionLevel)">
-       <xsl:choose>
-       <xsl:when                test = "$delRevLevels = 'Y'">
-        <xsl:if                 test = "@RevisionLevel = 'proposed'">
-         <xsl:element             name = "{name()}">
-          <xsl:apply-templates  select = "@*"/>
-          <xsl:apply-templates/>
-         </xsl:element>
-        </xsl:if>
-       </xsl:when>
-       <xsl:otherwise>
-         <xsl:element             name = "{name()}">
-          <xsl:apply-templates  select = "@*"/>
-          <xsl:apply-templates/>
-         </xsl:element>
-       </xsl:otherwise>
-      </xsl:choose>
-      </xsl:when>
-      <xsl:when                 test = "not(contains($insAppLevels,
+      </xsl:element>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:when                      test = "not(contains($insAppLevels,
                                                      @RevisionLevel))">
-       <xsl:apply-templates/>
-      </xsl:when>
-     </xsl:choose>
-    </xsl:template>
+    <xsl:apply-templates/>
+   </xsl:when>
+  </xsl:choose>
+ </xsl:template>
+
+ <!-- 
+ ==================================================================
+ Adding a bogus placeholder CDR-ID for empty CitationLinks.  This
+ is necessary in order to populate the RevisionLevel and Source
+ attributes copied to the CitationLink in the next filter.
+ The CDR-ID will be removed downstream.
+ ================================================================== -->
+ <xsl:template                   match = "CitationLink[not(@cdr:ref)]">
+  <xsl:element                    name = "{name()}">
+   <xsl:attribute                 name = "cdr:ref">
+    <xsl:text>CDR9999999999</xsl:text>
+   </xsl:attribute>
+  </xsl:element>
+ </xsl:template>
 
 
-<!-- ==================================================================
-       Identity rule, copies everything to the output tree.
-     ================================================================== -->
-    <xsl:template              match = "@*|node()">
-     <xsl:copy>
-      <xsl:apply-templates    select = "@*|node()"/>
-     </xsl:copy>
-    </xsl:template>
+ <!-- 
+ ==================================================================
+ Identity rule, copies everything to the output tree.
+ ================================================================== -->
+ <xsl:template                   match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates         select = "@*|node()"/>
+  </xsl:copy>
+ </xsl:template>
 
 </xsl:transform>

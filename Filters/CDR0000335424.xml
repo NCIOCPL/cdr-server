@@ -620,6 +620,7 @@ SELECT s.value
                                  select = "document(concat('cdrutil:',
                                                            '/get-pv-num/',
                                                        $SummaryRefID))"/>
+
   <!--
   If a SummaryRef or SummaryFragmentRef is pointing to itself and the summary
   is new we can't expect a publishable version of the summary to exist.
@@ -631,6 +632,12 @@ SELECT s.value
                                            and
                                            $SummaryRefID = $thisSummaryId">
      <xsl:text>/last</xsl:text>
+    </xsl:when>
+    <xsl:when                      test = "$pubVersion = 0">
+     <xsl:message             terminate = "yes">
+      <xsl:text>Publishable version doesn't exist for </xsl:text>
+      <xsl:value-of              select = "$SummaryRefID"/>
+     </xsl:message>
     </xsl:when>
     <xsl:otherwise>
      <xsl:text>/lastp</xsl:text>

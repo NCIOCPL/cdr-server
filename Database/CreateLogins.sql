@@ -482,3 +482,6 @@ GRANT SELECT ON glossifier           TO CdrGuest
 GRANT SELECT ON api_request          TO CdrGuest
 GRANT SELECT ON session_log          TO CdrGuest
 GO
+GRANT SELECT ON data_partner_notification TO CdrGuest
+GRANT SELECT ON data_partner_notification TO CdrPublishing
+GO
