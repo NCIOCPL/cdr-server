@@ -22,7 +22,6 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
 
  <xsl:include href = "cdr:name:Module: Citation Denormalization"/>
  <xsl:include href = "cdr:name:Module: Multimedia Denormalization"/>
-
  <xsl:variable                     name = "sumLanguage">
   <xsl:choose>
    <xsl:when                       test = "/Summary
@@ -133,11 +132,11 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
   </xsl:variable>
 
   <xsl:variable                   name = "queryRows"
-                                select = "document(
+                                select = "document(cdr:escape-uri(
                                           concat('cdrutil:/sql-query/',
                                                    $sqlQueryESBoard,
                                                    '~',
-                                                   $sumNormId))"/>
+                                                   $sumNormId)))"/>
 
 
   <!--
@@ -262,14 +261,13 @@ SELECT doc_id AS "CDRID"
    </xsl:variable>
 
    <xsl:variable                  name = "queryRowsLoe"
-                                select = "document(
+                                select = "document(cdr:escape-uri(
                                            concat('cdrutil:/sql-query/',
                                                    $sqlQueryESLoe,
                                                    '~',
-                                                   $loeNormIDES))"/>
+                                                   $loeNormIDES)))"/>
 
    <!-- xsl:value-of select = "$loeNormIDES"/ -->
-
    <xsl:variable                  name = "loeIDES">
     <xsl:for-each               select = "$queryRowsLoe
                                              /SqlResult
@@ -394,13 +392,13 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
          the resulting node into a string
    ================================================================== -->
    <xsl:variable                  name = "queryRows"
-                                select = "document(
+                                select = "document(cdr:escape-uri(
                                            concat('cdrutil:/sql-query/',
                                                    $sqlQueryName,
                                                    '~',
                                                    $personNormId,
                                                    '~',
-                                                   $sumNormIdEN))"/>
+                                                   $sumNormIdEN)))"/>
 
    <xsl:element                   name = "LeadReviewer">
     <!-- Adding last name as attribute to allow sorting by last name -->
@@ -565,9 +563,9 @@ SELECT value
    AND doc_id = ?
   </xsl:variable>
   <xsl:variable                   name = "ctg_result"
-                                select = "document(
+                                select = "document(cdr:escape-uri(
                                           concat('cdrutil:/sql-query/',
-                                                 $ctg_query, '~', $cdr_id))"/>
+                                                 $ctg_query, '~', $cdr_id)))"/>
 
   <xsl:variable                   name = "ctg_nct_id"
                                 select = "$ctg_result/SqlResult/row
@@ -584,10 +582,10 @@ SELECT s.value
    AND s.doc_id = ?
   </xsl:variable>
   <xsl:variable                   name = "inscope_result"
-                                select = "document(
+                                select = "document(cdr:escape-uri(
                                           concat('cdrutil:/sql-query/',
                                                  $inscope_query, '~',
-                                                 $cdr_id))"/>
+                                                 $cdr_id)))"/>
 
   <xsl:variable                   name = "inscope_nct_id"
                                 select = "$inscope_result/SqlResult/row
@@ -621,29 +619,35 @@ SELECT s.value
   <xsl:variable                    name = "pubVersion"
                                  select = "document(concat('cdrutil:',
                                                            '/get-pv-num/',
-                                                       @cdr:href | @href))"/>
+                                                       $SummaryRefID))"/>
 
   <!--
   If a SummaryRef or SummaryFragmentRef is pointing to itself and the summary
   is new we can't expect a publishable version of the summary to exist.
   In this case we need to allow to denormalize with the last version.
   ====================================================================== -->
-  <xsl:variable                   name = "SummaryRefInfo">
+  <xsl:variable                    name = "verQualifier">
    <xsl:choose>
-    <xsl:when                     test = "$pubVersion = 0
+    <xsl:when                      test = "$pubVersion = 0
                                            and
                                            $SummaryRefID = $thisSummaryId">
-     <xsl:copy-of              select = "document(concat('cdr:',
-                                                           $SummaryRefID,
-                                                           '/last'))"/>
+     <xsl:text>/last</xsl:text>
+    </xsl:when>
+    <xsl:when                      test = "$pubVersion = 0">
+     <xsl:message             terminate = "yes">
+      <xsl:text>Publishable version doesn't exist for </xsl:text>
+      <xsl:value-of              select = "$SummaryRefID"/>
+     </xsl:message>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:copy-of              select = "document(concat('cdr:',
-                                                           $SummaryRefID,
-                                                           '/lastp'))"/>
+     <xsl:text>/lastp</xsl:text>
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
+  <xsl:variable                    name = "SummaryRefInfo"
+                                 select = "document(concat('cdr:',
+                                                           $SummaryRefID,
+                                                           $verQualifier))"/>
 
   <xsl:element                     name = "{name()}">
    <xsl:attribute                  name = "cdr:href">
@@ -687,7 +691,8 @@ SELECT s.value
   <xsl:variable                    name = "MiscID"
                                  select = "@cdr:ref"/>
   <xsl:variable                    name = "MiscInfo"
-                                 select = "document(concat('cdr:',$MiscID,
+                                 select = "document(concat('cdr:',
+                                            cdr:escape-uri($MiscID),
                                                            '/lastp'))"/>
   <xsl:variable                    name = "MiscIDFrag"
                                  select = "substring-after($MiscID, '#')"/>

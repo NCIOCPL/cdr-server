@@ -121,9 +121,9 @@
                                Display MetaData
  ================================================================= -->
  <xsl:template                   match = "MiscellaneousDocumentMetadata">
-  <b>
-   <font size='4'>Metadata</font>
-  </b>
+  <xsl:element                    name = "h2">
+   <xsl:text>Metadata</xsl:text>
+  </xsl:element>
   <table width = '90%' cellpadding='0' cellspacing='0'>
    <tr>
     <td width='5%'>
@@ -163,10 +163,10 @@
  Display Paragraph text
  ================================================================== -->
  <xsl:template                   match = "MiscellaneousDocumentText">
-  <b>
-   <font size = '4'>Text</font>
-  </b>
-  <br />
+  <xsl:element                    name = "h2">
+   <xsl:text>Text</xsl:text>
+  </xsl:element>
+
   <xsl:apply-templates/>
  </xsl:template>
 
@@ -184,7 +184,45 @@
 
  <!--
  ==================================================================
-                 Display DateLastModified
+ Display the name attribute for the PlaceHolder element.
+ ================================================================== -->
+ <xsl:template                   match = "PlaceHolder">
+  <xsl:text>[</xsl:text>
+  <xsl:element                    name = "span">
+   <xsl:attribute                 name = "class">
+    <xsl:text>place-holder-md</xsl:text>
+   </xsl:attribute>
+   <xsl:value-of                select = "@name"/>
+  </xsl:element>
+  <xsl:text>]</xsl:text>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Display the name attribute for the PlaceHolder element.
+ ================================================================== -->
+ <xsl:template                   match = "GlossaryTermRef">
+  <xsl:element                    name = "a">
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "concat('/cgi-bin/cdr/Filter.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;Filter=set:QC+',
+                                                 'GlossaryTermName+',
+                                                 'with+Concept+Set')"/>
+   </xsl:attribute>
+   <xsl:attribute                 name = "target">
+    <xsl:text>_blank</xsl:text>
+   </xsl:attribute>
+
+   <xsl:value-of                select = "."/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Display DateLastModified
  ================================================================== -->
  <xsl:template                   match = "DateLastModified">
   <br />
@@ -200,5 +238,18 @@
     </td>
    </tr>
   </table>
+ </xsl:template>
+
+
+ <!--
+ =======================================================================
+ Just copy most nodes.
+ ======================================================================= -->
+ <xsl:template                   match = "@*|node()|comment()|
+                                         processing-instruction()">
+  <xsl:copy>
+   <xsl:apply-templates         select = "@*"/>
+   <xsl:apply-templates/>
+  </xsl:copy>
  </xsl:template>
 </xsl:transform>

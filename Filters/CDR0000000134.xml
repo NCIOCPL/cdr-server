@@ -47,21 +47,13 @@ Filter to create the vendor Terminology XML
    <xsl:attribute                 name = "LegacyPDQID">
     <xsl:value-of               select = "PdqKey"/>
    </xsl:attribute>
-   <xsl:if                        test = "OtherName/
-                                           SourceInformation/
-                                           VocabularySource/
-                                           SourceCode = 'NCI Thesaurus'
+   <xsl:if                        test = "NCIThesaurusConcept
                                           and
-                                          OtherName/
-                                           SourceInformation/
-                                           VocabularySource/
-                                           SourceTermType = 'PT'">
+                                          not(NCIThesaurusConcept[
+                                                             @Public='No'])">
     <xsl:attribute                name = "NCIThesaurusConceptID">
      <xsl:value-of              select = "normalize-space(
-                                            OtherName/
-                                            SourceInformation/
-                                            VocabularySource/
-                                            SourceTermId)"/>
+                                                     NCIThesaurusConcept)"/>
     </xsl:attribute>
    </xsl:if>
 
@@ -82,11 +74,22 @@ Filter to create the vendor Terminology XML
    ===================================================================
    Copy Date First Published and Date Last Modified
    =================================================================== -->
-   <xsl:choose>
-    <xsl:when                     test = "CdrDocCtl/FirstPub/Date">
-     <DateFirstPublished>
+   <xsl:variable                  name = "ctlFirstPub">
+    <xsl:choose>
+     <xsl:when                    test = "contains(CdrDocCtl/FirstPub/Date,
+                                                   'T')">
       <xsl:value-of             select = "substring-before(CdrDocCtl/
                                             FirstPub/Date,'T')"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "CdrDocCtl/FirstPub/Date"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:variable>
+   <xsl:choose>
+    <xsl:when                     test = "not($ctlFirstPub='')">
+     <DateFirstPublished>
+      <xsl:value-of             select = "$ctlFirstPub"/>
      </DateFirstPublished>
     </xsl:when>
     <xsl:otherwise>
@@ -183,20 +186,20 @@ Filter to create the vendor Terminology XML
    </xsl:variable>
 
    <xsl:variable                  name = "queryRows"
-                                select = "document(
+                                select = "document(cdr:escape-uri(
                                              concat('cdrutil:/sql-query/',
                                                     $sqlQuery,
-                                                    '~', $docNormId))"/>
+                                                    '~', $docNormId)))"/>
 
    <xsl:variable                  name = "conceptId">
     <xsl:value-of               select = "normalize-space(
-                                            ../../OtherName/
-                                            SourceInformation/
-                                            VocabularySource/
-                                            SourceTermId)"/>
+                                            ../../NCIThesaurusConcept)"/>
    </xsl:variable>
 
 
+   <!--
+   Conctruct the URL for NCI "active clinical trials" link
+   ======================================================== -->
    <!--
    If the SQL query found a DrugInfo Summary with a term link to this
    document, we need to suppress the display of the clinical search
@@ -206,29 +209,26 @@ Filter to create the vendor Terminology XML
                                           and
                                           not(/Term/TermType/TermTypeName
                                                     = 'Drug Combination')">
-   <!--
-   Conctruct the URL for NCI active trials using this drug
-   ======================================================== -->
-   <xsl:text> Check for </xsl:text>
+    <!--
+    We also need to suppress the link if the ConceptId isn't published yet
+    ====================================================================== -->
+    <xsl:if                       test = "not($conceptId = '')
+                                          and
+                                          not(/Term/
+                                               NCIThesaurusConcept[@Public = 'No'])">
+     <xsl:text> Check for </xsl:text>
 
-   <xsl:element                   name = "ExternalRef">
-    <xsl:attribute                name = "xref">
-     <xsl:text>https://www.cancer.gov/about-cancer/treatment</xsl:text>
-     <xsl:text>/clinical-trials/intervention/</xsl:text>
-      <xsl:value-of             select = "$conceptId"/>
-     <!-- 
-     <xsl:text>http://www.cancer.gov/Search/</xsl:text>
-     <xsl:text>ClinicalTrialsLink.aspx?id=</xsl:text>
-     <xsl:value-of              select = "number(
-                                            substring-after
-                                              (/Term/DocId, 'CDR'))"/>
-     <xsl:text>&#x26;idtype=1</xsl:text>
-     -->
-    </xsl:attribute>
-    <xsl:text>active clinical trials</xsl:text>
-   </xsl:element>
+     <xsl:element                 name = "ExternalRef">
+      <xsl:attribute              name = "xref">
+       <xsl:text>https://www.cancer.gov/about-cancer/treatment</xsl:text>
+       <xsl:text>/clinical-trials/intervention/</xsl:text>
+       <xsl:value-of            select = "$conceptId"/>
+      </xsl:attribute>
+      <xsl:text>active clinical trials</xsl:text>
+     </xsl:element>
 
-   <xsl:text> using this agent.</xsl:text>
+     <xsl:text> using this agent.</xsl:text>
+    </xsl:if>
    </xsl:if>
 
 
@@ -236,10 +236,12 @@ Filter to create the vendor Terminology XML
    <!--
    Conctruct the URL for NCI concept ID but only if the
    ID is published already
+   Same condition as with the clinical trials link
    ======================================================== -->
-   <xsl:if                        test = "/Term/
-                                           NCIThesaurusConcept[@Public = 'Yes']
-                                           = $conceptId">
+   <xsl:if                        test = "not($conceptId = '')
+                                          and
+                                          not(/Term/
+                                               NCIThesaurusConcept[@Public = 'No'])">
     <xsl:text> (</xsl:text>
     <xsl:element                  name = "ExternalRef">
      <xsl:attribute               name = "xref">

@@ -13,7 +13,7 @@
    -->
  <xsl:template           match = "/">
   <ReportBody>
-   <xsl:apply-templates select = "//PrivatePractice[@cdr:id = $fragId]"/>
+   <xsl:apply-templates select = "//PrivatePracticeLocation[@cdr:id = $fragId]"/>
    <xsl:apply-templates select = "//OtherPracticeLocation[@cdr:id = $fragId]"/>
   </ReportBody>
  </xsl:template>
@@ -26,7 +26,7 @@
  </xsl:template>
 
  <!-- Extract the address information for the PrivatePractice element -->
- <xsl:template           match = "PrivatePractice">
+ <xsl:template           match = "PrivatePracticeLocation">
   <!--<xsl:copy>-->
    <xsl:apply-templates  select = "node()"/>
   <!--</xsl:copy>-->
@@ -34,20 +34,37 @@
 
  <!-- Extract the address information for the OtherPracticeLocation element -->
  <xsl:template           match = "OtherPracticeLocation">
-  <xsl:variable           name = "fragRef"
+  <xsl:variable           name = "cdrRef"
                         select = "OrganizationLocation/@cdr:ref"/>
+  <xsl:variable           name = "orgId">
+   <xsl:choose>
+    <xsl:when             test = "contains($cdrRef, '#')">
+     <xsl:value-of      select = "substring-before($cdrRef, '#')"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of      select = "$cdrRef"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
   <xsl:variable           name = "orgDoc"
-                        select = "document(concat('cdrx:', $fragRef))"/>
+                        select = "document(concat('cdrx:', $orgId))"/>
   <xsl:if                 test = "$orgDoc and @cdr:id">
    <xsl:variable          name = "orgName"
                         select = "$orgDoc//OfficialName/Name"/>
-   <xsl:variable          name = "fragId"
-                        select = "substring-after($fragRef, '#')"/>
+   <xsl:variable          name = "fragId">
+    <xsl:choose>
+     <xsl:when            test = "contains($cdrRef, '#')">
+      <xsl:value-of     select = "substring-after($cdrRef, '#')"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of     select = "''"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:variable>
    <xsl:variable          name = "orgLocs"
                         select = "$orgDoc/Organization/OrganizationLocations"/>
    <xsl:variable          name = "orgLoc"
                         select = "$orgLocs/OrganizationLocation/Location[@cdr:id = $fragId]"/>
-
    <xsl:choose>
     <xsl:when             test = "SpecificPostalAddress">
      <xsl:apply-templates

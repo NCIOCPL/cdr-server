@@ -76,6 +76,10 @@ CREATE PROCEDURE cdr_get_term_tree
     @doc_id INT,
     @depth  INT
 AS
+
+    -- Do this or fail!
+    SET NOCOUNT ON;
+
     -- Used for loop control.
     DECLARE @nrows   INT
     DECLARE @nlevels INT
@@ -108,9 +112,10 @@ AS
     BEGIN
             INSERT INTO #parents(child, parent)
         SELECT DISTINCT tk.child, tk.parent
-                   FROM term_kids tk, #parents p
-                  WHERE tk.child = p.parent
-                    AND p.parent NOT IN (SELECT child
+                   FROM term_kids tk
+                   JOIN #parents p
+                     ON tk.child = p.parent
+                  WHERE p.parent NOT IN (SELECT child
                                            FROM #parents)
         SELECT @nrows = @@ROWCOUNT
     END
@@ -133,9 +138,10 @@ AS
     BEGIN
             INSERT INTO #children(child, parent)
         SELECT DISTINCT tk.child, tk.parent
-                   FROM term_kids tk, #children c
-                  WHERE tk.parent = c.child
-                    AND c.child NOT IN (SELECT parent
+                   FROM term_kids tk
+                   JOIN #children c
+                     ON tk.parent = c.child
+                  WHERE c.child NOT IN (SELECT parent
                                           FROM #children)
         SELECT @nrows = @@ROWCOUNT
         SELECT @nlevels = @nlevels + 1
@@ -145,10 +151,10 @@ AS
      * Generate the first result set, containing all the child-parent
      * relationships we have found.
      */
-    SELECT DISTINCT * 
+    SELECT DISTINCT *
                FROM #parents
               UNION
-             SELECT * 
+             SELECT *
                FROM #children
 
     /*
@@ -177,6 +183,9 @@ GO
 CREATE PROCEDURE get_participating_orgs
     @lead_org INTEGER
 AS
+
+    -- Do this or fail!
+    SET NOCOUNT ON;
 
     SELECT DISTINCT doc_id AS id, path
                INTO #po
@@ -218,7 +227,7 @@ AS
                 AND LEFT(lo.node_loc, 8) = LEFT(po.node_loc, 8)
                JOIN query_term role
                  ON role.doc_id = po.doc_id
-                AND LEFT(role.node_loc, 12) = 
+                AND LEFT(role.node_loc, 12) =
                     LEFT(lo.node_loc, 12)
                JOIN query_term frag
                  ON frag.doc_id = po.doc_id
@@ -237,7 +246,7 @@ AS
                                  '/OtherPracticeLocation' +
                                  '/ComplexAffiliation' +
                                  '/RoleAtAffiliatedOrganization'
-                AND frag.path  = '/Person/PersonLocations' + 
+                AND frag.path  = '/Person/PersonLocations' +
                                  '/OtherPracticeLocation/@cdr:id'
                 AND role.value = 'Principal Investigator'
                 AND lo.int_val = @lead_org
@@ -292,6 +301,9 @@ GO
 CREATE PROCEDURE cdr_get_tree_context
     @doc_id INT
 AS
+    -- Do this or fail!
+    SET NOCOUNT ON;
+
     DECLARE @nrows INT
     CREATE TABLE #parents(child INT, parent INT)
     CREATE INDEX idx_pc ON #parents(child)
@@ -308,9 +320,10 @@ AS
     BEGIN
             INSERT INTO #parents(child, parent)
         SELECT DISTINCT tp.child, tp.parent
-                   FROM term_parents tp, #parents p
-                  WHERE tp.child = p.parent
-                    AND p.parent NOT IN (SELECT child
+                   FROM term_parents tp
+                   JOIN #parents p
+                     ON tp.child = p.parent
+                  WHERE p.parent NOT IN (SELECT child
                                            FROM #parents)
         SELECT @nrows = @@ROWCOUNT
     END
@@ -323,9 +336,10 @@ AS
     BEGIN
             INSERT INTO #children(child, parent)
         SELECT DISTINCT tp.child, tp.parent
-                   FROM term_parents tp, #children c
-                  WHERE tp.parent = c.child
-                    AND c.child NOT IN (SELECT parent
+                   FROM term_parents tp
+                   JOIN #children c
+                     ON tp.parent = c.child
+                  WHERE c.child NOT IN (SELECT parent
                                           FROM #children)
         SELECT @nrows = @@ROWCOUNT
     END
@@ -335,80 +349,6 @@ AS
     DROP TABLE #parents
     DROP TABLE #children
 
-GO
-
-CREATE TRIGGER dev_task_trigger ON dev_task
-FOR UPDATE, INSERT
-AS
-    IF UPDATE(status)
-    BEGIN
-        UPDATE dev_task
-          SET dev_task.status_date = GETDATE()
-         FROM inserted, dev_task
-        WHERE dev_task.id = inserted.id
-    END
-
-GO
-
-/*
- * Another procedure required because of a bug in ADO, which complains
- * in the second query that the temporary table doesn't exist.  It's not
- * that ADO can't deal with temporary tables at all, but it gets very 
- * confused when placeholders and nested queries are combined.
- */
-CREATE PROCEDURE cdr_newly_pub_trials
-    @job_id INT
-AS
-    SELECT ppd1.doc_id,
-           pp1.pub_subset
-      INTO #prev_event
-      FROM pub_proc_doc ppd1
-      JOIN pub_proc pp1
-        ON pp1.id = ppd1.pub_proc
-      JOIN pub_proc_doc ppd2
-        ON ppd2.doc_id = ppd1.doc_id
-     WHERE ppd2.pub_proc = @job_id
-       AND pp1.id = (SELECT MAX(pp3.id) as foobar
-                       FROM pub_proc pp3
-                       JOIN pub_proc_doc ppd3
-                         ON ppd3.pub_proc = pp3.id
-                        AND ppd3.doc_id = ppd1.doc_id
-                       JOIN query_term ps
-                         ON ps.doc_id = pp3.pub_system
-                      WHERE pp3.id < ppd2.pub_proc
-                        AND ps.path = '/PublishingSystem/SystemName'
-                        AND ps.value = 'Primary'
-                        AND pp3.pub_subset IN ('Export', 'Remove'))
-
- SELECT DISTINCT ppd.doc_id,
-                 cat.value,
-                 stat.value,
-                 id.value
-            FROM pub_proc_doc ppd
-            JOIN query_term cat
-              ON cat.doc_id = ppd.doc_id
-            JOIN query_term cat_type
-              ON cat_type.doc_id = cat.doc_id
-             AND LEFT(cat_type.node_loc, 8) = LEFT(cat.node_loc, 8)
-            JOIN query_term stat
-              ON stat.doc_id = ppd.doc_id
-             AND stat.path = '/InScopeProtocol/ProtocolAdminInfo'
-                           + '/CurrentProtocolStatus'
-            JOIN query_term id
-              ON id.doc_id = ppd.doc_id
-             AND id.path = '/InScopeProtocol/ProtocolIDs/PrimaryID/IDString'
-           WHERE ppd.pub_proc = @job_id
-             AND cat.path = '/InScopeProtocol/ProtocolDetail/StudyCategory'
-                          + '/StudyCategoryName'
-             AND cat_type.path = '/InScopeProtocol/ProtocolDetail'
-                               + '/StudyCategory/StudyCategoryType'
-             AND cat_type.value = 'Primary'
-             AND ppd.doc_id NOT IN (SELECT doc_id
-                                      FROM #prev_event
-                                     WHERE pub_subset = 'Export')
-        ORDER BY cat.value,
-                 id.value,
-                 stat.value
 GO
 
 /*
@@ -432,13 +372,17 @@ AS
     /*
      * Get the main member organizations.
      */
+
+    -- Do this or fail!
+    SET NOCOUNT ON;
+
     SELECT DISTINCT mm_d.id,
                     mm_d.title
                INTO #mm
                FROM document mm_d
                JOIN query_term mm
                  ON mm.doc_id = mm_d.id
-              WHERE mm.path = '/Organization/OrganizationAffiliations' 
+              WHERE mm.path = '/Organization/OrganizationAffiliations'
                             + '/MemberOfCooperativeGroups'
                             + '/MainMemberOf/CooperativeGroup/@cdr:ref'
                 AND mm.int_val = @docId
@@ -539,12 +483,15 @@ AS
 GO
 
 /*
- * Pull out count of protocol and summary documents linking to a 
+ * Pull out count of protocol and summary documents linking to a
  * specified Person document (used by the Person QC report).
  */
 CREATE PROCEDURE cdr_get_count_of_links_to_persons
     @docId INTEGER
 AS
+
+    -- Speeds things up.
+    SET NOCOUNT ON;
 
     SELECT COUNT(person.doc_id), status.value
       FROM query_term person
@@ -590,6 +537,9 @@ GO
 CREATE PROC find_linked_docs
     @doc_id INTEGER
 AS
+    -- Do this or fail!
+    SET NOCOUNT ON;
+
     -- Local variables.
     DECLARE @nrows INTEGER
 
@@ -605,7 +555,7 @@ AS
              ON t.id = d.doc_type
           WHERE d.id = @doc_id
 
-    -- Keep inserting until we exhaust the links.  
+    -- Keep inserting until we exhaust the links.
     -- Don't get citations.
     SELECT @nrows = @@ROWCOUNT
     WHILE @nrows > 0
@@ -634,6 +584,19 @@ AS
     DROP TABLE #linked_docs
 
 /*
+ * A procedure that allows us to update the unique ID of the
+ * pub_proc table.  This procedure can be used to adjust the
+ * next Job-ID in order to avoid error messages from Gatekeeper
+ * due to non-unique Job-IDs after a DB refresh.
+ */
+CREATE PROCEDURE cdr_set_next_job_ID
+    @newID int
+AS
+    DBCC CHECKIDENT (pub_proc, RESEED, @newID)
+GO
+
+
+/*
  * Determine the counts of active and closed protocols to which a
  * person is connected, either through a lead organization on the
  * protocol, or one of the participating sites.
@@ -643,6 +606,9 @@ AS
 CREATE PROC get_prot_person_connections
     @doc_id INTEGER
 AS
+    -- Do this or fail!
+    SET NOCOUNT ON;
+
     -- Local variables.
     DECLARE @active_trials INTEGER
     DECLARE @closed_trials INTEGER
@@ -780,6 +746,9 @@ GO
 CREATE PROC select_changed_non_active_protocols
 
 AS
+    -- Do this or fail!
+    SET NOCOUNT ON;
+
     -- Create temporary table containing docId + version num of
     --   all currently published docs sent to cancer.gov
     SELECT doc_id AS id, MAX(doc_version) AS num
@@ -798,7 +767,7 @@ AS
         ON v.id = d.id
       JOIN query_term_pub q
         ON q.doc_id = d.id
-     WHERE q.path = 
+     WHERE q.path =
            '/InScopeProtocol/ProtocolAdminInfo/CurrentProtocolStatus'
        AND q.value IN ('Closed', 'Completed', 'Temporarily Closed')
        AND d.active_status = 'A'

@@ -733,6 +733,18 @@ GO
 CREATE INDEX debug_log_recorded_idx ON debug_log(recorded)
 GO
 
+/**
+ * Replacement for debug_log (when CDR Service was eliminated
+ */
+CREATE TABLE session_log
+   (entry_id INTEGER IDENTITY PRIMARY KEY,
+   thread_id INTEGER NOT NULL,
+    recorded DATETIME NOT NULL,
+     message NTEXT NOT NULL)
+CREATE INDEX session_log_recorded ON session_log(recorded, entry_id)
+GRANT SELECT ON session_log TO CdrGuest
+GO
+
 /*
  * Version control.  This is now implemented with a base table whose xml
  * column can be set to NULL, in which case the document for the version cat
@@ -1173,10 +1185,10 @@ CREATE VIEW term_kids
          AS SELECT DISTINCT q.int_val AS parent,
                             q.doc_id  AS child,
                             d.title
-                       FROM query_term q,
-                            document d
-                      WHERE d.id = q.doc_id
-                        AND q.path = /* '/Term/TermParent/@cdr:ref' */
+                       FROM query_term q
+                       JOIN document d
+                         ON d.id = q.doc_id
+                      WHERE q.path =
                             '/Term/TermRelationship/ParentTerm/TermId/@cdr:ref'
 GO
 
@@ -1188,13 +1200,13 @@ CREATE VIEW term_children
                             q1.doc_id  AS child,
                             COUNT(DISTINCT q2.doc_id) AS num_grandchildren,
                             d.title
-                       FROM query_term q1,
-                            query_term q2,
-                            document d
-                      WHERE d.id = q1.doc_id
-                        AND q1.path = '/Term/TermParent/@cdr:ref'
+                       FROM document d
+                       JOIN query_term q1
+                         ON q1.doc_id = d.id
+            LEFT OUTER JOIN query_term q2
+                         ON q1.doc_id = q2.int_val
+                      WHERE q1.path = '/Term/TermParent/@cdr:ref'
                         AND q2.path = '/Term/TermParent/@cdr:ref'
-                        AND q2.int_val =* q1.doc_id
                    GROUP BY q1.int_val, q1.doc_id, d.title
 GO
 
@@ -1438,9 +1450,10 @@ GO
  */
 CREATE VIEW published_doc
          AS SELECT pub_proc_doc.*
-              FROM pub_proc_doc, pub_event
+              FROM pub_proc_doc
+              JOIN pub_event
+                ON pub_event.id = pub_proc_doc.pub_proc
              WHERE pub_event.status = 'Success'
-               AND pub_event.id = pub_proc_doc.pub_proc
                AND (pub_proc_doc.failure IS NULL
                 OR pub_proc_doc.failure <> 'Y')
 GO
@@ -1531,9 +1544,9 @@ AS
   SELECT d.id AS DocId,
          t.name AS DocType,
          d.title AS DocTitle
-   FROM  document d,
-         doc_type t
-  WHERE  d.doc_type = t.id
+    FROM document d
+    JOIN doc_type t
+      ON d.doc_type = t.id
 GO
 
 /*
@@ -1555,10 +1568,10 @@ GO
 CREATE VIEW orphan_terms
 AS
     SELECT DISTINCT d.title
-               FROM document d,
-                    query_term q
-              WHERE d.id = q.doc_id
-                AND q.path = '/Term/TermPrimaryType'
+               FROM document d
+               JOIN query_term q
+                 ON d.id = q.doc_id
+              WHERE q.path = '/Term/TermPrimaryType'
                 AND q.value <> 'glossary term'
                 AND NOT EXISTS (SELECT *
                                   FROM query_term q2
@@ -1572,10 +1585,10 @@ GO
 CREATE VIEW TermsWithParents
 AS
     SELECT d.id, d.xml
-      FROM document d,
-           doc_type t
-     WHERE d.doc_type = t.id
-       AND t.name     = 'Term'
+      FROM document d
+      JOIN doc_type t
+        ON d.doc_type = t.id
+     WHERE t.name = 'Term'
        AND d.xml LIKE '%<TermParent%'
 GO
 
@@ -1785,6 +1798,18 @@ CREATE TABLE command_log
      command TEXT NOT NULL,
   CONSTRAINT command_log_pk PRIMARY KEY(thread, received))
 CREATE INDEX command_log_time ON command_log(received)
+GO
+
+/**
+ * Replacement for command_log table (when CDR service was eliminated)
+ */
+CREATE TABLE api_request
+ (request_id INTEGER IDENTITY PRIMARY KEY,
+  process_id INTEGER,
+   thread_id INTEGER,
+    received DATETIME,
+     request NTEXT)
+CREATE INDEX api_request_received ON api_request(received)
 GO
 
 /*
@@ -2562,6 +2587,20 @@ SELECT c.contact_id,
     ON o.org_id = c.org_id
   JOIN data_partner_product p
     ON p.prod_id = o.prod_id
+GO
+
+/*
+ * When we notify a PDQ data partner that new PDQ data is available, we
+ * record that notification here. With this information, if the notification
+ * job fails part-way through, we can answer the questions "which contacts
+ * have we already notified for this job?".
+ *
+ *   email_addr  where we sent the notification
+ *   notif_date  when we sent it
+ */
+CREATE TABLE data_partner_notification
+ (email_addr VARCHAR(64) NOT NULL,
+  notif_date DATETIME NOT NULL)
 GO
 
 /*

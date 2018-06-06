@@ -31,8 +31,18 @@ BZIssue::4629
  Template to denormalize Organization Name link
  ================================================================= -->
  <xsl:template                   match = "OrganizationLocation">
-  <xsl:variable                   name = "orgId"
+  <xsl:variable                   name = "cdrRef"
                                 select = "@cdr:ref"/>
+  <xsl:variable                   name = "orgId">
+   <xsl:choose>
+    <xsl:when                     test = "contains($cdrRef, '#')">
+     <xsl:value-of              select = "substring-before($cdrRef, '#')"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of              select = "$cdrRef"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
   <xsl:variable                   name = "orgDoc"
                                 select = "document(concat('cdr:', $orgId,
                                                           '/last'))"/>
@@ -45,6 +55,11 @@ BZIssue::4629
    <xsl:apply-templates         select = "$orgDoc/Organization/
                                                   OrganizationNameInformation/
                                                   OfficialName"/>
+<!--
+<FOO>
+   <xsl:copy-of select="$orgDoc"/>
+</FOO>
+-->
   </xsl:element>
  </xsl:template>
 
@@ -117,7 +132,8 @@ BZIssue::4629
                                                                '#'), '#'))"/>
 
   <xsl:variable                   name = "term"
-                                select = "document(concat('cdr:', $termId,
+                                select = "document(concat('cdr:CDR',
+                                                          $termNormId,
                                                           '/last'))"/>
   <xsl:element                    name = "FamilialCancerSyndrome">
    <xsl:attribute                 name = "cdr:ref">
@@ -145,10 +161,10 @@ BZIssue::4629
     </xsl:variable>
 
   <xsl:variable                   name = "queryRows"
-                                select = "document(
+                                select = "document(cdr:escape-uri(
                                             concat('cdrutil:/sql-query/',
                                                    $sqlQuery,
-                                                   '~', $termNormId))"/>
+                                                   '~', $termNormId)))"/>
 
   <xsl:copy-of                  select = "$queryRows"/>
 

@@ -1,54 +1,92 @@
 <?xml version="1.0"?>
 <!-- Filter title: Denormalization Filter: Summary InLine Numbering -->
-<xsl:transform           xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                          version  = "1.0"
-                         xmlns:cdr = "cips.nci.nih.gov/cdr">
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                              version  = "1.0"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr">
 
- <xsl:output                method = "xml"
-              omit-xml-declaration = "no"/>
+ <xsl:output                    method = "xml"
+                  omit-xml-declaration = "no"/>
 
-<!-- ====================================================================
-     This filter adds the same attribute assigned to the citation link at
-     the end of the summary section to the matching citation link in the
-     the summary section text
-     ==================================================================== -->
+ <!-- 
+ ====================================================================
+ This filter adds the same attribute assigned to the citation link as
+ part of the Reference section to the matching citation link in the
+ summary section text
+ ==================================================================== -->
 
-<!-- ====================================================================
-     add refidx to CitationReference elements
-     ==================================================================== -->
-<xsl:template                match = "Citation | ProtocolLink">
-  <xsl:variable               name = "ref">
-   <xsl:value-of            select = "@cdr:ref"/>
+ <!-- 
+ ====================================================================
+ Copy the refidx attribute from the Citations in the Reference section
+ to the Citation elements within the text.  These citations are linked 
+ via their CDR-ID (@cdr:ref).
+ If there are empty Citation elements, we're displaying the refidx
+ number of the very first empty citation element.  If there are more
+ than one empty Citations they all receive the refidx of the first
+ empty citation.
+ According to Victoria Shields it would be very rare for multiple 
+ empty citation links to exist within a single section and if this 
+ situation does come up the empty citations are properly sorted within
+ the reference section.
+ ==================================================================== -->
+ <xsl:template                   match = "Citation | ProtocolLink">
+  <xsl:variable                   name = "ref">
+   <xsl:value-of                select = "@cdr:ref"/>
   </xsl:variable>
+  <xsl:variable                   name = "refidx">
+   <xsl:value-of                select = "@refidx"/>
+  </xsl:variable>
+
+  <xsl:choose>
+   <!-- Only copy the refidx numbers to the inline citations -->
+   <xsl:when                      test = "not(parent::ReferenceList)">
+    <xsl:copy>
+     <xsl:apply-templates       select = "@*"/>
+     <xsl:attribute               name = "refidx">
+      <xsl:choose>
+      <xsl:when                   test = "ancestor::SummarySection/
+                                          ReferenceList/
+                                          Citation[@cdr:ref=$ref]/@refidx">
+      <xsl:value-of             select = "ancestor::SummarySection/
+                                          ReferenceList/
+                                          Citation[@cdr:ref=$ref]/@refidx"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of            select = "ancestor::SummarySection/
+                                          ReferenceList/
+                                          Citation[not(@cdr:ref)]/@refidx"/>
+      </xsl:otherwise>
+      </xsl:choose>
+     </xsl:attribute>
+
+     <xsl:apply-templates/>
+
+    </xsl:copy>
+   </xsl:when>
+   <!-- 
+   We want to copy all attributes.  We need at least the refidx value
+   in order to create the anker links for the citations from within the
+   text
+   ==================================================================== -->
+   <xsl:otherwise>
+    <xsl:copy>
+     <xsl:apply-templates       select = "@*"/>
+     <xsl:apply-templates/>
+    </xsl:copy>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!-- 
+ ================================================================
+ Template rule used to do XML to XML transformations which
+ copies any attribute node, or node that is child of of something
+ ================================================================ -->
+ <xsl:template                   match = "@*|node()">
   <xsl:copy>
-   <xsl:apply-templates     select = "@*"/>
-   <xsl:attribute             name = "refidx">
-    <xsl:value-of           select = "ancestor::SummarySection/
-                                      ReferenceList/
-                                      Citation[@cdr:ref=$ref]/@refidx"/>
-   </xsl:attribute>
-
-   <!--
-   Keep in for debugging purpose to ensure that the refidx is matching
-   between the text and the reference section
-   =================================================================== -->
+   <xsl:apply-templates         select = "@*"/>
    <xsl:apply-templates/>
-   <!-- xsl:if                    test = "not(../ReferenceList)">
-    <xsl:apply-templates     select = "@*"/>
-   </xsl:if -->
   </xsl:copy>
-</xsl:template>
-
-
-<!-- ================================================================
-     Template rule used to do XML to XML transformations which
-     copies any attribute node, or node that is child of of something
-     ================================================================ -->
-<xsl:template                match = "@*|node()">
- <xsl:copy>
-  <xsl:apply-templates      select = "@*"/>
-  <xsl:apply-templates/>
- </xsl:copy>
-</xsl:template>
+ </xsl:template>
 
 </xsl:transform>

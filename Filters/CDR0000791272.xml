@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Filter title: Validation Template -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0">
+ <xsl:output                    method = 'xml'
+                              encoding = 'utf-8'/>
+ <xsl:template                   match = "/">
+  <Errors>
+   <xsl:apply-templates/>
+  </Errors>
+ </xsl:template>
+
+ <xsl:template                   match = "node()">
+  <xsl:apply-templates/>
+ </xsl:template>
+
+ <xsl:template                    name = "pack-error">
+  <xsl:param                      name = "msg"/>
+  <xsl:element                    name = "Err">
+   <xsl:if                        test = "./@cdr-eid">
+    <xsl:attribute                name = "cdr-eid">
+     <xsl:value-of              select = "./@cdr-eid"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:call-template             name = "get-path">
+    <xsl:with-param               name = "node-part"
+                                select = "."/>
+   </xsl:call-template>
+   <xsl:value-of                select = "concat(&quot;:&quot;, $msg)"/>
+  </xsl:element>
+ </xsl:template>
+ <xsl:template                    name = "get-path">
+  <xsl:param                      name = "child-part"/>
+  <xsl:param                      name = "node-part"/>
+  <xsl:variable                   name = "parent"
+                                select = "$node-part/parent::node()"/>
+  <xsl:variable                   name = "my-name"
+                                select = "name($node-part)"/>
+  <xsl:choose>
+   <xsl:when                      test = "name($parent)">
+    <xsl:variable                 name = "my-pos"
+                                select = "count($node-part/preceding-sibling::*)+1"/>
+    <xsl:call-template            name = "get-path">
+     <xsl:with-param              name = "child-part"
+                                select = "concat(&quot;/&quot;, $my-name, &quot;[&quot;, $my-pos, &quot;]&quot;, $child-part)"/>
+     <xsl:with-param              name = "node-part"
+                                select = "$parent"/>
+    </xsl:call-template>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:value-of               select = "concat(&quot;/&quot;, name($node-part), $child-part)"/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+</xsl:transform>

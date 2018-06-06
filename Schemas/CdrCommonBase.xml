@@ -23,67 +23,124 @@
      JIRA::OCECDR-3840
      JIRA::OCECDR-3924 - remove Compact attribute from list elements
      JIRA::OCECDR-4020 - restore Compact attribute
+     JIRA::OCECDR-4242 - allow comments after table title
 
  -->
 
-<schema              xmlns           = 'http://www.w3.org/2001/XMLSchema'>
+<xsd:schema              xmlns:xsd       = 'http://www.w3.org/2001/XMLSchema'>
 
- <annotation>
-  <appInfo>
+ <xsd:annotation>
+  <xsd:appinfo>
    <pattern>
-    <rule            context         = 'PostalAddress|SpecificPostalAddress'>
-     <assert         test            = '@AddressType != "US" or
+    <rule context = 'PostalAddress|SpecificPostalAddress'>
+     <assert>
+      <test><![CDATA[
+@AddressType != "US" or
                                         document(concat("cdrutil:/valid-zip/",
-                                                        PostalCode_ZIP)) != ""'
-     >U.S. address must have valid ZIP code</assert>
-     <assert         test            = '@AddressType != "US" or
-                                        PoliticalSubUnit_State'
-     >U.S. address must have PoliticalSubUnit_State element</assert>
-     <assert         test            = '@AddressType != "US" or
-                    string(number(substring(Country/@cdr:ref,4))) =
-                      document("cdrutil:/sql-query/
+                                                        PostalCode_ZIP)) != ""
+]]>
+      </test>
+      <message><![CDATA[
+U.S. address must have valid ZIP code
+]]>
+      </message>
+     </assert>
+     <assert>
+      <test><![CDATA[
+@AddressType != "US" or
+                                        PoliticalSubUnit_State
+]]>
+      </test>
+      <message><![CDATA[
+U.S. address must have PoliticalSubUnit_State element
+]]>
+      </message>
+     </assert>
+     <assert>
+      <test><![CDATA[
+@AddressType != "US" or
+                    string(number(substring(Country/@cdr-ref,4))) =
+                      document(cdr:escape-uri("cdrutil:/sql-query/
                     SELECT doc_id
                       FROM query_term
-                     WHERE path = &apos;/Country/CountryFullName&apos;
-                       AND value = &apos;U.S.A.&apos;")
-                       /SqlResult/row/col[@name="doc_id"]'
-     >AddressType is US but Country is not U.S.A.</assert>
-     <assert         test            = '@AddressType = "US" or
-                    string(number(substring(Country/@cdr:ref,4))) !=
-                      document("cdrutil:/sql-query/
+                     WHERE path = '/Country/CountryFullName'
+                       AND value = 'U.S.A.'"))
+                       /SqlResult/row/col[@name="doc_id"]
+]]>
+      </test>
+      <message><![CDATA[
+AddressType is US but Country is not U.S.A.
+]]>
+      </message>
+     </assert>
+     <assert>
+      <test><![CDATA[
+@AddressType = "US" or
+                    string(number(substring(Country/@cdr-ref,4))) !=
+                      document(cdr:escape-uri("cdrutil:/sql-query/
                     SELECT doc_id
                       FROM query_term
-                     WHERE path = &apos;/Country/CountryFullName&apos;
-                       AND value = &apos;U.S.A.&apos;")
-                       /SqlResult/row/col[@name="doc_id"]'
-     >AddressType is Non-US but Country=U.S.A.</assert>
+                     WHERE path = '/Country/CountryFullName'
+                       AND value = 'U.S.A.'"))
+                       /SqlResult/row/col[@name="doc_id"]
+]]>
+      </test>
+      <message><![CDATA[
+AddressType is Non-US but Country=U.S.A.
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
 
    <!-- Separated out to suppress zip validation for external addresses. -->
    <pattern>
-    <rule            context         = 'ExternalSiteAddress'>
-     <assert         test            = '@AddressType != "US" or
-                                        PoliticalSubUnit_State'
-     >U.S. address must have PoliticalSubUnit_State element</assert>
-     <assert         test            = '@AddressType != "US" or
-                    string(number(substring(Country/@cdr:ref,4))) =
-                      document("cdrutil:/sql-query/
+    <rule context = 'ExternalSiteAddress'>
+     <assert>
+      <test><![CDATA[
+@AddressType != "US" or
+                                        PoliticalSubUnit_State
+]]>
+      </test>
+      <message><![CDATA[
+U.S. address must have PoliticalSubUnit_State element
+]]>
+      </message>
+     </assert>
+     <assert>
+      <test><![CDATA[
+@AddressType != "US" or
+                    string(number(substring(Country/@cdr-ref,4))) =
+                      document(cdr:escape-uri("cdrutil:/sql-query/
                     SELECT doc_id
                       FROM query_term
-                     WHERE path = &apos;/Country/CountryFullName&apos;
-                       AND value = &apos;U.S.A.&apos;")
-                       /SqlResult/row/col[@name="doc_id"]'
-     >AddressType is US but Country is not U.S.A.</assert>
-     <assert         test            = '@AddressType = "US" or
-                    string(number(substring(Country/@cdr:ref,4))) !=
-                      document("cdrutil:/sql-query/
+                     WHERE path = '/Country/CountryFullName'
+                       AND value = 'U.S.A.'"))
+                       /SqlResult/row/col[@name="doc_id"]
+]]>
+      </test>
+      <message><![CDATA[
+AddressType is US but Country is not U.S.A.
+]]>
+      </message>
+     </assert>
+     <assert>
+      <test><![CDATA[
+@AddressType = "US" or
+                    string(number(substring(Country/@cdr-ref,4))) !=
+                      document(cdr:escape-uri("cdrutil:/sql-query/
                     SELECT doc_id
                       FROM query_term
-                     WHERE path = &apos;/Country/CountryFullName&apos;
-                       AND value = &apos;U.S.A.&apos;")
-                       /SqlResult/row/col[@name="doc_id"]'
-     >AddressType is Non-US but Country=U.S.A.</assert>
+                     WHERE path = '/Country/CountryFullName'
+                       AND value = 'U.S.A.'"))
+                       /SqlResult/row/col[@name="doc_id"]
+]]>
+      </test>
+      <message><![CDATA[
+AddressType is Non-US but Country=U.S.A.
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
 
@@ -92,1825 +149,1763 @@
         The two assertions below have been propogated to the rule sets
         above.
    <pattern>
-    <rule            context         = 'PostalAddress|SpecificPostalAddress|
+    <rule context = 'PostalAddress|SpecificPostalAddress|
                                         ExternalSiteAddress'>
-     <assert         test            = '@AddressType != "US" or
-                    string(number(substring(Country/@cdr:ref,4))) =
-                      document("cdrutil:/sql-query/
+     <assert>
+      <test><![CDATA[
+@AddressType != "US" or
+                    string(number(substring(Country/@cdr-ref,4))) =
+                      document(cdr:escape-uri("cdrutil:/sql-query/
                     SELECT doc_id
                       FROM query_term
-                     WHERE path = &apos;/Country/CountryFullName&apos;
-                       AND value = &apos;U.S.A.&apos;")
-                       /SqlResult/row/col[@name="doc_id"]'
-     >AddressType is US but Country is not U.S.A.</assert>
-     <assert         test            = '@AddressType = "US" or
-                    string(number(substring(Country/@cdr:ref,4))) !=
-                      document("cdrutil:/sql-query/
+                     WHERE path = '/Country/CountryFullName'
+                       AND value = 'U.S.A.'"))
+                       /SqlResult/row/col[@name="doc_id"]
+]]>
+      </test>
+      <message><![CDATA[
+AddressType is US but Country is not U.S.A.
+]]>
+      </message>
+     </assert>
+     <assert>
+      <test><![CDATA[
+@AddressType = "US" or
+                    string(number(substring(Country/@cdr-ref,4))) !=
+                      document(cdr:escape-uri("cdrutil:/sql-query/
                     SELECT doc_id
                       FROM query_term
-                     WHERE path = &apos;/Country/CountryFullName&apos;
-                       AND value = &apos;U.S.A.&apos;")
-                       /SqlResult/row/col[@name="doc_id"]'
-     >AddressType is Non-US but Country=U.S.A.</assert>
+                     WHERE path = '/Country/CountryFullName'
+                       AND value = 'U.S.A.'"))
+                       /SqlResult/row/col[@name="doc_id"]
+]]>
+      </test>
+      <message><![CDATA[
+AddressType is Non-US but Country=U.S.A.
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
    <pattern>
-      <rule            context         = 'PoliticalSubUnit_State'>
-     <assert test = 'document(concat("cdrutil:/sql-query/
+      <rule context = 'PoliticalSubUnit_State'>
+     <assert>
+      <test><![CDATA[
+document(cdr:escape-uri(concat("cdrutil:/sql-query/
           SELECT value
             FROM query_term_pub
-           WHERE path = &apos;/PoliticalSubUnit/Country/@cdr:ref&apos;
-             AND doc_id = ?~", substring(@cdr:ref,4))
-             )/SqlResult/row/col[@name="value"] = ../Country/@cdr:ref'
-     >PoliticalSubUnit_State doc links to a different country from this
-      address Country link</assert>
+           WHERE path = '/PoliticalSubUnit/Country/@cdr:ref'
+             AND doc_id = ?~", substring(@cdr-ref,4)))
+             )/SqlResult/row/col[@name="value"] = ../Country/@cdr-ref
+]]>
+      </test>
+      <message><![CDATA[
+PoliticalSubUnit_State doc links to a different country from this
+      address Country link
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
   -->
    <pattern>
-    <rule            context         = 'AltTitle'>
-     <assert         test            = '(@TitleType != "Short" or
-                                        string-length() &lt; 65) and
+    <rule context = 'AltTitle'>
+     <assert>
+      <test><![CDATA[
+(@TitleType != "Short" or
+                                        string-length() < 65) and
 					(@TitleType != "Navlabel" or
-					string-length() &lt; 101)'
-     >AltTitle exceeds allowed length (max 64/Short; 100/Navlabel)</assert>
+					string-length() < 101)
+]]>
+      </test>
+      <message><![CDATA[
+AltTitle exceeds allowed length (max 64/Short; 100/Navlabel)
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
    <pattern>
-    <rule            context         = 'PoliticalSubUnit_State'>
+    <rule context = 'PoliticalSubUnit_State'>
 
      <!-- SubUnit doc->Country link matches this address Country link
           That's clear from reading the expression, right? -->
-     <assert test = 'document(concat("cdrutil:/sql-query/
+     <assert>
+      <test><![CDATA[
+document(cdr:escape-uri(concat("cdrutil:/sql-query/
           SELECT
               CASE
-                WHEN ISNUMERIC(&apos;",string(number(substring(@cdr:ref,4))),"&apos;) = 1 THEN (
+                WHEN ISNUMERIC('",string(number(substring(@cdr-ref,4))),"') = 1 THEN (
                   SELECT value
                     FROM query_term
-                   WHERE path = &apos;/PoliticalSubUnit/Country/@cdr:ref&apos;
+                   WHERE path = '/PoliticalSubUnit/Country/@cdr:ref'
                      AND doc_id = ?)
                 ELSE ?
               END AS value",
-                             "~", string(number(substring(@cdr:ref,4))),
-                             "~", ../Country/@cdr:ref)
-             )/SqlResult/row/col[@name="value"] = ../Country/@cdr:ref'
->PoliticalSubUnit_State is in different country from this address Country</assert>
+                             "~", string(number(substring(@cdr-ref,4))),
+                             "~", ../Country/@cdr-ref))
+             )/SqlResult/row/col[@name="value"] = ../Country/@cdr-ref
+]]>
+      </test>
+      <message><![CDATA[
+PoliticalSubUnit_State is in different country from this address Country
+]]>
+      </message>
+     </assert>
     </rule>
    </pattern>
-  </appInfo>
- </annotation>
+  </xsd:appinfo>
+ </xsd:annotation>
 
 <!--=================================================================-->
 <!--                  TEXT MARKUP ELEMENT GROUPS                     -->
 <!--=================================================================-->
-  <group             name            = 'CommonTextElements'>
-    <choice>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
-      <element       name            = 'ResponseToComment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
-      <element       name            = 'Section'
-                     type            = 'Section'
-                     minOccurs       = '0'/>
-    </choice>
-  </group>
+  <xsd:group             name            = 'CommonTextElements'>
+    <xsd:choice>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'ResponseToComment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Section'
+                         type            = 'Section'
+                         minOccurs       = '0'/>
+    </xsd:choice>
+  </xsd:group>
 
-  <group             name            = 'TitleMarkupElements'>
-    <choice>
-      <element       name            = 'Emphasis'
-                     type            = 'PhraseLevelWithoutId'/>
-      <element       name            = 'Strong'
-                     type            = 'PhraseLevelWithoutId'/>
-      <element       name            = 'Subscript'
-                     type            = 'PhraseLevelWithoutId'/>
-      <element       name            = 'Superscript'
-                     type            = 'PhraseLevelWithoutId'/>
-      <element       name            = 'TT'
-                     type            = 'PhraseLevel'/>
-      <element       name            = 'GeneName'
-                     type            = 'PhraseLevelWithoutId'/>
-      <element       name            = 'ScientificName'
-                     type            = 'PhraseLevelWithoutId'/>
-      <element       name            = 'ForeignWord'
-                     type            = 'PhraseLevelWithoutId'/>
-      <element       name            = 'TableNumber'
-                     type            = 'EmptyContent'/>
-    </choice>
-  </group>
+  <xsd:group             name            = 'TitleMarkupElements'>
+    <xsd:choice>
+      <xsd:element       name            = 'Emphasis'
+                         type            = 'PhraseLevelWithoutId'/>
+      <xsd:element       name            = 'Strong'
+                         type            = 'PhraseLevelWithoutId'/>
+      <xsd:element       name            = 'Subscript'
+                         type            = 'PhraseLevelWithoutId'/>
+      <xsd:element       name            = 'Superscript'
+                         type            = 'PhraseLevelWithoutId'/>
+      <xsd:element       name            = 'TT'
+                         type            = 'PhraseLevel'/>
+      <xsd:element       name            = 'GeneName'
+                         type            = 'PhraseLevelWithoutId'/>
+      <xsd:element       name            = 'ScientificName'
+                         type            = 'PhraseLevelWithoutId'/>
+      <xsd:element       name            = 'ForeignWord'
+                         type            = 'PhraseLevelWithoutId'/>
+      <xsd:element       name            = 'TableNumber'
+                         type            = 'EmptyContent'/>
+    </xsd:choice>
+  </xsd:group>
 
-  <group             name            = 'OtherPhraseElements'>
-    <choice>
-      <element       name            = 'LOERef'
-                     type            = 'SummaryRef'/>
-      <element       name            = 'LOEFragmentRef'
-                     type            = 'SummaryFragmentRef'/>
-      <element       name            = 'LOELink'
-                     type            = 'SummaryLink'/>
-      <element       name            = 'LOEFragmentLink'
-                     type            = 'SummaryFragmentLink'/>
-      <element       name            = 'CitationLink'
-                     type            = 'CitationLink'/>
-      <element       name            = 'CitationRef'
-                     type            = 'CitationRef'/>
-      <!--
-      <element       name            = 'CitationFragmentLink'
-                     type            = 'CitationFragmentLink'/>
-      <element       name            = 'CitationFragmentRef'
-                     type            = 'CitationFragmentRef'/>
-        -->
-      <element       name            = 'SummaryRef'
-                     type            = 'SummaryRef'/>
-      <element       name            = 'DrugSummaryRef'
-                     type            = 'DrugSummaryRef'/>
-      <element       name            = 'SummaryFragmentRef'
-                     type            = 'SummaryFragmentRef'/>
-      <element       name            = 'SummaryLink'
-                     type            = 'SummaryLink'/>
-      <element       name            = 'DrugSummaryLink'
-                     type            = 'DrugSummaryLink'/>
-      <element       name            = 'SummaryFragmentLink'
-                     type            = 'SummaryFragmentLink'/>
-      <element       name            = 'ProtocolRef'
-                     type            = 'ProtocolRef'/>
-      <element       name            = 'ProtocolLink'
-                     type            = 'ProtocolLink'/>
-      <element       name            = 'DrugName'
-                     type            = 'PhraseLevelWithoutId'/>
-      <element       name            = 'InterventionName'
-                     type            = 'PhraseLevelWithoutId'/>
-      <element       name            = 'GlossaryTermRef'
-                     type            = 'GlossaryRef'/>
-      <element       name            = 'GlossaryTermLink'
-                     type            = 'GlossaryLink'/>
-      <element       name            = 'ExternalRef'
-                     type            = 'ExternalRef'/>
-      <element       name            = 'Quote'
-                     type            = 'Quote'/>
-      <element       name            = 'Note'
-                     type            = 'GeneralText'/>
-      <element       name            = 'StandardWording'
-                     type            = 'PhraseLevelWithoutId'/>
-      <element       name            = 'DocumentationLink'
-                     type            = 'DocumentationLink'/>
-      <element       name            = 'DocumentationRef'
-                     type            = 'DocumentationRef'/>
-      <element       name            = 'DocumentationFragmentLink'
-                     type            = 'DocumentationFragmentLink'/>
-      <element       name            = 'DocumentationFragmentRef'
-                     type            = 'DocumentationFragmentRef'/>
-      <element       name            = 'MediaLink'
-                     type            = 'MediaLink'/>
-      <element       name            = 'MediaRef'
-                     type            = 'MediaRef'/>
-      <element       name            = 'MiscellaneousDocLink'
-                     type            =
-                                     'MiscellaneousLinkWithOptionalFragment'/>
-      <element       name            = 'FigureNumber'
-                     type            = 'EmptyContent'/>
-      <element       name            = 'ReferencedTableNumber'
-                     type            = 'ReferencedNumber'/>
-      <element       name            = 'ReferencedFigureNumber'
-                     type            = 'ReferencedNumber'/>
-    </choice>
-  </group>
+  <xsd:group             name            = 'OtherPhraseElements'>
+    <xsd:choice>
+      <xsd:element       name            = 'LOERef'
+                         type            = 'SummaryRef'/>
+      <xsd:element       name            = 'LOEFragmentRef'
+                         type            = 'SummaryFragmentRef'/>
+      <xsd:element       name            = 'LOELink'
+                         type            = 'SummaryLink'/>
+      <xsd:element       name            = 'LOEFragmentLink'
+                         type            = 'SummaryFragmentLink'/>
+      <xsd:element       name            = 'CitationLink'
+                         type            = 'CitationLink'/>
+      <xsd:element       name            = 'CitationRef'
+                         type            = 'CitationRef'/>
+          <!--
+      <xsd:element       name            = 'CitationFragmentLink'
+                         type            = 'CitationFragmentLink'/>
+      <xsd:element       name            = 'CitationFragmentRef'
+                         type            = 'CitationFragmentRef'/>
+            -->
+      <xsd:element       name            = 'SummaryRef'
+                         type            = 'SummaryRef'/>
+      <xsd:element       name            = 'DrugSummaryRef'
+                         type            = 'DrugSummaryRef'/>
+      <xsd:element       name            = 'SummaryFragmentRef'
+                         type            = 'SummaryFragmentRef'/>
+      <xsd:element       name            = 'SummaryLink'
+                         type            = 'SummaryLink'/>
+      <xsd:element       name            = 'DrugSummaryLink'
+                         type            = 'DrugSummaryLink'/>
+      <xsd:element       name            = 'SummaryFragmentLink'
+                         type            = 'SummaryFragmentLink'/>
+      <xsd:element       name            = 'ProtocolRef'
+                         type            = 'ProtocolRef'/>
+      <xsd:element       name            = 'ProtocolLink'
+                         type            = 'ProtocolLink'/>
+      <xsd:element       name            = 'DrugName'
+                         type            = 'PhraseLevelWithoutId'/>
+      <xsd:element       name            = 'InterventionName'
+                         type            = 'PhraseLevelWithoutId'/>
+      <xsd:element       name            = 'GlossaryTermRef'
+                         type            = 'GlossaryRef'/>
+      <xsd:element       name            = 'GlossaryTermLink'
+                         type            = 'GlossaryLink'/>
+      <xsd:element       name            = 'ExternalRef'
+                         type            = 'ExternalRef'/>
+      <xsd:element       name            = 'Quote'
+                         type            = 'Quote'/>
+      <xsd:element       name            = 'Note'
+                         type            = 'GeneralText'/>
+      <xsd:element       name            = 'StandardWording'
+                         type            = 'PhraseLevelWithoutId'/>
+      <xsd:element       name            = 'DocumentationLink'
+                         type            = 'DocumentationLink'/>
+      <xsd:element       name            = 'DocumentationRef'
+                         type            = 'DocumentationRef'/>
+      <xsd:element       name            = 'DocumentationFragmentLink'
+                         type            = 'DocumentationFragmentLink'/>
+      <xsd:element       name            = 'DocumentationFragmentRef'
+                         type            = 'DocumentationFragmentRef'/>
+      <xsd:element       name            = 'MediaLink'
+                         type            = 'MediaLink'/>
+      <xsd:element       name            = 'MediaRef'
+                         type            = 'MediaRef'/>
+      <xsd:element       name            = 'MiscellaneousDocLink'
+                         type            =
+                                         'MiscellaneousLinkWithOptionalFragment'/>
+      <xsd:element       name            = 'FigureNumber'
+                         type            = 'EmptyContent'/>
+      <xsd:element       name            = 'ReferencedTableNumber'
+                         type            = 'ReferencedNumber'/>
+      <xsd:element       name            = 'ReferencedFigureNumber'
+                         type            = 'ReferencedNumber'/>
+    </xsd:choice>
+  </xsd:group>
 
-  <group             name            = 'PhraseElements'>
-    <choice>
-      <group         ref             = 'TitleMarkupElements'/>
-      <group         ref             = 'OtherPhraseElements'/>
-    </choice>
-  </group>
+  <xsd:group             name            = 'PhraseElements'>
+    <xsd:choice>
+      <xsd:group         ref             = 'TitleMarkupElements'/>
+      <xsd:group         ref             = 'OtherPhraseElements'/>
+    </xsd:choice>
+  </xsd:group>
 
-  <group             name            = 'ParaLevelElements'>
-    <choice>
-      <element       name            = 'Para'
-                     type            = 'PhraseLevel'/>
-      <element       name            = 'LiteralLayout'
-                     type            = 'PhraseLevel'/>
-      <element       name            = 'Table'
-                     type            = 'Table'/>
-      <element       name            = 'ItemizedList'
-                     type            = 'ItemizedList'/>
-      <element       name            = 'OrderedList'
-                     type            = 'OrderedList'/>
-      <element       name            = 'QandASet'
-                     type            = 'QandASet'/>
-      <element       name            = 'Contact'
-                     type            = 'Contact'/>
-      <element       name            = 'MediaLink'
-                     type            = 'MediaLink'/>
-      <element       name            = 'MiscellaneousDocLink'
-                     type            =
-                                     'MiscellaneousLinkWithOptionalFragment'/>
-      <element       name            = 'PlaceHolder'
-                     type            = 'PlaceHolder'/>
-      <element       name            = 'SummaryModuleLink'
-                     type            = 'SummaryLink'/>
-    </choice>
-  </group>
+  <xsd:group             name            = 'ParaLevelElements'>
+    <xsd:choice>
+      <xsd:element       name            = 'Para'
+                         type            = 'PhraseLevel'/>
+      <xsd:element       name            = 'LiteralLayout'
+                         type            = 'PhraseLevel'/>
+      <xsd:element       name            = 'Table'
+                         type            = 'Table'/>
+      <xsd:element       name            = 'ItemizedList'
+                         type            = 'ItemizedList'/>
+      <xsd:element       name            = 'OrderedList'
+                         type            = 'OrderedList'/>
+      <xsd:element       name            = 'QandASet'
+                         type            = 'QandASet'/>
+      <xsd:element       name            = 'Contact'
+                         type            = 'Contact'/>
+      <xsd:element       name            = 'MediaLink'
+                         type            = 'MediaLink'/>
+      <xsd:element       name            = 'MiscellaneousDocLink'
+                         type            =
+                                         'MiscellaneousLinkWithOptionalFragment'/>
+      <xsd:element       name            = 'PlaceHolder'
+                         type            = 'PlaceHolder'/>
+      <xsd:element       name            = 'SummaryModuleLink'
+                         type            = 'SummaryLink'/>
+    </xsd:choice>
+  </xsd:group>
 
-  <group             name            = 'PhraseOrParaElements'>
-    <choice>
-      <group         ref             = 'PhraseElements'/>
-      <group         ref             = 'ParaLevelElements'/>
-    </choice>
-  </group>
+  <xsd:group             name            = 'PhraseOrParaElements'>
+    <xsd:choice>
+      <xsd:group         ref             = 'PhraseElements'/>
+      <xsd:group         ref             = 'ParaLevelElements'/>
+    </xsd:choice>
+  </xsd:group>
 
 <!--=================================================================-->
 <!--                  GENERAL TEXT ELEMENT TYPES                     -->
 <!--=================================================================-->
-  <complexType       name            = 'Title'
-                     mixed           = 'true'>
-    <choice          minOccurs       = '0'
-                     maxOccurs       = 'unbounded'>
-      <group         ref             = 'TitleMarkupElements'/>
-    </choice>
-  </complexType>
+  <xsd:complexType       name            = 'Title'
+                         mixed           = 'true'>
+    <xsd:choice          minOccurs       = '0'
+                         maxOccurs       = 'unbounded'>
+      <xsd:group         ref             = 'TitleMarkupElements'/>
+    </xsd:choice>
+  </xsd:complexType>
 
-  <complexType       name            = 'AltTitle'
-                     mixed           = 'true'>
-    <choice          minOccurs       = '0'
-                     maxOccurs       = 'unbounded'>
-      <group         ref             = 'TitleMarkupElements'/>
-    </choice>
-    <attribute       name            = 'TitleType'
-                     type            = 'AltTitleType'/>
-    <attribute       name            = 'Usage'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'AltTitle'
+                         mixed           = 'true'>
+    <xsd:choice          minOccurs       = '0'
+                         maxOccurs       = 'unbounded'>
+      <xsd:group         ref             = 'TitleMarkupElements'/>
+    </xsd:choice>
+    <xsd:attribute       name            = 'TitleType'
+                         type            = 'AltTitleType'
+                         use             = 'required'/>
+    <xsd:attribute       name            = 'Usage'
+                         type            = 'NotEmptyString'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'PhraseLevel'
-                     mixed           = 'true'>
-    <choice          minOccurs       = '0'
-                     maxOccurs       = 'unbounded'>
-      <group         ref             = 'PhraseElements'/>
-      <group         ref             = 'CommonTextElements'/>
-      <element       name            = 'PlaceHolder'
-                     type            = 'PlaceHolder'/>
-    </choice>
-    <attribute       name            = 'cdr:id'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'IncludedDevices'
-                     type            = 'IncludedDevices'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ExcludedDevices'
-                     type            = 'ExcludedDevices'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'PhraseLevel'
+                         mixed           = 'true'>
+    <xsd:choice          minOccurs       = '0'
+                         maxOccurs       = 'unbounded'>
+      <xsd:group         ref             = 'PhraseElements'/>
+      <xsd:group         ref             = 'CommonTextElements'/>
+      <xsd:element       name            = 'PlaceHolder'
+                         type            = 'PlaceHolder'/>
+    </xsd:choice>
+    <xsd:attribute       name            = 'cdr-id'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'IncludedDevices'
+                         type            = 'IncludedDevices'/>
+    <xsd:attribute       name            = 'ExcludedDevices'
+                         type            = 'ExcludedDevices'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'PhraseLevelWithoutId'
-                     mixed           = 'true'>
-    <choice          minOccurs       = '0'
-                     maxOccurs       = 'unbounded'>
-      <group         ref             = 'PhraseElements'/>
-      <group         ref             = 'CommonTextElements'/>
-    </choice>
-  </complexType>
+  <xsd:complexType       name            = 'PhraseLevelWithoutId'
+                         mixed           = 'true'>
+    <xsd:choice          minOccurs       = '0'
+                         maxOccurs       = 'unbounded'>
+      <xsd:group         ref             = 'PhraseElements'/>
+      <xsd:group         ref             = 'CommonTextElements'/>
+    </xsd:choice>
+  </xsd:complexType>
 
-  <complexType       name            = 'ParaLevel'>
-    <choice          minOccurs       = '1'
-                     maxOccurs       = 'unbounded'>
-      <group         ref             = 'ParaLevelElements'/>
-      <group         ref             = 'CommonTextElements'/>
-    </choice>
-  </complexType>
+  <xsd:complexType       name            = 'ParaLevel'>
+    <xsd:choice          minOccurs       = '1'
+                         maxOccurs       = 'unbounded'>
+      <xsd:group         ref             = 'ParaLevelElements'/>
+      <xsd:group         ref             = 'CommonTextElements'/>
+    </xsd:choice>
+  </xsd:complexType>
 
-  <complexType       name            = 'GeneralText'
-                     mixed           = 'true'>
-    <choice          minOccurs       = '0'
-                     maxOccurs       = 'unbounded'>
-      <group         ref             = 'PhraseOrParaElements'/>
-      <group         ref             = 'CommonTextElements'/>
-    </choice>
-  </complexType>
+  <xsd:complexType       name            = 'GeneralText'
+                         mixed           = 'true'>
+    <xsd:choice          minOccurs       = '0'
+                         maxOccurs       = 'unbounded'>
+      <xsd:group         ref             = 'PhraseOrParaElements'/>
+      <xsd:group         ref             = 'CommonTextElements'/>
+    </xsd:choice>
+  </xsd:complexType>
 
-  <complexType       name            = 'Section'>
-    <sequence>
-      <element       name            = 'Title'
-                     type            = 'Title'
-                     minOccurs       = '0'/>
-      <element       name            = 'AltTitle'
-                     type            = 'AltTitle'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'KeyPoint'
-                     type            = 'PhraseLevel'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <choice        minOccurs       = '0'
-                     maxOccurs       = 'unbounded'>
-        <group       ref             = 'ParaLevelElements'/>
-      </choice>
-      <element       name            = 'Section'
-                     type            = 'Section'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-    <attribute       name            = 'cdr:id'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'Section'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Title'
+                         type            = 'Title'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'AltTitle'
+                         type            = 'AltTitle'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'KeyPoint'
+                         type            = 'PhraseLevel'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:choice        minOccurs       = '0'
+                         maxOccurs       = 'unbounded'>
+        <xsd:group       ref             = 'ParaLevelElements'/>
+      </xsd:choice>
+      <xsd:element       name            = 'Section'
+                         type            = 'Section'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'cdr-id'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'Contact'>
-    <sequence>
-      <element       name            = 'ContactName'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'ContactDetail'
-                     type            = 'ContactDetail'/>
-    </sequence>
-    <attribute       name            = 'IncludedDevices'
-                     type            = 'IncludedDevices'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ExcludedDevices'
-                     type            = 'ExcludedDevices'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'Contact'>
+    <xsd:sequence>
+      <xsd:element       name            = 'ContactName'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'ContactDetail'
+                         type            = 'ContactDetail'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'IncludedDevices'
+                         type            = 'IncludedDevices'/>
+    <xsd:attribute       name            = 'ExcludedDevices'
+                         type            = 'ExcludedDevices'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'ContactDetail'>
-    <sequence>
-      <element       name            = 'PostalAddress'
-                     type            = 'PostalAddress'
-                     minOccurs       = '0'/>
-      <element       name            = 'Phone'
-                     type            = 'Phone'
-                     minOccurs       = '0'/>
-      <element       name            = 'TollFreePhone'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      <element       name            = 'Fax'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      <element       name            = 'Email'
-                     type            = 'Email'
-                     minOccurs       = '0'/>
-      <element       name            = 'WebSite'
-                     type            = 'ExternalRef'
-                     minOccurs       = '0'/>
-    </sequence>
-    <attribute       name            = 'cdr:id'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'ContactDetail'>
+    <xsd:sequence>
+      <xsd:element       name            = 'PostalAddress'
+                         type            = 'PostalAddress'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Phone'
+                         type            = 'Phone'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'TollFreePhone'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Fax'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Email'
+                         type            = 'Email'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'WebSite'
+                         type            = 'ExternalRef'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'cdr-id'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'Email'>
-    <simpleContent>
-      <extension     base            = 'EmailAddress'>
-        <attribute   name            = 'Public'
-                     type            = 'No'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'Email'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'EmailAddress'>
+        <xsd:attribute   name            = 'Public'
+                         type            = 'No'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'Phone'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'Public'
-                     type            = 'No'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'Phone'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'Public'
+                         type            = 'No'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'PostalAddress'>
-    <sequence>
-      <element       name            = 'Street'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'City'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      <element       name            = 'CitySuffix'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      <element       name            = 'PoliticalSubUnit_State'
-                     type            = 'PoliticalSubUnitLink'
-                     minOccurs       = '0'/>
-      <element       name            = 'Country'
-                     type            = 'CountryLink'/>
-      <element       name            = 'PostalCode_ZIP'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    </sequence>
-    <attribute       name            = 'Public'
-                     type            = 'No'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'AddressType'
-                     type            = 'AddressType'/>
-  </complexType>
+  <xsd:complexType       name            = 'PostalAddress'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Street'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'City'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'CitySuffix'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'PoliticalSubUnit_State'
+                         type            = 'PoliticalSubUnitLink'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'Country'
+                         type            = 'CountryLink'/>
+      <xsd:element       name            = 'PostalCode_ZIP'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'Public'
+                         type            = 'No'/>
+    <xsd:attribute       name            = 'AddressType'
+                         type            = 'AddressType'
+                         use             = 'required'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'Quote'>
-    <sequence>
-      <element       name            = 'QuotedText'
-                     type            = 'GeneralText'/>
-      <element       name            = 'Source'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      <element       name            = 'QuoteAuthor'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'Quote'>
+    <xsd:sequence>
+      <xsd:element       name            = 'QuotedText'
+                         type            = 'GeneralText'/>
+      <xsd:element       name            = 'Source'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'QuoteAuthor'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'ItemizedList'>
-    <sequence>
-      <element       name            = 'ListTitle'
-                     type            = 'Title'
-                     minOccurs       = '0'/>
-      <element       name            = 'ListItem'
-                     type            = 'GeneralText'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-    <attribute       name            = 'Style'
-                     type            = 'ItemizedListStyle'/>
-    <attribute       name            = 'cdr:id'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'IncludedDevices'
-                     type            = 'IncludedDevices'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ExcludedDevices'
-                     type            = 'ExcludedDevices'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Compact'
-                     type            = 'No'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'ItemizedList'>
+    <xsd:sequence>
+      <xsd:element       name            = 'ListTitle'
+                         type            = 'Title'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'ListItem'
+                         type            = 'GeneralText'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'Style'
+                         type            = 'ItemizedListStyle'
+                         use             = 'required'/>
+    <xsd:attribute       name            = 'cdr-id'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'IncludedDevices'
+                         type            = 'IncludedDevices'/>
+    <xsd:attribute       name            = 'ExcludedDevices'
+                         type            = 'ExcludedDevices'/>
+    <xsd:attribute       name            = 'Compact'
+                         type            = 'No'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'OrderedList'>
-    <sequence>
-      <element       name            = 'ListTitle'
-                     type            = 'Title'
-                     minOccurs       = '0'/>
-      <element       name            = 'ListItem'
-                     type            = 'GeneralText'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-    <attribute       name            = 'Style'
-                     type            = 'OrderedListStyle'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'cdr:id'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'IncludedDevices'
-                     type            = 'IncludedDevices'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ExcludedDevices'
-                     type            = 'ExcludedDevices'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Compact'
-                     type            = 'No'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'OrderedList'>
+    <xsd:sequence>
+      <xsd:element       name            = 'ListTitle'
+                         type            = 'Title'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'ListItem'
+                         type            = 'GeneralText'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'Style'
+                         type            = 'OrderedListStyle'/>
+    <xsd:attribute       name            = 'cdr-id'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'IncludedDevices'
+                         type            = 'IncludedDevices'/>
+    <xsd:attribute       name            = 'ExcludedDevices'
+                         type            = 'ExcludedDevices'/>
+    <xsd:attribute       name            = 'Compact'
+                         type            = 'No'/>
+  </xsd:complexType>
 
   <!-- CdrHref and CdrRef are not currently used but should be left for
-       future possible use
+           future possible use
     -->
 
-  <complexType       name            = 'CdrHref'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocId'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'CdrHref'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocId'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'CdrRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'CdrRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'ExternalRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:xref'
-                     type            = 'anyURI'/>
-        <attribute   name            = 'SourceTitle'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'ExternalRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-xref'
+                         type            = 'xsd:anyURI'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'SourceTitle'
+                         type            = 'xsd:string'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProtocolLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'comment'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'LastReviewedDate'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'LastReviewedStatus'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'ProtocolLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+        <xsd:attribute   name            = 'comment'
+                         type            = 'xsd:string'/>
+        <xsd:attribute   name            = 'LastReviewedDate'
+                         type            = 'xsd:date'/>
+        <xsd:attribute   name            = 'LastReviewedStatus'
+                         type            = 'xsd:string'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProtocolFragmentLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocIdWithFragment'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'ProtocolFragmentLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocIdWithFragment'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProtocolRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'comment'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'LastReviewedDate'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'LastReviewedStatus'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'ProtocolRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+        <xsd:attribute   name            = 'comment'
+                         type            = 'xsd:string'/>
+        <xsd:attribute   name            = 'LastReviewedDate'
+                         type            = 'xsd:date'/>
+        <xsd:attribute   name            = 'LastReviewedStatus'
+                         type            = 'xsd:string'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'ProtocolFragmentRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocIdWithFragment'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'ProtocolFragmentRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocIdWithFragment'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'SummaryLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'IncludedDevices'
-                     type            = 'IncludedDevices'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'ExcludedDevices'
-                     type            = 'ExcludedDevices'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'SummaryLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+        <xsd:attribute   name            = 'IncludedDevices'
+                         type            = 'IncludedDevices'/>
+        <xsd:attribute   name            = 'ExcludedDevices'
+                         type            = 'ExcludedDevices'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'DrugSummaryLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'DrugSummaryLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'SummaryFragmentLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocIdWithFragment'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'SummaryFragmentLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocIdWithFragment'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'SummaryRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'SummaryRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'DrugSummaryRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocId'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'DrugSummaryRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocId'
+                         use             = 'required'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'SummaryFragmentRef'
-                     mixed           = 'true'>
-    <choice          minOccurs       = '0'
-                     maxOccurs       = 'unbounded'>
-      <element       name            = 'ReferencedTableNumber'
-                     type            = 'ReferencedNumber'/>
-      <element       name            = 'ReferencedFigureNumber'
-                     type            = 'ReferencedNumber'/>
-    </choice>
-    <attribute       name            = 'cdr:href'
-                     type            = 'DocIdWithFragment'/>
-    <attribute       name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'SummaryFragmentRef'
+                         mixed           = 'true'>
+    <xsd:choice          minOccurs       = '0'
+                         maxOccurs       = 'unbounded'>
+      <xsd:element       name            = 'ReferencedTableNumber'
+                         type            = 'ReferencedNumber'/>
+      <xsd:element       name            = 'ReferencedFigureNumber'
+                         type            = 'ReferencedNumber'/>
+    </xsd:choice>
+    <xsd:attribute       name            = 'cdr-href'
+                         type            = 'DocIdWithFragment'
+                         use             = 'required'/>
+    <xsd:attribute       name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'ReferencedNumber'>
-    <simpleContent>
-      <extension     base            = 'EmptyContent'>
-        <attribute   name            = 'Target'
-                     type            = 'DocIdWithFragment'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'ReferencedNumber'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'EmptyContent'>
+        <xsd:attribute   name            = 'Target'
+                         type            = 'DocIdWithFragment'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'OrganizationLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'OrganizationLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'OrganizationOrPersonLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'OrganizationOrPersonLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'OrganizationFragmentLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocIdWithFragment'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'OrganizationFragmentLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocIdWithFragment'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'OrganizationRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'OrganizationRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'OrganizationFragmentRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocIdWithFragment'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'OrganizationFragmentRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocIdWithFragment'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'OrganizationLinkWithOptionalFragment'>
-    <simpleContent>
-      <extension     base            = 'string'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocIdWithOptionalFragment'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'OrganizationLinkWithOptionalFragment'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'xsd:string'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocIdWithOptionalFragment'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'xsd:string'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'PersonLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'PersonLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'PersonFragmentLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocIdWithFragment'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'PersonFragmentLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocIdWithFragment'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'PersonRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'PersonRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'PersonFragmentRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocIdWithFragment'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'PersonFragmentRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocIdWithFragment'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'TerminologyLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'TerminologyLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'TerminologyRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'TerminologyRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'PoliticalSubUnitLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'PoliticalSubUnitLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'CitationLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'comment'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'LastReviewedDate'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'CitationLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+        <xsd:attribute   name            = 'comment'
+                         type            = 'xsd:string'/>
+        <xsd:attribute   name            = 'LastReviewedDate'
+                         type            = 'xsd:date'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'CitationFragmentLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocIdWithFragment'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'CitationFragmentLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocIdWithFragment'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'CitationRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'comment'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'LastReviewedDate'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'CitationRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+        <xsd:attribute   name            = 'comment'
+                         type            = 'xsd:string'/>
+        <xsd:attribute   name            = 'LastReviewedDate'
+                         type            = 'xsd:date'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'CitationFragmentRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocIdWithFragment'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'CitationFragmentRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocIdWithFragment'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'MiscellaneousLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'MiscellaneousLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'MiscellaneousFragmentLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocIdWithFragment'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'MiscellaneousFragmentLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocIdWithFragment'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'MiscellaneousLinkWithOptionalFragment'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocIdWithOptionalFragment'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'IncludedDevices'
-                     type            = 'IncludedDevices'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'ExcludedDevices'
-                     type            = 'ExcludedDevices'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'MiscellaneousLinkWithOptionalFragment'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocIdWithOptionalFragment'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+        <xsd:attribute   name            = 'IncludedDevices'
+                         type            = 'IncludedDevices'/>
+        <xsd:attribute   name            = 'ExcludedDevices'
+                         type            = 'ExcludedDevices'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'MiscellaneousRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'MiscellaneousRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'MiscellaneousFragmentRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocIdWithFragment'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'MiscellaneousFragmentRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocIdWithFragment'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'DiagnosisLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'DiagnosisLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'GlossaryLink'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'GlossaryLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'GlossaryConceptLink'>
-    <simpleContent>
-      <extension     base            = 'string'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'GlossaryConceptLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'xsd:string'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'GlossaryNameLink'>
-    <simpleContent>
-      <extension     base            = 'string'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'GlossaryNameLink'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'xsd:string'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'GlossaryRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocId'/>
-        <attribute   name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'GlossaryRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocId'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'QandASet'>
-    <sequence>
-      <element       name            = 'MarkedUpTitle'
-                     type            = 'Title'
-                     minOccurs       = '0'/>
-      <choice>
-        <element     name            = 'QandADiv'
-                     type            = 'QandASet'
-                     maxOccurs       = 'unbounded'/>
-        <element     name            = 'QandAEntry'
-                     type            = 'QandAEntry'
-                     maxOccurs       = 'unbounded'/>
-      </choice>
-    </sequence>
-    <attribute       name            = 'cdr:id'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'IncludedDevices'
-                     type            = 'IncludedDevices'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ExcludedDevices'
-                     type            = 'ExcludedDevices'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'QandASet'>
+    <xsd:sequence>
+      <xsd:element       name            = 'MarkedUpTitle'
+                         type            = 'Title'
+                         minOccurs       = '0'/>
+      <xsd:choice>
+        <xsd:element     name            = 'QandADiv'
+                         type            = 'QandASet'
+                         maxOccurs       = 'unbounded'/>
+        <xsd:element     name            = 'QandAEntry'
+                         type            = 'QandAEntry'
+                         maxOccurs       = 'unbounded'/>
+      </xsd:choice>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'cdr-id'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'IncludedDevices'
+                         type            = 'IncludedDevices'/>
+    <xsd:attribute       name            = 'ExcludedDevices'
+                         type            = 'ExcludedDevices'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'QandAEntry'>
-    <sequence>
-      <element       name            = 'Question'
-                     type            = 'GeneralText'/>
-      <element       name            = 'Answer'
-                     type            = 'GeneralText'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-    <attribute       name            = 'cdr:id'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'QandAEntry'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Question'
+                         type            = 'GeneralText'/>
+      <xsd:element       name            = 'Answer'
+                         type            = 'GeneralText'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'cdr-id'
+                         type            = 'NotEmptyString'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'DatedAction'>
-    <sequence>
-      <element       name            = 'ActionDescription'
-                     type            = 'NotEmptyString'/>
-      <element       name            = 'ActionDate'
-                     type            = 'date'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'
-                     minOccurs       = '0'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'DatedAction'>
+    <xsd:sequence>
+      <xsd:element       name            = 'ActionDescription'
+                         type            = 'NotEmptyString'/>
+      <xsd:element       name            = 'ActionDate'
+                         type            = 'xsd:date'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
-  <complexType       name            = 'PlaceHolder'>
-    <simpleContent>
-      <extension     base            = 'EmptyContent'>
-        <attribute   name            = 'name'
-                     type            = 'string'/>
-        <attribute   name            = 'IncludedDevices'
-                     type            = 'IncludedDevices'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'ExcludedDevices'
-                     type            = 'ExcludedDevices'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'PlaceHolder'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'EmptyContent'>
+        <xsd:attribute   name            = 'name'
+                         type            = 'xsd:string'
+                         use             = 'required'/>
+        <xsd:attribute   name            = 'IncludedDevices'
+                         type            = 'IncludedDevices'/>
+        <xsd:attribute   name            = 'ExcludedDevices'
+                         type            = 'ExcludedDevices'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <simpleType        name            = 'EmptyContent'>
-   <restriction      base            = 'string'>
-    <maxLength       value           = '0'/>
-   </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'EmptyContent'>
+   <xsd:restriction      base            = 'xsd:string'>
+    <xsd:maxLength       value           = '0'/>
+   </xsd:restriction>
+  </xsd:simpleType>
 
 <!--=================================================================-->
 <!--                         TABLE TYPES                             -->
 <!--=================================================================-->
-  <complexType       name            = 'Table'>
-    <sequence>
-      <element       name            = 'Title'
-                     type            = 'Title'/>
-      <element       name            = 'TitleAbbrev'
-                     type            = 'Title'
-                     minOccurs       = '0'/>
-      <element       name            = 'TGroup'
-                     type            = 'TGroup'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-    <attribute       name            = 'Frame'
-                     type            = 'FrameAttrType'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'RowSep'
-                     type            = 'YesOrNo'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ColSep'
-                     type            = 'YesOrNo'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'TabStyle'
-                     type            = 'NMTOKEN'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'cdr:id'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'IncludedDevices'
-                     type            = 'IncludedDevices'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ExcludedDevices'
-                     type            = 'ExcludedDevices'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ExcludeFromNumberingSequence'
-                     type            = 'Yes'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'PdqKey'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'Table'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Title'
+                         type            = 'Title'/>
+      <xsd:choice        minOccurs       = '0'
+                         maxOccurs       = 'unbounded'>
+        <xsd:element     name            = 'Comment'
+                         type            = 'Comment'/>
+        <xsd:element     name            = 'ResponseToComment'
+                         type            = 'Comment'/>
+      </xsd:choice>
+      <xsd:element       name            = 'TitleAbbrev'
+                         type            = 'Title'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'TGroup'
+                         type            = 'TGroup'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'Frame'
+                         type            = 'FrameAttrType'/>
+    <xsd:attribute       name            = 'RowSep'
+                         type            = 'YesOrNo'/>
+    <xsd:attribute       name            = 'ColSep'
+                         type            = 'YesOrNo'/>
+    <xsd:attribute       name            = 'TabStyle'
+                         type            = 'xsd:NMTOKEN'/>
+    <xsd:attribute       name            = 'cdr-id'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'IncludedDevices'
+                         type            = 'IncludedDevices'/>
+    <xsd:attribute       name            = 'ExcludedDevices'
+                         type            = 'ExcludedDevices'/>
+    <xsd:attribute       name            = 'ExcludeFromNumberingSequence'
+                         type            = 'Yes'/>
+    <xsd:attribute       name            = 'PdqKey'
+                         type            = 'NotEmptyString'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'InformalTable'>
-    <sequence>
-      <element       name            = 'TGroup'
-                     type            = 'TGroup'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-    <attribute       name            = 'Frame'
-                     type            = 'FrameAttrType'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'RowSep'
-                     type            = 'YesOrNo'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ColSep'
-                     type            = 'YesOrNo'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'TabStyle'
-                     type            = 'NMTOKEN'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'InformalTable'>
+    <xsd:sequence>
+      <xsd:element       name            = 'TGroup'
+                         type            = 'TGroup'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'Frame'
+                         type            = 'FrameAttrType'/>
+    <xsd:attribute       name            = 'RowSep'
+                         type            = 'YesOrNo'/>
+    <xsd:attribute       name            = 'ColSep'
+                         type            = 'YesOrNo'/>
+    <xsd:attribute       name            = 'TabStyle'
+                         type            = 'xsd:NMTOKEN'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'TGroup'>
-    <sequence>
-      <element       name            = 'ColSpec'
-                     type            = 'ColSpec'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'SpanSpec'
-                     type            = 'SpanSpec'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'THead'
-                     type            = 'THeadOrFoot'
-                     minOccurs       = '0'/>
-      <element       name            = 'TFoot'
-                     type            = 'THeadOrFoot'
-                     minOccurs       = '0'/>
-      <element       name            = 'TBody'
-                     type            = 'TBody'/>
-    </sequence>
-    <attribute       name            = 'RowSep'
-                     type            = 'YesOrNo'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ColSep'
-                     type            = 'YesOrNo'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Align'
-                     type            = 'Align'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Char'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Charoff'
-                     type            = 'NMTOKEN'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Cols'
-                     type            = 'integer'/>
-    <attribute       name            = 'TGroupStyle'
-                     type            = 'NMTOKEN'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'TGroup'>
+    <xsd:sequence>
+      <xsd:element       name            = 'ColSpec'
+                         type            = 'ColSpec'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'SpanSpec'
+                         type            = 'SpanSpec'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'THead'
+                         type            = 'THeadOrFoot'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'TFoot'
+                         type            = 'THeadOrFoot'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'TBody'
+                         type            = 'TBody'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'RowSep'
+                         type            = 'YesOrNo'/>
+    <xsd:attribute       name            = 'ColSep'
+                         type            = 'YesOrNo'/>
+    <xsd:attribute       name            = 'Align'
+                         type            = 'Align'/>
+    <xsd:attribute       name            = 'Char'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'Charoff'
+                         type            = 'xsd:NMTOKEN'/>
+    <xsd:attribute       name            = 'Cols'
+                         type            = 'xsd:integer'
+                         use             = 'required'/>
+    <xsd:attribute       name            = 'TGroupStyle'
+                         type            = 'xsd:NMTOKEN'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'ColSpec'>
-    <attribute       name            = 'Align'
-                     type            = 'Align'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Char'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Charoff'
-                     type            = 'NMTOKEN'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ColName'
-                     type            = 'NMTOKEN'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ColNum'
-                     type            = 'integer'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ColWidth'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'RowSep'
-                     type            = 'YesOrNo'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ColSep'
-                     type            = 'YesOrNo'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'ColSpec'>
+    <xsd:attribute       name            = 'Align'
+                         type            = 'Align'/>
+    <xsd:attribute       name            = 'Char'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'Charoff'
+                         type            = 'xsd:NMTOKEN'/>
+    <xsd:attribute       name            = 'ColName'
+                         type            = 'xsd:NMTOKEN'/>
+    <xsd:attribute       name            = 'ColNum'
+                         type            = 'xsd:integer'/>
+    <xsd:attribute       name            = 'ColWidth'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'RowSep'
+                         type            = 'YesOrNo'/>
+    <xsd:attribute       name            = 'ColSep'
+                         type            = 'YesOrNo'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'SpanSpec'>
-    <attribute       name            = 'Align'
-                     type            = 'Align'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Char'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Charoff'
-                     type            = 'NMTOKEN'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'SpanName'
-                     type            = 'NMTOKEN'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'NameSt'
-                     type            = 'NMTOKEN'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'NameEnd'
-                     type            = 'NMTOKEN'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'RowSep'
-                     type            = 'YesOrNo'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ColSep'
-                     type            = 'YesOrNo'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'SpanSpec'>
+    <xsd:attribute       name            = 'Align'
+                         type            = 'Align'/>
+    <xsd:attribute       name            = 'Char'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'Charoff'
+                         type            = 'xsd:NMTOKEN'/>
+    <xsd:attribute       name            = 'SpanName'
+                         type            = 'xsd:NMTOKEN'/>
+    <xsd:attribute       name            = 'NameSt'
+                         type            = 'xsd:NMTOKEN'/>
+    <xsd:attribute       name            = 'NameEnd'
+                         type            = 'xsd:NMTOKEN'/>
+    <xsd:attribute       name            = 'RowSep'
+                         type            = 'YesOrNo'/>
+    <xsd:attribute       name            = 'ColSep'
+                         type            = 'YesOrNo'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'THeadOrFoot'>
-    <sequence>
-      <element       name            = 'ColSpec'
-                     type            = 'ColSpec'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-      <element       name            = 'Row'
-                     type            = 'Row'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-    <attribute       name            = 'Valign'
-                     type            = 'Valign'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'THeadOrFoot'>
+    <xsd:sequence>
+      <xsd:element       name            = 'ColSpec'
+                         type            = 'ColSpec'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'Row'
+                         type            = 'Row'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'Valign'
+                         type            = 'Valign'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'TBody'>
-    <sequence>
-      <element       name            = 'Row'
-                     type            = 'Row'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-    <attribute       name            = 'Valign'
-                     type            = 'Valign'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'TBody'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Row'
+                         type            = 'Row'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'Valign'
+                         type            = 'Valign'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'Row'>
-    <sequence>
-      <element       name            = 'entry'
-                     type            = 'Entry'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-    <attribute       name            = 'RowSep'
-                     type            = 'YesOrNo'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Valign'
-                     type            = 'Valign'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'Row'>
+    <xsd:sequence>
+      <xsd:element       name            = 'entry'
+                         type            = 'Entry'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'RowSep'
+                         type            = 'YesOrNo'/>
+    <xsd:attribute       name            = 'Valign'
+                         type            = 'Valign'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'Entry'
-                     mixed           = 'true'>
-    <choice          minOccurs       = '0'
-                     maxOccurs       = 'unbounded'>
-      <group         ref             = 'PhraseElements'/>
-      <element       name            = 'Comment'
-                     type            = 'Comment'/>
-      <element       name            = 'ResponseToComment'
-                     type            = 'Comment'/>
-    </choice>
-    <attribute       name            = 'RowSep'
-                     type            = 'YesOrNo'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ColSep'
-                     type            = 'YesOrNo'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'NameSt'
-                     type            = 'NMTOKEN'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'NameEnd'
-                     type            = 'NMTOKEN'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'SpanName'
-                     type            = 'NMTOKEN'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'MoreRows'
-                     type            = 'integer'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Align'
-                     type            = 'Align'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Char'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Charoff'
-                     type            = 'NMTOKEN'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Cols'
-                     type            = 'integer'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Valign'
-                     type            = 'Valign'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'Entry'
+                         mixed           = 'true'>
+    <xsd:choice          minOccurs       = '0'
+                         maxOccurs       = 'unbounded'>
+      <xsd:group         ref             = 'PhraseElements'/>
+      <xsd:element       name            = 'Comment'
+                         type            = 'Comment'/>
+      <xsd:element       name            = 'ResponseToComment'
+                         type            = 'Comment'/>
+    </xsd:choice>
+    <xsd:attribute       name            = 'RowSep'
+                         type            = 'YesOrNo'/>
+    <xsd:attribute       name            = 'ColSep'
+                         type            = 'YesOrNo'/>
+    <xsd:attribute       name            = 'NameSt'
+                         type            = 'xsd:NMTOKEN'/>
+    <xsd:attribute       name            = 'NameEnd'
+                         type            = 'xsd:NMTOKEN'/>
+    <xsd:attribute       name            = 'SpanName'
+                         type            = 'xsd:NMTOKEN'/>
+    <xsd:attribute       name            = 'MoreRows'
+                         type            = 'xsd:integer'/>
+    <xsd:attribute       name            = 'Align'
+                         type            = 'Align'/>
+    <xsd:attribute       name            = 'Char'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'Charoff'
+                         type            = 'xsd:NMTOKEN'/>
+    <xsd:attribute       name            = 'Cols'
+                         type            = 'xsd:integer'/>
+    <xsd:attribute       name            = 'Valign'
+                         type            = 'Valign'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'DocumentationLink'>
+  <xsd:complexType       name            = 'DocumentationLink'>
 
-   <simpleContent>
+   <xsd:simpleContent>
 
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'
-                     minOccurs       = '0'/>
-      </extension>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'/>
+      </xsd:extension>
 
-    </simpleContent>
-  </complexType>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'MediaLink'>
-    <sequence>
-      <element       name            = 'MediaID'
-                     type            = 'MediaID'/>
-      <element       name            = 'Caption'
-                     type            = 'GeneralText'
-                     minOccurs       = '0'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-    <attribute       name            = 'AlternativeText'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'Inline'
-                     type            = 'YesNo'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'UseCaption'
-                     type            = 'YesNo'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'size'
-                     type            = 'MediaSize'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'placement'
-                     type            = 'ImagePlacement'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'thumb'
-                     type            = 'YesNo'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'MinWidth'
-                     type            = 'integer'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'cdr:id'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'IncludedDevices'
-                     type            = 'IncludedDevices'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ExcludedDevices'
-                     type            = 'ExcludedDevices'
-                     minOccurs       = '0'/>
-    <attribute       name            = 'ExcludeFromNumberingSequence'
-                     type            = 'Yes'
-                     minOccurs       = '0'/>
-  </complexType>
+  <xsd:complexType       name            = 'MediaLink'>
+    <xsd:sequence>
+      <xsd:element       name            = 'MediaID'
+                         type            = 'MediaID'/>
+      <xsd:element       name            = 'Caption'
+                         type            = 'GeneralText'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'AlternativeText'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'Inline'
+                         type            = 'YesNo'/>
+    <xsd:attribute       name            = 'UseCaption'
+                         type            = 'YesNo'/>
+    <xsd:attribute       name            = 'size'
+                         type            = 'MediaSize'/>
+    <xsd:attribute       name            = 'placement'
+                         type            = 'ImagePlacement'/>
+    <xsd:attribute       name            = 'thumb'
+                         type            = 'YesNo'/>
+    <xsd:attribute       name            = 'MinWidth'
+                         type            = 'xsd:integer'/>
+    <xsd:attribute       name            = 'cdr-id'
+                         type            = 'NotEmptyString'/>
+    <xsd:attribute       name            = 'IncludedDevices'
+                         type            = 'IncludedDevices'/>
+    <xsd:attribute       name            = 'ExcludedDevices'
+                         type            = 'ExcludedDevices'/>
+    <xsd:attribute       name            = 'ExcludeFromNumberingSequence'
+                         type            = 'Yes'/>
+  </xsd:complexType>
 
-  <complexType       name            = 'MediaID'>
-   <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'MediaID'>
+   <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <simpleType        name            = 'MediaSize'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'full'/>
-      <enumeration   value           = 'half'/>
-      <enumeration   value           = 'third'/>
-      <enumeration   value           = 'quarter'/>
-      <enumeration   value           = 'fifth'/>
-      <enumeration   value           = 'sixth'/>
-      <enumeration   value           = 'as-is'/>
-      <enumeration   value           = 'three-quarters'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'MediaSize'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'full'/>
+      <xsd:enumeration   value           = 'half'/>
+      <xsd:enumeration   value           = 'third'/>
+      <xsd:enumeration   value           = 'quarter'/>
+      <xsd:enumeration   value           = 'fifth'/>
+      <xsd:enumeration   value           = 'sixth'/>
+      <xsd:enumeration   value           = 'as-is'/>
+      <xsd:enumeration   value           = 'three-quarters'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
 
-  <simpleType        name            = 'ImagePlacement'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'image-center'/>
-      <enumeration   value           = 'image-center-full'/>
-      <enumeration   value           = 'image-center-medium'/>
-      <enumeration   value           = 'image-left-medium'/>
-      <enumeration   value           = 'image-right-medium'/>
-      <enumeration   value           = 'image-left-small'/>
-      <enumeration   value           = 'image-right-small'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'ImagePlacement'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'image-center'/>
+      <xsd:enumeration   value           = 'image-center-full'/>
+      <xsd:enumeration   value           = 'image-center-medium'/>
+      <xsd:enumeration   value           = 'image-left-medium'/>
+      <xsd:enumeration   value           = 'image-right-medium'/>
+      <xsd:enumeration   value           = 'image-left-small'/>
+      <xsd:enumeration   value           = 'image-right-small'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
 
-  <complexType       name            = 'DocumentationFragmentLink'>
+  <xsd:complexType       name            = 'DocumentationFragmentLink'>
 
-   <simpleContent>
+   <xsd:simpleContent>
 
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocIdWithFragment'
-                     minOccurs       = '0'/>
-      </extension>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocIdWithFragment'/>
+      </xsd:extension>
 
-    </simpleContent>
-  </complexType>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'SupplementaryInfoLink'>
-   <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:ref'
-                     type            = 'DocId'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'SupplementaryInfoLink'>
+   <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-ref'
+                         type            = 'DocId'
+                         use             = 'required'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'MediaRef'>
-    <simpleContent>
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'FragmentIdWithOptionalDocId'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'MediaRef'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'FragmentIdWithOptionalDocId'
+                         use             = 'required'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name           = 'DocumentationRef'>
+  <xsd:complexType       name           = 'DocumentationRef'>
 
-   <simpleContent>
+   <xsd:simpleContent>
 
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocId'
-                     minOccurs       = '0'/>
-      </extension>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocId'/>
+      </xsd:extension>
 
-    </simpleContent>
-  </complexType>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'DocumentationFragmentRef'>
+  <xsd:complexType       name            = 'DocumentationFragmentRef'>
 
-   <simpleContent>
+   <xsd:simpleContent>
 
-      <extension     base            = 'NotEmptyString'>
-        <attribute   name            = 'cdr:href'
-                     type            = 'DocIdWithFragment'
-                     minOccurs       = '0'/>
-      </extension>
+      <xsd:extension     base            = 'NotEmptyString'>
+        <xsd:attribute   name            = 'cdr-href'
+                         type            = 'DocIdWithFragment'/>
+      </xsd:extension>
 
-    </simpleContent>
-  </complexType>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'UpdateMode'>
+  <xsd:complexType       name            = 'UpdateMode'>
 
-   <simpleContent>
+   <xsd:simpleContent>
 
-      <extension     base            = 'UpdateModeValidValues'>
-        <attribute   name            = 'MailerType'
-                     type            = 'MailerTypeValidValues'/>
-      </extension>
+      <xsd:extension     base            = 'UpdateModeValidValues'>
+        <xsd:attribute   name            = 'MailerType'
+                         type            = 'MailerTypeValidValues'
+                         use             = 'required'/>
+      </xsd:extension>
 
-    </simpleContent>
-  </complexType>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'Comment'>
-    <simpleContent>
-      <extension     base            = 'string'>
-        <attribute   name            = 'audience'
-                     type            = 'CommentAudience'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'user'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'date'
-                     type            = 'date'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'duration'
-                     type            = 'CommentDuration'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'source'
-                     type            = 'CommentSource'
-                     minOccurs       = '0'/>
-        <attribute   name            = 'context'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      </extension>
-    </simpleContent>
-  </complexType>
+  <xsd:complexType       name            = 'Comment'>
+    <xsd:simpleContent>
+      <xsd:extension     base            = 'xsd:string'>
+        <xsd:attribute   name            = 'audience'
+                         type            = 'CommentAudience'/>
+        <xsd:attribute   name            = 'user'
+                         type            = 'xsd:string'/>
+        <xsd:attribute   name            = 'date'
+                         type            = 'xsd:date'/>
+        <xsd:attribute   name            = 'duration'
+                         type            = 'CommentDuration'/>
+        <xsd:attribute   name            = 'source'
+                         type            = 'CommentSource'/>
+        <xsd:attribute   name            = 'context'
+                         type            = 'xsd:string'/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
 
-  <complexType       name            = 'RelatedDocumentsLinks'>
-    <sequence>
-      <element       name            = 'SupplementaryInfoLink'
-                     type            = 'SupplementaryInfoLink'
-                     maxOccurs       = 'unbounded'/>
-    </sequence>
-  </complexType>
+  <xsd:complexType       name            = 'RelatedDocumentsLinks'>
+    <xsd:sequence>
+      <xsd:element       name            = 'SupplementaryInfoLink'
+                         type            = 'SupplementaryInfoLink'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
 
   <!-- Link to a Media document for a video hosted on YouTube,
-       to be embedded in a player UI in the rendered linking
-       document. The title, caption, and presentation template
-       default values can be overridden here for this specific
-       usage. See https://tracker.nci.nih.gov/browse/OCECDR-3558. -->
-  <complexType       name            = 'EmbeddedVideo'>
-    <sequence>
-      <element       name            = 'VideoID'
-                     type            = 'MediaID'/>
-      <element       name            = 'SpecificMediaTitle'
-                     type            = 'string'
-                     minOccurs       = '0'/>
-      <element       name            = 'SpecificMediaCaption'
-                     type            = 'SpecificMediaCaption'
-                     minOccurs       = '0'/>
-      <element       name            = 'SpecificVideoPresentationTemplate'
-                     type            = 'VideoPresentationTemplate'
-                     minOccurs       = '0'/>
-    </sequence>
-    <attribute       name            = 'cdr:id'
-                     type            = 'NotEmptyString'
-                     minOccurs       = '0'/>
-  </complexType>
+           to be embedded in a player UI in the rendered linking
+           document. The title, caption, and presentation template
+           default values can be overridden here for this specific
+           usage. See https://tracker.nci.nih.gov/browse/OCECDR-3558. -->
+  <xsd:complexType       name            = 'EmbeddedVideo'>
+    <xsd:sequence>
+      <xsd:element       name            = 'VideoID'
+                         type            = 'MediaID'/>
+      <xsd:element       name            = 'SpecificMediaTitle'
+                         type            = 'xsd:string'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'SpecificMediaCaption'
+                         type            = 'SpecificMediaCaption'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'SpecificVideoPresentationTemplate'
+                         type            = 'VideoPresentationTemplate'
+                         minOccurs       = '0'/>
+    </xsd:sequence>
+    <xsd:attribute       name            = 'cdr-id'
+                         type            = 'NotEmptyString'/>
+  </xsd:complexType>
 
   <!-- Mirrors the MediaCaption type in Media.xml, but without
-       the audience and language attributes. This is used as
-       part of an EmbeddedVideo block used in a CDR document
-       which links to a Media document for a video. -->
-  <complexType       name            = 'SpecificMediaCaption'
-                     mixed           = 'true'>
-    <choice          minOccurs       = '0'
-                     maxOccurs       = 'unbounded'>
-      <group         ref             = 'PhraseOrParaElements'/>
-      <group         ref             = 'CommonTextElements'/>
-    </choice>
-  </complexType>
+           the audience and language attributes. This is used as
+           part of an EmbeddedVideo block used in a CDR document
+           which links to a Media document for a video. -->
+  <xsd:complexType       name            = 'SpecificMediaCaption'
+                         mixed           = 'true'>
+    <xsd:choice          minOccurs       = '0'
+                         maxOccurs       = 'unbounded'>
+      <xsd:group         ref             = 'PhraseOrParaElements'/>
+      <xsd:group         ref             = 'CommonTextElements'/>
+    </xsd:choice>
+  </xsd:complexType>
 
 <!--=================================================================-->
 <!--                    COMMON SIMPLE TYPES                          -->
 <!--=================================================================-->
 
-  <simpleType        name            = 'CommentAudience'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Internal'/>
-      <enumeration   value           = 'External'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'CommentAudience'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Internal'/>
+      <xsd:enumeration   value           = 'External'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'NotEmptyString'>
-    <restriction     base            = 'string'>
-      <minLength     value           = '0'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'NotEmptyString'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:minLength     value           = '0'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'NonEmptyString'>
-    <restriction     base            = 'string'>
-      <minLength     value           = '1'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'NonEmptyString'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:minLength     value           = '1'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
   <!-- Fields that are really data, not text.  All whitespace normalized -->
-  <simpleType        name            = 'DataString'>
-    <restriction     base            = 'string'>
-      <pattern       value           = '\S+( \S+)*'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'DataString'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:pattern       value           = '\S+( \S+)*'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'ItemizedListStyle'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'simple'/>
-      <enumeration   value           = 'bullet'/>
-      <enumeration   value           = 'dash'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'ItemizedListStyle'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'simple'/>
+      <xsd:enumeration   value           = 'bullet'/>
+      <xsd:enumeration   value           = 'dash'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'OrderedListStyle'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Arabic'/>
-      <enumeration   value           = 'UAlpha'/>
-      <enumeration   value           = 'URoman'/>
-      <enumeration   value           = 'LAlpha'/>
-      <enumeration   value           = 'LRoman'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'OrderedListStyle'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Arabic'/>
+      <xsd:enumeration   value           = 'UAlpha'/>
+      <xsd:enumeration   value           = 'URoman'/>
+      <xsd:enumeration   value           = 'LAlpha'/>
+      <xsd:enumeration   value           = 'LRoman'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'YesOrNo'>
-    <restriction     base            = 'integer'>
+  <xsd:simpleType        name            = 'YesOrNo'>
+    <xsd:restriction     base            = 'xsd:integer'>
     <!--YesOrNo type used in tables only-->
-      <enumeration   value           = '0'/>
-      <enumeration   value           = '1'/>
-    </restriction>
-  </simpleType>
+      <xsd:enumeration   value           = '0'/>
+      <xsd:enumeration   value           = '1'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'YesNo'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Yes'/>
-      <enumeration   value           = 'No'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'YesNo'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Yes'/>
+      <xsd:enumeration   value           = 'No'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'FrameAttrType'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Sides'/>
-      <enumeration   value           = 'Top'/>
-      <enumeration   value           = 'Bottom'/>
-      <enumeration   value           = 'TopBot'/>
-      <enumeration   value           = 'All'/>
-      <enumeration   value           = 'None'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'FrameAttrType'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Sides'/>
+      <xsd:enumeration   value           = 'Top'/>
+      <xsd:enumeration   value           = 'Bottom'/>
+      <xsd:enumeration   value           = 'TopBot'/>
+      <xsd:enumeration   value           = 'All'/>
+      <xsd:enumeration   value           = 'None'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'Align'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Center'/>
-      <enumeration   value           = 'Char'/>
-      <enumeration   value           = 'Justify'/>
-      <enumeration   value           = 'Left'/>
-      <enumeration   value           = 'Right'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'Align'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Center'/>
+      <xsd:enumeration   value           = 'Char'/>
+      <xsd:enumeration   value           = 'Justify'/>
+      <xsd:enumeration   value           = 'Left'/>
+      <xsd:enumeration   value           = 'Right'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'Valign'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Bottom'/>
-      <enumeration   value           = 'Middle'/>
-      <enumeration   value           = 'Top'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'Valign'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Bottom'/>
+      <xsd:enumeration   value           = 'Middle'/>
+      <xsd:enumeration   value           = 'Top'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'DocId'>
-    <restriction     base            = 'string'>
-      <pattern       value           = 'CDR[0-9]{10}'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'DocId'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:pattern       value           = 'CDR[0-9]{10}'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'DocIdWithFragment'>
-    <restriction     base            = 'string'>
-      <pattern       value           = 'CDR[0-9]{10}#[A-Za-z_]\S{0,31}'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'DocIdWithFragment'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:pattern       value           = 'CDR[0-9]{10}#[A-Za-z_]\S{0,31}'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'FragmentId'>
-    <restriction     base            = 'string'>
-      <pattern       value           = '[A-Za-z_]\S{0,31}'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'FragmentId'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:pattern       value           = '[A-Za-z_]\S{0,31}'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'AddressType'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'US'/>
+  <xsd:simpleType        name            = 'AddressType'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'US'/>
     <!--Will enforce (through programming outside schema):
-        1. Zip should be required
-        2. State should be required
-        3. Country=US
-        4. Phone should be required
-      -->
-      <enumeration   value           = 'Non-US'/>
-    </restriction>
-  </simpleType>
+            1. Zip should be required
+            2. State should be required
+            3. Country=US
+            4. Phone should be required
+          -->
+      <xsd:enumeration   value           = 'Non-US'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'PrimarySecondary'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Primary'/>
-      <enumeration   value           = 'Secondary'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'PrimarySecondary'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Primary'/>
+      <xsd:enumeration   value           = 'Secondary'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'No'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'No'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'No'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'No'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'Yes'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Yes'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'Yes'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Yes'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'YN'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Y'/>
-      <enumeration   value           = 'N'/>
-      <!--For possible use in PubMed citations only-->
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'YN'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Y'/>
+      <xsd:enumeration   value           = 'N'/>
+          <!--For possible use in PubMed citations only-->
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'DocIdWithOptionalFragment'>
-    <restriction     base            = 'string'>
-      <pattern       value           = 'CDR[0-9]{10}(#[A-Za-z_]\S*)?'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'DocIdWithOptionalFragment'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:pattern       value           = 'CDR[0-9]{10}(#[A-Za-z_]\S*)?'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'FragmentIdWithOptionalDocId'>
-    <restriction     base            = 'string'>
-      <pattern       value           = '(CDR[0-9]{10})?#[A-Za-z_]\S*'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'FragmentIdWithOptionalDocId'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:pattern       value           = '(CDR[0-9]{10})?#[A-Za-z_]\S*'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'FragmentRef'>
-    <restriction     base            = 'string'>
-      <pattern       value           = '#[A-Za-z_]\S*'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'FragmentRef'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:pattern       value           = '#[A-Za-z_]\S*'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'MailerTypeValidValues'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Protocol_SandP'/>
-      <enumeration   value           = 'Protocol_Abstract'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'MailerTypeValidValues'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Protocol_SandP'/>
+      <xsd:enumeration   value           = 'Protocol_Abstract'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'UpdateModeValidValues'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Web-based'/>
-      <enumeration   value           = 'External data file'/>
-      <enumeration   value           = 'RSS'/>
-      <enumeration   value           = 'COG'/>
-      <enumeration   value           = 'Oncore'/>
-      <enumeration   value           = 'NCIC'/>
-      <enumeration   value           = 'Mail'/>
-      <enumeration   value           = 'NCI Liaison Office'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'UpdateModeValidValues'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Web-based'/>
+      <xsd:enumeration   value           = 'External data file'/>
+      <xsd:enumeration   value           = 'RSS'/>
+      <xsd:enumeration   value           = 'COG'/>
+      <xsd:enumeration   value           = 'Oncore'/>
+      <xsd:enumeration   value           = 'NCIC'/>
+      <xsd:enumeration   value           = 'Mail'/>
+      <xsd:enumeration   value           = 'NCI Liaison Office'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'AltTitleType'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Short'/>
-      <enumeration   value           = 'Display'/>
-      <enumeration   value           = 'Navlabel'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'AltTitleType'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Short'/>
+      <xsd:enumeration   value           = 'Display'/>
+      <xsd:enumeration   value           = 'Navlabel'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'CommentDuration'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'permanent'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'CommentDuration'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'permanent'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'CommentSource'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'advisory-board'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'CommentSource'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'advisory-board'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'EmailAddress'>
-    <restriction     base            = 'string'>
-      <pattern       value           = '[^\s@]+@[^\s@]+\.[^\s@]+'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'EmailAddress'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:pattern       value           = '[^\s@]+@[^\s@]+\.[^\s@]+'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'NMTOKENS'>
-    <restriction     base            = 'string'>
-      <pattern       value           = '\S+(\s+\S+)*'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'NMTOKENS'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:pattern       value           = '\S+(\s+\S+)*'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'ExcludedDevices'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'none'/>
-      <enumeration   value           = 'mobile'/>
-      <enumeration   value           = 'screen'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'ExcludedDevices'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'none'/>
+      <xsd:enumeration   value           = 'mobile'/>
+      <xsd:enumeration   value           = 'screen'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-  <simpleType        name            = 'IncludedDevices'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'mobile'/>
-      <enumeration   value           = 'screen'/>
-    </restriction>
-  </simpleType>
+  <xsd:simpleType        name            = 'IncludedDevices'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'mobile'/>
+      <xsd:enumeration   value           = 'screen'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
   <!-- Controls three aspects of the embedded video's presentation:
-       positioning, size, and whether the title is displayed.
-       These are the allowed combinations. See the WCMS documentation
-       for further details. -->
-  <simpleType        name            = 'VideoPresentationTemplate'>
-    <restriction     base            = 'string'>
-      <enumeration   value           = 'Video100NoTitle'/>
-      <enumeration   value           = 'Video100Title'/>
-      <enumeration   value           = 'Video50NoTitle'/>
-      <enumeration   value           = 'Video50NoTitleRight'/>
-      <enumeration   value           = 'Video50TitleRight'/>
-      <enumeration   value           = 'Video75NoTitle'/>
-      <enumeration   value           = 'Video75Title'/>
-    </restriction>
-  </simpleType>
+           positioning, size, and whether the title is displayed.
+           These are the allowed combinations. See the WCMS documentation
+           for further details. -->
+  <xsd:simpleType        name            = 'VideoPresentationTemplate'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:enumeration   value           = 'Video100NoTitle'/>
+      <xsd:enumeration   value           = 'Video100Title'/>
+      <xsd:enumeration   value           = 'Video50NoTitle'/>
+      <xsd:enumeration   value           = 'Video50NoTitleRight'/>
+      <xsd:enumeration   value           = 'Video50TitleRight'/>
+      <xsd:enumeration   value           = 'Video75NoTitle'/>
+      <xsd:enumeration   value           = 'Video75Title'/>
+    </xsd:restriction>
+  </xsd:simpleType>
 
-</schema>
+</xsd:schema>
