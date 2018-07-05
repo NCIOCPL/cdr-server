@@ -72,13 +72,21 @@ BZIssue::4967 - [Summary] Modification to QC Reports to Show/Hide
     differently: Internal/External/Permanent/Advisory/etc.
     However, the users decided to only distinguish between internal
     and external comments.  See the following style block
+
+    It's been requested not to underline comments anymore if they
+    are within insertion markup and not to display any comments
+    with gray background.
+    Additionally, all comments should be displayed as normal text
+    without italics, spacing, underlining, etc.
+    Comments within deletion markup should still be displayed with
+    a line-through markup. VE, 2018-06-12
     ===============================================================
     .com_intern       { color: #00FFFF; }
     .com_extern       { color: white; }
     .com_perm         { background-color: #006666; }
     .com_temp         { background-color: green; }
     .com_adv          { letter-spacing: 0.1em; }
-    .com_edi          { letter-spacing: 0. em; }
+    .com_edi          { letter-spacing: 0; }
     .none             { display: none; }
     ***/
 
@@ -87,10 +95,10 @@ BZIssue::4967 - [Summary] Modification to QC Reports to Show/Hide
                         /* and has been removed                         */
                         /* background-color: #CFCFCF; }                 */
     .com_extern       { color: black; }
-    .com_perm         { background-color: none; }
-    .com_temp         { background-color: none; }
-    .com_adv          { letter-spacing: 0. em; }
-    .com_edi          { letter-spacing: 0. em; }
+    .com_perm         { background-color: transparent; }
+    .com_temp         { background-color: transparent; }
+    .com_adv          { letter-spacing: 0; }
+    .com_edi          { letter-spacing: 0; }
     .none             { display: none; }
 
     .commentnormal    { font-style: italic;
@@ -98,48 +106,85 @@ BZIssue::4967 - [Summary] Modification to QC Reports to Show/Hide
     .commentnormal_ad { color: white;
                         background-color: green;
                         font-style: italic;
-                        font-weight: bold;
-                        letter-spacing: 0.1em; }
-    .cominsertprop    { color: green;
-                        font-style: italic;
                         font-weight: bold; }
-                        /* background-color: #AAA; */
-    .cominsertprop_ad { color: green;
+                        /* letter-spacing: 0.1em; } */
+    .cominsertprop,
+    .cominsertprop > .insertproposed,
+    .cominsertprop > .insertproposed_ad
+                      { color: green;
                         font-style: italic;
                         font-weight: bold;
-                        letter-spacing: 0.1em; }
+                        letter-spacing: 0; }
                         /* background-color: #AAA; */
-    .cominsertappr    { color: red;
-                        background-color: none;   /* changed from green; */
+    .cominsertprop_ad,
+    .cominsertprop_ad > .insertproposed_ad
+                      { color: green;
                         font-style: italic;
+                        font-weight: bold;
+                        letter-spacing: 0; }
+                        /* background-color: #AAA; */
+    .cominsertappr,
+    .cominsertappr > .insertapproved,
+    .cominsertappr > .insertapproved_ad
+                      { color: red;
+                        background-color: transparent;   /* changed from green; */
+                        font-style: italic;
+                        letter-spacing: 0;
                         font-weight: bold; }
-    .cominsertappr_ad { color: red;
-                        background-color: none;   /* changed from green; */
+    .cominsertappr_ad,
+    .cominsertappr_ad > .insertapproved_ad
+                      { color: red;
+                        background-color: transparent;   /* changed from green; */
                         font-style: italic;
                         font-weight: bold;
-                        letter-spacing: 0.1em; }
-    .comdeleteprop    { text-decoration: line-through;
+                        letter-spacing: 0; }
+    .comdeleteprop,
+    .comdeleteprop > .deleteproposed,
+    .comdeleteprop > .deleteproposed_ad
+                      { text-decoration: line-through;
                         color: green;
                         font-style: italic;
+                        letter-spacing: 0;
                         font-weight: bold; }
                         /* background-color: #AAA; */
-    .comdeleteprop_ad { text-decoration: line-through;
+    .comdeleteprop_ad,
+    .comdeleteprop_ad > .deleteproposed_ad
+                      { text-decoration: line-through;
                         color: green;
                         font-style: italic;
                         font-weight: bold;
-                        letter-spacing: 0.1em; }
+                        letter-spacing: 0; }
                         /* background-color: #AAA; */
     .comdeleteappr    { text-decoration: line-through;
                         color: black;
-                        background-color: none;   /* changed from green; */
+                        background-color: transparent;   /* changed from green; */
                         font-style: italic;
                         font-weight: bold;}
     .comdeleteappr_ad { text-decoration: line-through;
                         color: black;
-                        background-color: none;   /* changed from green; */
+                        background-color: transparent;   /* changed from green; */
                         font-style: italic;
                         font-weight: bold;
                         letter-spacing: 0.1em; }
+
+ /* Comments within paragraphs, lists, tables, etc. should be 
+    displayed as inline elements. Comments that are siblings to 
+    these elements should be displayed as block elements.
+    =============================================================== */
+    p span.com_intern,
+    p span.com_extern,
+    ul span.com_intern,
+    ul span.com_extern,
+    ol span.com_intern,
+    ol span.com_extern,
+    table span.com_intern,
+    table span.com_extern
+                             { display: inline; }
+    span.com_intern,
+    span.com_extern
+                             { display: block; }
+    /* span.com_intern + span.response               */
+    /*                          { display: inline; } */
 
  /* Mark up other misc elements  */
  /* ===========================  */
