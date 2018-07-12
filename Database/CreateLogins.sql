@@ -485,3 +485,9 @@ GO
 GRANT SELECT ON data_partner_notification TO CdrGuest
 GRANT SELECT ON data_partner_notification TO CdrPublishing
 GO
+GRANT SELECT ON glossary_translation_state TO CdrGuest
+GRANT SELECT ON glossary_translation_job TO CdrGuest
+GRANT SELECT ON glossary_translation_job_history TO CdrGuest
+GRANT SELECT ON media_translation_state TO CdrGuest
+GRANT SELECT ON media_translation_job TO CdrGuest
+GRANT SELECT ON media_translation_job_history TO CdrGuest
