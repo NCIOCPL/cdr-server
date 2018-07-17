@@ -80,33 +80,33 @@ OCECDR-4123: Add HP/Patient URL to Summaries
                                            /SummaryTitle, ':'), ':'))"/>
  <xsl:variable                    name = "sumType"
                                 select = "/Summary
-                                         /SummaryMetaData
-                                         /SummaryType"/>
+                                          /SummaryMetaData
+                                          /SummaryType"/>
  <xsl:variable                    name = "sumAudience"
                                 select = "/Summary
-                                         /SummaryMetaData
-                                         /SummaryAudience"/>
+                                          /SummaryMetaData
+                                          /SummaryAudience"/>
  <xsl:variable                    name = "sumAgeGroup"
                                 select = "/Summary
-                                         /SummaryMetaData
-                                         /PDQBoard
-                                         /Board"/>
+                                          /SummaryMetaData
+                                          /PDQBoard
+                                          /Board"/>
  <xsl:variable                    name = "language"
                                 select = "/Summary
-                                         /SummaryMetaData
-                                         /SummaryLanguage"/>
+                                          /SummaryMetaData
+                                          /SummaryLanguage"/>
  <xsl:variable                    name = "sumUrlText"
                                 select = "/Summary
-                                         /SummaryMetaData
-                                         /SummaryURL"/>
+                                          /SummaryMetaData
+                                          /SummaryURL"/>
  <xsl:variable                    name = "sumUrl"
                                 select = "/Summary
-                                         /SummaryMetaData
-                                         /SummaryURL/@cdr:xref"/>
- <xsl:variable                   name = "sumPmid"
-                               select = "/Summary
-                                         /SummaryMetaData
-                                         /PMID"/>
+                                          /SummaryMetaData
+                                          /SummaryURL/@cdr:xref"/>
+ <xsl:variable                    name = "sumPmid"
+                                select = "/Summary
+                                          /SummaryMetaData
+                                          /PMID"/>
 
  <!--
  Information needed to populate the "About This Summary" sections
@@ -171,29 +171,28 @@ OCECDR-4123: Add HP/Patient URL to Summaries
   </xsl:choose>
  </xsl:variable>
 
+
  <xsl:variable                    name = "sumLoeUrl">
   <xsl:choose>
    <xsl:when                      test = "$language = 'English'">
     <!-- 
-    We need to do this little trick since some URLs are written as
-    http://www.cancer.gov and some as http://cancer.gov
-    ============================================================== -->
+    Using search string 'cancer.gov' since some of the active 
+    documents my still use 'http:' as the protocol instead of 'https:'
+    ================================================================== -->
     <xsl:value-of              select = "substring-after(
-                                           substring-after(
-                                             /Summary
-                                             /SummaryMetaData
-                                             /PDQBoard
-                                             /BoardLOEURL/@cdr:xref,
-                                             'http://'), 'cancer.gov')"/>
+                                           /Summary
+                                           /SummaryMetaData
+                                           /PDQBoard
+                                           /BoardLOEURL/@cdr:xref,
+                                           'cancer.gov')"/>
    </xsl:when>
    <xsl:otherwise>
     <xsl:value-of              select = "substring-after(
-                                           substring-after(
-                                             /Summary
-                                             /SummaryMetaData
-                                             /PDQBoard
-                                             /BoardLOEURLES/@cdr:xref,
-                                             'http://'), 'cancer.gov')"/>
+                                           /Summary
+                                           /SummaryMetaData
+                                           /PDQBoard
+                                           /BoardLOEURLES/@cdr:xref,
+                                           'cancer.gov')"/>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:variable>
@@ -775,8 +774,8 @@ OCECDR-4123: Add HP/Patient URL to Summaries
                                                    $docNormId)))"/>
   <!--
   Note:  The url created by function getSummaryURL has no trailing 
-         slash ('/'), specifies the domain as http://cancer.gov and
-         is normalized
+         slash ('/'), specifies the domain as https://www.cancer.gov 
+         and is normalized
   ================================================================= -->
   <xsl:variable                   name = "url">
    <xsl:call-template             name = "getSummaryURL">
@@ -974,8 +973,8 @@ OCECDR-4123: Add HP/Patient URL to Summaries
                                                    $hrefNormId)))"/>
     <!--
     Note:  The url created by function getSummaryURL has no trailing 
-           slash ('/'), specifies the domain as http://cancer.gov and
-           is normalized
+           slash ('/'), specifies the domain as https://www.cancer.gov
+           and is normalized
     ================================================================= -->
     <xsl:variable                 name = "url">
      <xsl:call-template           name = "getSummaryURL">
@@ -2220,9 +2219,29 @@ OCECDR-4123: Add HP/Patient URL to Summaries
   </xsl:choose>
   <xsl:element                    name = "ExternalRef">
    <xsl:attribute                 name = "xref">
-    <xsl:value-of               select = "$sumUrl"/>
+    <xsl:choose>
+     <xsl:when                    test = "starts-with($sumUrl, 'http://')">
+      <xsl:value-of             select = "concat('https://',
+                                                 substring-after($sumUrl, 
+                                                                 'http://')
+                                                )"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "$sumUrl"/>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:attribute>
-   <xsl:value-of                select = "$sumUrl"/>
+   <xsl:choose>
+    <xsl:when                     test = "starts-with($sumUrl, 'http://')">
+     <xsl:value-of              select = "concat('https://',
+                                                 substring-after($sumUrl, 
+                                                                 'http://')
+                                                )"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of              select = "$sumUrl"/>
+    </xsl:otherwise>
+   </xsl:choose>
   </xsl:element>
   <xsl:choose>
    <xsl:when                      test = "$language = 'English'">
@@ -2296,11 +2315,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
                                                  @cdr:id"/>
    </xsl:attribute>
    <!-- Change the url attribute to be a relative link -->
-   <!--
-   <xsl:attribute                 name = "url">
-    <xsl:value-of               select = "$sumUrl"/>
-   </xsl:attribute>
-   -->
+   <!-- ============================================== -->
    <xsl:attribute                 name = "url">
     <xsl:choose>
      <xsl:when                    test = "starts-with($sumUrl, 'http')">
@@ -2342,16 +2357,10 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    <xsl:attribute                 name = "cdr:xref">
     <xsl:choose>
      <xsl:when                    test = "$language = 'English'">
-      <!--
-      <xsl:text>http://www.cancer.gov/cancertopics/pdq</xsl:text>
-      -->
-      <xsl:text>http://www.cancer.gov/publications/pdq</xsl:text>
+      <xsl:text>https://www.cancer.gov/publications/pdq</xsl:text>
      </xsl:when>
      <xsl:otherwise>
-      <!--
-      <xsl:text>http://www.cancer.gov/espanol/recursos/pdq</xsl:text>
-      -->
-      <xsl:text>http://www.cancer.gov/espanol/publicaciones/pdq</xsl:text>
+      <xsl:text>https://www.cancer.gov/espanol/publicaciones/pdq</xsl:text>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:attribute>
@@ -3764,7 +3773,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
   ================================================= -->
   <xsl:element                    name = "ExternalRef">
    <xsl:attribute                 name = "xref">
-    <xsl:text>http://www.cancer.gov/search</xsl:text>
+    <xsl:text>https://www.cancer.gov/search</xsl:text>
     <xsl:text>/ClinicalTrialsLink.aspx?</xsl:text>
     <xsl:value-of               select = "$docType"/>
     <xsl:text>&amp;</xsl:text>
