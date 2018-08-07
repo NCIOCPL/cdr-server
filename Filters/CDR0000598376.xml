@@ -2,10 +2,22 @@
 <!-- Filter title: Glossary Term Definition Update -->
 <!--
  ================================================================
+ Filter to resolve PlaceHolder elements within a GlossaryTermConcept
+ definition.
+ The filter is applied to a snipped of XML code created by the program
+ GlossaryConceptFull.py.  The XML snipped has the following structure:
+   <GlossaryTermDef>
+     <TermNameString/>
+     <DefinitionText>
+       <Insertion or Deletion> [optional]
+       <PlaceHolder/>          [optional]
+     </DefinitionText>
+     <GlossaryTermPlaceHolder> [optional]
+       <ReplacementText/>
+     </GlossaryTermPlaceHolder>
+   </GlossaryTermDef>
 
- Filter to denormalize GlossaryTermName data.
  Written by Volker Englisch, 2008-02-27
-
  ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
@@ -92,7 +104,7 @@
   <tr>
    <td><xsl:text> </xsl:text></td>
    <td>
-    <xsl:value-of              select = "."/>
+    <xsl:value-of               select = "."/>
     <p/>
    </td>
   </tr>
@@ -119,23 +131,31 @@
     <xsl:when                     test = "@name = 'CAPPEDTERMNAME'">
      <span class="term-capped">
       <xsl:text>@@</xsl:text>
-      <xsl:apply-templates       select = "../../TermNameString |
+      <xsl:apply-templates      select = "../../TermNameString |
                                            ../../../TermNameString"/>
       <xsl:text>@@</xsl:text>
      </span>
     </xsl:when>
+    <!--
     <xsl:when                     test = "../../GlossaryTermPlaceHolder/
                                           ReplacementText[@name=$replace]">
+    -->
+    <xsl:when                     test = "/GlossaryTermDef/
+                                            GlossaryTermPlaceHolder/
+                                            ReplacementText[@name=$replace]">
      <span class="term-name">
-     <xsl:apply-templates       select = "../../GlossaryTermPlaceHolder/
-                                          ReplacementText[@name=$replace]"/>
+     <xsl:apply-templates       select = "/GlossaryTermDef/
+                                            GlossaryTermPlaceHolder/
+                                            ReplacementText[@name=$replace]"/>
      </span>
     </xsl:when>
-    <xsl:when                     test = "../../GlossaryConceptPlaceHolder/
-                                          ReplacementText[@name=$replace]">
+    <xsl:when                     test = "/GlossaryTermDef/
+                                            GlossaryConceptPlaceHolder/
+                                            ReplacementText[@name=$replace]">
      <span class="term-concept">
-     <xsl:apply-templates       select = "../../GlossaryConceptPlaceHolder/
-                                          ReplacementText[@name=$replace]"/>
+     <xsl:apply-templates       select = "/GlossaryTermDef/
+                                            GlossaryConceptPlaceHolder/
+                                            ReplacementText[@name=$replace]"/>
      </span>
     </xsl:when>
     <xsl:otherwise>
@@ -144,10 +164,6 @@
      </span>
     </xsl:otherwise>
    </xsl:choose>
-
-   <!-- xsl:text> [</xsl:text>
-   <xsl:value-of                select = "@name"/>
-   <xsl:text>]</xsl:text -->
  </xsl:template>
 
 

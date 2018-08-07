@@ -2727,3 +2727,65 @@ CREATE TABLE glossifier
    refreshed DATETIME NOT NULL,
        terms TEXT NOT NULL)
 GO
+
+CREATE TABLE media_translation_state
+   (value_id INTEGER IDENTITY PRIMARY KEY,
+  value_name NVARCHAR(128) NOT NULL UNIQUE,
+   value_pos INTEGER NOT NULL)
+GO
+INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Ready For Translation', 10)
+INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation of Labels Pending', 20)
+INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation Peer-Review Pending (only labels)', 30)
+INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation Peer-Review Complete (only labels)', 40)
+INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Spanish Labels Sent to Artist', 50)
+INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Spanish Illustration Approved', 60)
+INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation of Caption and Cont. Desc. Pending', 70)
+INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation Peer-Review Pending (Caption and Cont. Desc.)', 80)
+INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation Peer-Review Complete (Caption and Cont. Desc.)', 90)
+INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation Made Publishable', 100)
+GO
+
+CREATE TABLE media_translation_job
+ (english_id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs,
+    state_id INTEGER NOT NULL REFERENCES media_translation_state,
+  state_date DATETIME NOT NULL,
+ assigned_to INTEGER NOT NULL REFERENCES usr,
+    comments NTEXT NULL)
+GO
+
+CREATE TABLE media_translation_job_history
+ (history_id INTEGER IDENTITY PRIMARY KEY,
+  english_id INTEGER NOT NULL REFERENCES all_docs,
+    state_id INTEGER NOT NULL REFERENCES media_translation_state,
+  state_date DATETIME NOT NULL,
+ assigned_to INTEGER NOT NULL REFERENCES usr,
+    comments NTEXT NULL)
+GO
+
+CREATE TABLE glossary_translation_state
+   (value_id INTEGER IDENTITY PRIMARY KEY,
+  value_name NVARCHAR(128) NOT NULL UNIQUE,
+   value_pos INTEGER NOT NULL)
+GO
+INSERT INTO glossary_translation_state (value_name, value_pos) VALUES ('Ready For Translation', 10)
+INSERT INTO glossary_translation_state (value_name, value_pos) VALUES ('Ready for Translation Peer Review 1', 20)
+INSERT INTO glossary_translation_state (value_name, value_pos) VALUES ('Ready for Translation Peer Review 2', 30)
+INSERT INTO glossary_translation_state (value_name, value_pos) VALUES ('Translation Made Publishable', 40)
+GO
+
+CREATE TABLE glossary_translation_job
+     (doc_id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs,
+    state_id INTEGER NOT NULL REFERENCES glossary_translation_state,
+  state_date DATETIME NOT NULL,
+ assigned_to INTEGER NOT NULL REFERENCES usr,
+    comments NTEXT NULL)
+GO
+
+CREATE TABLE glossary_translation_job_history
+ (history_id INTEGER IDENTITY PRIMARY KEY,
+      doc_id INTEGER NOT NULL REFERENCES all_docs,
+    state_id INTEGER NOT NULL REFERENCES glossary_translation_state,
+  state_date DATETIME NOT NULL,
+ assigned_to INTEGER NOT NULL REFERENCES usr,
+    comments NTEXT NULL)
+GO
