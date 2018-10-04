@@ -786,10 +786,32 @@ Filter to create Vendor Genetics Professionals XML documents
  <xsl:template               match = "Comment |
                                       ResponseToComment">
 
-  <!-- xsl:text>222</xsl:text -->
   <xsl:variable               name = "myScope"
                             select = "name()"/>
 
+  <!-- 
+       Users want to have the Comments (not within para, ul, il, table)
+       to be displayed on a new line *and* display the ResponseToComment
+       on the same line without linebreak.  This requires to create a 
+       DIV as a container for both so that the containing comment and 
+       response can be styled as inline elements.
+  -->
+  <!--
+  <xsl:text>22</xsl:text>
+  <xsl:if                     test = "$myScope = 'Comment'">
+     <xsl:value-of   select = "following-sibling::ResponseToComment"/>
+  </xsl:if>
+  <xsl:text>33</xsl:text>
+  -->
+
+  <!--
+  <xsl:if                   test = "$myScope = 'Comment'
+                                      and
+                                      following-sibling::ResponseToComment">
+   <xsl:text>RESPONSE</xsl:text>
+  <xsl:element                name = "div">
+  </xsl:if>
+  -->
   <xsl:if                     test = "substring(@audience, 1, 1) =
                                                 $DisplayComments
                                       or
@@ -807,36 +829,6 @@ Filter to create Vendor Genetics Professionals XML documents
         <xsl:with-param       name = "myCss"
                             select = "'cominsertappr'"/>
        </xsl:call-template>
-       <!--
-       <span class="cominsertappr">
-        <xsl:choose>
-         <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [</xsl:text>
-
-          <xsl:choose>
-           <xsl:when          test = "@duration = 'permanent'
-                                      and
-                                      @source   = 'advisory-board'">
-            <xsl:text>Permanent-AB-</xsl:text>
-           </xsl:when>
-           <xsl:when          test = "@duration = 'permanent'">
-            <xsl:text>Permanent-</xsl:text>
-           </xsl:when>
-           <xsl:when          test = "@source = 'advisory-board'">
-            <xsl:text>AB-</xsl:text>
-           </xsl:when>
-          </xsl:choose>
-
-          <xsl:text>Comment: </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text> [Response: </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-        <xsl:apply-templates/>
-        <xsl:text>] </xsl:text>
-       </span>
-       -->
       </xsl:when>
       <xsl:when               test = "Insertion/@RevisionLevel = 'proposed'">
        <xsl:call-template     name = 'listComment'>
@@ -845,36 +837,6 @@ Filter to create Vendor Genetics Professionals XML documents
         <xsl:with-param       name = "myCss"
                             select = "'cominsertprop'"/>
        </xsl:call-template>
-       <!--
-       <span class="cominsertprop">
-        <xsl:choose>
-         <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [</xsl:text>
-
-          <xsl:choose>
-           <xsl:when          test = "@duration = 'permanent'
-                                      and
-                                      @source   = 'advisory-board'">
-            <xsl:text>Permanent-AB-</xsl:text>
-           </xsl:when>
-           <xsl:when          test = "@duration = 'permanent'">
-            <xsl:text>Permanent-</xsl:text>
-           </xsl:when>
-           <xsl:when          test = "@source = 'advisory-board'">
-            <xsl:text>AB-</xsl:text>
-           </xsl:when>
-          </xsl:choose>
-
-          <xsl:text>Comment: </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text> [Response: </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-        <xsl:apply-templates/>
-        <xsl:text>] </xsl:text>
-       </span>
-       -->
       </xsl:when>
       <xsl:otherwise>
        <!-- xsl:text>GGG </xsl:text -->
@@ -897,37 +859,6 @@ Filter to create Vendor Genetics Professionals XML documents
         <xsl:with-param       name = "myCss"
                             select = "'comdeleteappr'"/>
        </xsl:call-template>
-       <!--
-       <span class="comdeleteappr">
-        <xsl:choose>
-         <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [</xsl:text>
-
-          <xsl:choose>
-           <xsl:when          test = "@duration = 'permanent'
-                                      and
-                                      @source   = 'advisory-board'">
-            <xsl:text>Permanent-AB-</xsl:text>
-           </xsl:when>
-           <xsl:when          test = "@duration = 'permanent'">
-            <xsl:text>Permanent-</xsl:text>
-           </xsl:when>
-           <xsl:when          test = "@source = 'advisory-board'">
-            <xsl:text>AB-</xsl:text>
-           </xsl:when>
-          </xsl:choose>
-
-          <xsl:text>Comment: </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text> [Response: </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-
-        <xsl:apply-templates/>
-        <xsl:text>] </xsl:text>
-       </span>
-       -->
       </xsl:when>
       <xsl:when               test = "Deletion/@RevisionLevel = 'proposed'">
        <xsl:call-template     name = 'listComment'>
@@ -936,36 +867,6 @@ Filter to create Vendor Genetics Professionals XML documents
         <xsl:with-param       name = "myCss"
                             select = "'comdeleteprop'"/>
        </xsl:call-template>
-       <!--
-       <span class="comdeleteprop">
-        <xsl:choose>
-         <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [</xsl:text>
-
-          <xsl:choose>
-           <xsl:when          test = "@duration = 'permanent'
-                                      and
-                                      @source   = 'advisory-board'">
-            <xsl:text>Permanent-AB-</xsl:text>
-           </xsl:when>
-           <xsl:when          test = "@duration = 'permanent'">
-            <xsl:text>Permanent-</xsl:text>
-           </xsl:when>
-           <xsl:when          test = "@source = 'advisory-board'">
-            <xsl:text>AB-</xsl:text>
-           </xsl:when>
-          </xsl:choose>
-
-          <xsl:text>Comment: </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text> [Response: </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-        <xsl:apply-templates/>
-        <xsl:text>] </xsl:text>
-       </span>
-       -->
       </xsl:when>
       <xsl:otherwise>
        <!-- xsl:text>DDD </xsl:text -->
@@ -1070,36 +971,6 @@ Filter to create Vendor Genetics Professionals XML documents
         <xsl:with-param       name = "myCss"
                             select = "'cominsertappr'"/>
        </xsl:call-template>
-       <!--
-       <span class="cominsertappr">
-        <xsl:choose>
-         <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [</xsl:text>
-
-          <xsl:choose>
-           <xsl:when          test = "@duration = 'permanent'
-                                      and
-                                      @source   = 'advisory-board'">
-            <xsl:text>Permanent-AB-</xsl:text>
-           </xsl:when>
-           <xsl:when          test = "@duration = 'permanent'">
-            <xsl:text>Permanent-</xsl:text>
-           </xsl:when>
-           <xsl:when          test = "@source = 'advisory-board'">
-            <xsl:text>AB-</xsl:text>
-           </xsl:when>
-          </xsl:choose>
-
-          <xsl:text>Comment: </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text> [Response: </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-        <xsl:apply-templates/>
-        <xsl:text>] </xsl:text>
-       </span>
-       -->
       </xsl:when>
       <xsl:when               test = "Insertion/@RevisionLevel = 'proposed'">
        <xsl:call-template     name = 'listComment'>
@@ -1108,36 +979,6 @@ Filter to create Vendor Genetics Professionals XML documents
         <xsl:with-param       name = "myCss"
                             select = "'cominsertprop'"/>
        </xsl:call-template>
-       <!--
-       <span class="cominsertprop">
-        <xsl:choose>
-         <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [</xsl:text>
-
-          <xsl:choose>
-           <xsl:when          test = "@duration = 'permanent'
-                                      and
-                                      @source   = 'advisory-board'">
-            <xsl:text>Permanent-AB-</xsl:text>
-           </xsl:when>
-           <xsl:when          test = "@duration = 'permanent'">
-            <xsl:text>Permanent-</xsl:text>
-           </xsl:when>
-           <xsl:when          test = "@source = 'advisory-board'">
-            <xsl:text>AB-</xsl:text>
-           </xsl:when>
-          </xsl:choose>
-
-          <xsl:text>Comment: </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text> [Response: </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-        <xsl:apply-templates/>
-        <xsl:text>] </xsl:text>
-       </span>
-       -->
       </xsl:when>
       <xsl:otherwise>
        <xsl:call-template     name = 'listComment'>
@@ -1159,37 +1000,6 @@ Filter to create Vendor Genetics Professionals XML documents
         <xsl:with-param       name = "myCss"
                             select = "'comdeleteprop'"/>
        </xsl:call-template>
-       <!--
-       <span class="comdeleteprop">
-        <xsl:choose>
-         <xsl:when            test = "$myScope = 'Comment'">
-          <xsl:text> [</xsl:text>
-
-          <xsl:choose>
-           <xsl:when          test = "@duration = 'permanent'
-                                      and
-                                      @source   = 'advisory-board'">
-            <xsl:text>Permanent-AB-</xsl:text>
-           </xsl:when>
-           <xsl:when          test = "@duration = 'permanent'">
-            <xsl:text>Permanent-</xsl:text>
-           </xsl:when>
-           <xsl:when          test = "@source = 'advisory-board'">
-            <xsl:text>AB-</xsl:text>
-           </xsl:when>
-          </xsl:choose>
-
-          <xsl:text>Comment: </xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text> [Response: </xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-
-        <xsl:apply-templates/>
-        <xsl:text>] </xsl:text>
-       </span>
-       -->
       </xsl:when>
       <xsl:when               test = "Deletion/@RevisionLevel = 'approved'">
        <xsl:call-template     name = 'listComment'>
@@ -1388,6 +1198,10 @@ Filter to create Vendor Genetics Professionals XML documents
       <xsl:text> none</xsl:text>
      </xsl:otherwise>
     </xsl:choose>
+
+    <xsl:if                   test = "$myScope = 'ResponseToComment'">
+     <xsl:text> response</xsl:text>
+    </xsl:if>
    </xsl:attribute>
 
    <xsl:choose>
