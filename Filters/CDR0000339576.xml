@@ -27,6 +27,8 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "document('cdrutil:/docid')"/>
  <xsl:param                       name = "DisplayModuleMarkup"
                                 select = "'N'"/>
+ <xsl:param                       name = "DisplayPubImages"
+                                select = "'Y'"/>
 
  <xsl:variable                    name = "mediaAudience">
   <xsl:choose>
@@ -2089,8 +2091,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      <xsl:if                      test = "not(SectMetaData
                                               /SectionType =
                                               concat('Unusual Cancers Special',
-                                                       ' Considerations'))">
-
+                                                     ' Considerations'))">
       <xsl:call-template          name = "TocSummarySection">
        <xsl:with-param            name = "secID"
                                 select = "@cdr:id"/>
@@ -2832,6 +2833,14 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      <xsl:attribute               name = "src">
       <xsl:text>/cgi-bin/cdr/</xsl:text>
       <xsl:text>GetCdrImage.py?</xsl:text>
+        <xsl:choose>
+         <xsl:when                test = "$DisplayPubImages = 'N'">
+          <xsl:text>pp=N&amp;</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text>pp=Y&amp;</xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
       <xsl:text>id=</xsl:text>
 
       <xsl:value-of             select = "@cdr:ref"/>
@@ -2868,11 +2877,12 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  ====================================================================== -->
  <xsl:template                   match = "MediaID | VideoID"
                                   mode = "gtc">
+  <xsl:value-of                 select = "position()"/>
   <xsl:choose>
    <!--
    If multiple images are displayed we need a linebreak before
    the second title element -->
-   <!-- 
+   <!--
    This section is only used as part of the GTN QC report.
    The Media/MediaTitle node doesn't exist for the GTC QC report
    ============================================================= -->
@@ -2894,6 +2904,14 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        <xsl:attribute             name = "src">
         <xsl:text>/cgi-bin/cdr/</xsl:text>
         <xsl:text>GetCdrImage.py?</xsl:text>
+        <xsl:choose>
+         <xsl:when                test = "$DisplayPubImages = 'N'">
+          <xsl:text>pp=N&amp;</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text>pp=Y&amp;</xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:text>id=</xsl:text>
 
         <xsl:value-of           select = "@cdr:ref"/>
@@ -2938,6 +2956,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       </xsl:element>
      </xsl:when>
     </xsl:choose>
+    <br/>
    </xsl:when>
    <!-- This section is used for the GTC QC reports -->
    <xsl:otherwise>
@@ -2962,7 +2981,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       </xsl:element>
      </xsl:when>
      <xsl:when                    test = "parent::EmbeddedVideo">
-      <!-- Need to denormalize the EmbeddedVideo link to pickup 
+      <!-- Need to denormalize the EmbeddedVideo link to pickup
            the YouTube ID -->
       <xsl:variable               name = "VideoID"
                                 select = "@cdr:ref"/>
