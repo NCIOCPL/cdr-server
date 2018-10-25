@@ -27,6 +27,8 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "document('cdrutil:/docid')"/>
  <xsl:param                       name = "DisplayModuleMarkup"
                                 select = "'N'"/>
+ <xsl:param                       name = "DisplayPubImages"
+                                select = "'Y'"/>
 
  <xsl:variable                    name = "mediaAudience">
   <xsl:choose>
@@ -2089,8 +2091,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      <xsl:if                      test = "not(SectMetaData
                                               /SectionType =
                                               concat('Unusual Cancers Special',
-                                                       ' Considerations'))">
-
+                                                     ' Considerations'))">
       <xsl:call-template          name = "TocSummarySection">
        <xsl:with-param            name = "secID"
                                 select = "@cdr:id"/>
@@ -2832,6 +2833,14 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      <xsl:attribute               name = "src">
       <xsl:text>/cgi-bin/cdr/</xsl:text>
       <xsl:text>GetCdrImage.py?</xsl:text>
+        <xsl:choose>
+         <xsl:when                test = "$DisplayPubImages = 'N'">
+          <xsl:text>pp=N&amp;</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text>pp=Y&amp;</xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
       <xsl:text>id=</xsl:text>
 
       <xsl:value-of             select = "@cdr:ref"/>
@@ -2868,22 +2877,41 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  ====================================================================== -->
  <xsl:template                   match = "MediaID | VideoID"
                                   mode = "gtc">
+  <xsl:value-of                 select = "position()"/>
   <xsl:choose>
    <!--
    If multiple images are displayed we need a linebreak before
    the second title element -->
+   <!--
+   This section is only used as part of the GTN QC report.
+   The Media/MediaTitle node doesn't exist for the GTC QC report
+   ============================================================= -->
    <xsl:when                      test = "Media/MediaTitle">
     <xsl:if                       test = "position() > 1">
      <br/>
     </xsl:if>
     <xsl:value-of               select = "Media/MediaTitle"/>
     <br/>
+    <!--
+    In the Glossary Term Name Full QC report the Video and images
+    are both denormalized to 'Media' nodes and
+    those must be distinguished by their parent elements
+    EmbeddedVideo bs MediaLink
+    ============================================================== -->
     <xsl:choose>
      <xsl:when                    test = "parent::MediaLink">
       <xsl:element                name = "img">
        <xsl:attribute             name = "src">
         <xsl:text>/cgi-bin/cdr/</xsl:text>
         <xsl:text>GetCdrImage.py?</xsl:text>
+        <xsl:choose>
+         <xsl:when                test = "$DisplayPubImages = 'N'">
+          <xsl:text>pp=N&amp;</xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text>pp=Y&amp;</xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
         <xsl:text>id=</xsl:text>
 
         <xsl:value-of           select = "@cdr:ref"/>
@@ -2928,9 +2956,69 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       </xsl:element>
      </xsl:when>
     </xsl:choose>
+    <br/>
    </xsl:when>
+   <!-- This section is used for the GTC QC reports -->
    <xsl:otherwise>
     <xsl:value-of               select = "."/>
+    <br/>
+    <xsl:choose>
+     <xsl:when                    test = "parent::MediaLink">
+      <xsl:element                name = "img">
+       <xsl:attribute             name = "src">
+        <xsl:text>/cgi-bin/cdr/</xsl:text>
+        <xsl:text>GetCdrImage.py?</xsl:text>
+        <xsl:text>id=</xsl:text>
+
+        <xsl:value-of           select = "@cdr:ref"/>
+        <xsl:text>-300.jpg</xsl:text>
+       </xsl:attribute>
+
+       <xsl:call-template         name = "addIdLinkTarget">
+        <xsl:with-param           name = "id"
+                                select = "../@cdr:id"/>
+       </xsl:call-template>
+      </xsl:element>
+     </xsl:when>
+     <xsl:when                    test = "parent::EmbeddedVideo">
+      <!-- Need to denormalize the EmbeddedVideo link to pickup
+           the YouTube ID -->
+      <xsl:variable               name = "VideoID"
+                                select = "@cdr:ref"/>
+      <xsl:variable               name = "VideoInfo"
+                                select = "document(concat('cdr:', $VideoID,
+                                                          '/last'))"/>
+      <xsl:element                name = "img">
+       <xsl:attribute             name = "src">
+        <xsl:text>https://img.youtube.com/vi/</xsl:text>
+        <xsl:value-of           select = "$VideoInfo/Media/
+                                           PhysicalMedia/
+                                           VideoData/
+                                           HostingID"/>
+        <xsl:text>/hqdefault.jpg</xsl:text>
+       </xsl:attribute>
+       <xsl:attribute             name = "width">
+        <xsl:text>300px</xsl:text>
+       </xsl:attribute>
+
+       <xsl:call-template         name = "addIdLinkTarget">
+         <xsl:with-param          name = "id"
+                                select = "../@cdr:id"/>
+       </xsl:call-template>
+      </xsl:element>
+      <br/>
+      <xsl:element                name = "a">
+       <xsl:attribute             name = "href">
+        <xsl:text>https://www.youtube.com/watch?v=</xsl:text>
+        <xsl:value-of           select = "$VideoInfo/Media/
+                                           PhysicalMedia/
+                                           VideoData/
+                                           HostingID"/>
+       </xsl:attribute>
+       <xsl:text>Watch video on YouTube</xsl:text>
+      </xsl:element>
+     </xsl:when>
+    </xsl:choose>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>

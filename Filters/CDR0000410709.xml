@@ -15,6 +15,12 @@
                   omit-xml-declaration = "no"
                               encoding = "UTF-8"/>
 
+ <!--
+ Parameters passed via the Web interface
+ ================================================================= -->
+ <xsl:param                       name = "DisplayPubImages"
+                                select = "'Y'"/>
+
 
  <!--
  =================================================================
@@ -23,9 +29,20 @@
  <xsl:template                   match = "MediaID | VideoID">
   <xsl:variable                   name = "MediaID"
                                 select = "@cdr:ref"/>
+  <xsl:variable                   name = "imgVersion">
+   <xsl:choose>
+    <xsl:when                     test = "$DisplayPubImages = 'N'">
+     <xsl:text>/last</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>/lastp</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+  
   <xsl:variable                   name = "MediaInfo"
                                 select = "document(concat('cdr:',$MediaID,
-                                                           '/lastp'))"/>
+                                                           $imgVersion))"/>
   <xsl:element                    name = "MediaID">
    <xsl:attribute                 name = "cdr:ref">
     <xsl:value-of               select = "@cdr:ref"/>
