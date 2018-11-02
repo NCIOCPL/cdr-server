@@ -10,6 +10,7 @@ BZIssue::4836 - Create new section at end of HP summaries
 OCECDR-3824: Filter changes for new Spanish CAM summaries
 OCECDR-3869: Support for linking to blocked trials
 OCECTS-116 - Add nct_id attribute to ProtocolRef element
+OCECDR-4511 - Remove template which adds nct_id attributes to ProtocolRefs
 
  ================================================================ -->
 <xsl:transform                xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -534,73 +535,6 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
   </xsl:element>
  </xsl:template>
 -->
-
- <!--
- =================================================================
- Find the NCT ID for the clinical trial identified in the ProtocolRef
- element and add it as the nct_id attribute. The path for finding
- the ID depends on whether the trial's document is an CTGovProtocol
- document or an (obsolete) InScopeProtocol document. It's guaranteed
- that both paths can't be present for the same document, so it works
- to concatenate the results of the two queries below. If neither is
- present, we'll have an empty value for the nct_id variable (and
- attribute).
- ================================================================= -->
- <xsl:template                   match = "ProtocolRef">
-  <xsl:variable                   name = "cdr_ref"
-                                select = "@cdr:href"/>
-  <xsl:variable                   name = "cdr_id"
-                                select = "number(
-                                           substring-before(
-                                            concat(
-                                             substring-after($cdr_ref, 'CDR'),
-                                             '#'
-                                            ), '#'))"/>
-  <xsl:variable                   name = "ctg_query">
-SELECT value
-  FROM query_term
- WHERE path = '/CTGovProtocol/IDInfo/NCTID'
-   AND doc_id = ?
-  </xsl:variable>
-  <xsl:variable                   name = "ctg_result"
-                                select = "document(cdr:escape-uri(
-                                          concat('cdrutil:/sql-query/',
-                                                 $ctg_query, '~', $cdr_id)))"/>
-
-  <xsl:variable                   name = "ctg_nct_id"
-                                select = "$ctg_result/SqlResult/row
-                                           /col[@name='value']"/>
-  <xsl:variable                   name = "inscope_query">
-SELECT s.value
-  FROM query_term s
-  JOIN query_term t
-    ON s.doc_id = t.doc_id
-   AND LEFT(s.node_loc, 8) = LEFT(t.node_loc, 8)
- WHERE s.path = '/InScopeProtocol/ProtocolIDs/OtherID/IDString'
-   AND t.path = '/InScopeProtocol/ProtocolIDs/OtherID/IDType'
-   AND t.value = 'ClinicalTrials.gov ID'
-   AND s.doc_id = ?
-  </xsl:variable>
-  <xsl:variable                   name = "inscope_result"
-                                select = "document(cdr:escape-uri(
-                                          concat('cdrutil:/sql-query/',
-                                                 $inscope_query, '~',
-                                                 $cdr_id)))"/>
-
-  <xsl:variable                   name = "inscope_nct_id"
-                                select = "$inscope_result/SqlResult/row
-                                           /col[@name='value']"/>
-  <xsl:variable                   name = "nct_id"
-                                select = "concat($ctg_nct_id,
-                                                 $inscope_nct_id)"/>
-  <ProtocolRef>
-   <xsl:attribute                  name = "nct_id">
-    <xsl:value-of                select = "$nct_id"/>
-   </xsl:attribute>
-   <xsl:apply-templates          select = "@*|node()"/>
-  </ProtocolRef>
- </xsl:template>
-
 
  <!--
  =================================================================
