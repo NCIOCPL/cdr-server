@@ -136,11 +136,16 @@ OCECDR-4122: Changes the order of information in DIS
 
     <!--
     Now add all Drugreferences with Type='NLM'
+    Only display the test for the first node but combine the
+    DrugRefenrenceLink elements in a comma separated list (see the
+    Para template below).
     =============================================================== -->
     <xsl:for-each               select = "DrugReference/
                                             DrugReferenceType[text()='NLM']">
+     <xsl:if test = "position()=1">
      <xsl:apply-templates       select = ".."
                                   mode = "nlm"/>
+     </xsl:if>
     </xsl:for-each>
    </xsl:element>
 
@@ -465,9 +470,15 @@ OCECDR-4122: Changes the order of information in DIS
    document) we want to add the ExternalRef (a.k.a. DrugRefLink)
    ================================================================ -->
    <xsl:if                        test = ". = ../Para[1]">
-    <xsl:apply-templates        select = "../../../../../
-                                           DrugReferenceLink"/>
+    <xsl:for-each               select = "//DrugReference
+                                             [@section='About_drug']">
+      <xsl:apply-templates      select = "DrugReferenceLink"/>
+      <xsl:if                     test = "position() != last()">
+       <xsl:text>, </xsl:text>
+      </xsl:if>
+    </xsl:for-each>
     <xsl:text> - </xsl:text>
+
    </xsl:if>
 
    <xsl:apply-templates           mode = "copy"/>
