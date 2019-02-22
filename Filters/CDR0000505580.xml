@@ -402,7 +402,22 @@ OCECDR-4122: Changes the order of information in DIS
     <xsl:attribute                name = "xref">
      <xsl:value-of              select = "@cdr:xref"/>
     </xsl:attribute>
-    <xsl:value-of               select = "."/>
+
+    <!--
+    Until a global change has updated all DrugReferenceLinks to remove
+    the text "MedlinePlus Information on " we need to strip this text
+    out with this template
+    ================================================================== -->
+    <xsl:choose>
+     <xsl:when                    test = "starts-with(.,
+                                             'MedlinePlus Information on ')">
+      <xsl:value-of             select = "substring-after(.,
+                                             'MedlinePlus Information on ')"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "."/>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:element>
  </xsl:template>
 
@@ -479,6 +494,13 @@ OCECDR-4122: Changes the order of information in DIS
    <xsl:if                        test = ". = ../Para[1]">
     <xsl:for-each               select = "//DrugReference
                                              [@section='About_drug']">
+     <!--
+     The first drug needs the MedlinePlus text added
+     =============================================== -->
+     <xsl:if                      test = "position() = 1">
+      <xsl:text>MedlinePlus Information on </xsl:text>
+     </xsl:if>
+
      <xsl:apply-templates      select  = "DrugReferenceLink"/>
 
      <xsl:if                      test = "position() != last()">
@@ -492,7 +514,7 @@ OCECDR-4122: Changes the order of information in DIS
       </xsl:choose>
 
       <xsl:if                     test = "position() + 1 = last()
-                                          and 
+                                          and
                                           last() > 2">
        <xsl:text>and </xsl:text>
 
