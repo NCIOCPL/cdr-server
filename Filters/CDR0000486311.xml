@@ -26,6 +26,9 @@ Filter to create the DrugInformationSummary QC Report
                                 select = "document('cdrutil:/docid')"/>
  <xsl:variable                    name = "whoAmI"
                                 select = "'DrugInfoSummary'"/>
+ <xsl:variable                    name = "dateTime"
+                                select = "document('cdrutil:/date')"/>
+
  <!--
  ======================================================================
  Main Template
@@ -46,7 +49,13 @@ Filter to create the DrugInformationSummary QC Report
                                                   DocTitle, ';'), ';')"/>
     </TITLE>
     <STYLE type='text/css'>
-     .miscdoc   { background-color: DFDFDF; }
+     .miscdoc      { background-color: DFDFDF; }
+     .big          { font-size: 14pt;
+                     font-weight: bold; }
+     .center       { text-align: center; }
+     .date-header  { text-align: center;
+                     font-weight: bold;
+                     margin-bottom: 14px; }
      <xsl:call-template           name = "defaultStyle"/>
      <xsl:call-template           name = "rsInsertionDeletionStyle"/>
     </STYLE>
@@ -68,27 +77,32 @@ Filter to create the DrugInformationSummary QC Report
   ==================================================================
   Display Report heading and subheading
   ================================================================== -->
-  <xsl:element                    name = "span">
+  <xsl:element                    name = "div">
    <xsl:attribute                 name = "class">
-    <xsl:text>big</xsl:text>
+    <xsl:text>center</xsl:text>
    </xsl:attribute>
 
-    <center>
-     <xsl:text>Drug Information Summary</xsl:text>
-     <br/>
-     <xsl:text>QC Report</xsl:text>
-    </center>
+   <xsl:element                   name = "span">
+    <xsl:attribute                name = "class">
+     <xsl:text>big</xsl:text>
+    </xsl:attribute>
+
+    <xsl:text>Drug Information Summary</xsl:text>
+    <br/>
+    <xsl:text>QC Report</xsl:text>
+   </xsl:element>
   </xsl:element>
 
-   <b>
-   <font size='3'>
-    <center>
-     <xsl:value-of              select = "document(
-                                           concat('cdrutil:/date/%25B %25#d,',
-                                                  ' %25Y %25#I:%25M% 25p'))"/>
-    </center>
-   </font>
-  </b>
+  <xsl:element                    name = "div">
+   <xsl:attribute                 name = "class">
+    <xsl:text>date-header</xsl:text>
+   </xsl:attribute>
+
+   <xsl:call-template             name = "dateTimeHeader">
+    <xsl:with-param               name = "dateTime"
+                                select = "$dateTime"/>
+   </xsl:call-template>
+  </xsl:element>
   <p/>
 
   <!--
@@ -250,13 +264,13 @@ Filter to create the DrugInformationSummary QC Report
      </td>
      <td        xsl:use-attribute-sets = "cell2of2">
       <xsl:for-each             select = "ApprovedIndication">
-       <li>
-        <xsl:value-of           select = "Term/
+       <xsl:element               name = "li">
+        <xsl:apply-templates    select = "Term/
                                           PreferredName"/>
          <xsl:for-each          select = "Term">
           <xsl:call-template      name = "createCdrQcLink"/>
         </xsl:for-each>
-       </li>
+       </xsl:element>
       </xsl:for-each>
      </td>
     </tr>
@@ -291,6 +305,59 @@ Filter to create the DrugInformationSummary QC Report
    </tr>
   </table>
   <p/>
+ </xsl:template>
+
+
+ <!--
+ =====================================================================
+ Display ApprovedIndication information with insertion/deletion markup
+ ===================================================================== -->
+ <xsl:template                   match = "Term/PreferredName">
+  <xsl:choose>
+   <xsl:when                      test = "../@iod = 'Deletion'">
+    <xsl:choose>
+     <xsl:when                    test = "../@RevisionLevel = 'proposed'">
+      <xsl:element                name = "span">
+       <xsl:attribute             name = "class">
+        <xsl:text>deleteproposed</xsl:text>
+       </xsl:attribute>
+       <xsl:value-of            select = "."/>
+      </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:element                name = "span">
+       <xsl:attribute             name = "class">
+        <xsl:text>deleteapproved</xsl:text>
+       </xsl:attribute>
+       <xsl:value-of            select = "."/>
+      </xsl:element>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:when                      test = "../@iod = 'Insertion'">
+    <xsl:choose>
+     <xsl:when                    test = "../@RevisionLevel = 'proposed'">
+      <xsl:element                name = "span">
+       <xsl:attribute             name = "class">
+        <xsl:text>insertproposed</xsl:text>
+       </xsl:attribute>
+       <xsl:value-of            select = "."/>
+      </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:element                name = "span">
+       <xsl:attribute             name = "class">
+        <xsl:text>insertapproved</xsl:text>
+       </xsl:attribute>
+       <xsl:value-of            select = "."/>
+      </xsl:element>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:value-of               select = "."/>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
@@ -481,7 +548,7 @@ Filter to create the DrugInformationSummary QC Report
      <b>Entered By</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "EnteredBy"/>
+     <xsl:apply-templates       select = "EnteredBy"/>
     </td>
    </tr>
    <tr>
@@ -489,7 +556,7 @@ Filter to create the DrugInformationSummary QC Report
      <b>Entry Date</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "EntryDate"/>
+     <xsl:apply-templates       select = "EntryDate"/>
     </td>
    </tr>
    <tr>
@@ -519,6 +586,28 @@ Filter to create the DrugInformationSummary QC Report
   </table>
   <p/>
  </xsl:template>
+
+
+ <!--
+ ===================================================================
+ We need to display the Glossary Term Name/Concept report with
+ insertion/deletion markup.
+ =================================================================== -->
+ <xsl:template                    name = "dateTimeHeader">
+  <xsl:param                      name = "dateTime"/>
+  <xsl:variable                   name = "date"
+                                select = "substring-before($dateTime, 'T')"/>
+  <xsl:variable                   name = "time"
+                                select = "substring-before(
+                                            substring-after($dateTime, 'T'),
+                                                                      '.')"/>
+
+  <xsl:value-of                 select = "$date"/>
+  <xsl:text> </xsl:text>
+  <xsl:value-of                 select = "$time"/>
+  <xsl:text> h</xsl:text>
+ </xsl:template>
+
 
  <!--
  ================================================================
