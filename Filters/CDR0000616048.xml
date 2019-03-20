@@ -616,7 +616,14 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
     <xsl:value-of               select = "$sqlGTCRows/SqlResult/row/col"/>
    </xsl:variable>
 
+   <!--
+        The queries for EN and ES are almost identical except for the 
+        NOT IN clause, but I'm unable to substitute an entire statement 
+        with a variable (see the join using node_loc)
+   -->
    <xsl:variable                  name = "sqlGTNQuery">
+    <xsl:choose>
+     <xsl:when                    test = "$language = 'en'">
           SELECT n.value
             FROM query_term gtc
             JOIN query_term n
@@ -631,8 +638,47 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
              AND gtc.int_val = ?
              AND d.active_status = 'A'
              AND gts.value in ('Approved', 'Revision pending')
-             AND n.doc_id != ?
-           order by n.value
+              -- Don't include the glossary term itself in the also-called list
+             AND n.value NOT IN ( 
+                 SELECT q.value
+                   FROM query_term q
+                  WHERE q.doc_id = ?
+                    AND q.path = '/GlossaryTermName/' + ? + '/TermNameString'
+                                 )
+           ORDER BY n.value
+     </xsl:when>
+     <xsl:when                    test = "$language = 'es'">
+          SELECT n.value
+            FROM query_term gtc
+            JOIN query_term n
+              ON n.doc_id = gtc.doc_id
+             AND n.path = '/GlossaryTermName/' + ? + '/TermNameString'
+            JOIN document d
+              ON d.id = n.doc_id
+            JOIN query_term gts
+              ON d.id = gts.doc_id
+             AND gts.path = '/GlossaryTermName/' + ?
+             AND LEFT(n.node_loc, 4) = LEFT(gts.node_loc, 4)  -- ES only
+           WHERE gtc.path = '/GlossaryTermName/GlossaryTermConcept/@cdr:ref'
+             AND gtc.int_val = ?
+             AND d.active_status = 'A'
+             AND gts.value in ('Approved', 'Revision pending')
+             -- only include the terms with NameType in the alternate list 
+             --     (excluding the term itself)
+             AND n.value NOT IN ( 
+                 SELECT q.value
+                   FROM query_term q
+        LEFT OUTER JOIN query_term d
+                     ON d.doc_id = q.doc_id
+                    AND d.path = '/GlossaryTermName/TranslatedName/@NameType'
+                    AND left(d.node_loc, 4) = left(q.node_loc, 4)
+                  WHERE q.doc_id = ?
+                    AND q.path = '/GlossaryTermName/' + ? + '/TermNameString'
+                    AND d.doc_id is null
+                                 )
+           ORDER BY n.value
+     </xsl:when>
+    </xsl:choose>
    </xsl:variable>
 
    <!--
@@ -660,6 +706,8 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
     </xsl:choose>
    </xsl:variable>
 
+
+
    <xsl:variable                  name = "queryRows"
                                 select = "document(cdr:escape-uri(
                                             concat('cdrutil:/sql-query/',
@@ -667,7 +715,8 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
                                                    '~', $namePath,
                                                    '~', $statusPath,
                                                    '~', $sqlGTCId,
-                                                   '~', $gtnNormId)))"/>
+                                                   '~', $gtnNormId,
+                                                   '~', $namePath)))"/>
 
    <!--
    Also-called is only added if the SQL query returns with a record
