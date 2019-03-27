@@ -311,7 +311,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  <!--
  =====================================================================
  Template to create the RelatedDrugSummaryRef element
- Adding UseWith="en" attribute to prevent RelatedInformation link to 
+ Adding UseWith="en" attribute to prevent RelatedInformation link to
  an English DrugSummary in the Spanish section
  ===================================================================== -->
  <xsl:template                   match = "RelatedDrugSummaryLink">
@@ -356,9 +356,9 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  <!--
  =====================================================================
  Template to create the RelatedTGlossaryTermRef element
- The users are entering a single term name.  The filter will then 
- translate this based on the language and audience available. The 
- element is being duplicated displaying one entry for each 
+ The users are entering a single term name.  The filter will then
+ translate this based on the language and audience available. The
+ element is being duplicated displaying one entry for each
  GlossaryConcept definition but only if the related term exists for
  the specified dictionary and language as well.
  Example:
@@ -367,10 +367,10 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
       - Patient dictionary
       - Spanish patient dictionary
     Related Glossary Term "gene" (not real data)
-      This term contains 3 definitions resulting 
+      This term contains 3 definitions resulting
       in 3 RelatedGlossaryTermRefs
     Related Glossary Term "breastbone) (not real data)
-      This term contains 2 definitions resulting 
+      This term contains 2 definitions resulting
       in 2 RelatedGlossaryTermRefs
  ===================================================================== -->
  <xsl:template                   match = "RelatedGlossaryTermNameLink">
@@ -378,7 +378,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
                                 select = "@cdr:ref"/>
 
    <!--
-   Scan through all existing definitions of the glossary.  Each 
+   Scan through all existing definitions of the glossary.  Each
    definition will potentially create one related glossary link
    ============================================================= -->
    <xsl:for-each                select = "/GlossaryTermName/
@@ -388,11 +388,11 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
                                             GlossaryTermConcept/
                                             TranslatedTermDefinition[Audience]">
 
-    <!-- 
+    <!--
     Scan through each concept of the related glossary term and only
     display a related glossary link element if both, the language
     and the audience match
-    Note:  'thisLanguage' is *not* the en/es value but 
+    Note:  'thisLanguage' is *not* the en/es value but
            TermDefinition/TranslatedTermDefinition
     =============================================================== -->
     <xsl:variable                 name = "thisAudience"
@@ -473,7 +473,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
                                 select = "'0'"/>
   <xsl:param                      name = "thisLanguage"
                                 select = "''"/>
-  <!-- 
+  <!--
   The parameter 'thisLanguage' is not the en/es value but indicates
   the language by the element name (TermDefinition/TranslatedTermDefinition)
   Converting it here to make it less confusing.
@@ -616,28 +616,119 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
     <xsl:value-of               select = "$sqlGTCRows/SqlResult/row/col"/>
    </xsl:variable>
 
+   <!--
+        The queries for EN and ES are almost identical except for the
+        NOT IN clause, but I'm unable to substitute an entire statement
+        with a variable (see the join using node_loc)
+   -->
    <xsl:variable                  name = "sqlGTNQuery">
+    <xsl:choose>
+     <xsl:when                    test = "$language = 'en'">
           SELECT n.value
             FROM query_term gtc
             JOIN query_term n
               ON n.doc_id = gtc.doc_id
-             AND n.path = '/GlossaryTermName/' + ? + '/TermNameString'
+             AND n.path = '/GlossaryTermName/TermName/TermNameString'
             JOIN document d
               ON d.id = n.doc_id
             JOIN query_term gts
               ON d.id = gts.doc_id
-             AND gts.path = '/GlossaryTermName/' + ?
+             AND gts.path = '/GlossaryTermName/TermNameStatus'
+             -- AND LEFT(n.node_loc, 4) = LEFT(gts.node_loc, 4)  -- ES only
+    left outer join query_term t
+              on t.doc_id = n.doc_id
+             AND t.path = '/GlossaryTermName/TermName/@NameType'
+             -- AND LEFT(n.node_loc, 4) = LEFT(t.node_loc, 4)  -- ES only
            WHERE gtc.path = '/GlossaryTermName/GlossaryTermConcept/@cdr:ref'
              AND gtc.int_val = ?
              AND d.active_status = 'A'
              AND gts.value in ('Approved', 'Revision pending')
-             AND n.doc_id != ?
-           order by n.value
+              -- Don't include the glossary term itself in the also-called list
+              -- Making use of the fact that alternate names only exist for
+              -- Spanish terms, therefore an outer join will display NULL values
+              -- for records without alternate names
+             AND n.value not in (
+                 SELECT q.value
+                   FROM query_term q
+        LEFT OUTER JOIN query_term a
+                     ON a.doc_id = q.doc_id
+                    AND a.path = '/GlossaryTermName/TermName/@NameType'
+                    AND left(a.node_loc, 4) = left(q.node_loc, 4)
+                  WHERE q.doc_id = ?
+                    AND q.path = '/GlossaryTermName/TermName/TermNameString'
+                    AND a.doc_id is null
+                    )
+             -- Don't include the alternate names unless they are alternates of the term itself
+             -- This "not in" is only relevant for the Spanish selection
+             AND n.value not in (
+                 SELECT q.value
+                   FROM query_term q
+        LEFT OUTER JOIN query_term a
+                     ON a.doc_id = q.doc_id
+                    AND a.path = '/GlossaryTermName/TermName/@NameType'
+                    AND left(a.node_loc, 4) = left(q.node_loc, 4)
+                  WHERE q.doc_id != ?
+                    AND q.path = '/GlossaryTermName/TermName/TermNameString'
+                    AND a.doc_id is NOT null
+                    )
+           ORDER BY n.value
+     </xsl:when>
+     <xsl:when                    test = "$language = 'es'">
+          SELECT n.value
+            FROM query_term gtc
+            JOIN query_term n
+              ON n.doc_id = gtc.doc_id
+             AND n.path = '/GlossaryTermName/TranslatedName/TermNameString'
+            JOIN document d
+              ON d.id = n.doc_id
+            JOIN query_term gts
+              ON d.id = gts.doc_id
+             AND gts.path = '/GlossaryTermName/TranslatedName/TranslatedNameStatus'
+             AND LEFT(n.node_loc, 4) = LEFT(gts.node_loc, 4)  -- ES only
+    left outer join query_term t
+              on t.doc_id = n.doc_id
+             AND t.path = '/GlossaryTermName/TranslatedName/@NameType'
+             AND LEFT(n.node_loc, 4) = LEFT(t.node_loc, 4)  -- ES only
+           WHERE gtc.path = '/GlossaryTermName/GlossaryTermConcept/@cdr:ref'
+             AND gtc.int_val = ?
+             AND d.active_status = 'A'
+             AND gts.value in ('Approved', 'Revision pending')
+              -- Don't include the glossary term itself in the also-called list
+             AND n.value not in (
+                 SELECT q.value
+                   FROM query_term q
+        LEFT OUTER JOIN query_term d
+                     ON d.doc_id = q.doc_id
+                    AND d.path = '/GlossaryTermName/TranslatedName/@NameType'
+                    AND left(d.node_loc, 4) = left(q.node_loc, 4)
+                  WHERE q.doc_id = ?
+                    AND q.path = '/GlossaryTermName/TranslatedName/TermNameString'
+                    AND d.doc_id is null
+                    )
+             -- Don't include the alternate names unless they are alternates of the term itself
+             AND n.value not in (
+                 SELECT q.value
+                   FROM query_term q
+        LEFT OUTER JOIN query_term d
+                     ON d.doc_id = q.doc_id
+                    AND d.path = '/GlossaryTermName/TranslatedName/@NameType'
+                    AND left(d.node_loc, 4) = left(q.node_loc, 4)
+                  WHERE q.doc_id != ?
+                    AND q.path = '/GlossaryTermName/TranslatedName/TermNameString'
+                    AND d.doc_id is NOT null
+                    )
+           ORDER BY n.value
+     </xsl:when>
+    </xsl:choose>
    </xsl:variable>
 
    <!--
    We need two different queries depending on the language attribute
+
+   Since we need two individual queries for EN and ES anyway we
+   don't need to use the namePath and statusPath variables
    ================================================================= -->
+   <!--
    <xsl:variable                  name = "namePath">
     <xsl:choose>
      <xsl:when                    test = "$language = 'en'">
@@ -659,15 +750,18 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
      </xsl:when>
     </xsl:choose>
    </xsl:variable>
+   -->
+
+
 
    <xsl:variable                  name = "queryRows"
                                 select = "document(cdr:escape-uri(
                                             concat('cdrutil:/sql-query/',
                                                    $sqlGTNQuery,
-                                                   '~', $namePath,
-                                                   '~', $statusPath,
                                                    '~', $sqlGTCId,
-                                                   '~', $gtnNormId)))"/>
+                                                   '~', $gtnNormId,
+                                                   '~', $gtnNormId
+                                                   )))"/>
 
    <!--
    Also-called is only added if the SQL query returns with a record
