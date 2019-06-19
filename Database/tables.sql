@@ -2742,6 +2742,7 @@ INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Spanish Ill
 INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation of Caption and Cont. Desc. Pending', 70)
 INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation Peer-Review Pending (Caption and Cont. Desc.)', 80)
 INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation Peer-Review Complete (Caption and Cont. Desc.)', 90)
+INSERT INTO media_translation_state (value_name, value_pos) VALUES ('2nd Peer-Review and Implement Changes', 95)
 INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation Made Publishable', 100)
 GO
 
