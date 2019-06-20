@@ -2398,19 +2398,6 @@ mapping_gaps CHAR        NOT NULL DEFAULT 'N',
  PRIMARY KEY (job_id, ctrp_id))
 
 /*
- * Record of having asked for a pronunciation audio clip for the names
- * for a glossary entry found in a particular GlossaryTermName document.
- *
- *      cdr_id   primary key for the GlossaryTermName document
- * spreadsheet   name of the spreadsheet in which the request was included
- *    requeted   the date the request was generated
- */
-CREATE TABLE glossary_term_audio_request
-     (cdr_id INTEGER      NOT NULL PRIMARY KEY REFERENCES all_docs,
- spreadsheet VARCHAR(256) NOT NULL,
-   requested DATE         NOT NULL)
-
-/*
  * Record of clinical trial document set fetched from CTRP. Used to
  * figure out what we've already downloaded when the nightly job
  * connects to their server.
