@@ -59,11 +59,11 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
  <!--
  ======================================================================
- Display a Summary Reference or ProtocolRef
- These elements should display the QC report of the particular document
+ Display a Summary Reference
+ The element should display the QC report of the particular document
+ Note: This template used to include processing for ProtocolRefs, too.
  ====================================================================== -->
- <xsl:template                   match = "SummaryRef         |
-                                          ProtocolRef">
+ <xsl:template                   match = "SummaryRef">
   <a>
    <xsl:attribute                 name = "href">
     <!--
@@ -106,6 +106,24 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    </xsl:choose>
   </a>
 
+ </xsl:template>
+
+
+ <!--
+ ======================================================================
+ Display a ProtocolRef
+ The element should link to Cancer.gov using the following
+ format:
+    https://www.cancer.gov/clinicaltrials/NCT00004451
+ ====================================================================== -->
+ <xsl:template                   match = "ProtocolRef">
+  <a>
+   <xsl:attribute                 name = "href">
+    <xsl:text>https://www.cancer.gov/clinicaltrials/</xsl:text>
+    <xsl:value-of               select = "@nct_id"/>
+   </xsl:attribute>
+   <xsl:apply-templates/>
+  </a>
  </xsl:template>
 
 
@@ -2877,7 +2895,6 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  ====================================================================== -->
  <xsl:template                   match = "MediaID | VideoID"
                                   mode = "gtc">
-  <xsl:value-of                 select = "position()"/>
   <xsl:choose>
    <!--
    If multiple images are displayed we need a linebreak before

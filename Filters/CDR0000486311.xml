@@ -26,6 +26,9 @@ Filter to create the DrugInformationSummary QC Report
                                 select = "document('cdrutil:/docid')"/>
  <xsl:variable                    name = "whoAmI"
                                 select = "'DrugInfoSummary'"/>
+ <xsl:variable                    name = "dateTime"
+                                select = "document('cdrutil:/date')"/>
+
  <!--
  ======================================================================
  Main Template
@@ -46,7 +49,13 @@ Filter to create the DrugInformationSummary QC Report
                                                   DocTitle, ';'), ';')"/>
     </TITLE>
     <STYLE type='text/css'>
-     .miscdoc   { background-color: DFDFDF; }
+     .miscdoc      { background-color: DFDFDF; }
+     .big          { font-size: 14pt;
+                     font-weight: bold; }
+     .center       { text-align: center; }
+     .date-header  { text-align: center;
+                     font-weight: bold;
+                     margin-bottom: 14px; }
      <xsl:call-template           name = "defaultStyle"/>
      <xsl:call-template           name = "rsInsertionDeletionStyle"/>
     </STYLE>
@@ -68,35 +77,47 @@ Filter to create the DrugInformationSummary QC Report
   ==================================================================
   Display Report heading and subheading
   ================================================================== -->
-  <b>
-   <font size='4'>
-    <center>
-     <xsl:text>Drug Information Summary</xsl:text>
-     <br/>
-     <xsl:text>QC Report</xsl:text>
-    </center>
-   </font>
-   <font size='3'>
-    <center>
-     <xsl:value-of              select = "document(
-                                           concat('cdrutil:/date/%25B %25#d,',
-                                                  ' %25Y %25#I:%25M% 25p'))"/>
-    </center>
-   </font>
-  </b>
+  <xsl:element                    name = "div">
+   <xsl:attribute                 name = "class">
+    <xsl:text>center</xsl:text>
+   </xsl:attribute>
+
+   <xsl:element                   name = "span">
+    <xsl:attribute                name = "class">
+     <xsl:text>big</xsl:text>
+    </xsl:attribute>
+
+    <xsl:text>Drug Information Summary</xsl:text>
+    <br/>
+    <xsl:text>QC Report</xsl:text>
+   </xsl:element>
+  </xsl:element>
+
+  <xsl:element                    name = "div">
+   <xsl:attribute                 name = "class">
+    <xsl:text>date-header</xsl:text>
+   </xsl:attribute>
+
+   <xsl:call-template             name = "dateTimeHeader">
+    <xsl:with-param               name = "dateTime"
+                                select = "$dateTime"/>
+   </xsl:call-template>
+  </xsl:element>
   <p/>
 
   <!--
   ====================================================================
   Display CDR ID
   ==================================================================== -->
-  <b>
-   <font size='4'>
-    <xsl:value-of               select = "concat('CDR',
+  <xsl:element                    name = "span">
+   <xsl:attribute                 name = "class">
+    <xsl:text>big</xsl:text>
+   </xsl:attribute>
+
+   <xsl:value-of                select = "concat('CDR',
                                            number(
                                            substring-after($docID, 'CDR')))"/>
-   </font>
-  </b>
+  </xsl:element>
   <p/>
 
   <!--
@@ -106,9 +127,13 @@ Filter to create the DrugInformationSummary QC Report
   <table        xsl:use-attribute-sets = "table">
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
-     <b>
-      <font size="4">Title</font>
-     </b>
+     <xsl:element                 name = "span">
+      <xsl:attribute              name = "class">
+       <xsl:text>big</xsl:text>
+      </xsl:attribute>
+
+      <xsl:text>Title</xsl:text>
+     </xsl:element>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:apply-templates       select = "Title"/>
@@ -121,9 +146,12 @@ Filter to create the DrugInformationSummary QC Report
   ===================================================================
   Display Drug Information Meta Data
   =================================================================== -->
-  <b>
-   <font size="4">Drug Info Meta Data</font>
-  </b>
+  <xsl:element                 name = "span">
+   <xsl:attribute              name = "class">
+    <xsl:text>big</xsl:text>
+   </xsl:attribute>
+   <xsl:text>Drug Info Meta Data</xsl:text>
+  </xsl:element>
   <xsl:apply-templates          select = "DrugInfoMetaData"/>
 
   <!--
@@ -133,9 +161,12 @@ Filter to create the DrugInformationSummary QC Report
   <table        xsl:use-attribute-sets = "table">
    <tr>
     <td         xsl:use-attribute-sets = "cell1of2">
-     <b>
-      <font size="4">Drug Info Summary</font>
-     </b>
+     <xsl:element                 name = "span">
+      <xsl:attribute              name = "class">
+       <xsl:text>big</xsl:text>
+      </xsl:attribute>
+      <xsl:text>Drug Info Summary</xsl:text>
+     </xsl:element>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
      <xsl:apply-templates       select = "SummarySection"/>
@@ -233,13 +264,13 @@ Filter to create the DrugInformationSummary QC Report
      </td>
      <td        xsl:use-attribute-sets = "cell2of2">
       <xsl:for-each             select = "ApprovedIndication">
-       <li>
-        <xsl:value-of           select = "Term/
+       <xsl:element               name = "li">
+        <xsl:apply-templates    select = "Term/
                                           PreferredName"/>
          <xsl:for-each          select = "Term">
           <xsl:call-template      name = "createCdrQcLink"/>
         </xsl:for-each>
-       </li>
+       </xsl:element>
       </xsl:for-each>
      </td>
     </tr>
@@ -278,6 +309,59 @@ Filter to create the DrugInformationSummary QC Report
 
 
  <!--
+ =====================================================================
+ Display ApprovedIndication information with insertion/deletion markup
+ ===================================================================== -->
+ <xsl:template                   match = "Term/PreferredName">
+  <xsl:choose>
+   <xsl:when                      test = "../@iod = 'Deletion'">
+    <xsl:choose>
+     <xsl:when                    test = "../@RevisionLevel = 'proposed'">
+      <xsl:element                name = "span">
+       <xsl:attribute             name = "class">
+        <xsl:text>deleteproposed</xsl:text>
+       </xsl:attribute>
+       <xsl:value-of            select = "."/>
+      </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:element                name = "span">
+       <xsl:attribute             name = "class">
+        <xsl:text>deleteapproved</xsl:text>
+       </xsl:attribute>
+       <xsl:value-of            select = "."/>
+      </xsl:element>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:when                      test = "../@iod = 'Insertion'">
+    <xsl:choose>
+     <xsl:when                    test = "../@RevisionLevel = 'proposed'">
+      <xsl:element                name = "span">
+       <xsl:attribute             name = "class">
+        <xsl:text>insertproposed</xsl:text>
+       </xsl:attribute>
+       <xsl:value-of            select = "."/>
+      </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:element                name = "span">
+       <xsl:attribute             name = "class">
+        <xsl:text>insertapproved</xsl:text>
+       </xsl:attribute>
+       <xsl:value-of            select = "."/>
+      </xsl:element>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:value-of               select = "."/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!--
  ===================================================================
  Display Description information with insertion/deletion markup
  =================================================================== -->
@@ -290,6 +374,10 @@ Filter to create the DrugInformationSummary QC Report
  <!--
  ===================================================================
  Template to display the OtherNameType values
+
+ Note:  The proper display requires that the NLM DrugRefs are 
+        entered first and before the FDA DrugRefs.  If there are 
+        multiple NLM DrugRefs, those must be listed together.
  =================================================================== -->
  <xsl:template                   match = "DrugReference">
   <xsl:variable                   name = "fracID"
@@ -298,68 +386,151 @@ Filter to create the DrugInformationSummary QC Report
                                             MiscellaneousDocument/
                                             @cdr:ref, '#')"/>
 
-  <b>
-   <font size="4">
-    <xsl:text>Drug Reference - </xsl:text>
-    <xsl:value-of               select = "DrugReferenceType"/>
-   </font>
-  </b>
+  <!-- Store the number of NLM DrugRefs -->
+  <xsl:variable                   name = "nlmRefs"
+                                select = "count(//DrugReference[
+                                                    DrugReferenceType='NLM'
+                                                    ])"/>
+
+  <!-- 'NLM' may have multiple drugs but we only display one heading -->
+  <xsl:choose>
+   <xsl:when                      test = "DrugReferenceType = 'NLM'
+                                          and
+                                          position() = 1">
+    <xsl:element                  name = "span">
+     <xsl:attribute               name = "class">
+      <xsl:text>big</xsl:text>
+     </xsl:attribute>
+
+     <xsl:text>Drug Reference - </xsl:text>
+     <xsl:value-of              select = "DrugReferenceType"/>
+    </xsl:element>
+   </xsl:when>
+   <xsl:when                      test = "DrugReferenceType = 'NLM'
+                                          and
+                                          position() > 1">
+    <!-- Do nothing -->
+   </xsl:when>
+
+   <!-- Only display non-NLM headings here -->
+   <xsl:otherwise>
+    <xsl:element                  name = "span">
+     <xsl:attribute               name = "class">
+      <xsl:text>big</xsl:text>
+     </xsl:attribute>
+
+     <xsl:text>Drug Reference - </xsl:text>
+     <xsl:value-of              select = "DrugReferenceType"/>
+    </xsl:element>
+   </xsl:otherwise>
+  </xsl:choose>
+
   <table        xsl:use-attribute-sets = "table">
    <xsl:if                        test = "DrugReferencePostedDate">
     <tr>
-     <td         xsl:use-attribute-sets = "cell1of2">
+     <td        xsl:use-attribute-sets = "cell1of2">
       <b>Posted Date</b>
      </td>
-     <td         xsl:use-attribute-sets = "cell2of2">
-      <xsl:apply-templates       select = "DrugReferencePostedDate"/>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "DrugReferencePostedDate"/>
      </td>
     </tr>
    </xsl:if>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Link</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:apply-templates       select = "DrugReferenceLink"/>
-     <br/>
-     <xsl:for-each              select = "DrugReferenceLink">
-      <xsl:call-template          name = "createWebLink"/>
-     </xsl:for-each>
-    </td>
-   </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Description</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:apply-templates       select = "DrugReferenceDescription/
+
+   <!-- 'NLM' may have multiple drugs but we only display one heading -->
+   <xsl:choose>
+    <xsl:when                     test = "DrugReferenceType = 'NLM'
+                                          and
+                                          position() = 1">
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <b>Link</b>
+      </td>
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <xsl:apply-templates     select = "DrugReferenceLink"/>
+       <br/>
+       <xsl:for-each            select = "DrugReferenceLink">
+        <xsl:call-template        name = "createWebLink"/>
+       </xsl:for-each>
+      </td>
+     </tr>
+    </xsl:when>
+    <xsl:when                     test = "DrugReferenceType = 'NLM'
+                                          and
+                                          position() > 1">
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <xsl:text> </xsl:text>
+      </td>
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <xsl:apply-templates     select = "DrugReferenceLink"/>
+       <br/>
+       <xsl:for-each            select = "DrugReferenceLink">
+        <xsl:call-template        name = "createWebLink"/>
+       </xsl:for-each>
+      </td>
+     </tr>
+    </xsl:when>
+    <xsl:otherwise>
+     <tr>
+      <td       xsl:use-attribute-sets = "cell1of2">
+       <b>Link</b>
+      </td>
+      <td       xsl:use-attribute-sets = "cell2of2">
+       <xsl:apply-templates     select = "DrugReferenceLink"/>
+       <br/>
+       <xsl:for-each            select = "DrugReferenceLink">
+        <xsl:call-template        name = "createWebLink"/>
+       </xsl:for-each>
+      </td>
+     </tr>
+    </xsl:otherwise>
+   </xsl:choose>
+
+   <xsl:if                        test = "DrugReferenceType = 'NLM'
+                                         and
+                                         position() = $nlmRefs">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <xsl:element                name = "span">
+       <xsl:attribute             name = "class">
+        <xsl:text>bold</xsl:text>
+       </xsl:attribute>
+
+       <xsl:text>Description </xsl:text>
+      </xsl:element>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "DrugReferenceDescription/
                                           MiscellaneousDocument/
                                           MiscellaneousDocumentTitle"/>
-     <xsl:for-each              select = "DrugReferenceDescription/
+      <xsl:for-each             select = "DrugReferenceDescription/
                                           MiscellaneousDocument">
-      <xsl:call-template          name = "createCdrQcLink"/>
-     </xsl:for-each>
-     <br/>
-     <i><br/>
-      <div class="miscdoc">
-       <xsl:apply-templates     select = "DrugReferenceDescription//*[@cdr:id
+       <xsl:call-template         name = "createCdrQcLink"/>
+      </xsl:for-each>
+      <br/>
+      <i><br/>
+       <div class="miscdoc">
+        <xsl:apply-templates    select = "DrugReferenceDescription//*[@cdr:id
                                                                  = $fracID]"/>
-      </div>
-     </i>
-    </td>
-   </tr>
+       </div>
+      </i>
+     </td>
+    </tr>
+   </xsl:if>
+
    <xsl:if                        test = "Comment">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Comments</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-    <xsl:for-each               select = "Comment">
-     <xsl:apply-templates       select = "."/>
-     <br/>
-    </xsl:for-each>
-    </td>
-   </tr>
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Comments</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+     <xsl:for-each              select = "Comment">
+      <xsl:apply-templates      select = "."/>
+      <br/>
+     </xsl:for-each>
+     </td>
+    </tr>
    </xsl:if>
   </table>
   <p/>
@@ -369,7 +540,7 @@ Filter to create the DrugInformationSummary QC Report
  ===================================================================
  Template to display the OtherNameType values
  =================================================================== -->
- <xsl:template                   name = "adminSection">
+ <xsl:template                    name = "adminSection">
   <hr width="35%"/>
   <table        xsl:use-attribute-sets = "table">
    <tr>
@@ -377,7 +548,7 @@ Filter to create the DrugInformationSummary QC Report
      <b>Entered By</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "EnteredBy"/>
+     <xsl:apply-templates       select = "EnteredBy"/>
     </td>
    </tr>
    <tr>
@@ -385,7 +556,7 @@ Filter to create the DrugInformationSummary QC Report
      <b>Entry Date</b>
     </td>
     <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "EntryDate"/>
+     <xsl:apply-templates       select = "EntryDate"/>
     </td>
    </tr>
    <tr>
@@ -415,6 +586,28 @@ Filter to create the DrugInformationSummary QC Report
   </table>
   <p/>
  </xsl:template>
+
+
+ <!--
+ ===================================================================
+ We need to display the Glossary Term Name/Concept report with
+ insertion/deletion markup.
+ =================================================================== -->
+ <xsl:template                    name = "dateTimeHeader">
+  <xsl:param                      name = "dateTime"/>
+  <xsl:variable                   name = "date"
+                                select = "substring-before($dateTime, 'T')"/>
+  <xsl:variable                   name = "time"
+                                select = "substring-before(
+                                            substring-after($dateTime, 'T'),
+                                                                      '.')"/>
+
+  <xsl:value-of                 select = "$date"/>
+  <xsl:text> </xsl:text>
+  <xsl:value-of                 select = "$time"/>
+  <xsl:text> h</xsl:text>
+ </xsl:template>
+
 
  <!--
  ================================================================

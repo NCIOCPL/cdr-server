@@ -136,11 +136,16 @@ OCECDR-4122: Changes the order of information in DIS
 
     <!--
     Now add all Drugreferences with Type='NLM'
+    Only display the test for the first node but combine the
+    DrugRefenrenceLink elements in a comma separated list (see the
+    Para template below).
     =============================================================== -->
     <xsl:for-each               select = "DrugReference/
                                             DrugReferenceType[text()='NLM']">
+     <xsl:if test = "position()=1">
      <xsl:apply-templates       select = ".."
                                   mode = "nlm"/>
+     </xsl:if>
     </xsl:for-each>
    </xsl:element>
 
@@ -397,7 +402,22 @@ OCECDR-4122: Changes the order of information in DIS
     <xsl:attribute                name = "xref">
      <xsl:value-of              select = "@cdr:xref"/>
     </xsl:attribute>
-    <xsl:value-of               select = "."/>
+
+    <!--
+    Until a global change has updated all DrugReferenceLinks to remove
+    the text "MedlinePlus Information on " we need to strip this text
+    out with this template
+    ================================================================== -->
+    <xsl:choose>
+     <xsl:when                    test = "starts-with(.,
+                                             'MedlinePlus Information on ')">
+      <xsl:value-of             select = "substring-after(.,
+                                             'MedlinePlus Information on ')"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "."/>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:element>
  </xsl:template>
 
@@ -463,11 +483,46 @@ OCECDR-4122: Changes the order of information in DIS
    <!--
    If this is the first of the Para elements (coming from the misc.
    document) we want to add the ExternalRef (a.k.a. DrugRefLink)
+   Need to account for three types of display:
+   - one DRL
+     <DRL> - text
+   - two DRL
+     <DRL> and <DRL> - text
+   - three or more DRL
+     <DRL>, <DRL>, ... <DRL>, and <DRL> - text
    ================================================================ -->
    <xsl:if                        test = ". = ../Para[1]">
-    <xsl:apply-templates        select = "../../../../../
-                                           DrugReferenceLink"/>
+    <xsl:for-each               select = "//DrugReference
+                                             [@section='About_drug']">
+     <!--
+     The first drug needs the MedlinePlus text added
+     =============================================== -->
+     <xsl:if                      test = "position() = 1">
+      <xsl:text>MedlinePlus Information on </xsl:text>
+     </xsl:if>
+
+     <xsl:apply-templates      select  = "DrugReferenceLink"/>
+
+     <xsl:if                      test = "position() != last()">
+      <xsl:choose>
+       <xsl:when                  test = "last() = 2">
+        <xsl:text> and </xsl:text>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:text>, </xsl:text>
+       </xsl:otherwise>
+      </xsl:choose>
+
+      <xsl:if                     test = "position() + 1 = last()
+                                          and
+                                          last() > 2">
+       <xsl:text>and </xsl:text>
+
+      </xsl:if>
+     </xsl:if>
+    </xsl:for-each>
     <xsl:text> - </xsl:text>
+
    </xsl:if>
 
    <xsl:apply-templates           mode = "copy"/>
