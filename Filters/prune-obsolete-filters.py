@@ -11,12 +11,10 @@ from re import search
 from cdrapi import db
 from cdr import delDoc
 
-MODES = "test", "live"
-
 parser = ArgumentParser()
 parser.add_argument("--directory", "-d", default=".")
 parser.add_argument("--tier", "-t")
-parser.add_argument("--mode", "-m", choices=MODES)
+parser.add_argument("--live", "-l", action="store_true")
 parser.add_argument("--session", "-s", required=True)
 opts = parser.parse_args()
 titles = set()
@@ -37,7 +35,7 @@ query.where("t.name = 'Filter'")
 for doc_id, title in query.execute(cursor).fetchall():
     key = title.lower().strip()
     if key not in titles:
-        if opts.mode == "live":
+        if opts.live:
             cdr_id = delDoc(opts.session, doc_id)
             print(u"deleted {} ({!r})".format(cdr_id, title))
         else:
