@@ -1483,129 +1483,197 @@
     </xsl:element>
   </xsl:template>
 
-
   <!--
   =========================================================================
-  Template to display the videos within a figure element
+  Template to display the videos within a wrapped figure element
   ========================================================================= -->
   <xsl:template                  match = "EmbeddedVideo">
-   <xsl:element                   name = "figure">
-    <xsl:call-template            name = "figureClassTitle">
-     <xsl:with-param              name = "template"
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "data-embed-button">
+     <xsl:text>media_entity_embed</xsl:text>
+    </xsl:attribute>
+    <xsl:attribute                name = "data-entity-embed-display">
+     <xsl:call-template           name = "video-template">
+      <xsl:with-param             name = "template"
                                 select = "@template"/>
-    </xsl:call-template>
-
-    <xsl:element                  name = "div">
-     <xsl:attribute               name = "id">
-      <xsl:text>ytplayer-</xsl:text>
-      <xsl:value-of             select = "@unique_id"/>
-     </xsl:attribute>
-
-     <xsl:attribute               name = "class">
-      <xsl:text>flex-video widescreen</xsl:text>
-     </xsl:attribute>
-
-     <xsl:attribute               name = "data-video-id">
-      <xsl:value-of             select = "@unique_id"/>
-     </xsl:attribute>
-
-     <xsl:attribute               name = "data-video-title">
-      <xsl:value-of             select = "VideoTitle"/>
-     </xsl:attribute>
-
-     <xsl:element                 name = "noscript">
-      <xsl:element                name = "p">
-       <xsl:element               name = "a">
-        <xsl:attribute            name = "href">
-         <xsl:text>https://www.youtube.com/watch?v=</xsl:text>
-         <xsl:value-of          select = "@unique_id"/>
-        </xsl:attribute>
-
-        <xsl:attribute            name = "target">
-         <xsl:text>_blank</xsl:text>
-        </xsl:attribute>
-        <xsl:attribute            name = "title">
-         <xsl:value-of          select = "VideoTitle"/>
-        </xsl:attribute>
-
-        <xsl:text>View this video on YouTube.</xsl:text>
-       </xsl:element>
-      </xsl:element>
-     </xsl:element>
-    </xsl:element>
-
-    <!--
-    <xsl:element                  name = "figcaption">
-     <xsl:attribute               name = "class">
-      <xsl:text>caption-container no-resize</xsl:text>
-     </xsl:attribute>
-    -->
-
-     <xsl:apply-templates       select = "Caption"
-                                  mode = "video"/>
-    <!--
-    </xsl:element>
-    -->
-
-   </xsl:element>
-  </xsl:template>
-
-
-  <!--
-  =========================================================================
-  Template to set the CSS classes based on the template specified
-  ========================================================================= -->
-  <xsl:template                   name = "figureClassTitle">
-   <xsl:param                     name = "template"/>
-
+     </xsl:call-template>
+    </xsl:attribute>
+    <xsl:attribute                name = "data-entity-type">
+     <xsl:text>media</xsl:text>
+    </xsl:attribute>
+    <xsl:attribute                name = "data-caption">
+     <xsl:text></xsl:text>
+    </xsl:attribute>
     <xsl:attribute                name = "class">
-     <xsl:text>video</xsl:text>
-     <!-- Set the video size and positioning (for larger sizes)-->
+     <xsl:text>embedded-entity</xsl:text>
      <xsl:choose>
-      <xsl:when                   test = "starts-with($template, 'Video100')">
-       <xsl:text> size100 center</xsl:text>
+      <xsl:when                   test = "contains(@template, 'Right')">
+       <xsl:text> align-right</xsl:text>
       </xsl:when>
-      <xsl:when                   test = "starts-with($template, 'Video75')">
-       <xsl:text> size75 center</xsl:text>
-      </xsl:when>
-      <xsl:when                   test = "starts-with($template, 'Video50')">
-       <xsl:text> size50</xsl:text>
-
-       <!-- The size50 also allows float right or center -->
-       <xsl:choose>
-        <xsl:when                 test = "contains($template, 'Right')">
-         <xsl:text> right</xsl:text>
-        </xsl:when>
-        <xsl:otherwise>
-         <xsl:text> center</xsl:text>
-        </xsl:otherwise>
-       </xsl:choose>
-      </xsl:when>
-      <!-- No known template name, display the name itself -->
       <xsl:otherwise>
-       <xsl:value-of            select = "$template"/>
+       <xsl:text> align-center</xsl:text>
       </xsl:otherwise>
      </xsl:choose>
     </xsl:attribute>
-
-    <!-- Only print the title if a template *with* title is selected -->
-    <xsl:if                       test = "not(contains($template, 'NoTitle'))">
-     <xsl:call-template            name = "setVideoTitle"/>
-    </xsl:if>
-
+    <xsl:element                  name = "figure">
+     <xsl:attribute               name = "class">
+      <xsl:text>video</xsl:text>
+     </xsl:attribute>
+     <xsl:if                      test = "not(contains(@template, 'NoTitle'))">
+      <xsl:element                name = "h4">
+       <xsl:attribute             name = "class">
+        <xsl:text>title</xsl:text>
+       </xsl:attribute>
+       <xsl:attribute             name = "tabindex">
+        <xsl:text>0</xsl:text>
+       </xsl:attribute>
+       <xsl:value-of            select = "VideoTitle"/>
+      </xsl:element>
+     </xsl:if>
+     <xsl:call-template           name = "youtube-player"/>
+     <xsl:apply-templates       select = "Caption"
+                                  mode = "video"/>
+    </xsl:element> <!-- figure element for video -->
+   </xsl:element> <!-- top level div element for video -->
   </xsl:template>
 
 
   <!--
   =========================================================================
-  Template to display the Video title
+  Map EmbeddedVideo/@template value to data-entity-embed-display value.
+  Invoked by the EmbeddedVideo template immediately above.
   ========================================================================= -->
-  <xsl:template                   name = "setVideoTitle">
+  <xsl:template                   name = "video-template">
+   <xsl:param                     name = "template"/>
+   <xsl:choose>
+    <xsl:when                     test = "$template = 'Video100Title'">
+     <xsl:text>view_mode:media.video_display_large_title</xsl:text>
+    </xsl:when>
+    <xsl:when                     test = "$template = 'Video100NoTitle'">
+     <xsl:text>view_mode:media.video_display_large_no_title</xsl:text>
+    </xsl:when>
+    <xsl:when                     test = "$template = 'Video75Title'">
+     <xsl:text>view_mode:media.video_display_medium_title</xsl:text>
+    </xsl:when>
+    <xsl:when                     test = "$template = 'Video75NoTitle'">
+     <xsl:text>view_mode:media.video_display_medium_no_title</xsl:text>
+    </xsl:when>
+    <xsl:when                     test = "$template = 'Video50TitleRight'">
+     <xsl:text>view_mode:media.video_display_small_title</xsl:text>
+    </xsl:when>
+    <xsl:otherwise> <!-- Video50NoTitle or Video50NoTitleRight -->
+     <xsl:text>view_mode:media.video_display_small_no_title</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:template>
 
-   <xsl:element                   name = "h4">
-    <xsl:apply-templates        select = "VideoTitle"/>
-   </xsl:element>
 
+  <!--
+  =========================================================================
+  Template to display the videos within a wrapped figure element.
+  Invoked by the EmbeddedVideo template above.
+  ========================================================================= -->
+  <xsl:template                   name = "youtube-player">
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "id">
+     <xsl:text>ytplayer-</xsl:text>
+     <xsl:value-of              select = "@unique_id"/>
+    </xsl:attribute>
+    <xsl:attribute                name = "class">
+     <xsl:text>flex-video widescreen</xsl:text>
+    </xsl:attribute>
+    <xsl:attribute                name = "data-video-url">
+     <xsl:text>https://www.youtube.com/embed/</xsl:text>
+     <xsl:value-of              select = "@unique_id"/>
+     <xsl:text>?feature=oembed&amp;autoplay=1</xsl:text>
+    </xsl:attribute>
+    <xsl:attribute                name = "data-video-title">
+     <xsl:value-of              select = "VideoTitle"/>
+    </xsl:attribute>
+    <xsl:element                  name = "div">
+     <xsl:attribute               name = "class">
+      <xsl:text>video-preview--container</xsl:text>
+     </xsl:attribute>
+     <xsl:attribute               name = "tabindex">
+      <xsl:text>0</xsl:text>
+     </xsl:attribute>
+     <xsl:element                 name = "img">
+      <xsl:attribute              name = "src">
+       <xsl:text>https://img.youtube.com/vi/</xsl:text>
+       <xsl:value-of            select = "@unique_id"/>
+       <xsl:text>/hqdefault.jpg</xsl:text>
+      </xsl:attribute>
+      <xsl:attribute              name = "width">
+       <xsl:text>480</xsl:text>
+      </xsl:attribute>
+      <xsl:attribute              name = "height">
+       <xsl:text>360</xsl:text>
+      </xsl:attribute>
+      <xsl:attribute              name = "alt">
+       <xsl:text></xsl:text>
+      </xsl:attribute>
+     </xsl:element>
+     <xsl:call-template           name = "video-play-button"/>
+     <xsl:element                 name = "p">
+      <xsl:value-of             select = "VideoTitle"/>
+     </xsl:element>
+    </xsl:element> <!-- div for video preview container -->
+   </xsl:element> <!-- div for ytplayer -->
+  </xsl:template>
+
+  <!--
+  =========================================================================
+  Create the div block for the YouTube play button.
+  Invoked by the youtube-player template immediately above.
+  ========================================================================= -->
+  <xsl:template                   name = "video-play-button">
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>video-preview--play-button</xsl:text>
+    </xsl:attribute>
+    <xsl:element                  name = "svg">
+     <xsl:attribute               name = "version">
+      <xsl:text>1.1</xsl:text>
+     </xsl:attribute>
+     <xsl:attribute               name = "viewBox">
+      <xsl:text>0 0 68 48</xsl:text>
+     </xsl:attribute>
+     <xsl:attribute               name = "width">
+      <xsl:text>100%</xsl:text>
+     </xsl:attribute>
+     <xsl:attribute               name = "height">
+      <xsl:text>100%</xsl:text>
+     </xsl:attribute>
+     <xsl:element                 name = "path">
+      <xsl:attribute              name = "class">
+       <xsl:text>play-button--bg</xsl:text>
+      </xsl:attribute>
+      <xsl:attribute              name = "d">
+       <xsl:text>M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55</xsl:text>
+       <xsl:text>.79,.13,34,0,34,0S12.21,.13,6.9,1.55 C3.97,2.</xsl:text>
+       <xsl:text>33,2.27,4.81,1.48,7.74C0.06,13.05,0,24,0,24s0</xsl:text>
+       <xsl:text>.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42</xsl:text>
+       <xsl:text>,6.19 C12.21,47.87,34,48,34,48s21.79-0.13,27.</xsl:text>
+       <xsl:text>1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34</xsl:text>
+       <xsl:text>.95,68,24,68,24S67.94,13.05,66.52,7.74z</xsl:text>
+      </xsl:attribute>
+      <xsl:attribute              name = "fill">
+       <xsl:text>#212121</xsl:text>
+      </xsl:attribute>
+      <xsl:attribute              name = "fill-opacity">
+       <xsl:text>0.8</xsl:text>
+      </xsl:attribute>
+     </xsl:element> <!-- first svg path -->
+     <xsl:element                 name = "path">
+      <xsl:attribute              name = "d">
+       <xsl:text>M 45,24 27,14 27,34</xsl:text>
+      </xsl:attribute>
+      <xsl:attribute              name = "fill">
+       <xsl:text>#fff</xsl:text>
+      </xsl:attribute>
+     </xsl:element> <!-- second svg path -->
+    </xsl:element> <!-- svg -->
+   </xsl:element> <!-- div for video preview play button -->
   </xsl:template>
 
 
