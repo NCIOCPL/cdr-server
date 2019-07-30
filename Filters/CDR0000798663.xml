@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Filter title: Import Citation -->
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                               version = "1.0">
+
+  <xsl:output                   method = "xml"
+                              encoding = "utf-8"/>
+
+ <!-- Top element for what we get from NLM's PubMed -->
+  <xsl:template                  match = "MedlineCitation">
+    <MedlineCitation>
+      <xsl:if                     test = "normalize-space(@Status)">
+        <xsl:attribute            name = "Status">
+          <xsl:value-of         select = "normalize-space(@Status)"/>
+        </xsl:attribute>
+      </xsl:if>
+      <xsl:apply-templates      select = "MedlineID"/>
+      <xsl:apply-templates      select = "PMID"/>
+      <xsl:apply-templates      select = "Article"/>
+      <xsl:apply-templates      select = "MedlineJournalInfo/MedlineTA"/>
+    </MedlineCitation>
+  </xsl:template>
+
+  <!-- Cherry-pick what we need from the Article element -->
+  <xsl:template                  match = "Article">
+    <Article>
+      <xsl:apply-templates      select = "Journal"/>
+      <xsl:apply-templates      select = "ArticleTitle"/>
+      <xsl:apply-templates      select = "Pagination/MedlinePgn"/>
+      <xsl:apply-templates      select = "Abstract"/>
+      <xsl:apply-templates      select = "AuthorList"/>
+      <xsl:apply-templates      select = "Language"/>
+    </Article>
+  </xsl:template>
+
+  <!-- The users have decided to keep the inline markup -->
+  <xsl:template                  match = "ArticleTitle">
+    <ArticleTitle>
+      <xsl:apply-templates      select = "text() | b | i | sup | sub | u"/>
+    </ArticleTitle>
+  </xsl:template>
+
+  <!-- We don't publish this, but Robin still wants it -->
+  <xsl:template                  match = "Abstract">
+    <Abstract>
+      <xsl:apply-templates      select = "AbstractText"/>
+      <xsl:apply-templates      select = "CopyrightInformation"/>
+    </Abstract>
+  </xsl:template>
+
+  <!-- The users want to keep the attributes and the inline markup -->
+  <xsl:template                  match = "AbstractText">
+    <AbstractText>
+      <xsl:if                     test = "normalize-space(@Label)">
+        <xsl:attribute            name = "Label">
+          <xsl:value-of         select = "normalize-space(@Label)"/>
+        </xsl:attribute>
+      </xsl:if>
+      <xsl:if                     test = "normalize-space(@NlmCategory)">
+        <xsl:attribute            name = "NlmCategory">
+          <xsl:value-of         select = "normalize-space(@NlmCategory)"/>
+        </xsl:attribute>
+      </xsl:if>
+      <xsl:apply-templates      select = "text() | b | i | sup | sub | u"/>
+    </AbstractText>
+  </xsl:template>
+
+  <!-- Take what we want for the AuthorList element -->
+  <xsl:template                  match = "AuthorList">
+    <AuthorList>
+      <xsl:if                     test = "normalize-space(@CompleteYN)">
+        <xsl:attribute            name = "CompleteYN">
+          <xsl:value-of         select = "normalize-space(@CompleteYN)"/>
+        </xsl:attribute>
+      </xsl:if>
+      <xsl:apply-templates      select = "Author"/>
+    </AuthorList>
+  </xsl:template>
+
+  <!-- Keep the parts of Author that we want (remapping FirstName) -->
+  <xsl:template                  match = "Author">
+    <Author>
+      <xsl:apply-templates      select = "CollectiveName"/>
+      <xsl:apply-templates      select = "LastName"/>
+      <xsl:apply-templates      select = "FirstName | ForeName"/>
+      <xsl:apply-templates      select = "Initials"/>
+      <xsl:apply-templates      select = "Affiliation"/>
+      <xsl:apply-templates      select = "AffiliationInfo"/>
+    </Author>
+  </xsl:template>
+
+  <!-- Map the rare FirstName element to the standard ForeName -->
+  <xsl:template                  match = "FirstName">
+    <xsl:if                       test = "normalize-space(.)">
+      <ForeName>
+        <xsl:value-of           select = "normalize-space(.)"/>
+      </ForeName>
+    </xsl:if>
+  </xsl:template>
+
+  <!-- Robin requested that we retain this information for the authors,
+       even though the software doesn't use it anywhere -->
+  <xsl:template                  match = "AffiliationInfo">
+    <AffiliationInfo>
+      <xsl:apply-templates      select = "Affiliation"/>
+      <xsl:apply-templates      select = "Identifier"/>
+    </AffiliationInfo>
+  </xsl:template>
+
+  <!-- This is part of the AffiliationInfo above -->
+  <xsl:template                  match = "Identifier">
+    <Identifier>
+      <xsl:attribute              name = "Source">
+        <xsl:value-of           select = "normalize-space(@Source)"/>
+      </xsl:attribute>
+      <xsl:value-of             select = "normalize-space(.)"/>
+    </Identifier>
+  </xsl:template>
+
+  <!-- Pull in the parts of Journal that we want -->
+  <xsl:template                  match = "Journal">
+    <Journal>
+      <xsl:apply-templates      select = "ISSN"/>
+      <xsl:apply-templates      select = "JournalIssue"/>
+      <xsl:apply-templates      select = "Title"/>
+      <xsl:apply-templates      select = "ISOAbbreviation"/>
+    </Journal>
+  </xsl:template>
+
+  <!-- Take JournalIssue pieces -->
+  <xsl:template                  match = "JournalIssue">
+    <JournalIssue>
+      <xsl:apply-templates      select = "Volume"/>
+      <xsl:apply-templates      select = "Issue"/>
+      <xsl:apply-templates      select = "PubDate"/>
+    </JournalIssue>
+  </xsl:template>
+
+  <!-- Retain PubDate only if it has at least one wanted child -->
+  <xsl:template                  match = "PubDate">
+    <xsl:if                       test = "normalize-space(Year) or
+                                          normalize-space(MedlineDate)">
+      <PubDate>
+        <xsl:choose>
+          <xsl:when               test = "normalize-space(MedlineDate)">
+            <MedlineDate>
+              <xsl:value-of     select = "normalize-space(MedlineDate)"/>
+            </MedlineDate>
+          </xsl:when>
+          <xsl:otherwise>
+            <Year>
+              <xsl:value-of     select = "normalize-space(Year)"/>
+            </Year>
+          </xsl:otherwise>
+        </xsl:choose>
+      </PubDate>
+    </xsl:if>
+  </xsl:template>
+
+  <!-- Keep MedlineJournalInfo if it has a non-empty MedlinePgn child -->
+  <xsl:template                  match = "Pagination/MedlinePgn">
+    <xsl:if                       test = "normalize-space(.)">
+      <Pagination>
+        <MedlinePgn>
+          <xsl:value-of         select = "normalize-space(.)"/>
+        </MedlinePgn>
+      </Pagination>
+    </xsl:if>
+  </xsl:template>
+
+  <!-- Only pick up MedlineJournalInfo if it has a MedlineTA child -->
+  <xsl:template                  match = "MedlineJournalInfo/MedlineTA">
+    <xsl:if                       test = "normalize-space(.)">
+      <MedlineJournalInfo>
+        <MedlineTA>
+          <xsl:value-of         select = "normalize-space(.)"/>
+        </MedlineTA>
+      </MedlineJournalInfo>
+    </xsl:if>
+  </xsl:template>
+
+  <!-- Recursively process inline markup -->
+  <xsl:template                  match = "b | i | sup | sub | u">
+    <xsl:element                  name = "{name(.)}">
+      <xsl:apply-templates      select = "text() | b | i | sup | sub | u"/>
+    </xsl:element>
+  </xsl:template>
+
+  <!-- Elements we want to copy with text content only -->
+  <xsl:template                  match = "Affiliation |
+                                          CollectiveName |
+                                          CopyrightInformation |
+                                          FirstName |
+                                          ForeName |
+                                          Initials |
+                                          ISOAbbreviation |
+                                          ISSN |
+                                          Issue |
+                                          Language |
+                                          LastName |
+                                          MedlineID |
+                                          PMID |
+                                          Suffix |
+                                          Title |
+                                          Volume">
+    <xsl:if                       test = "normalize-space(.)">
+      <xsl:element                name = "{name(.)}">
+        <xsl:value-of           select = "normalize-space(.)"/>
+      </xsl:element>
+    </xsl:if>
+  </xsl:template>
+
+</xsl:transform>
