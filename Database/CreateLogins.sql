@@ -466,8 +466,6 @@ GRANT SELECT ON ctl TO CdrGuest
 GO
 GRANT SELECT ON ctl TO CdrPublishing
 GO
-GRANT SELECT ON glossary_term_audio_request to CdrGuest
-GO
 GRANT SELECT ON ctrp_trial_set TO CdrGuest
 GO
 GRANT SELECT ON ctgov_trial TO CdrGuest
