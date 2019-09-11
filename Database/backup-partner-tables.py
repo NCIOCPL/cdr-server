@@ -15,4 +15,4 @@ for table_name in TABLES:
     for row in cursor.fetchall():
         fp.write("%s\n" % repr(row))
     fp.close()
-    print "wrote", file_name
+    print("wrote", file_name)

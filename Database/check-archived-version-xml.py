@@ -32,12 +32,12 @@ done = 0
 for docId, docVersion in localVersions:
     localXml = getXml(localCursor, docId, docVersion, localTable)
     prodXml   = getXml(prodCursor, docId, docVersion, PROD_TABLE)
-    print ("CDR%010d V%05d" % (docId, docVersion)),
+    print(("CDR%010d V%05d" % (docId, docVersion)), end=' ')
     done += 1
     sys.stderr.write("\rchecked %d of %d versions" % (done, len(localVersions)))
     if localXml != prodXml:
-        print "DIFFERENT!"
+        print("DIFFERENT!")
         sys.stderr.write("\nCDR%d/%d DOES NOT MATCH\n" % (docId, docVersion))
     else:
-        print "OK!"
+        print("OK!")
 sys.stderr.write("\nDONE\n")

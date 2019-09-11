@@ -46,4 +46,4 @@ for email, date in rows:
         cursor.execute(insert, (email, date))
         count += 1
 conn.commit()
-print("inserted {:d} rows".format(count))
+print(("inserted {:d} rows".format(count)))

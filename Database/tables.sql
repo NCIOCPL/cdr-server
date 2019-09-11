@@ -1784,22 +1784,6 @@ CREATE TABLE pub_proc_cg_work
          xml NTEXT NULL)
 GO
 
-/*
- * Debugging table for tracking commands.
- *
- *       thread  logging ID used to identify this thread since the process
- *               started.
- *     received  date/time the command set was received by the server.
- *      command  full XML string (UTF-8 encoded) for the CdrCommandSet.
- */
-CREATE TABLE command_log
-     (thread INTEGER NOT NULL,
-    received DATETIME NOT NULL,
-     command TEXT NOT NULL,
-  CONSTRAINT command_log_pk PRIMARY KEY(thread, received))
-CREATE INDEX command_log_time ON command_log(received)
-GO
-
 /**
  * Replacement for command_log table (when CDR service was eliminated)
  */

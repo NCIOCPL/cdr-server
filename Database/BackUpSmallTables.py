@@ -78,7 +78,7 @@ except:
 # Back up each table and log the activity.
 #----------------------------------------------------------------------
 for table in tables:
-    print "backing up %s ..." % table
+    print("backing up %s ..." % table)
     try:
         os.unlink("backup/%s.txt" % table)
     except:

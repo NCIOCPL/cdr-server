@@ -17,4 +17,4 @@ name = "CreateLogins-%s.sql" % now
 fp = open(name, "wb")
 fp.write(script)
 fp.close()
-print "wrote", name
+print("wrote", name)

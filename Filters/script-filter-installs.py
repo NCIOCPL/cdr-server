@@ -12,12 +12,12 @@
 #----------------------------------------------------------------------
 import sys
 
-print "@if [%2] == [] goto usage"
+print("@if [%2] == [] goto usage")
 for line in sys.stdin:
     filename = line.strip()
-    print(r"python ..\DevTools\Utilities\UpdateFilter.py -v Y -p Y "
-          "-c \"scripted filter update\" %%1 %%2 %s" % filename)
-print "@goto done"
-print ":usage"
-print "@echo must specify user-id and password"
-print ":done"
+    print((r"python ..\DevTools\Utilities\UpdateFilter.py -v Y -p Y "
+          "-c \"scripted filter update\" %%1 %%2 %s" % filename))
+print("@goto done")
+print(":usage")
+print("@echo must specify user-id and password")
+print(":done")
