@@ -2146,7 +2146,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    <xsl:otherwise>
     <xsl:choose>
      <xsl:when                    test = "count($title) = 0">
-      <!-- Need to be able to markup a module section if requested 
+      <!-- Need to be able to markup a module section if requested
            Wrapping a div around SummarySection identified as module -->
       <xsl:element                name = "div">
        <xsl:if                    test = "@thissection = 'module'
@@ -2554,32 +2554,44 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  <xsl:template                   match = "MediaID">
   <xsl:choose>
    <xsl:when                      test = "$DisplayImages = 'Y'">
-    <xsl:apply-templates        select = "."
+    <xsl:choose>
+     <xsl:when                    test = "contains($whoAmI, 'RS')">
+      <xsl:apply-templates      select = "."
                                   mode = "summary"/>
-    <xsl:if                       test = "not(../@UseCaption = 'No')">
-     <xsl:call-template           name = "addCaption"/>
-    </xsl:if>
+      <xsl:if                     test = "not(../@UseCaption = 'No')">
+       <xsl:call-template         name = "addCaption"/>
+      </xsl:if>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:if                     test = "not(../@iod = 'Deletion')">
+       <xsl:apply-templates     select = "."
+                                  mode = "summary"/>
+       <xsl:if                    test = "not(../@UseCaption = 'No')">
+        <xsl:call-template        name = "addCaption"/>
+       </xsl:if>
+      </xsl:if>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:when>
    <!-- Image Placeholders -->
    <xsl:otherwise>
-    <xsl:element                  name = "div">
-     <xsl:attribute               name = "class">
-      <xsl:text>imagepadding</xsl:text>
-     </xsl:attribute>
-     <xsl:element                 name = "div">
-      <xsl:attribute              name = "class">
-       <xsl:text>gogreenimage</xsl:text>
-      </xsl:attribute>
-
-      <!-- 
-      The users want to have the image placeholders marked up
-      if the entire image is being inserted/deleted          -->
-      <xsl:choose>
-       <xsl:when                  test = "parent::MediaLink
+    <!--
+    The users want to have the image placeholders marked up
+    if the entire image is being inserted/deleted          -->
+    <xsl:choose>
+     <xsl:when                  test = "parent::MediaLink
                                             /@iod = 'Deletion'">
-        <xsl:choose>
-         <xsl:when                test = "preceding-sibling::Deletion
+      <xsl:choose>
+       <xsl:when                test = "preceding-sibling::Deletion
                                             /@RevisionLevel = 'proposed'">
+        <xsl:element                  name = "div">
+         <xsl:attribute               name = "class">
+          <xsl:text>imagepadding</xsl:text>
+         </xsl:attribute>
+         <xsl:element                 name = "div">
+          <xsl:attribute              name = "class">
+           <xsl:text>gogreenimage</xsl:text>
+          </xsl:attribute>
           <xsl:element            name = "span">
            <xsl:attribute         name = "class">
             <xsl:text>deleteproposed</xsl:text>
@@ -2592,28 +2604,60 @@ OCECDR-3956: Allow CitationLinks in Image Captions
            <xsl:value-of        select = "Media/
                                           MediaTitle"/>
           </xsl:element>
+         </xsl:element>
+        </xsl:element>
+       </xsl:when>
+       <xsl:otherwise>
+        <!--
+        Approved Deletion
+        Users want the image suppressed in a B/U report
+        -->
+        <xsl:choose>
+         <xsl:when              test = "contains($whoAmI, 'RS')">
+
+          <xsl:element                  name = "div">
+           <xsl:attribute               name = "class">
+            <xsl:text>imagepadding</xsl:text>
+           </xsl:attribute>
+           <xsl:element                 name = "div">
+            <xsl:attribute              name = "class">
+             <xsl:text>gogreenimage</xsl:text>
+            </xsl:attribute>
+            <xsl:element          name = "span">
+             <xsl:attribute       name = "class">
+              <xsl:text>deleteapproved</xsl:text>
+             </xsl:attribute>
+             <xsl:call-template   name = "addIdLinkTarget">
+              <xsl:with-param     name = "id"
+                                select = "../@cdr:id"/>
+             </xsl:call-template>
+             <b>Image: </b>
+             <xsl:value-of      select = "Media/
+                                          MediaTitle"/>
+            </xsl:element>
+           </xsl:element>
+          </xsl:element>
          </xsl:when>
          <xsl:otherwise>
-          <xsl:element            name = "span">
-           <xsl:attribute         name = "class">
-            <xsl:text>deleteapproved</xsl:text>
-           </xsl:attribute>
-           <xsl:call-template     name = "addIdLinkTarget">
-            <xsl:with-param       name = "id"
-                                select = "../@cdr:id"/>
-           </xsl:call-template>
-           <b>Image: </b>
-           <xsl:value-of        select = "Media/
-                                          MediaTitle"/>
-          </xsl:element>
+          <!-- Display videos in BU report but not deleted videos -->
          </xsl:otherwise>
         </xsl:choose>
-       </xsl:when>
-       <xsl:when                  test = "parent::MediaLink
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
+     <xsl:when                  test = "parent::MediaLink
                                             /@iod = 'Insertion'">
-        <xsl:choose>
-         <xsl:when                test = "preceding-sibling::Insertion
+      <xsl:choose>
+       <xsl:when                test = "preceding-sibling::Insertion
                                             /@RevisionLevel = 'proposed'">
+        <xsl:element                  name = "div">
+         <xsl:attribute               name = "class">
+          <xsl:text>imagepadding</xsl:text>
+         </xsl:attribute>
+         <xsl:element                 name = "div">
+          <xsl:attribute              name = "class">
+           <xsl:text>gogreenimage</xsl:text>
+          </xsl:attribute>
           <xsl:element            name = "span">
            <xsl:attribute         name = "class">
             <xsl:text>insertproposed</xsl:text>
@@ -2626,8 +2670,18 @@ OCECDR-3956: Allow CitationLinks in Image Captions
            <xsl:value-of        select = "Media/
                                           MediaTitle"/>
           </xsl:element>
-         </xsl:when>
-         <xsl:otherwise>
+         </xsl:element>
+        </xsl:element>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:element                  name = "div">
+         <xsl:attribute               name = "class">
+          <xsl:text>imagepadding</xsl:text>
+         </xsl:attribute>
+         <xsl:element                 name = "div">
+          <xsl:attribute              name = "class">
+           <xsl:text>gogreenimage</xsl:text>
+          </xsl:attribute>
           <xsl:element            name = "span">
            <xsl:attribute         name = "class">
             <xsl:text>insertapproved</xsl:text>
@@ -2640,21 +2694,31 @@ OCECDR-3956: Allow CitationLinks in Image Captions
            <xsl:value-of        select = "Media/
                                           MediaTitle"/>
           </xsl:element>
-         </xsl:otherwise>
-        </xsl:choose>
-       </xsl:when>
-       <xsl:otherwise>
-         <xsl:call-template       name = "addIdLinkTarget">
-          <xsl:with-param         name = "id"
-                                select = "../@cdr:id"/>
-         </xsl:call-template>
-         <b>Image: </b>
-         <xsl:value-of          select = "Media/
-                                          MediaTitle"/>
+         </xsl:element>
+        </xsl:element>
        </xsl:otherwise>
       </xsl:choose>
-     </xsl:element>
-    </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:element                  name = "div">
+       <xsl:attribute               name = "class">
+        <xsl:text>imagepadding</xsl:text>
+       </xsl:attribute>
+       <xsl:element                 name = "div">
+        <xsl:attribute              name = "class">
+         <xsl:text>gogreenimage</xsl:text>
+        </xsl:attribute>
+        <xsl:call-template       name = "addIdLinkTarget">
+         <xsl:with-param         name = "id"
+                                select = "../@cdr:id"/>
+        </xsl:call-template>
+        <b>Image: </b>
+        <xsl:value-of          select = "Media/
+                                          MediaTitle"/>
+       </xsl:element>
+      </xsl:element>
+     </xsl:otherwise>
+    </xsl:choose>
     <xsl:if                       test = "$mediaAudience =
                                                  'Health_professionals'">
      <xsl:if                      test = "not(../@UseCaption = 'No')">
@@ -2662,6 +2726,239 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      </xsl:if>
     </xsl:if>
    </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ ======================================================================
+ Template to display videos
+
+
+
+ - If DisplayImage = Y, display the image *and* the caption
+   - if there is no caption in the summary, display the caption of the
+     Media document
+ - If DisplayImage = N, display a placeholder for the image
+   - if it's a HP summary display the caption
+   - if it's a patient summary, don't display the caption
+     - if there is no caption in the summary, display the caption of
+       the Media document
+
+ If the image does notreplace the MediaID element with a little div
+ box as a place holder for the image
+ Don't show the caption if the "UseCaption = 'No'" attribute has been
+ set.
+ ====================================================================== -->
+ <xsl:template                   match = "EmbeddedVideo">
+  <xsl:choose>
+   <xsl:when                      test = "contains($whoAmI, 'RS')">
+    <xsl:choose>
+     <xsl:when                    test = "$DisplayImages = 'Y'">
+      <xsl:apply-templates      select = "MediaID"
+                                  mode = "summary"/>
+      <xsl:call-template          name = "addCaptionVideo"/>
+     </xsl:when>
+
+     <!-- Image Placeholders -->
+     <xsl:otherwise>
+      <xsl:element                name = "div">
+       <xsl:attribute             name = "class">
+        <xsl:text>imagepadding</xsl:text>
+       </xsl:attribute>
+       <xsl:element               name = "div">
+        <xsl:attribute            name = "class">
+         <xsl:text>gogreenimage</xsl:text>
+        </xsl:attribute>
+
+        <!--
+        The users want to have the image placeholders marked up
+        if the entire image is being inserted/deleted          -->
+        <xsl:choose>
+         <xsl:when                test = "@iod = 'Deletion'">
+          <xsl:choose>
+           <xsl:when              test = "preceding-sibling::Deletion
+                                            /@RevisionLevel = 'proposed'">
+            <xsl:element          name = "span">
+             <xsl:attribute       name = "class">
+              <xsl:text>deleteproposed</xsl:text>
+             </xsl:attribute>
+             <xsl:call-template   name = "addIdLinkTarget">
+              <xsl:with-param     name = "id"
+                                select = "../@cdr:id"/>
+             </xsl:call-template>
+             <b>Video: </b>
+             <xsl:value-of      select = "MediaID/
+                                          Media/
+                                          MediaTitle"/>
+            </xsl:element>
+           </xsl:when>
+           <xsl:otherwise>
+            <xsl:element          name = "span">
+             <xsl:attribute       name = "class">
+              <xsl:text>deleteapproved</xsl:text>
+             </xsl:attribute>
+             <xsl:call-template   name = "addIdLinkTarget">
+              <xsl:with-param     name = "id"
+                                select = "../@cdr:id"/>
+             </xsl:call-template>
+             <b>Video: </b>
+             <xsl:value-of      select = "MediaID/
+                                          Media/
+                                          MediaTitle"/>
+            </xsl:element>
+           </xsl:otherwise>
+          </xsl:choose>
+         </xsl:when>
+         <xsl:when                test = "@iod = 'Insertion'">
+          <xsl:choose>
+           <xsl:when              test = "preceding-sibling::Insertion
+                                            /@RevisionLevel = 'proposed'">
+            <xsl:element          name = "span">
+             <xsl:attribute         name = "class">
+              <xsl:text>insertproposed</xsl:text>
+             </xsl:attribute>
+             <xsl:call-template   name = "addIdLinkTarget">
+              <xsl:with-param     name = "id"
+                                select = "../@cdr:id"/>
+             </xsl:call-template>
+             <b>Video: </b>
+             <xsl:value-of      select = "MediaID/
+                                          Media/
+                                          MediaTitle"/>
+            </xsl:element>
+           </xsl:when>
+           <xsl:otherwise>
+            <xsl:element          name = "span">
+             <xsl:attribute       name = "class">
+              <xsl:text>insertapproved</xsl:text>
+             </xsl:attribute>
+             <xsl:call-template   name = "addIdLinkTarget">
+              <xsl:with-param     name = "id"
+                                select = "../@cdr:id"/>
+             </xsl:call-template>
+             <b>Video: </b>
+             <xsl:value-of      select = "MediaID/
+                                          Media/
+                                          MediaTitle"/>
+            </xsl:element>
+           </xsl:otherwise>
+          </xsl:choose>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:call-template      name = "addIdLinkTarget">
+           <xsl:with-param        name = "id"
+                                select = "../@cdr:id"/>
+          </xsl:call-template>
+          <b>Video: </b>
+          <xsl:value-of         select = "MediaID/
+                                          Media/
+                                          MediaTitle"/>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:element>
+      </xsl:element>
+      <xsl:if                     test = "$mediaAudience =
+                                                 'Health_professionals'">
+       <xsl:if                    test = "not(../@UseCaption = 'No')">
+        <xsl:call-template        name = "addCaption"/>
+       </xsl:if>
+      </xsl:if>
+     </xsl:otherwise>
+    </xsl:choose>
+
+   </xsl:when>
+   <xsl:otherwise>
+
+    <!-- Display videos in BU report but not deleted videos -->
+    <xsl:choose>
+     <xsl:when                    test = "$DisplayImages = 'Y'
+                                          and
+                                          not(@iod = 'Deletion')">
+      <xsl:apply-templates      select = "MediaID"
+                                  mode = "summary"/>
+      <xsl:call-template          name = "addCaptionVideo"/>
+     </xsl:when>
+
+     <!-- Image Placeholders -->
+     <xsl:otherwise>
+      <xsl:if                     test = "not(@iod = 'Deletion')">
+       <xsl:element               name = "div">
+        <xsl:attribute            name = "class">
+         <xsl:text>imagepadding</xsl:text>
+        </xsl:attribute>
+        <xsl:element              name = "div">
+         <xsl:attribute           name = "class">
+          <xsl:text>gogreenimage</xsl:text>
+         </xsl:attribute>
+
+         <!--
+         The users want to have the image placeholders marked up
+         if the entire image is being inserted/deleted          -->
+         <xsl:choose>
+          <xsl:when               test = "@iod = 'Deletion'">
+           <!-- Do nothing, image is deleted -->
+          </xsl:when>
+          <xsl:when               test = "@iod = 'Insertion'">
+           <xsl:choose>
+            <xsl:when             test = "preceding-sibling::Insertion
+                                            /@RevisionLevel = 'proposed'">
+             <xsl:element         name = "span">
+              <xsl:attribute      name = "class">
+               <xsl:text>insertproposed</xsl:text>
+              </xsl:attribute>
+              <xsl:call-template  name = "addIdLinkTarget">
+               <xsl:with-param    name = "id"
+                                select = "../@cdr:id"/>
+              </xsl:call-template>
+              <b>Video: </b>
+              <xsl:value-of     select = "MediaID/
+                                          Media/
+                                          MediaTitle"/>
+             </xsl:element>
+            </xsl:when>
+            <xsl:otherwise>
+             <xsl:element         name = "span">
+              <xsl:attribute      name = "class">
+               <xsl:text>insertapproved</xsl:text>
+              </xsl:attribute>
+              <xsl:call-template  name = "addIdLinkTarget">
+               <xsl:with-param    name = "id"
+                                select = "../@cdr:id"/>
+              </xsl:call-template>
+              <b>Video: </b>
+              <xsl:value-of     select = "MediaID/
+                                          Media/
+                                          MediaTitle"/>
+             </xsl:element>
+            </xsl:otherwise>
+           </xsl:choose>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:call-template     name = "addIdLinkTarget">
+            <xsl:with-param       name = "id"
+                                select = "../@cdr:id"/>
+           </xsl:call-template>
+           <b>Video: </b>
+           <xsl:value-of        select = "MediaID/
+                                          Media/
+                                          MediaTitle"/>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:element>
+       </xsl:element>
+      </xsl:if>
+      <xsl:if                     test = "$mediaAudience =
+                                                 'Health_professionals'">
+       <xsl:if                    test = "not(../@UseCaption = 'No')">
+        <xsl:call-template        name = "addCaption"/>
+       </xsl:if>
+      </xsl:if>
+     </xsl:otherwise>
+    </xsl:choose>
+
+   </xsl:otherwise>
+   
   </xsl:choose>
  </xsl:template>
 
@@ -2687,6 +2984,51 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        <xsl:text>media-caption</xsl:text>
       </xsl:attribute>
      <xsl:apply-templates       select = "Media/
+                                            MediaContent/
+                                            Captions/
+                                            MediaCaption[@audience =
+                                                           $mediaAudience
+                                                         and
+                                                         @language =
+                                                           $mediaLanguage]"/>
+     </xsl:element>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ========================================================================
+ Template handling Captions when images/video are being displayed as well
+ ======================================================================== -->
+ <xsl:template                    name = "addCaptionVideo">
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>caption</xsl:text>
+     <xsl:text> caption-box</xsl:text>
+    </xsl:attribute>
+   <xsl:choose>
+    <xsl:when                     test = "SpecificMediaCaption">
+    <!--
+     <xsl:apply-templates       select = "SpecificMediaCaption"
+                                  mode = "createCaption"/>
+    -->
+     <xsl:element                    name = "div">
+      <xsl:attribute                 name = "class">
+       <xsl:text>media-caption</xsl:text>
+      </xsl:attribute>
+
+      <xsl:apply-templates/>
+     </xsl:element>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:element                 name = "div">
+      <xsl:attribute              name = "class">
+       <xsl:text>media-caption</xsl:text>
+      </xsl:attribute>
+     <xsl:apply-templates       select = "MediaID/
+                                            Media/
                                             MediaContent/
                                             Captions/
                                             MediaCaption[@audience =
@@ -2744,14 +3086,14 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
  <!--
  ======================================================================
- Template to display the image of the MediaID element 
+ Template to display the image of the MediaID element
 
  Note: For both, the insertion as well as the deletion we're only
        marking-up the 'approved' revision level but not the 'publish'
-       or 'proposed' revision level.  To do so would require to add 
-       a RevisionLevel attribute to the MediaLink ID.  After the 
+       or 'proposed' revision level.  To do so would require to add
+       a RevisionLevel attribute to the MediaLink ID.  After the
        MediaLink denormalization the information of the revision level
-       is lost unless a caption is included and we have now way of 
+       is lost unless a caption is included and we have now way of
        identifying the revision level of the element currently.  It was
        decided to keep this as is for the time being.
                                                        2017-04-03, VE
@@ -2762,6 +3104,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   <xsl:choose>
    <!-- Deletion section -->
    <xsl:when                      test = "parent::MediaLink
+                                            /@iod = 'Deletion'
+                                          or
+                                          parent::EmbeddedVideo
                                             /@iod = 'Deletion'">
     <xsl:choose>
      <xsl:when                    test = "parent::MediaLink
@@ -2789,6 +3134,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    </xsl:when>
    <!-- Insertion section -->
    <xsl:when                      test = "parent::MediaLink
+                                             /@iod = 'Insertion'
+                                          or
+                                          parent::EmbeddedVideo
                                              /@iod = 'Insertion'">
     <xsl:choose>
      <xsl:when                    test = "parent::MediaLink
@@ -2842,30 +3190,62 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    <!--
    DIV to display the image
    ============================================= -->
-   <xsl:element                   name = "div">
-    <xsl:attribute                name = "class">
-     <xsl:text>image-center</xsl:text>
-    </xsl:attribute>
+   <xsl:choose>
+    <xsl:when                     test = "parent::EmbeddedVideo">
+      <xsl:element                name = "iframe">
+       <xsl:attribute             name = "src">
+        <xsl:text>https://www.youtube.com/embed/</xsl:text>
+        <xsl:value-of           select = "Media/
+                                           PhysicalMedia/
+                                           VideoData/
+                                           HostingID"/>
+       </xsl:attribute>
+        <!--
+        <xsl:text>/hqdefault.jpg</xsl:text>
+        -->
+       <xsl:attribute             name = "width">
+        <xsl:text>560px</xsl:text>
+       </xsl:attribute>
+       <xsl:attribute             name = "height">
+        <xsl:text>315px</xsl:text>
+       </xsl:attribute>
 
-    <xsl:element                  name = "img">
-     <xsl:attribute               name = "src">
-      <xsl:text>/cgi-bin/cdr/</xsl:text>
-      <xsl:text>GetCdrImage.py?</xsl:text>
-        <xsl:choose>
-         <xsl:when                test = "$DisplayPubImages = 'N'">
-          <xsl:text>pp=N&amp;</xsl:text>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:text>pp=Y&amp;</xsl:text>
-         </xsl:otherwise>
-        </xsl:choose>
-      <xsl:text>id=</xsl:text>
+       <xsl:call-template         name = "addIdLinkTarget">
+         <xsl:with-param          name = "id"
+                                select = "../@cdr:id"/>
+       </xsl:call-template>
+      </xsl:element>
 
-      <xsl:value-of             select = "@cdr:ref"/>
-      <xsl:text>-400.jpg</xsl:text>
-     </xsl:attribute>
-    </xsl:element>
-   </xsl:element>
+    </xsl:when>
+
+
+    <xsl:otherwise>
+     <xsl:element                   name = "div">
+      <xsl:attribute                name = "class">
+       <xsl:text>image-center dada</xsl:text>
+      </xsl:attribute>
+
+      <xsl:element                  name = "img">
+       <xsl:attribute               name = "src">
+        <xsl:text>/cgi-bin/cdr/</xsl:text>
+        <xsl:text>GetCdrImage.py?</xsl:text>
+          <xsl:choose>
+           <xsl:when                test = "$DisplayPubImages = 'N'">
+            <xsl:text>pp=N&amp;</xsl:text>
+           </xsl:when>
+           <xsl:otherwise>
+            <xsl:text>pp=Y&amp;</xsl:text>
+           </xsl:otherwise>
+          </xsl:choose>
+        <xsl:text>id=</xsl:text>
+
+        <xsl:value-of             select = "@cdr:ref"/>
+        <xsl:text>-400.jpg</xsl:text>
+       </xsl:attribute>
+      </xsl:element>
+     </xsl:element>
+    </xsl:otherwise>
+   </xsl:choose>
 
    <!--
    Floating DIV to display the title
