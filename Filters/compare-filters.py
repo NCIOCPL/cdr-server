@@ -3,12 +3,12 @@
 # Compare filters in Subversion against those in the CDR.
 #
 #----------------------------------------------------------------------
-import cdrdb
 import difflib
 import glob
 import re
 import sys
 import time
+from cdrapi import db
 
 def compare(me, you, full=False):
     differ = difflib.Differ()
@@ -39,9 +39,9 @@ for name in glob.glob("%s/CDR00*.xml" % directory):
     title = match.group(1).strip()
     local[title.lower()] = Filter(title, doc, name)
 repository = {}
-query = cdrdb.Query("document d", "d.id", "d.title", "d.xml")
+query = db.Query("document d", "d.id", "d.title", "d.xml")
 query.join("doc_type t", "t.id = d.doc_type")
-query.where(cdrdb.Query.Condition("t.name", "Filter"))
+query.where(query.Condition("t.name", "Filter"))
 for doc_id, title, doc in query.execute().fetchall():
     repository[title.strip().lower()] = Filter(title, doc, doc_id=doc_id)
 now = time.strftime("%Y%m%d%H%M%S")
