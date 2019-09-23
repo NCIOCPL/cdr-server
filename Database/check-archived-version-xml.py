@@ -34,7 +34,7 @@ done = 0
 for doc_id, doc_version in local_versions:
     local_xml = get_xml(local_cursor, doc_id, doc_version, localTable)
     prod_xml   = get_xml(prod_cursor, doc_id, doc_version, TABLE)
-    print(("CDR%010d V%05d" % (doc_id, doc_version)), end=" ")
+    print("CDR%010d V%05d" % (doc_id, doc_version), end=" ")
     done += 1
     stderr.write("\rchecked %d of %d versions" % (done, len(local_versions)))
     if local_xml != prod_xml:

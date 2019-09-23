@@ -18,22 +18,6 @@ from cdrapi.reports import Report
 from cdrapi.searches import QueryTermDef, Search
 from cdrapi.publishing import Job
 
-# ----------------------------------------------------------------------
-# The web server will be running this using Python 3.x, but we still
-# want the code to be backwards compatible with Python 2.7.
-# ----------------------------------------------------------------------
-from six import itervalues
-try:
-    basestring
-    base64encode = base64.encodestring
-    base64decode = base64.decodestring
-    READER = sys.stdin
-except:
-    base64encode = base64.encodebytes
-    base64decode = base64.decodebytes
-    basestring = str, bytes
-    unicode = str
-    READER = sys.stdin.buffer
 
 class CommandSet:
     """
@@ -178,9 +162,9 @@ class CommandSet:
 
         content_length = os.environ.get("CONTENT_LENGTH")
         if content_length:
-            request = READER.read(int(content_length))
+            request = sys.stdin.buffer.read(int(content_length))
         else:
-            request = READER.read()
+            request = sys.stdin.buffer.read()
         self.logger.info("%s bytes from %s", len(request), self.client)
         thread_id = threading.current_thread().ident
         values = os.getpid(), thread_id, request.decode("utf-8")
@@ -548,7 +532,7 @@ class CommandSet:
         result = doc.filter(*filters, **opts)
         response = etree.Element(node.tag + "Resp")
         if output:
-            doc = unicode(result.result_tree)
+            doc = str(result.result_tree)
             etree.SubElement(response, "Document").text = etree.CDATA(doc)
         if result.messages:
             messages = etree.SubElement(response, "Messages")
@@ -574,7 +558,7 @@ class CommandSet:
         files = Doctype.get_css_files(self.session)
         response = etree.Element(node.tag + "Resp")
         for name in sorted(files):
-            data = base64encode(files[name]).decode("ascii")
+            data = base64.encodebytes(files[name]).decode("ascii")
             wrapper = etree.SubElement(response, "File")
             etree.SubElement(wrapper, "Name").text = name
             etree.SubElement(wrapper, "Data").text = data
@@ -714,7 +698,7 @@ class CommandSet:
             wrapper = etree.SubElement(response, "LinkSource")
             etree.SubElement(wrapper, "SrcDocType").text = source.doctype.name
             etree.SubElement(wrapper, "SrcField").text = source.element
-            for target in itervalues(linktype.targets):
+            for target in linktype.targets.values():
                 etree.SubElement(response, "TargetDocType").text = target.name
         for prop in properties:
             wrapper = etree.SubElement(response, "LinkProperties")
@@ -1041,8 +1025,8 @@ class CommandSet:
             elif child.tag == "CdrDocXml":
                 doc_opts["xml"] = self.get_node_text(child)
             elif child.tag == "CdrDocBlob":
-                blob = base64decode(self.get_node_text(child).encode("ascii"))
-                doc_opts["blob"] = blob
+                blob_base64_chars = self.get_node_text(child).encode("ascii")
+                doc_opts["blob"] = base64.decodebytes(blob_base64_chars)
         if new and doc_opts.get("id"):
             raise Exception("can't add a document which already has an ID")
         if not new and not doc_opts.get("id"):
