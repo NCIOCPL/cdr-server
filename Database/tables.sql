@@ -738,7 +738,7 @@ GO
  */
 CREATE TABLE session_log
    (entry_id INTEGER IDENTITY PRIMARY KEY,
-   thread_id INTEGER NOT NULL,
+   thread_id BIGINT NOT NULL,
     recorded DATETIME NOT NULL,
      message NTEXT NOT NULL)
 CREATE INDEX session_log_recorded ON session_log(recorded, entry_id)
@@ -1419,7 +1419,7 @@ CREATE TABLE batch_job
    status_dt DATETIME NOT NULL,
       status VARCHAR (16) NOT NULL,
        email VARCHAR (256) NULL,
-    progress TEXT NULL)
+    progress NVARCHAR(MAX) NULL)
 GO
 
 /*
