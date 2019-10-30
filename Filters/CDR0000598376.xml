@@ -8,13 +8,17 @@
  GlossaryConceptFull.py.  The XML snipped has the following structure:
    <GlossaryTermDef>
      <TermNameString/>
+     <CappedNameString/>
      <DefinitionText>
        <Insertion or Deletion> [optional]
        <PlaceHolder/>          [optional]
      </DefinitionText>
      <GlossaryTermPlaceHolder> [optional]
-       <ReplacementText/>
+       <ReplacementText/> [one or more]
      </GlossaryTermPlaceHolder>
+     <GlossaryConceptPlaceHolder> [optional]
+       <ReplacementText/> [one or more]
+     </GlossaryConceptPlaceHolder>
    </GlossaryTermDef>
 
  Written by Volker Englisch, 2008-02-27
@@ -48,7 +52,7 @@
  will be suppressed.  The default template would include those.
  ================================================================= -->
  <xsl:template                   match = "TermNameDef |
-                                          TermNameString">
+                                          TermNameString | CappedNameString">
   <xsl:apply-templates/>
  </xsl:template>
 
@@ -118,52 +122,60 @@
  <xsl:template                   match = "PlaceHolder">
   <xsl:variable                   name = "replace"
                                 select = "@name"/>
-
-   <xsl:choose>
-    <xsl:when                     test = "@name = 'TERMNAME'">
-     <span class="term-normal">
+  <xsl:choose>
+   <xsl:when                      test = "@name = 'TERMNAME'">
+    <span class="term-normal">
      <!-- if the TermNameString is placed within insertion/deletion markup
           we will need to go one more level up to get the name for it -->
-     <xsl:apply-templates       select = "../../TermNameString |
+    <xsl:apply-templates        select = "../../TermNameString |
                                           ../../../TermNameString"/>
-     </span>
-    </xsl:when>
-    <xsl:when                     test = "@name = 'CAPPEDTERMNAME'">
-     <span class="term-capped">
-      <xsl:text>@@</xsl:text>
-      <xsl:apply-templates      select = "../../TermNameString |
-                                           ../../../TermNameString"/>
-      <xsl:text>@@</xsl:text>
-     </span>
-    </xsl:when>
-    <!--
-    <xsl:when                     test = "../../GlossaryTermPlaceHolder/
+    </span>
+   </xsl:when>
+   <xsl:when                      test = "@name = 'CAPPEDTERMNAME'">
+    <xsl:choose>
+     <xsl:when                    test = "/GlossaryTermDef/CappedNameString">
+      <span class="term-normal">
+       <xsl:apply-templates     select = "/GlossaryTermDef/CappedNameString"/>
+      </span>
+     </xsl:when>
+     <xsl:otherwise>
+      <span class="term-capped">
+       <xsl:text>@@</xsl:text>
+       <xsl:apply-templates     select = "../../TermNameString |
+                                          ../../../TermNameString"/>
+       <xsl:text>@@</xsl:text>
+      </span>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>
+   <!--
+   <xsl:when                      test = "../../GlossaryTermPlaceHolder/
                                           ReplacementText[@name=$replace]">
-    -->
-    <xsl:when                     test = "/GlossaryTermDef/
-                                            GlossaryTermPlaceHolder/
-                                            ReplacementText[@name=$replace]">
-     <span class="term-name">
+   -->
+   <xsl:when                      test = "/GlossaryTermDef/
+                                           GlossaryTermPlaceHolder/
+                                           ReplacementText[@name=$replace]">
+    <span class="term-name">
      <xsl:apply-templates       select = "/GlossaryTermDef/
-                                            GlossaryTermPlaceHolder/
-                                            ReplacementText[@name=$replace]"/>
-     </span>
-    </xsl:when>
-    <xsl:when                     test = "/GlossaryTermDef/
-                                            GlossaryConceptPlaceHolder/
-                                            ReplacementText[@name=$replace]">
-     <span class="term-concept">
+                                           GlossaryTermPlaceHolder/
+                                           ReplacementText[@name=$replace]"/>
+    </span>
+   </xsl:when>
+   <xsl:when                      test = "/GlossaryTermDef/
+                                           GlossaryConceptPlaceHolder/
+                                           ReplacementText[@name=$replace]">
+    <span class="term-concept">
      <xsl:apply-templates       select = "/GlossaryTermDef/
                                             GlossaryConceptPlaceHolder/
                                             ReplacementText[@name=$replace]"/>
-     </span>
-    </xsl:when>
-    <xsl:otherwise>
-     <span class="term-error">
+    </span>
+   </xsl:when>
+   <xsl:otherwise>
+    <span class="term-error">
      <xsl:text>*** No Text Found ***</xsl:text>
-     </span>
-    </xsl:otherwise>
-   </xsl:choose>
+    </span>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
