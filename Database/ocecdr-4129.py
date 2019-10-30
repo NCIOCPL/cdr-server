@@ -1,12 +1,24 @@
+#!/usr/bin/env python
+
+"""One-off database update script for the fall 2019 CDR Kepler release.
+"""
+
 from cdrapi import db
+
 conn = db.connect()
 cursor = conn.cursor()
+
+# Fix the batch_job table.
 print("Converting progress column for batch jobs to Unicode")
 cursor.execute("ALTER TABLE batch_job ALTER COLUMN progress NVARCHAR(MAX) NULL")
 conn.commit()
+
+# Fix the session_log table.
 print("Altering session log's thread ID to be cross-platform")
 cursor.execute("ALTER TABLE session_log ALTER COLUMN thread_id BIGINT NOT NULL")
 conn.commit()
+
+# Fix the query table.
 print("Print converting saved queries to Unicode")
 cursor.execute("ALTER TABLE query ALTER COLUMN value NVARCHAR(MAX) NULL")
 conn.commit()
@@ -21,10 +33,14 @@ for row in rows:
     cursor.execute("INSERT INTO query (name, value) VALUES(?, ?)", tuple(row))
 cursor.execute("GRANT ALL ON query TO CdrGuest")
 conn.commit()
+
+# Fix the ctl table.
 print("Adding uniqueness constraint to ctl table")
 cursor.execute("""\
 ALTER TABLE ctl ADD CONSTRAINT ctl_unique UNIQUE (grp, name, inactivated)""")
 conn.commit()
+
+# Fix the external mapping tables.
 print("cleaning up external mapping tables")
 GTU_SELECT = "SELECT id, name FROM external_map_usage WHERE name LIKE '%gloss%'"
 DELETE_RULES = "DELETE FROM external_map_rule WHERE element LIKE '{}%'"
@@ -64,4 +80,15 @@ cursor.execute(delete, list(glossary_mapping_ids))
 print(cursor.rowcount, "external mapping usages deleted")
 conn.commit()
 print("extern mapping tables cleanup done")
+
+# Fix the term_audio_mp3 table.
+print("fixing term_audio_mp3 Unicode columns")
+cursor.execute(
+"ALTER TABLE term_audio_mp3 ALTER COLUMN term_name NVARCHAR(256) NOT NULL")
+cursor.execute(
+"ALTER TABLE term_audio_mp3 ALTER COLUMN reader_note NVARCHAR(2048) NULL")
+cursor.execute(
+"ALTER TABLE term_audio_mp3 ALTER COLUMN reviewer_note NVARCHAR(2048) NULL")
+print("fix of term_audio_mp3 table done")
+conn.commit()
 print("Database modifications complete")
