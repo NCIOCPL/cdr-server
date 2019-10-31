@@ -4,16 +4,16 @@
 ====================================================================
 
 Filter to denormalize a SummaryModuleLink.  This filter needs to run
-prior to the "Denormalization Filter: Summary" in the sequence of 
+prior to the "Denormalization Filter: Summary" in the sequence of
 the filter set members because some processing, like identifying if a
-SummarySection is empty, can only be done successfully if all 
+SummarySection is empty, can only be done successfully if all
 SummarySections are available.
 
 Volker Englisch, 2011-09-14
 
 BZIssue::5097 - Modifications to Publishing Filter to include Module content
 BZIssue::OCECDR-3645 - Changes section in summary modules
-OCECDR-4159: Modify QC Report filters to not display Module Changes Section 
+OCECDR-4159: Modify QC Report filters to not display Module Changes Section
              in main Summary QC reports
 
 ==================================================================== -->
@@ -24,7 +24,7 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
  <xsl:output                    method = 'xml'
                               encoding = 'utf-8'/>
 
- <!-- 
+ <!--
  =================================================================
  Start copying everything from the root down
  ================================================================= -->
@@ -33,35 +33,37 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==================================================================
  Template to denormalize a module link into a section of a summary.
- We also need to include those summary sections that are listed 
+ We also need to include those summary sections that are listed
  within insertion/deletion markup.
+ Modified to pull in only a publishable version of a module.
+                                                     VE, 2019-10-31
  ================================================================== -->
  <xsl:template                   match = "SummaryModuleLink">
   <xsl:variable                   name = "moduleRef"
                                 select = "@cdr:ref"/>
   <xsl:variable                   name = "moduleInfo"
                                 select = "document(concat('cdr:', $moduleRef,
-                                                            ''))"/>
+                                                                  '/lastp'))"/>
    <xsl:apply-templates         select = "$moduleInfo/
                                            Summary/
                                            SummarySection
                                              [not(SectMetaData/
-                                                  SectionType = 
+                                                  SectionType =
                                                       'Changes to summary')] |
                                           $moduleInfo/
                                            Summary/
                                            Insertion[child::SummarySection
                                              [not(SectMetaData/
-                                                  SectionType = 
+                                                  SectionType =
                                                       'Changes to summary')]] |
                                           $moduleInfo/
                                            Summary/
                                            Deletion[child::SummarySection
                                              [not(SectMetaData/
-                                                  SectionType = 
+                                                  SectionType =
                                                       'Changes to summary')]]"
                                   mode = "module">
     <xsl:with-param               name = "ref"
@@ -72,17 +74,17 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==================================================================
  Template to process all SummarySections
  This template converts the cdr:id to be unique accross the new
  document.  It also adds the cdr:id of the module document.
  ================================================================== -->
- <xsl:template                   match = "SummarySection" 
+ <xsl:template                   match = "SummarySection"
                                   mode = "module">
   <xsl:param                      name = "ref"/>
   <xsl:param                      name = "module"/>
-  
+
     <xsl:variable                 name = "modprefix">
      <xsl:value-of              select = "$module"/>
      <xsl:value-of              select = "concat('_', $ref)"/>
@@ -141,12 +143,12 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==================================================================
- Template to properly process a summary section that is included 
+ Template to properly process a summary section that is included
  in Insertion/Deletion tags within the module document.
  ================================================================== -->
- <xsl:template                   match = "Insertion | Deletion" 
+ <xsl:template                   match = "Insertion | Deletion"
                                   mode = "module">
   <xsl:param                      name = "ref"/>
   <xsl:param                      name = "module"/>
@@ -156,15 +158,15 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
     <xsl:copy/>
    </xsl:for-each>
 
-   <xsl:apply-templates         select = "SummarySection" 
+   <xsl:apply-templates         select = "SummarySection"
                                   mode = "module">
-    <xsl:with-param               name = "module" 
+    <xsl:with-param               name = "module"
                                 select = "$module"/>
-    <xsl:with-param               name = "ref" 
+    <xsl:with-param               name = "ref"
                                 select = "$ref"/>
    </xsl:apply-templates>
   </xsl:copy>
-  <!-- 
+  <!--
   <xsl:choose>
    <xsl:when test = "$module">
   aaa<xsl:copy>
@@ -193,7 +195,7 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==================================================================
  Template to update the cdr:id value for elements with the module
  ================================================================== -->
@@ -225,11 +227,11 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
   </xsl:choose>
  </xsl:template>
 
- 
- <!-- 
+
+ <!--
  ==================================================================
  Template rule used to do XML to XML transformations which
- copies any attribute node, or node that is child of of something 
+ copies any attribute node, or node that is child of of something
  ================================================================== -->
  <xsl:template                   match = '@*|node()'
                                   mode = "module">
@@ -237,7 +239,7 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
   <xsl:param                      name = "module"/>
 
   <xsl:copy>
-   <xsl:apply-templates         select = '@*|node()' 
+   <xsl:apply-templates         select = '@*|node()'
                                   mode = "module">
     <xsl:with-param               name = "ref"
                                 select = "$ref"/>
@@ -248,10 +250,10 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==================================================================
  Template rule used to do XML to XML transformations which
- copies any attribute node, or node that is child of something 
+ copies any attribute node, or node that is child of something
  (Everything that's not inside a SummaryModule or SummarySection)
  ================================================================== -->
  <xsl:template                   match = '@*|node()'>
@@ -261,12 +263,12 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
  </xsl:template>
 
 
- <!-- 
+ <!--
  ==================================================================
  Template to process all elements of SummarySections within a
  module
  ================================================================== -->
- <!-- 
+ <!--
  <xsl:template                   match = 'SummarySectionXXX/*'
                                   mode = "module">
   <xsl:param                      name = "ref"/>
@@ -274,7 +276,7 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
   <xsl:text>mode: module</xsl:text>
 
   <xsl:copy>
-   <xsl:apply-templates         select = '@*|node()|SummaryModuleLink' 
+   <xsl:apply-templates         select = '@*|node()|SummaryModuleLink'
                                   mode = "module">
     <xsl:with-param               name = "ref"
                                 select = "$ref"/>
@@ -286,11 +288,11 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
  -->
 
 
- <!-- 
+ <!--
  ==================================================================
  Template to denormalize a module link into a section of a summary.
  ================================================================== -->
- <!-- 
+ <!--
  <xsl:template                   match = "SummaryModuleLinkXXX"
                                   mode = "module">
   <xsl:text>Volker-m</xsl:text>
