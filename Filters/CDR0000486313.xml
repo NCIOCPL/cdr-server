@@ -155,6 +155,30 @@ BZIssue::4781 - Have certain links to unpublished docs ignored
 
  <!--
  ======================================================================
+ Denormalize EmbeddedVideo element
+ ====================================================================== -->
+ <xsl:template                    match = "VideoID">
+  <xsl:copy>
+  <xsl:variable                   name = "videoID"
+                                select = "@cdr:ref"/>
+
+  <xsl:variable                   name = "videoDoc"
+                                select = "document(concat('cdr:', $videoID,
+                                                           '/lastp'))"/>
+
+
+  <xsl:element                    name = "Media">
+   <xsl:attribute                 name = "cdr:ref">
+    <xsl:value-of               select = "@cdr:ref"/>
+   </xsl:attribute>
+   <xsl:copy-of                  select = "$videoDoc/Media/*"/>
+  </xsl:element>
+  </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ ======================================================================
  Denormalize Organization Information
  ====================================================================== -->
  <xsl:template                    match = "Manufacturer">
