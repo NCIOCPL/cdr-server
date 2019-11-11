@@ -91,4 +91,14 @@ cursor.execute(
 "ALTER TABLE term_audio_mp3 ALTER COLUMN reviewer_note NVARCHAR(2048) NULL")
 print("fix of term_audio_mp3 table done")
 conn.commit()
+
+# Drop the old versions of the scheduler tables.
+print("dropping old versions of the scheduler tables")
+cursor.execute("DROP TABLE scheduler_jobauditlog")
+cursor.execute("DROP TABLE scheduler_execution")
+cursor.execute("DROP TABLE scheduler_jobs")
+conn.commit()
+print("scheduler tables dropped")
+
+# That's it.
 print("Database modifications complete")
