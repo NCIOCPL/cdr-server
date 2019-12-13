@@ -36,9 +36,12 @@ conn.commit()
 
 # Fix the ctl table.
 print("Adding uniqueness constraint to ctl table")
-cursor.execute("""\
+try:
+    cursor.execute("""\
 ALTER TABLE ctl ADD CONSTRAINT ctl_unique UNIQUE (grp, name, inactivated)""")
-conn.commit()
+    conn.commit()
+except Exception as e:
+    print(e)
 
 # Fix the external mapping tables.
 print("cleaning up external mapping tables")
