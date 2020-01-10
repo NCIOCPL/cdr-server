@@ -738,7 +738,7 @@ GO
  */
 CREATE TABLE session_log
    (entry_id INTEGER IDENTITY PRIMARY KEY,
-   thread_id INTEGER NOT NULL,
+   thread_id BIGINT NOT NULL,
     recorded DATETIME NOT NULL,
      message NTEXT NOT NULL)
 CREATE INDEX session_log_recorded ON session_log(recorded, entry_id)
@@ -1419,7 +1419,7 @@ CREATE TABLE batch_job
    status_dt DATETIME NOT NULL,
       status VARCHAR (16) NOT NULL,
        email VARCHAR (256) NULL,
-    progress TEXT NULL)
+    progress NVARCHAR(MAX) NULL)
 GO
 
 /*
@@ -1782,22 +1782,6 @@ CREATE TABLE pub_proc_cg_work
       cg_job INTEGER NOT NULL REFERENCES pub_proc,
     doc_type VARCHAR(32) NOT NULL,
          xml NTEXT NULL)
-GO
-
-/*
- * Debugging table for tracking commands.
- *
- *       thread  logging ID used to identify this thread since the process
- *               started.
- *     received  date/time the command set was received by the server.
- *      command  full XML string (UTF-8 encoded) for the CdrCommandSet.
- */
-CREATE TABLE command_log
-     (thread INTEGER NOT NULL,
-    received DATETIME NOT NULL,
-     command TEXT NOT NULL,
-  CONSTRAINT command_log_pk PRIMARY KEY(thread, received))
-CREATE INDEX command_log_time ON command_log(received)
 GO
 
 /**

@@ -37,6 +37,6 @@ for doc_id, title in query.execute(cursor).fetchall():
     if key not in titles:
         if opts.live:
             cdr_id = delDoc(opts.session, doc_id)
-            print(u"deleted {} ({!r})".format(cdr_id, title))
+            print((u"deleted {} ({!r})".format(cdr_id, title)))
         else:
-            print(u"CDR{:d} ({!r}) will be deleted".format(doc_id, title))
+            print((u"CDR{:d} ({!r}) will be deleted".format(doc_id, title)))
