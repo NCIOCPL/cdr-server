@@ -1,8 +1,6 @@
-#----------------------------------------------------------------------
-#
-# Compare filters in Subversion against those in the CDR.
-#
-#----------------------------------------------------------------------
+"""Compare filters in Subversion against those in the CDR.
+"""
+
 import difflib
 import glob
 import re
@@ -32,7 +30,7 @@ directory = len(sys.argv) > 1 and sys.argv[1] or "."
 full_diffs = len(sys.argv) > 2 and sys.argv[2] == "-f"
 local = {}
 for name in glob.glob("%s/CDR00*.xml" % directory):
-    doc = open(name).read()
+    doc = open(name, encoding="utf-8").read()
     match = re.search("<!-- Filter title:([^>]+)-->", doc)
     if not match:
         raise Exception("no filter title in %s\n" % repr(name))
@@ -51,7 +49,7 @@ for title in sorted(local):
         print("Only in Git: %s" % repr(local[title].title))
     else:
         localXml = local[title].doc
-        repoXml = repository[title].doc.encode("utf-8").replace("\r", "")
+        repoXml = repository[title].doc.replace("\r", "")
         diff = compare(localXml, repoXml)
         if diff:
             fp.write("%s\n" % local[title].filename)
