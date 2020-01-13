@@ -17,6 +17,8 @@
  <xsl:output                  method = "xml"
                             encoding = "utf-8"/>
 
+ <xsl:param                     name = "tier"/>
+
  <!-- Suppress default attribute copying rule. -->
  <xsl:template                 match = "@*"/>
 
@@ -62,19 +64,27 @@
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
+  <xsl:variable                 name = "audio">
+   <xsl:call-template           name = "get-audio-pronunciation">
+    <xsl:with-param             name = "langcode"
+                              select = "$langcode"/>
+   </xsl:call-template>
+  </xsl:variable>
+  <xsl:variable                 name = "key">
+   <xsl:if                      test = "$langcode = 'en'">
+    <xsl:value-of             select = "../TermPronunciation"/>
+   </xsl:if>
+  </xsl:variable>
   <xsl:variable                 name = "pronunciation">
    <pronunciation>
-    <audio>
-     <xsl:call-template         name = "get-audio-pronunciation">
-      <xsl:with-param           name = "langcode"
-                              select = "$langcode"/>
-     </xsl:call-template>
-    </audio>
-    <key>
-     <xsl:if                    test = "$langcode = 'en'">
-      <xsl:value-of           select = "../TermPronunciation"/>
-     </xsl:if>
-    </key>
+    <xsl:if                     test = "$audio != '' or $key != ''">
+     <audio>
+      <xsl:value-of           select = "$audio"/>
+     </audio>
+     <key>
+      <xsl:value-of           select = "$key"/>
+     </key>
+    </xsl:if>
    </pronunciation>
   </xsl:variable>
   <xsl:variable                 name = "definition">
@@ -188,7 +198,7 @@
        </xsl:choose>
       </xsl:variable>
       <xsl:if                   test = "$caption-language = $langcode">
-       <caption                 type = "array-member">
+       <caption>
         <xsl:apply-templates  select = "*|text()"/>
        </caption>
       </xsl:if>
@@ -228,9 +238,29 @@
     <xsl:if                     test = "@type = 'image/jpeg'">
      <media                     type = "array-member">
       <type>image</type>
+      <!--
       <ref>
        <xsl:value-of          select = "@ref"/>
       </ref>
+      -->
+      <xsl:variable             name = "id">
+       <xsl:call-template       name = "extract-id-integer">
+        <xsl:with-param         name = "cdr-id"
+                              select = "@ref"/>
+       </xsl:call-template>
+      </xsl:variable>
+      <xsl:call-template        name = "add-image-source">
+       <xsl:with-param          name = "id"
+                              select = "$id"/>
+       <xsl:with-param          name = "width"
+                              select = "571"/>
+      </xsl:call-template>
+      <xsl:call-template        name = "add-image-source">
+       <xsl:with-param          name = "id"
+                              select = "$id"/>
+       <xsl:with-param          name = "width"
+                              select = "750"/>
+      </xsl:call-template>
       <alt>
        <xsl:value-of          select = "@alt"/>
       </alt>
@@ -246,7 +276,7 @@
         </xsl:choose>
        </xsl:variable>
        <xsl:if                  test = "$caption-language = $langcode">
-        <caption                type = "array-member">
+        <caption>
          <xsl:apply-templates select = "*|text()"/>
         </caption>
        </xsl:if>
@@ -260,7 +290,16 @@
   </xsl:if>
  </xsl:template>
 
- <!-- Find the links to other resources matching the current language. -->
+ <!-- Find the links to other resources matching the current language.
+
+      Example source from exported XML:
+
+      <RelatedGlossaryTermRef
+          href="CDR0000046658"
+          UseWith="en"
+          audience="Patients"
+      >second primary cancer</RelatedGlossaryTermRef>
+ -->
  <xsl:template                 match = "RelatedInformation">
   <xsl:param                    name = "langcode"/>
   <xsl:for-each               select = "*">
@@ -269,19 +308,40 @@
      <text>
       <xsl:value-of           select = "normalize-space()"/>
      </text>
-     <url>
-      <xsl:choose>
-       <xsl:when                test = "name() = 'RelatedSummaryRef'">
-        <xsl:value-of         select = "@url"/>
-       </xsl:when>
-       <xsl:when                test = "name() = 'RelatedDrugSummaryRef'">
-        <xsl:value-of         select = "@url"/>
-       </xsl:when>
-       <xsl:when                test = "name() = 'RelatedExternalRef'">
-        <xsl:value-of         select = "@xref"/>
-       </xsl:when>
-      </xsl:choose>
-     </url>
+     <xsl:if                    test = "name() != 'RelatedGlossaryTermRef'">
+      <url>
+       <xsl:choose>
+        <xsl:when               test = "name() = 'RelatedSummaryRef'">
+         <xsl:text>https://www.cancer.gov</xsl:text>
+         <xsl:value-of        select = "@url"/>
+        </xsl:when>
+        <xsl:when               test = "name() = 'RelatedDrugSummaryRef'">
+         <xsl:text>https://www.cancer.gov</xsl:text>
+         <xsl:value-of        select = "@url"/>
+        </xsl:when>
+        <xsl:when               test = "name() = 'RelatedExternalRef'">
+         <xsl:value-of        select = "@xref"/>
+        </xsl:when>
+       </xsl:choose>
+      </url>
+     </xsl:if>
+     <xsl:if                    test = "name() = 'RelatedGlossaryTermRef'">
+      <id>
+       <xsl:call-template       name = "extract-id-integer">
+        <xsl:with-param         name = "cdr-id"
+                              select = "@href"/>
+       </xsl:call-template>
+      </id>
+      <audience>
+       <xsl:call-template       name = "map-audience">
+        <xsl:with-param         name = "name"
+                              select = "@audience"/>
+       </xsl:call-template>
+      </audience>
+      <pretty_url_name     processor = "clean_pretty_url">
+       <xsl:value-of          select = "text()"/>
+      </pretty_url_name>
+     </xsl:if>
      <type>
       <xsl:choose>
        <xsl:when                test = "name() = 'RelatedSummaryRef'">
@@ -301,6 +361,32 @@
     </related_resources>
    </xsl:if>
   </xsl:for-each>
+ </xsl:template>
+
+ <!-- Add a source for a specific width of an image. -->
+ <xsl:template                  name = "add-image-source">
+  <xsl:param                    name = "id"/>
+  <xsl:param                    name = "width"/>
+  <image_srcs                   type = "array-member">
+   <size>
+    <xsl:value-of             select = "$width"/>
+   </size>
+   <src>
+    <xsl:text>https://nci-media</xsl:text>
+    <xsl:if                     test = "$tier != 'PROD'">
+     <xsl:text>-</xsl:text>
+     <xsl:call-template         name = "lowercase-str">
+      <xsl:with-param           name = "str"
+                              select = "$tier"/>
+     </xsl:call-template>
+    </xsl:if>
+    <xsl:text>.cancer.gov/images/pdq/CDR</xsl:text>
+    <xsl:value-of             select = "$id"/>
+    <xsl:text>-</xsl:text>
+    <xsl:value-of             select = "$width"/>
+    <xsl:text>.jpg</xsl:text>
+   </src>
+  </image_srcs>
  </xsl:template>
 
  <!-- Add a single language/audience/dictionary node. -->
@@ -381,6 +467,15 @@
      </xsl:call-template>
     </xsl:variable>
     <xsl:if                     test = "$id != ''">
+     <xsl:text>https://nci-media</xsl:text>
+     <xsl:if                    test = "$tier != 'PROD'">
+      <xsl:text>-</xsl:text>
+      <xsl:call-template        name = "lowercase-str">
+       <xsl:with-param          name = "str"
+                              select = "$tier"/>
+      </xsl:call-template>
+     </xsl:if>
+     <xsl:text>.cancer.gov/audio/pdq/</xsl:text>
      <xsl:value-of            select = "$id"/>
      <xsl:text>.mp3</xsl:text>
     </xsl:if>
