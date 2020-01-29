@@ -40,6 +40,15 @@ Filter to create the vendor Terminology XML
  Copy DocId, PreferredName, OtherTermName, OtherNameType
  ====================================================================== -->
  <xsl:template                   match = "Term">
+  <xsl:variable                   name = "cname">
+   <xsl:if                        test = "NCIThesaurusConcept
+                                          and
+                                          not(NCIThesaurusConcept[
+                                                             @Public='No'])">
+    <xsl:value-of               select = "normalize-space(
+                                                     NCIThesaurusConcept)"/>
+   </xsl:if>
+  </xsl:variable>
   <xsl:element                    name = '{name()}'>
    <xsl:attribute                 name = "id">
     <xsl:value-of               select = "DocId"/>
@@ -47,13 +56,9 @@ Filter to create the vendor Terminology XML
    <xsl:attribute                 name = "LegacyPDQID">
     <xsl:value-of               select = "PdqKey"/>
    </xsl:attribute>
-   <xsl:if                        test = "NCIThesaurusConcept
-                                          and
-                                          not(NCIThesaurusConcept[
-                                                             @Public='No'])">
+   <xsl:if                        test = "not($cname = '')">
     <xsl:attribute                name = "NCIThesaurusConceptID">
-     <xsl:value-of              select = "normalize-space(
-                                                     NCIThesaurusConcept)"/>
+     <xsl:value-of              select = "$cname"/>
     </xsl:attribute>
    </xsl:if>
 
@@ -102,8 +107,22 @@ Filter to create the vendor Terminology XML
 
    <xsl:apply-templates         select = "DateLastModified"
                                   mode = "copy"/>
+   <!--
+   ===================================================================
+   Adding information needed for the dictionary API.  It will only be
+   used for Cancer.gov but not for the PDQ partners.
+   =================================================================== -->
+   <xsl:element                   name = "CGovInfo">
+    <!-- Add link to DIS URL -->
+    <xsl:call-template            name = "getDISLink"/>
+    <xsl:call-template            name = "getNCITName">
+     <xsl:with-param              name = "cname"
+                                select = "$cname"/>
+    </xsl:call-template>
+   </xsl:element>
   </xsl:element>
  </xsl:template>
+
 
 
  <!--
@@ -397,5 +416,72 @@ Filter to create the vendor Terminology XML
 
    <xsl:apply-templates select = "Term/PreferredName"/>
   </MenuParent>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Template to retrieve and display the URL for the linked
+ DrugInfo Summary
+ =================================================================== -->
+ <xsl:template                    name = "getDISLink">
+  <xsl:variable                   name = "docNormId"
+                                select = "number(
+                                           substring-before(
+                                           concat(
+                                           substring-after(/Term/DocId, 'CDR'),
+                                                               '#'), '#'))"/>
+  <xsl:variable                   name = "sqlQuery">
+    SELECT t.doc_id, u.value AS "URL", d.value AS "TITLE"
+      FROM query_term_pub t
+      JOIN query_term_pub u
+        ON t.doc_id = u.doc_id
+       AND u.path = '/DrugInformationSummary/DrugInfoMetaData/URL/@cdr:xref'
+      JOIN query_term_pub d
+        ON t.doc_id = d.doc_id
+       AND d.path = '/DrugInformationSummary/Title'
+     WHERE t.path = '/DrugInformationSummary/DrugInfoMetaData/TerminologyLink/@cdr:ref'
+       AND t.int_val = ?
+  </xsl:variable>
+
+  <xsl:variable                   name = "queryRows"
+                                select = "document(cdr:escape-uri(
+                                            concat('cdrutil:/sql-query/',
+                                                   $sqlQuery,
+                                                   '~', $docNormId)))"/>
+  <!--
+  <xsl:copy-of select = "$queryRows"/>
+  -->
+  <!--
+  Only create the variable if a link exists
+  ================================================================== -->
+  <xsl:if                         test = "count($queryRows/SqlResult/row) &gt; 0">
+   <xsl:element                   name = "DISUrl">
+    <xsl:value-of               select = "$queryRows
+                                            /SqlResult
+                                            /row
+                                            /col[@name='URL']"/>
+   </xsl:element>
+   <xsl:element                   name = "DISTitle">
+    <xsl:value-of               select = "$queryRows
+                                            /SqlResult
+                                            /row
+                                            /col[@name='TITLE']"/>
+   </xsl:element>
+  </xsl:if>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Template to retrieve and display the URL for the linked
+ DrugInfo Summary
+ =================================================================== -->
+ <xsl:template                    name = "getNCITName">
+  <xsl:param                      name = "cname"
+                                select = "''"/>
+  <xsl:element                    name = "NCITName">
+   <xsl:value-of                select = "document(concat('cdrutil:ncit-pn/', $cname))"/>
+  </xsl:element>
  </xsl:template>
 </xsl:transform>
