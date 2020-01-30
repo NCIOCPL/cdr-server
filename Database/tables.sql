@@ -2761,3 +2761,22 @@ CREATE TABLE glossary_translation_job_history
  assigned_to INTEGER NOT NULL REFERENCES usr,
     comments NTEXT NULL)
 GO
+
+CREATE TABLE media_hash (
+           id INTEGER NOT NULL REFERENCES all_docs,
+  sha256_hash BINARY(32) NOT NULL
+)
+GRANT SELECT ON media_hash TO CdrGuest
+GRANT SELECT, UPDATE, INSERT, DELETE ON media_hash TO CdrPublishing
+GO
+
+CREATE TABLE scheduled_job (
+          id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWID(),
+        name NVARCHAR(512) NOT NULL,
+     enabled BIT NOT NULL,
+   job_class NVARCHAR(128) NOT NULL,
+        opts VARCHAR(1024) NOT NULL,
+    schedule VARCHAR(256) NULL
+)
+GRANT SELECT ON scheduled_job TO CdrGuest
+GO
