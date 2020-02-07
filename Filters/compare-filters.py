@@ -1,14 +1,13 @@
-#----------------------------------------------------------------------
-#
-# Compare filters in Subversion against those in the CDR.
-#
-#----------------------------------------------------------------------
-import cdrdb
+"""Compare filters in Subversion against those in the CDR.
+"""
+
+import argparse
+import datetime
 import difflib
 import glob
 import re
 import sys
-import time
+from cdrapi import db
 
 def compare(me, you, full=False):
     differ = difflib.Differ()
@@ -17,7 +16,7 @@ def compare(me, you, full=False):
         return "".join(diffs)
     changes = []
     for line in diffs:
-        if line[0] != ' ':
+        if line[0] != " ":
             changes.append(line)
     return "".join(changes)
 
@@ -28,44 +27,43 @@ class Filter:
         self.filename = filename
         self.doc_id = doc_id
 
-directory = len(sys.argv) > 1 and sys.argv[1] or "."
-full_diffs = len(sys.argv) > 2 and sys.argv[2] == "-f"
+parser = argparse.ArgumentParser()
+parser.add_argument("--directory", "-d", default=".")
+parser.add_argument("--full", "-f", action="store_true")
+opts = parser.parse_args()
 local = {}
-for name in glob.glob("%s/CDR00*.xml" % directory):
-    doc = open(name).read()
+for name in glob.glob(f"{opts.directory}/CDR00*.xml"):
+    doc = open(name, encoding="utf-8").read()
     match = re.search("<!-- Filter title:([^>]+)-->", doc)
     if not match:
-        raise Exception("no filter title in %s\n" % repr(name))
+        raise Exception(f"no filter title in {name!r}")
     title = match.group(1).strip()
     local[title.lower()] = Filter(title, doc, name)
 repository = {}
-query = cdrdb.Query("document d", "d.id", "d.title", "d.xml")
+query = db.Query("document d", "d.id", "d.title", "d.xml")
 query.join("doc_type t", "t.id = d.doc_type")
-query.where(cdrdb.Query.Condition("t.name", "Filter"))
+query.where(query.Condition("t.name", "Filter"))
 for doc_id, title, doc in query.execute().fetchall():
     repository[title.strip().lower()] = Filter(title, doc, doc_id=doc_id)
-now = time.strftime("%Y%m%d%H%M%S")
-fp = open("filter-diffs.%s" % now, "w")
-for title in sorted(local):
-    if title not in repository:
-        print "Only in Git: %s" % repr(local[title].title)
-    else:
-        localXml = local[title].doc
-        repoXml = repository[title].doc.encode("utf-8").replace("\r", "")
-        diff = compare(localXml, repoXml)
-        if diff:
-            fp.write("%s\n" % local[title].filename)
-            print "diff %s %s" % (local[title].filename,
-                                  repr(local[title].title))
-            #print (" %s " % local[title].title).center(78, "*")
-            print "< GIT DOCUMENT %s" % local[title].filename
-            print "> CDR DOCUMENT CDR%010d" % repository[title].doc_id
-            if full_diffs:
-                print compare(localXml, repoXml, full_diffs)
-            else:
-                print diff
-fp.close()
+now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+with open(f"filter-diffs.{now}", "w") as fp:
+    for title in sorted(local):
+        if title not in repository:
+            print(f"Only in Git: {local[title].title!r}")
+        else:
+            local_xml = local[title].doc
+            repo_xml = repository[title].doc.replace("\r", "")
+            diff = compare(local_xml, repo_xml)
+            if diff:
+                fp.write(f"{local[title].filename}\n")
+                print(f"diff {local[title].filename} {local[title].title!r}")
+                print(f"< GIT DOCUMENT {local[title].filename}")
+                print(f"> CDR DOCUMENT CDR{repository[title].doc_id:010d}")
+                if opts.full:
+                    print(compare(local_xml, repo_xml, True))
+                else:
+                    print(diff)
 for title in sorted(repository):
     if title not in local:
         args = repository[title].doc_id, repository[title].title
-        print "Only in the CDR: [CDR%010d] %s" % args
+        print("Only in the CDR: [CDR{:010d}] {}".format(*args))

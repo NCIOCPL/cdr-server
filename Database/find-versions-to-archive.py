@@ -29,5 +29,5 @@ SELECT v.id, v.num
        AND a.num = v.num
 )""")
 versions = cursor.fetchall()
-print(repr(versions))
+print((repr(versions)))
 stderr.write("{:d} versions\n".format(len(versions)))

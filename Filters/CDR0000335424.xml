@@ -1,4 +1,4 @@
-<?xml version = "1.0" encoding="utf-8"?>
+<?xml version="1.0" ?>
 <!-- Filter title: Denormalization Filter: Summary -->
 <!--
  ================================================================
@@ -159,9 +159,22 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
    </xsl:choose>
   </xsl:variable>
 
+
+
+  <!--
+  Cancel the report if we can't find the board ID for the English board to
+  retrieve the board information.
+  ==================================================================== -->
+  <xsl:if                         test = "$BoardID = ''">
+   <xsl:message              terminate = "yes">
+    <xsl:text>Error: No board ID available to retrieve board info!</xsl:text>
+   </xsl:message>
+  </xsl:if>
+
   <xsl:variable                   name = "BoardInfo"
                                 select = "document(concat('cdr:',$BoardID,
                                                            '/last'))"/>
+
    <xsl:choose>
     <xsl:when                     test = "$sumLanguage = 'EN'">
      <xsl:element                 name = "Board">

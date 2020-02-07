@@ -16,10 +16,10 @@ from cdrapi.users import Session
 from cdrapi import db
 
 try:
-    basestring
+    str
 except:
-    basestring = (str, bytes)
-    unicode = str
+    str = (str, bytes)
+    str = str
 
 
 class Tests(unittest.TestCase):
@@ -204,13 +204,13 @@ if FULL:
             wrapper = etree.SubElement(root, "TermName")
             etree.SubElement(wrapper, "TermNameString").text = "Yo!"
             wrapper = etree.SubElement(root, "TranslatedName")
-            etree.SubElement(wrapper, "TermNameString").text = u"\xa1Hola!"
+            etree.SubElement(wrapper, "TermNameString").text = "\xa1Hola!"
             doc = Doc(self.session, xml=etree.tostring(root))
-            expected = u"Yo!;\xa1Hola! [es]"
+            expected = "Yo!;\xa1Hola! [es]"
             result = self.filter(doc, "name:DocTitle for GlossaryTermName")
             self.assertFalse(result.error_log)
             self.assertFalse(result.messages)
-            self.assertEqual(unicode(result.result_tree), expected)
+            self.assertEqual(str(result.result_tree), expected)
         def test_012_inscopeproto(self):
             root = etree.Element("InScopeProtocol")
             protocol_ids = etree.SubElement(root, "ProtocolIDs")
@@ -229,7 +229,7 @@ if FULL:
             expected = "{};{}".format(";".join("ABCDE"), "z" * 1024)[:255]
             self.assertFalse(result.error_log)
             self.assertFalse(result.messages)
-            self.assertEqual(unicode(result.result_tree), expected)
+            self.assertEqual(str(result.result_tree), expected)
         def test_013_licensee_tit(self):
             root = etree.Element("Licensee")
             info = etree.SubElement(root, "LicenseeInformation")
@@ -325,13 +325,13 @@ if FULL:
             result = self.filter(doc, "name:DocTitle for Person")
             self.assertFalse(result.error_log)
             self.assertFalse(result.messages)
-            self.assertEqual(unicode(result.result_tree), doc.title)
+            self.assertEqual(str(result.result_tree), doc.title)
         def test_021_politicalsub(self):
             doc = self.get_doc("PoliticalSubUnit")
             result = self.filter(doc, "name:DocTitle for PoliticalSubUnit")
             self.assertFalse(result.error_log)
             self.assertFalse(result.messages)
-            self.assertEqual(unicode(result.result_tree), doc.title)
+            self.assertEqual(str(result.result_tree), doc.title)
         def test_022_publishingsy(self):
             root = etree.Element("PublishingSystem")
             etree.SubElement(root, "SystemName").text = "Fake name for test"
@@ -386,7 +386,7 @@ if FULL:
             result = self.filter(doc, "name:DocTitle for Term")
             self.assertFalse(result.error_log)
             self.assertFalse(result.messages)
-            self.assertEqual(unicode(result.result_tree), doc.title)
+            self.assertEqual(str(result.result_tree), doc.title)
         def test_027_termset_titl(self):
             root = etree.Element("TermSet")
             etree.SubElement(root, "TermSetName").text = "dada"
@@ -395,7 +395,7 @@ if FULL:
             result = self.filter(doc, "name:DocTitle for TermSet")
             self.assertFalse(result.error_log)
             self.assertFalse(result.messages)
-            self.assertEqual(unicode(result.result_tree), "dada;gimte")
+            self.assertEqual(str(result.result_tree), "dada;gimte")
 
 
 # Put new tests up here while you're working on them, then move them
