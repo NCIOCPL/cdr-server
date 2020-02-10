@@ -64,7 +64,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  Note: This template used to include processing for ProtocolRefs, too.
  ====================================================================== -->
  <xsl:template                   match = "SummaryRef">
-  <a>
+  <xsl:element                    name = "a">
    <xsl:attribute                 name = "href">
     <!--
     For reformatted patient summaries run a different QC report
@@ -98,19 +98,16 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    </xsl:attribute>
 
    <xsl:choose>
-    <xsl:when                         test = "name() = 'SummaryRef'
+    <xsl:when                     test = "name() = 'SummaryRef'
                                               and
                                               SummaryRefText">
-     <xsl:apply-templates             select = "SummaryRefText"/>
+     <xsl:apply-templates       select = "SummaryRefText"/>
     </xsl:when>
     <xsl:otherwise>
      <xsl:apply-templates/>
-<!--
-     <xsl:apply-templates select = "."/>
--->
     </xsl:otherwise>
    </xsl:choose>
-  </a>
+  </xsl:element>
 
  </xsl:template>
 
@@ -123,13 +120,13 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     https://www.cancer.gov/clinicaltrials/NCT00004451
  ====================================================================== -->
  <xsl:template                   match = "ProtocolRef">
-  <a>
+  <xsl:element                    name = "a">
    <xsl:attribute                 name = "href">
     <xsl:text>https://www.cancer.gov/clinicaltrials/</xsl:text>
     <xsl:value-of               select = "@nct_id"/>
    </xsl:attribute>
    <xsl:apply-templates/>
-  </a>
+  </xsl:element>
  </xsl:template>
 
 
@@ -141,7 +138,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  ====================================================================== -->
  <xsl:template                   match = "SummaryFragmentRef |
                                           LOEFragmentRef">
-  <a>
+  <xsl:element                    name = "a">
    <!--
    Attribute to being able and specify the CSS for this link
    ========================================================= -->
@@ -193,7 +190,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        <!--
        For reformatted patient summaries run 'pat' QC report
        =========================================================== -->
-       <xsl:when                    test = "LinkedSummary
+       <xsl:when                  test = "LinkedSummary
                                             /LinkedSummaryAudience = 'Patients'
                                           and
                                           (LinkedSummary
@@ -203,13 +200,13 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                             /LinkedSummaryType =
                                            concat('Integrative, alternative, ',
                                                   'and complementary therapies'))">
-        <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=',
-                                             substring-before(@cdr:href, '#'),
+                                                 substring-before(@cdr:href, '#'),
                                                  '&amp;ReportType=pat',
                                                  '&amp;Session=guest',
                                                  '#',
-                                            substring-after(@cdr:href, '#'))"/>
+                                                 substring-after(@cdr:href, '#'))"/>
                                              <!--
                                                  '&amp;DocVersion=-1',
                                              -->
@@ -219,12 +216,12 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        For old patient summaries and HP run regular QC report
        =========================================================== -->
        <xsl:otherwise>
-        <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
+        <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=',
-                                             substring-before(@cdr:href, '#'),
+                                                 substring-before(@cdr:href, '#'),
                                                  '&amp;Session=guest',
                                                  '#',
-                                            substring-after(@cdr:href, '#'))"/>
+                                                 substring-after(@cdr:href, '#'))"/>
                                              <!--
                                                  '&amp;DocVersion=-1',
                                              -->
@@ -236,17 +233,17 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    </xsl:attribute>
 
    <xsl:choose>
-    <xsl:when                         test = "name() = 'SummaryFragmentRef'
-                                              and
-                                              SummaryRefText">
-     <xsl:apply-templates             select = "SummaryRefText"/>
+    <xsl:when                     test = "name() = 'SummaryFragmentRef'
+                                          and
+                                          SummaryRefText">
+     <xsl:apply-templates       select = "SummaryRefText"/>
     </xsl:when>
     <xsl:otherwise>
      <xsl:apply-templates/>
     </xsl:otherwise>
    </xsl:choose>
 
-  </a>
+  </xsl:element>
  </xsl:template>
 
 
@@ -258,14 +255,14 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                           DocumentationLink">
   <xsl:variable                   name = "docRef"
                                 select = "@cdr:href"/>
-  <a>
+  <xsl:element                    name = "a">
    <xsl:attribute                 name = "href">
     <xsl:text>/cgi-bin/cdr/Filter.py?DocId=</xsl:text>
     <xsl:value-of               select = "$docRef"/>
     <xsl:text>&amp;Filter=name:Documentation+Help+Screens+Filter</xsl:text>
    </xsl:attribute>
    <xsl:apply-templates/>
-  </a>
+  </xsl:element>
  </xsl:template>
 
 
@@ -279,7 +276,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "substring-before(@cdr:href, '#')"/>
   <xsl:variable                   name = "docFrag"
                                 select = "substring-after(@cdr:href, '#')"/>
-  <a>
+  <xsl:element                    name = "a">
    <xsl:attribute                 name = "href">
     <xsl:text>/cgi-bin/cdr/Filter.py?DocId=</xsl:text>
     <xsl:value-of               select = "$docRef"/>
@@ -288,7 +285,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     <xsl:text>&amp;Filter=name:Documentation+Help+Screens+Filter</xsl:text>
    </xsl:attribute>
    <xsl:apply-templates/>
-  </a>
+  </xsl:element>
  </xsl:template>
 
 
@@ -299,7 +296,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  <xsl:template                   match = "DrugSummaryRef">
   <xsl:choose>
    <xsl:when                      test = "Deletion">
-    <a>
+    <xsl:element                  name = "a">
      <xsl:attribute               name = "href">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -310,12 +307,12 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       <xsl:text>_blank</xsl:text>
      </xsl:attribute>
      <span class="deleteDisRef">
-      <xsl:value-of           select = "."/>
+      <xsl:value-of             select = "."/>
      </span>
-    </a>
+    </xsl:element>
    </xsl:when>
    <xsl:when                      test = "Insertion">
-    <a>
+    <xsl:element                  name = "a">
      <xsl:attribute               name = "href">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -326,12 +323,12 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       <xsl:text>_blank</xsl:text>
      </xsl:attribute>
      <span class="insertDisRef">
-      <xsl:value-of           select = "."/>
+      <xsl:value-of             select = "."/>
      </span>
-    </a>
+    </xsl:element>
    </xsl:when>
    <xsl:otherwise>
-    <a>
+    <xsl:element                  name = "a">
      <xsl:attribute               name = "href">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -342,7 +339,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       <xsl:text>_blank</xsl:text>
      </xsl:attribute>
      <xsl:value-of              select = "."/>
-    </a>
+    </xsl:element>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
@@ -409,7 +406,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   <xsl:choose>
    <xsl:when                      test = "GlossaryText/
                                           Deletion">
-    <a>
+    <xsl:element                  name = "a">
      <xsl:attribute               name = "href">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
@@ -420,14 +417,6 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      <xsl:attribute               name = "target">
       <xsl:text>_blank</xsl:text>
      </xsl:attribute>
-     <!--
-     <xsl:attribute               name = "title">
-      <xsl:text>audience=</xsl:text>
-      <xsl:value-of             select = "Audience"/>
-      <xsl:text>, dictionary=</xsl:text>
-      <xsl:value-of             select = "Dictionary"/>
-     </xsl:attribute>
-     -->
      <xsl:choose>
       <xsl:when                   test = "GlossaryText/
                                            Deletion[@RevisionLevel='approved']">
@@ -487,10 +476,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        <xsl:value-of            select = "GlossaryText"/>
       </xsl:otherwise>
      </xsl:choose>
-    </a>
+    </xls:element>
    </xsl:when>
    <xsl:when                      test = "GlossaryText/Insertion">
-    <a>
+    <xsl:element                  name = "a">
      <xsl:attribute               name = "href">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
@@ -501,14 +490,6 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      <xsl:attribute               name = "target">
       <xsl:text>_blank</xsl:text>
      </xsl:attribute>
-     <!--
-     <xsl:attribute               name = "title">
-      <xsl:text>audience=</xsl:text>
-      <xsl:value-of             select = "Audience"/>
-      <xsl:text>, dictionary=</xsl:text>
-      <xsl:value-of             select = "Dictionary"/>
-     </xsl:attribute>
-     -->
      <xsl:choose>
       <xsl:when                   test = "GlossaryText/
                                           Insertion[@RevisionLevel='approved']">
@@ -568,10 +549,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        <xsl:value-of            select = "GlossaryText"/>
       </xsl:otherwise>
      </xsl:choose>
-    </a>
+    </xls:element>
    </xsl:when>
    <xsl:otherwise>
-    <a>
+    <xsl:element                  name = "a">
      <xsl:attribute               name = "href">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
@@ -582,16 +563,8 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      <xsl:attribute               name = "target">
       <xsl:text>_blank</xsl:text>
      </xsl:attribute>
-     <!--
-     <xsl:attribute               name = "title">
-      <xsl:text>audience=</xsl:text>
-      <xsl:value-of             select = "Audience"/>
-      <xsl:text>, dictionary=</xsl:text>
-      <xsl:value-of             select = "Dictionary"/>
-     </xsl:attribute>
-     -->
      <xsl:value-of              select = "GlossaryText"/>
-    </a>
+    </xsl:element>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
@@ -609,7 +582,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                   mode = "PE">
   <xsl:choose>
    <xsl:when                      test = "GlossaryText/Deletion">
-    <a>
+    <xsl:element                  name = "a">
      <xsl:attribute               name = "href">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -678,11 +651,11 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        <xsl:value-of            select = "GlossaryText"/>
       </xsl:otherwise>
      </xsl:choose>
-    </a>
+    </xsl:element>
    </xsl:when>
    <xsl:when                      test = "GlossaryText/
                                           Insertion">
-    <a>
+    <xsl:element                  name = "a">
      <xsl:attribute               name = "href">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -751,10 +724,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        <xsl:value-of            select = "GlossaryText"/>
       </xsl:otherwise>
      </xsl:choose>
-    </a>
+    </xsl:element>
    </xsl:when>
    <xsl:otherwise>
-    <a>
+    <xsl:element                  name = "a">
      <xsl:attribute               name = "href">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -765,7 +738,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       <xsl:text>_blank</xsl:text>
      </xsl:attribute>
      <xsl:value-of              select = "GlossaryText"/>
-    </a>
+    </xsl:element>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
@@ -784,7 +757,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    <xsl:when                      test = "GlossaryText/Deletion">
     <xsl:if                       test = "GlossaryText/
                                           Deletion/@RevisionLevel = 'proposed'">
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
           <xsl:value-of         select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
@@ -796,12 +769,12 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         <xsl:value-of           select = "GlossaryText/
                                           Deletion"/>
        </span>
-      </a>
+      </xsl:element>
     </xsl:if>
    </xsl:when>
    <xsl:when                      test = "GlossaryText/
                                           Insertion">
-    <a>
+    <xsl:element                name = "a">
      <xsl:attribute               name = "href">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
@@ -816,10 +789,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       <xsl:value-of             select = "GlossaryText/
                                           Insertion"/>
      </span>
-    </a>
+    </xsl:element>
    </xsl:when>
    <xsl:otherwise>
-    <a>
+    <xsl:element                name = "a">
      <xsl:attribute               name = "href">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
@@ -828,7 +801,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                                  'with+Concept+Set')"/>
      </xsl:attribute>
      <xsl:value-of              select = "GlossaryText"/>
-    </a>
+    </xsl:element>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
@@ -849,7 +822,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                           Deletion">
     <xsl:if                       test = "GlossaryText/
                                           Deletion/@RevisionLevel = 'proposed'">
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -860,12 +833,12 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         <xsl:value-of           select = "GlossaryText/
                                           Deletion"/>
        </span>
-      </a>
+      </xsl:element>
     </xsl:if>
    </xsl:when>
    <xsl:when                      test = "GlossaryText/
                                           Insertion">
-    <a>
+    <xsl:element                name = "a">
      <xsl:attribute               name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -879,10 +852,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       <xsl:value-of             select = "GlossaryText/
                                           Insertion"/>
      </span>
-    </a>
+    </xsl:element>
    </xsl:when>
    <xsl:otherwise>
-    <a>
+    <xsl:element                name = "a">
      <xsl:attribute               name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -890,7 +863,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                                  '&amp;Session=guest')"/>
      </xsl:attribute>
      <xsl:value-of              select = "GlossaryText"/>
-    </a>
+    </xsl:element>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
@@ -908,7 +881,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     <xsl:choose>
      <xsl:when                    test = "GlossaryText/
                                           Deletion/@Source = 'advisory-board'">
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
@@ -920,10 +893,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         <xsl:value-of           select = "GlossaryText/
                                           Deletion"/>
        </span>
-      </a>
+      </xsl:element>
      </xsl:when>
      <xsl:otherwise>
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
@@ -935,7 +908,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         <xsl:value-of           select = "GlossaryText/
                                           Deletion"/>
        </span>
-      </a>
+      </xsl:element>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:when>
@@ -943,7 +916,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     <xsl:choose>
      <xsl:when                    test = "GlossaryText/
                                           Insertion/@Source = 'advisory-board'">
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
@@ -955,10 +928,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         <xsl:value-of           select = "GlossaryText/
                                           Insertion"/>
        </span>
-      </a>
+      </xsl:element>
      </xsl:when>
      <xsl:otherwise>
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
@@ -967,7 +940,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                                  'with+Concept+Set')"/>
        </xsl:attribute>
        <xsl:value-of            select = "GlossaryText"/>
-      </a>
+      </xsl:element>
 
      </xsl:otherwise>
     </xsl:choose>
@@ -988,7 +961,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     <xsl:choose>
      <xsl:when                    test = "GlossaryText/
                                           Deletion/@Source = 'advisory-board'">
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -999,10 +972,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         <xsl:value-of           select = "GlossaryText/
                                           Deletion"/>
        </span>
-      </a>
+      </xsl:element>
      </xsl:when>
      <xsl:otherwise>
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -1013,7 +986,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         <xsl:value-of           select = "GlossaryText/
                                           Deletion"/>
        </span>
-      </a>
+      </xsl:element>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:when>
@@ -1021,7 +994,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     <xsl:choose>
      <xsl:when                    test = "GlossaryText/
                                           Insertion/@Source = 'advisory-board'">
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -1032,10 +1005,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         <xsl:value-of           select = "GlossaryText/
                                           Insertion"/>
        </span>
-      </a>
+      </xsl:element>
      </xsl:when>
      <xsl:otherwise>
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -1043,7 +1016,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                                  '&amp;Session=guest')"/>
        </xsl:attribute>
        <xsl:value-of            select = "GlossaryText"/>
-      </a>
+      </xsl:element>
 
      </xsl:otherwise>
     </xsl:choose>
@@ -1064,7 +1037,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     <xsl:choose>
      <xsl:when                    test = "GlossaryText/
                                           Deletion/@Source = 'advisory-board'">
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
@@ -1076,10 +1049,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         <xsl:value-of           select = "GlossaryText/
                                           Deletion"/>
        </span>
-      </a>
+      </xsl:element>
      </xsl:when>
      <xsl:otherwise>
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
@@ -1090,7 +1063,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        <span class="deleteGlossaryTerm">
         <xsl:value-of           select = "GlossaryText"/>
        </span>
-      </a>
+      </xsl:element>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:when>
@@ -1098,7 +1071,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     <xsl:choose>
      <xsl:when                    test = "GlossaryText/
                                           Insertion/@Source = 'advisory-board'">
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
@@ -1107,13 +1080,13 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                                  'with+Concept+Set')"/>
        </xsl:attribute>
        <span class="insertGlossaryTerm_ad">
-        <xsl:value-of            select = "GlossaryText/
-                                           Insertion"/>
+        <xsl:value-of           select = "GlossaryText/
+                                          Insertion"/>
        </span>
-      </a>
+      </xsl:element>
      </xsl:when>
      <xsl:otherwise>
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/Filter.py?',
                                                  'DocId=', @cdr:href,
@@ -1122,7 +1095,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                                  'with+Concept+Set')"/>
        </xsl:attribute>
        <xsl:value-of            select = "GlossaryText"/>
-      </a>
+      </xsl:element>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:otherwise>
@@ -1141,7 +1114,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     <xsl:choose>
      <xsl:when                    test = "GlossaryText/
                                           Deletion/@Source = 'advisory-board'">
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -1152,10 +1125,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         <xsl:value-of           select = "GlossaryText/
                                           Deletion"/>
        </span>
-      </a>
+      </xsl:element>
      </xsl:when>
      <xsl:otherwise>
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -1166,7 +1139,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         <xsl:value-of           select = "GlossaryText/
                                           Deletion"/>
        </span>
-      </a>
+      </xsl:element>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:when>
@@ -1174,7 +1147,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     <xsl:choose>
      <xsl:when                    test = "GlossaryText/
                                           Insertion/@Source = 'advisory-board'">
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -1182,13 +1155,13 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                                  '&amp;Session=guest')"/>
        </xsl:attribute>
        <span class="insertGlossaryTerm_ad">
-        <xsl:value-of            select = "GlossaryText/
-                                           Insertion"/>
+        <xsl:value-of           select = "GlossaryText/
+                                          Insertion"/>
        </span>
-      </a>
+      </xsl:element>
      </xsl:when>
      <xsl:otherwise>
-      <a>
+      <xsl:element                name = "a">
        <xsl:attribute             name = "href">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
@@ -1196,7 +1169,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                                  '&amp;Session=guest')"/>
        </xsl:attribute>
        <xsl:value-of            select = "GlossaryText"/>
-      </a>
+      </xsl:element>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:otherwise>
@@ -1276,7 +1249,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "@cdr:xref"/>
   <a href="{$nlink}">
    <xsl:apply-templates/>
-  </a>
+  </xsl:element>
  </xsl:template>
 
 
@@ -2166,7 +2139,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "child::Title"/>
 
   <xsl:choose>
-   <xsl:when                       test = "$ShowLearnMoreSection = 'N'
+   <xsl:when                      test = "$ShowLearnMoreSection = 'N'
                                           and
                                           starts-with($title,
                                                           'To Learn More')">
@@ -2472,68 +2445,13 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
  <!--
  =====================================================================
- Display an ordered list
-   *** Compact attribute depricated ***
- ===================================================================== -->
- <xsl:template                   match = "OrderedListXXX"
-                                  mode = "compactNo">
-  <!-- Ensure that Para and List are separated by a blank line for Compact=No-->
-  <xsl:if                         test = "not(preceding-sibling::self = 'Para')
-                                          and
-                                          ../../@Compact">
-   <p/>
-  </xsl:if>
-  <xsl:apply-templates          select = "ListTitle"/>
-  <ol>
-   <xsl:attribute                 name = "Class">
-    <xsl:choose>
-     <xsl:when                    test = "@Style = 'UAlpha'">
-      <xsl:text>A</xsl:text>
-     </xsl:when>
-     <xsl:when                    test = "@Style = 'LAlpha'">
-      <xsl:text>little-alpha</xsl:text>
-     </xsl:when>
-     <xsl:when                    test = "@Style = 'URoman'">
-      <xsl:text>I</xsl:text>
-     </xsl:when>
-     <xsl:when                    test = "@Style = 'LRoman'">
-      <xsl:text>little-roman</xsl:text>
-     </xsl:when>
-     <xsl:when                    test = "@Style = 'Arabic'">
-      <xsl:text>d</xsl:text>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:text>none</xsl:text>
-     </xsl:otherwise>
-    </xsl:choose>
-   </xsl:attribute>
-   <xsl:call-template             name = "addIdLinkTarget">
-    <xsl:with-param               name = "id"
-                                select = "@cdr:id"/>
-   </xsl:call-template>
-
-   <xsl:choose>
-    <xsl:when                     test = "@Compact">
-     <xsl:apply-templates       select = "ListItem"
-                                  mode = "compactNo"/>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:apply-templates       select = "ListItem"/>
-    </xsl:otherwise>
-   </xsl:choose>
-  </ol>
- </xsl:template>
-
-
- <!--
- =====================================================================
  Display a list item but suppress items without content.
  ===================================================================== -->
  <xsl:template                   match = "ListItem">
   <xsl:if                         test = "not(. = '')">
    <li>
     <xsl:for-each               select = "@iod">
-      <xsl:attribute               name = "class">
+      <xsl:attribute              name = "class">
        <xsl:value-of            select = "."/>
       </xsl:attribute>
      </xsl:for-each>
@@ -2604,6 +2522,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    </xsl:when>
    <!-- Image Placeholders -->
    <xsl:otherwise>
+    <!--
     <xsl:element                  name = "div">
      <xsl:attribute               name = "class">
       <xsl:text>imagepadding</xsl:text>
@@ -2612,6 +2531,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       <xsl:attribute              name = "class">
        <xsl:text>gogreenimage</xsl:text>
       </xsl:attribute>
+      -->
 
       <!--
       The users want to have the image placeholders marked up
@@ -2619,40 +2539,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       <xsl:choose>
        <xsl:when                  test = "parent::MediaLink
                                             /@iod = 'Deletion'">
-      <xsl:choose>
-       <xsl:when                test = "preceding-sibling::Deletion
-                                            /@RevisionLevel = 'proposed'">
-        <xsl:element                  name = "div">
-         <xsl:attribute               name = "class">
-          <xsl:text>imagepadding</xsl:text>
-         </xsl:attribute>
-         <xsl:element                 name = "div">
-          <xsl:attribute              name = "class">
-           <xsl:text>gogreenimage</xsl:text>
-          </xsl:attribute>
-          <xsl:element            name = "span">
-           <xsl:attribute         name = "class">
-            <xsl:text>deleteproposed</xsl:text>
-           </xsl:attribute>
-           <xsl:call-template     name = "addIdLinkTarget">
-            <xsl:with-param       name = "id"
-                                select = "../@cdr:id"/>
-           </xsl:call-template>
-           <b>Image: </b>
-           <xsl:value-of        select = "Media/
-                                          MediaTitle"/>
-          </xsl:element>
-         </xsl:element>
-        </xsl:element>
-       </xsl:when>
-       <xsl:otherwise>
-        <!--
-        Approved Deletion
-        Users want the image suppressed in a B/U report
-        -->
         <xsl:choose>
-         <xsl:when              test = "contains($whoAmI, 'RS')">
-
+         <xsl:when                test = "preceding-sibling::Deletion
+                                            /@RevisionLevel = 'proposed'">
           <xsl:element                  name = "div">
            <xsl:attribute               name = "class">
             <xsl:text>imagepadding</xsl:text>
@@ -2661,55 +2550,112 @@ OCECDR-3956: Allow CitationLinks in Image Captions
             <xsl:attribute              name = "class">
              <xsl:text>gogreenimage</xsl:text>
             </xsl:attribute>
-            <xsl:element          name = "span">
-             <xsl:attribute       name = "class">
-              <xsl:text>deleteapproved</xsl:text>
+            <xsl:element            name = "span">
+             <xsl:attribute         name = "class">
+              <xsl:text>deleteproposed</xsl:text>
              </xsl:attribute>
-             <xsl:call-template   name = "addIdLinkTarget">
-              <xsl:with-param     name = "id"
+             <xsl:call-template     name = "addIdLinkTarget">
+              <xsl:with-param       name = "id"
                                 select = "../@cdr:id"/>
              </xsl:call-template>
              <b>Image: </b>
-             <xsl:value-of      select = "Media/
+             <xsl:value-of        select = "Media/
                                           MediaTitle"/>
             </xsl:element>
            </xsl:element>
           </xsl:element>
          </xsl:when>
          <xsl:otherwise>
-          <!-- Display videos in BU report but not deleted videos -->
+          <!--
+          Approved Deletion
+          Users want the image suppressed in a B/U report
+          -->
+          <xsl:choose>
+           <xsl:when              test = "contains($whoAmI, 'RS')">
+
+            <xsl:element                  name = "div">
+             <xsl:attribute               name = "class">
+              <xsl:text>imagepadding</xsl:text>
+             </xsl:attribute>
+             <xsl:element                 name = "div">
+              <xsl:attribute              name = "class">
+               <xsl:text>gogreenimage</xsl:text>
+              </xsl:attribute>
+              <xsl:element          name = "span">
+               <xsl:attribute       name = "class">
+                <xsl:text>deleteapproved</xsl:text>
+               </xsl:attribute>
+               <xsl:call-template   name = "addIdLinkTarget">
+                <xsl:with-param     name = "id"
+                                select = "../@cdr:id"/>
+               </xsl:call-template>
+               <b>Image: </b>
+               <xsl:value-of      select = "Media/
+                                          MediaTitle"/>
+              </xsl:element>
+             </xsl:element>
+            </xsl:element>
+           </xsl:when>
+           <xsl:otherwise>
+            <!-- Display videos in BU report but not deleted videos -->
+           </xsl:otherwise>
+          </xsl:choose>
          </xsl:otherwise>
         </xsl:choose>
-       </xsl:otherwise>
-      </xsl:choose>
-     </xsl:when>
-     <xsl:when                  test = "parent::MediaLink
+       </xsl:when>
+       <xsl:when                  test = "parent::MediaLink
                                             /@iod = 'Insertion'">
-      <xsl:choose>
-       <xsl:when                test = "preceding-sibling::Insertion
+        <xsl:choose>
+         <xsl:when                test = "preceding-sibling::Insertion
                                             /@RevisionLevel = 'proposed'">
-        <xsl:element                  name = "div">
-         <xsl:attribute               name = "class">
-          <xsl:text>imagepadding</xsl:text>
-         </xsl:attribute>
-         <xsl:element                 name = "div">
-          <xsl:attribute              name = "class">
-           <xsl:text>gogreenimage</xsl:text>
-          </xsl:attribute>
-          <xsl:element            name = "span">
-           <xsl:attribute         name = "class">
-            <xsl:text>insertproposed</xsl:text>
+          <xsl:element                  name = "div">
+           <xsl:attribute               name = "class">
+            <xsl:text>imagepadding</xsl:text>
            </xsl:attribute>
-           <xsl:call-template     name = "addIdLinkTarget">
-            <xsl:with-param       name = "id"
+           <xsl:element                 name = "div">
+            <xsl:attribute              name = "class">
+             <xsl:text>gogreenimage</xsl:text>
+            </xsl:attribute>
+            <xsl:element            name = "span">
+             <xsl:attribute         name = "class">
+              <xsl:text>insertproposed</xsl:text>
+             </xsl:attribute>
+             <xsl:call-template     name = "addIdLinkTarget">
+              <xsl:with-param       name = "id"
                                 select = "../@cdr:id"/>
-           </xsl:call-template>
-           <b>Image: </b>
-           <xsl:value-of        select = "Media/
+             </xsl:call-template>
+             <b>Image: </b>
+             <xsl:value-of        select = "Media/
                                           MediaTitle"/>
+            </xsl:element>
+           </xsl:element>
           </xsl:element>
-         </xsl:element>
-        </xsl:element>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:element                  name = "div">
+           <xsl:attribute               name = "class">
+            <xsl:text>imagepadding</xsl:text>
+           </xsl:attribute>
+           <xsl:element                 name = "div">
+            <xsl:attribute              name = "class">
+             <xsl:text>gogreenimage</xsl:text>
+            </xsl:attribute>
+            <xsl:element            name = "span">
+             <xsl:attribute         name = "class">
+              <xsl:text>insertapproved</xsl:text>
+             </xsl:attribute>
+             <xsl:call-template     name = "addIdLinkTarget">
+              <xsl:with-param       name = "id"
+                                select = "../@cdr:id"/>
+             </xsl:call-template>
+             <b>Image: </b>
+             <xsl:value-of        select = "Media/
+                                          MediaTitle"/>
+            </xsl:element>
+           </xsl:element>
+          </xsl:element>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:when>
        <xsl:otherwise>
         <xsl:element                  name = "div">
@@ -2720,43 +2666,18 @@ OCECDR-3956: Allow CitationLinks in Image Captions
           <xsl:attribute              name = "class">
            <xsl:text>gogreenimage</xsl:text>
           </xsl:attribute>
-          <xsl:element            name = "span">
-           <xsl:attribute         name = "class">
-            <xsl:text>insertapproved</xsl:text>
-           </xsl:attribute>
-           <xsl:call-template     name = "addIdLinkTarget">
-            <xsl:with-param       name = "id"
+          <xsl:call-template       name = "addIdLinkTarget">
+           <xsl:with-param         name = "id"
                                 select = "../@cdr:id"/>
-           </xsl:call-template>
-           <b>Image: </b>
-           <xsl:value-of        select = "Media/
+          </xsl:call-template>
+          <b>Image: </b>
+          <xsl:value-of          select = "Media/
                                           MediaTitle"/>
-          </xsl:element>
          </xsl:element>
         </xsl:element>
        </xsl:otherwise>
       </xsl:choose>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:element                  name = "div">
-       <xsl:attribute               name = "class">
-        <xsl:text>imagepadding</xsl:text>
-       </xsl:attribute>
-       <xsl:element                 name = "div">
-        <xsl:attribute              name = "class">
-         <xsl:text>gogreenimage</xsl:text>
-        </xsl:attribute>
-        <xsl:call-template       name = "addIdLinkTarget">
-         <xsl:with-param         name = "id"
-                                select = "../@cdr:id"/>
-        </xsl:call-template>
-        <b>Image: </b>
-        <xsl:value-of          select = "Media/
-                                          MediaTitle"/>
-       </xsl:element>
-      </xsl:element>
-     </xsl:otherwise>
-    </xsl:choose>
+
     <xsl:if                       test = "$mediaAudience =
                                                  'Health_professionals'">
      <xsl:if                      test = "not(../@UseCaption = 'No')">
@@ -3131,7 +3052,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        or 'proposed' revision level.  To do so would require to add
        a RevisionLevel attribute to the MediaLink ID.  After the
        MediaLink denormalization the information of the revision level
-       is lost unless a caption is included and we have now way of
+       is lost unless a caption is included and we have no way of
        identifying the revision level of the element currently.  It was
        decided to keep this as is for the time being.
                                                        2017-04-03, VE
@@ -4285,7 +4206,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  ====================================================================== -->
  <xsl:template                    name = "addCitationLink">
   <xsl:param                      name = "sectionID"/>
-         <a>
+         <xsl:element                name = "a">
           <xsl:attribute           name = "href">
            <xsl:text>#CL</xsl:text>
            <xsl:value-of         select = "$sectionID"/>
@@ -4327,7 +4248,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
            </xsl:otherwise>
           </xsl:choose>
 
-         </a>
+         </xsl:element>
  </xsl:template>
 
 
