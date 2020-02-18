@@ -19,25 +19,14 @@
  *  - tables to support document search/selection
  *  - tables to map internal identifiers to identifiers in external systems
  *  - tables to manage publication and other batch jobs
- *  - tables to manage import from and export to external systems
+ *  - tables to manage import from and export to external systems (obsolete)
+ *
+ * This script assumes the cdr and cdr_archived_versions tables have been
+ * freshly created, with no user tables.
  *
  * BZIssue::4925
  * BZIssue::4924 - Modify Summary Date Last Modified Report
  * BZIssue::5294 (OCECDR-3595) - new ctrp_id column for ctgov_import table
- */
-
-/*
- * Do this part by hand.  It *has* to succeed!
- * USE master
- * GO
- * DROP DATABASE cdr
- * GO
- * CREATE DATABASE cdr
- * GO
- * DROP DATABASE cdr_archived_versions
- * GO
- * CREATE DATABASE cdr_archived_versions
- * GO
  */
 
 USE cdr_archived_versions
@@ -70,190 +59,6 @@ USE cdr
 GO
 
 /*
- * Common data elements (requirement 2.1.6).  All data tags beginning with
- * 'Z' must appear in this table, effectively creating a reserved namespace
- * for controlled data elements used throughout the system, to ensure that
- * the instances of the elements can be found.
- *
- * NOTE: Not currently used.
- *
- * Consider placing this functionality in a text-format control file. - AM
- *
- *          tag  XML tag used for all elements used for the functionality
- *               represented in the description column
- *  description  free text description of the functionality represented by
- *               this common data element
- *          dtd  optional specification for the DTD which must be used for
- *               this element
- */
-CREATE TABLE common
-        (tag VARCHAR(32)  PRIMARY KEY,
- description VARCHAR(255) NOT NULL,
-         dtd NVARCHAR(255)    NULL)
-GO
-
-/*
- * Named and typed values used to control various run-time settings.
- *
- * Software in the CdrServer enforces a constraint that only one grp+name
- * combination is allowed to be active (i.e., inactivated is null) at a time.
- * If there is more than one, the software will throw an exception.  An
- * attempt to add one via the CdrServer software will inactivate any existing
- * active row with the same grp+name.
- *
- *           id  unique row ID.
- *          grp  identifies group this name=value belongs to, e.g. "dbconnect"
- *         name  mnemonic label for value; e.g., "timeout"
- *          val  value associated with this name; e.g., "3000"
- *      comment  optional text description of the use of this value,
- *                e.g., "Database connection timeout, in milliseconds"
- *      created  Datetime this row was created
- *  inactivated  Datetime row made inactive, not used on controlling ops
- */
-CREATE TABLE ctl
-         (id INTEGER         IDENTITY PRIMARY KEY,
-         grp VARCHAR(255)    NOT NULL,
-        name VARCHAR(255)    NOT NULL,
-         val NVARCHAR(255)   NOT NULL,
-     comment VARCHAR(255)    NULL,
-     created DATETIME        NOT NULL,
- inactivated DATETIME        NULL)
-GO
-
-/*
- * Users authorized to work with the CDR.  Note that connection information is
- * not stored in the database, but is instead tracked by the server
- * application directly at runtime.
- *
- *           id  automatically generated primary key for the usr table
- *         name  unique logon name used by this user
- *     password  plain text string used to authenticate this user's identity
- *     hashedpw  use this instead of password if hashing available
- * login_failed  count of consecutive failures, reset to 0 on success
- *      created  date and time the user's account was added to the system
- *     fullname  optional string giving the user's full name
- *       office  optional identification of the office in which the user works
- *        email  optional email address; used for automated notification of
- *               system events
- *        phone  option telephone number used to contact this user
- *      expired  optional date/time this account was (or will be) deactivated
- *      comment  optional free-text description of additional characteristics
- *               for this user account
- *
- * Note:
- *   There used to be a column for passwords that has been removed for
- *   tightened security purposes.
- *     Plain text string used to authenticate this user's identity
- *     password VARCHAR(32) NOT NULL
- */
-CREATE TABLE usr
-         (id INTEGER     IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL UNIQUE,
-    hashedpw VARBINARY(2048) NULL,
-login_failed INTEGER     NOT NULL DEFAULT 0,
-     created DATETIME    NOT NULL,
-    fullname VARCHAR(100)    NULL,
-      office VARCHAR(100)    NULL,
-       email VARCHAR(128)    NULL,
-       phone VARCHAR(20)     NULL,
-     expired DATETIME        NULL,
-     comment VARCHAR(255)    NULL)
-GO
-
-/*
- *
- */
-CREATE VIEW open_usr AS
-     SELECT id, name, created, fullname, office, email, phone, expired,
-            comment
-       FROM usr
-GO
-
-/*
- * Sessions created on behalf of individual users.
- *
- *           id  automatically generated primary key for the table
- *         name  newly generated string which identifies the session for
- *               purposes of the external client interface.  Returned to
- *               the client as SessionId
- *          usr  identifies the user on whose behalf the session has been
- *               created
- *    initiated  date/time the session was created
- *     last_act  date/time of the most recent activity for the session
- *      comment  optional free-text notes about the session
- */
-CREATE TABLE session
-         (id INTEGER     IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL UNIQUE,
-         usr INTEGER     NOT NULL REFERENCES usr,
-   initiated DATETIME    NOT NULL,
-    last_act DATETIME    NOT NULL,
-       ended DATETIME        NULL,
-     comment VARCHAR(255)    NULL)
-GO
-
-/*
- * Tells whether the document type is in XML, or in some other format, such
- * as Microsoft Word 95, JPEG, HTML, PNG, etc.
- *
- *           id  automatically generated primary key for the format table
- *         name  the name of the format displayed to the user; e.g., HTML
- *      comment  optional free-text description of this format
- */
-CREATE TABLE format
-         (id INTEGER     IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL UNIQUE,
-     comment VARCHAR(255)    NULL)
-GO
-
-/*
- * Every document stored in the repository must have a type represented by a
- * row in this table.
- *
- *           id  automatically generated primary key for the doc_type table;
- *               since the id is unique throughout the repository, this
- *               column satisfies requirement 2.3.2
- *         name  display name for this document type; e.g. PROTOCOL
- *       format  identifies whether document is in XML, or some other format,
- *               such as Microsoft Word 95, JPEG, HTML, PNG, etc.
- *      created  date/time when the document type was created
- *   versioning  flag indicating whether version control is to be applied to
- *               documents of this type (see requirement 2.4.2)
- *          dtd  XML document type definition used to validate documents of
- *               this type; even document types which are "unstructured" from
- *               the perspective of the repository system (for example, PNG
- *               ILLUSTRATION) have a DTD for the XML information carried for
- *               the document.
- *   xml_schema  CDR doc id of the document containing the XML schema
- *               which identifies requirements of the elements of documents
- *               of this type; required even for "unstructured"
- *               document types.
- *  schema_date  Date/time when schema was last modified.
- *          css  stylesheet for use by the client for editing documents of
- *               this type.
- * title_filter  Identifier (document id) of XSLT filter for generating
- *               a document title from this document type.
- *       active  'Y' for document types currently in use; otherwise 'N'.
- *      comment  optional free-text description of additional characteristics
- *               of documents of this type.
- *
- * NOTE: We can't declare some of the FOREIGN KEY constraints until later in
- *       the script, when we have defined the all_docs table.
- */
-CREATE TABLE doc_type
-         (id INTEGER     IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL UNIQUE,
-      format INTEGER     NOT NULL REFERENCES format,
-     created DATETIME    NOT NULL,
-  versioning CHAR        NOT NULL DEFAULT 'Y',
-  xml_schema INTEGER         NULL,
- schema_date DATETIME    NOT NULL DEFAULT GETDATE(),
-title_filter INT             NULL,
-      active CHAR        NOT NULL DEFAULT 'Y',
-     comment VARCHAR(255)    NULL)
-GO
-
-/*
  * Functions (a.k.a "actions") which can be performed on documents.
  *
  *               id  automatically generated primary key for the action table
@@ -265,44 +70,10 @@ GO
  *                   characteristics for this function
  */
     CREATE TABLE action
-             (id INTEGER IDENTITY PRIMARY KEY,
+             (id INTEGER      IDENTITY PRIMARY KEY,
             name VARCHAR(32)  NOT NULL UNIQUE,
-doctype_specific CHAR(1)      DEFAULT 'N',
-         comment VARCHAR(255) NULL)
-GO
-
-/*
- * Groups used to assign permissions; users can belong to more than one.
- *
- *           id  automatically generated primary key for the grp table
- *         name  display name used to identify the group to the user; for
- *               example, PDQ ADMIN
- *      comment  optional free-text description of the characteristics of
- *               this group; for example, "Responsible for adding users,
- *               document types, and validation rules; membership of this
- *               group should be restricted to two or three individuals."
- */
-CREATE TABLE grp
-         (id INTEGER     IDENTITY PRIMARY KEY,
-        name VARCHAR(32) NOT NULL UNIQUE,
-     comment VARCHAR(255)    NULL)
-GO
-
-/*
- * Set of legal status codes for documents in the repository.
- *
- *           id  primary key for the doc_status table; e.g., P
- *         name  display name shown to the user for this document status;
- *               e.g., PUBLISHED
- *      comment  optional free-text description of the characteristics of this
- *               document status, such as the conditions under which it should
- *               be applied, or the actions triggered by (or prevented) by the
- *               status
- */
-CREATE TABLE doc_status
-         (id CHAR        PRIMARY KEY,
-        name VARCHAR(32) NOT NULL UNIQUE,
-     comment VARCHAR(255)    NULL)
+doctype_specific CHAR(1)          NULL DEFAULT 'N',
+         comment NVARCHAR(255   ) NULL)
 GO
 
 /*
@@ -317,9 +88,63 @@ GO
  *               status
  */
 CREATE TABLE active_status
-         (id CHAR PRIMARY KEY,
+         (id CHAR        PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
-     comment VARCHAR(255) NULL)
+     comment NVARCHAR(255)   NULL)
+GO
+
+/*
+ * Version control.  This is now implemented with a base table whose xml
+ * column can be set to NULL, in which case the document for the version cat
+ * be retrieved from a separate database with a single table to store the
+ * older versions of documents.  New versions have their xml stored
+ * directly in the base table.  Every year (or six months if we need to do it
+ * more frequently) the xml is moved to the separate database and the xml
+ * column in the base table is set to NULL.  The doc_version view now
+ * presents the data in a way that is transparent to the software in the
+ * rest of the system, which has no knowledge of the database for the
+ * archived XML.
+ *
+ *           id  identifies the document which this version represents
+ *          num  sequential number of the version of the document; numbering
+ *               starts with 1
+ *           dt  date/time the document was checked in - by GETDATE()
+ *               in checkin transaction
+ *               don't know if it's used for anything at all
+ *   updated_dt  date/time identical to what's in the the audit_trail
+ *               this is the important date needed to match a version to
+ *               an action recorded in the audit_trail or wherever.
+ *          usr  identifies the user account that checked in the document
+ *   val_status  copied from document table
+ *     val_date  copied from document table
+ *   updated_dt  date/time the document last updated
+ *     doc_type  foreign key reference into the doc_type table
+ *  publishable  'Y'=this version can be published, 'N'=can't publish
+ *        title  required string containing title for document; Titles will
+ *               not be required to be unique
+ *          xml  for structured documents, this is the data for the document;
+ *               for unstructured documents this contains tagged textual
+ *               information associated with the document (for example, the
+ *               standard caption for an illustration)
+ *      comment  optional free-text description of additional characteristics
+ *               of the document
+ */
+CREATE TABLE all_doc_versions
+             (id INTEGER       NOT NULL,
+             num INTEGER       NOT NULL,
+              dt DATETIME      NOT NULL,
+      updated_dt DATETIME      NOT NULL,
+             usr INTEGER       NOT NULL,
+      val_status CHAR          NOT NULL,
+        val_date DATETIME          NULL,
+     publishable CHAR          NOT NULL,
+        doc_type INTEGER       NOT NULL,
+           title NVARCHAR(255) NOT NULL,
+             xml NTEXT             NULL,
+         comment NVARCHAR(255)     NULL,
+     PRIMARY KEY (id, num))
+GO
+GRANT INSERT, UPDATE ON all_doc_versions TO CdrPublishing
 GO
 
 /*
@@ -365,13 +190,13 @@ GO
  */
       CREATE TABLE all_docs
                (id INTEGER IDENTITY PRIMARY KEY,
-        val_status CHAR          NOT NULL DEFAULT 'U' REFERENCES doc_status,
+        val_status CHAR          NOT NULL DEFAULT 'U',
           val_date DATETIME          NULL,
-          doc_type INTEGER       NOT NULL REFERENCES doc_type,
+          doc_type INTEGER       NOT NULL,
              title NVARCHAR(255) NOT NULL,
                xml NTEXT         NOT NULL,
            comment NVARCHAR(255)     NULL,
-     active_status CHAR          NOT NULL DEFAULT 'A' REFERENCES active_status,
+     active_status CHAR          NOT NULL DEFAULT 'A',
       last_frag_id INTEGER       NOT NULL DEFAULT 0,
          first_pub DATETIME          NULL,
 first_pub_knowable CHAR          NOT NULL DEFAULT 'Y')
@@ -396,59 +221,106 @@ GO
 CREATE INDEX doc_status_idx ON all_docs(active_status, id)
 GO
 
-/*
- * Couldn't do this until now, because the all_docs table hadn't been
- * defined yet.
+/**
+ * Replacement for command_log table (when CDR service was eliminated)
  */
-ALTER TABLE doc_type
-        ADD CONSTRAINT fk_doc_type__xml_schema
-FOREIGN KEY (xml_schema)
- REFERENCES all_docs
-GO
-ALTER TABLE doc_type
-        ADD CONSTRAINT fk_doc_type__title_filter
-FOREIGN KEY (title_filter)
- REFERENCES all_docs
-GO
-
-CREATE VIEW document AS SELECT * FROM all_docs WHERE active_status != 'D'
+CREATE TABLE api_request
+ (request_id INTEGER IDENTITY PRIMARY KEY,
+  process_id INTEGER,
+   thread_id INTEGER,
+    received DATETIME,
+     request NTEXT)
+CREATE INDEX api_request_received ON api_request(received)
 GO
 
 /*
- * View of the document table containing only active documents.
- */
-CREATE VIEW active_doc AS SELECT * FROM document WHERE active_status = 'A'
-GO
-
-/*
- * View of the document table containing only deleted documents.
- */
-CREATE VIEW deleted_doc AS SELECT * FROM document WHERE active_status = 'D'
-GO
-
-/*
- * View of the doc_version table containing only publishable versions.
- * Command decision made by the CDR team to enforce check for val_status
- *   as part of publishability.
- * There _should_ be no invalid publishable docs, but we found some
- *   citations for which the latest publishable version is actually
- *   not valid.
- */
-CREATE VIEW publishable_version AS
-     SELECT *
-       FROM doc_version
-      WHERE publishable = 'Y'
-        AND val_status = 'V'
-GO
-
-/*
- * Flag for documents which have been marked as ready for pre-publication
- * review.
+ * Actions performed on documents which modified the data.  Requirement 4.1.3.
  *
- *       doc_id  foreign key into all_docs table.
+ *     document  identifies the document on which this action was performed
+ *           dt  date/time the modified version of the document was stored
+ *               in the repository
+ *          usr  user account responsible for the changes
+ *       action  identification of the action which was performed
+ *      program  optional identification of the program used to perform the
+ *               action
+ *      comment  optional free-form text explanation of the changes
  */
-CREATE TABLE ready_for_review
-     (doc_id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs)
+CREATE TABLE audit_trail
+   (document INTEGER      NOT NULL,
+          dt DATETIME     NOT NULL,
+         usr INTEGER      NOT NULL,
+      action INTEGER      NOT NULL,
+     program VARCHAR(32)      NULL,
+     comment NVARCHAR(255)    NULL,
+ PRIMARY KEY (document, dt))
+GO
+
+/*
+ * Additional action associated with a row in the audit_trail table.
+ * The immediate use for this table is to record explicitly when the
+ * all_docs.active_status value changes between 'A' (active) and 'I'
+ * (inactive).  We initially considered implementing support for that
+ * requirement by simply inserting an additional row in the audit_trail
+ * table, but there were views and other software which relied on
+ * the primary key for that table restricting the combination of
+ * document ID and DATETIME for the audited action to a single row.
+ *
+ *     document  identifies the document on which this action was performed
+ *           dt  date/time the action occurred
+ *       action  identification of the action which was performed
+ */
+CREATE TABLE audit_trail_added_action
+   (document INTEGER      NOT NULL,
+          dt DATETIME     NOT NULL,
+      action INTEGER      NOT NULL,
+ CONSTRAINT audit_added_pk PRIMARY KEY (document, dt, action))
+GO
+
+/*
+ * Holds all information for a batch job.
+ * These are not publishing jobs, which have their own table, but
+ * other types of batch jobs.
+ *
+ *           id  Batch job id.
+ *         name  Human readable name of this job.
+ *      command  Executable command line, may include @@vars, see cdrbatch.py.
+ *               May also include command line args, but see batch_job_parm
+ *               for more flexible way to pass args to Python progs.
+ *   process_id  OS process identifier.
+ *      started  DateTime job was queued.
+ *         last  DateTime last status was set.
+ *       status  Last known status of job.  See cdrbatch.py
+ *        email  Send email here with final status.
+ * progress_msg  Job can set this to allow status query.
+ *               At end, job might set final info here.
+ */
+CREATE TABLE batch_job
+         (id INTEGER IDENTITY PRIMARY KEY,
+        name NVARCHAR(512) NOT NULL,
+     command NVARCHAR(512) NOT NULL,
+  process_id INTEGER           NULL,
+     started DATETIME      NOT NULL,
+   status_dt DATETIME      NOT NULL,
+      status VARCHAR(16)   NOT NULL,
+       email VARCHAR(256)      NULL,
+    progress NVARCHAR(MAX)     NULL)
+GO
+GRANT INSERT, UPDATE ON batch_job TO CdrPublishing
+GO
+
+/*
+ * Parameters for a batch job.
+ *
+ *          job  batch_job id for which these are parameters.
+ *         name  Name of parameter, application dependent.
+ *        value  Value as a string, application dependent.
+ */
+CREATE TABLE batch_job_parm
+        (job INTEGER      NOT NULL,
+        name NVARCHAR(32) NOT NULL,
+       value NTEXT        NOT NULL)
+GO
+GRANT INSERT, UPDATE ON batch_job_parm TO CdrPublishing
 GO
 
 /*
@@ -470,13 +342,143 @@ GO
  *               out
  */
 CREATE TABLE checkout
-         (id INTEGER  NOT NULL REFERENCES all_docs,
-      dt_out DATETIME NOT NULL,
-         usr INTEGER  NOT NULL REFERENCES usr,
-       dt_in DATETIME     NULL,
-     version INTEGER      NULL,
-     comment VARCHAR(255) NULL,
+         (id INTEGER   NOT NULL,
+      dt_out DATETIME  NOT NULL,
+         usr INTEGER   NOT NULL,
+       dt_in DATETIME      NULL,
+     version INTEGER       NULL,
+     comment NVARCHAR(255) NULL,
  PRIMARY KEY (id, dt_out))
+GO
+GRANT INSERT, UPDATE ON checkout TO CdrPublishing
+GO
+
+/*
+ * Records events which occurred in a CDR client session.  Used, for
+ * example, to record when users save documents locally instead of in
+ * the CDR.
+ *
+ *     event_id  primary key for table
+ *   event_time  when was the event recorded
+ *   event_desc  text description of the event
+ *      session  foreign key reference into the session table
+ */
+CREATE TABLE client_log
+   (event_id INTEGER       IDENTITY PRIMARY KEY,
+  event_time DATETIME      NOT NULL,
+  event_desc NVARCHAR(255) NOT NULL,
+     session INTEGER           NULL)
+GO
+
+/*
+ * Select information for each new trial found on ClinicalTrials.gov.
+ * Used for report of recent CT.gov trials (OCECDR-3877).
+ *
+ *         nct_id  unique ID for the trial document (primary key)
+ *    trial_title  brief title (if present) otherwise official title
+ *    trial_phase  phase(s) of the trial
+ * first_received  when the trial first appeared in NLM's database
+ */
+  CREATE TABLE ctgov_trial
+       (nct_id VARCHAR(11) NOT NULL PRIMARY KEY,
+   trial_title NVARCHAR(1024) NOT NULL,
+   trial_phase NVARCHAR(20) NULL,
+first_received DATETIME NOT NULL)
+GO
+
+/*
+ * ID other than the NCT ID for a clinical trial document in NLM's
+ * database. Used for report of recent CT.gov trials (OCECDR-3877).
+ *
+ *    nct_id  unique ID for NLM's trial document (link to ctgov_trial
+ *            table)
+ *  position  keeps the IDs in the order in which they appear in NLM's
+ *            clinical_trial document
+ *  other_id  the value of the ID
+ */
+CREATE TABLE ctgov_trial_other_id
+     (nct_id VARCHAR(11)    NOT NULL,
+    position INTEGER        NOT NULL,
+    other_id NVARCHAR(1024) NOT NULL,
+ PRIMARY KEY (nct_id, position))
+GO
+
+/*
+ * Sponsors/collaborators found in NLM clinical trial documents.
+ * Used for report of recent CT.gov trials (OCECDR-3877).
+ *
+ *    nct_id  unique ID for NLM's trial document (link to ctgov_trial
+ *            table)
+ *  position  keeps the sponsors in the order in which they appear
+ *            in NLM's clinical_trial document
+ *   sponsor  name of the sponsor/collaborator
+ */
+CREATE TABLE ctgov_trial_sponsor
+     (nct_id VARCHAR(11)    NOT NULL,
+    position INTEGER        NOT NULL,
+     sponsor NVARCHAR(1024) NOT NULL,
+ PRIMARY KEY (nct_id, position))
+GO
+
+/*
+ * Named and typed values used to control various run-time settings.
+ *
+ * Software in the CdrServer enforces a constraint that only one grp+name
+ * combination is allowed to be active (i.e., inactivated is null) at a time.
+ * If there is more than one, the software will throw an exception.  An
+ * attempt to add one via the CdrServer software will inactivate any existing
+ * active row with the same grp+name.
+ *
+ *           id  unique row ID.
+ *          grp  identifies group this name=value belongs to, e.g. "dbconnect"
+ *         name  mnemonic label for value; e.g., "timeout"
+ *          val  value associated with this name; e.g., "3000"
+ *      comment  optional text description of the use of this value,
+ *                e.g., "Database connection timeout, in milliseconds"
+ *      created  Datetime this row was created
+ *  inactivated  Datetime row made inactive, not used on controlling ops
+ */
+CREATE TABLE ctl
+         (id INTEGER         IDENTITY PRIMARY KEY,
+         grp NVARCHAR(255)   NOT NULL,
+        name NVARCHAR(255)   NOT NULL,
+         val NVARCHAR(255)   NOT NULL,
+     comment NVARCHAR(255)       NULL,
+     created DATETIME        NOT NULL,
+ inactivated DATETIME            NULL)
+GO
+
+/*
+ * When we notify a PDQ data partner that new PDQ data is available, we
+ * record that notification here. With this information, if the notification
+ * job fails part-way through, we can answer the questions "which contacts
+ * have we already notified for this job?".
+ *
+ *   email_addr  where we sent the notification
+ *   notif_date  when we sent it
+ */
+CREATE TABLE data_partner_notification
+ (email_addr NVARCHAR(64) NOT NULL,
+  notif_date DATETIME     NOT NULL)
+GO
+
+/*
+ * Keep track of the CDR DLL commands run for a CDR session. Used for
+ * troubleshooting when XMetaL crashes or locks up. See OCECDR-4229.
+ *
+ *     log_id  primary key, generated by the database
+ *  log_saved  when the log was posted to the database; usually (but
+ *             not necessarily) at the end of the session
+ *   cdr_user  account name of the user running XMetaL
+ * session_id  unique string identifying the CDR session
+ *   log_data  contents of the trace log
+ */
+CREATE TABLE dll_trace_log
+     (log_id INTEGER IDENTITY PRIMARY KEY,
+   log_saved DATETIME NOT NULL,
+    cdr_user VARCHAR(64),
+  session_id VARCHAR(64),
+    log_data NTEXT NOT NULL)
 GO
 
 /*
@@ -515,95 +517,110 @@ GO
  *     blob_id  id of the blob in the doc_blob table.
  */
 CREATE TABLE doc_blob_usage
-       (doc_id INTEGER UNIQUE REFERENCES all_docs,
-       blob_id INTEGER UNIQUE REFERENCES doc_blob)
+       (doc_id INTEGER PRIMARY KEY,
+       blob_id INTEGER)
 GO
+
 /*
- * Indexes for access by either identifier.
- * Table may be small enough that this isn't helpful, but just in
- * case it grows.
+ * Indexes for access by the blob ID.
  */
-CREATE INDEX doc_blob_doc_idx ON doc_blob_usage(doc_id)
 CREATE INDEX doc_blob_blob_idx ON doc_blob_usage(blob_id)
 GO
 
 /*
- * Associates a blob with a version of a document that describes it.
- * When a document associated with a blob (i.e., a blob metadata document)
- * is versioned, we create an entry in this table indicating that the
- * version references this particular blob.
- * If the blob changes, a new doc_blob will be created and the doc_blob_usage
- * table will refer to the new blob.  But the version_blob_usage entry
- * will remain unchanged.  The old version still references the old blob.
+ * Set of legal status codes for documents in the repository.
  *
- *      doc_id  id of the metadata document for this blob.
- * doc_version  version number.
- *     blob_id  id of the blob in the doc_blob table.
+ *           id  primary key for the doc_status table; e.g., P
+ *         name  display name shown to the user for this document status;
+ *               e.g., PUBLISHED
+ *      comment  optional free-text description of the characteristics of this
+ *               document status, such as the conditions under which it should
+ *               be applied, or the actions triggered by (or prevented) by the
+ *               status
  */
-CREATE TABLE version_blob_usage
-       (doc_id INTEGER REFERENCES all_docs,
-   doc_version INTEGER,
-       blob_id INTEGER REFERENCES doc_blob)
-GO
-/*
- * Indexes for access.
- */
-CREATE INDEX ver_blob_doc_idx ON version_blob_usage(doc_id, doc_version)
-CREATE INDEX ver_blob_blob_idx ON version_blob_usage(blob_id)
+CREATE TABLE doc_status
+         (id CHAR        PRIMARY KEY,
+        name VARCHAR(32) NOT NULL UNIQUE,
+     comment NVARCHAR(255)   NULL)
 GO
 
 /*
- * Names document attributes associated with a particular document.
- * Requirement 2.3.1.  This can store any values which need to be used for
- * filtering selections without the need for searching through the full
- * documents.  Could also be used to help support ORDER BY extractions.  Note
- * that this table supports multiple occurrences of attributes of a given
- * type for each document.
+ * Every document stored in the repository must have a type represented by a
+ * row in this table.
  *
- * Either use this table, or a parallel table which carries the values of
- * records used for validating referential integrity (for example, thesaurus
- * records).
+ *           id  automatically generated primary key for the doc_type table;
+ *               since the id is unique throughout the repository, this
+ *               column satisfies requirement 2.3.2
+ *         name  display name for this document type; e.g. PROTOCOL
+ *       format  identifies whether document is in XML, or some other format,
+ *               such as Microsoft Word 95, JPEG, HTML, PNG, etc.
+ *      created  date/time when the document type was created
+ *   versioning  flag indicating whether version control is to be applied to
+ *               documents of this type (see requirement 2.4.2)
+ *          dtd  XML document type definition used to validate documents of
+ *               this type; even document types which are "unstructured" from
+ *               the perspective of the repository system (for example, PNG
+ *               ILLUSTRATION) have a DTD for the XML information carried for
+ *               the document.
+ *   xml_schema  CDR doc id of the document containing the XML schema
+ *               which identifies requirements of the elements of documents
+ *               of this type; required even for "unstructured"
+ *               document types.
+ *  schema_date  Date/time when schema was last modified.
+ *          css  stylesheet for use by the client for editing documents of
+ *               this type.
+ * title_filter  Identifier (document id) of XSLT filter for generating
+ *               a document title from this document type.
+ *       active  'Y' for document types currently in use; otherwise 'N'.
+ *      comment  optional free-text description of additional characteristics
+ *               of documents of this type.
  *
- * NOTE: Not currently used.
- *
- *           id  identification of the document to which this attribute
- *               pertains
- *         name  name of the type of this document attribute; for example,
- *               'AUDIENCE'
- *          num  occurrence number for this instance of this attribute type
- *               for this document; convention starts numbering with 1
- *          val  value for this attribute instance; e.g., 'Technical'
- *      comment  optional free-text notes concerning this attribute value
+ * NOTE: We can't declare some of the FOREIGN KEY constraints until later in
+ *       the script, when we have defined the all_docs table.
  */
-CREATE TABLE doc_attr
-         (id INTEGER NOT NULL REFERENCES all_docs,
-        name VARCHAR(32) NOT NULL,
+CREATE TABLE doc_type
+         (id INTEGER     IDENTITY PRIMARY KEY,
+        name VARCHAR(32) NOT NULL UNIQUE,
+      format INTEGER     NOT NULL,
+     created DATETIME    NOT NULL,
+  versioning CHAR        NOT NULL DEFAULT 'Y',
+  xml_schema INTEGER         NULL,
+ schema_date DATETIME    NOT NULL DEFAULT GETDATE(),
+title_filter INTEGER         NULL,
+      active CHAR        NOT NULL DEFAULT 'Y',
+     comment NVARCHAR(255)   NULL)
+GO
+
+/*
+ * Associates a version label with a specific version of a single document.
+ *
+ *        label  foreign key into the version_label table
+ *     document  identifies the document which this version represents
+ *          num  sequential number of the version of the document
+ */
+CREATE TABLE doc_version_label
+      (label INTEGER NOT NULL,
+    document INTEGER NOT NULL,
          num INTEGER NOT NULL,
-         val NVARCHAR(255) NULL,
-     comment VARCHAR(255) NULL,
- PRIMARY KEY (id, name, num))
+ PRIMARY KEY (label, document))
 GO
 
 /*
- * Names of sets of external values which correspond to CDR documents.
+ * Information used by publishing export in a separate process.
  *
- *           id  automatically generated primary key for the table
- *         name  display name for the category of identifier; e.g.
- *               'CTGov Sponsor'
- *  auth_action  used to control authorization for editing rows in
- *               the external_map table; only a user who is a member
- *               of at least one group with the permission identified
- *               by this column for the usage of a row in the external_map
- *               table are allowed to modify that row; this is enforced
- *               by the CGI script, not within the CDR server
- *      comment  optional free-text explanation of the usage/characteristics
- *               of this category of external identifier
+ *   job_id  foreign key into the pub_proc table
+ *  spec_id  unique integrer for a given job_id
+ *  filters  sequence of names of filters or filter sets
+ *   subdir  where the exported documents should be written
  */
-CREATE TABLE external_map_usage
-         (id INTEGER      IDENTITY PRIMARY KEY,
-        name VARCHAR(32)  NOT NULL UNIQUE,
- auth_action INTEGER      NOT NULL REFERENCES action,
-     comment NVARCHAR(255)    NULL)
+CREATE TABLE export_spec
+     (job_id INTEGER NOT NULL,
+     spec_id INTEGER NOT NULL,
+     filters NTEXT NOT NULL,
+      subdir NVARCHAR(32) NULL,
+ PRIMARY KEY (job_id, spec_id))
+GO
+GRANT INSERT, UPDATE, DELETE ON export_spec TO CdrPublishing
 GO
 
 /*
@@ -625,29 +642,14 @@ GO
  */
 CREATE TABLE external_map
          (id INTEGER       IDENTITY PRIMARY KEY,
-       usage INTEGER       NOT NULL REFERENCES external_map_usage,
+       usage INTEGER       NOT NULL,
        value NVARCHAR(356) NOT NULL,
-      doc_id INTEGER           NULL REFERENCES all_docs,
-         usr INTEGER           NULL REFERENCES usr,
+      doc_id INTEGER           NULL,
+         usr INTEGER           NULL,
     last_mod DATETIME      NOT NULL,
        bogus CHAR          NOT NULL DEFAULT 'N',
-    mappable CHAR          NOT NULL DEFUALT 'Y',
+    mappable CHAR          NOT NULL DEFAULT 'Y',
 CONSTRAINT external_map_unique UNIQUE (usage, value))
-GO
-
-/*
- * Custom processing rules for mapping of external values.
- *
- *           id  primary key for this table (auto-generated)
- *       map_id  foreign key into the external_map table
- *      element  element to be populated with custom value
- *        value  value to be placed in element
- */
-CREATE TABLE external_map_rule
-         (id INTEGER       IDENTITY PRIMARY KEY,
-      map_id INTEGER       NOT NULL REFERENCES external_map,
-     element VARCHAR(64)   NOT NULL,
-       value NVARCHAR(255) NOT NULL)
 GO
 
 /*
@@ -666,193 +668,185 @@ CREATE TABLE external_map_nomap_pattern
 GO
 
 /*
- * Actions performed on documents which modified the data.  Requirement 4.1.3.
+ * Custom processing rules for mapping of external values.
  *
- *     document  identifies the document on which this action was performed
- *           dt  date/time the modified version of the document was stored
- *               in the repository
- *          usr  user account responsible for the changes
- *       action  identification of the action which was performed
- *      program  optional identification of the program used to perform the
- *               action
- *      comment  optional free-form text explanation of the changes
+ *           id  primary key for this table (auto-generated)
+ *       map_id  foreign key into the external_map table
+ *      element  element to be populated with custom value
+ *        value  value to be placed in element
  */
-CREATE TABLE audit_trail
-   (document INTEGER      NOT NULL REFERENCES all_docs,
-          dt DATETIME     NOT NULL,
-         usr INTEGER      NOT NULL REFERENCES usr,
-      action INTEGER      NOT NULL REFERENCES action,
-     program VARCHAR(32)      NULL,
-     comment VARCHAR(255)     NULL,
- PRIMARY KEY (document, dt))
+CREATE TABLE external_map_rule
+         (id INTEGER       IDENTITY PRIMARY KEY,
+      map_id INTEGER       NOT NULL,
+     element VARCHAR(64)   NOT NULL,
+       value NVARCHAR(255) NOT NULL)
 GO
 
 /*
- * Additional action associated with a row in the audit_trail table.
- * The immediate use for this table is to record explicitly when the
- * all_docs.active_status value changes between 'A' (active) and 'I'
- * (inactive).  We initially considered implementing support for that
- * requirement by simply inserting an additional row in the audit_trail
- * table, but there were views and other software which relied on
- * the primary key for that table restricting the combination of
- * document ID and DATETIME for the audited action to a single row.
+ * Table used to determine whether a mapping is to a document of the
+ * correct type.
  *
- *     document  identifies the document on which this action was performed
- *           dt  date/time the action occurred
- *       action  identification of the action which was performed
+ *     usage  foreign key into the external_map_usage table
+ *  doc_type  foreign key into the doc_type table
  */
-CREATE TABLE audit_trail_added_action
-   (document INTEGER      NOT NULL REFERENCES all_docs,
-          dt DATETIME     NOT NULL,
-      action INTEGER      NOT NULL REFERENCES action,
- CONSTRAINT audit_added_pk PRIMARY KEY (document, dt, action),
- CONSTRAINT audit_added_fk FOREIGN KEY (document, dt) REFERENCES audit_trail)
+CREATE TABLE external_map_type
+      (usage INTEGER NOT NULL,
+    doc_type INTEGER NOT NULL,
+PRIMARY KEY (usage, doc_type))
 GO
 
 /*
- * Information logged for debugging.
+ * Names of sets of external values which correspond to CDR documents.
  *
- *         id  Sequential id shows sequence of log writes.
- *     thread  Separate id for each thread, allows us to find messages
- *             generated by the same thread in the general stream of messages.
- *   recorded  Date time the message is logged.
- *     source  String passed by function requesting logging - should identify
- *             the function, code fragment, or other useful debugging info.
- *        msg  Logged message.
- *
- * Maximum SQL Server row size of 8000 allows up to 3945 wide chars for msg.
- * We're using 3800 in case we have to add something else later.
+ *           id  automatically generated primary key for the table
+ *         name  display name for the category of identifier; e.g.
+ *               'CTGov Sponsor'
+ *  auth_action  used to control authorization for editing rows in
+ *               the external_map table; only a user who is a member
+ *               of at least one group with the permission identified
+ *               by this column for the usage of a row in the external_map
+ *               table are allowed to modify that row; this is enforced
+ *               by the CGI script, not within the CDR server
+ *      comment  optional free-text explanation of the usage/characteristics
+ *               of this category of external identifier
  */
-CREATE TABLE debug_log
-         (id INTEGER        IDENTITY PRIMARY KEY,
-      thread INTEGER        NOT NULL,
-    recorded DATETIME       NOT NULL,
-      source NVARCHAR(64)   NOT NULL,
-         msg NVARCHAR(3800) NOT NULL)
-GO
-CREATE INDEX debug_log_recorded_idx ON debug_log(recorded)
-GO
-
-/**
- * Replacement for debug_log (when CDR Service was eliminated
- */
-CREATE TABLE session_log
-   (entry_id INTEGER IDENTITY PRIMARY KEY,
-   thread_id BIGINT NOT NULL,
-    recorded DATETIME NOT NULL,
-     message NTEXT NOT NULL)
-CREATE INDEX session_log_recorded ON session_log(recorded, entry_id)
-GRANT SELECT ON session_log TO CdrGuest
+CREATE TABLE external_map_usage
+         (id INTEGER      IDENTITY PRIMARY KEY,
+        name NVARCHAR(32) NOT NULL UNIQUE,
+ auth_action INTEGER      NOT NULL,
+     comment NVARCHAR(255)    NULL)
 GO
 
 /*
- * Version control.  This is now implemented with a base table whose xml
- * column can be set to NULL, in which case the document for the version cat
- * be retrieved from a separate database with a single table to store the
- * older versions of documents.  New versions have their xml stored
- * directly in the base table.  Every year (or six months if we need to do it
- * more frequently) the xml is moved to the separate database and the xml
- * column in the base table is set to NULL.  The doc_version view now
- * presents the data in a way that is transparent to the software in the
- * rest of the system, which has no knowledge of the database for the
- * archived XML.
+ * Named collection of CDR XSL/T filters and nested filter sets.
  *
- *           id  identifies the document which this version represents
- *          num  sequential number of the version of the document; numbering
- *               starts with 1
- *           dt  date/time the document was checked in - by GETDATE()
- *               in checkin transaction
- *               don't know if it's used for anything at all
- *   updated_dt  date/time identical to what's in the the audit_trail
- *               this is the important date needed to match a version to
- *               an action recorded in the audit_trail or wherever.
- *          usr  identifies the user account that checked in the document
- *   val_status  copied from document table
- *     val_date  copied from document table
- *   updated_dt  date/time the document last updated
- *     doc_type  foreign key reference into the doc_type table
- *  publishable  'Y'=this version can be published, 'N'=can't publish
- *        title  required string containing title for document; Titles will
- *               not be required to be unique
- *          xml  for structured documents, this is the data for the document;
- *               for unstructured documents this contains tagged textual
- *               information associated with the document (for example, the
- *               standard caption for an illustration)
- *      comment  optional free-text description of additional characteristics
- *               of the document
+ *      command  full XML string (UTF-8 encoded) for the CdrCommandSet.
+ *           id  automatically generated primary key.
+ *         name  used by scripts to invoke the set of filters.
+ *  description  brief description of the set, used to describe the
+ *               filter set's use in a user interface (for example,
+ *               in a popup help tip).
+ *        notes  more extensive optional notes on the use of this
+ *               filter set.
  */
-CREATE TABLE all_doc_versions
-             (id INTEGER      NOT NULL REFERENCES all_docs,
-             num INTEGER      NOT NULL,
-              dt DATETIME     NOT NULL,
-      updated_dt DATETIME     NOT NULL,
-             usr INTEGER      NOT NULL REFERENCES usr,
-      val_status CHAR         NOT NULL REFERENCES doc_status,
-        val_date DATETIME         NULL,
-     publishable CHAR         NOT NULL,
-        doc_type INTEGER      NOT NULL REFERENCES doc_type,
-           title VARCHAR(255) NOT NULL,
-             xml NTEXT            NULL,
-         comment VARCHAR(255)     NULL,
-     PRIMARY KEY (id, num))
+CREATE TABLE filter_set
+         (id INTEGER IDENTITY NOT NULL PRIMARY KEY,
+        name NVARCHAR(80)     NOT NULL UNIQUE,
+ description NVARCHAR(256)    NOT NULL,
+       notes NTEXT                NULL)
 GO
 
 /*
- * View which makes the siphoning off of older XML to a separate table
- * transparent to the rest of the system. See description of the
- * all_doc_versions table above.
+ * Member of a filter set.
+ *
+ *   filter_set  identifies which set this is a member of.
+ *     position  identifies how to sequence this member within the set.
+ *       filter  identifies a filter which is a member of the set.
+ *       subset  identifies a nested filter set.
  */
-CREATE VIEW doc_version
-AS
-         SELECT v.id, v.num, v.dt, v.updated_dt, v.usr,
-                v.val_status, v.val_date,
-                v.publishable, v.doc_type, v.title,
-                xml = CASE
-                    WHEN v.xml IS NOT NULL THEN v.xml
-                    ELSE a.xml
-                END,
-                comment
-           FROM all_doc_versions v
-LEFT OUTER JOIN cdr_archived_versions.dbo.doc_version_xml a
-             ON a.id = v.id
-            AND a.num = v.num
+CREATE TABLE filter_set_member
+ (filter_set INTEGER NOT NULL,
+    position INTEGER NOT NULL,
+      filter INTEGER     NULL,
+      subset INTEGER     NULL,
+  CONSTRAINT filter_set_member_pk PRIMARY KEY(filter_set, position))
 GO
 
-
 /*
- * Marks a version for later retrieval by name.  Note that a single version of
- * a given document can be marked with more than one label (or with none at
- * all).
+ * Tells whether the document type is in XML, or in some other format, such
+ * as Microsoft Word 95, JPEG, HTML, PNG, etc.
  *
- *           id  automatically generated primary key for the version_label
- *               table
- *        label  identification of a logical version; used to mark the common
- *               version for a collection of documents in order to be able to
- *               retrieve that version of those documents at a later point in
- *               time, without knowing the individual version number for each
- *               document
- *      comment  optional free-text description of the purpose of this version
- *               label
+ *           id  automatically generated primary key for the format table
+ *         name  the name of the format displayed to the user; e.g., HTML
+ *      comment  optional free-text description of this format
  */
-CREATE TABLE version_label
+CREATE TABLE format
          (id INTEGER     IDENTITY PRIMARY KEY,
         name VARCHAR(32) NOT NULL UNIQUE,
-     comment VARCHAR(255)    NULL)
+     comment NVARCHAR(255)   NULL)
 GO
 
 /*
- * Associates a version label with a specific version of a single document.
+ * Current state of a glossary translation job.
  *
- *        label  foreign key into the version_label table
- *     document  identifies the document which this version represents
- *          num  sequential number of the version of the document
+ *       doc_id  foreign key into the all_docs table
+ *     state_id  foreign key into the glossary_translation_state table
+ *   state_date  when the state was assigned
+ *  assigned_to  foreign key into the usr table
+ *     comments  optional notes/instructions, etc.
  */
-CREATE TABLE doc_version_label
+CREATE TABLE glossary_translation_job
+     (doc_id INTEGER  NOT NULL PRIMARY KEY,
+    state_id INTEGER  NOT NULL,
+  state_date DATETIME NOT NULL,
+ assigned_to INTEGER  NOT NULL,
+    comments NTEXT        NULL)
+GO
 
-      (label INTEGER NOT NULL REFERENCES version_label,
-    document INTEGER NOT NULL REFERENCES all_docs,
-         num INTEGER NOT NULL,
- PRIMARY KEY (label, document))
+/*
+ * State history for glossary translation workflow.
+ *
+ *   history_id  primary key for this table
+ *       doc_id  foreign key into the all_docs table
+ *     state_id  foreign key into the glossary_translation_state table
+ *   state_date  when the state was assigned
+ *  assigned_to  foreign key into the usr table
+ *     comments  optional notes/instructions, etc.
+ */
+CREATE TABLE glossary_translation_job_history
+ (history_id INTEGER  IDENTITY PRIMARY KEY,
+      doc_id INTEGER  NOT NULL,
+    state_id INTEGER  NOT NULL,
+  state_date DATETIME NOT NULL,
+ assigned_to INTEGER  NOT NULL,
+    comments NTEXT        NULL)
+GO
+
+/*
+ * Valid value control table for glossary translation workflow states.
+ *
+ *     value_id  primary key for this table
+ *   value_name  required display name for this state
+ *    value_pos  required integer for ordering the states
+ */
+CREATE TABLE glossary_translation_state
+   (value_id INTEGER       IDENTITY PRIMARY KEY,
+  value_name NVARCHAR(128) NOT NULL UNIQUE,
+   value_pos INTEGER       NOT NULL)
+GO
+
+/*
+ * One-row table holding serialized data for the glossifier service.
+ * Seeded with INSERT INTO glossifier VALUES(1, GETDATE(), ''). Refreshed
+ * by nightly job running under CDR scheduler.
+ *
+ * TODO: soon to be retired.
+ *
+ *        pk  primary key, set manually to 1
+ * refreshed  when the data was last refreshed
+ *     terms  serialized glossary term data
+ */
+CREATE TABLE glossifier
+         (pk INTEGER  PRIMARY KEY,
+   refreshed DATETIME NOT NULL,
+       terms TEXT     NOT NULL)
+GO
+
+/*
+ * Groups used to assign permissions; users can belong to more than one.
+ *
+ *           id  automatically generated primary key for the grp table
+ *         name  display name used to identify the group to the user; for
+ *               example, PDQ ADMIN
+ *      comment  optional free-text description of the characteristics of
+ *               this group; for example, "Responsible for adding users,
+ *               document types, and validation rules; membership of this
+ *               group should be restricted to two or three individuals."
+ */
+CREATE TABLE grp
+         (id INTEGER      IDENTITY PRIMARY KEY,
+        name NVARCHAR(32) NOT NULL UNIQUE,
+     comment NVARCHAR(255)    NULL)
 GO
 
 /*
@@ -866,10 +860,10 @@ GO
  *               assignment of this permission to the group
  */
 CREATE TABLE grp_action
-        (grp INTEGER  NOT NULL REFERENCES grp,
-      action INTEGER  NOT NULL REFERENCES action,
-    doc_type INTEGER  NOT NULL REFERENCES doc_type,
-     comment VARCHAR(255) NULL,
+        (grp INTEGER   NOT NULL,
+      action INTEGER   NOT NULL,
+    doc_type INTEGER   NOT NULL,
+     comment NVARCHAR(255) NULL,
  PRIMARY KEY (grp, action, doc_type))
 GO
 
@@ -882,115 +876,27 @@ GO
  *               in this group
  */
 CREATE TABLE grp_usr
-        (grp INTEGER  NOT NULL REFERENCES grp,
-         usr INTEGER  NOT NULL REFERENCES usr,
-     comment VARCHAR(255) NULL,
+        (grp INTEGER   NOT NULL,
+         usr INTEGER   NOT NULL,
+     comment NVARCHAR(255) NULL,
  PRIMARY KEY (grp, usr))
 GO
 
-
-/*************************************************************
- *      Link related tables
- *************************************************************/
-
 /*
- * Valid link types.
- * Provides a unique identifier for a single link type.
- * Most types will appear in one specific field of one doctype, but
- *  it is possible for the same type to be used in more than one place.
- * Each unique type has defining properties, see table link_properties.
+ * Document fragment link targets found in the system.
+ * If a document has any "id" attributes, an entry is made
+ *  for each doc_id + fragment.
+ * This table allows us to quickly determine whether an attempt to link
+ *  to a fragment within a document will succeed, without having to
+ *  retrieve, parse, and search the target document
  *
- *     id       Unique id used in other tables.
- *     name     Human readable name
- *     chk_type Which table to check links in:
- *                'C' = Current active docs in document table
- *                'P' = Publishable active docs in doc_version
- *                'V' = Any doc in doc_version
- *     comment  Optional free text notes
+ *     doc_id    Id of doc containing fragment.
+ *     fragment  Value of id attribute in element.
  */
-CREATE TABLE link_type (
-          id INTEGER      IDENTITY PRIMARY KEY,
-        name VARCHAR(32)  UNIQUE NOT NULL,
-    chk_type CHAR         NOT NULL DEFAULT 'C',
-     comment VARCHAR(255) NULL
-)
-GO
-
-/*
- * Link source control.
- * Checked by link validation software to determine whether
- *  a particular field is allowed to contain a particular link type.
- * A particular field may only contain one link type.  Otherwise
- *  the presence of a field with an href would not be enough to
- *  determine the type of link represented.
- *
- *     doc_type  Foreign key references doc_type table.
- *     element   Element in doc_type which may contain one of these links.
- *     link_id   Foreign key references link_type table.
- */
-CREATE TABLE link_xml (
-      doc_type INTEGER      NOT NULL REFERENCES doc_type,
-       element VARCHAR(64)  NOT NULL,
-       link_id INTEGER      NOT NULL REFERENCES link_type,
-   PRIMARY KEY (doc_type, element)
-)
-GO
-
-/*
- * Link target control
- * Checked by link validation software to determine whether
- *  a particular link refers to a document of the correct type.
- * Note that a single link type may refer to more than one target
- *  document type.
- *
- *    source_link_type  Type of link to be checked.
- *    target_doc_type   Allowed doc_type of target.  May be more than 1.
- */
-CREATE TABLE link_target (
-    source_link_type  INTEGER NOT NULL REFERENCES link_type,
-     target_doc_type  INTEGER NOT NULL REFERENCES doc_type
-)
-GO
-
-/*
- * Valid link property types.
- * Lists all link custom validation properties known to the system.
- * Each entry in this table essentially identifies a custom validation
- *  routine which may be invoked during link validation.
- * Entries may only be created by a programmer who has written code
- *  to support the custom validation identified here.  Entries must
- *  not be made by users.
- * See CdrLinkProcs.cpp for how custom link properties are validated.
- *     id       Unique id used in other tables.
- *     name     Human readable name
- *     comment  Optional free text notes
- */
-CREATE TABLE link_prop_type (
-          id INTEGER      IDENTITY PRIMARY KEY,
-        name VARCHAR(32)  NOT NULL UNIQUE,
-     comment VARCHAR(255)     NULL
-)
-GO
-
-/*
- * Properties of links.
- * Checked by link validation software to determine whether
- *  any given link or link set has the specified properties.
- *
- *     link_id   Identifier for a type of link.
- *     property  Identifier for a property type.
- *     value     A valid value of this property for this link type.
- *     comment   Free text comments.
- *
- * Example:
- *   Link target doc must contain certain field/value pairs.
- *      (we have a whole megillah for checking this.)
- */
-CREATE TABLE link_properties (
-      link_id INTEGER       NOT NULL REFERENCES link_type,
-  property_id INTEGER       NOT NULL REFERENCES link_prop_type,
-        value VARCHAR(1024)     NULL,
-      comment VARCHAR(256)      NULL
+CREATE TABLE link_fragment (
+         doc_id INTEGER     NOT NULL,
+       fragment VARCHAR(64) NOT NULL,
+    PRIMARY KEY (doc_id, fragment)
 )
 GO
 
@@ -1019,12 +925,12 @@ GO
  *           That is now changed and the constraint could be re-imposed.
  */
 CREATE TABLE link_net (
-          link_type INTEGER     NOT NULL REFERENCES link_type,
-         source_doc INTEGER     NOT NULL REFERENCES all_docs,
-        source_elem VARCHAR(64) NOT NULL,
-         target_doc INTEGER         NULL /* REFERENCES all_docs */ ,
-        target_frag VARCHAR(32)     NULL,
-                url VARCHAR(256)    NULL
+   link_type INTEGER     NOT NULL,
+  source_doc INTEGER     NOT NULL,
+ source_elem VARCHAR(64) NOT NULL,
+  target_doc INTEGER         NULL,
+ target_frag VARCHAR(32)     NULL,
+         url VARCHAR(256)    NULL
 )
 GO
 CREATE INDEX link_net_source_idx ON link_net(source_doc)
@@ -1034,56 +940,326 @@ GO
 CREATE INDEX link_net_targ_frag_idx ON link_net(target_doc, target_frag)
 GO
 
-
 /*
- * Document fragment link targets found in the system.
- * If a document has any "id" attributes, an entry is made
- *  for each doc_id + fragment.
- * This table allows us to quickly determine whether an attempt to link
- *  to a fragment within a document will succeed, without having to
- *  retrieve, parse, and search the target document
- *
- *     doc_id    Id of doc containing fragment.
- *     fragment  Value of id attribute in element.
+ * Valid link property types.
+ * Lists all link custom validation properties known to the system.
+ * Each entry in this table essentially identifies a custom validation
+ *  routine which may be invoked during link validation.
+ * Entries may only be created by a programmer who has written code
+ *  to support the custom validation identified here.  Entries must
+ *  not be made by users.
+ * See CdrLinkProcs.cpp for how custom link properties are validated.
+ *     id       Unique id used in other tables.
+ *     name     Human readable name
+ *     comment  Optional free text notes
  */
-CREATE TABLE link_fragment (
-         doc_id INTEGER     NOT NULL REFERENCES all_docs,
-       fragment VARCHAR(64) NOT NULL,
-    PRIMARY KEY (doc_id, fragment)
+CREATE TABLE link_prop_type (
+          id INTEGER      IDENTITY PRIMARY KEY,
+        name VARCHAR(32)  NOT NULL UNIQUE,
+     comment NVARCHAR(255)    NULL
 )
 GO
 
-
 /*
- * Control PermaTargId attributes used to uniquely identify sections
- *  of a document with an unchanging ID that non-CDR web pages can use
- *  to "deep link" to that section, i.e., to link to an anchor inside
- *  the document, not just to the top level.
- * We track these here to insure that PermaTargIds are unique across
- *  the entire database and are never re-used.
- * PermaTargIds should never be used for linking from one CDR document to
- *  another.  Use cdr:id for that.  These are only for links from non-CDR
- *  documents to CDR documents.  The validation criteria for the two kinds
- *  of IDs are different.
+ * Properties of links.
+ * Checked by link validation software to determine whether
+ *  any given link or link set has the specified properties.
  *
- *       targ_id    PermaTargID attribute, unique.
- *        doc_id    ID of the document containing the PermaTargId.
- *     dt_active    Datetime targ_id created.
- *    dt_deleted    Datetime targ_id marked as deleted, never re-use
- *                  If null, permatarg is active.
+ *     link_id   Identifier for a type of link.
+ *     property  Identifier for a property type.
+ *     value     A valid value of this property for this link type.
+ *     comment   Free text comments.
+ *
+ * Example:
+ *   Link target doc must contain certain field/value pairs.
+ *      (we have a whole megillah for checking this.)
  */
-CREATE TABLE link_permatarg (
-         targ_id    INTEGER IDENTITY PRIMARY KEY,
-          doc_id    INTEGER NOT NULL REFERENCES all_docs,
-       dt_active    DATETIME NOT NULL DEFAULT GETDATE(),
-      dt_deleted    DATETIME NULL
+CREATE TABLE link_properties (
+      link_id INTEGER       NOT NULL,
+  property_id INTEGER       NOT NULL,
+        value NVARCHAR(1024)    NULL,
+      comment NVARCHAR(256)     NULL
 )
 GO
 
+/*
+ * Link target control
+ * Checked by link validation software to determine whether
+ *  a particular link refers to a document of the correct type.
+ * Note that a single link type may refer to more than one target
+ *  document type.
+ *
+ *    source_link_type  Type of link to be checked.
+ *    target_doc_type   Allowed doc_type of target.  May be more than 1.
+ */
+CREATE TABLE link_target (
+    source_link_type  INTEGER NOT NULL,
+     target_doc_type  INTEGER NOT NULL
+)
+GO
 
-/*************************************************************
- *      End link related tables
- *************************************************************/
+/*
+ * Valid link types.
+ * Provides a unique identifier for a single link type.
+ * Most types will appear in one specific field of one doctype, but
+ *  it is possible for the same type to be used in more than one place.
+ * Each unique type has defining properties, see table link_properties.
+ *
+ *     id       Unique id used in other tables.
+ *     name     Human readable name
+ *     chk_type Which table to check links in:
+ *                'C' = Current active docs in document table
+ *                'P' = Publishable active docs in doc_version
+ *                'V' = Any doc in doc_version
+ *     comment  Optional free text notes
+ */
+CREATE TABLE link_type (
+          id INTEGER      IDENTITY PRIMARY KEY,
+        name VARCHAR(32)  UNIQUE NOT NULL,
+    chk_type CHAR                NOT NULL DEFAULT 'C',
+     comment NVARCHAR(255)           NULL
+)
+GO
+
+/*
+ * Link source control.
+ * Checked by link validation software to determine whether
+ *  a particular field is allowed to contain a particular link type.
+ * A particular field may only contain one link type.  Otherwise
+ *  the presence of a field with an href would not be enough to
+ *  determine the type of link represented.
+ *
+ *     doc_type  Foreign key references doc_type table.
+ *     element   Element in doc_type which may contain one of these links.
+ *     link_id   Foreign key references link_type table.
+ */
+CREATE TABLE link_xml (
+      doc_type INTEGER      NOT NULL,
+       element VARCHAR(64)  NOT NULL,
+       link_id INTEGER      NOT NULL,
+   PRIMARY KEY (doc_type, element)
+)
+GO
+
+/*
+ * Used to communicate between processes for the media manifest file.
+ *
+ *    job_id  ID for the publishing job (but no foreign key contraint)
+ *    doc_id  ID for the CDR Media document (but no foreign key constraint)
+ * blob_date  when the Media document's BLOB was stored in the CDR
+ * file_name  base file name (not full path) for the media file
+ *     title  string for the CDR Media document's title
+ */
+CREATE TABLE media_manifest (
+      job_id INTEGER      NOT NULL,
+      doc_id INTEGER      NOT NULL,
+   blob_date DATETIME     NOT NULL,
+    filename NVARCHAR(32) NOT NULL,
+       title NTEXT        NOT NULL,
+ PRIMARY KEY (job_id, doc_id)
+)
+GO
+GRANT INSERT, UPDATE ON media_manifest TO CdrPublishing
+GO
+
+/*
+ * Current state of a media document translation job.
+ *
+ *       doc_id  foreign key into the all_docs table
+ *     state_id  foreign key into the media_translation_state table
+ *   state_date  when the state was assigned
+ *  assigned_to  foreign key into the usr table
+ *     comments  optional notes/instructions, etc.
+ */
+CREATE TABLE media_translation_job
+ (english_id INTEGER  NOT NULL PRIMARY KEY,
+    state_id INTEGER  NOT NULL,
+  state_date DATETIME NOT NULL,
+ assigned_to INTEGER  NOT NULL,
+    comments NTEXT        NULL)
+GO
+
+/*
+ * State history for media document translation workflow.
+ *
+ *   history_id  primary key for this table
+ *       doc_id  foreign key into the all_docs table
+ *     state_id  foreign key into the media_translation_state table
+ *   state_date  when the state was assigned
+ *  assigned_to  foreign key into the usr table
+ *     comments  optional notes/instructions, etc.
+ */
+CREATE TABLE media_translation_job_history
+ (history_id INTEGER  IDENTITY PRIMARY KEY,
+  english_id INTEGER  NOT NULL,
+    state_id INTEGER  NOT NULL,
+  state_date DATETIME NOT NULL,
+ assigned_to INTEGER  NOT NULL,
+    comments NTEXT        NULL)
+GO
+
+/*
+ * Valid value control table for media translation workflow states.
+ *
+ *     value_id  primary key for this table
+ *   value_name  required display name for this state
+ *    value_pos  required integer for ordering the states
+ */
+CREATE TABLE media_translation_state
+   (value_id INTEGER IDENTITY PRIMARY KEY,
+  value_name NVARCHAR(128) NOT NULL UNIQUE,
+   value_pos INTEGER NOT NULL)
+GO
+
+/*
+ * Table used to track processing of publication events.
+ *
+ *           id  primary key for the publication event processing.
+ *   pub_system  name of the system requesting the publishing event e.g. (UDB).
+ *   pub_subset  name of the publishing subset used for the event.
+ *          usr  ID of user requesting the publication event.
+ *   output_dir  output directory (without .username.datetime.status).
+ *      started  date/time processing commenced.
+ *    completed  date/time processing was finished.
+ *       status  see list of valid status values enumerated at the top
+ *               of the class definition for Publish in cdrpub.py.
+ *     messages  messages generated during processing.
+ *     external  flag indicating whether the publishing event took place
+ *               outside the CDR (such as historical publications imported
+ *               from the PDQ Oracle tables); further details in the messages
+ *               column when appropriate.
+ */
+CREATE TABLE pub_proc
+         (id INTEGER IDENTITY PRIMARY KEY,
+  pub_system INTEGER      NOT NULL,
+  pub_subset VARCHAR(255) NOT NULL,
+         usr INTEGER      NOT NULL,
+  output_dir VARCHAR(255) NOT NULL,
+     started DATETIME     NOT NULL,
+   completed DATETIME         NULL,
+      status VARCHAR(32)  NOT NULL,
+    messages NTEXT            NULL,
+       email VARCHAR(255)     NULL,
+  "external" CHAR(1)          NULL DEFAULT 'N',
+   no_output CHAR(1)      NOT NULL DEFAULT 'N')
+GO
+GRANT INSERT, UPDATE ON pub_proc TO CdrPublishing
+GO
+
+/*
+ * Table used to remember the set of documents which Cancer.Gov has.
+ *
+ *           id  primary key of document sent to Cancer.Gov.
+ *     pub_proc  identifies job which sent the document to Cancer.Gov.
+ *          xml  copy of the filtered document sent to Cancer.Gov.
+ *   force_push  flag indicating that the document can be pushed
+ *               to Cancer.gov even if it is identical with what
+ *               we sent with the previous job.
+ *       cg_new  indicates whether this document is missing from
+ *               the live Cancer.gov site or the Cancer.gov Preview
+ *               stage; set to 'N' in the normal case; set to 'Y'
+ *               for documents which were pushed to Cancer.gov
+ *               but later failed processing; this allows the
+ *               module which groups published documents which
+ *               must all fail together to recognize which documents
+ *               aren't really available on Cancer.gov, even though
+ *               they have rows in the pub_proc_cg table.
+ */
+CREATE TABLE pub_proc_cg
+         (id INTEGER NOT NULL PRIMARY KEY,
+    pub_proc INTEGER NOT NULL,
+         xml NTEXT   NOT NULL,
+  force_push CHAR    NOT NULL DEFAULT 'N',
+      cg_new CHAR    NOT NULL DEFAULT 'N')
+GO
+GRANT INSERT, UPDATE, DELETE ON pub_proc_cg TO CdrPublishing
+GO
+
+/*
+ * Table used to hold working information on transactions to
+ * Cancer.Gov. The information will be permanently stored to
+ * pub_proc_cg and pub_proc_doc after transactions to Cancer.Gov
+ * are completed. The information will be deleted after they are
+ * updated successfully to pub_proc_cg and pub_proc_doc.
+ *
+ * This table rather than a temporary table is created to guarantee
+ * the state of pub_proc_doc and pub_proc_cg can be kept in sync
+ * with Cancer.Gov.
+ *
+ *           id  primary key of document sent to Cancer.Gov.
+ *          num  version of the document sent to Cancer.Gov.
+ *       cg_job  job which sent the document to Cancer.Gov.
+ *   vendor_job  job which produced the filtered documents.
+ *     doc_type  document type name of the document.
+ *          xml  copy of the filtered document sent to Cancer.Gov;
+ *               NULL denotes deleted document.
+ */
+CREATE TABLE pub_proc_cg_work
+         (id INTEGER     NOT NULL PRIMARY KEY,
+         num INTEGER     NOT NULL,
+  vendor_job INTEGER     NOT NULL,
+      cg_job INTEGER     NOT NULL,
+    doc_type VARCHAR(32) NOT NULL,
+         xml NTEXT           NULL)
+GO
+GRANT INSERT, UPDATE, DELETE ON pub_proc_cg_work TO CdrPublishing
+GO
+
+/*
+ * Table used to record processing of a document for a publication event.
+ *
+ *     pub_proc  foreign key into the pub_proc table.
+ *       doc_id  identification of document being processed.
+ *  doc_version  part of foreign key into doc_version table.
+ *      failure  set to 'Y' if document could not be published.
+ *     messages  optional description of any failures.
+ *      removed  flag indicating that instead of an export of a document,
+ *               this row refers to an instruction sent to Cancer.Gov
+ *               to remove the document from the web site.
+ */
+CREATE TABLE pub_proc_doc
+   (pub_proc INTEGER      NOT NULL,
+      doc_id INTEGER      NOT NULL,
+ doc_version INTEGER      NOT NULL,
+     failure CHAR             NULL,
+    messages NTEXT            NULL,
+     removed CHAR(1)          NULL DEFAULT 'N',
+      subdir VARCHAR(32)      NULL DEFAULT '',
+  CONSTRAINT pub_proc_doc_pk  PRIMARY KEY(pub_proc, doc_id))
+GO
+GRANT INSERT, UPDATE ON pub_proc_doc TO CdrPublishing
+GO
+
+/*
+ * Table used to record parameters used for processing a publication event.
+ *
+ *           id  used with pub_proc to form the primary key.
+ *     pub_proc  foreign key into the pub_proc table.
+ *    parm_name  name of the parameter.
+ *   parm_value  value of the parameter.
+ */
+CREATE TABLE pub_proc_parm
+         (id INTEGER      NOT NULL,
+    pub_proc INTEGER      NOT NULL,
+   parm_name NVARCHAR(32) NOT NULL,
+  parm_value NTEXT            NULL,
+  CONSTRAINT pub_proc_parm_pk PRIMARY KEY(pub_proc, id))
+GO
+GRANT INSERT, UPDATE ON pub_proc_parm TO CdrPublishing
+GO
+
+/*
+ * Stored database queries.
+ *
+ *    name  required string identifying the query, used as the primary key
+ *   value  the SQL query string
+ */
+CREATE TABLE query
+       (name NVARCHAR(160) NOT NULL PRIMARY KEY,
+       value NVARCHAR(MAX)     NULL)
+GO
+GRANT INSERT, UPDATE, DELETE, REFERENCES ON query TO CdrGuest
+GO
 
 /*
  * Contains searchable element data.  Populated for elements identified in
@@ -1101,7 +1277,7 @@ GO
  *               table represent sibling under the same parent.
  */
 CREATE TABLE query_term
-     (doc_id INTEGER       NOT NULL REFERENCES all_docs,
+     (doc_id INTEGER       NOT NULL,
         path VARCHAR(512)  NOT NULL,
        value VARCHAR(800)  NOT NULL,
      int_val INTEGER           NULL,
@@ -1117,13 +1293,25 @@ CREATE INDEX ix_query_term4 ON query_term(int_val, doc_id)
 GO
 
 /*
+ * Identifies elements which are to be indexed for querying.
+ *
+ *         path  hierarchical representation of element to be indexed;
+ *               for example, 'Protocol/ProtSponsor'.
+ *    term_rule  foreign key into query_term_rule table.
+ */
+CREATE TABLE query_term_def
+       (path VARCHAR(512) NOT NULL,
+   term_rule INTEGER          NULL)
+GO
+
+/*
  * Contains searchable element data for the last publishable version
  * of each document.
  *
  * The structure and meaning of the fields is identical to query_term, q.v.
  */
 CREATE TABLE query_term_pub
-     (doc_id INTEGER       NOT NULL REFERENCES all_docs,
+     (doc_id INTEGER       NOT NULL,
         path VARCHAR(512)  NOT NULL,
        value VARCHAR(800)  NOT NULL,
      int_val INTEGER           NULL,
@@ -1150,291 +1338,453 @@ GO
  *               element.
  */
 CREATE TABLE query_term_rule
-         (id INTEGER       IDENTITY PRIMARY KEY,
-        name VARCHAR(32)   NOT NULL,
-    rule_def VARCHAR(2000) NOT NULL)
+         (id INTEGER        IDENTITY PRIMARY KEY,
+        name NVARCHAR(32)   NOT NULL,
+    rule_def NVARCHAR(2000) NOT NULL)
 GO
 
 /*
- * Identifies elements which are to be indexed for querying.
+ * Flag for documents which have been marked as ready for pre-publication
+ * review.
  *
- *         path  hierarchical representation of element to be indexed;
- *               for example, 'Protocol/ProtSponsor'.
- *    term_rule  foreign key into query_term_rule table.
+ *       doc_id  foreign key into all_docs table.
  */
-CREATE TABLE query_term_def
-       (path VARCHAR(512) NOT NULL,
-   term_rule INTEGER          NULL REFERENCES query_term_rule)
+CREATE TABLE ready_for_review
+     (doc_id INTEGER NOT NULL PRIMARY KEY)
 GO
 
 /*
- * Contains child-parent document ID pairs for Term document hierarchical
- * relationships.
+ * Job run by the CDR scheduler.
+ *
+ *        id  primary key for the table
+ *      name  required string for the job's name
+ *   enabled  Boolean flag indicating whether the job should be run
+ * job_class  required string in the form module_name.class_name
+ *      opts  required JSON string for the job's parameter options
+ *  schedule  optional string for cron-like schedule information
  */
-CREATE VIEW term_parents
-         AS SELECT DISTINCT doc_id AS child,
-                            CAST(SUBSTRING(value, 4, 10) AS INT) as parent
-                       FROM query_term
-                      WHERE path = '/Term/TermParent/@cdr:ref'
+CREATE TABLE scheduled_job (
+          id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWID(),
+        name NVARCHAR(512)    NOT NULL,
+     enabled BIT              NOT NULL,
+   job_class NVARCHAR(128)    NOT NULL,
+        opts VARCHAR(1024)    NOT NULL,
+    schedule VARCHAR(256)         NULL
+)
 GO
 
 /*
- * More efficient view of previous view.
+ * Sessions created on behalf of individual users.
+ *
+ *           id  automatically generated primary key for the table
+ *         name  newly generated string which identifies the session for
+ *               purposes of the external client interface.  Returned to
+ *               the client as SessionId
+ *          usr  identifies the user on whose behalf the session has been
+ *               created
+ *    initiated  date/time the session was created
+ *     last_act  date/time of the most recent activity for the session
+ *      comment  optional free-text notes about the session
  */
-CREATE VIEW term_kids
-         AS SELECT DISTINCT q.int_val AS parent,
-                            q.doc_id  AS child,
-                            d.title
-                       FROM query_term q
-                       JOIN document d
-                         ON d.id = q.doc_id
-                      WHERE q.path =
-                            '/Term/TermRelationship/ParentTerm/TermId/@cdr:ref'
-GO
-
-/*
- * This version tells which nodes are leaves.
- */
-CREATE VIEW term_children
-         AS SELECT DISTINCT q1.int_val AS parent,
-                            q1.doc_id  AS child,
-                            COUNT(DISTINCT q2.doc_id) AS num_grandchildren,
-                            d.title
-                       FROM document d
-                       JOIN query_term q1
-                         ON q1.doc_id = d.id
-            LEFT OUTER JOIN query_term q2
-                         ON q1.doc_id = q2.int_val
-                      WHERE q1.path = '/Term/TermParent/@cdr:ref'
-                        AND q2.path = '/Term/TermParent/@cdr:ref'
-                   GROUP BY q1.int_val, q1.doc_id, d.title
-GO
-
-/*
- * Table controlling values of dev_task.status.
- */
-CREATE TABLE dev_task_status
-     (status VARCHAR(20) NOT NULL PRIMARY KEY)
-GO
-
-/*
- * Table for tracking CDR development tasks.
- * Obsolete.
- */
-CREATE TABLE dev_task
+CREATE TABLE session
          (id INTEGER     IDENTITY PRIMARY KEY,
- description TEXT        NOT NULL,
- assigned_to VARCHAR(30)     NULL,
-      status VARCHAR(20) NOT NULL REFERENCES dev_task_status,
- status_date DATETIME    NOT NULL DEFAULT GETDATE(),
-    category VARCHAR(32)     NULL,
-est_complete DATETIME        NULL,
-       notes TEXT            NULL)
+        name VARCHAR(32) NOT NULL UNIQUE,
+         usr INTEGER     NOT NULL,
+   initiated DATETIME    NOT NULL,
+    last_act DATETIME    NOT NULL,
+       ended DATETIME        NULL,
+  ip_address VARCHAR(64)     NULL,
+     comment NVARCHAR(255)   NULL)
 GO
 
-/*
- * Table for valid values in issue.priority column.
- */
-CREATE TABLE issue_priority
-    (priority VARCHAR(20) PRIMARY KEY)
-GO
-
-/*
- * Table for valid values in user columns of issue table.
- */
-CREATE TABLE issue_user
-       (name VARCHAR(30) PRIMARY KEY)
-GO
-
-/*
- * Table for tracking development issues for the CDR project (bugs, change
- * requests, etc.).
+/**
+ * Replacement for debug_log (when CDR Service was eliminated).
  *
- *           id  primary key for the issue.
- *       logged  date/time the issue was logged.
- *    logged_by  name of the project member who logged the issue.
- *     priority  level of urgency with which issue should be addressed.
- *  description  free text description of the problem or request.
- *     assigned  date/time the issue was assigned to a project team member.
- *  assigned_to  name of project member to whom the issue was assigned.
- *     resolved  date/time the issue was closed.
- *  resolved_by  name of project member who resolved the issue.
- *        notes  additional information about the issue, including information
- *               about how the issue was resolved.
+ *  entry_id  primary key for this table
+ * thread_id  ID of the thread in which this activity occurred
+ *  recorded  when the activity was logged
+ *   message  required description of the activity
  */
-CREATE TABLE issue
-         (id INTEGER IDENTITY PRIMARY KEY,
-      logged DATETIME    NOT NULL,
-   logged_by VARCHAR(30) NOT NULL REFERENCES issue_user,
-    priority VARCHAR(20) NOT NULL REFERENCES issue_priority,
- description TEXT        NOT NULL,
-    assigned DATETIME        NULL,
- assigned_to VARCHAR(30)     NULL REFERENCES issue_user,
-    resolved DATETIME        NULL,
- resolved_by VARCHAR(30)     NULL REFERENCES issue_user,
-       notes TEXT            NULL)
+CREATE TABLE session_log
+   (entry_id INTEGER  IDENTITY PRIMARY KEY,
+   thread_id BIGINT   NOT NULL,
+    recorded DATETIME NOT NULL,
+     message NTEXT    NOT NULL)
+CREATE INDEX session_log_recorded ON session_log(recorded, entry_id)
 GO
 
 /*
- * Table used to track development tasks for CDR reports.
+ * Valid values table for types of changes to summary documents.
+ * Used by the translation queue management software. Valid value
+ * lookup tables constructed with this structure (same column names
+ * and types) can be managed using the admin web interface.
  *
- *  description  brief textual identification of report
- *         spec  location of specification document (if any)
- *       sample  location of sample report document (if any)
- *     dev_task  foreign key reference to dev_task table
+ *   value_id   primary key, automatically generated
+ * value_name   display name for the value
+ *  value_pos   unique integer controlling the position of the value
+ *              in picklists and reports
  */
-CREATE TABLE report_task
-(description VARCHAR(255) NOT NULL PRIMARY KEY,
-        spec VARCHAR(255)     NULL,
-      sample VARCHAR(255)     NULL,
-    dev_task INT              NULL REFERENCES dev_task)
+CREATE TABLE summary_change_type
+   (value_id INTEGER IDENTITY PRIMARY KEY,
+  value_name NVARCHAR(128) NOT NULL UNIQUE,
+   value_pos INTEGER NOT NULL)
 GO
 
 /*
- * Table used to track processing of publication events.
+ * Tracking information for the translation of an English CDR Summary
+ * document into Spanish.
  *
- *           id  primary key for the publication event processing.
- *   pub_system  name of the system requesting the publishing event e.g. (UDB).
- *   pub_subset  name of the publishing subset used for the event.
- *          usr  ID of user requesting the publication event.
- *   output_dir  output directory (without .username.datetime.status).
- *      started  date/time processing commenced.
- *    completed  date/time processing was finished.
- *       status  see list of valid status values enumerated at the top
- *               of the class definition for Publish in cdrpub.py.
- *     messages  messages generated during processing.
- *     external  flag indicating whether the publishing event took place
- *               outside the CDR (such as historical publications imported
- *               from the PDQ Oracle tables); further details in the messages
- *               column when appropriate.
+ *   english_id  primary key (thus unique) and foreign key into all_docs
+ *               table
+ *     state_id  foreign key into the lookup table for translation job status
+ *   state_date  when the job entered the current state
+ *  change_type  foreign key into the lookup table for summary change type
+ *  assigned_to  foreign key into the table for CDR users
+ *     comments  optional instructions (e.g., specific version to translate)
+ *     notified  record of when the assigned user was last notified about
+ *               the change of the job's state; might not need this any more
+ *               (requirements have been wandering all around, and are still
+ *               not quite fixed in stone).
  */
-CREATE TABLE pub_proc
-         (id INTEGER IDENTITY PRIMARY KEY,
-  pub_system INTEGER      NOT NULL REFERENCES all_docs,
-  pub_subset VARCHAR(255) NOT NULL,
-         usr INTEGER      NOT NULL REFERENCES usr,
-  output_dir VARCHAR(255) NOT NULL,
-     started DATETIME     NOT NULL,
-   completed DATETIME         NULL,
-      status VARCHAR(32)  NOT NULL,
-    messages NTEXT            NULL,
-       email VARCHAR(255)     NULL,
-    external CHAR(1)          NULL DEFAULT 'N',
-   no_output CHAR(1)      NOT NULL DEFAULT 'N')
+CREATE TABLE summary_translation_job
+ (english_id INTEGER  NOT NULL PRIMARY KEY,
+    state_id INTEGER  NOT NULL,
+  state_date DATETIME NOT NULL,
+ change_type INTEGER  NOT NULL,
+ assigned_to INTEGER  NOT NULL,
+    comments NTEXT        NULL,
+    notified DATETIME     NULL)
 GO
 
 /*
- * Table used to record parameters used for processing a publication event.
+ * All states for the translation of the PDQ English summary documents.
+ * Probably wouldn't have done this in a separate table, but the users'
+ * originally requirements were for the system to discard prior states
+ * for a summary translation's workflow, retaining only the latest state.
+ * Then at the last minute they were puzzled that the reports didn't
+ * show them any history. :-)
  *
- *           id  used with pub_proc to form the primary key.
- *     pub_proc  foreign key into the pub_proc table.
- *    parm_name  name of the parameter.
- *   parm_value  value of the parameter.
+ *   history_id  primary key, automatically generated
+ *   english_id  foreign key into all_docs table
+ *     state_id  foreign key into the lookup table for translation job status
+ *   state_date  when the job entered the current state
+ *  change_type  foreign key into the lookup table for summary change type
+ *  assigned_to  foreign key into the table for CDR users
+ *     comments  optional instructions (e.g., specific version to translate)
+ *     notified  record of when the assigned user was last notified about
+ *               the change of the job's state; might not need this any more
+ *               (requirements have been wandering all around, and are still
+ *               not quite fixed in stone).
  */
-CREATE TABLE pub_proc_parm
-         (id INTEGER      NOT NULL,
-    pub_proc INTEGER      NOT NULL REFERENCES pub_proc,
-   parm_name VARCHAR(32)  NOT NULL,
-  parm_value NVARCHAR(255)    NULL,
-  CONSTRAINT pub_proc_parm_pk      PRIMARY KEY(pub_proc, id))
+CREATE TABLE summary_translation_job_history
+ (history_id INTEGER  IDENTITY PRIMARY KEY,
+  english_id INTEGER  NOT NULL,
+    state_id INTEGER  NOT NULL,
+  state_date DATETIME NOT NULL,
+ change_type INTEGER  NOT NULL,
+ assigned_to INTEGER  NOT NULL,
+    comments NTEXT        NULL,
+    notified DATETIME     NULL)
 GO
 
 /*
- * Table used to record processing of a document for a publication event.
+ * Valid values table for the status of CDR document translation jobs.
+ * Used by the translation queue management software. Valid value
+ * lookup tables constructed with this structure (same column names
+ * and types) can be managed using the admin web interface.
  *
- *     pub_proc  foreign key into the pub_proc table.
- *       doc_id  identification of document being processed.
- *  doc_version  part of foreign key into doc_version table.
- *      failure  set to 'Y' if document could not be published.
- *     messages  optional description of any failures.
- *      removed  flag indicating that instead of an export of a document,
- *               this row refers to an instruction sent to Cancer.Gov
- *               to remove the document from the web site.
+ *   value_id   primary key, automatically generated
+ * value_name   display name for the value
+ *  value_pos   unique integer controlling the position of the value
+ *              in picklists and reports
  */
-CREATE TABLE pub_proc_doc
-   (pub_proc INTEGER      NOT NULL  REFERENCES pub_proc,
-      doc_id INTEGER      NOT NULL,
- doc_version INTEGER      NOT NULL,
-     failure CHAR             NULL,
-    messages NTEXT            NULL,
-     removed CHAR(1)          NULL DEFAULT 'N',
-      subdir VARCHAR(32)      NULL DEFAULT '',
-  CONSTRAINT pub_proc_doc_fk        PRIMARY KEY(pub_proc, doc_id, doc_version),
-  CONSTRAINT pub_proc_doc_fk_docver FOREIGN KEY(doc_id, doc_version)
-                                    REFERENCES doc_version)
+CREATE TABLE summary_translation_state
+   (value_id INTEGER IDENTITY PRIMARY KEY,
+  value_name NVARCHAR(128) NOT NULL UNIQUE,
+   value_pos INTEGER NOT NULL)
 GO
 
 /*
- * Collects information about documents to be remailed in a given job.
- * Entries in this table normally exist only until the job is
- * complete, after which they are deleted.  A system crash could
- * leave useless entries in the table which serve no function and
- * can be cleaned out if desired.
+ * Audio pronunciation file for a CDR glossary document.
  *
- *          job  Publication job id, foreign key into the pub_proc table.
- *          doc  Document to be mailed
- *      tracker  Id of mailer tracking doc for original mailing for
- *               which this is a remailer.
- *               There may be more than one for one doc.
- *    recipient  Id of person or org document for recipient of the
- *               remailing.  There must be one per tracker.
+ *              id  primary key for this table
+ *      zipfile_id  foreign key into the term_audio_zipfile table
+ *   review_status  R=rejected, A=approved, U=unreviewed
+ *          cdr_id  foreign key into the all_docs table
+ *       term_name  required string for the name being pronounced
+ *        language  'English' or 'Spanish'
+ *   pronunciation  optional string for the phonetic representation
+ *        mp3_name  string for the path in the zipfile for the mp3 file
+ *     reader_note  optional comments from the creator of the mp3 file
+ *   reviewer_note  optional comments from the reviewer of the mp3 file
+ *     reviewer_id  foreign key into the usr table
+ *     review_date  when the review was performed
  */
-CREATE TABLE remailer_ids
-        (job INTEGER      NOT NULL REFERENCES pub_proc,
-         doc INTEGER      NOT NULL,
-     tracker INTEGER      NOT NULL,
-   recipient INTEGER      NULL,
-  CONSTRAINT remailer_ids_doc_fk FOREIGN KEY (doc)
-                                 REFERENCES all_docs,
-  CONSTRAINT remailer_ids_tracker_fk FOREIGN KEY (tracker)
-                                     REFERENCES all_docs,
-  CONSTRAINT remailer_ids_recipient_fk FOREIGN KEY (recipient)
-                                       REFERENCES all_docs)
+ CREATE TABLE term_audio_mp3
+          (id INTEGER       IDENTITY PRIMARY KEY,
+   zipfile_id INTEGER       NOT NULL,
+review_status CHAR              NULL DEFAULT 'U',
+       cdr_id INTEGER       NOT NULL,
+    term_name nvarchar(256) NOT NULL,
+     language VARCHAR(10)   NOT NULL,
+pronunciation VARCHAR(256)      NULL,
+     mp3_name VARCHAR(256)      NULL,
+  reader_note NVARCHAR(2048)    NULL,
+reviewer_note NVARCHAR(2048)    NULL,
+  reviewer_id INTEGER           NULL,
+  review_date DATETIME          NULL)
 GO
 
 /*
- * Holds all information for a batch job.
- * These are not publishing jobs, which have their own table, but
- * other types of batch jobs.
+ * Compressed archive of audio pronunciation files for glossary documents.
  *
- *           id  Batch job id.
- *         name  Human readable name of this job.
- *      command  Executable command line, may include @@vars, see cdrbatch.py.
- *               May also include command line args, but see batch_job_parm
- *               for more flexible way to pass args to Python progs.
- *   process_id  OS process identifier.
- *      started  DateTime job was queued.
- *         last  DateTime last status was set.
- *       status  Last known status of job.  See cdrbatch.py
- *        email  Send email here with final status.
- * progress_msg  Job can set this to allow status query.
- *               At end, job might set final info here.
+ *       id  primary key for this table
+ * filename  required string for the base file name (no path)
+ * filedate  when the file was loaded onto the CDR server
+ * complete  'Y' if all of the pronunciations have been reviewed
  */
-CREATE TABLE batch_job
-         (id INTEGER  IDENTITY PRIMARY KEY,
-        name VARCHAR (512) NOT NULL,
-     command VARCHAR (512) NOT NULL,
-  process_id INTEGER NULL,
-     started DATETIME NOT NULL,
-   status_dt DATETIME NOT NULL,
-      status VARCHAR (16) NOT NULL,
-       email VARCHAR (256) NULL,
-    progress NVARCHAR(MAX) NULL)
+CREATE TABLE term_audio_zipfile
+         (id INTEGER      IDENTITY PRIMARY KEY,
+    filename VARCHAR(128) NOT NULL,
+    filedate DATETIME     NOT NULL,
+    complete CHAR             NULL DEFAULT 'N')
 GO
 
 /*
- * Parameters for a batch job.
+ * Table to store the set of parameters submitted to QC reports.
+ * This table is used and populated by the program QcReports.py.
+ * The QC reports are being converted into MS-Word from IE but
+ * MS-Word limits the URL to be passed to 256 characters.  We
+ * store the set of parameters in this table and only pass the
+ * record-ID to run the QC report for MS-Word.
  *
- *          job  batch_job id for which these are parameters.
- *         name  Name of parameter, application dependent.
- *        value  Value as a string, application dependent.
+ *        id primary key for table
+ *  shortURL currently unused
+ *   longURL the list of parameters passed to the report module
+ *       usr the user ID running the report/storing the record
+ *           currently unused
+ *   created date and time when row has been created
+ *  lastused currently unused
  */
-CREATE TABLE batch_job_parm
-        (job INTEGER NOT NULL REFERENCES batch_job,
-        name VARCHAR (32) NOT NULL,
-       value VARCHAR (256) NOT NULL)
+CREATE TABLE url_parm_set
+         (id INTEGER       IDENTITY PRIMARY KEY,
+    shortURL VARCHAR(150)      NULL,
+     longURL VARCHAR(2000) NOT NULL,
+         usr INTEGER           NULL,
+     created DATETIME      NOT NULL DEFAULT GETDATE(),
+    lastused DATETIME          NULL)
+GO
+GRANT INSERT ON url_parm_set TO CdrGuest
 GO
 
+/*
+ * Users authorized to work with the CDR.  Note that connection information is
+ * not stored in the database, but is instead tracked by the server
+ * application directly at runtime.
+ *
+ *           id  automatically generated primary key for the usr table
+ *         name  unique logon name used by this user
+ *     password  plain text string used to authenticate this user's identity
+ *     hashedpw  use this instead of password if hashing available
+ * login_failed  count of consecutive failures, reset to 0 on success
+ *      created  date and time the user's account was added to the system
+ *     fullname  optional string giving the user's full name
+ *       office  optional identification of the office in which the user works
+ *        email  optional email address; used for automated notification of
+ *               system events
+ *        phone  option telephone number used to contact this user
+ *      expired  optional date/time this account was (or will be) deactivated
+ *      comment  optional free-text description of additional characteristics
+ *               for this user account
+ *
+ * Note:
+ *   There used to be a column for passwords that has been removed for
+ *   tightened security purposes.
+ *     Plain text string used to authenticate this user's identity
+ *     password VARCHAR(32) NOT NULL
+ */
+CREATE TABLE usr
+         (id INTEGER     IDENTITY PRIMARY KEY,
+        name VARCHAR(32) NOT NULL UNIQUE,
+    hashedpw VARBINARY(2048) NULL,
+login_failed INTEGER     NOT NULL DEFAULT 0,
+     created DATETIME    NOT NULL,
+    fullname VARCHAR(100)    NULL,
+      office VARCHAR(100)    NULL,
+       email VARCHAR(128)    NULL,
+       phone VARCHAR(20)     NULL,
+     expired DATETIME        NULL,
+     comment VARCHAR(255)    NULL)
+GO
+
+/*
+ * Associates a blob with a version of a document that describes it.
+ * When a document associated with a blob (i.e., a blob metadata document)
+ * is versioned, we create an entry in this table indicating that the
+ * version references this particular blob.
+ * If the blob changes, a new doc_blob will be created and the doc_blob_usage
+ * table will refer to the new blob.  But the version_blob_usage entry
+ * will remain unchanged.  The old version still references the old blob.
+ *
+ *      doc_id  id of the metadata document for this blob.
+ * doc_version  version number.
+ *     blob_id  id of the blob in the doc_blob table.
+ */
+CREATE TABLE version_blob_usage
+       (doc_id INTEGER,
+   doc_version INTEGER,
+       blob_id INTEGER)
+GO
+/*
+ * Indexes for access.
+ */
+CREATE INDEX ver_blob_doc_idx ON version_blob_usage(doc_id, doc_version)
+CREATE INDEX ver_blob_blob_idx ON version_blob_usage(blob_id)
+GO
+
+/*
+ * Marks a version for later retrieval by name.  Note that a single version of
+ * a given document can be marked with more than one label (or with none at
+ * all).
+ *
+ *           id  automatically generated primary key for the version_label
+ *               table
+ *        label  identification of a logical version; used to mark the common
+ *               version for a collection of documents in order to be able to
+ *               retrieve that version of those documents at a later point in
+ *               time, without knowing the individual version number for each
+ *               document
+ *      comment  optional free-text description of the purpose of this version
+ *               label
+ */
+CREATE TABLE version_label
+         (id INTEGER     IDENTITY PRIMARY KEY,
+        name VARCHAR(32) NOT NULL UNIQUE,
+     comment NVARCHAR(255)   NULL)
+GO
+
+/*
+ * Information from ZIPInfo's ZIPList5 subscription service.
+ *
+ * See https://www.zipinfo.com/ for documentation of the fields.
+ */
+    CREATE TABLE zipcode
+           (city VARCHAR(28) NOT NULL,
+              st CHAR(2)     NOT NULL,
+             zip CHAR(5)     NOT NULL,
+       area_code CHAR(5)     NOT NULL,
+     county_fips CHAR(5)     NOT NULL,
+     county_name VARCHAR(25) NOT NULL,
+       preferred CHAR(1)     NOT NULL CHECK (preferred IN ('P', 'A', 'N')),
+   zip_code_type CHAR(1)     NOT NULL CHECK (zip_code_type IN ('P',
+                                                               'U',
+                                                               'M',
+                                                               ' ')))
+GO
+
+/*
+ * Backup for the zipcode table.
+ */
+    CREATE TABLE zipcode_backup
+           (city VARCHAR(28) NOT NULL,
+              st CHAR(2)     NOT NULL,
+             zip CHAR(5)     NOT NULL,
+       area_code CHAR(5)     NOT NULL,
+     county_fips CHAR(5)     NOT NULL,
+     county_name VARCHAR(25) NOT NULL,
+       preferred CHAR(1)     NOT NULL CHECK (preferred IN ('P', 'A', 'N')),
+   zip_code_type CHAR(1)     NOT NULL CHECK (zip_code_type IN ('P',
+                                                               'U',
+                                                               'M',
+                                                               ' ')))
+GO
+
+/************************************************************************/
+/* VIEWS WITH NO DEPENDENCIES ON OTHER VIEWS                            */
+/************************************************************************/
+
+/*
+ * View of the document table containing only active documents.
+ */
+CREATE VIEW active_doc AS SELECT * FROM all_docs WHERE active_status = 'A'
+GO
+
+/*
+ * View of the document table containing only deleted documents.
+ */
+CREATE VIEW deleted_doc AS SELECT * FROM all_docs WHERE active_status = 'D'
+GO
+
+/*
+ * Most code in the CDR uses this view rather than the underlying table.
+ */
+CREATE VIEW document AS SELECT * FROM all_docs WHERE active_status != 'D'
+GO
+GRANT INSERT, UPDATE ON document TO CdrPublishing
+GO
+
+/*
+ * View on the audit trail for actions which save a document.
+ */
+CREATE VIEW doc_save_action
+         AS
+     SELECT audit_trail.document doc_id,
+            audit_trail.dt save_date,
+            action.name save_action,
+            audit_trail.usr save_user
+       FROM audit_trail
+       JOIN action
+         ON action.id = audit_trail.action
+      WHERE action.name IN ('ADD DOCUMENT', 'MODIFY DOCUMENT')
+GO
+
+/*
+ * View which makes the siphoning off of older XML to a separate table
+ * transparent to the rest of the system. See description of the
+ * all_doc_versions table above.
+ */
+CREATE VIEW doc_version
+AS
+         SELECT v.id, v.num, v.dt, v.updated_dt, v.usr,
+                v.val_status, v.val_date,
+                v.publishable, v.doc_type, v.title,
+                xml = CASE
+                    WHEN v.xml IS NOT NULL THEN v.xml
+                    ELSE a.xml
+                END,
+                comment
+           FROM all_doc_versions v
+LEFT OUTER JOIN cdr_archived_versions.dbo.doc_version_xml a
+             ON a.id = v.id
+            AND a.num = v.num
+GO
+
+/*
+ * One row, the most recent one, for each actual term.
+ *
+ * Due to character set problems, the terms don't always exactly match,
+ * but every combination of cdr_id + language should be unique.
+ *
+ *  max_date - the date of the last review for each unique term.
+ *
+ * Inner joining on this table will ensure that only the last review of a
+ * term is examined.
+ */
+CREATE VIEW lastmp3
+AS
+     SELECT MAX(review_date) AS max_date, cdr_id, language
+       FROM term_audio_mp3
+   GROUP BY cdr_id, language
+GO
+
+/*
+ * View of the usr table without the password information.
+ */
+CREATE VIEW open_usr AS
+     SELECT id, name, created, fullname, office, email, phone, expired,
+            comment
+       FROM usr
+GO
 
 /*
  * View for completed publication events.
@@ -1446,59 +1796,20 @@ CREATE VIEW pub_event
 GO
 
 /*
- * View of documents which have been successfully published.
+ * Contains child-parent document ID pairs for Term document hierarchical
+ * relationships.
  */
-CREATE VIEW published_doc
-         AS SELECT pub_proc_doc.*
-              FROM pub_proc_doc
-              JOIN pub_event
-                ON pub_event.id = pub_proc_doc.pub_proc
-             WHERE pub_event.status = 'Success'
-               AND (pub_proc_doc.failure IS NULL
-                OR pub_proc_doc.failure <> 'Y')
+CREATE VIEW term_parents
+AS
+    SELECT DISTINCT doc_id AS child, int_val AS parent
+               FROM query_term
+              WHERE path = '/Term/TermRelationship/ParentTerm/TermId/@cdr:ref'
 GO
 
-/*
- * View of documents which have been successfully pushed during or
- * since the latest successful full load push job.
- */
-CREATE VIEW pushed_doc
-         AS SELECT d.doc_id, d.doc_version, d.pub_proc, e.pub_subset,
-                   e.completed
-              FROM pub_proc_doc d
-              JOIN pub_event e
-                ON e.id = d.pub_proc
-             WHERE e.status = 'Success'
-               AND e.pub_subset LIKE 'Push%'
-               AND d.failure IS NULL
-               AND d.removed = 'N'
-               AND e.id >= (SELECT MAX(id)
-                              FROM pub_event
-                             WHERE e.status = 'Success'
-                               AND pub_subset =
-                                      'Push_Documents_To_Cancer.Gov_Full-Load')
-GO
 
-/*
- * View of documents which have been successfully removed from Cancer.gov
- * since the latest successful full load push job.
- */
-CREATE VIEW removed_doc
-         AS SELECT d.doc_id, d.doc_version, d.pub_proc, e.pub_subset,
-                   e.completed
-              FROM pub_proc_doc d
-              JOIN pub_event e
-                ON e.id = d.pub_proc
-             WHERE e.status = 'Success'
-               AND e.pub_subset LIKE 'Push%'
-               AND d.failure IS NULL
-               AND d.removed = 'Y'
-               AND e.id > (SELECT MAX(id)
-                             FROM pub_event
-                            WHERE e.status = 'Success'
-                              AND pub_subset =
-                                      'Push_Documents_To_Cancer.Gov_Full-Load')
-GO
+/************************************************************************/
+/* VIEWS WITH DEPENDENCIES ON OTHER VIEWS - FIRST PASS                  */
+/************************************************************************/
 
 /*
  * View of documents control system behavior.
@@ -1547,61 +1858,6 @@ AS
     FROM document d
     JOIN doc_type t
       ON d.doc_type = t.id
-GO
-
-/*
- * View used to determine when it's appropriate to send update mailers.
- */
-CREATE VIEW last_doc_publication
-         AS SELECT published_doc.doc_id,
-                   pub_event.pub_subset,
-                   MAX(pub_event.completed) as dt
-              FROM published_doc
-              JOIN pub_event
-                ON pub_event.id = published_doc.pub_proc
-          GROUP BY pub_event.pub_subset, published_doc.doc_id
-GO
-
-/*
- * Terminology tree display support.
- */
-CREATE VIEW orphan_terms
-AS
-    SELECT DISTINCT d.title
-               FROM document d
-               JOIN query_term q
-                 ON d.id = q.doc_id
-              WHERE q.path = '/Term/TermPrimaryType'
-                AND q.value <> 'glossary term'
-                AND NOT EXISTS (SELECT *
-                                  FROM query_term q2
-                                 WHERE q2.doc_id = d.id
-                                   AND q2.path = '/Term/TermParent/@cdr:ref')
-GO
-
-/*
- * More terminology tree display support.
- */
-CREATE VIEW TermsWithParents
-AS
-    SELECT d.id, d.xml
-      FROM document d
-      JOIN doc_type t
-        ON d.doc_type = t.id
-     WHERE t.name = 'Term'
-       AND d.xml LIKE '%<TermParent%'
-GO
-
-/*
- * Useful view for troubleshooting login failures or detecting intruders.
- */
-CREATE VIEW failed_login_attempts
-AS
-    SELECT recorded,
-           source,
-           msg
-      FROM debug_log
-     WHERE source LIKE 'Failed logon attempt%'
 GO
 
 /*
@@ -1688,6 +1944,40 @@ LEFT OUTER JOIN usr vu
 GO
 
 /*
+ * Most recent publishable version for each document.
+ */
+CREATE VIEW latest_publishable_version
+AS
+      SELECT d.id,
+             MAX(v.num) num
+        FROM doc_version v
+        JOIN document d
+          ON d.id = v.id
+         AND v.val_status = 'V'
+         AND v.publishable = 'Y'
+         AND d.active_status = 'A'
+    GROUP BY d.id
+GO
+
+/*
+ * Terminology tree display support.
+ */
+CREATE VIEW orphan_terms
+AS
+    SELECT DISTINCT d.title
+               FROM document d
+               JOIN query_term q
+                 ON d.id = q.doc_id
+              WHERE q.path = '/Term/TermPrimaryType'
+                AND q.value <> 'glossary term'
+                AND NOT EXISTS (SELECT *
+                                  FROM query_term q2
+                                 WHERE q2.doc_id = d.id
+                                   AND q2.path = '/Term/TermRelationship'
+                                               + 'ParentTerm/TermId/@cdr:ref')
+GO
+
+/*
  * Used for finding publishing jobs for licensees and Cancer.gov.
  */
 CREATE VIEW primary_pub_job
@@ -1701,6 +1991,153 @@ AS
        AND pub_proc.completed IS NOT NULL
 GO
 
+/*
+ * View of the doc_version view containing only publishable versions.
+ * Command decision made by the CDR team to enforce check for val_status
+ *   as part of publishability.
+ * There _should_ be no invalid publishable docs, but we found some
+ *   citations for which the latest publishable version is actually
+ *   not valid. (Don't think it's possible for this to happen any more.)
+ */
+CREATE VIEW publishable_version AS
+     SELECT *
+       FROM doc_version
+      WHERE publishable = 'Y'
+        AND val_status = 'V'
+GO
+
+/*
+ * View of documents which have been successfully published.
+ */
+CREATE VIEW published_doc
+         AS SELECT pub_proc_doc.*
+              FROM pub_proc_doc
+              JOIN pub_event
+                ON pub_event.id = pub_proc_doc.pub_proc
+             WHERE pub_event.status = 'Success'
+               AND (pub_proc_doc.failure IS NULL
+                OR pub_proc_doc.failure <> 'Y')
+GO
+
+/*
+ * View of documents which have been successfully pushed during or
+ * since the latest successful full load push job.
+ */
+CREATE VIEW pushed_doc
+AS
+    SELECT d.doc_id, d.doc_version, d.pub_proc, e.pub_subset, e.completed
+      FROM pub_proc_doc d
+      JOIN pub_event e
+        ON e.id = d.pub_proc
+     WHERE e.status = 'Success'
+       AND e.pub_subset LIKE 'Push%'
+       AND d.failure IS NULL
+       AND d.removed = 'N'
+       AND e.id >= (SELECT MAX(id)
+                      FROM pub_event
+                     WHERE e.status = 'Success'
+                       AND pub_subset = 'Push_Documents_To_Cancer.'
+                                      + 'Gov_Full-Load')
+GO
+
+/*
+ * View of documents which have been successfully removed from Cancer.gov
+ * since the latest successful full load push job.
+ */
+CREATE VIEW removed_doc
+AS
+    SELECT d.doc_id, d.doc_version, d.pub_proc, e.pub_subset, e.completed
+      FROM pub_proc_doc d
+      JOIN pub_event e
+        ON e.id = d.pub_proc
+     WHERE e.status = 'Success'
+       AND e.pub_subset LIKE 'Push%'
+       AND d.failure IS NULL
+       AND d.removed = 'Y'
+       AND e.id > (SELECT MAX(id)
+                     FROM pub_event
+                    WHERE e.status = 'Success'
+                      AND pub_subset = 'Push_Documents_To_Cancer.Gov_Full-Load')
+GO
+
+/*
+ * Alternate (more efficient) approach to term_parents view.
+ */
+CREATE VIEW term_kids
+AS
+    SELECT DISTINCT q.int_val AS parent, q.doc_id AS child, d.title
+               FROM query_term q
+               JOIN document d
+                 ON d.id = q.doc_id
+              WHERE q.path = '/Term/TermRelationship/ParentTerm/TermId/@cdr:ref'
+GO
+
+/*
+ * This version tells which nodes are leaves.
+ */
+CREATE VIEW term_children
+AS
+    SELECT DISTINCT q1.int_val AS parent,
+                    q1.doc_id  AS child,
+                    COUNT(DISTINCT q2.doc_id) AS num_grandchildren,
+                    d.title
+               FROM document d
+               JOIN query_term q1
+                 ON q1.doc_id = d.id
+    LEFT OUTER JOIN query_term q2
+                 ON q1.doc_id = q2.int_val
+              WHERE q1.path = '/Term/TermRelationship/ParentTerm'
+                            + '/TermId/@cdr:ref'
+                AND q2.path = '/Term/TermRelationship/ParentTerm'
+                            + '/TermId/@cdr:ref'
+           GROUP BY q1.int_val, q1.doc_id, d.title
+GO
+
+/*
+ * More terminology tree display support.
+ */
+CREATE VIEW TermsWithParents
+AS
+    SELECT d.id, d.xml
+      FROM document d
+      JOIN doc_type t
+        ON d.doc_type = t.id
+     WHERE t.name = 'Term'
+       AND d.xml LIKE '%<TermParent%'
+GO
+
+
+/************************************************************************/
+/* VIEWS WITH DEPENDENCIES ON OTHER VIEWS - SECOND PASS                 */
+/************************************************************************/
+
+/*
+ * View which finds the last time a CDR document was saved.
+ */
+CREATE VIEW doc_last_save
+         AS
+     SELECT doc_id,
+            MAX(save_date) AS last_save_date
+       FROM doc_save_action
+   GROUP BY doc_id
+GO
+
+/*
+ * View used by the Pronunciation Recordings Tracking report.
+ */
+CREATE VIEW last_doc_publication
+         AS SELECT published_doc.doc_id,
+                   pub_event.pub_subset,
+                   MAX(pub_event.completed) AS dt
+              FROM published_doc
+              JOIN pub_event
+                ON pub_event.id = published_doc.pub_proc
+          GROUP BY pub_event.pub_subset, published_doc.doc_id
+GO
+
+/*
+ * Builds on the primary_pub_job view to get the documents for each such job.
+ */
 CREATE VIEW primary_pub_doc
 AS
     SELECT pub_proc_doc.*, primary_pub_job.completed,
@@ -1711,1072 +2148,256 @@ AS
      WHERE pub_proc_doc.failure IS NULL
 GO
 
-/*
- * Table used to remember the set of documents which Cancer.Gov has.
- *
- *           id  primary key of document sent to Cancer.Gov.
- *     pub_proc  identifies job which sent the document to Cancer.Gov.
- *          xml  copy of the filtered document sent to Cancer.Gov.
- *   force_push  flag indicating that the document can be pushed
- *               to Cancer.gov even if it is identical with what
- *               we sent with the previous job.
- *       cg_new  indicates whether this document is missing from
- *               the live Cancer.gov site or the Cancer.gov Preview
- *               stage; set to 'N' in the normal case; set to 'Y'
- *               for documents which were pushed to Cancer.gov
- *               but later failed processing; this allows the
- *               module which groups published documents which
- *               must all fail together to recognize which documents
- *               aren't really available on Cancer.gov, even though
- *               they have rows in the pub_proc_cg table.
- */
-CREATE TABLE pub_proc_cg
-         (id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs,
-    pub_proc INTEGER NOT NULL REFERENCES pub_proc,
-         xml NTEXT   NOT NULL,
-  force_push CHAR    NOT NULL DEFAULT 'N',
-      cg_new CHAR    NOT NULL DEFAULT 'N')
+
+/************************************************************************/
+/* FOREIGN KEY CONSTRAINTS                                              */
+/************************************************************************/
+
+ALTER TABLE all_doc_versions ADD FOREIGN KEY(doc_type) REFERENCES doc_type
+GO
+ALTER TABLE all_doc_versions ADD FOREIGN KEY(id) REFERENCES all_docs
+GO
+ALTER TABLE all_doc_versions ADD FOREIGN KEY(usr) REFERENCES usr
+GO
+ALTER TABLE all_doc_versions ADD FOREIGN KEY(val_status) REFERENCES doc_status
 GO
 
-/*
- * Table used to remember trials we have sent to ClinicalTrials.gov
- * at NLM.
- *
- *                id  primary key of document sent to NLM.
- *               xml  copy of the filtered document sent to NLM.
- *         last_sent  date/time of the most recent export to NLM.
- * drop_notification  date/time we last told NLM the trial has been pulled
- *                    from Cancer.gov.
- */
-     CREATE TABLE pub_proc_nlm
-              (id INTEGER      NOT NULL PRIMARY KEY REFERENCES all_docs,
-              xml NTEXT        NOT NULL,
-        last_sent DATETIME     NOT NULL,
-      last_status VARCHAR(255)     NULL,
-drop_notification DATETIME         NULL)
+ALTER TABLE all_docs ADD FOREIGN KEY(active_status) REFERENCES active_status
+GO
+ALTER TABLE all_docs ADD FOREIGN KEY(doc_type) REFERENCES doc_type
+GO
+ALTER TABLE all_docs ADD FOREIGN KEY(val_status) REFERENCES doc_status
 GO
 
-/*
- * Table used to hold working information on transactions to
- * Cancer.Gov. The information will be permanently stored to
- * pub_proc_cg and pub_proc_doc after transactions to Cancer.Gov
- * are completed. The information will be deleted after they are
- * updated successfully to pub_proc_cg and pub_proc_doc.
- *
- * This table rather than a temporary table is created to guarantee
- * the state of pub_proc_doc and pub_proc_cg can be kept in sync
- * with Cancer.Gov.
- *
- *           id  primary key of document sent to Cancer.Gov.
- *          num  version of the document sent to Cancer.Gov.
- *       cg_job  job which sent the document to Cancer.Gov.
- *   vendor_job  job which produced the filtered documents.
- *     doc_type  document type name of the document.
- *          xml  copy of the filtered document sent to Cancer.Gov;
- *               NULL denotes deleted document.
- */
-CREATE TABLE pub_proc_cg_work
-         (id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs,
-         num INTEGER NOT NULL,
-  vendor_job INTEGER NOT NULL REFERENCES pub_proc,
-      cg_job INTEGER NOT NULL REFERENCES pub_proc,
-    doc_type VARCHAR(32) NOT NULL,
-         xml NTEXT NULL)
+ALTER TABLE audit_trail ADD FOREIGN KEY(action) REFERENCES action
+GO
+ALTER TABLE audit_trail ADD FOREIGN KEY(document) REFERENCES all_docs
+GO
+ALTER TABLE audit_trail ADD FOREIGN KEY(usr) REFERENCES usr
 GO
 
-/**
- * Replacement for command_log table (when CDR service was eliminated)
- */
-CREATE TABLE api_request
- (request_id INTEGER IDENTITY PRIMARY KEY,
-  process_id INTEGER,
-   thread_id INTEGER,
-    received DATETIME,
-     request NTEXT)
-CREATE INDEX api_request_received ON api_request(received)
+ALTER TABLE audit_trail_added_action ADD FOREIGN KEY(action) REFERENCES action
+GO
+ALTER TABLE audit_trail_added_action ADD FOREIGN KEY(document)
+ REFERENCES all_docs
+GO
+ALTER TABLE audit_trail_added_action ADD FOREIGN KEY(document, dt)
+ REFERENCES audit_trail
 GO
 
-/*
- * Named collection of CDR XSL/T filters and nested filter sets.
- *
- *      command  full XML string (UTF-8 encoded) for the CdrCommandSet.
- *           id  automatically generated primary key.
- *         name  used by scripts to invoke the set of filters.
- *  description  brief description of the set, used to describe the
- *               filter set's use in a user interface (for example,
- *               in a popup help tip).
- *        notes  more extensive optional notes on the use of this
- *               filter set.
- */
-CREATE TABLE filter_set
-         (id INTEGER IDENTITY NOT NULL PRIMARY KEY,
-        name VARCHAR(80)      NOT NULL UNIQUE,
- description NVARCHAR(256)    NOT NULL,
-       notes NTEXT                NULL)
+ALTER TABLE batch_job_parm ADD FOREIGN KEY(job) REFERENCES batch_job
 GO
 
-/*
- * Member of a filter set.
- *
- *   filter_set  identifies which set this is a member of.
- *     position  identifies how to sequence this member within the set.
- *       filter  identifies a filter which is a member of the set.
- *       subset  identifies a nested filter set.
- */
-CREATE TABLE filter_set_member
- (filter_set INTEGER NOT NULL REFERENCES filter_set,
-    position INTEGER NOT NULL,
-      filter INTEGER     NULL REFERENCES all_docs,
-      subset INTEGER     NULL REFERENCES filter_set,
-  CONSTRAINT filter_set_member_pk PRIMARY KEY(filter_set, position))
+ALTER TABLE checkout ADD FOREIGN KEY(id) REFERENCES all_docs
+GO
+ALTER TABLE checkout ADD FOREIGN KEY(usr) REFERENCES usr
 GO
 
-/*
- * System wide control table, used for any arbitrary name value pairs
- * that the system needs to access.
- *
- *         name  The name associated with this value.
- *               By convention, applications should group related values by
- *               using related names, (arbitrary example below):
- *                  mailer/Person/maxmailers = ...
- *                  mailer/Person/interval = ...
- *                  mailer/Organization/maxmailers = ...
- *               Because name is unique, we limit len to below sys limit
- *               of 900 chars on index length.  Should be more than enough.
- *        value  String to retrieve for this name.
- *  last_change  Date-time when value last set.
- *          usr  ID of user making the last change.
- *      program  Optional name of program making the last change.
- *        notes  Optional notes documenting this system value.
- */
-CREATE TABLE sys_value
-       (name VARCHAR(800) NOT NULL UNIQUE,
-       value VARCHAR(2000) NOT NULL,
-         usr INT NOT NULL REFERENCES usr,
- last_change DATETIME NOT NULL,
-     program varchar(64) NULL,
-       notes NTEXT NULL)
+ALTER TABLE client_log ADD FOREIGN KEY(session) REFERENCES session
 GO
 
-/*
- * Table of valid values for disposition status of documents imported
- * from ClinicalTrials.gov.
- *
- *           id  uniquely identifies the status value
- *         name  string used to represent the value
- *      comment  optional user comments
- */
-CREATE TABLE ctgov_disposition
-         (id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32)      NOT NULL UNIQUE,
-     comment NTEXT                NULL)
+ALTER TABLE ctgov_trial_other_id ADD FOREIGN KEY(nct_id) REFERENCES ctgov_trial
 GO
 
-/*
- * Table for tracking documents downloaded from NLM's CancerTrials.gov site.
- *
- *         nlm_id  uniquely identifies the document within CT.gov
- *          title  official title, if present; otherwise brief title
- *            xml  unmodified XML document as downloaded from NLM
- *     downloaded  date/time of download
- *    disposition  foreign key into ctgov_disposition table
- *             dt  date/time of most recent disposition change
- *       verified  date/time document was last verified at NLM
- *        changed  date/time document was last changed at NLM
- *         cdr_id  document ID in CDR (if imported)
- *        dropped  flag indicating that NLM is no longer exporting this trial
- * reason_dropped  used to record results of research into why NLM stopped
- *                 sending a trial; when this column has been populated
- *                 the CT.gov download report will suppress reporting of
- *                 the drop of the trial
- *          force  flag for trials we want even if NLM doesn't code them
- *                 in such a way that they would be picked up by our
- *                 basic query
- *        comment  user comments, if any
- *          phase  captures the phase of the trial for reporting
- *   dup_reported  when did we report the duplicate to CIAT (if ever)?
- *        ctrp_id  optional ID in the form NCI-2099-99999 (where 9 represents
- *                 any decimal digit; drawn from the first org_study_id or
- *                 secondary_id found in the clinical trial document received
- *                 from NLM; added for request BZIssue::5294 (OCECDR-3295)
- */
-CREATE TABLE ctgov_import
-     (nlm_id VARCHAR(16)   NOT NULL PRIMARY KEY,
-       title NVARCHAR(255)     NULL,
-         xml NTEXT             NULL,
-  downloaded DATETIME          NULL,
- disposition INTEGER       NOT NULL REFERENCES ctgov_disposition,
-          dt DATETIME      NOT NULL,
-    verified DATETIME          NULL,
-     changed DATETIME          NULL,
-      cdr_id INTEGER           NULL REFERENCES all_docs,
-     dropped CHAR          NOT NULL DEFAULT 'N',
- reason_dropped VARCHAR(512)   NULL,
-       force CHAR          NOT NULL DEFAULT 'N',
-     comment NTEXT             NULL,
-       phase VARCHAR(20)       NULL,
-dup_reported DATETIME          NULL,
-     ctrp_id VARCHAR(16)       NULL)
-GO
-CREATE INDEX ctgov_import_title ON ctgov_import(title)
-GO
-CREATE INDEX ctgov_import_down  ON ctgov_import(downloaded)
+ALTER TABLE ctgov_trial_sponsor ADD FOREIGN KEY(nct_id) REFERENCES ctgov_trial
 GO
 
-/*
- * Record of each CTGovProtocol import job.
- *
- *           id  primary key for table
- *           dt  datetime job was run
- */
-CREATE TABLE ctgov_import_job
-         (id INTEGER IDENTITY PRIMARY KEY,
-          dt DATETIME NOT NULL)
+ALTER TABLE doc_blob_usage ADD FOREIGN KEY(blob_id) REFERENCES doc_blob
 GO
-CREATE INDEX ctgov_import_job_dt ON ctgov_import_job(dt)
+ALTER TABLE doc_blob_usage ADD FOREIGN KEY(doc_id) REFERENCES all_docs
 GO
 
-/*
- * Remembers what happened to each document processed by a given
- * CTGov import job.
- *
- *          job  foreign key into ctgov_import_job table
- *       nlm_id  foreign key into ctgov_import table
- *          new  'Y' if this is the first import of the document; otherwise 'N'
- * needs_review  'Y' if NLM made changes which might affect PDQ indexing;
- *               otherwise 'N'
- *  pub_version  'Y' if a publishable version was created; otherwise 'N'
- *  transferred  'Y' if the trial is being converted from an InScopeProtocol
-                 to a CTGovProtocol; otherwise 'N'
- */
-CREATE TABLE ctgov_import_event
-        (job INTEGER     NOT NULL REFERENCES ctgov_import_job,
-      nlm_id VARCHAR(16) NOT NULL REFERENCES ctgov_import,
-      locked CHAR(1)     NOT NULL DEFAULT 'N',
-         new CHAR(1)         NULL,
-needs_review CHAR(1)         NULL,
- pub_version CHAR(1)         NULL,
- transferred CHAR            NULL,
-  CONSTRAINT ctgov_import_event_pk PRIMARY KEY(job, nlm_id))
+ALTER TABLE doc_type ADD FOREIGN KEY(format) REFERENCES format
+GO
+ALTER TABLE doc_type ADD FOREIGN KEY(title_filter) REFERENCES all_docs
+GO
+ALTER TABLE doc_type ADD FOREIGN KEY(xml_schema) REFERENCES all_docs
 GO
 
-/*
- * Remembers statistics from download jobs for trials from ClinicalTrials.gov.
- *
- *           id  primary key
- *           dt  date/time of download job
- * total_trials  number of cancer trials that meet query criteria
- *   new_trials  new "active" and "not yet active" trials
- *  transferred  Count of trials for which ownership tranferred from PDQ
- *      updated  Updates to previously downloaded trials
- *    unchanged  skipped trials since no changes from previous download
- *      pdq_cdr  skipped trials from PDQ/CDR
- *   duplicates  skipped duplicate trials
- * out_of_scope  Skipped out of scope trials
- *       closed  Skipped closed and completed trials
- */
-CREATE TABLE ctgov_download_stats
-         (id INTEGER  IDENTITY PRIMARY KEY,
-          dt DATETIME NOT NULL,
-total_trials INTEGER  NOT NULL,
-  new_trials INTEGER  NOT NULL,
- transferred INTEGER  NOT NULL,
-     updated INTEGER  NOT NULL,
-   unchanged INTEGER  NOT NULL,
-     pdq_cdr INTEGER  NOT NULL,
-  duplicates INTEGER  NOT NULL,
-out_of_scope INTEGER  NOT NULL,
-      closed INTEGER  NOT NULL)
+ALTER TABLE doc_version_label ADD FOREIGN KEY(label) REFERENCES version_label
 GO
-CREATE INDEX ctgov_download_stats_dt ON ctgov_download_stats (dt)
+ALTER TABLE doc_version_label ADD FOREIGN KEY(document, num)
+ REFERENCES all_doc_versions
 GO
 
-/*
- * Logs filter document IDs when filter profiling is turned on by
- * setting the environment variable CDR_FILTER_PROFILING before
- * starting the CdrServer.  See CdrFilter.cpp.
- *
- *      id  CDR document ID of a filter that was invoked
- *  millis  Number of milliseconds elapsed between start/end of filtering
- *      dt  Date/time of invocation
- *
- * Typical usage is:
- *   SELECT id AS FilterID, COUNT(millis) AS Count, AVG(millis) AS AvgMils,
- *          MAX(millis) AS Max, MIN(millis) AS Min, STDEV(millis) AS StdDev
- *     FROM filter_profile
- *    WHERE dt BETWEEN (... AND ...)
- * GROUP BY id
- * ORDER BY id
- *
- * Rows may be deleted at any time without harming CDR operations.
- */
-CREATE TABLE filter_profile
-        (id INTEGER,
-     millis INTEGER,
-         dt DATETIME)
+ALTER TABLE external_map ADD FOREIGN KEY(doc_id) REFERENCES all_docs
+GO
+ALTER TABLE external_map ADD FOREIGN KEY(usage) REFERENCES external_map_usage
+GO
+ALTER TABLE external_map ADD FOREIGN KEY(usr) REFERENCES usr
 GO
 
-/*
- * Records jobs used to push documents to Cancer.gov, so we can remember
- * whether and when we sent any protocols from the job to NLM.
- *
- *  pub_proc  Identifies job by ID
- *  exported  Records time CTGov export was run for this job.
- */
-CREATE TABLE ctgov_export
-   (pub_proc INTEGER PRIMARY KEY REFERENCES pub_proc,
-    exported DATETIME NULL)
+ALTER TABLE external_map_rule ADD FOREIGN KEY(map_id) REFERENCES external_map
 GO
 
-/*
- * Table of valid values for disposition status of documents imported
- * from an outside organization.
- *
- *           id  uniquely identifies the status value
- *         name  string used to represent the value; e.g. 'imported',
- *               'pending', 'unmatched'
- *      comment  optional user comments
- */
-CREATE TABLE import_disposition
-         (id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32)      NOT NULL UNIQUE,
-     comment NTEXT                NULL)
+ALTER TABLE external_map_type ADD FOREIGN KEY(doc_type) REFERENCES doc_type
+GO
+ALTER TABLE external_map_type ADD FOREIGN KEY(usage)
+ REFERENCES external_map_usage
 GO
 
-/*
- * External organizations from which we import documents.
- *
- *           id  primary key, automatically generated
- *         name  name of the source (e.g., RSS)
- *      comment  optional description of the external organization
- */
-CREATE TABLE import_source
-         (id INTEGER IDENTITY PRIMARY KEY,
-        name VARCHAR(32)      NOT NULL UNIQUE,
-     comment NTEXT                NULL)
+ALTER TABLE external_map_usage ADD FOREIGN KEY(auth_action) REFERENCES action
 GO
 
-/*
- * Table for tracking documents downloaded from an external source.
- *
- *           id  primary key, automatically generated by the database
- *       source  foreign key linking to the external_source table
- *    source_id  uniquely identifies the document within the external
- *               organization
- *        title  optional title used to display the document's name
- *          xml  unmodified XML document as downloaded from the external
- *               source
- *   downloaded  date/time of download
- *  disposition  foreign key into ctgov_disposition table
- *      disp_dt  date/time of most recent disposition change
- *       cdr_id  document ID in CDR (if imported)
- *      dropped  records when we detect that document is no longer exported
- *      comment  user comments, if any
- */
-CREATE TABLE import_doc
-         (id INTEGER       IDENTITY PRIMARY KEY,
-      source INTEGER       NOT NULL REFERENCES import_source,
-   source_id VARCHAR(64)   NOT NULL,
-       title NVARCHAR(255)     NULL,
-         xml NTEXT             NULL,
-  downloaded DATETIME          NULL,
- disposition INTEGER       NOT NULL REFERENCES import_disposition,
-     disp_dt DATETIME      NOT NULL,
-    verified DATETIME          NULL,
-     changed DATETIME          NULL,
-      cdr_id INTEGER           NULL REFERENCES all_docs,
-     dropped DATETIME          NULL,
-     comment NTEXT             NULL,
-CONSTRAINT import_doc_unique UNIQUE (source, source_id))
+ALTER TABLE filter_set_member ADD FOREIGN KEY(filter) REFERENCES all_docs
 GO
-CREATE INDEX import_doc_title ON import_doc(title)
+ALTER TABLE filter_set_member ADD FOREIGN KEY(filter_set) REFERENCES filter_set
 GO
-CREATE INDEX import_doc_down  ON import_doc(downloaded)
+ALTER TABLE filter_set_member ADD FOREIGN KEY(subset) REFERENCES filter_set
 GO
 
-/*
- * Record of each job importing a batch of external documents.
- *
- *           id  primary key for table
- *           dt  datetime job was run
- *       source  link to import_source table
- *       status  'Started', 'In progress', 'Failure', 'Success'
- */
-CREATE TABLE import_job
-         (id INTEGER     IDENTITY PRIMARY KEY,
-          dt DATETIME    NOT NULL,
-      source INTEGER     NOT NULL REFERENCES import_source,
-      status VARCHAR(20) NOT NULL)
+ALTER TABLE glossary_translation_job ADD FOREIGN KEY(assigned_to) REFERENCES usr
 GO
-CREATE INDEX import_job_dt ON import_job(dt)
+ALTER TABLE glossary_translation_job ADD FOREIGN KEY(doc_id) REFERENCES all_docs
 GO
-CREATE INDEX import_job_source ON import_job(source, status, dt)
+ALTER TABLE glossary_translation_job ADD FOREIGN KEY(state_id)
+ REFERENCES glossary_translation_state
 GO
 
-/*
- * Remembers what happened to each document processed by a given
- * import job.
- *
- *          job  foreign key into import_job table
- *          doc  foreign key into import_doc table
- *       locked  'Y' if we were unable to modify the document because it was
- *               locked; otherwise 'N'
- *          new  'Y' if this is the first import of the document; otherwise 'N'
- * needs_review  'Y' if anomalies were detected which may require user review;
- *               otherwise 'N'
- *  pub_version  'Y' if a publishable version was created; otherwise 'N'
- */
-CREATE TABLE import_event
-        (job INTEGER     NOT NULL REFERENCES import_job,
-         doc INTEGER     NOT NULL REFERENCES import_doc,
-      locked CHAR(1)     NOT NULL DEFAULT 'N',
-         new CHAR(1)     NOT NULL DEFAULT 'N',
-needs_review CHAR(1)     NOT NULL DEFAULT 'N',
- pub_version CHAR(1)     NOT NULL DEFAULT 'N',
-  CONSTRAINT import_event_pk PRIMARY KEY(job, doc))
+ALTER TABLE glossary_translation_job_history ADD FOREIGN KEY(assigned_to)
+ REFERENCES usr
+GO
+ALTER TABLE glossary_translation_job_history ADD FOREIGN KEY(doc_id)
+ REFERENCES all_docs
+GO
+ALTER TABLE glossary_translation_job_history ADD FOREIGN KEY(state_id)
+ REFERENCES glossary_translation_state
 GO
 
-/*
- * Table used to determine whether a mapping is to a document of the
- * correct type.
- *
- *     usage  foreign key into the external_map_usage table
- *  doc_type  foreign key into the doc_type table
- */
-CREATE TABLE external_map_type
-      (usage INTEGER NOT NULL REFERENCES external_map_usage,
-    doc_type INTEGER NOT NULL REFERENCES doc_type,
-PRIMARY KEY (usage, doc_type))
+ALTER TABLE grp_action ADD FOREIGN KEY(action) REFERENCES action
+GO
+ALTER TABLE grp_action ADD FOREIGN KEY(doc_type) REFERENCES doc_type
+GO
+ALTER TABLE grp_action ADD FOREIGN KEY(grp) REFERENCES grp
 GO
 
-/*
- * Sets of GENETICSPROFESSIONAL documents to be imported from CIAT-maintained
- * external database.
- *
- *           id  primary key for table
- * submitted_by  foreign key into usr table for user submitting set
- *         path  location of zipfile containing gp document set
- *     uploaded  date/time the set was submitted by CIAT
- *       status  U (uploaded), P (processing), I (imported), or E (error)
- *     imported  date/time the set was imported into the repository
- *       errors  description of failure, if imported did not succeed
- */
-CREATE TABLE gp_import_set
-         (id INTEGER       IDENTITY PRIMARY KEY,
-submitted_by INTEGER       NOT NULL REFERENCES usr,
-        path VARCHAR(1024) NOT NULL,
-    uploaded DATETIME      NOT NULL,
-      status CHAR          NOT NULL DEFAULT 'U',
-    imported DATETIME          NULL,
-      errors NTEXT             NULL)
+ALTER TABLE grp_usr ADD FOREIGN KEY(grp) REFERENCES grp
+GO
+ALTER TABLE grp_usr ADD FOREIGN KEY(usr) REFERENCES usr
 GO
 
-/*
- * Records events which occurred in a CDR client session.  Used, for
- * example, to record when users save documents locally instead of in
- * the CDR.
- *
- *     event_id  primary key for table
- *   event_time  when was the event recorded
- *   event_desc  text description of the event
- *      session  foreign key reference into the session table
- */
-CREATE TABLE client_log
-   (event_id INTEGER       IDENTITY PRIMARY KEY,
-  event_time DATETIME      NOT NULL,
-  event_desc NVARCHAR(255) NOT NULL,
-     session INTEGER           NULL REFERENCES session)
+ALTER TABLE link_fragment ADD FOREIGN KEY(doc_id) REFERENCES all_docs
 GO
 
-/*
- * Table to store the set of parameters submitted to QC reports.
- * This table us used and populated by the program QcReports.py.
- * The QC reports are being converted into MS-Word from IE but
- * MS-Word limits the URL to be passed to 256 characters.  We
- * store the set of parameters in this table and only pass the
- * record-ID to run the QC report for MS-Word.
- *
- *        id primary key for table
- *  shortURL currently unused
- *   longURL the list of parameters passed to the report module
- *       usr the user ID running the report/storing the record
- *           currently unused
- *   created date and time when row has been created
- *  lastused currently unused
- */
-CREATE TABLE url_parm_set
-         (id INTEGER       IDENTITY PRIMARY KEY,
-    shortURL VARCHAR(150)      NULL,
-     longURL VARCHAR(2000) NOT NULL,
-         usr INTEGER           NULL,
-     created DATETIME      NOT NULL DEFAULT GETDATE(),
-    lastused DATETIME          NULL)
+ALTER TABLE link_net ADD FOREIGN KEY(link_type) REFERENCES link_type
+GO
+ALTER TABLE link_net ADD FOREIGN KEY(source_doc) REFERENCES all_docs
+GO
+ALTER TABLE link_net ADD FOREIGN KEY(target_doc) REFERENCES all_docs
 GO
 
-/*
- * View on the audit trail for actions which save a document.
- */
-CREATE VIEW doc_save_action
-         AS
-     SELECT audit_trail.document doc_id,
-            audit_trail.dt save_date,
-            action.name save_action,
-            audit_trail.usr save_user
-       FROM audit_trail
-       JOIN action
-         ON action.id = audit_trail.action
-      WHERE action.name IN ('ADD DOCUMENT', 'MODIFY DOCUMENT')
+ALTER TABLE link_properties ADD FOREIGN KEY(link_id) REFERENCES link_type
+GO
+ALTER TABLE link_properties ADD FOREIGN KEY(property_id)
+ REFERENCES link_prop_type
 GO
 
-/*
- * View which finds the last time a CDR document was saved.
- */
-CREATE VIEW doc_last_save
-         AS
-     SELECT doc_id,
-            MAX(save_date) last_save_date
-       FROM doc_save_action
-   GROUP BY doc_id
+ALTER TABLE link_target ADD FOREIGN KEY(source_link_type) REFERENCES link_type
+GO
+ALTER TABLE link_target ADD FOREIGN KEY(target_doc_type) REFERENCES doc_type
 GO
 
-/*
- * Outcome for each CTRP trial document during a download job.
- *
- *     disp_id  primary key, automatically generated
- *   disp_name  string representing the disposition
- *     comment  optional elaboration on the semantics of the value
- */
-CREATE TABLE ctrp_download_disposition
-    (disp_id INTEGER     IDENTITY PRIMARY KEY,
-   disp_name VARCHAR(32) NOT NULL UNIQUE,
-     comment NTEXT           NULL)
-
-/*
- * Outcome for each CTRP trial document during an import job.
- *
- *     disp_id  primary key, automatically generated
- *   disp_name  string representing the disposition
- *     comment  optional elaboration on the semantics of the value
- */
-CREATE TABLE ctrp_import_disposition
-    (disp_id INTEGER     IDENTITY PRIMARY KEY,
-   disp_name VARCHAR(32) NOT NULL UNIQUE,
-     comment NTEXT           NULL)
-
-/* Populate the CTRP disposition tables */
-INSERT INTO ctrp_download_disposition (disp_name) VALUES ('new')
-INSERT INTO ctrp_download_disposition (disp_name) VALUES ('changed')
-INSERT INTO ctrp_download_disposition (disp_name) VALUES ('unchanged')
-INSERT INTO ctrp_download_disposition (disp_name) VALUES ('failure')
-INSERT INTO ctrp_download_disposition (disp_name) VALUES ('out of scope')
-INSERT INTO ctrp_download_disposition (disp_name) VALUES ('needs nct id')
-INSERT INTO ctrp_download_disposition (disp_name) VALUES ('rejected')
-INSERT INTO ctrp_download_disposition (disp_name) VALUES ('unmatched')
-INSERT INTO ctrp_import_disposition (disp_name) VALUES ('not yet reviewed')
-INSERT INTO ctrp_import_disposition  (disp_name) VALUES ('import requested')
-INSERT INTO ctrp_import_disposition (disp_name) VALUES ('imported')
-INSERT INTO ctrp_import_disposition (disp_name) VALUES ('rejected')
-
-/*
- * One row in the this table for each download of a set of trial
- * documents from CTRP.
- *
- *       job_id  primary key, automatically generated
- *   downloaded  date/time the set was retrieved from CTRP
- * job_filename  name of the file for the set in the form
- *               CTRP-TRIALS-YYYY-MM-DD.zip
- *      job_url  url used to retrieve the archive file for the set from CTRP
- */
-CREATE TABLE ctrp_download_job
-     (job_id INTEGER     IDENTITY PRIMARY KEY,
-  downloaded DATETIME    NOT NULL,
-job_filename VARCHAR(80) NOT NULL,
-     job_url VARCHAR(256)    NULL)
-
-/*
- * One row for each trial document found in each set of clinical trial
- * documents retrieved from CTRP.
- *
- *      job_id  foreign key into the ctrp_download_job table
- *     ctrp_id  unique identifier of the trial document in the CTRP system
- * disposition  foreign key into the ctrp_download_disposition table
- *     comment  optional notes on the trial's processing
- */
-CREATE TABLE ctrp_download
-     (job_id INTEGER     NOT NULL REFERENCES ctrp_download_job,
-     ctrp_id VARCHAR(16) NOT NULL,
- disposition INTEGER     NOT NULL REFERENCES ctrp_download_disposition,
-     comment NTEXT           NULL,
- PRIMARY KEY (job_id, ctrp_id))
-
-/*
- * One row for each CTRP trial document whose site information we
- * need to import into the matching CTGovProtocol document.
- *
- *     ctrp_id  unique identifier of the trial document in the CTRP system
- * disposition  foreign key into the ctrp_import_disposition table
- *      cdr_id  foreign key into the CDR all_docs table; represents
- *              the document for the CTGovProtocol into which the site
- *              information from the CTRP document will be imported;
- *              we might want to prohibit NULLs in this column after
- *              the dust settles; over time the requirements for this
- *              import software have varied wildly, so constraints like
- *              this have been hard to nail down
- *      nct_id  unique identifier of the trial in NLM's clinicaltrials.gov
- *              system; not clear at this point how this will be used
- *              (another point at which the requirements have been
- *              extremely volatile), but I'm recording it
- *     doc_xml  the serialized representation of the document received
- *              from CTRP; will be NULL in cases where CIAT has provided
- *              us with the mapping between the CDR ID and the CTRP ID
- *              for a trial, but we haven't yet pulled the document
- *              down from CTRP in the download software; we may also
- *              have situations in which CIAT provides us with the
- *              mapping relationship, and we have retrieved the XML
- *              document from CTRP, but the CDR ID still represents
- *              an InScopeProtocol document instead of a CTGovProtocol
- *              document: in that case the import software will skip
- *              over the trial until the InScopeProtocol document has
- *              been converted to a CTGovProtocol document (after
- *              "ownership" of the document has been transferred)
- *     comment  optional notes on the processing of this trial
- */
-CREATE TABLE ctrp_import
-    (ctrp_id VARCHAR(16) NOT NULL PRIMARY KEY,
- disposition INTEGER     NOT NULL REFERENCES ctrp_import_disposition,
-      cdr_id INTEGER         NULL REFERENCES all_docs,
-      nct_id VARCHAR(16)     NULL,
-     doc_xml NTEXT           NULL,
-     comment NTEXT           NULL)
-
-/*
- * One row in the this table for each job to sweep through the queue of
- * site information to be import from CTRP documents into the corresponding
- * CTGovProtocol documents and perform those imports.
- *
- *       job_id  primary key, automatically generated
- *     imported  date/time the import job was run
- */
-CREATE TABLE ctrp_import_job
-     (job_id INTEGER     IDENTITY PRIMARY KEY,
-    imported DATETIME    NOT NULL)
-
-/*
- * Record of each attempt to import site information from the trial's
- * CTRP document into the corresponding CTGovProtocol document.
- *
- *       job_id  foreign key into the ctrp_import_job table
- *      ctrp_id  foreign key into the ctrp_import table
- *       locked  flag (Y|N) indicating that the import failed because
- *               the CTGovProtocol document was checked out by one of
- *               the users
- * mapping_gaps  flag (Y|N) indicating that the import failed because
- *               we were unable to establish required links to CDR
- *               organization, country, or political subunit documents.
- */
-CREATE TABLE ctrp_import_event
-     (job_id INTEGER     NOT NULL REFERENCES ctrp_import_job,
-     ctrp_id VARCHAR(16) NOT NULL REFERENCES ctrp_import,
-      locked CHAR        NOT NULL DEFAULT 'N',
-mapping_gaps CHAR        NOT NULL DEFAULT 'N',
- PRIMARY KEY (job_id, ctrp_id))
-
-/*
- * Record of clinical trial document set fetched from CTRP. Used to
- * figure out what we've already downloaded when the nightly job
- * connects to their server.
- *
- *    set_id  primary key for the table
- *  filename  name of the zipfile created by CTRP
- * processed  date and time successful processing was completed
- */
-CREATE TABLE ctrp_trial_set
-     (set_id INTEGER IDENTITY PRIMARY KEY,
-    filename VARCHAR(64) NOT NULL UNIQUE,
-   processed DATETIME NOT NULL)
-
-/*
- * Select information for each new trial found on ClinicalTrials.gov.
- * Used for report of recent CT.gov trials (OCECDR-3877).
- *
- *         nct_id  unique ID for the trial document (primary key)
- *    trial_title  brief title (if present) otherwise official title
- *    trial_phase  phase(s) of the trial
- * first_received  when the trial first appeared in NLM's database
- */
-  CREATE TABLE ctgov_trial
-       (nct_id VARCHAR(11) NOT NULL PRIMARY KEY,
-   trial_title NVARCHAR(1024) NOT NULL,
-   trial_phase NVARCHAR(20) NULL,
-first_received DATETIME NOT NULL)
+ALTER TABLE link_xml ADD FOREIGN KEY(doc_type) REFERENCES doc_type
+GO
+ALTER TABLE link_xml ADD FOREIGN KEY(link_id) REFERENCES link_type
 GO
 
-/*
- * Sponsors/collaborators found in NLM clinical trial documents.
- * Used for report of recent CT.gov trials (OCECDR-3877).
- *
- *    nct_id  unique ID for NLM's trial document (link to ctgov_trial
- *            table)
- *  position  keeps the sponsors in the order in which they appear
- *            in NLM's clinical_trial document
- *   sponsor  name of the sponsor/collaborator
- */
-CREATE TABLE ctgov_trial_sponsor
-     (nct_id VARCHAR(11) NOT NULL REFERENCES ctgov_trial,
-    position INTEGER NOT NULL,
-     sponsor NVARCHAR(1024) NOT NULL,
- PRIMARY KEY (nct_id, position))
+ALTER TABLE media_translation_job ADD FOREIGN KEY(assigned_to) REFERENCES usr
+GO
+ALTER TABLE media_translation_job ADD FOREIGN KEY(english_id)
+ REFERENCES all_docs
+GO
+ALTER TABLE media_translation_job ADD FOREIGN KEY(state_id)
+ REFERENCES media_translation_state
 GO
 
-/*
- * ID other than the NCT ID for a clinical trial document in NLM's
- * database. Used for report of recent CT.gov trials (OCECDR-3877).
- *
- *    nct_id  unique ID for NLM's trial document (link to ctgov_trial
- *            table)
- *  position  keeps the IDs in the order in which they appear in NLM's
- *            clinical_trial document
- *  other_id  the value of the ID
- */
-CREATE TABLE ctgov_trial_other_id
-     (nct_id VARCHAR(11) NOT NULL REFERENCES ctgov_trial,
-    position INTEGER NOT NULL,
-    other_id NVARCHAR(1024) NOT NULL,
- PRIMARY KEY (nct_id, position))
+ALTER TABLE media_translation_job_history ADD FOREIGN KEY(assigned_to)
+ REFERENCES usr
+GO
+ALTER TABLE media_translation_job_history ADD FOREIGN KEY(english_id)
+ REFERENCES all_docs
+GO
+ALTER TABLE media_translation_job_history ADD FOREIGN KEY(state_id)
+ REFERENCES media_translation_state
 GO
 
-/*
- * Represents a class of consumers of PDQ data. Over the years there
- * have been many of these. Currently there is only one (CDR) in
- * production, and another for testing/development (TEST).
- *
- *      prod_id  primary key, automatically generated
- *    prod_name  short string, generally uppercase, without spaces
- *    prod_desc  optional string describing the nature of the product
- *  inactivated  optional date when the product was taken out of commission
- *     last_mod  date/time the product's row was last modified
- */
-CREATE TABLE data_partner_product
-    (prod_id INTEGER        NOT NULL IDENTITY PRIMARY KEY,
-   prod_name VARCHAR(64)    NOT NULL UNIQUE,
-   prod_desc NVARCHAR(2048)     NULL,
- inactivated DATE               NULL,
-    last_mod DATETIME       NOT NULL)
+ALTER TABLE pub_proc ADD FOREIGN KEY(pub_system) REFERENCES all_docs
+GO
+ALTER TABLE pub_proc ADD FOREIGN KEY(usr) REFERENCES usr
 GO
 
-/*
- * Represents a PDQ data partner organization. Each PDQ data product
- * can have many partner organizations (or none), and each partner
- * organization can have zero or more contact records. Currently,
- * the organization record must have a unique name across all
- * products. If requirements change, and that restriction must
- * be lifted, the database table definition will have to be altered.
- *
- *       org_id  primary key, automatically generated
- *     org_name  partner organization's name; must be present and unique
- *      prod_id  foreign key into the product table above (required)
- *   org_status  one of A (Active), T (Test), or S (Special); required
- *    activated  date the partner record was added (required)
- *   terminated  date the partner was unsubscribed (optional)
- *      renawal  optional date for renewal of the partner
- * ftp_username  optional name for the partner's FTP account
- *     last_mod  date/time the partner's org row was last modified
- */
-CREATE TABLE data_partner_org
-     (org_id INTEGER        NOT NULL IDENTITY PRIMARY KEY,
-    org_name NVARCHAR(255)  NOT NULL UNIQUE,
-     prod_id INTEGER        NOT NULL REFERENCES data_partner_product,
-  org_status CHAR(1)        NOT NULL
-                            CONSTRAINT chk_org_status
-                            CHECK (org_status IN ('A','T','S')),
-   activated DATE           NOT NULL,
-  terminated DATE               NULL,
-     renewal DATE               NULL,
-ftp_username VARCHAR(64)        NULL,
-    last_mod DATETIME       NOT NULL)
+ALTER TABLE pub_proc_cg ADD FOREIGN KEY(id) REFERENCES all_docs
+GO
+ALTER TABLE pub_proc_cg ADD FOREIGN KEY(pub_proc) REFERENCES pub_proc
 GO
 
-/*
- * Individual to whom correspondence about the product's activity is sent.
- * Contacts can be primary, secondary, internal, or deleted. They are
- * always associated with a data partner organization.
- *
- *   contact_id  primary key, automatically generated
- *       org_id  foreign key into the organization table above (required)
- *  person_name  required string for the contact's personal name
- *   email_addr  required (without this, there would be no point)
- *        phone  ancient method for communicating
- * contact_type  required; one of the following values:
- *                 P (primary)
- *                 S (secondary)
- *                 I (internal)
- *                 D (deleted)
- *  notif_count  required number of times this contact has been notified
- *   notif_date  last time this contact was notified (optional)
- *     last_mod  date/time the contact's row was last modified
- */
-CREATE TABLE data_partner_contact
- (contact_id INTEGER       NOT NULL IDENTITY PRIMARY KEY,
-      org_id INTEGER       NOT NULL REFERENCES data_partner_org,
- person_name NVARCHAR(255) NOT NULL,
-  email_addr VARCHAR(64)   NOT NULL,
-       phone VARCHAR(64)       NULL,
-contact_type CHAR(1)       NOT NULL
-                           CONSTRAINT chk_contact_type
-                           CHECK (contact_type IN ('P','S','I','D')),
- notif_count INTEGER       NOT NULL,
-  notif_date DATETIME          NULL,
-    last_mod DATETIME      NOT NULL)
+ALTER TABLE pub_proc_cg_work ADD FOREIGN KEY(cg_job) REFERENCES pub_proc
+GO
+ALTER TABLE pub_proc_cg_work ADD FOREIGN KEY(id) REFERENCES all_docs
+GO
+ALTER TABLE pub_proc_cg_work ADD FOREIGN KEY(vendor_job) REFERENCES pub_proc
 GO
 
-/*
- * Convenience view for older software, which used the data in a denormalized
- * form. The column names match the names of the columns in the tables from
- * which the view is build (with the last_mod column being drawn from the
- * rows for the contacts).
- */
-CREATE VIEW pdq_contact AS
-SELECT c.contact_id,
-       p.prod_name,
-       c.email_addr,
-       c.person_name,
-       o.org_name,
-       c.phone,
-       o.org_status,
-       c.notif_count,
-       c.contact_type,
-       o.ftp_username,
-       o.activated,
-       o.terminated,
-       o.renewal,
-       CASE WHEN c.notif_date IS NULL THEN 'N' ELSE 'Y' END AS notified,
-       c.notif_date,
-       o.org_id,
-       c.last_mod
-  FROM data_partner_contact c
-  JOIN data_partner_org o
-    ON o.org_id = c.org_id
-  JOIN data_partner_product p
-    ON p.prod_id = o.prod_id
+ALTER TABLE pub_proc_doc ADD FOREIGN KEY(doc_id, doc_version)
+ REFERENCES all_doc_versions
+GO
+ALTER TABLE pub_proc_doc ADD FOREIGN KEY(pub_proc) REFERENCES pub_proc
 GO
 
-/*
- * When we notify a PDQ data partner that new PDQ data is available, we
- * record that notification here. With this information, if the notification
- * job fails part-way through, we can answer the questions "which contacts
- * have we already notified for this job?".
- *
- *   email_addr  where we sent the notification
- *   notif_date  when we sent it
- */
-CREATE TABLE data_partner_notification
- (email_addr VARCHAR(64) NOT NULL,
-  notif_date DATETIME NOT NULL)
+ALTER TABLE pub_proc_parm ADD FOREIGN KEY(pub_proc) REFERENCES pub_proc
 GO
 
-/*
- * Valid values table for types of changes to summary documents.
- * Used by the translation queue management software. Valid value
- * lookup tables constructed with this structure (same column names
- * and types) can be managed using the admin web interface.
- *
- *   value_id   primary key, automatically generated
- * value_name   display name for the value
- *  value_pos   unique integer controlling the position of the value
- *              in picklists and reports
- */
-CREATE TABLE summary_change_type
-   (value_id INTEGER IDENTITY PRIMARY KEY,
-  value_name NVARCHAR(128) NOT NULL UNIQUE,
-   value_pos INTEGER NOT NULL)
+ALTER TABLE query_term ADD FOREIGN KEY(doc_id) REFERENCES all_docs
 GO
 
-/*
- * Valid values table for the status of CDR document translation jobs.
- * Used by the translation queue management software. Valid value
- * lookup tables constructed with this structure (same column names
- * and types) can be managed using the admin web interface.
- *
- *   value_id   primary key, automatically generated
- * value_name   display name for the value
- *  value_pos   unique integer controlling the position of the value
- *              in picklists and reports
- */
-CREATE TABLE summary_translation_state
-   (value_id INTEGER IDENTITY PRIMARY KEY,
-  value_name NVARCHAR(128) NOT NULL UNIQUE,
-   value_pos INTEGER NOT NULL)
+ALTER TABLE query_term_def ADD FOREIGN KEY(term_rule) REFERENCES query_term_rule
 GO
 
-/*
- * Tracking information for the translation of an English CDR Summary
- * document into Spanish.
- *
- *   english_id  primary key (thus unique) and foreign key into all_docs
- *               table
- *     state_id  foreign key into the lookup table for translation job status
- *   state_date  when the job entered the current state
- *  change_type  foreign key into the lookup table for summary change type
- *  assigned_to  foreign key into the table for CDR users
- *     comments  optional instructions (e.g., specific version to translate)
- *     notified  record of when the assigned user was last notified about
- *               the change of the job's state; might not need this any more
- *               (requirements have been wandering all around, and are still
- *               not quite fixed in stone).
- */
-CREATE TABLE summary_translation_job
- (english_id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs,
-    state_id INTEGER NOT NULL REFERENCES summary_translation_state,
-  state_date DATETIME NOT NULL,
- change_type INTEGER NOT NULL REFERENCES summary_change_type,
- assigned_to INTEGER NOT NULL REFERENCES usr,
-    comments NTEXT NULL,
-    notified DATETIME NULL)
+ALTER TABLE query_term_pub ADD FOREIGN KEY(doc_id) REFERENCES all_docs
 GO
 
-/*
- * All states for the translation of the PDQ English summary documents.
- * Probably wouldn't have done this in a separate table, but the users'
- * originally requirements were for the system to discard prior states
- * for a summary translation's workflow, retaining only the latest state.
- * Then at the last minute they were puzzled that the reports didn't
- * show them any history. :-)
- *
- *   history_id  primary key, automatically generated
- *   english_id  foreign key into all_docs table
- *     state_id  foreign key into the lookup table for translation job status
- *   state_date  when the job entered the current state
- *  change_type  foreign key into the lookup table for summary change type
- *  assigned_to  foreign key into the table for CDR users
- *     comments  optional instructions (e.g., specific version to translate)
- *     notified  record of when the assigned user was last notified about
- *               the change of the job's state; might not need this any more
- *               (requirements have been wandering all around, and are still
- *               not quite fixed in stone).
- */
-CREATE TABLE summary_translation_job_history
- (history_id INTEGER IDENTITY PRIMARY KEY,
-  english_id INTEGER NOT NULL REFERENCES all_docs,
-    state_id INTEGER NOT NULL REFERENCES summary_translation_state,
-  state_date DATETIME NOT NULL,
- change_type INTEGER NOT NULL REFERENCES summary_change_type,
- assigned_to INTEGER NOT NULL REFERENCES usr,
-    comments NTEXT NULL,
-    notified DATETIME NULL)
+ALTER TABLE ready_for_review ADD FOREIGN KEY(doc_id) REFERENCES all_docs
 GO
 
-/*
- * Keep track of the CDR DLL commands run for a CDR session. Used for
- * troubleshooting when XMetaL crashes or locks up. See OCECDR-4229.
- *
- *     log_id  primary key, generated by the database
- *  log_saved  when the log was posted to the database; usually (but
- *             not necessarily) at the end of the session
- *   cdr_user  account name of the user running XMetaL
- * session_id  unique string identifying the CDR session
- *   log_data  contents of the trace log
- */
-CREATE TABLE dll_trace_log
-     (log_id INTEGER IDENTITY PRIMARY KEY,
-   log_saved DATETIME NOT NULL,
-    cdr_user VARCHAR(64),
-  session_id VARCHAR(64),
-    log_data TEXT NOT NULL)
+ALTER TABLE session ADD FOREIGN KEY(usr) REFERENCES usr
 GO
 
-/*
- * One-row table holding serialized data for the glossifier service.
- * Seeded with INSERT INTO glossifier VALUES(1, GETDATE(), ''). Refreshed
- * by nightly job running under CDR scheduler.
- *
- *        pk  primary key, set manually to 1
- * refreshed  when the data was last refreshed
- *     terms  serialized glossary term data
- */
-CREATE TABLE glossifier
-         (pk INTEGER PRIMARY KEY,
-   refreshed DATETIME NOT NULL,
-       terms TEXT NOT NULL)
+ALTER TABLE summary_translation_job ADD FOREIGN KEY(assigned_to) REFERENCES usr
+GO
+ALTER TABLE summary_translation_job ADD FOREIGN KEY(english_id)
+ REFERENCES all_docs
+GO
+ALTER TABLE summary_translation_job ADD FOREIGN KEY(change_type)
+ REFERENCES summary_change_type
+GO
+ALTER TABLE summary_translation_job ADD FOREIGN KEY(state_id)
+ REFERENCES summary_translation_state
 GO
 
-CREATE TABLE media_translation_state
-   (value_id INTEGER IDENTITY PRIMARY KEY,
-  value_name NVARCHAR(128) NOT NULL UNIQUE,
-   value_pos INTEGER NOT NULL)
+ALTER TABLE summary_translation_job_history ADD FOREIGN KEY(assigned_to)
+ REFERENCES usr
 GO
-INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Ready For Translation', 10)
-INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation of Labels Pending', 20)
-INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation Peer-Review Pending (only labels)', 30)
-INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation Peer-Review Complete (only labels)', 40)
-INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Spanish Labels Sent to Artist', 50)
-INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Spanish Illustration Approved', 60)
-INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation of Caption and Cont. Desc. Pending', 70)
-INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation Peer-Review Pending (Caption and Cont. Desc.)', 80)
-INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation Peer-Review Complete (Caption and Cont. Desc.)', 90)
-INSERT INTO media_translation_state (value_name, value_pos) VALUES ('2nd Peer-Review and Implement Changes', 95)
-INSERT INTO media_translation_state (value_name, value_pos) VALUES ('Translation Made Publishable', 100)
+ALTER TABLE summary_translation_job_history ADD FOREIGN KEY(change_type)
+ REFERENCES summary_change_type
+GO
+ALTER TABLE summary_translation_job_history ADD FOREIGN KEY(english_id)
+ REFERENCES all_docs
+GO
+ALTER TABLE summary_translation_job_history ADD FOREIGN KEY(state_id)
+ REFERENCES summary_translation_state
 GO
 
-CREATE TABLE media_translation_job
- (english_id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs,
-    state_id INTEGER NOT NULL REFERENCES media_translation_state,
-  state_date DATETIME NOT NULL,
- assigned_to INTEGER NOT NULL REFERENCES usr,
-    comments NTEXT NULL)
+ALTER TABLE term_audio_mp3 ADD FOREIGN KEY(cdr_id) REFERENCES all_docs
+GO
+ALTER TABLE term_audio_mp3 ADD FOREIGN KEY(reviewer_id) REFERENCES usr
+GO
+ALTER TABLE term_audio_mp3 ADD FOREIGN KEY(zipfile_id)
+ REFERENCES term_audio_zipfile
 GO
 
-CREATE TABLE media_translation_job_history
- (history_id INTEGER IDENTITY PRIMARY KEY,
-  english_id INTEGER NOT NULL REFERENCES all_docs,
-    state_id INTEGER NOT NULL REFERENCES media_translation_state,
-  state_date DATETIME NOT NULL,
- assigned_to INTEGER NOT NULL REFERENCES usr,
-    comments NTEXT NULL)
+ALTER TABLE version_blob_usage ADD FOREIGN KEY(blob_id) REFERENCES doc_blob
+GO
+ALTER TABLE version_blob_usage ADD FOREIGN KEY(doc_id, doc_version)
+ REFERENCES all_doc_versions
 GO
 
-CREATE TABLE glossary_translation_state
-   (value_id INTEGER IDENTITY PRIMARY KEY,
-  value_name NVARCHAR(128) NOT NULL UNIQUE,
-   value_pos INTEGER NOT NULL)
-GO
-INSERT INTO glossary_translation_state (value_name, value_pos) VALUES ('Ready For Translation', 10)
-INSERT INTO glossary_translation_state (value_name, value_pos) VALUES ('Ready for Translation Peer Review 1', 20)
-INSERT INTO glossary_translation_state (value_name, value_pos) VALUES ('Ready for Translation Peer Review 2', 30)
-INSERT INTO glossary_translation_state (value_name, value_pos) VALUES ('Translation Made Publishable', 40)
-GO
-
-CREATE TABLE glossary_translation_job
-     (doc_id INTEGER NOT NULL PRIMARY KEY REFERENCES all_docs,
-    state_id INTEGER NOT NULL REFERENCES glossary_translation_state,
-  state_date DATETIME NOT NULL,
- assigned_to INTEGER NOT NULL REFERENCES usr,
-    comments NTEXT NULL)
-GO
-
-CREATE TABLE glossary_translation_job_history
- (history_id INTEGER IDENTITY PRIMARY KEY,
-      doc_id INTEGER NOT NULL REFERENCES all_docs,
-    state_id INTEGER NOT NULL REFERENCES glossary_translation_state,
-  state_date DATETIME NOT NULL,
- assigned_to INTEGER NOT NULL REFERENCES usr,
-    comments NTEXT NULL)
-GO
-
-CREATE TABLE media_hash (
-           id INTEGER NOT NULL REFERENCES all_docs,
-  sha256_hash BINARY(32) NOT NULL
-)
-GRANT SELECT ON media_hash TO CdrGuest
-GRANT SELECT, UPDATE, INSERT, DELETE ON media_hash TO CdrPublishing
-GO
-
-CREATE TABLE scheduled_job (
-          id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY DEFAULT NEWID(),
-        name NVARCHAR(512) NOT NULL,
-     enabled BIT NOT NULL,
-   job_class NVARCHAR(128) NOT NULL,
-        opts VARCHAR(1024) NOT NULL,
-    schedule VARCHAR(256) NULL
-)
-GRANT SELECT ON scheduled_job TO CdrGuest
-GO
