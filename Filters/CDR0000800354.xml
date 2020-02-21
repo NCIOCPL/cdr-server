@@ -35,6 +35,9 @@
                                select = "@id"/>
    </xsl:call-template>
   </xsl:variable>
+  <xsl:variable                  name = "preferred-name">
+   <xsl:value-of               select = "normalize-space(PreferredName)"/>
+  </xsl:variable>
   <xsl:variable                  name = "definition">
    <xsl:apply-templates        select = "Definition[1]/DefinitionText">
     <xsl:with-param              name = "name"
@@ -53,22 +56,27 @@
    <term_id>
     <xsl:value-of              select = "$id"/>
    </term_id>
-   <term_name>
-    <xsl:value-of              select = "normalize-space(PreferredName)"/>
-   </term_name>
-   <xsl:if                       test = "@NCIThesaurusConceptID != ''">
-    <nci_concept_id>
-     <xsl:value-of             select = "@NCIThesaurusConceptID"/>
-    </nci_concept_id>
-   </xsl:if>
+   <name>
+    <xsl:value-of              select = "$preferred-name"/>
+   </name>
+   <first_letter            processor = "lowercase_first_letter">
+    <xsl:value-of              select = "$preferred-name"/>
+   </first_letter>
+   <term_type>FullTerm</term_type>
+   <term_name_type>PreferredName</term_name_type>
+   <pretty_url_name         processor = "clean_pretty_url">
+    <xsl:value-of              select = "$pretty-url-name"/>
+   </pretty_url_name>
    <xsl:apply-templates        select = "OtherName"/>
    <xsl:apply-templates        select = "Definition/DefinitionText">
     <xsl:with-param              name = "name"
                                select = "'definition'"/>
    </xsl:apply-templates>
-   <pretty_url_name         processor = "clean_pretty_url">
-    <xsl:value-of              select = "$pretty-url-name"/>
-   </pretty_url_name>
+   <xsl:if                       test = "@NCIThesaurusConceptID != ''">
+    <nci_concept_id>
+     <xsl:value-of             select = "@NCIThesaurusConceptID"/>
+    </nci_concept_id>
+   </xsl:if>
    <xsl:call-template            name = "related-resource"/>
   </node>
 
@@ -210,6 +218,15 @@
   </xsl:if>
  </xsl:template>
 
+ <xsl:template                  name = "other-name-type">
+  <xsl:variable                 name = "type">
+   <xsl:value-of              select = "normalize-space(OtherNameType)"/>
+  </xsl:variable>
+  <type>
+   <xsl:value-of              select = "translate($type, ' ', '')"/>
+  </type>
+ </xsl:template>
+
  <xsl:template                   name = "pretty-url-name">
   <xsl:variable                  name = "ncit-name"
                                select = "normalize-space(CGovInfo/NCITName)"/>
@@ -224,14 +241,12 @@
  </xsl:template>
 
  <xsl:template                  match = "OtherName">
-  <alias                         type = "array-member">
+  <aliases                       type = "array-member">
+   <xsl:call-template            name = "other-name-type"/>
    <name>
     <xsl:value-of              select = "normalize-space(OtherTermName)"/>
    </name>
-   <type>
-    <xsl:value-of              select = "normalize-space(OtherNameType)"/>
-   </type>
-  </alias>
+  </aliases>
  </xsl:template>
 
  <!-- Extract significant digits from the CDR ID, without CDR0* prefix. -->
