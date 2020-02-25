@@ -39,14 +39,14 @@ Filter to create Vendor Genetics Professionals XML documents
    ==============================================================
    copy summary meta data, and title
    ============================================================== -->
-   <SummaryMetaData>
+   <xsl:element                   name = "SummaryMetaData">
     <xsl:apply-templates        select = "SummaryMetaData/SummaryType"
                                   mode = "copy"/>
     <xsl:apply-templates        select = "SummaryMetaData/SummaryAudience"
                                   mode = "copy"/>
     <xsl:apply-templates        select = "SummaryMetaData/SummaryLanguage"
                                   mode = "copy"/>
-   </SummaryMetaData>
+   </xsl:element>
 
    <!--
    ======================================================================
@@ -64,45 +64,52 @@ Filter to create Vendor Genetics Professionals XML documents
      section.  It is being renamed here to be able and handle these titles
      separately from all other SummarySection titles
      ====================================================================== -->
-     <SectionTitle>
+     <xsl:element                 name = "SectionTitle">
       <xsl:attribute              name = "cdr:id">
        <xsl:value-of            select = "@cdr:id"/>
       </xsl:attribute>
       <xsl:apply-templates      select = "Title"
                                   mode = "copy"/>
-     </SectionTitle>
+     </xsl:element>
 
      <!--
      ===============================================================
      Collect Keypoints for keypoints box above each SummarySection
      =============================================================== -->
-     <KeyPoints>
-      <KeyPointsList             Style = 'bullet'>
+     <xsl:element                 name = "KeyPoints">
+      <xsl:element                name = "KeyPointsList">
+       <xsl:attribute             name = "Style">
+        <xsl:text>bullet</xsl:text>
+       </xsl:attribute>
+
        <xsl:for-each            select = "SummarySection">
         <xsl:if                   test = "KeyPoint">
-         <ListItem>
+         <xsl:element             name = "ListItem">
           <xsl:apply-templates  select = "KeyPoint"
                                   mode = "copy"/>
 
           <xsl:if                 test = "SummarySection/KeyPoint">
-           <KeyPointsList        Style = 'dash'>
+           <xsl:element           name = "KeyPointsList">
+            <xsl:attribute        name = "Style">
+             <xsl:text>dash</xsl:text>
+            </xsl:attribute>
             <xsl:for-each       select = "SummarySection">
              <xsl:apply-templates
                                 select = "Title"
                                   mode = "copy"/>
-             <ListItem>
+             <xsl:element         name = "ListItem">
               <xsl:apply-templates
                                 select = "KeyPoint"
                                   mode = "copy"/>
-             </ListItem>
+             </xsl:element>
             </xsl:for-each>
-           </KeyPointsList>
+           </xsl:element>
           </xsl:if>
-         </ListItem>
+         </xsl:element>
         </xsl:if>
        </xsl:for-each>
-      </KeyPointsList>
-     </KeyPoints>
+      </xsl:element>
+     </xsl:element>
 
 
     <!--
@@ -117,17 +124,17 @@ Filter to create Vendor Genetics Professionals XML documents
                                   mode = "copy"/>
    </xsl:for-each>
 
-    <GlossaryTerms>
+    <xsl:element                  name = "GlossaryTerms">
      <xsl:for-each              select = "//GlossaryTermRef">
-      <GlossaryTerm>
-       <GlossaryTermRef>
+      <xsl:element                name = "GlossaryTerm">
+       <xsl:element               name = "GlossaryTermRef">
         <xsl:apply-templates    select = "GlossaryText"
                                   mode = "copy"/>
         <xsl:apply-templates    select = "Dictionary"
                                   mode = "copy"/>
         <xsl:apply-templates    select = "Audience"
                                   mode = "copy"/>
-       </GlossaryTermRef>
+       </xsl:element>
 
        <xsl:variable              name = "defID"
                                 select = "@cdr:href"/>
@@ -147,14 +154,14 @@ Filter to create Vendor Genetics Professionals XML documents
          <xsl:when                test = "/Summary/
                                            SummaryMetaData/
                                            SummaryLanguage = 'English'">
-          <GlossaryTermName>
+          <xsl:element            name = "GlossaryTermName">
            <xsl:value-of        select = "$defInfo/GlossaryTermName/
                                           TermName/
                                           TermNameString"/>
-          </GlossaryTermName>
+          </xsl:element>
           <xsl:copy-of          select = "$defInfo/GlossaryTermName/
                                            ReplacementText"/>
-          <GlossaryTermConcept>
+          <xsl:element            name = "GlossaryTermConcept">
            <!--
            The Genetics Summaries are using the definitions for the HP
            audience instead of Patient (English only)
@@ -195,38 +202,38 @@ Filter to create Vendor Genetics Professionals XML documents
                                               Dictionary = 'Cancer.gov']"/>
             </xsl:otherwise>
            </xsl:choose>
-          </GlossaryTermConcept>
+          </xsl:element>
          </xsl:when>
          <xsl:otherwise>
-          <GlossaryTermName>
+          <xsl:element            name = "GlossaryTermName">
            <xsl:value-of        select = "$defInfo/GlossaryTermName/
                                            TranslatedName/
                                            TermNameString"/>
-          </GlossaryTermName>
+          </xsl:element>
           <xsl:copy-of          select = "$defInfo/GlossaryTermName/
                                            ReplacementText"/>
-          <GlossaryTermConcept>
+          <xsl:element            name = "GlossaryTermConcept">
            <xsl:copy-of         select = "$conceptInfo/
                                            GlossaryTermConcept/
                                            TranslatedTermDefinition
-                                              [Audience = 'Patient']"/>
-          </GlossaryTermConcept>
+                                              [Audience = $sumAudience]"/>
+          </xsl:element>
          </xsl:otherwise>
         </xsl:choose>
-      </GlossaryTerm>
+      </xsl:element>
      </xsl:for-each>
-    </GlossaryTerms>
-    <LOETerms>
+    </xsl:element>
+    <xsl:element                  name = "LOETerms">
      <xsl:for-each              select = "//LOERef">
-      <LOETerm>
-       <LOERef>
+      <xsl:element                name = "LOETerm">
+       <xsl:element               name = "LOERef">
         <xsl:apply-templates    select = "GlossaryText"
                                   mode = "copy"/>
         <xsl:apply-templates    select = "Dictionary"
                                   mode = "copy"/>
         <xsl:apply-templates    select = "Audience"
                                   mode = "copy"/>
-       </LOERef>
+       </xsl:element>
 
        <xsl:variable              name = "defID"
                                 select = "@cdr:href"/>
@@ -246,14 +253,14 @@ Filter to create Vendor Genetics Professionals XML documents
          <xsl:when                test = "/Summary/
                                            SummaryMetaData/
                                            SummaryLanguage = 'English'">
-          <GlossaryTermName>
+          <xsl:element            name = "GlossaryTermName">
            <xsl:value-of        select = "$defInfo/GlossaryTermName/
                                           TermName/
                                           TermNameString"/>
-          </GlossaryTermName>
+          </xsl:element>
           <xsl:copy-of          select = "$defInfo/GlossaryTermName/
                                            ReplacementText"/>
-          <GlossaryTermConcept>
+          <xsl:element            name = "GlossaryTermConcept">
            <!--
            The Genetics Summaries are using the definitions for the HP
            audience instead of Patient (English only)
@@ -275,27 +282,27 @@ Filter to create Vendor Genetics Professionals XML documents
                                               Dictionary = 'Cancer.gov']"/>
             </xsl:otherwise>
            </xsl:choose>
-          </GlossaryTermConcept>
+          </xsl:element>
          </xsl:when>
          <xsl:otherwise>
-          <GlossaryTermName>
+          <xsl:element            name = "GlossaryTermName">
            <xsl:value-of        select = "$defInfo/GlossaryTermName/
                                            TranslatedName/
                                            TermNameString"/>
-          </GlossaryTermName>
+          </xsl:element>
           <xsl:copy-of          select = "$defInfo/GlossaryTermName/
                                            ReplacementText"/>
-           <GlossaryTermConcept>
-          <xsl:copy-of          select = "$conceptInfo/
+          <xsl:element            name = "GlossaryTermConcept">
+           <xsl:copy-of         select = "$conceptInfo/
                                            GlossaryTermConcept/
                                            TranslatedTermDefinition
                                               [Audience = $sumAudience]"/>
-          </GlossaryTermConcept>
+          </xsl:element>
          </xsl:otherwise>
         </xsl:choose>
-      </LOETerm>
+      </xsl:element>
      </xsl:for-each>
-    </LOETerms>
+    </xsl:element>
   </xsl:copy>
  </xsl:template>
 
